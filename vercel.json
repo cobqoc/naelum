@@ -1,5 +1,25 @@
 {
   "framework": "nextjs",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "xn--b30bo0o.com" }],
+      "destination": "https://naelum.app/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.xn--b30bo0o.com" }],
+      "destination": "https://naelum.app/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.naelum.app" }],
+      "destination": "https://naelum.app/$1",
+      "permanent": true
+    }
+  ],
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "regions": ["icn1"],
