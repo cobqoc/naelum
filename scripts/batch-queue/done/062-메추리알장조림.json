@@ -1,0 +1,37 @@
+{
+  "title": "메추리알 장조림",
+  "description": "한번에 모든 재료를 넣고 끓이는 간단한 메추리알 장조림입니다. 식혀서 냉장고에 보관하면 간이 배어 더 맛있게 즐길 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=RmZyxKOUbfs",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "삶은 메추리알", "quantity": null, "unit": "선택", "notes": "마트에서 파는 삶은 메추리알", "is_optional": false },
+    { "ingredient_name": "꽈리고추", "quantity": 1, "unit": "줌", "notes": "취향에 따라 2줌까지 가능", "is_optional": true },
+    { "ingredient_name": "마늘", "quantity": null, "unit": "선택", "notes": "편썰기 또는 반 가르기", "is_optional": false },
+    { "ingredient_name": "간장", "quantity": 1, "unit": "컵", "notes": "진간장 또는 국간장", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": 0.5, "unit": "컵", "notes": "", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 4, "unit": "컵", "notes": "", "is_optional": false },
+    { "ingredient_name": "다시마", "quantity": null, "unit": "선택", "notes": "마무리에 넣음", "is_optional": true },
+    { "ingredient_name": "타라메리", "quantity": null, "unit": "선택", "notes": "색을 진하게 내고 싶을 때", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "메추리알을 한 번 헹궈 냄비에 담습니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "간장 1컵, 설탕 반 컵, 물 4컵을 함께 붓고 편 썬 마늘을 넣어줍니다.", "timer_minutes": null, "tip": "여러 재료를 따로 끓일 필요 없이 한 번에 넣으면 됩니다." },
+    { "instruction": "꽈리고추를 큼직하게 2등분 또는 3등분하여 넣어줍니다.", "timer_minutes": null, "tip": "파란 색깔을 살리고 싶으면 마지막 불 끌 때 넣어도 됩니다." },
+    { "instruction": "불을 켜고 끓어오르면 시간을 재어 3~5분 정도 더 끓여줍니다.", "timer_minutes": 5, "tip": "끓인 직후에는 싱거워도 식혀서 냉장 보관하면 간이 쏙 들어갑니다." },
+    { "instruction": "불을 끄기 직전에 다시마를 넣어 맛을 우려낸 후 다시마는 건져냅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "한김 식혀 냉장고에 넣어 보관하며 꺼내 먹습니다.", "timer_minutes": null, "tip": "버터에 밥을 볶아 얹어 먹으면 아침 한 끼로 훌륭합니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "반찬", "SideDish", "장조림", "메추리알"]
+}

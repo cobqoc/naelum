@@ -1,0 +1,43 @@
+{
+  "title": "콩나물 해장국",
+  "description": "북어 대가리로 진한 육수를 낸 콩나물 해장국입니다. 달걀 수란과 오징어를 곁들여 식당에서 먹는 듯한 깊은 맛을 냅니다.",
+  "video_url": "https://www.youtube.com/watch?v=Sh8kjldrKf8",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "북어 대가리", "quantity": 3, "unit": "개", "notes": "멸치로 대체 가능", "is_optional": false },
+    { "ingredient_name": "콩나물", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": 0.5, "unit": "개", "notes": "껍질째 사용하면 색과 향이 좋음", "is_optional": false },
+    { "ingredient_name": "다시마", "quantity": 2, "unit": "장", "notes": "손바닥만한 크기", "is_optional": false },
+    { "ingredient_name": "오징어", "quantity": null, "unit": "선택", "notes": "살짝 데친 것", "is_optional": true },
+    { "ingredient_name": "청양고추", "quantity": null, "unit": "선택", "notes": "", "is_optional": true },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "간 마늘", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": null, "unit": "선택", "notes": "색과 향, 간을 내는 용도", "is_optional": false },
+    { "ingredient_name": "미원", "quantity": null, "unit": "선택", "notes": "밥 숟가락 3분의 2 정도, 취향에 따라", "is_optional": true },
+    { "ingredient_name": "멸치 다시다", "quantity": null, "unit": "선택", "notes": "깊은 맛 용, 취향에 따라", "is_optional": true },
+    { "ingredient_name": "달걀", "quantity": null, "unit": "개", "notes": "수란용", "is_optional": false },
+    { "ingredient_name": "밥", "quantity": null, "unit": "선택", "notes": "", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "북어 대가리를 흐르는 물에 한 번 씻어 냄비에 담고 껍질째 반 가른 양파와 함께 잠길 정도로 물을 부어줍니다.", "timer_minutes": null, "tip": "북어 대가리는 물에 잘 가라앉지 않으니 냄비 크기에 맞춰 넣으면 됩니다." },
+    { "instruction": "다시마 2장을 넣고 약 1시간 정도 끓여 육수를 진하게 우려냅니다.", "timer_minutes": 60, "tip": "" },
+    { "instruction": "오징어는 몸통을 통째로 데쳐 살짝 익힌 후 건져 준비하고 청양고추와 대파도 썰어 둡니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "우러난 육수에 콩나물을 넣고 국간장으로 색과 간을 내며 미원과 멸치 다시다를 기호에 맞게 추가합니다.", "timer_minutes": null, "tip": "콩나물 넣은 후 불을 세게 올려 끓어오르면 바로 건져냅니다." },
+    { "instruction": "달걀을 작은 그릇에 깨 넣고 끓는 물에 살짝 데쳐 수란을 만듭니다.", "timer_minutes": null, "tip": "수란 전용 기구나 국자에 기름을 살짝 발라 사용하면 편합니다." },
+    { "instruction": "뚝배기에 건진 콩나물과 오징어, 대파, 청양고추, 간 마늘을 담고 육수를 부어 끓여줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "끓어오르면 그릇에 밥을 풀어 담고 수란을 올려 완성합니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "해장국", "콩나물"]
+}

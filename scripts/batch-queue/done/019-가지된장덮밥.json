@@ -1,0 +1,46 @@
+{
+  "title": "가지 된장 덮밥",
+  "description": "가지를 된장 양념에 볶아 밥 위에 올린 간단한 덮밥입니다. 된장의 구수함과 가지의 부드러운 식감이 잘 어우러지는 백종원 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=wTtHP5qFOio",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 15,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "가지", "amount": "1", "unit": "개" },
+    { "name": "된장", "amount": "1.5", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "작은술" },
+    { "name": "맛술", "amount": "1", "unit": "큰술" },
+    { "name": "간장", "amount": "1", "unit": "작은술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "작은술" },
+    { "name": "식용유", "amount": "2", "unit": "큰술" },
+    { "name": "밥", "amount": "1", "unit": "공기" },
+    { "name": "쪽파", "amount": null, "unit": "약간" },
+    { "name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "가지를 반 갈라 한 입 크기로 썰어 준비합니다."
+    },
+    {
+      "order": 2,
+      "description": "된장, 설탕, 맛술, 간장, 다진 마늘을 섞어 양념장을 만듭니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 식용유를 두르고 가지를 넣어 중불에서 볶습니다."
+    },
+    {
+      "order": 4,
+      "description": "가지가 부드러워지면 양념장을 넣고 고루 버무리며 볶습니다."
+    },
+    {
+      "order": 5,
+      "description": "밥 위에 볶은 가지를 올리고 쪽파와 통깨를 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["가지", "된장", "덮밥", "간편요리", "백종원", "채소요리"]
+}

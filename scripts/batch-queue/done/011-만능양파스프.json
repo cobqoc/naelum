@@ -1,0 +1,69 @@
+{
+  "title": "만능양파 스프",
+  "description": "냉동 만능양파볶음 한 덩어리를 물에 녹여 끓이는 간단한 양파 수프입니다. 소고기 육수나 다시다를 쓰면 훨씬 깊은 맛이 납니다. 바게트빵과 모짜렐라치즈를 올리면 프렌치 어니언 수프 스타일로 즐길 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=C2GGN4yEphk",
+  "difficulty_level": "easy",
+  "cuisine_type": "western",
+  "dish_type": "soup",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": true,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "만능양파볶음 (냉동)",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "덩어리 (약 45g)",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "물",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소고기 육수나 소고기 다시다로 대체하면 더 깊은 맛",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "소금",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "후춧가루",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "바게트빵",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "곁들이거나 수프 위에 올리기",
+      "is_optional": true
+    },
+    {
+      "ingredient_name": "모짜렐라치즈",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "바게트 위에 올려 녹이면 프렌치 어니언 수프 스타일",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "냄비에 물을 넣고 냉동 만능양파볶음 한 덩어리를 넣어 녹입니다."
+    },
+    {
+      "instruction": "끓이면서 소금과 후춧가루로 간을 맞춥니다.",
+      "tip": "소고기 육수나 다시다 큐브를 사용하면 훨씬 풍부한 맛이 납니다."
+    },
+    {
+      "instruction": "그릇에 담고, 원하면 바게트빵을 올리거나 함께 냅니다. 모짜렐라치즈를 올리면 완성입니다.",
+      "tip": "처음에는 물로만 만들어 맛보고, 마음에 들면 다음번에 소고기 육수나 다시다를 더해보세요."
+    }
+  ],
+  "tags": ["양파수프", "만능양파볶음", "어니언수프", "수프", "간단요리", "백종원레시피"]
+}

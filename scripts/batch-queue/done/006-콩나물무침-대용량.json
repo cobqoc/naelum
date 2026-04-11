@@ -1,0 +1,89 @@
+{
+  "title": "콩나물무침 (대용량 식당용)",
+  "description": "식당에서 대량으로 만드는 콩나물무침입니다. 콩나물을 살짝 삶아 바로 찬물에 식힌 후 마늘·참기름으로 무치며, 당근과 파를 넣어 풍성하게 만듭니다. 고춧가루를 넣으면 빨간 버전, 넣지 않으면 하얀 버전이 됩니다. 찬물에 완전히 식혀야 물러지거나 상하지 않습니다.",
+  "video_url": "https://www.youtube.com/watch?v=0q0btGvIrWY",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": true,
+  "is_vegan": true,
+  "ingredients": [
+    {
+      "ingredient_name": "콩나물",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "2박스 기준 (대량). 아스파라긴산이 풍부한 꼬리 부분은 제거하지 않는 것 추천",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "소금",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "삶는 물용",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "다진마늘",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "참기름",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "한국식 참기름은 깊이 볶아 향이 강함. 적당량 사용",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "대파 또는 쪽파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "대파는 5mm 정도 썰기. 쪽파로 대체 가능",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "당근",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "채 썰기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "고춧가루",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "빨간 버전 원할 때만 추가",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "끓는 소금물에 콩나물을 넣어 삶습니다. 너무 오래 삶지 않도록 주의합니다.",
+      "tip": "콩나물 같은 여린 채소는 금방 오버쿡됩니다. 식감이 살아있도록 짧게 삶으세요."
+    },
+    {
+      "instruction": "삶은 콩나물을 바로 건져 찬물에 헹구어 완전히 식힙니다.",
+      "tip": "따뜻한 상태에서 양념하면 금방 물러지고 상합니다. 열기가 남아있지 않을 때까지 차가운 물에 충분히 식히세요."
+    },
+    {
+      "instruction": "껍데기를 제거하며 깨끗이 씻고 물기를 뺍니다.",
+      "tip": "껍데기 하나하나가 다 원가입니다. 꼼꼼히 건져내면 한 접시가 더 나옵니다."
+    },
+    {
+      "instruction": "당근을 채 썰고 대파(또는 쪽파)를 썹니다."
+    },
+    {
+      "instruction": "큰 볼에 식은 콩나물, 당근 채, 파를 담고 다진마늘과 소금을 넣어 무칩니다.",
+      "tip": "빨간 버전은 이 단계에서 고춧가루를 추가합니다."
+    },
+    {
+      "instruction": "참기름을 넣어 골고루 버무리고 간을 맞춥니다. 그릇에 높게 담아 완성합니다.",
+      "tip": "처음 양념할 때 살짝 싱거워도 그릇에 담으면 국물이 생겨 간이 맞아지는 경우가 많습니다."
+    }
+  ],
+  "tags": ["콩나물무침", "콩나물", "무침", "반찬", "대용량", "비건", "백종원레시피"]
+}

@@ -1,0 +1,47 @@
+{
+  "title": "마라기스",
+  "description": "사천 마라 향신료를 활용한 닭가슴살 기스면 요리입니다. 노두유와 산초, 쯔란의 중화 향신료가 어우러져 깊고 얼얼한 마라 향을 냅니다.",
+  "video_url": "https://www.youtube.com/watch?v=nPRKSxlh0rQ",
+  "difficulty_level": "medium",
+  "cuisine_type": "chinese",
+  "dish_type": "main",
+  "cook_time_minutes": 30,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "닭가슴살", "amount": "200", "unit": "g" },
+    { "name": "기스면 (또는 소면)", "amount": "200", "unit": "g" },
+    { "name": "진간장", "amount": "2", "unit": "큰술" },
+    { "name": "노두유", "amount": "1", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "작은술" },
+    { "name": "사천고추 (건)", "amount": "5", "unit": "개" },
+    { "name": "산초 (화자오)", "amount": "1", "unit": "작은술" },
+    { "name": "쯔란 (큐민)", "amount": "1", "unit": "작은술" },
+    { "name": "고추기름", "amount": "2", "unit": "큰술" },
+    { "name": "마늘", "amount": "3", "unit": "쪽" },
+    { "name": "쪽파", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "닭가슴살을 얇게 슬라이스한 뒤 간장, 노두유, 설탕으로 밑간합니다."
+    },
+    {
+      "order": 2,
+      "description": "기스면을 끓는 물에 삶아 건진 뒤 찬물에 헹궈 그릇에 담습니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 고추기름을 두르고 사천고추, 산초, 쯔란, 마늘을 볶아 향을 냅니다."
+    },
+    {
+      "order": 4,
+      "description": "밑간한 닭가슴살을 넣어 겉이 익을 때까지 빠르게 볶습니다."
+    },
+    {
+      "order": 5,
+      "description": "삶은 면 위에 볶은 닭가슴살을 올리고 쪽파를 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["마라", "기스면", "닭가슴살", "중화요리", "흑백요리사", "매운맛"]
+}

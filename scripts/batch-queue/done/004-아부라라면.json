@@ -1,0 +1,45 @@
+{
+  "title": "아부라소바 스타일 라면",
+  "description": "국물 없이 라면 스프와 간장 양념을 활용해 만든 일본식 아부라소바 스타일의 비빔라면입니다. 달걀 프라이와 김을 올려 고소하게 즐깁니다.",
+  "video_url": "https://www.youtube.com/watch?v=RuEyl_cMMns",
+  "difficulty_level": "easy",
+  "cuisine_type": "japanese",
+  "dish_type": "main",
+  "cook_time_minutes": 10,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "라면", "amount": "1", "unit": "봉지" },
+    { "name": "라면 분말 스프", "amount": "1/2", "unit": "봉지" },
+    { "name": "진간장", "amount": "1", "unit": "큰술" },
+    { "name": "식초", "amount": "1", "unit": "작은술" },
+    { "name": "설탕", "amount": "1/2", "unit": "작은술" },
+    { "name": "참기름", "amount": "1", "unit": "작은술" },
+    { "name": "달걀", "amount": "1", "unit": "개" },
+    { "name": "쪽파", "amount": null, "unit": "약간" },
+    { "name": "김", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "라면을 끓는 물에 삶아 건진 후 그릇에 담습니다."
+    },
+    {
+      "order": 2,
+      "description": "라면 분말 스프 반 봉지, 간장, 식초, 설탕, 참기름을 섞어 양념장을 만듭니다."
+    },
+    {
+      "order": 3,
+      "description": "삶은 라면 위에 양념장을 올립니다."
+    },
+    {
+      "order": 4,
+      "description": "프라이팬에 달걀 프라이를 만들어 라면 위에 올립니다."
+    },
+    {
+      "order": 5,
+      "description": "쪽파와 김을 올려 마무리하고 잘 비벼서 먹습니다."
+    }
+  ],
+  "tags": ["라면", "비빔", "아부라소바", "국물없는라면", "백종원"]
+}

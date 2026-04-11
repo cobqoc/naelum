@@ -1,0 +1,41 @@
+{
+  "title": "오징어 뭇국",
+  "description": "들기름에 볶아 깊은 맛을 낸 시원한 오징어 뭇국입니다. 해장으로도 잘 어울리는 국물요리입니다.",
+  "video_url": "https://www.youtube.com/watch?v=Zkxiydlmplw",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "오징어", "quantity": null, "unit": "마리", "notes": "통오징어", "is_optional": false },
+    { "ingredient_name": "무", "quantity": null, "unit": "선택", "notes": "나박썰기", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": null, "unit": "대", "notes": "송송 썰기", "is_optional": false },
+    { "ingredient_name": "들기름", "quantity": 1, "unit": "큰술", "notes": "포인트 재료", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": 1, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "멸치액젓", "quantity": 1, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "꽃소금", "quantity": 1, "unit": "큰술", "notes": "간 보고 조절", "is_optional": false },
+    { "ingredient_name": "물", "quantity": null, "unit": "L", "notes": "2인분 1L, 3인분 1.5L, 4인분 2L", "is_optional": false },
+    { "ingredient_name": "간 생강", "quantity": null, "unit": "선택", "notes": "선택, 스페셜 풍미용", "is_optional": true },
+    { "ingredient_name": "간 마늘", "quantity": null, "unit": "선택", "notes": "생강 대신 사용 가능", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "통오징어 다리의 빨판을 손톱으로 벗겨 까칠한 부분을 정리합니다. 가위로 몸통 배를 갈라 내장과 뼈를 분리하고, 눈과 입(이빨) 부분을 잘라 제거합니다. 오징어 껍질은 벗기지 않는 편이 국물 맛에 좋습니다.", "timer_minutes": null, "tip": "껍질을 벗기고 싶다면 키친타월로 잡고 벗겨내면 미끄러지지 않습니다." },
+    { "instruction": "손질한 오징어 몸통과 다리는 먹기 좋은 크기로 나박하게 썰고, 무도 나박썰기로 준비합니다. 대파는 송송 썰어 둡니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "냄비에 오징어와 무를 넣고 들기름 1큰술을 두른 뒤 지글지글 소리가 나도록 볶아줍니다. 참기름이나 식용유는 사용하지 않습니다.", "timer_minutes": null, "tip": "참기름은 느끼하고 식용유는 풍미가 부족하므로 반드시 들기름을 사용합니다." },
+    { "instruction": "무가 반투명해질 때까지 충분히 볶아 재료의 풍미를 끌어올립니다.", "timer_minutes": null, "tip": "노래 한 곡 1절 부를 시간 정도가 기준입니다." },
+    { "instruction": "분량의 물을 붓고 국간장 1큰술, 멸치액젓 1큰술을 넣은 뒤 간을 봅니다. 오징어의 소금기에 따라 간이 달라지므로 확인 후 꽃소금 약 1큰술을 추가합니다.", "timer_minutes": null, "tip": "간 보는 과정을 생략하지 않습니다." },
+    { "instruction": "국이 끓어오르면 불을 중약불로 줄이고 근근히 끓입니다. 거품은 감칠맛 성분이므로 걷어내지 않습니다.", "timer_minutes": 7, "tip": "먹기 직전까지 남은 거품만 살짝 걷어냅니다." },
+    { "instruction": "기호에 따라 간 생강 약 1/4큰술 또는 간 마늘 1/2큰술을 넣어 풍미를 더합니다.", "timer_minutes": null, "tip": "생강과 마늘은 둘 중 하나만 선택합니다." },
+    { "instruction": "먹기 직전에 송송 썬 대파를 넣고 불을 끄면 완성입니다. 밥과 김치를 곁들여 냅니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "해장"]
+}

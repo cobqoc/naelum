@@ -1,0 +1,48 @@
+{
+  "title": "마파두부",
+  "description": "두반장과 고추기름으로 만든 얼얼하고 매콤한 중국 사천식 마파두부입니다. 여경래 셰프의 흑백요리사 레시피로 정통 중화 방식으로 조리합니다.",
+  "video_url": "https://www.youtube.com/watch?v=_-4nakEwN0s",
+  "difficulty_level": "medium",
+  "cuisine_type": "chinese",
+  "dish_type": "main",
+  "cook_time_minutes": 20,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "연두부", "amount": "1", "unit": "모" },
+    { "name": "돼지고기 민찌 (다진 것)", "amount": "100", "unit": "g" },
+    { "name": "두반장", "amount": "2", "unit": "큰술" },
+    { "name": "고추기름", "amount": "2", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "작은술" },
+    { "name": "간장", "amount": "1", "unit": "큰술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "큰술" },
+    { "name": "다진 생강", "amount": "1", "unit": "작은술" },
+    { "name": "육수 (닭 또는 채소)", "amount": "150", "unit": "ml" },
+    { "name": "전분물", "amount": "2", "unit": "큰술" },
+    { "name": "산초 가루 (화자오)", "amount": null, "unit": "약간" },
+    { "name": "쪽파", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "연두부를 2cm 크기로 깍둑 썰어 끓는 물에 살짝 데쳐 물기를 뺍니다."
+    },
+    {
+      "order": 2,
+      "description": "웍에 고추기름을 두르고 다진 마늘, 생강을 볶아 향을 냅니다."
+    },
+    {
+      "order": 3,
+      "description": "돼지고기 민찌를 넣어 볶다가 두반장을 넣고 계속 볶습니다."
+    },
+    {
+      "order": 4,
+      "description": "육수를 붓고 간장, 설탕으로 간한 후 두부를 넣어 2분간 끓입니다."
+    },
+    {
+      "order": 5,
+      "description": "전분물을 넣어 농도를 조절하고 산초 가루와 쪽파를 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["마파두부", "두부", "중화요리", "사천", "매운맛", "흑백요리사", "여경래"]
+}

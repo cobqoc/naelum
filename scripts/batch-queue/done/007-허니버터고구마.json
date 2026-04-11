@@ -1,0 +1,34 @@
+{
+  "title": "허니버터고구마",
+  "description": "고구마를 버터와 꿀(물엿)로 달콤하게 볶아 계피 향을 더한 간식입니다.",
+  "video_url": "https://www.youtube.com/watch?v=EHGZFmPsWV0",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "snack",
+  "cooking_time_minutes": 25,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "고구마", "amount": "2", "unit": "개" },
+    { "ingredient_name": "버터", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "꿀", "amount": "2", "unit": "큰술" },
+    { "ingredient_name": "계피가루", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "instruction": "고구마는 껍질을 벗기고 먹기 좋은 크기로 잘라 전자레인지나 에어프라이어로 어느 정도 익힙니다."
+    },
+    {
+      "instruction": "팬을 중약불로 달군 후 버터를 녹입니다."
+    },
+    {
+      "instruction": "익힌 고구마를 팬에 넣고 표면이 살짝 노릇해질 때까지 굴려가며 볶습니다."
+    },
+    {
+      "instruction": "꿀을 넣고 고구마 전체에 코팅되도록 잘 섞습니다."
+    },
+    {
+      "instruction": "불을 끄고 계피가루를 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["허니버터고구마", "고구마간식", "고구마요리", "간식", "디저트"]
+}

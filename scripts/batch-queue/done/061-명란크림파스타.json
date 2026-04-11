@@ -1,0 +1,39 @@
+{
+  "title": "명란 크림파스타",
+  "description": "명란젓의 짭조름한 맛과 생크림의 고소함이 어우러진 파스타입니다. 볶은 마늘의 향이 더해져 풍부한 맛을 냅니다.",
+  "video_url": "https://www.youtube.com/watch?v=fpqJOFMfhmk",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "italian",
+  "dish_type": "noodle",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "파스타면", "quantity": 100, "unit": "g", "notes": "1인분, 라면이나 소면, 중면, 우동면으로 대체 가능", "is_optional": false },
+    { "ingredient_name": "명란젓", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "생크림", "quantity": null, "unit": "선택", "notes": "반 컵 정도, 없으면 우유 대체 가능", "is_optional": false },
+    { "ingredient_name": "통마늘", "quantity": null, "unit": "선택", "notes": "없으면 간마늘 사용", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": null, "unit": "선택", "notes": "채썰기", "is_optional": false },
+    { "ingredient_name": "올리브유", "quantity": 2, "unit": "큰술", "notes": "퓨어 올리브유 또는 식용유", "is_optional": false },
+    { "ingredient_name": "소금", "quantity": null, "unit": "선택", "notes": "면 삶는 용", "is_optional": false },
+    { "ingredient_name": "후춧가루", "quantity": null, "unit": "선택", "notes": "", "is_optional": true },
+    { "ingredient_name": "쪽파", "quantity": null, "unit": "선택", "notes": "고명용, 파슬리 가루로 대체 가능", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "끓는 물에 소금을 넣고 파스타면을 알 덴테로 삶아 건져둡니다.", "timer_minutes": null, "tip": "휘핑크림은 달아서 크림파스타에 적합하지 않으니 생크림을 사용합니다." },
+    { "instruction": "팬에 올리브유 두 숟갈을 두르고 편 썬 통마늘을 노릇노릇해질 때까지 볶아 고소한 향을 냅니다.", "timer_minutes": null, "tip": "마늘을 충분히 볶아야 고소함이 살아납니다." },
+    { "instruction": "마늘이 갈색이 되려고 할 때 채썬 양파를 넣고 함께 볶아줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "명란젓을 넣고 덩어리가 너무 풀어지지 않도록 조심조심 볶아줍니다.", "timer_minutes": null, "tip": "알알이 풀어진 명란을 원하면 이 단계에서 허물어 줍니다." },
+    { "instruction": "생크림 반 컵을 부어 끓여준 후 삶은 파스타면을 넣고 섞어줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "소금으로 간을 맞추고 후춧가루를 뿌려줍니다.", "timer_minutes": null, "tip": "덩어리 명란 파스타는 간을 슴슴하게 해야 명란과 함께 먹었을 때 딱 맞습니다." },
+    { "instruction": "접시에 담고 쪽파 또는 파슬리 가루를 뿌려 완성합니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["이탈리안", "ItalianFood", "면요리", "Noodles", "파스타", "명란"]
+}

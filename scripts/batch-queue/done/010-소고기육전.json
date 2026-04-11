@@ -1,0 +1,36 @@
+{
+  "title": "소고기육전",
+  "description": "소고기 목등심을 얇게 펴 맛소금과 후추로 간하고 밀가루, 달걀 순으로 옷을 입혀 지져낸 고소한 육전입니다.",
+  "video_url": "https://www.youtube.com/watch?v=4ddh-yB9x1Q",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "cooking_time_minutes": 20,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "소고기 목등심 (얇게 썬 것)", "quantity": 200, "unit": "g" },
+    { "ingredient_name": "밀가루", "quantity": 4, "unit": "큰술" },
+    { "ingredient_name": "달걀", "quantity": 2, "unit": "개" },
+    { "ingredient_name": "맛소금", "quantity": null, "unit": "약간" },
+    { "ingredient_name": "후추", "quantity": null, "unit": "약간" },
+    { "ingredient_name": "식용유", "quantity": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "instruction": "소고기는 키친타올로 핏물을 제거하고 맛소금과 후추를 앞뒤로 뿌려 밑간합니다."
+    },
+    {
+      "instruction": "달걀을 풀어 달걀물을 만들어 둡니다."
+    },
+    {
+      "instruction": "밑간한 소고기에 밀가루를 골고루 묻힌 뒤 여분의 가루는 털어냅니다."
+    },
+    {
+      "instruction": "밀가루 묻힌 소고기를 달걀물에 담가 코팅합니다."
+    },
+    {
+      "instruction": "식용유를 두른 팬에 중약불로 올려 달걀이 익을 때까지 한 면씩 지집니다."
+    }
+  ],
+  "tags": ["육전", "소고기육전", "명절음식", "전", "안주"]
+}

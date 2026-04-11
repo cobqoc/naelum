@@ -1,0 +1,43 @@
+{
+  "title": "양념 돼지목살 튀김",
+  "description": "간장 양념에 재운 돼지목살을 튀김가루에 묻혀 바삭하게 튀긴 요리입니다. 겉은 바삭하고 속은 촉촉한 맛이 특징입니다.",
+  "video_url": "https://www.youtube.com/watch?v=SqsX495Zie4",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 30,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "돼지목살", "amount": "500", "unit": "g" },
+    { "name": "진간장", "amount": "3", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "큰술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "큰술" },
+    { "name": "청주", "amount": "2", "unit": "큰술" },
+    { "name": "튀김가루", "amount": "1", "unit": "컵" },
+    { "name": "식용유", "amount": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "돼지목살을 한 입 크기로 두툼하게 썰어 준비합니다."
+    },
+    {
+      "order": 2,
+      "description": "간장, 설탕, 다진 마늘, 청주를 섞어 양념을 만들고 목살을 넣어 20분 이상 재워둡니다."
+    },
+    {
+      "order": 3,
+      "description": "튀김가루를 양념한 목살에 고루 묻혀 여분의 가루를 털어냅니다."
+    },
+    {
+      "order": 4,
+      "description": "170~180°C 식용유에 목살을 넣어 3~4분간 튀깁니다."
+    },
+    {
+      "order": 5,
+      "description": "건져서 1분 후 다시 한 번 180°C에서 30초간 튀겨 바삭하게 완성합니다."
+    }
+  ],
+  "tags": ["튀김", "목살", "돼지고기", "백종원", "간식"]
+}

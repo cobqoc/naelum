@@ -1,0 +1,103 @@
+{
+  "title": "감자사라다 (대용량 식당용)",
+  "description": "식당에서 반찬이나 사이드 메뉴로 활용하는 대용량 감자 샐러드입니다. 삶은 감자에 절인 양파·오이와 셀러리를 넣고 마요네즈로 버무립니다. 모닝빵에 채워 감자빵으로, 마카로니나 삶은 달걀을 추가해 다양하게 응용할 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=QPjfwubAvso",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": true,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "감자",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "젓가락으로 먹기 좋은 한입 크기로 썰기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "당근",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "감자보다 작게 썰기 (당근이 더 빨리 물러짐)",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "양파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소금에 절여 물기 짜기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "오이",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소금에 절여 물기 짜기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "셀러리",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "실 같은 섬유질 제거 후 썰기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "소금",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "삶는 물용, 양파·오이 절이기용",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "마요네즈",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "주된 소스. 양은 취향에 따라 조절",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "생크림",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "마요네즈에 추가하면 더 고급스러운 맛. 없어도 됨",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "감자를 한입 크기로 썹니다. 당근은 감자보다 약간 작게 썹니다.",
+      "tip": "같은 크기라도 당근이 더 빨리 무르므로 당근을 조금 더 작게 썰거나 나중에 넣어야 식감이 좋습니다."
+    },
+    {
+      "instruction": "냄비에 물을 붓고 소금을 넣은 뒤 감자를 먼저 넣어 삶기 시작합니다. 끓어오르면 당근을 추가합니다.",
+      "tip": "당근은 같은 크기라도 감자보다 빨리 물러지므로 나중에 넣습니다."
+    },
+    {
+      "instruction": "감자를 삶는 동안 양파와 오이를 소금에 절입니다.",
+      "tip": "양파를 잘게 썰어 절이면 물이 많이 나옵니다. 절인 후 물기를 충분히 짜야 완성된 사라다가 물러지지 않습니다."
+    },
+    {
+      "instruction": "셀러리의 섬유질을 제거하고 먹기 좋게 썹니다."
+    },
+    {
+      "instruction": "감자를 꼬챙이나 젓가락으로 찔러 보아 완전히 익으면 건져 식힙니다.",
+      "tip": "너무 무르면 버무릴 때 뭉개집니다. 살짝 식감이 남아 있도록 익히세요."
+    },
+    {
+      "instruction": "절인 양파와 오이의 물기를 손으로 꼭 짭니다."
+    },
+    {
+      "instruction": "식은 감자와 당근, 물기 짠 양파·오이, 셀러리를 큰 볼에 모두 넣습니다. 마요네즈(필요시 생크림도 함께)를 넣고 골고루 버무립니다.",
+      "tip": "감자는 버무릴 때 뭉개지기 쉬우니 너무 세게 섞지 마세요. 큰 주걱이나 깨끗한 손으로 가볍게 섞어도 됩니다."
+    },
+    {
+      "instruction": "간을 보고 부족하면 소금으로 조절한 뒤 접시에 상추를 깔고 담아 완성합니다."
+    }
+  ],
+  "tags": ["감자사라다", "감자샐러드", "대용량", "반찬", "사이드", "식당레시피", "백종원레시피"]
+}

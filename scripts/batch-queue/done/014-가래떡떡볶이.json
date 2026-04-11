@@ -1,0 +1,35 @@
+{
+  "title": "가래떡떡볶이",
+  "description": "가래떡을 고추장, 고춧가루, 설탕, 물엿으로 만든 양념에 자작하게 조려낸 쫄깃하고 매콤달콤한 가래떡떡볶이입니다.",
+  "video_url": "https://www.youtube.com/watch?v=78AQ-ten9lE",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "snack",
+  "cooking_time_minutes": 20,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "가래떡", "quantity": 300, "unit": "g" },
+    { "ingredient_name": "고추장", "quantity": 2, "unit": "큰술" },
+    { "ingredient_name": "고춧가루", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "설탕", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "물엿", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "간장", "quantity": 1, "unit": "작은술" },
+    { "ingredient_name": "다진 마늘", "quantity": 1, "unit": "작은술" },
+    { "ingredient_name": "물", "quantity": 300, "unit": "ml" }
+  ],
+  "steps": [
+    {
+      "instruction": "가래떡은 먹기 좋은 크기로 어슷 썰어 찬물에 잠시 담가 둡니다."
+    },
+    {
+      "instruction": "냄비에 물을 붓고 고추장, 고춧가루, 설탕, 물엿, 간장, 다진 마늘을 넣어 잘 섞습니다."
+    },
+    {
+      "instruction": "양념이 끓어오르면 가래떡을 넣어 중불에서 졸입니다."
+    },
+    {
+      "instruction": "국물이 자작해지고 떡이 윤기 나게 코팅되면 불을 끄고 완성합니다."
+    }
+  ],
+  "tags": ["떡볶이", "가래떡떡볶이", "분식", "간식", "매콤달콤"]
+}

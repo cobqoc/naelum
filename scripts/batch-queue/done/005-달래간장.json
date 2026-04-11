@@ -1,0 +1,35 @@
+{
+  "title": "달래간장",
+  "description": "봄 제철 달래를 간장, 마늘, 고춧가루, 설탕, 참기름으로 무쳐 밥 위에 올려 먹는 향긋한 달래간장 소스입니다.",
+  "video_url": "https://www.youtube.com/watch?v=ceSuK8MVEb4",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "sauce",
+  "cooking_time_minutes": 10,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "달래", "amount": "100", "unit": "g" },
+    { "ingredient_name": "간장", "amount": "2", "unit": "큰술" },
+    { "ingredient_name": "다진 마늘", "amount": "0.5", "unit": "작은술" },
+    { "ingredient_name": "설탕", "amount": "0.5", "unit": "작은술" },
+    { "ingredient_name": "고춧가루", "amount": "1", "unit": "작은술" },
+    { "ingredient_name": "청양고추", "amount": "1", "unit": "개" },
+    { "ingredient_name": "참기름", "amount": "1", "unit": "작은술" },
+    { "ingredient_name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "instruction": "달래는 뿌리 부분의 흙을 깨끗이 씻고 4~5cm 길이로 자릅니다."
+    },
+    {
+      "instruction": "청양고추는 잘게 다집니다."
+    },
+    {
+      "instruction": "볼에 간장, 다진 마늘, 설탕, 고춧가루, 청양고추를 넣고 잘 섞습니다."
+    },
+    {
+      "instruction": "달래를 넣고 양념과 골고루 버무린 뒤 참기름과 통깨를 더해 마무리합니다."
+    }
+  ],
+  "tags": ["달래간장", "달래무침", "봄나물", "양념장", "반찬"]
+}

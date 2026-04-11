@@ -1,0 +1,32 @@
+{
+  "title": "묵은지 멸치 지짐",
+  "description": "묵은지와 통멸치를 자작하게 지져낸 충청도식 가정 요리입니다. 밥에 올려 김과 함께 싸 먹으면 옛날 집밥의 정취가 살아납니다.",
+  "video_url": "https://www.youtube.com/watch?v=hvbh9EnL6Ww",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "묵은지", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "통멸치", "quantity": null, "unit": "선택", "notes": "내장과 머리 손질", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "참기름", "quantity": null, "unit": "선택", "notes": "", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "통멸치의 머리와 내장을 일일이 손질하여 깨끗하게 준비합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "냄비에 손질한 멸치를 수북하게 깔고 그 위에 고춧가루를 넉넉히 뿌립니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "고춧가루 위에 묵은지를 듬뿍 올리고 참기름을 아낌없이 둘러 코팅합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "멸치에서 우러난 육수가 묵은지에 푹 배도록 천천히 끓여 기름이 사이사이 스며들게 합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "국물이 자작하게 졸아들도록 한 번 더 칼칼하게 지져내 맛을 깊게 합니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "메인요리", "MainDish", "묵은지", "멸치", "얼큰", "집밥"]
+}

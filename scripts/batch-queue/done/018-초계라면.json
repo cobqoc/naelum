@@ -1,0 +1,45 @@
+{
+  "title": "닭가슴살 초계라면",
+  "description": "삶은 닭가슴살을 겨자와 식초 소스에 버무려 얼음을 넣은 시원한 라면 국물에 올린 여름 별미 냉라면입니다. 초계탕에서 영감을 받은 백종원 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=xdz1U-R_0qA",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 20,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "라면 (진라면 등)", "amount": "1", "unit": "봉지" },
+    { "name": "닭가슴살", "amount": "100", "unit": "g" },
+    { "name": "겨자", "amount": "1", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "큰술" },
+    { "name": "식초", "amount": "3", "unit": "큰술" },
+    { "name": "진간장", "amount": "1", "unit": "큰술" },
+    { "name": "얼음", "amount": null, "unit": "적당량" },
+    { "name": "오이", "amount": "1/4", "unit": "개" },
+    { "name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "닭가슴살을 끓는 물에 삶아 익힌 뒤 결대로 가늘게 찢습니다."
+    },
+    {
+      "order": 2,
+      "description": "겨자, 설탕, 식초, 간장을 섞어 초계 양념장을 만들고 닭가슴살을 버무립니다."
+    },
+    {
+      "order": 3,
+      "description": "라면을 끓는 물에 삶아 건진 후 찬물에 헹구고 그릇에 담습니다."
+    },
+    {
+      "order": 4,
+      "description": "라면 스프를 물에 타 국물을 만들어 얼음을 넣어 차갑게 식힙니다."
+    },
+    {
+      "order": 5,
+      "description": "라면 위에 양념한 닭가슴살, 채 썬 오이를 올리고 차가운 국물을 부어 완성합니다."
+    }
+  ],
+  "tags": ["라면", "냉라면", "초계", "닭가슴살", "여름", "백종원"]
+}

@@ -1,0 +1,46 @@
+{
+  "title": "파슬리 페스토 볶음밥",
+  "description": "파슬리로 만든 그린 페스토를 활용한 볶음밥으로, 백김치와 버터의 고소함이 어우러져 이색적인 풍미를 냅니다. 흑백요리사에서 소개된 셰프 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=MaiWn55K1aE",
+  "difficulty_level": "medium",
+  "cuisine_type": "fusion",
+  "dish_type": "main",
+  "cook_time_minutes": 20,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "밥", "amount": "2", "unit": "공기" },
+    { "name": "파슬리", "amount": "30", "unit": "g" },
+    { "name": "올리브오일", "amount": "3", "unit": "큰술" },
+    { "name": "파르미잔 치즈 (강판에 간 것)", "amount": "20", "unit": "g" },
+    { "name": "레몬즙", "amount": "1", "unit": "큰술" },
+    { "name": "백김치", "amount": "100", "unit": "g" },
+    { "name": "버터", "amount": "1", "unit": "큰술" },
+    { "name": "달걀", "amount": "2", "unit": "개" },
+    { "name": "소금", "amount": null, "unit": "약간" },
+    { "name": "흑후추", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "파슬리, 올리브오일, 파르미잔 치즈, 레몬즙을 블렌더에 넣고 갈아 페스토를 만듭니다."
+    },
+    {
+      "order": 2,
+      "description": "백김치는 잘게 다집니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 버터를 녹이고 다진 백김치를 볶습니다."
+    },
+    {
+      "order": 4,
+      "description": "밥을 넣어 함께 볶다가 페스토를 넣어 고루 섞습니다."
+    },
+    {
+      "order": 5,
+      "description": "소금, 흑후추로 간을 맞추고 달걀 프라이를 올려 완성합니다."
+    }
+  ],
+  "tags": ["볶음밥", "페스토", "파슬리", "백김치", "흑백요리사", "퓨전"]
+}

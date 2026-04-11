@@ -1,0 +1,40 @@
+{
+  "title": "참치 밥전",
+  "description": "찬밥과 참치캔, 달걀을 섞어 부쳐낸 간단한 밥전입니다. 남은 밥을 활용한 간편 요리로, 고소하고 든든한 한 끼가 됩니다.",
+  "video_url": "https://www.youtube.com/watch?v=qaPsk77sGso",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "snack",
+  "cook_time_minutes": 15,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "찬밥", "amount": "1", "unit": "공기" },
+    { "name": "참치캔", "amount": "1", "unit": "캔" },
+    { "name": "달걀", "amount": "2", "unit": "개" },
+    { "name": "부침가루", "amount": "3", "unit": "큰술" },
+    { "name": "당근", "amount": "1/4", "unit": "개" },
+    { "name": "쪽파", "amount": "2", "unit": "대" },
+    { "name": "소금", "amount": null, "unit": "약간" },
+    { "name": "식용유", "amount": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "참치캔의 기름을 제거하고, 당근과 쪽파는 잘게 썹니다."
+    },
+    {
+      "order": 2,
+      "description": "찬밥, 참치, 달걀, 부침가루, 당근, 쪽파, 소금을 한데 넣어 잘 섞습니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 식용유를 두르고 반죽을 한 숟갈씩 올려 납작하게 펼칩니다."
+    },
+    {
+      "order": 4,
+      "description": "중불에서 한 면이 노릇해지면 뒤집어 반대쪽도 구워 완성합니다."
+    }
+  ],
+  "tags": ["밥전", "참치", "찬밥활용", "간식", "백종원", "간편요리"]
+}

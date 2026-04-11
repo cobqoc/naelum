@@ -1,0 +1,38 @@
+{
+  "title": "들기름 두부구이",
+  "description": "들기름의 고소한 향과 두부의 구수함이 살아있는 간단한 요리입니다. 겉은 바삭하고 속은 부드러운 식감으로 양념간장을 곁들여 먹습니다.",
+  "video_url": "https://www.youtube.com/watch?v=JrTVWvj8uhs",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": true,
+  "is_vegan": true,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "두부", "quantity": null, "unit": "선택", "notes": "가능하면 손두부, 1인 2장", "is_optional": false },
+    { "ingredient_name": "들기름", "quantity": null, "unit": "선택", "notes": "넉넉히", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "notes": "흰 부분과 파란 부분", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": 2, "unit": "개", "notes": "", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": null, "unit": "선택", "notes": "소량", "is_optional": false },
+    { "ingredient_name": "간장", "quantity": null, "unit": "선택", "notes": "재료 위로 올라오지 않게", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": null, "unit": "선택", "notes": "소량", "is_optional": true },
+    { "ingredient_name": "참기름", "quantity": null, "unit": "선택", "notes": "마무리용", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "두부는 손가락 한 마디 정도 두께로 두껍게 썰어 물기를 빼줍니다.", "timer_minutes": null, "tip": "두께가 식감에 큰 영향을 줍니다." },
+    { "instruction": "팬을 먼저 달궈준 후 열이 오르면 들기름을 넉넉히 둘러 팬 전체에 빈틈없이 퍼지게 합니다.", "timer_minutes": null, "tip": "들기름은 열을 많이 받지 않도록 나중에 넣어줍니다." },
+    { "instruction": "두부를 올려 양면이 노릇노릇해지도록 부쳐줍니다.", "timer_minutes": null, "tip": "중불로 옆면까지 기울여가며 튀기듯 구워줍니다." },
+    { "instruction": "양념간장을 만들기 위해 대파와 청양고추를 잘게 썰어 그릇에 담습니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "설탕을 소량 넣고 간장을 재료 위로 올라오지 않을 정도로만 부어준 후 고춧가루 약간을 넣어 섞어줍니다.", "timer_minutes": null, "tip": "파와 고추에서 나온 즙이 어우러져 짜지 않고 맛있는 양념간장이 됩니다." },
+    { "instruction": "마지막에 참기름을 둘러 양념간장을 완성합니다.", "timer_minutes": null, "tip": "양념간장이 번거로우면 미간 소금만 뿌려 먹어도 들기름과 두부의 고소함을 즐길 수 있습니다." },
+    { "instruction": "노릇하게 구운 두부에 양념간장을 올려 함께 먹습니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "반찬", "SideDish", "두부요리", "비건"]
+}

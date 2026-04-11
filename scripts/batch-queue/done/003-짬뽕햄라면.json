@@ -1,0 +1,39 @@
+{
+  "title": "짬뽕햄라면",
+  "description": "깡통햄과 양배추, 양파, 청양고추를 볶다가 고춧가루와 라면 스프로 얼큰하게 끓여내는 짬뽕 스타일 햄라면입니다.",
+  "video_url": "https://www.youtube.com/watch?v=hX3httwbzAQ",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "cooking_time_minutes": 15,
+  "servings": 1,
+  "ingredients": [
+    { "ingredient_name": "라면", "amount": "1", "unit": "봉지" },
+    { "ingredient_name": "깡통햄", "amount": "1", "unit": "캔" },
+    { "ingredient_name": "양파", "amount": "0.5", "unit": "개" },
+    { "ingredient_name": "양배추", "amount": "2", "unit": "잎" },
+    { "ingredient_name": "대파", "amount": "0.5", "unit": "대" },
+    { "ingredient_name": "청양고추", "amount": "1", "unit": "개" },
+    { "ingredient_name": "고춧가루", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "식용유", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "물", "amount": "550", "unit": "ml" }
+  ],
+  "steps": [
+    {
+      "instruction": "깡통햄은 먹기 좋은 크기로 자르고, 양파·양배추는 큼직하게, 대파와 청양고추는 어슷 썹니다."
+    },
+    {
+      "instruction": "냄비에 식용유를 두르고 햄을 먼저 볶아 노릇하게 색을 냅니다."
+    },
+    {
+      "instruction": "양파, 양배추, 대파, 청양고추를 넣고 고춧가루를 더해 함께 볶습니다."
+    },
+    {
+      "instruction": "물을 붓고 끓어오르면 라면 사리와 스프를 넣어 기호에 따라 간을 맞추며 끓입니다."
+    },
+    {
+      "instruction": "라면이 원하는 익힘 정도가 되면 불을 끄고 그릇에 담습니다."
+    }
+  ],
+  "tags": ["라면", "햄라면", "짬뽕라면", "간편요리", "야식"]
+}

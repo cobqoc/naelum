@@ -1,0 +1,39 @@
+{
+  "title": "소고기떡국",
+  "description": "소고기 불고기 거리로 국물을 내고 떡국떡을 넣어 끓인 뒤 달걀지단을 올린 구수하고 든든한 떡국입니다.",
+  "video_url": "https://www.youtube.com/watch?v=981M6UmXXsc",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "cooking_time_minutes": 30,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "떡국떡", "quantity": 300, "unit": "g" },
+    { "ingredient_name": "소고기 불고기 거리", "quantity": 150, "unit": "g" },
+    { "ingredient_name": "달걀", "quantity": 2, "unit": "개" },
+    { "ingredient_name": "대파", "quantity": 1, "unit": "대" },
+    { "ingredient_name": "국간장", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "멸치액젓", "quantity": 1, "unit": "작은술" },
+    { "ingredient_name": "참기름", "quantity": 1, "unit": "작은술" },
+    { "ingredient_name": "소금", "quantity": null, "unit": "약간" },
+    { "ingredient_name": "물", "quantity": 1, "unit": "L" }
+  ],
+  "steps": [
+    {
+      "instruction": "떡국떡은 찬물에 10분 정도 불려 둡니다."
+    },
+    {
+      "instruction": "냄비에 참기름을 두르고 소고기를 볶다가 물을 붓고 끓입니다."
+    },
+    {
+      "instruction": "국물이 끓어오르면 거품을 걷어내고 국간장, 멸치액젓으로 간합니다."
+    },
+    {
+      "instruction": "불린 떡국떡을 넣고 떡이 떠오를 때까지 중불에서 끓입니다."
+    },
+    {
+      "instruction": "달걀을 풀어 줄기처럼 넣거나 지단으로 만들어 올리고 대파를 넣어 마무리합니다."
+    }
+  ],
+  "tags": ["떡국", "소고기떡국", "명절음식", "설날", "한식"]
+}

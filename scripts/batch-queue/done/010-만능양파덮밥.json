@@ -1,0 +1,86 @@
+{
+  "title": "만능양파 덮밥",
+  "description": "냉동 만능양파볶음을 간장 소스로 녹이고 달걀을 올려 밥 위에 얹는 간단한 덮밥입니다. 5분 안에 만들 수 있으며, 가쓰오부시를 올리면 풍미가 더 올라갑니다.",
+  "video_url": "https://www.youtube.com/watch?v=-3y_AR7zYXM",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "rice",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "밥",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "공기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "만능양파볶음 (냉동)",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "덩어리",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "달걀",
+      "quantity": 2,
+      "unit": "개",
+      "notes": "취향에 따라 1~2개. 완숙 또는 반숙",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "간장",
+      "quantity": 2,
+      "unit": "큰술",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "설탕",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소량. 기호에 따라 가감",
+      "is_optional": true
+    },
+    {
+      "ingredient_name": "참기름",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "생파 싫어하는 경우 조리 중에 넣기",
+      "is_optional": true
+    },
+    {
+      "ingredient_name": "가쓰오부시",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "마무리 고명용",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "팬에 물을 조금 붓고 냉동 만능양파볶음을 넣어 녹입니다."
+    },
+    {
+      "instruction": "간장 2큰술과 설탕 소량을 넣고 섞습니다.",
+      "tip": "만능양파볶음 자체가 이미 달아서 설탕은 조금만 넣거나 생략해도 됩니다."
+    },
+    {
+      "instruction": "달걀을 넣고 취향에 따라 완숙 또는 반숙으로 익힙니다.",
+      "tip": "국물이 너무 없어지면 물을 조금 보충하세요."
+    },
+    {
+      "instruction": "밥 위에 소스와 달걀을 얹고 가쓰오부시와 파를 올려 완성합니다."
+    }
+  ],
+  "tags": ["양파덮밥", "만능양파볶음", "덮밥", "간단요리", "백종원레시피", "간단한끼"]
+}

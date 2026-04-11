@@ -1,0 +1,36 @@
+{
+  "title": "불고기짜파구리",
+  "description": "짜파게티와 너구리를 섞어 불고기 소고기를 올려 완성하는, 영화 기생충으로 유명해진 짜파구리 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=EHM6D2tf4Yg",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "cooking_time_minutes": 15,
+  "servings": 1,
+  "ingredients": [
+    { "ingredient_name": "짜파게티", "quantity": 1, "unit": "봉지" },
+    { "ingredient_name": "너구리", "quantity": 1, "unit": "봉지" },
+    { "ingredient_name": "소고기 불고기 거리", "quantity": 150, "unit": "g" },
+    { "ingredient_name": "올리브유", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "식용유", "quantity": 1, "unit": "큰술" }
+  ],
+  "steps": [
+    {
+      "instruction": "팬에 식용유를 두르고 소고기 불고기를 중불에서 볶아 익혀둡니다."
+    },
+    {
+      "instruction": "냄비에 물을 끓여 짜파게티와 너구리 면을 함께 넣고 삶습니다."
+    },
+    {
+      "instruction": "면이 거의 익으면 물을 8~10큰술 정도만 남기고 따라냅니다."
+    },
+    {
+      "instruction": "짜파게티 스프와 너구리 스프를 모두 넣고 올리브유를 더해 잘 볶듯이 섞습니다."
+
+    },
+    {
+      "instruction": "그릇에 담고 볶아둔 불고기를 위에 올려 완성합니다."
+    }
+  ],
+  "tags": ["짜파구리", "짜파게티", "너구리", "불고기", "기생충", "라면"]
+}

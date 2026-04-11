@@ -1,0 +1,31 @@
+{
+  "title": "90초 볶음라면",
+  "description": "라면을 물에 삶지 않고 팬에 볶아 90초 만에 완성하는 빠르고 쫄깃한 볶음라면입니다.",
+  "video_url": "https://www.youtube.com/watch?v=dqvMsds3ITY",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "cooking_time_minutes": 5,
+  "servings": 1,
+  "ingredients": [
+    { "ingredient_name": "라면", "quantity": 1, "unit": "봉지" },
+    { "ingredient_name": "달걀", "quantity": 1, "unit": "개" },
+    { "ingredient_name": "식용유", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "물", "quantity": 200, "unit": "ml" }
+  ],
+  "steps": [
+    {
+      "instruction": "라면 사리는 살짝 부숴 넓은 팬에 펼쳐 놓습니다."
+    },
+    {
+      "instruction": "팬에 식용유를 두르고 면 위에 물을 부은 뒤 스프를 넣어 강불로 빠르게 볶습니다."
+    },
+    {
+      "instruction": "물이 거의 없어지면 면을 계속 뒤적이며 90초 안에 볶아냅니다."
+    },
+    {
+      "instruction": "달걀 프라이를 만들어 볶음라면 위에 올려 완성합니다."
+    }
+  ],
+  "tags": ["볶음라면", "라면", "간편요리", "야식", "10분요리"]
+}

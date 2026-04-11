@@ -1,0 +1,35 @@
+{
+  "title": "시원한 콩나물국",
+  "description": "집에서도 시원하고 깔끔하게 끓일 수 있는 콩나물국입니다. 뚜껑을 덮거나 열지 않고 한 번에 끓여 비린내 없이 맑은 국물을 낼 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=SeUG8iRDE_g",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "콩나물", "quantity": 300, "unit": "g", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 2, "unit": "L", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": null, "unit": "선택", "notes": "색 내기용", "is_optional": false },
+    { "ingredient_name": "소금", "quantity": null, "unit": "선택", "notes": "간 맞춤", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": null, "unit": "선택", "is_optional": true },
+    { "ingredient_name": "다진 마늘", "quantity": null, "unit": "선택", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "콩나물은 가볍게 한 번만 헹궈 물기를 뺍니다.", "timer_minutes": null, "tip": "박박 씻으면 영양소가 빠져 좋지 않습니다." },
+    { "instruction": "냄비에 물 2L와 콩나물을 한 번에 넣습니다. 이후 끓는 동안에는 뚜껑을 열거나 덮거나 한 가지 방식을 유지합니다.", "timer_minutes": null, "tip": "중간에 뚜껑을 바꾸면 비린내가 납니다." },
+    { "instruction": "국간장을 약간 넣어 색과 향을 내줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "끓어오르기 시작하면 소금으로 간을 맞춥니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "마무리로 송송 썬 대파와 청양고추를 넣어 향을 냅니다.", "timer_minutes": null, "tip": "너무 오래 끓이면 숨이 죽으니 주의합니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "콩나물국"]
+}

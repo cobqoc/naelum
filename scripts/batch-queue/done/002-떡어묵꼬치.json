@@ -1,0 +1,35 @@
+{
+  "title": "떡어묵꼬치",
+  "description": "밀떡과 봉어묵을 꼬치에 꽂아 구운 후 마요네즈, 설탕, 식초, 고춧가루, 연유로 만든 새콤달콤한 소스를 발라 먹는 길거리 간식입니다.",
+  "video_url": "https://www.youtube.com/watch?v=-A0iP6Uzy3A",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "snack",
+  "cooking_time_minutes": 20,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "밀떡", "amount": "200", "unit": "g" },
+    { "ingredient_name": "봉어묵", "amount": "2", "unit": "장" },
+    { "ingredient_name": "마요네즈", "amount": "3", "unit": "큰술" },
+    { "ingredient_name": "설탕", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "식초", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "고춧가루", "amount": "0.5", "unit": "큰술" },
+    { "ingredient_name": "연유", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "식용유", "amount": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "instruction": "봉어묵은 먹기 좋은 크기로 접어서 꼬치에 밀떡과 번갈아 꽂습니다."
+    },
+    {
+      "instruction": "마요네즈, 설탕, 식초, 고춧가루, 연유를 잘 섞어 소스를 만들어 둡니다."
+    },
+    {
+      "instruction": "팬에 식용유를 두르고 중불에서 꼬치를 전면에 걸쳐 노릇하게 굽습니다."
+    },
+    {
+      "instruction": "꼬치가 골고루 익으면 만들어둔 소스를 듬뿍 발라 완성합니다."
+    }
+  ],
+  "tags": ["떡꼬치", "어묵꼬치", "간식", "길거리음식", "분식"]
+}

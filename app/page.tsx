@@ -1,0 +1,713 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
+import SearchBar from "@/components/SearchBar";
+import RecipeCard from "@/components/RecipeCard";
+import FridgeRecipeCard from "@/components/FridgeRecipeCard";
+import Link from "next/link";
+import Footer from "@/components/Footer";
+import SafeImage from "@/components/Common/SafeImage";
+import { createClient } from '@/lib/supabase/client';
+import { useI18n } from '@/lib/i18n/context';
+import { useAuth } from '@/lib/auth/context';
+import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
+import dynamic from 'next/dynamic';
+
+const InteractiveFridge = dynamic(() => import('@/components/Fridge/InteractiveFridge'), {
+  ssr: false,
+  loading: () => <div className="w-full max-w-xs mx-auto md:max-w-sm"><div className="w-full rounded-2xl bg-background-secondary animate-pulse" style={{ aspectRatio: '3/4' }} /></div>
+});
+
+const BG_EMOJIS = [
+  { e: '🍳', top: '8%',  left: '7%',  size: '1.4rem', op: 0.07, dur: '28s', delay: '0s'  },
+  { e: '🥕', top: '12%', left: '82%', size: '1.1rem', op: 0.06, dur: '33s', delay: '4s'  },
+  { e: '🌿', top: '22%', left: '15%', size: '1.0rem', op: 0.05, dur: '38s', delay: '8s'  },
+  { e: '🍜', top: '30%', left: '90%', size: '1.5rem', op: 0.06, dur: '25s', delay: '2s'  },
+  { e: '🫐', top: '40%', left: '3%',  size: '1.0rem', op: 0.05, dur: '31s', delay: '6s'  },
+  { e: '🧄', top: '48%', left: '75%', size: '1.2rem', op: 0.07, dur: '36s', delay: '10s' },
+  { e: '🍖', top: '58%', left: '20%', size: '1.3rem', op: 0.06, dur: '29s', delay: '3s'  },
+  { e: '🥦', top: '65%', left: '88%', size: '1.1rem', op: 0.05, dur: '34s', delay: '7s'  },
+  { e: '🍅', top: '72%', left: '10%', size: '1.4rem', op: 0.07, dur: '27s', delay: '5s'  },
+  { e: '🧅', top: '80%', left: '60%', size: '1.0rem', op: 0.05, dur: '32s', delay: '9s'  },
+  { e: '🫑', top: '18%', left: '50%', size: '1.2rem', op: 0.06, dur: '30s', delay: '1s'  },
+  { e: '🍄', top: '35%', left: '40%', size: '1.1rem', op: 0.05, dur: '35s', delay: '11s' },
+  { e: '🥚', top: '52%', left: '55%', size: '1.0rem', op: 0.06, dur: '26s', delay: '13s' },
+  { e: '🧂', top: '88%', left: '30%', size: '1.3rem', op: 0.07, dur: '37s', delay: '15s' },
+  { e: '🫒', top: '92%', left: '78%', size: '1.1rem', op: 0.05, dur: '29s', delay: '2s'  },
+  { e: '🍋', top: '5%',  left: '40%', size: '1.2rem', op: 0.06, dur: '33s', delay: '7s'  },
+  { e: '🥩', top: '75%', left: '45%', size: '1.4rem', op: 0.05, dur: '31s', delay: '12s' },
+  { e: '🌶️', top: '45%', left: '28%', size: '1.0rem', op: 0.06, dur: '28s', delay: '4s'  },
+] as const;
+
+const CUISINE_IMAGES: Partial<Record<string, string>> = {
+  korean: '/images/categories/korean.svg',
+  chinese: '/images/categories/chinese.svg',
+  italian: '/images/categories/italian.svg',
+};
+
+const CUISINE_ICONS: Record<string, string> = {
+  korean: '🇰🇷',
+  chinese: '🥢',
+  japanese: '🍣',
+  western: '🥩',
+  italian: '🍝',
+  french: '🥐',
+  mexican: '🌮',
+  indian: '🍛',
+  thai: '🌶️',
+  vietnamese: '🍜',
+  other: '🍽️',
+};
+
+const CUISINE_COLORS: Record<string, string> = {
+  korean: '#ef4444',
+  chinese: '#f59e0b',
+  japanese: '#ec4899',
+  western: '#3b82f6',
+  italian: '#22c55e',
+  french: '#a855f7',
+  mexican: '#f97316',
+  indian: '#eab308',
+  thai: '#84cc16',
+  vietnamese: '#10b981',
+  other: '#6b7280',
+};
+
+const DISH_ICONS: Record<string, string> = {
+  main: '🍖',
+  soup: '🍲',
+  side: '🍱',
+  noodle: '🍜',
+  rice: '🍚',
+  dessert: '🍰',
+  beverage: '☕',
+  snack: '🍿',
+  salad: '🥗',
+  baking: '🍞',
+  other: '🍽️',
+};
+
+const DISH_COLORS: Record<string, string> = {
+  main: '#ef4444',
+  soup: '#f97316',
+  side: '#22c55e',
+  noodle: '#f59e0b',
+  rice: '#84cc16',
+  dessert: '#ec4899',
+  beverage: '#3b82f6',
+  snack: '#a855f7',
+  salad: '#34d399',
+  baking: '#d97706',
+  other: '#6b7280',
+};
+
+interface RecipeItem {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  display_image?: string | null;
+  prep_time_minutes: number | null;
+  cook_time_minutes: number | null;
+  difficulty_level: string | null;
+  views_count?: number;
+  likes_count?: number;
+  cooked_count?: number;
+  average_rating?: number;
+  author?: { username: string; avatar_url?: string | null };
+  matchRate?: number;
+  matchedCount?: number;
+  totalIngredients?: number;
+  missingIngredientNames?: string[];
+}
+
+interface TipItem {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  category: string;
+  duration_minutes: number | null;
+  author?: { username: string } | null;
+}
+
+type FeedItem =
+  | { type: 'recipe' } & RecipeItem
+  | { type: 'tip' } & TipItem;
+
+function CardSkeleton() {
+  return <div className="rounded-2xl bg-background-secondary animate-pulse aspect-[4/3]" />;
+}
+
+export default function Home() {
+  const router = useRouter();
+  const { t } = useI18n();
+
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn = !!user;
+
+  const [mounted, setMounted] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [categoryTab, setCategoryTab] = useState<'cuisine' | 'dish'>('cuisine');
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+  const [catScrollLeft, setCatScrollLeft] = useState(false);
+  const [catScrollRight, setCatScrollRight] = useState(true);
+  const [catScrollPct, setCatScrollPct] = useState(0);
+
+  const updateCatScroll = () => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCatScrollLeft(el.scrollLeft > 0);
+    setCatScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    setCatScrollPct(maxScroll > 0 ? el.scrollLeft / maxScroll : 0);
+  };
+
+  // PC: 마우스 휠 → 가로 스크롤 변환
+  useEffect(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      el.scrollBy({ left: e.deltaY * 1.5, behavior: 'auto' });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // 탭 변경 시 스크롤 초기화 + 화살표 상태 재계산
+  useEffect(() => {
+    const el = categoryScrollRef.current;
+    if (!el) return;
+    el.scrollLeft = 0;
+    requestAnimationFrame(updateCatScroll);
+  }, [categoryTab]);
+  // SSR/클라이언트 hydration 불일치 방지
+  useEffect(() => setMounted(true), []);
+
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedHasMore, setFeedHasMore] = useState(true);
+  const feedOffsetRef = useRef(0);
+  const isFetchingFeedRef = useRef(false);
+  const feedSentinelRef = useRef<HTMLDivElement>(null);
+
+  const [trendingItems, setTrendingItems] = useState<RecipeItem[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+
+  const [fridgeRecs, setFridgeRecs] = useState<RecipeItem[]>([]);
+  const [fridgeLoading, setFridgeLoading] = useState(false);
+  const [hasFridgeItems, setHasFridgeItems] = useState(false);
+
+  // 온보딩 체크 (user가 로드된 후 1번만 실행)
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from('profiles')
+      .select('onboarding_completed, onboarding_step')
+      .eq('id', user.id)
+      .single()
+      .then(({ data: profile }) => {
+        if (profile && !profile.onboarding_completed && profile.onboarding_step === 0) {
+          router.push('/auth/terms-agreement');
+        }
+      });
+  }, [user, router]);
+
+  // 스크롤 감지
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 50);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 이번 주 인기 레시피 — 초기 렌더링 후 유휴 시간에 로드
+  useEffect(() => {
+    const load = () => {
+      fetch('/api/recommendations?type=trending&limit=4')
+        .then(r => r.json())
+        .then(data => setTrendingItems(data.recommendations || []))
+        .catch(() => {})
+        .finally(() => setTrendingLoading(false));
+    };
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(load, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(load, 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // 최신 레시피 + 팁 혼합 피드 (무한 스크롤)
+  const RECIPES_PER_PAGE = 8;
+  const TIPS_PER_PAGE = 4;
+  const FEED_AUTO_LIMIT = 100; // 이 개수 이후엔 수동 버튼으로 전환
+
+  const fetchFeedPage = useCallback(async (reset = false) => {
+    if (isFetchingFeedRef.current) return;
+    isFetchingFeedRef.current = true;
+
+    if (reset) {
+      feedOffsetRef.current = 0;
+      setFeedItems([]);
+      setFeedHasMore(true);
+      setFeedLoading(true);
+    }
+
+    const offset = feedOffsetRef.current;
+
+    try {
+      const supabase = createClient();
+      const tipOffset = Math.floor(offset / 2);
+
+      const [{ data: recipes }, tipRes] = await Promise.all([
+        supabase
+          .from('recipes')
+          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles(username)')
+          .eq('is_published', true)
+          .eq('is_public', true)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + RECIPES_PER_PAGE - 1),
+        fetch(`/api/tip?limit=${TIPS_PER_PAGE}&offset=${tipOffset}`)
+          .then(r => r.json())
+          .catch(() => ({ tips: [] })),
+      ]);
+
+      const recipeFeed: FeedItem[] = (recipes || []).map(r => ({
+        type: 'recipe' as const,
+        ...r,
+        author: Array.isArray(r.author) ? r.author[0] : r.author,
+      }));
+
+      const tipFeed: FeedItem[] = (tipRes.tips || []).map((tip: TipItem) => ({
+        type: 'tip' as const,
+        ...tip,
+      }));
+
+      // 레시피 2개마다 팁 1개 끼워넣기
+      const mixed: FeedItem[] = [];
+      let ri = 0, ti = 0;
+      while (ri < recipeFeed.length || ti < tipFeed.length) {
+        if (ri < recipeFeed.length) mixed.push(recipeFeed[ri++]);
+        if (ri < recipeFeed.length) mixed.push(recipeFeed[ri++]);
+        if (ti < tipFeed.length) mixed.push(tipFeed[ti++]);
+      }
+
+      if (reset) {
+        setFeedItems(mixed);
+      } else {
+        setFeedItems(prev => [...prev, ...mixed]);
+      }
+
+      feedOffsetRef.current = offset + RECIPES_PER_PAGE;
+      setFeedHasMore((recipes?.length ?? 0) >= RECIPES_PER_PAGE);
+    } catch {
+      // ignore
+    } finally {
+      isFetchingFeedRef.current = false;
+      setFeedLoading(false);
+    }
+  }, []);
+
+  // 로그인 상태 변경 시 피드 초기화
+  useEffect(() => {
+    fetchFeedPage(true);
+  }, [user?.id, fetchFeedPage]);
+
+  // 무한 스크롤 - sentinel이 보이면 다음 페이지 로드 (100개 미만일 때만)
+  useEffect(() => {
+    const sentinel = feedSentinelRef.current;
+    if (!sentinel || !feedHasMore || feedItems.length >= FEED_AUTO_LIMIT) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchFeedPage(false);
+        }
+      },
+      { rootMargin: '300px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [feedHasMore, fetchFeedPage, feedItems.length]);
+
+  // 냉장고 기반 추천 (로그인 사용자) — 유휴 시간에 로드
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setHasFridgeItems(false);
+      setFridgeRecs([]);
+      return;
+    }
+    setFridgeLoading(true);
+    const load = () => {
+      fetch('/api/recommendations?type=ingredients&limit=4')
+        .then(r => r.json())
+        .then(data => {
+          if (data.recommendations?.length > 0) {
+            setHasFridgeItems(true);
+            setFridgeRecs(data.recommendations);
+          } else {
+            setHasFridgeItems(false);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setFridgeLoading(false));
+    };
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(load, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(load, 500);
+    return () => clearTimeout(t);
+  }, [isLoggedIn, user?.id]);
+
+  return (
+    <div className="min-h-screen bg-background-primary text-text-primary">
+      {mounted && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+          {BG_EMOJIS.map((item, i) => (
+            <span
+              key={i}
+              className="absolute select-none"
+              style={{
+                top: item.top,
+                left: item.left,
+                fontSize: item.size,
+                opacity: item.op,
+                animation: `food-float ${item.dur} ease-in-out infinite`,
+                animationDelay: item.delay,
+              }}
+            >
+              {item.e}
+            </span>
+          ))}
+        </div>
+      )}
+      <Header />
+
+      <main id="main-content" className="relative flex min-h-screen flex-col items-center px-4 md:px-6 pt-16 md:pt-20 pb-24 md:pb-12">
+        {/* 배경 장식 */}
+        <div className="absolute top-1/4 -left-20 h-48 w-48 md:h-64 md:w-64 rounded-full bg-accent-warm/5 md:bg-accent-warm/10 blur-[80px] md:blur-[100px]" />
+        <div className="absolute bottom-1/4 -right-20 h-48 w-48 md:h-64 md:w-64 rounded-full bg-accent-warm/3 md:bg-accent-warm/5 blur-[80px] md:blur-[100px]" />
+
+        {/* Hero */}
+        <div className={`w-full max-w-2xl mt-4 md:mt-8 transition-all duration-500 ${
+          isScrolled && !searchFocused ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
+        } z-10`}>
+
+          {/* 비로그인: Interactive Fridge를 검색바 위에 표시 */}
+          {!authLoading && !isLoggedIn && (
+            <div className="flex justify-center mb-6">
+              <InteractiveFridge />
+            </div>
+          )}
+
+          <div onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}>
+            <SearchBar />
+          </div>
+        </div>
+
+        <div className="w-full max-w-5xl mt-4 md:mt-8 space-y-10">
+
+          {/* 1. 카테고리 탐색 */}
+          <section aria-label="카테고리">
+            {/* 탭 토글 */}
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold">카테고리</h2>
+              <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
+                <button
+                  onClick={() => setCategoryTab('cuisine')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    categoryTab === 'cuisine'
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'text-text-muted hover:text-text-secondary'
+                  }`}
+                >
+                  국가별
+                </button>
+                <button
+                  onClick={() => setCategoryTab('dish')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    categoryTab === 'dish'
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'text-text-muted hover:text-text-secondary'
+                  }`}
+                >
+                  요리별
+                </button>
+              </div>
+            </div>
+
+            {/* 1행 가로 스크롤 카드 */}
+            <div className="relative -mx-4 overflow-hidden">
+              {/* 왼쪽 페이드 + 화살표 */}
+              {catScrollLeft && <>
+                <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background-primary to-transparent z-10" />
+                <button
+                  onClick={() => categoryScrollRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}
+                  className="hidden md:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 items-center justify-center rounded-full bg-background-secondary/90 border border-white/10 text-text-secondary hover:text-text-primary shadow-lg transition-all hover:scale-110 text-lg leading-none"
+                >‹</button>
+              </>}
+              {/* 오른쪽 페이드 + 화살표 */}
+              {catScrollRight && <>
+                <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background-primary to-transparent z-10" />
+                <button
+                  onClick={() => categoryScrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}
+                  className="hidden md:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 items-center justify-center rounded-full bg-background-secondary/90 border border-white/10 text-text-secondary hover:text-text-primary shadow-lg transition-all hover:scale-110 text-lg leading-none"
+                >›</button>
+              </>}
+
+              {/* 스크롤 컨테이너 — 오른쪽에 반 카드 여백을 남겨 "더 있음" 암시 */}
+              <div ref={categoryScrollRef} onScroll={updateCatScroll} className="overflow-x-auto scrollbar-hide px-4 pr-10">
+                <div className="flex gap-2 w-max">
+                  {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label }) => {
+                    const color = categoryTab === 'cuisine' ? CUISINE_COLORS[value] : DISH_COLORS[value];
+                    const icon = categoryTab === 'cuisine' ? CUISINE_ICONS[value] : DISH_ICONS[value];
+                    const href = categoryTab === 'cuisine'
+                      ? `/recipes?cuisine_type=${value}`
+                      : `/recipes?dish_type=${value}`;
+                    return (
+                      <Link
+                        key={value}
+                        href={href}
+                        className="w-20 h-20 md:w-[88px] md:h-[88px] rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${color}22 0%, transparent 100%)` }}
+                        onMouseEnter={e => {
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.borderColor = `${color}55`;
+                          el.style.boxShadow = `0 0 14px ${color}33`;
+                        }}
+                        onMouseLeave={e => {
+                          const el = e.currentTarget as HTMLElement;
+                          el.style.borderColor = '';
+                          el.style.boxShadow = '';
+                        }}
+                      >
+                        {categoryTab === 'cuisine' && CUISINE_IMAGES[value] ? (
+                          <div className="w-10 h-10 rounded-lg overflow-hidden">
+                            <SafeImage src={CUISINE_IMAGES[value]!} alt={label} width={40} height={40} className="object-cover w-full h-full" />
+                          </div>
+                        ) : (
+                          <span className="text-2xl leading-none">{icon}</span>
+                        )}
+                        <span className="text-[11px] font-medium text-text-secondary leading-tight text-center px-1">
+                          {label}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 스크롤 진행 바 — 모바일/데스크탑 모두 표시 */}
+            <div className="mt-2 h-0.5 rounded-full bg-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-accent-warm/50 transition-all duration-150"
+                style={{ width: `${Math.max(20, catScrollPct * 100)}%` }}
+              />
+            </div>
+          </section>
+
+          {/* 2. 냉장고 추천 (로그인 사용자) */}
+          {isLoggedIn && (
+            <section aria-label="냉장고 추천">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h2 className="text-base font-bold flex items-center gap-1.5">
+                    <svg width="18" height="18" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="4" y="4" width="60" height="92" rx="6" fill="#5BA8B5" stroke="#111" strokeWidth="5"/>
+                      <rect x="4" y="4" width="28" height="62" rx="6" fill="#4A8F9C"/>
+                      <rect x="4" y="66" width="60" height="4" fill="#111"/>
+                      <rect x="9" y="14" width="17" height="10" rx="2" fill="#F5C842" stroke="#111" strokeWidth="2.5"/>
+                      <rect x="32" y="4" width="32" height="62" fill="#A8DDE8"/>
+                      <rect x="55" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
+                      <rect x="59" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
+                      <ellipse cx="47" cy="30" rx="7" ry="5" fill="#C8925A" stroke="#111" strokeWidth="2"/>
+                      <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#B07840" stroke="#111" strokeWidth="2"/>
+                      <rect x="42" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
+                      <rect x="48" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
+                      <rect x="64" y="4" width="20" height="62" rx="4" fill="#5BA8B5" stroke="#111" strokeWidth="4"/>
+                      <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="28" y="20" width="8" height="14" rx="4" fill="#111"/>
+                      <rect x="28" y="42" width="8" height="14" rx="4" fill="#111"/>
+                      <rect x="4" y="70" width="60" height="26" rx="6" fill="#5BA8B5"/>
+                      <rect x="28" y="80" width="12" height="6" rx="3" fill="#111"/>
+                    </svg>
+                    냉장고 재료로 만들 수 있어요
+                  </h2>
+                  <p className="text-xs text-text-muted mt-0.5">보유한 재료와 가장 잘 맞는 레시피</p>
+                </div>
+                {hasFridgeItems && (
+                  <Link href="/recommendations" className="px-3 py-1 rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors flex-shrink-0">더 보기 →</Link>
+                )}
+              </div>
+              {fridgeLoading ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[...Array(4)].map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+              ) : hasFridgeItems ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {fridgeRecs.map((recipe, i) => (
+                    <FridgeRecipeCard key={recipe.id} recipe={recipe} priority={i === 0} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-background-secondary border border-white/5 px-6 py-8 text-center">
+                  <div className="flex justify-center mb-3">
+                    <svg width="52" height="52" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="4" y="4" width="60" height="92" rx="6" fill="#5BA8B5" stroke="#111" strokeWidth="5"/>
+                      <rect x="4" y="4" width="28" height="62" rx="6" fill="#4A8F9C"/>
+                      <rect x="4" y="66" width="60" height="4" fill="#111"/>
+                      <rect x="9" y="14" width="17" height="10" rx="2" fill="#F5C842" stroke="#111" strokeWidth="2.5"/>
+                      <rect x="32" y="4" width="32" height="62" fill="#A8DDE8"/>
+                      <rect x="55" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
+                      <rect x="59" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
+                      <ellipse cx="47" cy="30" rx="7" ry="5" fill="#C8925A" stroke="#111" strokeWidth="2"/>
+                      <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#B07840" stroke="#111" strokeWidth="2"/>
+                      <rect x="42" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
+                      <rect x="48" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
+                      <rect x="64" y="4" width="20" height="62" rx="4" fill="#5BA8B5" stroke="#111" strokeWidth="4"/>
+                      <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
+                      <rect x="28" y="20" width="8" height="14" rx="4" fill="#111"/>
+                      <rect x="28" y="42" width="8" height="14" rx="4" fill="#111"/>
+                      <rect x="4" y="70" width="60" height="26" rx="6" fill="#5BA8B5"/>
+                      <rect x="28" y="80" width="12" height="6" rx="3" fill="#111"/>
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-text-primary mb-1">냉장고가 비어있어요</p>
+                  <p className="text-xs text-text-muted mb-4">재료를 등록하면 지금 바로 만들 수 있는 레시피를 추천해드려요!</p>
+                  <Link
+                    href="/fridge"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                  >
+                    재료 등록하기
+                  </Link>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 3. 이번 주 인기 */}
+          <section aria-label="이번 주 인기">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-base font-bold">🔥 이번 주 인기</h2>
+                <p className="text-xs text-text-muted mt-0.5">가장 많이 만들어진 레시피</p>
+              </div>
+              <Link href="/recipes?sort=trending" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors flex-shrink-0">더 보기 →</Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {trendingLoading
+                ? [...Array(4)].map((_, i) => <CardSkeleton key={i} />)
+                : trendingItems.length === 0
+                  ? <p className="col-span-2 md:col-span-4 text-sm text-text-muted text-center py-8">아직 데이터가 없습니다</p>
+                  : trendingItems.map((recipe, i) => (
+                      <RecipeCard key={recipe.id} recipe={recipe} showAuthor priority={i < 4} />
+                    ))
+              }
+            </div>
+          </section>
+
+          {/* 4. 최신 레시피 & 팁 혼합 (무한 스크롤) */}
+          <section aria-label="최신 레시피 & 팁">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold">✨ 최신 레시피 &amp; 팁</h2>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link href="/recipes" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">레시피 전체 →</Link>
+                <Link href="/tip" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">팁 전체 →</Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {feedLoading && feedItems.length === 0
+                ? [...Array(8)].map((_, i) => <CardSkeleton key={i} />)
+                : feedItems.length === 0
+                  ? <p className="col-span-2 md:col-span-3 lg:col-span-4 text-sm text-text-muted text-center py-8">{t.home.noRecipes}</p>
+                  : feedItems.map((item, i) =>
+                      item.type === 'recipe' ? (
+                        <RecipeCard key={`r-${item.id}`} recipe={item} showAuthor priority={i < 4} />
+                      ) : (
+                        <Link key={`t-${item.id}`} href={`/tip/${item.id}`} className="block group">
+                          <div className="rounded-2xl bg-background-secondary overflow-hidden border border-white/5 transition-all group-hover:border-accent-warm/50 group-hover:shadow-lg group-hover:shadow-accent-warm/10">
+                            <div className="aspect-[4/3] w-full relative">
+                              {item.thumbnail_url ? (
+                                <SafeImage
+                                  src={item.thumbnail_url}
+                                  alt={item.title}
+                                  fill
+                                  className="object-cover transition-transform group-hover:scale-105"
+                                  sizes="(max-width: 640px) 50vw, 33vw"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">💡</div>
+                              )}
+                              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-accent-warm/90 text-background-primary text-[10px] font-bold backdrop-blur-sm">팁</div>
+                            </div>
+                            <div className="p-3">
+                              <h3 className="font-bold text-sm truncate">{item.title}</h3>
+                              {item.author && (
+                                <p className="text-[11px] text-text-muted mt-1">@{item.author.username}</p>
+                              )}
+                              <p className="text-xs text-text-muted mt-0.5">
+                                {item.category}{item.duration_minutes ? ` · ${item.duration_minutes}분` : ''}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    )
+              }
+              {/* 추가 로딩 중 skeleton */}
+              {feedLoading && feedItems.length > 0 &&
+                [...Array(3)].map((_, i) => <CardSkeleton key={`more-${i}`} />)
+              }
+            </div>
+
+            {/* 100개 미만: 자동 로드 sentinel */}
+            {feedHasMore && feedItems.length < FEED_AUTO_LIMIT && (
+              <div ref={feedSentinelRef} className="h-4" />
+            )}
+            {/* 100개 이상: 수동 더 보기 버튼 */}
+            {feedHasMore && feedItems.length >= FEED_AUTO_LIMIT && (
+              <div className="flex justify-center pt-6 pb-2">
+                <button
+                  onClick={() => fetchFeedPage(false)}
+                  disabled={feedLoading}
+                  className="px-6 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:border-accent-warm/50 hover:text-accent-warm transition-colors disabled:opacity-50"
+                >
+                  {feedLoading ? '불러오는 중...' : '더 보기'}
+                </button>
+              </div>
+            )}
+            {!feedHasMore && feedItems.length > 0 && (
+              <p className="text-center text-xs text-text-muted pt-6 pb-2">모든 레시피 & 팁을 불러왔습니다</p>
+            )}
+          </section>
+
+        </div>
+      </main>
+
+      <Footer />
+
+      <BottomNav />
+    </div>
+  );
+}

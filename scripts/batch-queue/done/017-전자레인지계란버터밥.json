@@ -1,0 +1,38 @@
+{
+  "title": "전자레인지 계란 버터밥",
+  "description": "전자레인지로 2분 30초 만에 완성하는 계란 버터밥입니다. 장조림과 버터의 조합으로 고소하고 짭조름한 맛이 나는 백종원 간편 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=nQaR6cwSmQk",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 5,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "밥", "amount": "1", "unit": "공기" },
+    { "name": "달걀", "amount": "1", "unit": "개" },
+    { "name": "버터", "amount": "10", "unit": "g" },
+    { "name": "장조림 (캔)", "amount": "1", "unit": "캔" },
+    { "name": "쪽파", "amount": null, "unit": "약간" },
+    { "name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "전자레인지용 그릇에 밥을 담고 가운데를 살짝 파 달걀을 올립니다."
+    },
+    {
+      "order": 2,
+      "description": "달걀 노른자를 젓가락으로 살짝 찌른 뒤 뚜껑을 덮고 전자레인지에서 2분 30초간 돌립니다."
+    },
+    {
+      "order": 3,
+      "description": "꺼낸 후 버터와 장조림을 올립니다."
+    },
+    {
+      "order": 4,
+      "description": "쪽파와 통깨를 뿌리고 잘 비벼서 먹습니다."
+    }
+  ],
+  "tags": ["계란버터밥", "전자레인지", "간편요리", "백종원", "1인분", "장조림"]
+}

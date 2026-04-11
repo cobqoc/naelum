@@ -1,0 +1,17 @@
+{
+  "channels": [
+    {
+      "name": "백종원의 요리비책",
+      "channelId": "UCyn-K7rZLXjGl7VXGweIlcA",
+      "type": "recipe",
+      "enabled": true
+    },
+    {
+      "name": "만개의레시피",
+      "channelId": "UCpG97ABMNgMwRFBEkjcvisQ",
+      "type": "recipe",
+      "enabled": false
+    }
+  ],
+  "lastCheckedAt": null
+}

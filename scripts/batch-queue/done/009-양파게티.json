@@ -1,0 +1,53 @@
+{
+  "title": "양파게티 (만능양파 짜장라면)",
+  "description": "냉동해둔 만능양파볶음 한 덩어리를 짜장라면에 넣어 끓이는 초간단 라면입니다. 단맛을 좋아하면 단연 최고지만, 단것이 싫은 분은 처음에는 소량만 넣어 보세요. 국물을 자박하게 잡아야 양파 볶음이 잘 스며듭니다.",
+  "video_url": "https://www.youtube.com/watch?v=GlQZFTUeRoI",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "짜장라면",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "봉지",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "만능양파볶음 (냉동)",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "덩어리. 단맛이 강해지므로 처음에는 소량만 사용해보고 조절",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "고추장",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "단맛을 줄이고 싶을 때 소량 추가",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "냄비에 물을 붓고 건더기 스프를 먼저 넣습니다."
+    },
+    {
+      "instruction": "냉동 만능양파볶음 한 덩어리를 넣습니다.",
+      "tip": "라면 끓이기 전 냉동에서 꺼내두면 좋지만, 바로 넣어도 됩니다."
+    },
+    {
+      "instruction": "면을 넣고 끓입니다. 국물을 평소보다 자박하게 잡아야 양파볶음이 면에 잘 스며듭니다.",
+      "tip": "양파볶음은 국물을 흡수하므로 물을 조금 더 넣어두세요."
+    },
+    {
+      "instruction": "기호에 따라 고추장을 소량 넣어 단맛을 줄이고 완성합니다."
+    }
+  ],
+  "tags": ["양파게티", "짜장라면", "만능양파볶음", "라면", "간단요리", "백종원레시피"]
+}

@@ -1,0 +1,41 @@
+{
+  "title": "빨간 어묵",
+  "description": "시장 노점식 매콤달콤 빨간 국물 어묵입니다. 꼬치에 어묵을 접어 꽂고 간단한 양념 국물에 푹 끓여내어 간식이나 야식으로 즐기기 좋습니다.",
+  "video_url": "https://www.youtube.com/watch?v=87zznFb0-us",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "snack",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "사각 어묵", "quantity": null, "unit": "장", "notes": "한 꼬치에 약 2.5장 기준", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 500, "unit": "ml", "notes": "", "is_optional": false },
+    { "ingredient_name": "고추장", "quantity": 2, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "간장", "quantity": 1, "unit": "큰술", "notes": "깎아서 계량", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": 2, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "굵은 고춧가루", "quantity": 0.5, "unit": "큰술", "notes": "빛깔용", "is_optional": false },
+    { "ingredient_name": "고운 고춧가루", "quantity": 0.5, "unit": "큰술", "notes": "빛깔용", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": 1, "unit": "대", "notes": "큼직하게 썰기", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": null, "unit": "선택", "notes": "기호에 따라", "is_optional": true },
+    { "ingredient_name": "후춧가루", "quantity": null, "unit": "꼬집", "notes": "아주 살짝만", "is_optional": true },
+    { "ingredient_name": "나무 꼬치", "quantity": null, "unit": "선택", "notes": "나무젓가락으로 대체 가능", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "사각 어묵을 네 번 접어 물결 모양이 되도록 꼬치에 번갈아 꽂아 준비합니다.", "timer_minutes": null, "tip": "두툼하게 원하면 세 번 접기로 해도 됩니다." },
+    { "instruction": "대파는 큼직하게 썰고 양파도 채 썰어 준비하고, 기호에 따라 청양고추도 썰어 놓습니다.", "timer_minutes": null, "tip": "국물 맛의 핵심은 대파이니 넉넉히 넣습니다." },
+    { "instruction": "냄비에 물 500ml를 붓고 고추장 2큰술, 간장 1큰술, 설탕 2큰술, 굵은 고춧가루와 고운 고춧가루를 넣어 잘 풀어줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "양념이 다 녹으면 썰어 둔 대파와 양파, 청양고추를 넣고 끓입니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "꼬치에 꽂은 어묵을 국물에 잘 잠기도록 넣고 푹 끓여 맛이 배어들게 합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "마지막에 후춧가루를 아주 조금만 톡 쳐서 향을 살리고 완성합니다.", "timer_minutes": null, "tip": "후춧가루는 많이 넣으면 맛이 이상해지니 한 톡 정도만 넣습니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "간식", "Snack", "어묵", "매콤", "달콤", "야식"]
+}

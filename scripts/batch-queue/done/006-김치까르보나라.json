@@ -1,0 +1,48 @@
+{
+  "title": "김치 까르보나라",
+  "description": "이탈리아 전통 까르보나라에 묵은지를 더해 한국적인 풍미를 살린 퓨전 파스타입니다. 달걀 노른자와 치즈로 만든 크리미한 소스에 묵은지의 새콤함이 잘 어우러집니다.",
+  "video_url": "https://www.youtube.com/watch?v=7NAnzqvOhaY",
+  "difficulty_level": "medium",
+  "cuisine_type": "fusion",
+  "dish_type": "main",
+  "cook_time_minutes": 25,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "푸실리 (또는 스파게티)", "amount": "200", "unit": "g" },
+    { "name": "달걀 노른자", "amount": "4", "unit": "개" },
+    { "name": "파르미잔 치즈 (강판에 간 것)", "amount": "50", "unit": "g" },
+    { "name": "묵은지", "amount": "100", "unit": "g" },
+    { "name": "소시지 (또는 판체타)", "amount": "100", "unit": "g" },
+    { "name": "흑후추", "amount": null, "unit": "약간" },
+    { "name": "소금", "amount": null, "unit": "약간" },
+    { "name": "올리브오일", "amount": "1", "unit": "큰술" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "달걀 노른자와 강판에 간 파르미잔 치즈, 흑후추를 섞어 소스를 만듭니다."
+    },
+    {
+      "order": 2,
+      "description": "소금을 넣은 끓는 물에 파스타를 삶습니다. 면수는 버리지 않고 보관합니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 올리브오일을 두르고 소시지를 볶다가 묵은지를 넣어 함께 볶습니다."
+    },
+    {
+      "order": 4,
+      "description": "삶은 파스타를 프라이팬에 옮기고 불을 끈 뒤 달걀 소스를 넣어 빠르게 섞습니다."
+    },
+    {
+      "order": 5,
+      "description": "소스가 너무 되직하면 면수를 조금씩 넣어 농도를 조절합니다."
+    },
+    {
+      "order": 6,
+      "description": "흑후추를 넉넉히 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["파스타", "까르보나라", "김치", "묵은지", "퓨전", "흑백요리사"]
+}

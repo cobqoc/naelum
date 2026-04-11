@@ -1,0 +1,78 @@
+{
+  "title": "만능양파 간장비빔면",
+  "description": "냉동 만능양파볶음을 해동해 사리면과 간장·참기름으로 비비는 간단한 비빔면입니다. 단맛과 고소함이 어우러지며 재료가 거의 없어도 뚝딱 만들 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=5uWt6U1Re5Q",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": true,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "사리면",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "인분",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "만능양파볶음 (냉동)",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "덩어리. 자연 해동하거나 그대로 사용",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "간장",
+      "quantity": 2,
+      "unit": "큰술",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "참기름",
+      "quantity": 1,
+      "unit": "큰술",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "설탕",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소량. 기호에 따라 가감",
+      "is_optional": true
+    },
+    {
+      "ingredient_name": "후춧가루",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "소량",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "쪽파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "마무리 고명용",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "끓는 물에 사리면을 삶은 뒤 찬물에 헹구어 물기를 뺍니다.",
+      "tip": "찬물에 헹군 뒤 물기를 충분히 빼야 비빌 때 양념이 잘 배어듭니다."
+    },
+    {
+      "instruction": "볼에 면과 냉동에서 꺼낸 만능양파볶음을 넣습니다."
+    },
+    {
+      "instruction": "간장 2큰술, 설탕 소량, 참기름, 후춧가루를 넣고 잘 비빕니다."
+    },
+    {
+      "instruction": "쪽파를 올려 완성합니다."
+    }
+  ],
+  "tags": ["간장비빔면", "비빔면", "만능양파볶음", "면요리", "간단요리", "백종원레시피"]
+}

@@ -1,0 +1,41 @@
+{
+  "title": "구운 마늘 라면",
+  "description": "통마늘을 껍질째 구워 라면에 넣는 간단하지만 깊은 풍미를 내는 라면 레시피입니다. 안성재 셰프가 흑백요리사에서 소개한 방식으로, 구운 마늘의 단맛이 국물에 배어납니다.",
+  "video_url": "https://www.youtube.com/watch?v=utIbM9Iua-k",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 15,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "라면 (빽라면 또는 원하는 라면)", "amount": "1", "unit": "봉지" },
+    { "name": "통마늘 (껍질 있는 것)", "amount": "8", "unit": "쪽" },
+    { "name": "물", "amount": "550", "unit": "ml" },
+    { "name": "달걀", "amount": "1", "unit": "개" },
+    { "name": "대파", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "통마늘을 껍질째 프라이팬이나 직화로 겉이 까맣게 탈 때까지 굽습니다."
+    },
+    {
+      "order": 2,
+      "description": "구운 마늘의 껍질을 벗겨 준비합니다."
+    },
+    {
+      "order": 3,
+      "description": "냄비에 물과 구운 마늘을 넣고 끓입니다."
+    },
+    {
+      "order": 4,
+      "description": "물이 끓으면 라면 스프와 면을 넣고 조리합니다."
+    },
+    {
+      "order": 5,
+      "description": "달걀과 대파를 올려 완성합니다."
+    }
+  ],
+  "tags": ["라면", "마늘", "구운마늘", "흑백요리사", "안성재", "간편요리"]
+}

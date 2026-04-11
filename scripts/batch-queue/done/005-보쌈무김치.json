@@ -1,0 +1,46 @@
+{
+  "title": "보쌈무김치",
+  "description": "무를 절여 고춧가루 양념에 버무린 새콤달콤한 무김치와 부드럽게 삶은 보쌈 돼지고기를 함께 즐기는 요리입니다.",
+  "video_url": "https://www.youtube.com/watch?v=KbWtIU129hw",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 60,
+  "servings": 4,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "무", "amount": "500", "unit": "g" },
+    { "name": "꽃소금", "amount": "1", "unit": "큰술" },
+    { "name": "고춧가루", "amount": "2", "unit": "큰술" },
+    { "name": "설탕", "amount": "1", "unit": "큰술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "큰술" },
+    { "name": "쪽파", "amount": "3", "unit": "대" },
+    { "name": "돼지고기 (목살 또는 삼겹살)", "amount": "500", "unit": "g" },
+    { "name": "대파", "amount": "1", "unit": "대" },
+    { "name": "된장", "amount": "1", "unit": "큰술" },
+    { "name": "통후추", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "무를 나박나박 썰어 꽃소금을 뿌리고 20분간 절인 뒤 물기를 꽉 짜냅니다."
+    },
+    {
+      "order": 2,
+      "description": "절인 무에 고춧가루, 설탕, 다진 마늘을 넣고 골고루 버무립니다."
+    },
+    {
+      "order": 3,
+      "description": "쪽파를 썰어 넣고 다시 버무려 무김치를 완성합니다."
+    },
+    {
+      "order": 4,
+      "description": "냄비에 돼지고기가 잠길 만큼 물을 붓고 된장, 대파, 통후추를 넣어 40~50분간 삶습니다."
+    },
+    {
+      "order": 5,
+      "description": "삶은 돼지고기를 꺼내 한 김 식힌 뒤 먹기 좋은 두께로 썰어 무김치와 함께 냅니다."
+    }
+  ],
+  "tags": ["보쌈", "무김치", "돼지고기", "백종원", "한식"]
+}

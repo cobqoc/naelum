@@ -1,0 +1,45 @@
+{
+  "title": "돼지갈비찜",
+  "description": "카라멜로 고기를 먼저 볶아 색을 입힌 후 간장 양념에 무, 당근, 양파를 넣고 은근히 조린 부드럽고 윤기 나는 돼지갈비찜입니다.",
+  "video_url": "https://www.youtube.com/watch?v=WT9tCViPddU",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cooking_time_minutes": 60,
+  "servings": 4,
+  "ingredients": [
+    { "name": "돼지갈비", "amount": "1", "unit": "kg" },
+    { "name": "무", "amount": "200", "unit": "g" },
+    { "name": "당근", "amount": "1", "unit": "개" },
+    { "name": "양파", "amount": "1", "unit": "개" },
+    { "name": "대파", "amount": "1", "unit": "대" },
+    { "name": "청양고추", "amount": "2", "unit": "개" },
+    { "name": "설탕", "amount": "3", "unit": "큰술" },
+    { "name": "간장", "amount": "5", "unit": "큰술" },
+    { "name": "맛술", "amount": "2", "unit": "큰술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "큰술" },
+    { "name": "참기름", "amount": "1", "unit": "큰술" },
+    { "name": "물", "amount": "300", "unit": "ml" }
+  ],
+  "steps": [
+    {
+      "instruction": "돼지갈비는 찬물에 30분 이상 담가 핏물을 제거한 후 건져서 물기를 닦습니다."
+    },
+    {
+      "instruction": "냄비에 설탕을 넣고 중불로 가열해 카라멜을 만든 뒤 갈비를 넣고 전면에 색이 나도록 볶습니다."
+    },
+    {
+      "instruction": "간장, 맛술, 다진 마늘, 물을 넣고 뚜껑을 닫아 중약불에서 20분 끓입니다."
+    },
+    {
+      "instruction": "무와 당근을 먹기 좋은 크기로 썰어 냄비에 넣고 10분 더 조립니다."
+    },
+    {
+      "instruction": "양파, 대파, 청양고추를 넣고 국물이 자작해질 때까지 5~10분 더 조립니다."
+    },
+    {
+      "instruction": "불을 끄고 참기름을 넣어 마무리합니다."
+    }
+  ],
+  "tags": ["돼지갈비찜", "갈비찜", "명절음식", "한식", "조림"]
+}

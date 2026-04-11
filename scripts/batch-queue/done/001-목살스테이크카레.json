@@ -1,0 +1,97 @@
+{
+  "title": "목살 스테이크 카레",
+  "description": "두꺼운 돼지목살을 스테이크처럼 겉면을 강하게 구운 뒤 야채와 함께 카레 소스로 졸여내는 요리입니다. 일반 카레와 달리 두툼한 고기를 먼저 구워 고기 풍미를 살리는 것이 핵심입니다.",
+  "video_url": "https://www.youtube.com/watch?v=wDXCxlcr3hY",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "돼지목살",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "두꺼운 것 사용. 앞다리살, 뒷다리살, 생삼겹살 두꺼운 것도 가능",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "파프리카",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "토마토로 대체 가능 (같은 양)",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "양파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "넉넉하게 사용할수록 단맛이 풍부해짐",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "감자",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "당근",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "카레 가루 또는 고형 카레",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "식용유",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "버터와 혼합하거나 버터만 사용하면 더 풍부한 풍미. 단, 버터만 쓰면 고온에서 타기 쉬우므로 식용유와 섞어 사용 권장",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "물",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "돼지목살의 바깥쪽 지방과 심줄 부분에 칼집을 넣어 고기가 구울 때 틀어지는 것을 방지합니다.",
+      "tip": "안쪽보다 바깥쪽 지방 부위를 끊어주는 것이 조리 후 모양을 살리는 데 특히 효과적입니다."
+    },
+    {
+      "instruction": "파프리카(또는 토마토)와 양파를 먹기 좋은 크기로 썹니다.",
+      "tip": "양파는 많이 사용할수록 국물의 단맛이 풍부해집니다."
+    },
+    {
+      "instruction": "팬에 식용유를 두르고 강불로 달군 뒤, 고기의 한쪽 면이 탈 듯이 색깔이 짙게 날 때까지 굽습니다. 뒤집어 반대쪽도 동일하게 굽습니다.",
+      "tip": "고기는 자기 이름의 기름에서 튀겨지고 구워져야 제 맛이 납니다. 색이 덜 났다고 생각할 때 다음 단계로 넘어가면 실패하는 경우가 많습니다."
+    },
+    {
+      "instruction": "같은 팬에 양파를 볶다가 파프리카(또는 토마토)를 넣고 함께 볶습니다.",
+      "tip": "양파를 충분히 볶아 단맛을 끌어내면 소스의 풍미가 크게 좋아집니다."
+    },
+    {
+      "instruction": "물을 붓고 끓어오르면 중불로 줄입니다. 감자와 당근을 넣고 완전히 익을 때까지 끓이면서 물의 양을 조절합니다.",
+      "tip": "너무 센 불에서 조리하면 국물이 금방 졸아 짜질 수 있습니다. 야채가 충분히 익을 시간을 주세요."
+    },
+    {
+      "instruction": "카레 가루(또는 고형 카레)를 넣고 잘 녹여 섞습니다.",
+      "tip": "국물이 너무 없으면 뻑뻑해집니다. 이때는 물을 조금 더 보충하면 됩니다."
+    },
+    {
+      "instruction": "감자가 완전히 익었는지 확인하고 간을 봐서 부족하면 카레 가루를 조금 더 넣어 마무리합니다."
+    }
+  ],
+  "tags": ["카레", "돼지목살", "스테이크카레", "한식카레", "백종원레시피"]
+}

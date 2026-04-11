@@ -1,0 +1,35 @@
+{
+  "title": "맑은 미역국",
+  "description": "고기 없이 끓이는 가성비 맑은 미역국입니다. 미역 자체의 감칠맛을 살려 간단하고 맑게 즐길 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=uu8BqXy6lf4",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "마른 미역", "quantity": null, "unit": "선택", "notes": "불리면 2컵 정도 분량", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 1.5, "unit": "L", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": 1, "unit": "큰술", "notes": "색 내기용", "is_optional": false },
+    { "ingredient_name": "다진 마늘", "quantity": 1, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "멸치액젓", "quantity": null, "unit": "선택", "notes": "감칠맛용", "is_optional": true },
+    { "ingredient_name": "소금", "quantity": null, "unit": "선택", "notes": "최종 간 맞춤", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "마른 미역은 불릴 필요 없이 깨끗이 씻기만 해서 사용합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "냄비에 씻은 미역과 물 1.5L를 넣고 끓입니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "국간장 1큰술, 다진 마늘 1큰술, 멸치액젓을 조금 넣어 간을 잡아줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "오래 끓일수록 미역에서 감칠맛이 더 우러나니 푹 끓여줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "중간에 물이 졸아들면 물을 조금씩 보충합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "마지막으로 소금으로 간을 맞춰 완성합니다. 차갑게 먹어도 맛있습니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "미역국"]
+}

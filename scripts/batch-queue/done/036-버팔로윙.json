@@ -1,0 +1,38 @@
+{
+  "title": "집에서 만드는 버팔로 윙",
+  "description": "뉴욕에서 먹던 색깔과 맛을 재현한 버팔로 윙입니다. 맥주 안주나 지인 모임 분위기를 낼 때 잘 어울립니다.",
+  "video_url": "https://www.youtube.com/watch?v=LojVJnvLb30",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": 28,
+  "difficulty_level": null,
+  "cuisine_type": "western",
+  "dish_type": "snack",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "닭 날개", "quantity": 10, "unit": "개", "notes": "냉장 추천", "is_optional": false },
+    { "ingredient_name": "닭 어깨 봉", "quantity": 10, "unit": "개", "notes": "냉장 추천", "is_optional": false },
+    { "ingredient_name": "타바스코 소스", "quantity": null, "unit": "컵", "notes": "반 컵 가까이", "is_optional": false },
+    { "ingredient_name": "고운 고춧가루", "quantity": null, "unit": "큰술", "notes": "1~1.5 큰술", "is_optional": false },
+    { "ingredient_name": "버터", "quantity": null, "unit": "선택", "notes": "엄지손가락 한 마디 정도", "is_optional": false },
+    { "ingredient_name": "맛소금", "quantity": null, "unit": "작은술", "notes": "1/4~1/3 작은술", "is_optional": false },
+    { "ingredient_name": "사과 식초", "quantity": null, "unit": "컵", "notes": "약 1/3 컵, 시큼할수록 좋음", "is_optional": false },
+    { "ingredient_name": "식용유", "quantity": null, "unit": "선택", "notes": "에어프라이어 팬에 바름", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "작은 냄비나 프라이팬에 타바스코 소스, 고운 고춧가루, 버터, 맛소금, 사과 식초를 모두 넣고 불에 올립니다.", "timer_minutes": null, "tip": "타바스코가 없다면 스리라차로 대체하고 식초를 20% 정도 더 넣습니다." },
+    { "instruction": "끓어오르면 고춧가루 풋내를 날리기 위해 1분간 더 끓입니다.", "timer_minutes": 1, "tip": "" },
+    { "instruction": "불을 끄고 소스를 접시에 덜어 식힙니다.", "timer_minutes": null, "tip": "빨리 식히려면 그릇을 찬물에 담가도 됩니다." },
+    { "instruction": "식힌 소스의 약 2/3 분량을 닭 날개와 어깨 봉에 붓고 골고루 버무립니다. 나머지 소스는 냉장 보관합니다.", "timer_minutes": null, "tip": "양념이 잘 배도록 칼집을 내거나, 버무린 뒤 냉장고에서 하루 재우면 더 맛있습니다." },
+    { "instruction": "에어프라이어 팬에 식용유를 살짝 바르거나 종이 호일을 깔고 재운 닭을 올린 뒤 180도에서 15~16분 굽습니다.", "timer_minutes": 16, "tip": "" },
+    { "instruction": "한 면이 익으면 뒤집어 180도에서 약 12분 더 굽습니다. 노릇한 색이 나오면 꺼냅니다.", "timer_minutes": 12, "tip": "" },
+    { "instruction": "구워낸 닭을 남겨둔 소스로 한 번 더 버무려 마무리합니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["양식", "WesternFood", "간식", "Snack"]
+}

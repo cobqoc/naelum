@@ -1,0 +1,46 @@
+{
+  "title": "두부 피자 튀김",
+  "description": "이스트 반죽으로 만든 튀김 도우 안에 두부 소와 마리나라 소스를 넣어 튀긴 이탈리아식 피자 프리타입니다. 나폴리 맛피아 셰프의 레시피로 겉은 바삭하고 속은 촉촉합니다.",
+  "video_url": "https://www.youtube.com/watch?v=JZlMEBj7P2M",
+  "difficulty_level": "hard",
+  "cuisine_type": "italian",
+  "dish_type": "snack",
+  "cook_time_minutes": 90,
+  "servings": 4,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "강력분", "amount": "160", "unit": "g" },
+    { "name": "설탕", "amount": "5", "unit": "g" },
+    { "name": "소금", "amount": "5", "unit": "g" },
+    { "name": "드라이이스트", "amount": "2", "unit": "g" },
+    { "name": "올리브오일", "amount": "15", "unit": "g" },
+    { "name": "물 (미지근한 것)", "amount": "95", "unit": "ml" },
+    { "name": "두부", "amount": "1/2", "unit": "모" },
+    { "name": "마리나라 소스", "amount": "4", "unit": "큰술" },
+    { "name": "모차렐라 치즈", "amount": "60", "unit": "g" },
+    { "name": "식용유", "amount": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "강력분, 설탕, 소금, 이스트, 올리브오일, 미지근한 물을 섞어 반죽하고 1시간 이상 발효시킵니다."
+    },
+    {
+      "order": 2,
+      "description": "두부는 물기를 제거하고 으깬 뒤 소금, 올리브오일로 밑간합니다."
+    },
+    {
+      "order": 3,
+      "description": "발효된 반죽을 4등분해 얇게 펼친 후 마리나라 소스, 두부, 모차렐라 치즈를 올립니다."
+    },
+    {
+      "order": 4,
+      "description": "반죽 가장자리를 오므려 소가 새지 않게 단단히 봉합니다."
+    },
+    {
+      "order": 5,
+      "description": "170°C 식용유에 넣어 황금빛이 될 때까지 4~5분간 튀깁니다."
+    }
+  ],
+  "tags": ["피자", "튀김", "두부", "이탈리아", "흑백요리사", "나폴리맛피아"]
+}

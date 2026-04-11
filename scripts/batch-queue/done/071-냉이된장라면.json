@@ -1,0 +1,33 @@
+{
+  "title": "냉이 된장 라면",
+  "description": "봄 입맛을 살려주는 냉이 된장 라면입니다. 라면에 된장과 봄나물 냉이를 더해 고깃집 된장찌개 같은 구수한 맛이 납니다.",
+  "video_url": "https://www.youtube.com/watch?v=6lcrq5D_63o",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "라면", "quantity": 1, "unit": "개", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 600, "unit": "ml", "is_optional": false },
+    { "ingredient_name": "냉이", "quantity": null, "unit": "선택", "notes": "잘 씻어서", "is_optional": false },
+    { "ingredient_name": "된장", "quantity": 0.5, "unit": "큰술", "notes": "재래식 된장 권장", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "is_optional": true },
+    { "ingredient_name": "청양고추", "quantity": null, "unit": "선택", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "냉이는 뿌리 쪽 흙을 꼼꼼히 털어내고 깨끗이 씻어 둡니다.", "timer_minutes": null, "tip": "물에 잠시 담가두면 흙이 잘 빠집니다." },
+    { "instruction": "냄비에 물 600ml를 붓고 된장 반 큰술 정도를 풀어줍니다.", "timer_minutes": null, "tip": "재래식 된장이 더 구수합니다." },
+    { "instruction": "물이 끓으면 라면 스프는 평소보다 줄여서 넣고 면을 넣습니다.", "timer_minutes": null, "tip": "된장이 들어가므로 스프를 줄여야 짜지 않습니다." },
+    { "instruction": "면이 풀어지기 시작하면 냉이와 대파, 청양고추를 넣고 살짝만 더 끓여 마무리합니다.", "timer_minutes": null, "tip": "냉이는 너무 오래 끓이지 말고 아삭함을 살립니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "면요리", "Noodles", "라면", "냉이"]
+}

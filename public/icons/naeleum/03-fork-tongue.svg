@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 포크 + 혀 가운데 가지 — 좌우는 일반 가지, 중앙만 오렌지 혀 -->
+  <!-- 손잡이 -->
+  <rect x="14" y="22" width="4" height="8" rx="2" fill="#999"/>
+  <!-- 목(shank) -->
+  <rect x="14.5" y="13" width="3" height="10" rx="1.5" fill="#999"/>
+  <!-- 가지 기반 바 -->
+  <rect x="7" y="11.5" width="18" height="2.5" rx="1.25" fill="#999"/>
+  <!-- 왼쪽 가지 -->
+  <rect x="7" y="2.5" width="2.5" height="10" rx="1.25" fill="#999"/>
+  <!-- 오른쪽 가지 -->
+  <rect x="22.5" y="2.5" width="2.5" height="10" rx="1.25" fill="#999"/>
+  <!-- 가운데 혀 가지 (오렌지, 더 길고 혀 모양) -->
+  <path d="M14.5 2.5 Q16 2 17.5 2.5 L17.5 13 C17.5 17.5 17 19.5 16 19.5 C15 19.5 14.5 17.5 14.5 13Z" fill="#ff9966"/>
+  <line x1="16" y1="6" x2="16" y2="18.5" stroke="#cc5500" stroke-width="1.1" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,37 @@
+{
+  "title": "황태 미역국",
+  "description": "고기 대신 황태포를 넣어 끓이는 해장용 미역국입니다. 참기름에 볶은 황태의 고소함과 미역의 감칠맛이 어우러져 속이 풀립니다.",
+  "video_url": "https://www.youtube.com/watch?v=rLDquEv-ZJg",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": 20,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "불린 미역", "quantity": 2, "unit": "컵", "notes": "마른 미역 반 컵 정도 불린 양", "is_optional": false },
+    { "ingredient_name": "황태포", "quantity": 2, "unit": "컵", "is_optional": false },
+    { "ingredient_name": "참기름", "quantity": 1, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "다진 마늘", "quantity": 1, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": 2, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "액젓", "quantity": null, "unit": "선택", "notes": "멸치·까나리 등", "is_optional": true },
+    { "ingredient_name": "소금", "quantity": null, "unit": "선택", "notes": "마지막 간 맞춤", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 1.5, "unit": "L", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "황태포는 물에 살짝 적신 뒤 꼭 짜고 먹기 좋은 크기로 찢어 둡니다.", "timer_minutes": null, "tip": "오래 담그면 맛이 빠져나갑니다." },
+    { "instruction": "냄비에 참기름 1큰술을 두르고 황태를 중약불에서 볶아 고소한 향을 냅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "불린 미역을 넣고 함께 볶아줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "물 1.5L를 붓고 다진 마늘 1큰술, 국간장 2큰술, 액젓을 넣어 간을 맞춥니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "끓어오르면 중불로 줄여 20분 이상 충분히 끓여 감칠맛을 끌어냅니다.", "timer_minutes": 20, "tip": "" },
+    { "instruction": "마지막으로 소금으로 간을 맞춰 완성합니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "미역국", "황태", "해장"]
+}

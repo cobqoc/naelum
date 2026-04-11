@@ -1,0 +1,53 @@
+{
+  "title": "만능양파볶음 (카라멜라이징 양파)",
+  "description": "양파를 식용유에 장시간 볶아 수분을 날리고 당분을 카라멜화시킨 만능 소스입니다. 완성하면 처음 양의 약 1/10로 줄어들며, 냉동 보관해두고 라면·덮밥·수프·비빔면 등에 바로 꺼내 활용할 수 있습니다. 버터나 올리브유 대신 일반 식용유로 만들어야 다양한 요리에 두루 쓸 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=uAShnbgCLSU",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "other",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": 60,
+  "is_vegetarian": true,
+  "is_vegan": true,
+  "ingredients": [
+    {
+      "ingredient_name": "양파",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "많은 양을 한꺼번에 만들어 냉동 보관. 버터나 올리브유 사용 금지 — 식용유로만 활용도가 가장 넓음",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "식용유",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "종이컵 1~2.5컵 정도. 양파 양에 따라 조절",
+      "is_optional": false
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "양파를 채 썰어 준비합니다."
+    },
+    {
+      "instruction": "코팅 팬이나 냄비에 식용유를 두르고 채 썬 양파를 넣습니다."
+    },
+    {
+      "instruction": "중불~강불로 가열하며 양파에서 수분이 나올 때까지 10~20분 볶습니다.",
+      "tip": "양파 숨이 죽고 수분이 빠지기 전까지는 많은 양처럼 보이지만 볶고 나면 확 줄어듭니다."
+    },
+    {
+      "instruction": "어느 정도 수분이 날아가면 불을 중약불로 줄이고 계속 볶으며 색깔이 갈색으로 변하기를 기다립니다. 약 40분 더 볶습니다.",
+      "tip": "바닥에 눌어붙기 시작하면 식용유를 조금 더 보충하세요. 시간보다 '색깔'을 보고 판단하세요."
+    },
+    {
+      "instruction": "양파 껍질보다 더 진한 갈색이 되면 불을 끄고 잘 섞어 줍니다."
+    },
+    {
+      "instruction": "완전히 식힌 뒤 지퍼백에 넓고 얇게 담습니다. 젓가락으로 칸을 나누어 눌러두면 한 덩어리씩 떼어 쓰기 편합니다.",
+      "tip": "냉동 보관하면 오래 두고 활용할 수 있습니다. 반드시 식은 상태에서 냉동하세요."
+    }
+  ],
+  "tags": ["만능양파볶음", "카라멜라이징", "양파볶음", "냉동보관", "만능소스", "백종원레시피"]
+}

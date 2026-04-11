@@ -1,0 +1,59 @@
+'use client';
+
+import { useEffect } from 'react';
+import Link from 'next/link';
+
+const messages = {
+  ko: {
+    title: '문제가 발생했습니다',
+    description: '예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.',
+    retry: '다시 시도',
+    goHome: '홈으로 돌아가기',
+  },
+  en: {
+    title: 'Something went wrong',
+    description: 'An unexpected error occurred. Please try again.',
+    retry: 'Try again',
+    goHome: 'Go home',
+  },
+};
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error('Application error:', error);
+  }, [error]);
+
+  const t = messages.ko;
+
+  return (
+    <div className="min-h-screen bg-background-primary text-text-primary flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <div className="text-8xl mb-6">😵</div>
+        <h1 className="text-2xl font-bold mb-3">{t.title}</h1>
+        <p className="text-text-muted mb-8">
+          {t.description}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={reset}
+            className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors"
+          >
+            {t.retry}
+          </button>
+          <Link
+            href="/"
+            className="px-6 py-3 rounded-xl bg-background-secondary border border-white/10 font-bold hover:bg-background-tertiary transition-colors"
+          >
+            {t.goHome}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}

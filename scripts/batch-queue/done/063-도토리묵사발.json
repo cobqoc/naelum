@@ -1,0 +1,40 @@
+{
+  "title": "도토리 묵사발",
+  "description": "더운 여름에 시원하게 즐기는 도토리 묵사발입니다. 잘 익은 김치와 오이, 새콤한 육수가 어우러져 별미로 먹기 좋습니다.",
+  "video_url": "https://www.youtube.com/watch?v=-Imo0xgUQG0",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "도토리묵", "quantity": null, "unit": "선택", "notes": "반으로 갈라 썰기", "is_optional": false },
+    { "ingredient_name": "잘 익은 김치", "quantity": 1, "unit": "컵", "notes": "잘게 썰기", "is_optional": false },
+    { "ingredient_name": "오이", "quantity": null, "unit": "선택", "notes": "얇게 채썰기", "is_optional": true },
+    { "ingredient_name": "마늘", "quantity": null, "unit": "선택", "notes": "다진 것, 소량", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 2, "unit": "컵", "notes": "육수용", "is_optional": false },
+    { "ingredient_name": "소고기 다시다", "quantity": null, "unit": "선택", "notes": "멸치국수로 만들면 멸치 다시다 사용", "is_optional": false },
+    { "ingredient_name": "집간장", "quantity": null, "unit": "선택", "notes": "진간장 가능", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": 0.5, "unit": "큰술", "notes": "단맛을 내는 포인트", "is_optional": false },
+    { "ingredient_name": "식초", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "참기름", "quantity": null, "unit": "선택", "notes": "마무리용", "is_optional": true },
+    { "ingredient_name": "김가루", "quantity": null, "unit": "선택", "notes": "기호에 따라", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "도토리묵을 먼저 반으로 갈라 손가락 굵기로 썰어 준비합니다.", "timer_minutes": null, "tip": "칼 조심해서 썰어주세요." },
+    { "instruction": "잘 익은 김치를 1컵 정도 잘게 썰어주고 오이도 얇게 채썰어 준비합니다.", "timer_minutes": null, "tip": "김치를 너무 많이 넣으면 짜질 수 있습니다." },
+    { "instruction": "물 2컵에 소고기 다시다를 풀어 육수를 만듭니다.", "timer_minutes": null, "tip": "다시다는 물에 잘 녹지 않으니 충분히 저어줍니다." },
+    { "instruction": "육수에 집간장을 넣어 간을 맞추고 설탕 반 숟갈, 식초를 넣어 새콤달콤하게 맛을 냅니다.", "timer_minutes": null, "tip": "냉면 육수처럼 설탕이 들어가야 단맛이 납니다." },
+    { "instruction": "그릇에 도토리묵을 담고 김치, 오이, 다진 마늘을 올립니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "차갑게 식힌 육수를 부어주고 참기름과 김가루를 취향에 따라 올려 완성합니다.", "timer_minutes": null, "tip": "김가루를 넣지 않고 먼저 먹어보고 취향에 맞게 추가하면 좋습니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "면요리", "Noodles", "묵", "여름요리"]
+}

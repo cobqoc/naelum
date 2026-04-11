@@ -1,0 +1,38 @@
+{
+  "title": "만능 곱창무침",
+  "description": "삶은 곱창과 양을 매콤달콤한 양념에 무쳐 냉동 보관해두고 라면이나 볶음에 활용하는 만능 무침입니다. 해외에서도 쉽게 구할 수 있는 재료로 만들 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=ZE3X6f6E3Ss",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "곱창", "quantity": null, "unit": "선택", "notes": "손질된 것", "is_optional": false },
+    { "ingredient_name": "양(소 위)", "quantity": null, "unit": "선택", "notes": "깐 양 권장", "is_optional": false },
+    { "ingredient_name": "고추장", "quantity": 3, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": 1, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "간장", "quantity": 2, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": 3, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "다진 마늘", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "들깨가루", "quantity": 2, "unit": "큰술", "is_optional": true },
+    { "ingredient_name": "참기름", "quantity": null, "unit": "선택", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "곱창은 기름을 잘라내고 속을 훑어 씻어줍니다. 양은 깐 것을 사용하면 손질이 편합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "끓는 물에 곱창과 양을 넣고 30분~1시간 정도 입안에서 한두 번 씹어 넘길 수 있을 만큼 부드럽게 삶습니다.", "timer_minutes": 60, "tip": "연해야 나중에 활용하기 좋습니다." },
+    { "instruction": "삶은 곱창과 양을 먹기 좋은 크기로 자릅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "볼에 고추장 3, 설탕 1, 간장 2, 고춧가루 3큰술과 다진 마늘을 넣고 삶은 내장과 고루 무쳐줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "들깨가루 2큰술과 참기름을 더해 한 번 더 버무려 마무리합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "1인분씩 나눠 냉동 보관해 두고 필요할 때 꺼내 라면이나 볶음 요리에 활용합니다.", "timer_minutes": null, "tip": "얼린 상태 그대로 라면에 넣어 같이 끓이면 곱창라면이 됩니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "반찬", "SideDish", "곱창", "매콤"]
+}

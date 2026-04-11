@@ -1,0 +1,40 @@
+{
+  "title": "꽃게 해장국",
+  "description": "무에서 우러난 깊은 맛과 꽃게의 시원함이 어우러지는 해장국입니다. 된장 하나로 간을 맞춰 간단하게 만들 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=YLd78Yqoy9I",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "꽃게", "quantity": 2, "unit": "마리", "notes": "손바닥만한 크기, 냉동 또는 절단 꽃게도 가능", "is_optional": false },
+    { "ingredient_name": "무", "quantity": null, "unit": "선택", "notes": "손바닥보다 조금 작게 나박썰기, 두께 손가락 한 마디 반", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": null, "unit": "선택", "notes": "반 개", "is_optional": true },
+    { "ingredient_name": "애호박", "quantity": null, "unit": "선택", "notes": "기호에 따라 추가", "is_optional": true },
+    { "ingredient_name": "매운 고추", "quantity": null, "unit": "선택", "notes": "", "is_optional": true },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "notes": "", "is_optional": true },
+    { "ingredient_name": "된장", "quantity": 2, "unit": "큰술", "notes": "넉넉히", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": 1, "unit": "큰술", "notes": "색을 내는 용도", "is_optional": false },
+    { "ingredient_name": "다시다", "quantity": null, "unit": "선택", "notes": "멸치 또는 소고기 다시다 소량", "is_optional": true },
+    { "ingredient_name": "쌀뜨물", "quantity": null, "unit": "선택", "notes": "없으면 생수 사용, 꽃게가 충분히 잠길 정도", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "냄비에 나박썰기한 무와 양파, 호박, 매운 고추를 넣고 꽃게가 잠길 정도로 쌀뜨물 또는 생수를 부어줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "된장을 넉넉하게 두 숟갈 풀어 된장국보다는 진하고 된장찌개보다는 연한 정도로 간을 맞춥니다.", "timer_minutes": null, "tip": "오로지 된장으로만 간하는 것이 가장 쉽습니다." },
+    { "instruction": "꽃게는 게딱지를 열어 내장이 있는 뚜껑 부분은 따로 두고, 아가미를 떼어내 손질한 후 반으로 자릅니다.", "timer_minutes": null, "tip": "아가미는 바닷물이 드나드는 부위라서 꼭 제거합니다." },
+    { "instruction": "국물에 고춧가루 한 숟갈을 넣어 색을 내고 다시다를 약간 추가해 간을 봅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "무에서 충분히 맛이 우러나도록 오래 끓여줍니다.", "timer_minutes": null, "tip": "시간이 지날수록 깊은 맛이 납니다." },
+    { "instruction": "손질한 꽃게와 게딱지를 함께 넣고 한소끔 더 끓여 완성합니다.", "timer_minutes": null, "tip": "게딱지 안의 게장이 국물에 우러납니다." },
+    { "instruction": "뜨거울 때 국물에 밥을 말아 함께 먹습니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "해장국", "꽃게"]
+}

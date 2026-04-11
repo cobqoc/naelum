@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 그릇 + 혀 — 그릇 테두리 위로 혀가 솟아남 -->
+  <!-- 혀 (그릇 뒤에 먼저 그림) -->
+  <path d="M12 16 C11 11 13 5.5 16 5.5 C19 5.5 21 11 20 16 C20 19.5 18 21 16 21 C14 21 12 19.5 12 16Z" fill="#ff9966"/>
+  <line x1="16" y1="8.5" x2="16" y2="20.5" stroke="#cc5500" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- 그릇 테두리 (혀 기반부 가림) -->
+  <line x1="4" y1="17" x2="28" y2="17" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 그릇 몸통 -->
+  <path d="M4 17 C5 26 10 30 16 30 C22 30 27 26 28 17" fill="none" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- 그릇 받침 -->
+  <line x1="12" y1="30" x2="20" y2="30" stroke="#bbb" stroke-width="2" stroke-linecap="round"/>
+</svg>

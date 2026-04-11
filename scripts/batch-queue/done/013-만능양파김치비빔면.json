@@ -1,0 +1,87 @@
+{
+  "title": "만능양파 김치비빔면",
+  "description": "냉동 만능양파볶음, 김치, 고추장으로 비비는 매콤한 비빔면입니다. 달콤한 양파볶음이 김치의 신맛과 고추장의 매운맛을 잡아줘 균형 잡힌 맛이 납니다. 달걀후라이를 얹으면 한 끼 식사로도 충분합니다.",
+  "video_url": "https://www.youtube.com/watch?v=sen4L0zVlpA",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "noodle",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "사리면",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "인분",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "만능양파볶음 (냉동)",
+      "quantity": 1,
+      "unit": "기타",
+      "notes": "덩어리",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "김치",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "먹기 좋게 썰기",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "고추장",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "반 숟갈 정도. 식성에 따라 조절",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "간장",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "반 숟갈 정도",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "고춧가루",
+      "quantity": null,
+      "unit": "기타",
+      "notes": "색깔을 더 내고 싶을 때 추가",
+      "is_optional": true
+    },
+    {
+      "ingredient_name": "참기름",
+      "quantity": null,
+      "unit": "기타",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "달걀후라이",
+      "quantity": 1,
+      "unit": "개",
+      "notes": "마무리 고명용",
+      "is_optional": true
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "끓는 물에 사리면을 삶은 뒤 찬물에 헹구어 물기를 뺍니다."
+    },
+    {
+      "instruction": "김치를 먹기 좋은 크기로 썰고 고추장을 버무려 둡니다.",
+      "tip": "김치에 고추장을 미리 버무려두면 비빌 때 더 잘 섞입니다."
+    },
+    {
+      "instruction": "볼에 면, 만능양파볶음, 김치+고추장, 간장을 넣고 참기름을 더해 잘 비빕니다.",
+      "tip": "고춧가루를 추가하면 색깔이 더 선명해집니다."
+    },
+    {
+      "instruction": "달걀후라이를 올려 완성합니다."
+    }
+  ],
+  "tags": ["김치비빔면", "비빔면", "만능양파볶음", "김치", "면요리", "간단요리", "백종원레시피"]
+}

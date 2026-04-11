@@ -1,0 +1,45 @@
+{
+  "title": "전복 볶음 냄비밥",
+  "description": "신선한 전복을 손질해 참기름에 볶은 뒤 밥과 함께 냄비에서 지어낸 전복 냄비밥입니다. 양념장과 함께 비벼 먹으면 고소하고 풍미 있는 한 끼가 됩니다.",
+  "video_url": "https://www.youtube.com/watch?v=qioLJwafP8I",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 30,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "전복", "amount": "2", "unit": "마리" },
+    { "name": "밥 (또는 불린 쌀)", "amount": "1", "unit": "공기" },
+    { "name": "참기름", "amount": "1", "unit": "큰술" },
+    { "name": "진간장", "amount": "2", "unit": "큰술" },
+    { "name": "참기름 (양념장용)", "amount": "1", "unit": "작은술" },
+    { "name": "고춧가루", "amount": "1", "unit": "작은술" },
+    { "name": "다진 마늘", "amount": "1", "unit": "작은술" },
+    { "name": "쪽파", "amount": null, "unit": "약간" },
+    { "name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "전복은 솔로 깨끗이 씻고 내장과 살을 분리합니다. 살에 칼집을 넣어 먹기 좋게 썹니다."
+    },
+    {
+      "order": 2,
+      "description": "냄비에 참기름을 두르고 전복 내장을 먼저 볶다가 전복 살을 넣어 함께 볶습니다."
+    },
+    {
+      "order": 3,
+      "description": "밥을 넣어 전복과 함께 고루 섞은 뒤 뚜껑을 덮고 중약불에서 5분간 뜸을 들입니다."
+    },
+    {
+      "order": 4,
+      "description": "간장, 참기름, 고춧가루, 다진 마늘, 쪽파, 통깨를 섞어 양념장을 만듭니다."
+    },
+    {
+      "order": 5,
+      "description": "완성된 냄비밥에 양념장을 올려 내고 비벼서 먹습니다."
+    }
+  ],
+  "tags": ["전복", "냄비밥", "해산물", "백종원", "고급요리"]
+}

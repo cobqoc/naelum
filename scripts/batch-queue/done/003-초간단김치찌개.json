@@ -1,0 +1,109 @@
+{
+  "title": "초간단 김치찌개",
+  "description": "잘 익은 신 김치와 돼지고기를 쌀뜨물에 끓여내는 간편한 김치찌개입니다. 별도의 사전 볶음 없이 고기를 물에 먼저 끓여 육수를 내는 방식으로, 재료만 있으면 빠르게 완성할 수 있습니다. 신김치일수록 깊은 맛이 납니다.",
+  "video_url": "https://www.youtube.com/watch?v=DnQ09ZZCjCs",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "ingredients": [
+    {
+      "ingredient_name": "돼지고기",
+      "quantity": 120,
+      "unit": "g",
+      "notes": "어느 부위든 가능. 지방이 있는 부위를 쓰면 국물이 더 깊어짐",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "신 김치",
+      "quantity": 150,
+      "unit": "g",
+      "notes": "반드시 충분히 발효된 신김치 사용. 생김치는 사용 불가",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "쌀뜨물",
+      "quantity": 380,
+      "unit": "ml",
+      "notes": "없으면 물로 대체 가능",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "다진마늘",
+      "quantity": 30,
+      "unit": "g",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "대파",
+      "quantity": 30,
+      "unit": "g",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "청양고추",
+      "quantity": 10,
+      "unit": "g",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "굵은 고춧가루",
+      "quantity": 30,
+      "unit": "g",
+      "notes": "고운 고춧가루와 별도로 사용",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "고운 고춧가루",
+      "quantity": 30,
+      "unit": "g",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "국간장",
+      "quantity": 15,
+      "unit": "ml",
+      "notes": "없으면 소금이나 액젓으로 대체 가능. 일반 간장은 향이 강해 맛이 달라질 수 있음",
+      "is_optional": false
+    },
+    {
+      "ingredient_name": "새우젓",
+      "quantity": 15,
+      "unit": "g",
+      "notes": "없으면 액젓(멸치액젓, 까나리액젓 등)으로 대체 가능",
+      "is_optional": false
+    }
+  ],
+  "steps": [
+    {
+      "instruction": "대파와 청양고추를 먹기 좋게 썰어 둡니다."
+    },
+    {
+      "instruction": "냄비에 돼지고기와 쌀뜨물(또는 물)을 넣고 강불로 끓여 육수를 냅니다.",
+      "tip": "오래 끓일수록 돼지고기 지방이 국물에 녹아들어 더 깊은 맛이 납니다."
+    },
+    {
+      "instruction": "육수가 우러나면 신 김치와 다진마늘을 넣습니다.",
+      "tip": "충분히 발효된 신김치가 핵심입니다. '너무 시다' 싶을 정도로 신 것이 찌개에 적합합니다."
+    },
+    {
+      "instruction": "대파와 청양고추를 넣습니다."
+    },
+    {
+      "instruction": "굵은 고춧가루와 고운 고춧가루를 넣고 잘 섞으며 끓입니다.",
+      "tip": "고춧가루의 굵기에 따라 입자감이 달라집니다. 없으면 한 종류만 사용해도 됩니다."
+    },
+    {
+      "instruction": "국간장과 새우젓을 넣어 간을 맞추고 조금 더 끓입니다.",
+      "tip": "일반 간장은 향이 강하므로 국간장이 없으면 소금이나 액젓으로 간을 맞추세요."
+    },
+    {
+      "instruction": "그릇에 담고 대파와 고추를 고명으로 올려 완성합니다."
+    }
+  ],
+  "tags": ["김치찌개", "돼지김치찌개", "간단김치찌개", "한식", "백종원레시피", "찌개"]
+}

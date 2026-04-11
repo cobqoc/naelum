@@ -1,0 +1,37 @@
+{
+  "title": "소고기메추리알장조림",
+  "description": "소고기 불고기 거리와 메추리알을 간장, 설탕, 맛술로 달짝지근하게 조려 밥 반찬으로 즐기는 장조림입니다.",
+  "video_url": "https://www.youtube.com/watch?v=ysCrvaErHKE",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "cooking_time_minutes": 25,
+  "servings": 4,
+  "ingredients": [
+    { "ingredient_name": "메추리알", "amount": "20", "unit": "개" },
+    { "ingredient_name": "소고기 불고기 거리", "amount": "200", "unit": "g" },
+    { "ingredient_name": "간장", "amount": "4", "unit": "큰술" },
+    { "ingredient_name": "설탕", "amount": "1", "unit": "큰술" },
+    { "ingredient_name": "맛술", "amount": "2", "unit": "큰술" },
+    { "ingredient_name": "다진 마늘", "amount": "1", "unit": "작은술" },
+    { "ingredient_name": "물", "amount": "200", "unit": "ml" }
+  ],
+  "steps": [
+    {
+      "instruction": "메추리알은 삶아서 껍질을 벗겨 둡니다."
+    },
+    {
+      "instruction": "냄비에 소고기를 넣고 중불에서 핏기가 없어질 때까지 볶습니다."
+    },
+    {
+      "instruction": "간장, 설탕, 맛술, 다진 마늘, 물을 넣고 끓입니다."
+    },
+    {
+      "instruction": "국물이 끓어오르면 삶은 메추리알을 넣고 중약불에서 국물이 자작해질 때까지 조립니다."
+    },
+    {
+      "instruction": "국물이 거의 없어지면 불을 끄고 완성합니다."
+    }
+  ],
+  "tags": ["장조림", "메추리알장조림", "소고기장조림", "반찬", "밥반찬"]
+}

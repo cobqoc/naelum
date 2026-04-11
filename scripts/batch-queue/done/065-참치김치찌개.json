@@ -1,0 +1,42 @@
+{
+  "title": "참치김치찌개",
+  "description": "돼지고기 없이 참치 통조림으로 간편하게 끓이는 김치찌개입니다. 참치에 양념간장을 곁들여 먹으면 밥 한 공기가 더 생각나는 별미가 됩니다.",
+  "video_url": "https://www.youtube.com/watch?v=e--h7ax_6pQ",
+  "servings": 2,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "신김치", "quantity": 1, "unit": "컵", "notes": "반 컵은 냄비에, 나머지는 두고 사용", "is_optional": false },
+    { "ingredient_name": "참치 통조림", "quantity": 100, "unit": "g", "notes": "기름째 사용", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": 1, "unit": "개", "notes": "작은 것", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "notes": "송송 썰기", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": 3, "unit": "개", "is_optional": true },
+    { "ingredient_name": "다진 마늘", "quantity": 1, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": null, "unit": "선택", "notes": "기호에 맞게", "is_optional": false },
+    { "ingredient_name": "국간장", "quantity": null, "unit": "선택", "notes": "간 맞추기", "is_optional": false },
+    { "ingredient_name": "멸치액젓", "quantity": null, "unit": "선택", "notes": "감칠맛용", "is_optional": true },
+    { "ingredient_name": "두부", "quantity": null, "unit": "선택", "is_optional": true },
+    { "ingredient_name": "물", "quantity": 500, "unit": "ml", "notes": "2인분 기준", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": null, "unit": "선택", "notes": "너무 신 김치일 때", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "냄비에 신김치 반 컵을 깔고 그 위에 채 썬 양파, 송송 썬 대파, 청양고추를 올립니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "참치 통조림을 기름까지 함께 부어 넣습니다. 참치 기름이 국물 맛을 살려줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "다진 마늘 1큰술, 고춧가루, 물 500ml를 넣고 끓입니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "신 김치일 경우 설탕을 아주 조금만 넣어 신맛을 잡아줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "국간장으로 간을 맞추고 멸치액젓을 조금 더해 감칠맛을 냅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "두부를 먹기 좋게 썰어 올린 뒤 끓어오르면 완성합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "곁들임 양념간장은 양파채와 청양고추, 간장, 고춧가루, 설탕, 참기름을 섞어 만들고 참치 살을 찍어 밥과 함께 먹습니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "김치찌개", "참치"]
+}

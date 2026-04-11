@@ -1,0 +1,39 @@
+{
+  "title": "매콤한 두부조림",
+  "description": "얼큰한 양념에 졸여낸 밥도둑 두부조림입니다. 찌개용이든 부침용이든 어떤 두부를 사용해도 무방합니다.",
+  "video_url": "https://www.youtube.com/watch?v=JvuV9aAh7VY",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "두부", "quantity": 1, "unit": "모", "notes": "", "is_optional": false },
+    { "ingredient_name": "새우젓", "quantity": 1, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "굵은 고춧가루", "quantity": 2, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "진간장", "quantity": 2, "unit": "큰술", "notes": "", "is_optional": false },
+    { "ingredient_name": "황설탕", "quantity": null, "unit": "큰술", "notes": "약 1/3 큰술", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 1, "unit": "컵", "notes": "두부가 살짝 잠길 정도", "is_optional": false },
+    { "ingredient_name": "간 마늘", "quantity": null, "unit": "큰술", "notes": "약 1/2 큰술", "is_optional": false },
+    { "ingredient_name": "간 생강", "quantity": null, "unit": "선택", "notes": "약간", "is_optional": false },
+    { "ingredient_name": "대파", "quantity": 1, "unit": "컵", "notes": "송송 썰기", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": 1, "unit": "개", "notes": "송송 썰기", "is_optional": false },
+    { "ingredient_name": "들기름", "quantity": 1, "unit": "큰술", "notes": "", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "두부를 팬 모양에 맞춰 넓적하고 얇게 썰어 낮은 냄비나 팬에 가지런히 깔아줍니다.", "timer_minutes": null, "tip": "찌개용, 부침용 어떤 두부든 상관없습니다." },
+    { "instruction": "두부가 살짝 잠길 정도의 물을 붓고, 새우젓, 고춧가루, 진간장, 황설탕, 간 마늘, 간 생강을 넣습니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "썰어둔 대파와 청양고추를 뚜껑처럼 덮어 올린 뒤 불을 켭니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "국물이 반 정도로 졸아들면 들기름을 둘러 풍미를 더합니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "국물이 거의 없어질 때까지 졸이면 완성입니다.", "timer_minutes": null, "tip": "졸임 정도는 개인 취향에 맞게 조절합니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "반찬", "SideDish"]
+}

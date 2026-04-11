@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "regions": ["icn1"],
+  "crons": [
+    {
+      "path": "/api/push/send-expiry",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    }
+  }
+}

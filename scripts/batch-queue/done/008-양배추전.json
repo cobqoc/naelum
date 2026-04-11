@@ -1,0 +1,37 @@
+{
+  "title": "양배추전 (카베츠야끼)",
+  "description": "잘게 썬 양배추와 달걀, 부침가루를 섞어 만든 일본식 양배추 부침개입니다. 재료가 간단하고 조리가 빨라 간편한 한 끼로 즐기기 좋습니다.",
+  "video_url": "https://www.youtube.com/watch?v=cUQzxhmYdGs",
+  "difficulty_level": "easy",
+  "cuisine_type": "japanese",
+  "dish_type": "side",
+  "cook_time_minutes": 15,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "양배추 (채 썬 것)", "amount": "3", "unit": "컵" },
+    { "name": "달걀", "amount": "2", "unit": "개" },
+    { "name": "부침가루", "amount": "1/2", "unit": "컵" },
+    { "name": "소금", "amount": null, "unit": "약간" },
+    { "name": "식용유", "amount": null, "unit": "적당량" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "양배추를 가늘게 채 썰어 큰 볼에 담습니다."
+    },
+    {
+      "order": 2,
+      "description": "달걀, 부침가루, 소금을 넣고 잘 섞어 반죽을 만듭니다."
+    },
+    {
+      "order": 3,
+      "description": "프라이팬에 식용유를 두르고 반죽을 원형으로 펼쳐 중불에서 3~4분간 굽습니다."
+    },
+    {
+      "order": 4,
+      "description": "바닥이 노릇하게 익으면 뒤집어 반대쪽도 3~4분간 구워 완성합니다."
+    }
+  ],
+  "tags": ["양배추전", "부침개", "카베츠야끼", "간편요리", "백종원"]
+}

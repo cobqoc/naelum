@@ -1,0 +1,38 @@
+{
+  "title": "햄감자채볶음",
+  "description": "감자를 얇게 채 썰어 햄, 당근, 양파와 함께 볶아낸 간단하고 맛있는 밥반찬입니다.",
+  "video_url": "https://www.youtube.com/watch?v=xu71-2Wb_fI",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "cooking_time_minutes": 15,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "감자", "amount": "2", "unit": "개" },
+    { "ingredient_name": "햄", "amount": "100", "unit": "g" },
+    { "ingredient_name": "양파", "amount": "0.5", "unit": "개" },
+    { "ingredient_name": "당근", "amount": "0.3", "unit": "개" },
+    { "ingredient_name": "대파", "amount": "0.3", "unit": "대" },
+    { "ingredient_name": "식용유", "amount": "2", "unit": "큰술" },
+    { "ingredient_name": "소금", "amount": null, "unit": "약간" },
+    { "ingredient_name": "후추", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "instruction": "감자는 껍질을 벗겨 가늘게 채 썰고 찬물에 담가 전분을 제거한 후 건집니다."
+    },
+    {
+      "instruction": "햄, 양파, 당근, 대파도 채 썰어 준비합니다."
+    },
+    {
+      "instruction": "팬에 식용유를 두르고 햄을 먼저 볶아 노릇하게 만듭니다."
+    },
+    {
+      "instruction": "당근과 양파를 넣고 중불에서 1~2분 볶습니다."
+    },
+    {
+      "instruction": "감자채를 넣고 투명해질 때까지 볶은 뒤 대파, 소금, 후추로 간하여 완성합니다."
+    }
+  ],
+  "tags": ["감자채볶음", "햄볶음", "반찬", "간편요리", "밥반찬"]
+}

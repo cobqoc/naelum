@@ -1,0 +1,49 @@
+{
+  "title": "달걀만두",
+  "description": "달걀 피로 감싼 만두로, 당면과 채소 소를 넣어 부드럽고 고소한 맛을 냅니다. 밀가루 없이 달걀만으로 만두피를 만드는 색다른 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=5-a5CPASYBc",
+  "difficulty_level": "medium",
+  "cuisine_type": "korean",
+  "dish_type": "side",
+  "cook_time_minutes": 30,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "달걀", "amount": "3", "unit": "개" },
+    { "name": "당면", "amount": "50", "unit": "g" },
+    { "name": "당근", "amount": "1/4", "unit": "개" },
+    { "name": "대파", "amount": "1/4", "unit": "대" },
+    { "name": "청양고추", "amount": "1", "unit": "개" },
+    { "name": "진간장", "amount": "1", "unit": "큰술" },
+    { "name": "참기름", "amount": "1", "unit": "작은술" },
+    { "name": "소금", "amount": null, "unit": "약간" },
+    { "name": "식용유", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "당면을 끓는 물에 삶아 건진 후 먹기 좋은 길이로 잘라 간장과 참기름으로 밑간합니다."
+    },
+    {
+      "order": 2,
+      "description": "당근은 가늘게 채 썰고, 파와 청양고추는 송송 썰어 준비합니다."
+    },
+    {
+      "order": 3,
+      "description": "당면, 당근, 파, 청양고추를 섞어 만두 소를 만들고 소금으로 간을 맞춥니다."
+    },
+    {
+      "order": 4,
+      "description": "달걀을 풀어 소금 한 꼬집을 넣고, 프라이팬에 식용유를 두른 뒤 달걀물을 얇게 펼쳐 지단을 만듭니다."
+    },
+    {
+      "order": 5,
+      "description": "지단 위에 만두 소를 올리고 삼각형 또는 반달 모양으로 접어 가장자리를 눌러 붙입니다."
+    },
+    {
+      "order": 6,
+      "description": "약불에서 양면을 노릇하게 구워 완성합니다."
+    }
+  ],
+  "tags": ["만두", "달걀", "간편요리", "백종원", "밀가루없이"]
+}

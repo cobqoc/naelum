@@ -1,0 +1,35 @@
+{
+  "title": "홍콩식 햄 계란밥",
+  "description": "홍콩 차찬텡의 인기 메뉴인 런천미트와 달걀프라이를 얹은 간장 덮밥입니다. 노두유로 풍미를 더해 집에서도 간단하게 즐길 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=01snsHZK6Ns",
+  "servings": 1,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": "초급",
+  "cuisine_type": "chinese",
+  "dish_type": "rice",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "런천미트(햄)", "quantity": null, "unit": "선택", "notes": "원하는 두께로", "is_optional": false },
+    { "ingredient_name": "달걀", "quantity": 2, "unit": "개", "notes": "취향껏 조절", "is_optional": false },
+    { "ingredient_name": "밥", "quantity": 1, "unit": "개", "notes": "공기", "is_optional": false },
+    { "ingredient_name": "노두유", "quantity": null, "unit": "선택", "notes": "거의 짜지 않은 중국 간장, 필수 재료", "is_optional": false },
+    { "ingredient_name": "식용유", "quantity": null, "unit": "선택", "notes": "", "is_optional": false },
+    { "ingredient_name": "맛소금", "quantity": null, "unit": "선택", "notes": "싱거울 경우 추가", "is_optional": true }
+  ],
+  "steps": [
+    { "instruction": "런천미트를 원하는 두께로 썰어 준비합니다. 두껍게 썰면 식감이 풍부하고 얇게 썰면 담백하게 즐길 수 있습니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "달걀 껍데기를 만진 직후에는 반드시 비누로 손을 깨끗이 씻어 주세요. 식중독 예방을 위한 중요한 습관입니다.", "timer_minutes": null, "tip": "식약처 권고 사항입니다." },
+    { "instruction": "그릇에 따뜻한 밥을 먹고 싶은 만큼 담아 준비해 둡니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "강불로 달군 팬에 식용유를 살짝 두르고, 썰어둔 런천미트를 노릇하게 구워 밥 위에 올립니다.", "timer_minutes": null, "tip": "기름이 튈 수 있으니 주의하세요." },
+    { "instruction": "같은 팬에 식용유를 넉넉히 두르고 달걀을 반숙으로 부쳐낸 뒤 밥 위에 얹어 줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "완성된 덮밥 위에 노두유를 취향껏 뿌리고, 싱거우면 맛소금을 약간 추가해 간을 맞추면 완성입니다.", "timer_minutes": null, "tip": "노두유가 없으면 이 요리의 그럴듯한 맛이 나지 않으니 꼭 준비해 주세요." }
+  ],
+  "tags": ["중식", "ChineseFood", "밥요리", "RiceDish", "홍콩", "덮밥", "간단", "초간단", "차찬텡", "런천미트"]
+}

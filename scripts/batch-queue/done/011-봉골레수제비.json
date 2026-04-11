@@ -1,0 +1,50 @@
+{
+  "title": "봉골레 수제비",
+  "description": "이탈리아 봉골레 파스타에서 영감을 받아 조개와 구운 마늘, 버터로 만든 국물에 수제비를 끓여낸 퓨전 요리입니다. 최현석 셰프의 흑백요리사 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=-KTb3zivHXk",
+  "difficulty_level": "medium",
+  "cuisine_type": "fusion",
+  "dish_type": "main",
+  "cook_time_minutes": 40,
+  "servings": 2,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "밀가루", "amount": "200", "unit": "g" },
+    { "name": "물", "amount": "100", "unit": "ml" },
+    { "name": "소금", "amount": "1", "unit": "작은술" },
+    { "name": "바지락 (또는 모시조개)", "amount": "300", "unit": "g" },
+    { "name": "마늘", "amount": "6", "unit": "쪽" },
+    { "name": "버터", "amount": "2", "unit": "큰술" },
+    { "name": "올리브오일", "amount": "2", "unit": "큰술" },
+    { "name": "화이트 와인", "amount": "50", "unit": "ml" },
+    { "name": "파슬리", "amount": null, "unit": "약간" },
+    { "name": "흑후추", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "밀가루에 소금과 물을 넣어 반죽한 후 랩으로 싸 30분간 휴지시킵니다."
+    },
+    {
+      "order": 2,
+      "description": "마늘은 껍질째 오븐 또는 프라이팬에서 구워 구운 마늘을 만듭니다."
+    },
+    {
+      "order": 3,
+      "description": "냄비에 올리브오일을 두르고 구운 마늘을 으깨 볶다가 바지락을 넣고 화이트 와인을 붓습니다."
+    },
+    {
+      "order": 4,
+      "description": "뚜껑을 덮고 조개가 입을 열 때까지 2~3분간 가열한 뒤 물을 추가해 국물을 만듭니다."
+    },
+    {
+      "order": 5,
+      "description": "국물이 끓으면 반죽을 얇게 뜯어 넣어 수제비를 익힙니다."
+    },
+    {
+      "order": 6,
+      "description": "버터를 넣어 국물에 윤기를 더하고, 파슬리와 흑후추를 뿌려 완성합니다."
+    }
+  ],
+  "tags": ["봉골레", "수제비", "조개", "퓨전", "흑백요리사", "최현석"]
+}

@@ -1,0 +1,41 @@
+{
+  "title": "전자레인지 3분 비빔밥",
+  "description": "전자레인지로 3분 30초 만에 완성하는 초간편 비빔밥입니다. 냉장고 채소를 활용해 빠르게 한 끼를 해결할 수 있는 백종원 레시피입니다.",
+  "video_url": "https://www.youtube.com/watch?v=EhTxL1sWnMI",
+  "difficulty_level": "easy",
+  "cuisine_type": "korean",
+  "dish_type": "main",
+  "cook_time_minutes": 10,
+  "servings": 1,
+  "calories_per_serving": null,
+  "ingredients": [
+    { "name": "밥", "amount": "1", "unit": "공기" },
+    { "name": "고추장", "amount": "1.5", "unit": "큰술" },
+    { "name": "국간장", "amount": "1", "unit": "작은술" },
+    { "name": "참기름", "amount": "1", "unit": "작은술" },
+    { "name": "당근", "amount": "1/4", "unit": "개" },
+    { "name": "시금치 (또는 냉장고 채소)", "amount": "1", "unit": "줌" },
+    { "name": "콩나물", "amount": "1", "unit": "줌" },
+    { "name": "달걀", "amount": "1", "unit": "개" },
+    { "name": "통깨", "amount": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "description": "전자레인지용 용기에 밥을 담고 채소들을 올립니다."
+    },
+    {
+      "order": 2,
+      "description": "고추장, 국간장, 참기름을 넣고 뚜껑을 덮어 전자레인지에 3분 30초간 돌립니다."
+    },
+    {
+      "order": 3,
+      "description": "꺼내서 달걀을 올리고 다시 30초간 더 돌립니다."
+    },
+    {
+      "order": 4,
+      "description": "통깨를 뿌리고 잘 비벼서 먹습니다."
+    }
+  ],
+  "tags": ["비빔밥", "전자레인지", "간편요리", "백종원", "1인분"]
+}

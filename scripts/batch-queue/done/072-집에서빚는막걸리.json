@@ -1,0 +1,36 @@
+{
+  "title": "집에서 빚는 막걸리",
+  "description": "쌀과 누룩, 효모, 물만으로 집에서 담그는 전통 막걸리입니다. 직접 빚으면 우리 술의 깊은 향과 맛을 경험할 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=u1m21zlfVLo",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "beverage",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": true,
+  "is_vegan": true,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "쌀", "quantity": 2, "unit": "kg", "is_optional": false },
+    { "ingredient_name": "누룩", "quantity": 200, "unit": "g", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 2, "unit": "L", "is_optional": false },
+    { "ingredient_name": "효모", "quantity": 3, "unit": "g", "notes": "쌀 기준", "is_optional": false },
+    { "ingredient_name": "설탕", "quantity": null, "unit": "선택", "notes": "효모 배양용 소량", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "쌀을 맑은 물이 나올 때까지 여러 번 씻어 잡내를 제거한 뒤 1시간~1시간 30분 정도 불려줍니다.", "timer_minutes": 90, "tip": "첫 물은 재빨리 따라내야 나쁜 향이 배지 않습니다." },
+    { "instruction": "불린 쌀을 체에 밭쳐 약 40분간 물기를 빼줍니다.", "timer_minutes": 40, "tip": "" },
+    { "instruction": "찜통에 물을 넉넉히 올려 끓이고 면포를 깐 뒤 쌀을 올려 센 불 40분, 불을 줄여 10분 더 찌고 뜸을 들입니다.", "timer_minutes": 50, "tip": "" },
+    { "instruction": "찐 쌀(고두밥)을 쟁반에 펼쳐 체온보다 약간 차가운 30도 정도로 식혀줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "효모 약 3g에 설탕 3분의 1, 미지근한 물 반 컵을 섞어 6시간 정도 배양해 둡니다.", "timer_minutes": 360, "tip": "기포가 올라오면 배양 완료입니다." },
+    { "instruction": "식힌 고두밥에 누룩과 배양한 효모를 넣고 쌀알이 뭉치지 않게 고루 섞어 항아리에 담습니다.", "timer_minutes": null, "tip": "항아리는 가득 채우지 말고 여유를 둡니다." },
+    { "instruction": "24~26도에서 약 6일간 발효시키며 매일 한 번씩 저어줍니다. 여름에는 발효가 더 빨라질 수 있습니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "발효가 끝나면 체에 걸러 짜내어 완성합니다. 얼음을 띄워 원주로 즐기거나 물을 타 마십니다.", "timer_minutes": null, "tip": "" }
+  ],
+  "tags": ["한식", "KoreanFood", "음료", "Beverage", "막걸리", "전통주"]
+}

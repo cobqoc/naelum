@@ -1,0 +1,42 @@
+{
+  "title": "에그인헬",
+  "description": "토마토, 파프리카, 양파, 햄을 볶아 매콤한 토마토 소스를 만들고 달걀을 올려 뚜껑을 덮어 반숙으로 익히는 원팬 요리입니다.",
+  "video_url": "https://www.youtube.com/watch?v=lcwN6qULaHU",
+  "difficulty_level": "easy",
+  "cuisine_type": "western",
+  "dish_type": "brunch",
+  "cooking_time_minutes": 20,
+  "servings": 2,
+  "ingredients": [
+    { "ingredient_name": "달걀", "quantity": 3, "unit": "개" },
+    { "ingredient_name": "토마토", "quantity": 2, "unit": "개" },
+    { "ingredient_name": "햄", "quantity": 100, "unit": "g" },
+    { "ingredient_name": "파프리카", "quantity": 0.5, "unit": "개" },
+    { "ingredient_name": "양파", "quantity": 0.5, "unit": "개" },
+    { "ingredient_name": "토마토소스", "quantity": 3, "unit": "큰술" },
+    { "ingredient_name": "고추장 또는 고춧가루", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "큐민 분말", "quantity": null, "unit": "약간" },
+    { "ingredient_name": "치즈", "quantity": null, "unit": "적당량" },
+    { "ingredient_name": "올리브유", "quantity": 1, "unit": "큰술" },
+    { "ingredient_name": "소금", "quantity": null, "unit": "약간" },
+    { "ingredient_name": "후추", "quantity": null, "unit": "약간" }
+  ],
+  "steps": [
+    {
+      "instruction": "양파, 파프리카, 햄을 잘게 다지고 토마토는 깍둑썰기합니다."
+    },
+    {
+      "instruction": "팬에 올리브유를 두르고 양파를 먼저 볶다가 햄과 파프리카를 넣어 함께 볶습니다."
+    },
+    {
+      "instruction": "토마토, 토마토소스, 고추장(또는 고춧가루), 큐민 분말, 소금, 후추를 넣고 잘 섞어 소스를 만듭니다."
+    },
+    {
+      "instruction": "소스가 끓어오르면 숟가락으로 우물을 만들고 달걀을 하나씩 올립니다."
+    },
+    {
+      "instruction": "치즈를 뿌리고 뚜껑을 닫아 달걀이 원하는 익힘 정도가 될 때까지 익힙니다."
+    }
+  ],
+  "tags": ["에그인헬", "샥슈카", "달걀요리", "브런치", "원팬요리"]
+}

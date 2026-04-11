@@ -1,0 +1,42 @@
+{
+  "title": "차돌 된장찌개",
+  "description": "차돌박이 또는 우삼겹을 넣어 끓이는 깊은 맛의 된장찌개입니다. 고기의 기름으로 국물 맛을 살려 식당에서 먹는 된장찌개 느낌을 낼 수 있습니다.",
+  "video_url": "https://www.youtube.com/watch?v=Mfnwc1dc0MY",
+  "servings": null,
+  "prep_time_minutes": null,
+  "cook_time_minutes": null,
+  "difficulty_level": null,
+  "cuisine_type": "korean",
+  "dish_type": "soup",
+  "calories": null,
+  "protein_grams": null,
+  "carbs_grams": null,
+  "fat_grams": null,
+  "is_vegetarian": false,
+  "is_vegan": false,
+  "is_gluten_free": false,
+  "ingredients": [
+    { "ingredient_name": "차돌박이", "quantity": null, "unit": "선택", "notes": "우삼겹으로 대체 가능", "is_optional": false },
+    { "ingredient_name": "된장", "quantity": 5, "unit": "큰술", "is_optional": false },
+    { "ingredient_name": "고추장", "quantity": null, "unit": "선택", "notes": "조금", "is_optional": true },
+    { "ingredient_name": "감자", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "애호박", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "양파", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "두부", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "느타리버섯", "quantity": null, "unit": "선택", "is_optional": true },
+    { "ingredient_name": "대파", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "청양고추", "quantity": null, "unit": "선택", "is_optional": true },
+    { "ingredient_name": "다진 마늘", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "고춧가루", "quantity": null, "unit": "선택", "is_optional": false },
+    { "ingredient_name": "물", "quantity": 1, "unit": "L", "notes": "1~1.5L", "is_optional": false }
+  ],
+  "steps": [
+    { "instruction": "대파, 호박, 감자, 양파, 두부, 버섯을 먹기 좋은 크기로 썰어 준비합니다.", "timer_minutes": null, "tip": "모양을 달리 썰면 식당 느낌이 납니다." },
+    { "instruction": "냄비에 차돌박이를 넣고 중불에서 기름이 나올 때까지 굽습니다.", "timer_minutes": null, "tip": "살짝 눌어붙는 감칠맛을 활용합니다." },
+    { "instruction": "고기가 노릇해지면 물 1~1.5L를 붓고 된장 5큰술을 풀어줍니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "끓어오르면 감자, 양파를 먼저 넣고 다진 마늘과 고추장, 고춧가루를 넣어 간을 냅니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "어느 정도 끓으면 애호박과 버섯을 넣고 마무리 단계로 대파와 청양고추, 두부를 올립니다.", "timer_minutes": null, "tip": "" },
+    { "instruction": "완성된 찌개를 뚝배기에 옮겨 한번 더 확 끓여낸 뒤 상에 올립니다.", "timer_minutes": null, "tip": "다음날 다시 끓이면 더 맛있습니다." }
+  ],
+  "tags": ["한식", "KoreanFood", "국물요리", "Soup", "된장찌개", "차돌박이"]
+}
