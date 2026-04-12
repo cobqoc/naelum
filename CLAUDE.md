@@ -8,6 +8,30 @@
 - **Styling**: Tailwind CSS 4 (@tailwindcss/postcss)
 - **Language**: TypeScript 5.x
 
+## 🌿 브랜치 전략
+
+```
+main      → 프로덕션 (naelum.app) — 직접 푸시 금지
+develop   → 스테이징 (Vercel Preview URL) — 기본 작업 브랜치
+feature/* → 기능 단위 브랜치 (선택)
+```
+
+### 작업 흐름
+```
+1. develop 브랜치에서 작업
+2. git push origin develop
+3. Vercel Preview URL에서 프로덕션 환경 테스트
+4. 문제 없으면 GitHub에서 develop → main PR 생성 후 머지
+5. naelum.app 자동 배포
+```
+
+### 주의사항
+- **main에 직접 푸시 금지** — 반드시 develop에서 테스트 후 PR로 머지
+- 서비스 워커, 캐시 관련 변경은 반드시 Preview URL에서 검증 (dev 서버에서 재현 안 됨)
+- 대규모 페이지 구조 변경 시 `public/sw.js`의 `CACHE_VERSION` 함께 올릴 것
+
+---
+
 ## 🛠 개발 명령어
 - **개발 서버**: `npm run dev`
 - **프로젝트 빌드**: `npm run build`
