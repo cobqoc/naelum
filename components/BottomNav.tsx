@@ -188,9 +188,6 @@ export default function BottomNav() {
                       </span>
                     )}
                   </div>
-                  <span className={`text-[11px] mt-0.5 font-medium ${showCart ? 'text-accent-warm' : ''}`}>
-                    {label}
-                  </span>
                   {showCart && (
                     <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-accent-warm" />
                   )}
@@ -211,7 +208,7 @@ export default function BottomNav() {
                         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-warm/50 to-transparent" />
                         <div className="p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <span className="text-sm font-bold text-text-primary flex items-center gap-1.5">🧊 냉장고</span>
+                            <span className="text-sm font-bold text-text-primary flex items-center gap-1.5"><FridgeIcon size={18} /> 냉장고</span>
                             <button
                               onClick={(e) => { e.stopPropagation(); setShowFridgeHint(false); }}
                               className="w-5 h-5 flex items-center justify-center rounded-full bg-error/20 hover:bg-error/30 text-error transition-all flex-shrink-0"
@@ -258,9 +255,6 @@ export default function BottomNav() {
                     strokeWidth={active ? 2.5 : 1.8}
                     className={`transition-transform ${active ? 'scale-110' : ''}`}
                   />
-                  <span className={`text-[11px] mt-0.5 font-medium ${active ? 'text-accent-warm' : ''}`}>
-                    {item.label}
-                  </span>
                   {active && (
                     <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-accent-warm" />
                   )}
@@ -307,9 +301,6 @@ export default function BottomNav() {
                   className={`transition-transform ${active ? 'scale-110' : ''}`}
                 />
               )}
-              <span className={`text-[11px] mt-0.5 font-medium ${active ? 'text-accent-warm' : ''}`}>
-                {label}
-              </span>
               {active && (
                 <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-accent-warm" />
               )}
