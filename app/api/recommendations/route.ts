@@ -293,8 +293,7 @@ export async function GET(request: NextRequest) {
               average_rating,
               author:profiles(username, avatar_url)
             `)
-            .eq('is_published', true)
-            .eq('is_public', true)
+            .eq('status', 'published')
             .order('average_rating', { ascending: false })
             .limit(limit)
 
@@ -318,8 +317,7 @@ export async function GET(request: NextRequest) {
               author:profiles(username, avatar_url),
               ingredients:recipe_ingredients(ingredient_name)
             `)
-            .eq('is_published', true)
-            .eq('is_public', true)
+            .eq('status', 'published')
 
           if (cuisineTypes.length > 0) {
             query = query.in('cuisine_type', cuisineTypes)
@@ -372,8 +370,7 @@ export async function GET(request: NextRequest) {
                 average_rating, views_count,
                 author:profiles(username, avatar_url)
               `)
-              .eq('is_published', true)
-              .eq('is_public', true)
+              .eq('status', 'published')
               .in('id', topRecipeIds)
 
             // cooked_count 추가 후 정렬
@@ -393,8 +390,7 @@ export async function GET(request: NextRequest) {
               average_rating, views_count,
               author:profiles(username, avatar_url)
             `)
-            .eq('is_published', true)
-            .eq('is_public', true)
+            .eq('status', 'published')
             .order('average_rating', { ascending: false })
             .limit(limit)
 
@@ -441,8 +437,7 @@ export async function GET(request: NextRequest) {
               average_rating,
               author:profiles(username, avatar_url)
             `)
-            .eq('is_published', true)
-            .eq('is_public', true)
+            .eq('status', 'published')
             .order('average_rating', { ascending: false })
             .limit(limit)
 
