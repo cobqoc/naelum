@@ -66,33 +66,34 @@ export async function GET(request: Request) {
         }
       }
 
-      // 프로필 존재 여부 확인
+      // 프로필 존재 여부 및 온보딩 완료 여부 확인
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, onboarding_completed')
         .eq('id', authData.user.id)
-        .single()
+        .maybeSingle()
 
-      // 프로필이 없으면 → 신규 사용자 → 약관 동의 페이지로
-      if (!profile) {
-        // 이메일 중복 체크 (다른 provider로 이미 가입된 경우)
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id, email, auth_provider')
-          .eq('email', authData.user.email!)
-          .maybeSingle()
+      // 온보딩 미완료(신규 사용자 포함) → 약관 동의 페이지로
+      if (!profile?.onboarding_completed) {
+        if (!profile) {
+          // 프로필이 아예 없으면 이메일 중복 체크 (다른 provider로 이미 가입된 경우)
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id, auth_provider')
+            .eq('email', authData.user.email!)
+            .maybeSingle()
 
-        if (existingProfile) {
-          // 중복된 이메일이 있으면 로그아웃 후 에러 페이지로 리다이렉트
-          await supabase.auth.signOut()
-          return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
+          if (existingProfile && existingProfile.id !== authData.user.id) {
+            await supabase.auth.signOut()
+            return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
+          }
         }
 
-        // 중복이 없으면 약관 동의 페이지로 (프로필은 생성하지 않음)
+        // 약관 동의 페이지로 (트리거로 생성된 프로필도 여기서 처리)
         return NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
       }
 
-      // 프로필이 있으면 기존 사용자 → 홈으로
+      // 온보딩 완료된 기존 사용자 → 홈으로
       return NextResponse.redirect(`${baseUrl}${next}`)
     }
   }

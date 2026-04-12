@@ -86,31 +86,36 @@ export default function TermsAgreementPage() {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (existingProfile) {
-        // 프로필이 있으면 온보딩 상태 초기화 및 마케팅 동의 저장
-        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          setError(t.auth.profileUpdateError);
-          setLoading(false);
-          return;
-        }
-      } else {
+      if (!existingProfile) {
         // 프로필이 없으면 생성 (Google/Kakao OAuth 신규 가입자)
         const { error: insertError } = await createProfile(supabase, {
           id: user.id,
           email: user.email!,
           authProvider: provider,
-          marketingConsent: agreedToMarketing,
           onboardingCompleted: false,
           onboardingStep: 0,
         });
         if (insertError) {
-          console.error('Profile insert error:', insertError);
-          setError(t.auth.profileCreateError);
-          setLoading(false);
-          return;
+          // 중복 키 오류는 트리거로 이미 생성된 경우 — 무시하고 계속
+          const isDuplicate = insertError.toLowerCase().includes('duplicate') ||
+            insertError.toLowerCase().includes('unique') ||
+            insertError.includes('23505');
+          if (!isDuplicate) {
+            console.error('Profile insert error:', insertError);
+            setError(t.auth.profileCreateError);
+            setLoading(false);
+            return;
+          }
         }
+      }
+
+      // 약관 동의 상태 업데이트 (마케팅 동의 포함)
+      const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        setError(t.auth.profileUpdateError);
+        setLoading(false);
+        return;
       }
 
       // 온보딩 모달 표시
