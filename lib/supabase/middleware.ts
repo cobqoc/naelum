@@ -27,7 +27,15 @@ export async function updateSession(request: NextRequest): Promise<{ response: N
 
   // IMPORTANT: 세션 갱신 + user 반환
   // https://supabase.com/docs/guides/auth/server-side/nextjs
-  const { data: { user } } = await supabase.auth.getUser()
+  // getUser()가 네트워크 오류 등으로 throw하면 미들웨어 전체가 503으로 실패하므로
+  // try/catch로 감싸고 실패 시 비인증(guest)으로 처리
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // auth 서버 오류 시 guest로 처리 (서비스 중단 방지)
+  }
 
   return { response: supabaseResponse, user }
 }
