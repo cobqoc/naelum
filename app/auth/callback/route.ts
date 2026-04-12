@@ -22,8 +22,12 @@ export async function GET(request: Request) {
 
       const baseUrl = getBaseUrl()
 
-      // OAuth 콜백 처리 시 provider 검증 (Google, Kakao 등)
-      const currentProvider = authData.user.app_metadata?.provider || 'unknown'
+      // OAuth 콜백은 항상 소셜 로그인(Google, Kakao 등)을 통해 도달함
+      // app_metadata.provider는 Supabase auto-linking 이후에도 원래 값을 유지하므로 신뢰 불가
+      // identities 배열에서 이메일 외의 provider(= 실제 사용한 OAuth provider)를 확인
+      const identities = authData.user.identities ?? []
+      const oauthIdentity = identities.find(i => i.provider !== 'email')
+      const currentProvider = oauthIdentity?.provider ?? authData.user.app_metadata?.provider ?? 'unknown'
 
       const { data: existingProfile } = await supabase
         .from('profiles')
