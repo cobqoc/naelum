@@ -596,9 +596,9 @@ Email:
 ### DevOps & Infrastructure
 ```yaml
 Hosting:
-  - Vercel (Next.js 최적화)
-  - AWS (확장성)
-  - Cloudflare Pages
+  - Vercel (Next.js 최적화) — 현재 사용 중
+  - Cloudflare — Vercel 앞단 CDN/보안 레이어 (현재 연결됨)
+  - AWS (확장성, 향후 이전 예정)
 
 CI/CD:
   - GitHub Actions
@@ -973,7 +973,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.1.0  
-**최종 수정일**: 2026-04-11  
+**최종 수정일**: 2026-04-12  
 **작성자**: 꼬르륵 개발팀
 
 ---
@@ -984,6 +984,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **낼름함 (레시피 저장)** — 구현 완료
   - 레시피 카드의 👅 낼름 버튼으로 저장
   - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
+
+### 보안 / 봇 차단 구현 현황
+- **Cloudflare** — naelum.app 앞단에 연결 완료 (무료 플랜)
+  - Bot Fight Mode ON, SSL Full (strict), 서울 CDN
+- **AI 크롤러 차단** (`proxy.ts`) — GPTBot, ClaudeBot, CCBot, Bytespider, AhrefsBot 등 14종 전체 경로 차단
+- **robots.txt** — AI/SEO 봇 명시적 Disallow, 검색엔진(Google/Bing)만 허용
+- **Rate Limiting** — Supabase DB 기반 (`lib/ratelimit.ts`, `supabase/migrations/20260411_rate_limits.sql`)
+  - 검색: 30회/분 (IP), 추천: 20회/분 (IP), 업로드: 10회/분 (유저ID), 로그인: 5회/15분 (IP+email)
+  - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 사용
+  - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
+- **Rate limits 테이블 정리** — 매시간 cron 실행 (`/api/cron/cleanup-rate-limits`)
 
 ### 레시피 DB
 - **레시피 1,753개** — 전부 공개(published) 상태
