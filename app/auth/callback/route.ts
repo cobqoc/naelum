@@ -22,8 +22,12 @@ export async function GET(request: Request) {
 
       const baseUrl = getBaseUrl()
 
-      // OAuth 콜백 처리 시 provider 검증 (Google, Kakao 등)
-      const currentProvider = authData.user.app_metadata?.provider || 'unknown'
+      // OAuth 콜백은 항상 소셜 로그인(Google, Kakao 등)을 통해 도달함
+      // app_metadata.provider는 Supabase auto-linking 이후에도 원래 값을 유지하므로 신뢰 불가
+      // identities 배열에서 이메일 외의 provider(= 실제 사용한 OAuth provider)를 확인
+      const identities = authData.user.identities ?? []
+      const oauthIdentity = identities.find(i => i.provider !== 'email')
+      const currentProvider = oauthIdentity?.provider ?? authData.user.app_metadata?.provider ?? 'unknown'
 
       const { data: existingProfile } = await supabase
         .from('profiles')
@@ -39,8 +43,16 @@ export async function GET(request: Request) {
         )
       }
 
-      // 같은 사용자지만 provider가 다른 경우
+      // 같은 사용자지만 provider가 다른 경우 (Supabase auto-linking으로 무단 연결된 케이스)
       if (existingProfile && existingProfile.auth_provider && existingProfile.auth_provider !== currentProvider) {
+        // auto-linking으로 추가된 OAuth identity를 즉시 제거 (반복 연결 방지)
+        if (oauthIdentity && (authData.user.identities?.length ?? 0) > 1) {
+          try {
+            await supabase.auth.unlinkIdentity(oauthIdentity)
+          } catch {
+            // unlinkIdentity 실패해도 signOut으로 세션 제거
+          }
+        }
         await supabase.auth.signOut()
         return NextResponse.redirect(
           `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`

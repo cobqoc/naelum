@@ -10,8 +10,7 @@ interface AdminRecipe {
   thumbnail_url: string | null;
   cuisine_type: string | null;
   difficulty_level: string | null;
-  is_published: boolean;
-  is_public: boolean;
+  status: string;
   views_count: number;
   average_rating: number;
   created_at: string;
@@ -55,7 +54,7 @@ export default function AdminRecipesPage() {
   }, [page, search, status]);
 
   const handleTogglePublish = async (recipe: AdminRecipe) => {
-    const action = recipe.is_published ? 'unpublish' : 'publish';
+    const action = recipe.status === 'published' ? 'unpublish' : 'publish';
     const res = await fetch(`/api/admin/recipes/${recipe.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +62,7 @@ export default function AdminRecipesPage() {
     });
 
     if (res.ok) {
-      toast.success(recipe.is_published ? '비공개 처리되었습니다' : '공개 처리되었습니다');
+      toast.success(recipe.status === 'published' ? '비공개 처리되었습니다' : '공개 처리되었습니다');
       loadRecipes();
     } else {
       toast.error('처리 중 오류가 발생했습니다');
@@ -177,10 +176,10 @@ export default function AdminRecipesPage() {
                       {recipe.average_rating > 0 ? `★ ${recipe.average_rating.toFixed(1)}` : '-'}
                     </td>
                     <td className="px-4 py-3">
-                      {recipe.is_published ? (
+                      {recipe.status === 'published' ? (
                         <span className="px-2 py-1 text-xs rounded bg-success/20 text-success">공개</span>
                       ) : (
-                        <span className="px-2 py-1 text-xs rounded bg-warning/20 text-warning">비공개</span>
+                        <span className="px-2 py-1 text-xs rounded bg-warning/20 text-warning">{recipe.status === 'private' ? '비공개' : '임시저장'}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-text-muted">
@@ -192,7 +191,7 @@ export default function AdminRecipesPage() {
                           onClick={() => handleTogglePublish(recipe)}
                           className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors"
                         >
-                          {recipe.is_published ? '비공개' : '공개'}
+                          {recipe.status === 'published' ? '비공개' : '공개'}
                         </button>
                         <button
                           onClick={() => handleDelete(recipe)}

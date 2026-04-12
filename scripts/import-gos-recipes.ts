@@ -259,7 +259,7 @@ async function main() {
           thumbnail_url: thumbnail,
           cuisine_type: 'other',
           dish_type: 'main',
-          is_published: true,
+          status: 'published' as const,
         })
         .select('id')
         .single();

@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const supabase = await createClient();
     const { id: recipeId } = await context.params;
-    const { is_public } = await request.json();
+    const { status } = await request.json();
 
     const { user, error: authError } = await requireAuth(supabase);
     if (authError) return authError;
@@ -38,7 +38,7 @@ export async function PATCH(
     // 공개 설정 업데이트
     const { error: updateError } = await supabase
       .from('recipes')
-      .update({ is_public })
+      .update({ status })
       .eq('id', recipeId);
 
     if (updateError) {
@@ -49,7 +49,7 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json({ success: true, is_public });
+    return NextResponse.json({ success: true, status });
   } catch (error) {
     console.error('Error in visibility API:', error);
     return NextResponse.json(

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
@@ -13,21 +13,17 @@ const STORAGE_KEYS = {
 } as const;
 
 function LoginContent() {
-  const router = useRouter();
+
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
-  const [email, setEmail] = useState(() =>
-    typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) ?? '') : ''
-  );
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [saveEmail, setSaveEmail] = useState(() =>
-    typeof window !== 'undefined' ? !!localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) : false
-  );
+  const [saveEmail, setSaveEmail] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
   // Find ID states
@@ -54,16 +50,23 @@ function LoginContent() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
 
-  // 프로필 확인 및 홈으로 리다이렉트
   const redirectAfterLogin = () => {
-    const redirectTo = searchParams.get('redirect') || '/';
-    router.push(redirectTo);
+    const param = searchParams.get('redirect') || '/';
+    // 상대경로만 허용: /path 형식. //evil.com 같은 프로토콜-상대 URL 차단
+    const redirectTo = param.startsWith('/') && !param.startsWith('//') ? param : '/';
+    window.location.href = redirectTo;
   };
 
-  // 구버전 자동 로그인 설정 정리
-  // (이미 로그인된 경우 미들웨어가 서버에서 홈으로 리다이렉트하므로 세션 체크 불필요)
+  // localStorage 초기화 (hydration 후 클라이언트에서만 실행)
   useEffect(() => {
     localStorage.removeItem('naelum_auto_login');
+    const saved = localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) ?? '';
+    if (saved) {
+      queueMicrotask(() => {
+        setEmail(saved);
+        setSaveEmail(true);
+      });
+    }
   }, []);
 
   // 쿼리 파라미터 확인하여 비밀번호 찾기 모달 자동 열기

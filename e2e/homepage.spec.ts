@@ -56,7 +56,7 @@ test.describe('홈페이지 기능 테스트', () => {
     await page.waitForLoadState('networkidle');
 
     // 하단 네비게이션 바 확인 (모바일에서만)
-    const bottomNav = page.locator('nav').filter({ hasText: '홈' });
+    const bottomNav = page.locator('nav[aria-label]').last();
     await expect(bottomNav).toBeVisible();
   });
 

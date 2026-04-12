@@ -41,7 +41,7 @@ export default function ResetPasswordPage() {
 
     // Supabase Auth 이벤트 리스너
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
+      async (event: string) => {
         if (event === 'PASSWORD_RECOVERY') {
           setValidSession(true);
           setChecking(false);

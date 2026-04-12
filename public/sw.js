@@ -128,13 +128,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy: 나머지 — Network First
+  // Strategy: 나머지 — Network First (캐시 없으면 자연 실패 — 합성 503 제거)
   event.respondWith(
-    fetch(request).catch(() => {
-      return caches.match(request).then((cached) =>
-        cached || new Response('Offline', { status: 503 })
-      );
-    })
+    fetch(request).catch(() => caches.match(request))
   );
 });
 

@@ -100,7 +100,7 @@ async function main() {
       carbs_grams: parseFloat(recipe.INFO_CAR) || null,
       fat_grams: parseFloat(recipe.INFO_FAT) || null,
       sodium_mg: recipe.INFO_NA ? Math.round(parseFloat(recipe.INFO_NA)) : null,
-      is_published: true,
+      status: 'published' as const,
       published_at: new Date().toISOString(),
     })
     .select('id')

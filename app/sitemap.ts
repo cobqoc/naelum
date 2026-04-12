@@ -10,8 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: recipes } = await supabase
     .from('recipes')
     .select('id, updated_at')
-    .eq('is_public', true)
-    .eq('is_published', true)
+    .eq('status', 'published')
     .order('updated_at', { ascending: false });
 
   // Fetch all public user profiles

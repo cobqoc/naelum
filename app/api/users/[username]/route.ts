@@ -47,20 +47,15 @@ export async function GET(
   }
 
   // 최근 레시피 조회
-  let recipesQuery = supabase
+  const recipesQuery = supabase
     .from('recipes')
     .select(`
-      id, title, thumbnail_url, average_rating, created_at, is_public
+      id, title, thumbnail_url, average_rating, created_at, status
     `)
     .eq('author_id', profile.id)
-    .eq('is_published', true)
+    .in('status', isOwnProfile ? ['published', 'private'] : ['published'])
     .order('created_at', { ascending: false })
     .limit(6)
-
-  // 본인 프로필이 아닌 경우 공개된 레시피만 보이기
-  if (!isOwnProfile) {
-    recipesQuery = recipesQuery.eq('is_public', true)
-  }
 
   const { data: recipes } = await recipesQuery
 
@@ -86,8 +81,9 @@ export async function GET(
     profile,
     recipes: recipes || [],
     interests: interests?.map(i => i.interest_value) || [],
-    dietaryPreferences: dietaryPrefs?.map(d => d.preference_type) || [],
-    allergies: allergies?.map(a => a.ingredient_name) || [],
+    // 알레르기·식단 선호도는 민감한 개인정보 — 본인만 조회 가능
+    dietaryPreferences: isOwnProfile ? dietaryPrefs?.map(d => d.preference_type) || [] : [],
+    allergies: isOwnProfile ? allergies?.map(a => a.ingredient_name) || [] : [],
     isFollowing,
     isOwnProfile
   })

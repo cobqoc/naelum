@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
+import { useAuth } from '@/lib/auth/context';
 import RecipeJsonLd from '@/components/RecipeJsonLd';
 
 const RecipeBrowseView = dynamic(() => import('@/components/RecipeBrowseView'), { ssr: false });
@@ -47,7 +48,7 @@ interface Recipe {
   thumbnail_url: string | null;
   ingredients_image_url?: string | null;
   video_url?: string | null;
-  is_public: boolean;
+  status: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
 }
@@ -141,7 +142,8 @@ export default function RecipeDetailPage(props: PageProps) {
     };
   }, [timerActive, timerPaused, timerSeconds, playTimerSound]);
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { user: authUser, profile: authProfile, loading: authLoading } = useAuth();
+  const userId = authUser?.id ?? null;
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -160,27 +162,17 @@ export default function RecipeDetailPage(props: PageProps) {
   }, []);
 
   useEffect(() => {
+    setCurrentUsername(authProfile?.username ?? null);
+  }, [authProfile?.username]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
     let isMounted = true;
     const supabase = createClient();
 
     async function fetchData() {
-      // 1. Get current user first
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user && isMounted) {
-        setCurrentUserId(user.id);
-
-        // Get current user's username
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single();
-
-        if (profile) {
-          setCurrentUsername(profile.username);
-        }
-      }
+      const user = userId ? { id: userId } : null;
 
       // 2. Fetch recipe details
       const { data: recipeData, error: recipeError } = await supabase
@@ -207,8 +199,8 @@ export default function RecipeDetailPage(props: PageProps) {
         return;
       } else {
         // 3. Check if recipe is private and user has permission to view
-        if (recipeData.is_public === false) {
-          // Private recipe - only author can view
+        if (recipeData.status !== 'published') {
+          // Private/draft recipe - only author can view
           if (!user || recipeData.author_id !== user.id) {
             // Not authorized to view this private recipe
             setRecipe(null);
@@ -289,11 +281,11 @@ export default function RecipeDetailPage(props: PageProps) {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, authLoading, userId]);
 
   // Check if user has cooked this recipe and has reviewed it
   useEffect(() => {
-    if (!currentUserId || !id) return;
+    if (!userId || !id) return;
 
     async function checkCookedAndReview() {
       const supabase = createClient();
@@ -302,7 +294,7 @@ export default function RecipeDetailPage(props: PageProps) {
       const { data: session } = await supabase
         .from('cooking_sessions')
         .select('id')
-        .eq('user_id', currentUserId)
+        .eq('user_id', userId!)
         .eq('recipe_id', id)
         .not('completed_at', 'is', null)
         .maybeSingle();
@@ -325,7 +317,7 @@ export default function RecipeDetailPage(props: PageProps) {
     }
 
     checkCookedAndReview();
-  }, [currentUserId, id]);
+  }, [userId, id]);
 
   // 조회수 증가
   useEffect(() => {
@@ -589,7 +581,7 @@ export default function RecipeDetailPage(props: PageProps) {
             {recipe.title}
           </div>
           <div className="flex gap-2 flex-shrink-0">
-            {currentUserId && recipe.author_id === currentUserId && (
+            {userId && recipe.author_id === userId && (
               <Link
                 href={`/recipes/${id}/edit`}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-background-secondary text-text-primary hover:bg-background-tertiary transition-all"
@@ -660,7 +652,7 @@ export default function RecipeDetailPage(props: PageProps) {
         recipeId={id}
         averageRating={recipe.average_rating}
         ratingsCount={recipe.ratings_count}
-        currentUserId={currentUserId}
+        currentUserId={userId}
         hasCooked={hasCooked}
         onRatingUpdate={refreshRecipeRatings}
       />
@@ -668,7 +660,7 @@ export default function RecipeDetailPage(props: PageProps) {
       {/* 댓글 섹션 */}
       <RecipeComments
         recipeId={id}
-        currentUserId={currentUserId}
+        currentUserId={userId}
       />
 
       {/* 냉장고 모달 */}

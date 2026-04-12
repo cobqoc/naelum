@@ -60,22 +60,17 @@ export async function GET(
 
   switch (type) {
     case 'created': {
-      let query = supabase
+      const query = supabase
         .from('recipes')
         .select(`
           id, title, description, thumbnail_url, display_image,
           prep_time_minutes, cook_time_minutes, difficulty_level,
-          average_rating, views_count, created_at, is_public
+          average_rating, views_count, created_at, status
         `, { count: 'exact' })
         .eq('author_id', profile.id)
-        .eq('is_published', true)
+        .in('status', isOwnProfile ? ['published', 'private'] : ['published'])
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
-
-      // 본인 프로필이 아닌 경우 공개된 레시피만 보이기
-      if (!isOwnProfile) {
-        query = query.eq('is_public', true)
-      }
 
       const result = await query
 
@@ -189,10 +184,10 @@ export async function GET(
         .select(`
           id, title, description, thumbnail_url, display_image,
           prep_time_minutes, cook_time_minutes, difficulty_level,
-          average_rating, views_count, created_at, is_public
+          average_rating, views_count, created_at, status
         `, { count: 'exact' })
         .eq('author_id', profile.id)
-        .eq('is_published', false)
+        .eq('status', 'draft')
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 
@@ -207,11 +202,10 @@ export async function GET(
         .select(`
           id, title, description, thumbnail_url, display_image,
           prep_time_minutes, cook_time_minutes, difficulty_level,
-          average_rating, views_count, created_at, is_public
+          average_rating, views_count, created_at, status
         `, { count: 'exact' })
         .eq('author_id', profile.id)
-        .eq('is_published', true)
-        .eq('is_public', false)
+        .eq('status', 'private')
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 

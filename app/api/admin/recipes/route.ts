@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
       thumbnail_url,
       cuisine_type,
       difficulty_level,
-      is_published,
-      is_public,
+      status,
       views_count,
       average_rating,
       created_at,
@@ -36,10 +35,8 @@ export async function GET(request: NextRequest) {
     query = query.ilike('title', `%${search}%`)
   }
 
-  if (status === 'published') {
-    query = query.eq('is_published', true)
-  } else if (status === 'draft') {
-    query = query.eq('is_published', false)
+  if (status === 'published' || status === 'draft' || status === 'private') {
+    query = query.eq('status', status)
   }
 
   query = query.range(offset, rangeEnd)

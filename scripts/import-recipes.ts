@@ -629,7 +629,7 @@ async function main() {
           carbs_grams: parseNumber(recipe.INFO_CAR),
           fat_grams: parseNumber(recipe.INFO_FAT),
           sodium_mg: parseIntSafe(recipe.INFO_NA),
-          is_published: true,
+          status: 'published' as const,
           published_at: new Date().toISOString(),
         })
         .select('id')

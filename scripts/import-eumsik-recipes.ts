@@ -239,7 +239,7 @@ async function main() {
           description,
           cuisine_type: 'korean',
           dish_type: 'other',
-          is_published: true,
+          status: 'published' as const,
           calories,
         })
         .select('id')

@@ -38,7 +38,7 @@ interface Recipe {
   cook_time_minutes?: number;
   difficulty_level?: string;
   created_at: string;
-  is_public: boolean;
+  status: string;
   completed_at?: string; // for cooked recipes
   completion_photo_url?: string | null; // for cooked recipes - user's completion photo
   author?: { username: string; avatar_url: string | null }; // for saved/cooked recipes
@@ -376,12 +376,13 @@ export default function ProfilePage(props: PageProps) {
     setMenuOpenRecipeId(null);
   };
 
-  const handleToggleVisibility = async (recipeId: string, currentVisibility: boolean) => {
+  const handleToggleVisibility = async (recipeId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'published' ? 'private' : 'published';
     try {
       const res = await fetch(`/api/recipes/${recipeId}/visibility`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_public: !currentVisibility })
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (!res.ok) {
@@ -391,9 +392,9 @@ export default function ProfilePage(props: PageProps) {
 
       // 목록 업데이트
       setRecipes(prev => prev.map(r =>
-        r.id === recipeId ? { ...r, is_public: !currentVisibility } : r
+        r.id === recipeId ? { ...r, status: newStatus } : r
       ));
-      toast.success(currentVisibility ? t.errors.recipeHidden : t.errors.recipePublished);
+      toast.success(currentStatus === 'published' ? t.errors.recipeHidden : t.errors.recipePublished);
     } catch (error) {
       console.error('Error toggling visibility:', error);
       toast.error(error instanceof Error ? error.message : t.errors.visibilityChangeFailed);
@@ -809,7 +810,7 @@ export default function ProfilePage(props: PageProps) {
                   )}
 
                   {/* 비공개 표시 */}
-                  {!recipe.is_public && isOwnProfile && activeTab === 'created' && (
+                  {recipe.status !== 'published' && isOwnProfile && activeTab === 'created' && (
                     <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">
                       🔒 비공개
                     </div>
@@ -936,17 +937,17 @@ export default function ProfilePage(props: PageProps) {
                           {t.recipe.modify}
                         </Link>
                         <button
-                          onClick={() => handleToggleVisibility(recipe.id, recipe.is_public)}
+                          onClick={() => handleToggleVisibility(recipe.id, recipe.status)}
                           className="w-full flex items-center gap-2 px-4 py-3 hover:bg-background-secondary transition-colors text-sm text-left"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            {recipe.is_public ? (
+                            {recipe.status === 'published' ? (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                             ) : (
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             )}
                           </svg>
-                          {recipe.is_public ? t.recipe.hide : t.recipe.publish}
+                          {recipe.status === 'published' ? t.recipe.hide : t.recipe.publish}
                         </button>
                         <button
                           onClick={() => handleDeleteRecipe(recipe.id)}
