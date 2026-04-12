@@ -13,8 +13,12 @@ export async function GET(request: NextRequest) {
   const difficulty = searchParams.get('difficulty')
   const maxTime = searchParams.get('maxTime')
   const dietary = searchParams.get('dietary')
-  const sort = searchParams.get('sort') || 'created_at'
-  const order = searchParams.get('order') || 'desc'
+  const VALID_SORT_COLUMNS = ['created_at', 'average_rating', 'views_count', 'likes_count', 'title', 'popular', 'rating']
+  const VALID_ORDERS = ['asc', 'desc']
+  const rawSort = searchParams.get('sort') || 'created_at'
+  const rawOrder = searchParams.get('order') || 'desc'
+  const sort = VALID_SORT_COLUMNS.includes(rawSort) ? rawSort : 'created_at'
+  const order = VALID_ORDERS.includes(rawOrder) ? rawOrder : 'desc'
 
   let query = supabase
     .from('recipes')
@@ -24,8 +28,7 @@ export async function GET(request: NextRequest) {
       ingredients:recipe_ingredients(ingredient_name),
       tags:recipe_tags(tag_name)
     `, { count: 'exact' })
-    .eq('is_published', true)
-    .eq('is_public', true)
+    .eq('status', 'published')
 
   // 필터 적용
   if (cuisine) {
@@ -91,8 +94,8 @@ export async function POST(request: NextRequest) {
       title,
       description,
       ...recipeData,
-      is_published: body.is_published !== false,
-      published_at: body.is_published !== false ? new Date().toISOString() : null
+      status: body.status || 'published',
+      published_at: (body.status || 'published') === 'published' ? new Date().toISOString() : null
     })
     .select()
     .single()

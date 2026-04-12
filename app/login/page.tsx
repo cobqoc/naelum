@@ -51,7 +51,9 @@ function LoginContent() {
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
 
   const redirectAfterLogin = () => {
-    const redirectTo = searchParams.get('redirect') || '/';
+    const param = searchParams.get('redirect') || '/';
+    // 상대경로만 허용: /path 형식. //evil.com 같은 프로토콜-상대 URL 차단
+    const redirectTo = param.startsWith('/') && !param.startsWith('//') ? param : '/';
     window.location.href = redirectTo;
   };
 

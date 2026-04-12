@@ -42,6 +42,31 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
+    const supabaseHost = (process.env.NEXT_PUBLIC_SUPABASE_URL || '')
+      .replace('https://', '')
+      .split('/')[0]
+
+    const csp = [
+      "default-src 'self'",
+      // Next.js는 hydration용 인라인 스크립트 필요 — nonce 미사용 시 unsafe-inline 불가피
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      // 이미지: Supabase Storage, Unsplash, Google 프로필 사진
+      "img-src 'self' data: blob: https:",
+      // API 연결: Supabase, Google/Kakao OAuth
+      [
+        "connect-src 'self'",
+        supabaseHost ? `https://${supabaseHost} wss://${supabaseHost}` : '',
+        'https://accounts.google.com',
+        'https://kauth.kakao.com https://kapi.kakao.com',
+      ].filter(Boolean).join(' '),
+      "font-src 'self' data:",
+      "frame-src 'none'",     // iframe 삽입 차단
+      "object-src 'none'",    // Flash/Plugin 차단
+      "base-uri 'self'",      // <base> 태그 인젝션 차단
+      "form-action 'self'",   // 폼 외부 전송 차단
+    ].join('; ')
+
     return [
       {
         source: '/(.*)',
@@ -54,6 +79,12 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
+          // HTTPS 강제: 1년간 브라우저가 HTTP 시도를 차단
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains',
+          },
+          { key: 'Content-Security-Policy', value: csp },
         ],
       },
     ];
