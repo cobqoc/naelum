@@ -162,17 +162,17 @@ export default function RecipeDetailPage(props: PageProps) {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    // 인증 컨텍스트에서 즉시 username 설정 (getUser() 중복 호출 방지)
     setCurrentUsername(authProfile?.username ?? null);
+  }, [authProfile?.username]);
+
+  useEffect(() => {
+    if (authLoading) return;
 
     let isMounted = true;
     const supabase = createClient();
 
     async function fetchData() {
-      // 미들웨어가 이미 getUser()를 처리하므로 auth context에서 user를 가져옴
-      const user = authUser;
+      const user = userId ? { id: userId } : null;
 
       // 2. Fetch recipe details
       const { data: recipeData, error: recipeError } = await supabase

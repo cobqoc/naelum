@@ -58,15 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // onAuthStateChange는 구독 즉시 INITIAL_SESSION 이벤트를 발생시켜 초기 세션을 처리함
     // 로그인/로그아웃/토큰 갱신 모두 이 리스너에서 처리됨
     const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email || '' });
-        await fetchProfile(session.user.id);
+        setLoading(false);
+        fetchProfile(session.user.id);
       } else {
         setUser(null);
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
