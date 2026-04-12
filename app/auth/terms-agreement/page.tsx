@@ -86,22 +86,12 @@ export default function TermsAgreementPage() {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (existingProfile) {
-        // 프로필이 있으면 온보딩 상태 초기화 및 마케팅 동의 저장
-        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          setError(t.auth.profileUpdateError);
-          setLoading(false);
-          return;
-        }
-      } else {
+      if (!existingProfile) {
         // 프로필이 없으면 생성 (Google/Kakao OAuth 신규 가입자)
         const { error: insertError } = await createProfile(supabase, {
           id: user.id,
           email: user.email!,
           authProvider: provider,
-          marketingConsent: agreedToMarketing,
           onboardingCompleted: false,
           onboardingStep: 0,
         });
@@ -112,6 +102,18 @@ export default function TermsAgreementPage() {
           return;
         }
       }
+
+      // 약관 동의 상태 업데이트 (마케팅 동의 포함)
+      const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        setError(t.auth.profileUpdateError);
+        setLoading(false);
+        return;
+      }
+
+      // 세션 갱신 → auth context에서 profile 재조회 (드롭다운에 사용자 정보 표시)
+      await supabase.auth.refreshSession();
 
       // 온보딩 모달 표시
       setShowOnboardingModal(true);

@@ -63,8 +63,10 @@ export default function OnboardingWizard({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 현재 단계 저장
+      // 약관은 동의한 상태이므로 onboarding_completed: true로 설정
+      // (재로그인 시 terms-agreement로 다시 튕기는 문제 방지)
       await supabase.from('profiles').update({
+        onboarding_completed: true,
         onboarding_step: step,
         updated_at: new Date().toISOString(),
       }).eq('id', user.id);

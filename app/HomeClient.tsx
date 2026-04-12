@@ -21,6 +21,10 @@ const InteractiveFridge = dynamic(() => import('@/components/Fridge/InteractiveF
   loading: () => <div className="w-full max-w-xs mx-auto md:max-w-sm"><div className="w-full rounded-2xl bg-background-secondary animate-pulse" style={{ aspectRatio: '3/4' }} /></div>
 });
 
+const OnboardingWizard = dynamic(() => import('@/components/Onboarding/OnboardingWizard'), {
+  ssr: false,
+});
+
 const BG_EMOJIS = [
   { e: '🍳', top: '8%',  left: '7%',  size: '1.4rem', op: 0.07, dur: '28s', delay: '0s'  },
   { e: '🥕', top: '12%', left: '82%', size: '1.1rem', op: 0.06, dur: '33s', delay: '4s'  },
@@ -214,6 +218,9 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
   const [fridgeLoading, setFridgeLoading] = useState(false);
   const [hasFridgeItems, setHasFridgeItems] = useState(false);
 
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+
   // 서버에서 초기 데이터를 로드했는지 추적 (첫 번째 effect 실행 시 fetch 스킵용)
   const skipInitialFetchRef = useRef(initialFeed.length > 0);
 
@@ -225,10 +232,18 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
       .from('profiles')
       .select('onboarding_completed, onboarding_step')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
       .then(({ data: profile }) => {
-        if (profile && !profile.onboarding_completed && profile.onboarding_step === 0) {
+        if (!profile) return;
+        // 약관 미동의 상태 → terms-agreement로 (안전망)
+        if (!profile.onboarding_completed) {
           router.push('/auth/terms-agreement');
+          return;
+        }
+        // 약관 동의했지만 프로필 설정 미완료 (나중에 하기 클릭한 유저)
+        if (profile.onboarding_step < 4) {
+          const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
+          if (!dismissed) setShowOnboardingBanner(true);
         }
       });
   }, [user, router]);
@@ -417,6 +432,49 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
         </div>
       )}
       <Header />
+
+      {/* 온보딩 미완료 배너 */}
+      {showOnboardingBanner && (
+        <div className="sticky top-16 md:top-[68px] z-30 w-full bg-accent-warm/10 border-b border-accent-warm/20 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-sm text-text-secondary">
+              <span className="text-accent-warm font-medium">프로필을 완성</span>하면 더 정확한 맞춤 레시피 추천을 받을 수 있어요!
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowOnboardingModal(true)}
+                className="text-xs font-medium text-accent-warm hover:underline whitespace-nowrap"
+              >
+                완성하기 →
+              </button>
+              <button
+                onClick={() => {
+                  if (user) localStorage.setItem(`naelum_onboarding_banner_${user.id}`, '1');
+                  setShowOnboardingBanner(false);
+                }}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                aria-label="닫기"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 온보딩 위자드 (배너에서 열기) */}
+      {showOnboardingModal && (
+        <OnboardingWizard
+          isOpen={showOnboardingModal}
+          onClose={() => setShowOnboardingModal(false)}
+          onComplete={() => {
+            setShowOnboardingModal(false);
+            setShowOnboardingBanner(false);
+          }}
+        />
+      )}
 
       <main id="main-content" className="relative flex min-h-screen flex-col items-center px-4 md:px-6 pt-16 md:pt-20 pb-24 md:pb-12">
         {/* 배경 장식 */}

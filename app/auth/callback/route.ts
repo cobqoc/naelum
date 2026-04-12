@@ -1,5 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
+import { removeOAuthIdentity } from '@/lib/supabase/service'
 import { NextResponse } from 'next/server'
+
+function redirectToDuplicateEmail(baseUrl: string, email: string, original: string): NextResponse {
+  const response = NextResponse.redirect(`${baseUrl}/auth/duplicate-email`)
+  response.cookies.set('_naelum_dup', JSON.stringify({ e: email, o: original }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 120,
+    path: '/',
+  })
+  return response
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -22,72 +35,65 @@ export async function GET(request: Request) {
 
       const baseUrl = getBaseUrl()
 
-      // OAuth 콜백은 항상 소셜 로그인(Google, Kakao 등)을 통해 도달함
-      // app_metadata.provider는 Supabase auto-linking 이후에도 원래 값을 유지하므로 신뢰 불가
-      // identities 배열에서 이메일 외의 provider(= 실제 사용한 OAuth provider)를 확인
+      // identities 배열에서 email / OAuth identity 분리
       const identities = authData.user.identities ?? []
+      const emailIdentity = identities.find(i => i.provider === 'email')
       const oauthIdentity = identities.find(i => i.provider !== 'email')
-      const currentProvider = oauthIdentity?.provider ?? authData.user.app_metadata?.provider ?? 'unknown'
 
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('auth_provider, id')
-        .eq('email', authData.user.email!)
-        .maybeSingle()
-
-      // 이미 다른 provider로 가입된 경우
-      if (existingProfile && existingProfile.id !== authData.user.id) {
-        await supabase.auth.signOut()
-        return NextResponse.redirect(
-          `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`
-        )
-      }
-
-      // 같은 사용자지만 provider가 다른 경우 (Supabase auto-linking으로 무단 연결된 케이스)
-      if (existingProfile && existingProfile.auth_provider && existingProfile.auth_provider !== currentProvider) {
-        // auto-linking으로 추가된 OAuth identity를 즉시 제거 (반복 연결 방지)
-        if (oauthIdentity && (authData.user.identities?.length ?? 0) > 1) {
-          try {
-            await supabase.auth.unlinkIdentity(oauthIdentity)
-          } catch {
-            // unlinkIdentity 실패해도 signOut으로 세션 제거
-          }
+      // email + OAuth identity가 모두 있으면 → Supabase auto-linking이 발생한 것
+      // 이메일로 가입한 계정에 OAuth가 무단으로 연결된 케이스
+      if (emailIdentity && oauthIdentity) {
+        try {
+          await removeOAuthIdentity(authData.user.id, oauthIdentity.provider)
+        } catch {
+          // 제거 실패해도 signOut으로 세션 무효화
         }
         await supabase.auth.signOut()
-        return NextResponse.redirect(
-          `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`
-        )
+        return redirectToDuplicateEmail(baseUrl, authData.user.email!, 'email')
       }
 
-      // 프로필 존재 여부 확인
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', authData.user.id)
-        .single()
-
-      // 프로필이 없으면 → 신규 사용자 → 약관 동의 페이지로
-      if (!profile) {
-        // 이메일 중복 체크 (다른 provider로 이미 가입된 경우)
+      // OAuth only로 로그인했는데 다른 provider로 가입된 프로필이 있는 경우
+      if (oauthIdentity) {
         const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('id, email, auth_provider')
+          .select('auth_provider, id')
           .eq('email', authData.user.email!)
           .maybeSingle()
 
-        if (existingProfile) {
-          // 중복된 이메일이 있으면 로그아웃 후 에러 페이지로 리다이렉트
+        if (existingProfile && existingProfile.id !== authData.user.id) {
           await supabase.auth.signOut()
-          return NextResponse.redirect(
-            `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`
-          )
+          return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
+        }
+      }
+
+      // 프로필 존재 여부 및 온보딩 완료 여부 확인
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, onboarding_completed')
+        .eq('id', authData.user.id)
+        .maybeSingle()
+
+      // 온보딩 미완료(신규 사용자 포함) → 약관 동의 페이지로
+      if (!profile?.onboarding_completed) {
+        if (!profile) {
+          // 프로필이 아예 없으면 이메일 중복 체크 (다른 provider로 이미 가입된 경우)
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id, auth_provider')
+            .eq('email', authData.user.email!)
+            .maybeSingle()
+
+          if (existingProfile && existingProfile.id !== authData.user.id) {
+            await supabase.auth.signOut()
+            return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
+          }
         }
 
-        // 중복이 없으면 약관 동의 페이지로 (프로필은 생성하지 않음)
+        // 약관 동의 페이지로 (트리거로 생성된 프로필도 여기서 처리)
         return NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
       }
 
-      // 프로필이 있으면 기존 사용자 → 홈으로
+      // 온보딩 완료된 기존 사용자 → 홈으로
       return NextResponse.redirect(`${baseUrl}${next}`)
     }
   }

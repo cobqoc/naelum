@@ -86,7 +86,7 @@ export default function SetPasswordPage() {
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       // 프로필이 없으면 생성, 있으면 마케팅 동의 업데이트
       if (!existingProfile) {

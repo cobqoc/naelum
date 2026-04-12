@@ -22,6 +22,10 @@ export default defineConfig({
     extraHTTPHeaders: {
       'Accept-Language': 'ko-KR,ko;q=0.9',
     },
+    launchOptions: {
+      // Windows에서 Chromium sandbox 크래시 방지
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    },
   },
 
   projects: [
