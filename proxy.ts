@@ -81,16 +81,6 @@ function createSupabaseClient(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // OAuth code가 루트 경로에 도달한 경우 /auth/callback으로 리다이렉트
-  // Supabase redirect URL 허용 목록에 없는 도메인에서 OAuth 시작 시 Site URL로 fallback되어 발생
-  if (pathname === '/' && request.nextUrl.searchParams.has('code')) {
-    const callbackUrl = new URL('/auth/callback', request.url)
-    callbackUrl.searchParams.set('code', request.nextUrl.searchParams.get('code')!)
-    const next = request.nextUrl.searchParams.get('next')
-    if (next) callbackUrl.searchParams.set('next', next)
-    return NextResponse.redirect(callbackUrl)
-  }
-
   // AI 크롤러: robots.txt 제외 전체 차단
   if (pathname !== '/robots.txt' && isAICrawler(request)) {
     return new NextResponse('Forbidden', { status: 403 })
