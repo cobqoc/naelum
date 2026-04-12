@@ -17,7 +17,9 @@ function safeParseInt(value: string | null, defaultVal: number, min: number, max
 
 // GET /api/search - 통합 검색
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const ip = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
   const { allowed } = await checkRateLimit(`search:${ip}`, { windowMs: 60 * 1000, maxRequests: 30 })
   if (!allowed) {
     return NextResponse.json({ error: '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })

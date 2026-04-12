@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 // 재료 매칭: 퍼지 매칭 + 동의어 처리
 const INGREDIENT_SYNONYMS: Record<string, string[]> = {
@@ -149,6 +150,14 @@ async function filterByDietaryPreferences<T extends { ingredients?: { ingredient
 
 // GET /api/recommendations - 재료 기반 레시피 추천
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
+  const { allowed } = await checkRateLimit(`recommendations:${ip}`, { windowMs: 60 * 1000, maxRequests: 20 })
+  if (!allowed) {
+    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
+
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
 
@@ -178,6 +187,31 @@ export async function GET(request: NextRequest) {
 
         const ingredientNames = userIngredients.map(i => i.ingredient_name.toLowerCase())
 
+        // 사용자 재료 + 동의어 확장 (DB 사전 필터링용)
+        const expandedSet = new Set<string>(ingredientNames)
+        for (const ing of ingredientNames) {
+          const synonyms = INGREDIENT_SYNONYMS[ing]
+          if (synonyms) synonyms.forEach(s => expandedSet.add(s.toLowerCase().trim()))
+        }
+
+        // recipe_ingredients에서 매칭 recipe_id 먼저 조회 (1000개 전체 로드 대신)
+        const ilikeClauses = [...expandedSet]
+          .slice(0, 40)
+          .map(ing => `ingredient_name.ilike.%${ing}%`)
+          .join(',')
+
+        const { data: candidateRows } = await supabase
+          .from('recipe_ingredients')
+          .select('recipe_id')
+          .or(ilikeClauses)
+
+        if (!candidateRows?.length) {
+          return NextResponse.json({ recommendations: [] })
+        }
+
+        const candidateIds = [...new Set(candidateRows.map(r => r.recipe_id))]
+
+        // 후보 레시피만 fetch (기존 .limit(1000) 대신)
         const { data: recipes } = await supabase
           .from('recipes')
           .select(`
@@ -189,7 +223,7 @@ export async function GET(request: NextRequest) {
           `)
           .eq('is_published', true)
           .eq('is_public', true)
-          .limit(1000)
+          .in('id', candidateIds.slice(0, 300))
 
         if (!recipes) {
           return NextResponse.json({ recommendations: [] })

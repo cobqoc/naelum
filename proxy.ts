@@ -2,6 +2,47 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 
+// AI 학습 데이터 수집 봇 (모든 경로 차단 — robots.txt 제외)
+const BLOCKED_AI_CRAWLERS = [
+  /GPTBot/i,
+  /ChatGPT-User/i,
+  /Google-Extended/i,
+  /\bCCBot\b/i,
+  /anthropic-ai/i,
+  /ClaudeBot/i,
+  /Bytespider/i,        // TikTok/ByteDance
+  /AhrefsBot/i,
+  /SemrushBot/i,
+  /MJ12bot/i,
+  /DotBot/i,
+  /DataForSeoBot/i,
+  /PetalBot/i,
+]
+
+// 악성 스크래퍼 User-Agent (API 경로만 차단)
+const BLOCKED_UA_PATTERNS = [
+  /python-requests/i,
+  /scrapy/i,
+  /wget/i,
+  /libwww-perl/i,
+  /Go-http-client/i,
+  /java\/\d/i,
+  /\bbot\b(?!.*(?:google|bing|yandex|naver|kakao|apple|twitter|facebook|slack))/i,
+  /\bcrawler\b(?!.*(?:google|bing|yandex))/i,
+  /\bspider\b(?!.*(?:google|bing|yandex))/i,
+]
+
+function isAICrawler(request: NextRequest): boolean {
+  const ua = request.headers.get('user-agent') || ''
+  return BLOCKED_AI_CRAWLERS.some(p => p.test(ua))
+}
+
+function isBlockedBot(request: NextRequest): boolean {
+  const ua = request.headers.get('user-agent') || ''
+  if (!ua) return true // User-Agent 없으면 차단
+  return BLOCKED_UA_PATTERNS.some(p => p.test(ua))
+}
+
 // 로그인 필요 경로 (정적)
 const PROTECTED_ROUTES = [
   '/tip/new',
@@ -39,6 +80,16 @@ function createSupabaseClient(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // AI 크롤러: robots.txt 제외 전체 차단
+  if (pathname !== '/robots.txt' && isAICrawler(request)) {
+    return new NextResponse('Forbidden', { status: 403 })
+  }
+
+  // 악성 봇: API 경로만 차단
+  if (pathname.startsWith('/api/') && isBlockedBot(request)) {
+    return new NextResponse('Forbidden', { status: 403 })
+  }
 
   const isProtected =
     PROTECTED_ROUTES.some((r) => pathname.startsWith(r)) ||

@@ -15,6 +15,7 @@ import { useScrollCache } from '@/lib/hooks/useScrollCache';
 
 const RECIPES_PER_PAGE = 20;
 const CACHE_KEY = 'scroll_cache_recipes';
+const MAX_RECIPES_AUTO = 120; // 이 개수 이후엔 수동 버튼으로 전환 (DOM 누적 방지)
 
 interface RecipesCache {
   recipes: Recipe[];
@@ -164,7 +165,7 @@ export default function AllRecipesPage() {
   }, [loadingMore, hasMore, page, sortBy, fetchRecipes]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !hasMore || recipes.length >= MAX_RECIPES_AUTO) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -179,7 +180,7 @@ export default function AllRecipesPage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loading, loadMore]);
+  }, [loading, loadMore, hasMore, recipes.length]);
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
@@ -229,12 +230,20 @@ export default function AllRecipesPage() {
                 ))}
               </div>
 
-              <div ref={sentinelRef} className="mt-8 flex justify-center">
+              <div ref={sentinelRef} className="mt-8 flex flex-col items-center gap-4">
                 {loadingMore && (
                   <div className="flex items-center gap-2 text-text-muted text-sm py-4">
                     <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
                     <span>{t.recipe.loadMore}</span>
                   </div>
+                )}
+                {hasMore && recipes.length >= MAX_RECIPES_AUTO && !loadingMore && (
+                  <button
+                    onClick={loadMore}
+                    className="px-6 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:border-accent-warm/50 hover:text-accent-warm transition-colors"
+                  >
+                    더 보기
+                  </button>
                 )}
               </div>
             </>

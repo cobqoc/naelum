@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
     }
 
     // IP 기반 rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    const ip = request.headers.get('cf-connecting-ip')
+      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || request.headers.get('x-real-ip')
       || 'unknown'
     const identifier = `${ip}:${email}`

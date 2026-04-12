@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
+import { checkRateLimit } from '@/lib/ratelimit';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -11,6 +12,11 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { user, error: authError } = await requireAuth(supabase);
   if (authError) return authError;
+
+  const { allowed } = await checkRateLimit(`upload:${user!.id}`, { windowMs: 60 * 1000, maxRequests: 10 })
+  if (!allowed) {
+    return NextResponse.json({ error: '업로드 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
 
   let formData: FormData;
   try {
