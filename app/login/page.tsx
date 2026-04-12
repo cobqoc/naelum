@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
 
 function LoginContent() {
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
@@ -54,11 +55,9 @@ function LoginContent() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
 
-  // 로그인 후 하드 리다이렉트: 전체 페이지 리로드로 AuthProvider 재초기화
-  // router.push()는 클라이언트 내비게이션이라 auth context가 갱신되지 않음
   const redirectAfterLogin = () => {
     const redirectTo = searchParams.get('redirect') || '/';
-    window.location.href = redirectTo;
+    router.push(redirectTo);
   };
 
   // 구버전 자동 로그인 설정 정리
