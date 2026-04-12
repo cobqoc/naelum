@@ -80,18 +80,18 @@ export default function SignupPage() {
     setLoading(true);
     setError('');
 
-    // 이미 가입된 이메일인지 확인
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id, auth_provider')
-      .eq('email', email)
-      .single();
+    // 이미 가입된 이메일인지 확인 (서버 API 경유 - 직접 DB 쿼리 방지)
+    const checkRes = await fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const { provider } = await checkRes.json();
 
-    if (existingProfile) {
-      // Provider별 에러 메시지
-      if (existingProfile.auth_provider === 'google') {
+    if (provider) {
+      if (provider === 'google') {
         setError(t.auth.googleRegisteredUseGoogle);
-      } else if (existingProfile.auth_provider === 'kakao') {
+      } else if (provider === 'kakao') {
         setError(t.auth.kakaoRegisteredUseKakao);
       } else {
         setError(t.auth.alreadyRegisteredLogin);

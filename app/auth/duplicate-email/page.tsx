@@ -11,17 +11,15 @@ export default async function DuplicateEmailPage() {
   }
 
   let email = ''
-  let original = ''
 
   try {
     const data = JSON.parse(hint.value)
     email = typeof data.e === 'string' ? data.e : ''
-    original = typeof data.o === 'string' ? data.o : ''
   } catch {
     redirect('/login')
   }
 
   if (!email) redirect('/login')
 
-  return <DuplicateEmailContent email={email} originalProvider={original} />
+  return <DuplicateEmailContent email={email} />
 }

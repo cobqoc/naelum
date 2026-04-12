@@ -5,37 +5,10 @@ import { useI18n } from '@/lib/i18n/context';
 
 interface Props {
   email: string;
-  originalProvider: string;
 }
 
-export function DuplicateEmailContent({ email, originalProvider }: Props) {
+export function DuplicateEmailContent({ email }: Props) {
   const { t } = useI18n();
-
-  const getProviderMessage = () => {
-    if (originalProvider === 'email') {
-      return {
-        description: t.auth.registeredWithEmail,
-        action: t.auth.loginWithPassword,
-      };
-    } else if (originalProvider === 'google') {
-      return {
-        description: t.auth.registeredWithGoogle,
-        action: t.auth.useGoogleLogin,
-      };
-    } else if (originalProvider === 'kakao') {
-      return {
-        description: t.auth.registeredWithKakao,
-        action: t.auth.loginWithKakaoAction,
-      };
-    } else {
-      return {
-        description: t.auth.registeredWithOther,
-        action: t.auth.loginWithOther,
-      };
-    }
-  };
-
-  const providerInfo = getProviderMessage();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background-primary px-4 md:px-6 py-8 md:py-12">
@@ -61,22 +34,15 @@ export function DuplicateEmailContent({ email, originalProvider }: Props) {
         <p className="mb-6 text-sm md:text-base text-text-secondary text-center">
           <span className="font-medium text-accent-warm">{email}</span>
           <br />
-          계정이 이미 존재합니다.
+          이미 다른 방법으로 가입된 이메일입니다.
         </p>
 
         <div className="mb-8 rounded-xl bg-warning/10 border border-warning/30 p-4">
           <div className="flex gap-3">
             <span className="text-2xl">⚠️</span>
             <div className="text-sm text-text-primary">
-              <p className="font-bold text-warning mb-2">{providerInfo.description}</p>
-              <p className="text-text-secondary mb-3">{providerInfo.action}</p>
-              <div className="rounded-lg bg-background-tertiary p-3 mt-3">
-                <p className="text-xs text-text-muted">
-                  <strong>{t.auth.securityNoticeTitle}</strong> {t.auth.securityNoticeDesc}
-                  {originalProvider === 'email' && ` ${t.auth.emailPasswordSecurityNote}`}
-                  {originalProvider === 'google' && ` ${t.auth.googleSecurityNote}`}
-                </p>
-              </div>
+              <p className="font-bold text-warning mb-2">로그인 방법을 확인해주세요</p>
+              <p className="text-text-secondary">이 이메일은 이미 다른 방법으로 가입되어 있습니다. 로그인 페이지에서 다른 방법으로 시도해보세요.</p>
             </div>
           </div>
         </div>
