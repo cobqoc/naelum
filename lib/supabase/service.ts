@@ -44,3 +44,18 @@ export function createServiceClient() {
     }
   )
 }
+
+/**
+ * Supabase auto-linking으로 잘못 추가된 OAuth identity를 제거합니다.
+ * unlinkIdentity()는 서버 사이드에서 작동하지 않으므로 service role로 직접 처리합니다.
+ */
+export async function removeOAuthIdentity(userId: string, provider: string): Promise<void> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return
+  const client = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+  await client.rpc('remove_oauth_identity', { p_user_id: userId, p_provider: provider })
+}
+
