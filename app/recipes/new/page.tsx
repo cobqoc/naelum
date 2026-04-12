@@ -720,7 +720,7 @@ export default function NewRecipePage() {
           tags,
           original_recipe_id: remixSource?.id || null,
           is_remix: !!remixSource,
-          is_published: false,
+          status: 'draft' as const,
         }),
       });
       const data = await response.json();

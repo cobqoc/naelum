@@ -221,8 +221,7 @@ export async function GET(request: NextRequest) {
             author:profiles(username, avatar_url),
             ingredients:recipe_ingredients(ingredient_name)
           `)
-          .eq('is_published', true)
-          .eq('is_public', true)
+          .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
 
         if (!recipes) {
@@ -426,8 +425,7 @@ export async function GET(request: NextRequest) {
             average_rating, meal_type,
             author:profiles(username, avatar_url)
           `)
-          .eq('is_published', true)
-          .eq('is_public', true)
+          .eq('status', 'published')
           .eq('meal_type', mealType)
           .order('average_rating', { ascending: false })
           .limit(limit)

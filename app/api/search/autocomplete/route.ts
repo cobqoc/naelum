@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     supabase
       .from('recipes')
       .select('title, average_rating')
-      .eq('is_published', true)
+      .eq('status', 'published')
       .ilike('title', `%${query}%`)
       .order('average_rating', { ascending: false })
       .limit(8),

@@ -13,8 +13,7 @@ async function fetchHomeData() {
     supabase
       .from('recipes')
       .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles(username)')
-      .eq('is_published', true)
-      .eq('is_public', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
       .range(0, INITIAL_RECIPES - 1),
     supabase
@@ -71,8 +70,7 @@ async function fetchHomeData() {
       const { data: trendingData } = await supabase
         .from('recipes')
         .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles(username, avatar_url)')
-        .eq('is_published', true)
-        .eq('is_public', true)
+        .eq('status', 'published')
         .in('id', topIds);
 
       initialTrending = ((trendingData || []).map(r => ({
@@ -88,8 +86,7 @@ async function fetchHomeData() {
     const { data: fallback } = await supabase
       .from('recipes')
       .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles(username, avatar_url)')
-      .eq('is_published', true)
-      .eq('is_public', true)
+      .eq('status', 'published')
       .order('average_rating', { ascending: false })
       .limit(4);
 

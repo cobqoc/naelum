@@ -64,8 +64,7 @@ export async function GET(request: NextRequest) {
           average_rating, views_count, cuisine_type,
           author:profiles(username, avatar_url)
         `, { count: 'exact' })
-        .eq('is_published', true)
-        .eq('is_public', true)
+        .eq('status', 'published')
         .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
 
       if (cuisine) recipeQuery = recipeQuery.eq('cuisine_type', cuisine)
@@ -120,12 +119,11 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
             author:profiles(username, avatar_url),
-            is_published, is_public
+            status
           )
         `, { count: 'exact' })
         .ilike('ingredient_name', `%${query}%`)
-        .eq('recipe.is_published', true)
-        .eq('recipe.is_public', true)
+        .eq('recipe.status', 'published')
         .range(offset, offset + limit - 1)
 
       /* eslint-disable @typescript-eslint/no-explicit-any */

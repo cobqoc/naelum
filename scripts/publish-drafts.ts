@@ -51,7 +51,7 @@ async function main() {
   if (input.type === 'recipe') {
     const { data, error } = await supabase
       .from('recipes')
-      .update({ is_published: true, published_at: new Date().toISOString() })
+      .update({ status: 'published', published_at: new Date().toISOString() })
       .in('id', input.ids)
       .select('id, title');
 

@@ -108,7 +108,7 @@ async function main() {
           description: '한식진흥원 제공 전통 한식 레시피 (연변 조선족·북한 전통음식 아카이브). 레시피명 확보 후 업데이트 예정.',
           cuisine_type: 'korean',
           dish_type: 'other',
-          is_published: false,  // 이름이 임시이므로 비공개
+          status: 'draft' as const,  // 이름이 임시이므로 비공개
         })
         .select('id')
         .single();
@@ -156,7 +156,7 @@ async function main() {
   console.log(`  성공: ${success}건 (비공개 draft)`);
   console.log(`  스킵: ${skip}건`);
   console.log(`  에러: ${error}건`);
-  console.log('\n  ℹ️  레시피명 확보 후 is_published=true 로 업데이트하세요.');
+  console.log('\n  ℹ️  레시피명 확보 후 status=published 로 업데이트하세요.');
   console.log('========================================');
 }
 

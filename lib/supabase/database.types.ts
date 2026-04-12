@@ -200,7 +200,7 @@ export interface Database {
           ratings_count: number
           original_recipe_id: string | null
           is_remix: boolean
-          is_published: boolean
+          status: 'draft' | 'private' | 'published'
           is_featured: boolean
           published_at: string | null
           created_at: string
@@ -239,7 +239,7 @@ export interface Database {
           ratings_count?: number
           original_recipe_id?: string | null
           is_remix?: boolean
-          is_published?: boolean
+          status?: 'draft' | 'private' | 'published'
           is_featured?: boolean
           published_at?: string | null
           created_at?: string
@@ -278,7 +278,7 @@ export interface Database {
           ratings_count?: number
           original_recipe_id?: string | null
           is_remix?: boolean
-          is_published?: boolean
+          status?: 'draft' | 'private' | 'published'
           is_featured?: boolean
           published_at?: string | null
           created_at?: string

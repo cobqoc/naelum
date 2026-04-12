@@ -15,7 +15,7 @@ export interface Recipe extends RecipeBase {
   cooked_count?: number;
   cuisine_type?: string;
   servings?: number | null;
-  is_public?: boolean;
+  status?: 'draft' | 'private' | 'published';
   created_at?: string;
   author?: { username: string; avatar_url?: string | null };
   has_cooked?: boolean;

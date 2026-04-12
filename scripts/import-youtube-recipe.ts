@@ -182,8 +182,7 @@ async function main() {
       is_gluten_free: input.is_gluten_free || false,
       is_dairy_free: input.is_dairy_free || false,
       is_low_carb: input.is_low_carb || false,
-      is_published: true,
-      is_public: false,
+      status: 'private' as const,
       published_at: null,
     })
     .select('id')

@@ -342,7 +342,7 @@ async function main() {
           thumbnail_url,
           cuisine_type: 'korean',
           dish_type: 'side',
-          is_published: true,
+          status: 'published' as const,
           published_at: new Date().toISOString(),
         })
         .select('id').single();

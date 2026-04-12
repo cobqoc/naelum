@@ -27,7 +27,7 @@ async function showStatus() {
     .from('recipes')
     .select('id, title, likes_count, saves_count, views_count, average_rating')
     .eq('is_featured', true)
-    .eq('is_published', true);
+    .eq('status', 'published');
 
   if (error) {
     console.error('ERROR:', error.message);
@@ -50,7 +50,7 @@ async function calculateTop(count: number) {
   const { data, error } = await supabase
     .from('recipes')
     .select('id, title, likes_count, saves_count, views_count, average_rating, is_featured')
-    .eq('is_published', true)
+    .eq('status', 'published')
     .order('likes_count', { ascending: false })
     .limit(100);
 
@@ -84,7 +84,7 @@ async function updateFeatured(count: number) {
   const { data, error } = await supabase
     .from('recipes')
     .select('id, title, likes_count, saves_count, views_count, average_rating')
-    .eq('is_published', true)
+    .eq('status', 'published')
     .order('likes_count', { ascending: false })
     .limit(100);
 

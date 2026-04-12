@@ -19,7 +19,7 @@ export async function PATCH(
 
     const { error } = await auth.supabase
       .from('recipes')
-      .update({ is_published: true })
+      .update({ status: 'published' })
       .eq('id', id)
 
     if (error) {
@@ -38,7 +38,7 @@ export async function PATCH(
 
     const { error } = await auth.supabase
       .from('recipes')
-      .update({ is_published: false })
+      .update({ status: 'draft' })
       .eq('id', id)
 
     if (error) {

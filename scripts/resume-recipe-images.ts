@@ -113,7 +113,7 @@ async function main() {
     .from('recipes')
     .select('id')
     .is('thumbnail_url', null)
-    .eq('is_public', false);
+    .eq('status', 'private');
 
   const noThumbIds = new Set((noThumbRecipes ?? []).map((r: { id: string }) => r.id));
 

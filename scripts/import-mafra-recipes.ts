@@ -330,7 +330,7 @@ async function main() {
           carbs_grams:      null,
           fat_grams:        null,
           sodium_mg:        null,
-          is_published:     true,
+          status:           'published' as const,
           published_at:     new Date().toISOString(),
         })
         .select('id')

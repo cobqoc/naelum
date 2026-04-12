@@ -76,7 +76,7 @@ export default function AllRecipesPage() {
     let query = supabase
       .from('recipes')
       .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles(username), created_at')
-      .eq('is_public', true);
+      .eq('status', 'published');
 
     if (cuisineFilterRef.current) query = query.eq('cuisine_type', cuisineFilterRef.current);
     if (dishFilterRef.current) query = query.eq('dish_type', dishFilterRef.current);

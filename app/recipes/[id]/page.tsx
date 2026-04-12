@@ -48,7 +48,7 @@ interface Recipe {
   thumbnail_url: string | null;
   ingredients_image_url?: string | null;
   video_url?: string | null;
-  is_public: boolean;
+  status: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
 }
@@ -199,8 +199,8 @@ export default function RecipeDetailPage(props: PageProps) {
         return;
       } else {
         // 3. Check if recipe is private and user has permission to view
-        if (recipeData.is_public === false) {
-          // Private recipe - only author can view
+        if (recipeData.status !== 'published') {
+          // Private/draft recipe - only author can view
           if (!user || recipeData.author_id !== user.id) {
             // Not authorized to view this private recipe
             setRecipe(null);
