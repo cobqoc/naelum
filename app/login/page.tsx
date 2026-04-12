@@ -2,20 +2,18 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
 import { getPasswordStrength } from '@/lib/utils/password';
-import { useAuth } from '@/lib/auth/context';
 
 const STORAGE_KEYS = {
   SAVED_EMAIL: 'naelum_saved_email',
 } as const;
 
 function LoginContent() {
-  const router = useRouter();
-  const { refresh: refreshAuth } = useAuth();
+
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
@@ -56,10 +54,11 @@ function LoginContent() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
 
-  // 프로필 확인 및 홈으로 리다이렉트
+  // 로그인 후 하드 리다이렉트: 전체 페이지 리로드로 AuthProvider 재초기화
+  // router.push()는 클라이언트 내비게이션이라 auth context가 갱신되지 않음
   const redirectAfterLogin = () => {
     const redirectTo = searchParams.get('redirect') || '/';
-    router.push(redirectTo);
+    window.location.href = redirectTo;
   };
 
   // 구버전 자동 로그인 설정 정리
@@ -174,9 +173,6 @@ function LoginContent() {
       } else {
         localStorage.removeItem(STORAGE_KEYS.SAVED_EMAIL);
       }
-
-      // auth context를 명시적으로 갱신 (onAuthStateChange 크로스 인스턴스 알림 보장)
-      await refreshAuth();
 
       // 프로필 확인 및 리다이렉트
       redirectAfterLogin();
