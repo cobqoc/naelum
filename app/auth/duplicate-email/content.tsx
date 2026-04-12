@@ -47,29 +47,6 @@ export function DuplicateEmailContent({ email }: Props) {
           </div>
         </div>
 
-        <details className="mb-6 rounded-xl bg-info/10 border border-info/20 p-4">
-          <summary className="cursor-pointer text-sm font-medium text-info flex items-center gap-2">
-            <span>💡</span>
-            <span>{t.auth.forgotSignupMethod}</span>
-          </summary>
-          <div className="mt-3 text-sm text-text-secondary">
-            <ul className="space-y-1.5 ml-2">
-              <li className="flex items-start gap-2">
-                <span className="text-accent-warm">•</span>
-                <span>{t.auth.dupEmailHint1}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent-warm">•</span>
-                <span>{t.auth.dupEmailHint2}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-accent-warm">•</span>
-                <span>{t.auth.dupEmailHint3}</span>
-              </li>
-            </ul>
-          </div>
-        </details>
-
         <div className="space-y-3">
           <Link
             href="/login"
