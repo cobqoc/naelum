@@ -1,10 +1,10 @@
-const CACHE_NAME = 'naelum-v2';
-const STATIC_CACHE = 'naelum-static-v2';
-const RECIPE_CACHE = 'naelum-recipes-v2';
-const IMAGE_CACHE = 'naelum-images-v2';
+const CACHE_VERSION = 'v3';
+const CACHE_NAME = `naelum-${CACHE_VERSION}`;
+const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
+const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
+const IMAGE_CACHE = `naelum-images-${CACHE_VERSION}`;
 
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/offline.html',
 ];
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
 const MAX_RECIPE_CACHE = 50;
 const MAX_IMAGE_CACHE = 100;
 
-// Install - cache static assets
+// Install - cache static assets (홈은 캐시 안 함 — SSR 결과가 요청마다 다름)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -51,10 +51,27 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip API and auth requests
+  // Skip API, auth, 페이지 탐색 요청 (Next.js SSR 페이지는 항상 네트워크에서)
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
 
-  // Strategy: Images - Cache First
+  // Strategy: Next.js 정적 자산 — Cache First (hash 포함되어 영구 캐시 안전)
+  if (url.pathname.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Strategy: 이미지 — Cache First
   if (
     request.destination === 'image' ||
     url.pathname.match(/\.(png|jpg|jpeg|gif|webp|avif|svg|ico)$/)
@@ -71,17 +88,14 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return response;
-        }).catch(() => {
-          // Return a placeholder for failed images
-          return new Response('', { status: 404 });
-        });
+        }).catch(() => new Response('', { status: 404 }));
       })
     );
     return;
   }
 
-  // Strategy: Recipe pages - Network First with cache fallback
-  if (url.pathname.startsWith('/recipes/')) {
+  // Strategy: 개별 레시피 페이지 (/recipes/[id]) — Network First with cache fallback
+  if (url.pathname.match(/^\/recipes\/[^/]+$/)) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -94,38 +108,32 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => {
-          return caches.match(request).then((cached) => {
-            if (cached) return cached;
-            return caches.match('/offline.html');
-          });
-        })
+        .catch(() =>
+          caches.match(request).then((cached) =>
+            cached || caches.match('/offline.html')
+          )
+        )
     );
     return;
   }
 
-  // Strategy: Everything else - Stale While Revalidate
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetchPromise = fetch(request)
-        .then((response) => {
-          if (response.ok && response.type === 'basic') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, clone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          if (cached) return cached;
-          if (request.mode === 'navigate') {
-            return caches.match('/offline.html').then(r => r || caches.match('/'));
-          }
-          return new Response('Offline', { status: 503 });
-        });
+  // Strategy: 페이지 탐색 (/, /recipes, /search 등) — Network Only
+  // SSR 페이지는 캐시하지 않고 항상 서버에서 최신 내용을 받음
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match('/offline.html')
+      )
+    );
+    return;
+  }
 
-      return cached || fetchPromise;
+  // Strategy: 나머지 — Network First
+  event.respondWith(
+    fetch(request).catch(() => {
+      return caches.match(request).then((cached) =>
+        cached || new Response('Offline', { status: 503 })
+      );
     })
   );
 });
@@ -143,7 +151,7 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       data: { url },
-      tag: url, // 같은 재료 알림은 덮어쓰기
+      tag: url,
       renotify: false,
     })
   );
@@ -167,18 +175,15 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle recipe download for offline reading
+// 특정 레시피 오프라인 저장
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CACHE_RECIPE') {
     const { url, assets } = event.data;
     caches.open(RECIPE_CACHE).then((cache) => {
       cache.add(url);
       if (assets && assets.length > 0) {
-        const imageCache = caches.open(IMAGE_CACHE);
-        imageCache.then((ic) => {
-          assets.forEach((asset) => {
-            ic.add(asset).catch(() => {});
-          });
+        caches.open(IMAGE_CACHE).then((ic) => {
+          assets.forEach((asset) => ic.add(asset).catch(() => {}));
         });
       }
     });
