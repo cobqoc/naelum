@@ -1,11 +1,24 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { parse, serialize } from 'cookie'
 
+// navigator.locks가 MetaMask/SES 등 브라우저 확장에 의해 차단될 수 있음.
+// 차단 시 Supabase _acquireLock에서 AbortError가 발생해 세션 초기화 전체가 실패함.
+// 심플한 Promise 체인 mutex로 대체해 navigator.locks 의존성을 제거.
+let _lockQueue: Promise<unknown> = Promise.resolve();
+function simpleLock<T>(_name: string, _timeout: number, fn: () => Promise<T>): Promise<T> {
+  const next = _lockQueue.then(() => fn());
+  _lockQueue = next.catch(() => {});
+  return next;
+}
+
 function newClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      auth: {
+        lock: simpleLock,
+      },
       cookies: {
         getAll() {
           if (typeof document === 'undefined') return []

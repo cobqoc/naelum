@@ -17,17 +17,13 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
-  const [email, setEmail] = useState(() =>
-    typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) ?? '') : ''
-  );
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [saveEmail, setSaveEmail] = useState(() =>
-    typeof window !== 'undefined' ? !!localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) : false
-  );
+  const [saveEmail, setSaveEmail] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
   // Find ID states
@@ -59,10 +55,16 @@ function LoginContent() {
     window.location.href = redirectTo;
   };
 
-  // 구버전 자동 로그인 설정 정리
-  // (이미 로그인된 경우 미들웨어가 서버에서 홈으로 리다이렉트하므로 세션 체크 불필요)
+  // localStorage 초기화 (hydration 후 클라이언트에서만 실행)
   useEffect(() => {
     localStorage.removeItem('naelum_auto_login');
+    const saved = localStorage.getItem(STORAGE_KEYS.SAVED_EMAIL) ?? '';
+    if (saved) {
+      queueMicrotask(() => {
+        setEmail(saved);
+        setSaveEmail(true);
+      });
+    }
   }, []);
 
   // 쿼리 파라미터 확인하여 비밀번호 찾기 모달 자동 열기
