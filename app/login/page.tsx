@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
 import { getPasswordStrength } from '@/lib/utils/password';
+import { useAuth } from '@/lib/auth/context';
 
 const STORAGE_KEYS = {
   SAVED_EMAIL: 'naelum_saved_email',
@@ -14,6 +15,7 @@ const STORAGE_KEYS = {
 
 function LoginContent() {
   const router = useRouter();
+  const { refresh: refreshAuth } = useAuth();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
@@ -172,6 +174,9 @@ function LoginContent() {
       } else {
         localStorage.removeItem(STORAGE_KEYS.SAVED_EMAIL);
       }
+
+      // auth context를 명시적으로 갱신 (onAuthStateChange 크로스 인스턴스 알림 보장)
+      await refreshAuth();
 
       // 프로필 확인 및 리다이렉트
       redirectAfterLogin();
