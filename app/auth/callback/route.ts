@@ -2,6 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { removeOAuthIdentity } from '@/lib/supabase/service'
 import { NextResponse } from 'next/server'
 
+function redirectToDuplicateEmail(baseUrl: string, email: string, original: string): NextResponse {
+  const response = NextResponse.redirect(`${baseUrl}/auth/duplicate-email`)
+  response.cookies.set('_naelum_dup', JSON.stringify({ e: email, o: original }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 120,
+    path: '/',
+  })
+  return response
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -37,9 +49,7 @@ export async function GET(request: Request) {
           // 제거 실패해도 signOut으로 세션 무효화
         }
         await supabase.auth.signOut()
-        return NextResponse.redirect(
-          `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=email`
-        )
+        return redirectToDuplicateEmail(baseUrl, authData.user.email!, 'email')
       }
 
       // OAuth only로 로그인했는데 다른 provider로 가입된 프로필이 있는 경우
@@ -52,9 +62,7 @@ export async function GET(request: Request) {
 
         if (existingProfile && existingProfile.id !== authData.user.id) {
           await supabase.auth.signOut()
-          return NextResponse.redirect(
-            `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`
-          )
+          return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
         }
       }
 
@@ -77,9 +85,7 @@ export async function GET(request: Request) {
         if (existingProfile) {
           // 중복된 이메일이 있으면 로그아웃 후 에러 페이지로 리다이렉트
           await supabase.auth.signOut()
-          return NextResponse.redirect(
-            `${baseUrl}/auth/duplicate-email?email=${encodeURIComponent(authData.user.email!)}&original=${existingProfile.auth_provider}`
-          )
+          return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
         }
 
         // 중복이 없으면 약관 동의 페이지로 (프로필은 생성하지 않음)
