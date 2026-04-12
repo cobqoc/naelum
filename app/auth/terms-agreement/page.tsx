@@ -96,16 +96,10 @@ export default function TermsAgreementPage() {
           onboardingStep: 0,
         });
         if (insertError) {
-          // 중복 키 오류는 트리거로 이미 생성된 경우 — 무시하고 계속
-          const isDuplicate = insertError.toLowerCase().includes('duplicate') ||
-            insertError.toLowerCase().includes('unique') ||
-            insertError.includes('23505');
-          if (!isDuplicate) {
-            console.error('Profile insert error:', insertError);
-            setError(t.auth.profileCreateError);
-            setLoading(false);
-            return;
-          }
+          console.error('Profile insert error:', insertError);
+          setError(t.auth.profileCreateError);
+          setLoading(false);
+          return;
         }
       }
 
