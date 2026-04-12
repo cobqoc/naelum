@@ -112,6 +112,9 @@ export default function TermsAgreementPage() {
         return;
       }
 
+      // 세션 갱신 → auth context에서 profile 재조회 (드롭다운에 사용자 정보 표시)
+      await supabase.auth.refreshSession();
+
       // 온보딩 모달 표시
       setShowOnboardingModal(true);
       setLoading(false);

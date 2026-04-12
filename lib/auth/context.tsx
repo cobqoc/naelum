@@ -29,12 +29,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await createClient()
+      const { data } = await createClient()
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', userId)
-        .single();
-      if (error) return;
+        .maybeSingle();
       if (data) setProfile(data);
     } catch {
       // 프로필 로드 실패 시 무시
