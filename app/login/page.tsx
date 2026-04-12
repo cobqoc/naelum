@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
@@ -14,7 +14,6 @@ const STORAGE_KEYS = {
 
 function LoginContent() {
 
-  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { t } = useI18n();
@@ -57,7 +56,7 @@ function LoginContent() {
 
   const redirectAfterLogin = () => {
     const redirectTo = searchParams.get('redirect') || '/';
-    router.push(redirectTo);
+    window.location.href = redirectTo;
   };
 
   // 구버전 자동 로그인 설정 정리
