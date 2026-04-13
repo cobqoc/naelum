@@ -370,7 +370,7 @@ export default function Header() {
                 </div>
                 <Link
                   href="/login"
-                  className="hidden md:inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                  className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
                   로그인
                 </Link>
