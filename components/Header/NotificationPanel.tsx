@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -44,7 +44,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     }
   }, []);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const { count } = await supabase
         .from('notifications')
@@ -52,7 +52,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
         .eq('is_read', false);
       setUnreadCount(count || 0);
     } catch { /* ignore */ }
-  };
+  }, [supabase]);
 
   const fetchNotifications = async () => {
     setNotifLoading(true);
@@ -73,8 +73,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, fetchUnreadCount]);
 
   const markAsRead = async (id: string) => {
     const res = await fetch('/api/notifications', {

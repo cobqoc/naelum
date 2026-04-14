@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
     query = query.eq('difficulty_level', difficulty)
   }
   if (maxTime) {
-    query = query.lte('total_time_minutes', parseInt(maxTime))
+    const maxTimeNum = parseInt(maxTime, 10)
+    if (Number.isFinite(maxTimeNum) && maxTimeNum > 0) {
+      query = query.lte('total_time_minutes', maxTimeNum)
+    }
   }
   if (dietary === 'vegetarian') {
     query = query.eq('is_vegetarian', true)

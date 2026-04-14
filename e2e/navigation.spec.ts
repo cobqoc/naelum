@@ -9,8 +9,8 @@ test.describe('네비게이션 흐름 테스트', () => {
     const logo = page.locator('a[href="/"]').or(page.locator('a:has-text("낼름")'));
     if (await logo.count() > 0) {
       await logo.first().click();
-      await page.waitForURL('http://localhost:3000/');
-      await expect(page).toHaveURL('http://localhost:3000/');
+      await page.waitForURL('/');
+      await expect(page).toHaveURL(/\/$/);
     }
   });
 
@@ -65,7 +65,7 @@ test.describe('네비게이션 흐름 테스트', () => {
     const is404 = await page.locator('text=404').count() > 0 ||
                   await page.locator('text=찾을 수 없').count() > 0 ||
                   await page.locator('text=Not Found').count() > 0;
-    const isHome = page.url() === 'http://localhost:3000/';
+    const isHome = new URL(page.url()).pathname === '/';
 
     expect(is404 || isHome).toBeTruthy();
   });

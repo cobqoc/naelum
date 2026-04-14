@@ -4,7 +4,14 @@ test.describe('스크롤 복원 테스트', () => {
   test('레시피 목록 - 스크롤 후 상세 이동 → 뒤로가기 시 위치 복원', async ({ page }) => {
     // 1. 레시피 목록 페이지 접속
     await page.goto('/recipes');
-    await page.waitForSelector('[data-testid="recipe-card"], a[href^="/recipes/"]', { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+
+    const hasEmptyState = await page.locator('text=아직 레시피가 없습니다').count() > 0;
+    if (hasEmptyState) {
+      test.skip(true, '레시피가 없는 환경입니다 (스크롤 복원 검증 불가)');
+      return;
+    }
 
     // 2. 초기 레시피 카드가 로드됐는지 확인
     const initialCards = await page.locator('a[href^="/recipes/"]').count();
@@ -75,8 +82,14 @@ test.describe('스크롤 복원 테스트', () => {
 
   test('레시피 목록 - sessionStorage 캐시 저장 확인', async ({ page }) => {
     await page.goto('/recipes');
-    await page.waitForSelector('a[href^="/recipes/"]', { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
+
+    const hasEmptyState = await page.locator('text=아직 레시피가 없습니다').count() > 0;
+    if (hasEmptyState) {
+      test.skip(true, '레시피가 없는 환경입니다 (스크롤 복원 검증 불가)');
+      return;
+    }
 
     // 스크롤
     await page.evaluate(() => window.scrollTo(0, 500));
@@ -115,8 +128,14 @@ test.describe('스크롤 복원 테스트', () => {
   test('레시피 목록 - 정렬 변경 시 캐시 클리어', async ({ page }) => {
     // 캐시가 있는 상태에서 시작
     await page.goto('/recipes');
-    await page.waitForSelector('a[href^="/recipes/"]', { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
+
+    const hasEmptyState = await page.locator('text=아직 레시피가 없습니다').count() > 0;
+    if (hasEmptyState) {
+      test.skip(true, '레시피가 없는 환경입니다 (스크롤 복원 검증 불가)');
+      return;
+    }
 
     // 수동으로 캐시 주입
     await page.evaluate(() => {

@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -10,7 +12,7 @@ export default defineConfig({
   timeout: 60000,
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     // 더 긴 타임아웃 설정 (기본 30초 → 60초)
@@ -39,7 +41,8 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
+  // 외부 URL(PLAYWRIGHT_BASE_URL)이 지정된 경우 로컬 서버 불필요
+  webServer: process.env.PLAYWRIGHT_BASE_URL ? undefined : {
     // E2E는 프로덕션 빌드로 실행: dev 오버레이가 클릭을 가로채는 문제 회피
     command: 'npm run build && npm run start',
     url: 'http://localhost:3000',

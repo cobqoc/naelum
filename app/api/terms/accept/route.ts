@@ -23,8 +23,7 @@ export async function POST(request: NextRequest) {
     request.headers.get('x-real-ip') ||
     null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_terms_acceptance')
     .upsert(
       {
@@ -52,8 +51,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const version = searchParams.get('version') || CURRENT_TERMS_VERSION;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('user_terms_acceptance')
     .select('accepted_at, terms_version')
     .eq('user_id', user.id)

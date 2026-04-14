@@ -53,7 +53,7 @@ export default function CookingModePage(props: PageProps) {
   const [timerActive, setTimerActive] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
-  const fetchRecipe = async () => {
+  const fetchRecipe = useCallback(async () => {
     const { data, error } = await supabase
       .from('recipes')
       .select(`
@@ -73,9 +73,9 @@ export default function CookingModePage(props: PageProps) {
       setRecipe({ ...data, steps: sortedSteps });
     }
     setLoading(false);
-  };
+  }, [id, supabase]);
 
-  const startCookingSession = async () => {
+  const startCookingSession = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -92,13 +92,13 @@ export default function CookingModePage(props: PageProps) {
     if (data) {
       setSessionId(data.id);
     }
-  };
+  }, [id, supabase]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRecipe();
     startCookingSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [fetchRecipe, startCookingSession]);
 
   // Timer effect
   useEffect(() => {

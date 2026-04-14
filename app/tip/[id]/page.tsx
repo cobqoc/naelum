@@ -57,8 +57,7 @@ export default function TipDetailPage() {
       setLoading(false);
     };
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, supabase]);
 
   const handleDelete = async () => {
     if (!confirm('팁을 삭제하시겠습니까?')) return;

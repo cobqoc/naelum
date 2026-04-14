@@ -57,8 +57,7 @@ export default function AdminDashboard() {
         .limit(10);
 
       if (actionsData) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setRecentActions(actionsData as any);
+        setRecentActions(actionsData as unknown as RecentAction[]);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);

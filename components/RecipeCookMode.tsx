@@ -126,6 +126,8 @@ export default function RecipeCookMode({
     if (voice.isEnabled && currentStep) {
       voice.speakStep(currentStep.step_number, currentStep.instruction, currentStep.tip || undefined);
     }
+    // voice.speakStep은 useCallback으로 안정화된 참조 (추가 시 lint가 voice 객체 전체를 요구해 매 렌더 실행됨)
+    // currentStep은 currentStepIndex 변경 시에만 변경되므로 deps 중복
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStepIndex, voice.isEnabled]);
 

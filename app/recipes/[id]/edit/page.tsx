@@ -285,7 +285,7 @@ export default function EditRecipePage(props: PageProps) {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('recipe-images')
@@ -338,7 +338,7 @@ export default function EditRecipePage(props: PageProps) {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `ingredients-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('recipe-images')
@@ -391,7 +391,7 @@ export default function EditRecipePage(props: PageProps) {
 
       const fileExt = file.name.split('.').pop();
       const fileName = `thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('recipe-images')

@@ -15,7 +15,12 @@ export async function POST(
   const { user, error: authError } = await requireAuth(supabase)
   if (authError) return authError
 
-  const body = await request.json().catch(() => ({}))
+  let body: { folder_id?: string; notes?: string } = {}
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+  }
   const folderId = body.folder_id || null
   const rawNotes = body.notes ?? null
   const notes = typeof rawNotes === 'string' ? sanitizeHtml(rawNotes) : null
