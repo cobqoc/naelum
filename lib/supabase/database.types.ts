@@ -604,6 +604,51 @@ export interface Database {
         }
       }
 
+      user_blocks: {
+        Row: {
+          id: string
+          blocker_id: string
+          blocked_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          blocker_id: string
+          blocked_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          blocker_id?: string
+          blocked_id?: string
+          created_at?: string
+        }
+      }
+
+      user_terms_acceptance: {
+        Row: {
+          id: string
+          user_id: string
+          terms_version: string
+          accepted_at: string | null
+          ip_address: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          terms_version: string
+          accepted_at?: string | null
+          ip_address?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          terms_version?: string
+          accepted_at?: string | null
+          ip_address?: string | null
+        }
+      }
+
       // ================================================
       // 6. INGREDIENTS MANAGEMENT
       // ================================================

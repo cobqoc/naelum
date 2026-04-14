@@ -27,8 +27,7 @@ export async function POST(
     return NextResponse.json({ error: '자기 자신을 차단할 수 없습니다.' }, { status: 400 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_blocks')
     .insert({ blocker_id: user.id, blocked_id: targetUser.id });
 
@@ -63,8 +62,7 @@ export async function DELETE(
     return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_blocks')
     .delete()
     .eq('blocker_id', user.id)
@@ -98,8 +96,7 @@ export async function GET(
     return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('user_blocks')
     .select('id')
     .eq('blocker_id', user.id)

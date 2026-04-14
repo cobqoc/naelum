@@ -13,21 +13,7 @@ import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import BottomNav from '@/components/BottomNav';
 import Header from '@/components/Header';
-
-// ── 냉장고 스타일 레이아웃 ──────────────────────────
-
-// 밝은 배경(냉장·상온·기타)용 카테고리 색상 — 진한 텍스트로 가독성 최대화
-const CATEGORY_PILL_LIGHT: Record<string, string> = {
-  veggie:    'bg-green-100 text-green-800 ring-1 ring-green-300/70',
-  meat:      'bg-red-100 text-red-800 ring-1 ring-red-300/70',
-  seafood:   'bg-sky-100 text-sky-800 ring-1 ring-sky-300/70',
-  grain:     'bg-lime-100 text-lime-800 ring-1 ring-lime-300/70',
-  dairy:     'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300/70',
-  seasoning: 'bg-violet-100 text-violet-800 ring-1 ring-violet-300/70',
-  condiment: 'bg-teal-100 text-teal-800 ring-1 ring-teal-300/70',
-  fruit:     'bg-orange-100 text-orange-800 ring-1 ring-orange-300/70',
-  other:     'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300/70',
-};
+import { CATEGORY_PILL_LIGHT, CATEGORY_PILL_FREEZER } from '@/lib/constants/ingredientColors';
 
 // 어두운 배경(기본)용 카테고리 색상 — 밝은 텍스트로 가독성 최대화
 const CATEGORY_PILL_DARK: Record<string, string> = {
@@ -56,7 +42,7 @@ function getExpiryStatus(expiryDate: string | null | undefined) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const expiry = new Date(expiryDate); expiry.setHours(0, 0, 0, 0);
   const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 0) return { text: '만료', level: 'expired' as const };
+  if (days < 0) return { text: '만료', level: 'critical' as const };
   if (days === 0) return { text: 'D-Day', level: 'critical' as const };
   if (days <= 3) return { text: `D-${days}`, level: 'critical' as const };
   if (days <= 7) return { text: `D-${days}`, level: 'warning' as const };
@@ -116,18 +102,6 @@ function MovePopup({ ingredientId, ingredientName, currentLocation, onMove, onDe
 }
 
 // ── IngredientPill ─────────────────────────────────
-// 냉동 구역(어두운 파란 배경)용 pill — 카테고리별 밝은 색상
-const CATEGORY_PILL_FREEZER: Record<string, string> = {
-  veggie:    'bg-green-400/30 text-green-200 ring-1 ring-green-400/40',
-  meat:      'bg-red-400/30 text-red-200 ring-1 ring-red-400/40',
-  seafood:   'bg-sky-400/30 text-sky-200 ring-1 ring-sky-400/40',
-  grain:     'bg-lime-400/30 text-lime-200 ring-1 ring-lime-400/40',
-  dairy:     'bg-yellow-300/30 text-yellow-200 ring-1 ring-yellow-300/40',
-  seasoning: 'bg-violet-400/30 text-violet-200 ring-1 ring-violet-400/40',
-  condiment: 'bg-teal-400/30 text-teal-200 ring-1 ring-teal-400/40',
-  fruit:     'bg-orange-400/30 text-orange-200 ring-1 ring-orange-400/40',
-  other:     'bg-indigo-400/30 text-indigo-200 ring-1 ring-indigo-400/40',
-};
 
 interface IngredientPillProps {
   ingredient: {

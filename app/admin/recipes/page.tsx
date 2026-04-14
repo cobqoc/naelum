@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/lib/toast/context';
 
@@ -27,7 +27,7 @@ export default function AdminRecipesPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
 
-  const loadRecipes = async () => {
+  const loadRecipes = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({
       page: page.toString(),
@@ -46,12 +46,12 @@ export default function AdminRecipesPage() {
     }
 
     setLoading(false);
-  };
+  }, [page, search, status]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRecipes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search, status]);
+  }, [loadRecipes]);
 
   const handleTogglePublish = async (recipe: AdminRecipe) => {
     const action = recipe.status === 'published' ? 'unpublish' : 'publish';

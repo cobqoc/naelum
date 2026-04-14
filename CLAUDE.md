@@ -8,6 +8,35 @@
 - **Styling**: Tailwind CSS 4 (@tailwindcss/postcss)
 - **Language**: TypeScript 5.x
 
+## 🗄️ Supabase 환경 분리
+
+| 환경 | 브랜치 | Supabase 프로젝트 | 용도 |
+|---|---|---|---|
+| 로컬 개발 | — | `naelum-dev` (`jmyrdoguxlizvajfcwep`) | `.env.local` |
+| Vercel Preview | `develop` | `naelum-dev` (`jmyrdoguxlizvajfcwep`) | Preview URL |
+| Vercel Production | `main` | `naelum` (`rgnlgpfazxgwsnkgrhzs`) | naelum.app |
+
+### DB 마이그레이션 흐름
+```
+1. supabase/migrations/ 에 SQL 파일 작성
+2. naelum-dev에 먼저 apply → 검증
+3. 문제 없으면 naelum(prod)에 apply
+```
+
+> MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
+
+### dev DB 현황 (2026-04-13 기준)
+- `recipes`: 100개 (프로덕션 인기순 샘플, `author_id = null`)
+- `ingredients_master`: 605개 (전체 복사)
+- 함수·트리거·뷰 프로덕션과 동기화 완료
+
+### 주의사항
+- **로컬/dev에서 절대 prod DB 직접 수정 금지**
+- dev에 유저 없음 → 유저 관련 기능 테스트 시 dev에서 직접 회원가입 필요
+- Google OAuth 로그인 안 될 경우: naelum-dev → Authentication → URL Configuration에서 `http://localhost:3000` 등록 확인
+
+---
+
 ## 🌿 브랜치 전략
 
 ```

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
 
@@ -28,7 +28,7 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({
       page: page.toString(),
@@ -45,12 +45,12 @@ export default function AdminUsersPage() {
     }
 
     setLoading(false);
-  };
+  }, [page, search]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search]);
+  }, [loadUsers]);
 
   const handleBanUser = async (userId: string, reason: string) => {
     const res = await fetch(`/api/admin/users/${userId}`, {
