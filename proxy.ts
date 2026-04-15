@@ -155,6 +155,24 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // 약관 미동의 유저 강제 리다이렉트
+  // naelum_needs_terms 쿠키 있고, 로그인됐고, /auth/ · /api/ 경로가 아닌 경우
+  const needsTerms = request.cookies.get('naelum_needs_terms')?.value === '1'
+  if (needsTerms && user && !pathname.startsWith('/auth/') && !pathname.startsWith('/api/')) {
+    const supabase = createSupabaseClient(request)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile?.onboarding_completed) {
+      return NextResponse.redirect(new URL('/auth/terms-agreement', request.url))
+    }
+    // 온보딩 완료됨 → 쿠키 제거 후 통과
+    response.cookies.delete('naelum_needs_terms')
+  }
+
   return response
 }
 

@@ -89,8 +89,16 @@ export async function GET(request: Request) {
           }
         }
 
-        // 약관 동의 페이지로 (트리거로 생성된 프로필도 여기서 처리)
-        return NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
+        // 약관 동의 페이지로 — 미동의 상태를 쿠키로 마킹 (미들웨어에서 강제 리다이렉트)
+        const termsRedirect = NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
+        termsRedirect.cookies.set('naelum_needs_terms', '1', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24, // 24시간
+        })
+        return termsRedirect
       }
 
       // 온보딩 완료된 기존 사용자 → 홈으로
