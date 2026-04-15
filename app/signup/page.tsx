@@ -17,7 +17,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(180);
+  const [remainingSeconds, setRemainingSeconds] = useState(300);
   // 여러 채널(BroadcastChannel, storage, onAuthStateChange)이 동시에 발화해도 한 번만 이동
   const navigatingRef = useRef(false);
 
@@ -61,7 +61,8 @@ export default function SignupPage() {
       }
     );
 
-    // 3분 카운트다운 — 매 초 감소, 0이 되면 재시도 UI로 복귀
+    // 5분 카운트다운 — Supabase mailer_otp_exp(300초)와 동기화
+    // 0이 되면 매직 링크도 서버에서 만료되므로 재시도 UI로 복귀
     const interval = setInterval(() => {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
@@ -135,7 +136,7 @@ export default function SignupPage() {
       }
       setLoading(false);
     } else {
-      setRemainingSeconds(180);
+      setRemainingSeconds(300);
       setEmailSent(true);
       setLoading(false);
     }
