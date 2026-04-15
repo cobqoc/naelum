@@ -726,9 +726,9 @@ export default function NewRecipePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '임시저장에 실패했습니다.');
 
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
       toast.success('임시저장됐습니다!');
-      router.push(`/@${profile?.username}?tab=drafts`);
+      router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
     } finally {
