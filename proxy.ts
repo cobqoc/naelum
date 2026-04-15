@@ -97,7 +97,22 @@ export async function proxy(request: NextRequest) {
   const isAdmin = ADMIN_ROUTES.some((r) => pathname.startsWith(r))
   const isAuthOnly = AUTH_ONLY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))
 
-  // updateSession은 항상 1회 호출 (쿠키 갱신 + user 반환)
+  // 세션 쿠키 없으면 user는 반드시 null → Supabase API 호출 생략
+  const hasSessionCookie = request.cookies.getAll().some(
+    c => c.name.startsWith('sb-') && c.name.includes('-auth-token')
+  )
+
+  if (!hasSessionCookie) {
+    if (isProtected || isAdmin) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    // isAuthOnly: user가 null이므로 리다이렉트 불필요
+    return NextResponse.next()
+  }
+
+  // 세션 쿠키 있음: 토큰 갱신 + user 반환
   const { response, user } = await updateSession(request)
 
   // 이미 로그인된 사용자가 /login, /signup 접근 시 홈으로 리다이렉트

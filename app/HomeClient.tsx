@@ -223,6 +223,8 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
 
   // 서버에서 초기 데이터를 로드했는지 추적 (첫 번째 effect 실행 시 fetch 스킵용)
   const skipInitialFetchRef = useRef(initialFeed.length > 0);
+  // auth 상태 변화(undefined→userId)로 인한 불필요한 re-fetch 방지
+  const feedInitializedRef = useRef(false);
 
   // 온보딩 체크 (user가 로드된 후 1번만 실행)
   useEffect(() => {
@@ -353,7 +355,11 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
   }, []);
 
   // 피드 로드 — 서버에서 초기 데이터를 받은 경우 첫 번째 fetch 스킵
+  // auth 상태 변화(undefined→userId) 시 SSR 데이터를 버리지 않도록 feedInitializedRef로 보호
   useEffect(() => {
+    if (feedInitializedRef.current) return; // 이미 초기화 완료 — auth 변화로 인한 재실행 무시
+    feedInitializedRef.current = true;
+
     if (skipInitialFetchRef.current) {
       skipInitialFetchRef.current = false;
       return; // 서버 pre-fetch 데이터 유지
