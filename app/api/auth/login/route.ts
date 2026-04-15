@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       const failResult = await recordFailedAttempt(identifier)
       return NextResponse.json({
-        error: error.message,
+        error: '이메일 또는 비밀번호가 올바르지 않습니다',
         remainingAttempts: failResult.remainingAttempts,
         locked: failResult.locked
       }, { status: 401 })
