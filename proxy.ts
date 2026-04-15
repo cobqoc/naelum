@@ -78,6 +78,21 @@ function createSupabaseClient(request: NextRequest) {
   )
 }
 
+// bfcache 차단: 뒤로가기로 인증 플로우를 우회하지 못하도록
+// /signup, /login, /auth/* 및 세션 쿠키가 있는 모든 응답에서 브라우저 캐시 비활성화.
+// no-store가 있으면 bfcache도 무효화되어 네비게이션 시 항상 미들웨어가 재실행된다.
+function applyNoStore(res: NextResponse, pathname: string, hasSession: boolean) {
+  const needsNoStore =
+    hasSession ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth/')
+  if (needsNoStore) {
+    res.headers.set('Cache-Control', 'no-store, must-revalidate')
+  }
+  return res
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -106,10 +121,10 @@ export async function proxy(request: NextRequest) {
     if (isProtected || isAdmin) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+      return applyNoStore(NextResponse.redirect(loginUrl), pathname, false)
     }
     // isAuthOnly: user가 null이므로 리다이렉트 불필요
-    return NextResponse.next()
+    return applyNoStore(NextResponse.next(), pathname, false)
   }
 
   // 세션 쿠키 있음: 토큰 갱신 + user 반환
@@ -117,14 +132,14 @@ export async function proxy(request: NextRequest) {
 
   // 이미 로그인된 사용자가 /login, /signup 접근 시 홈으로 리다이렉트
   if (isAuthOnly && user) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return applyNoStore(NextResponse.redirect(new URL('/', request.url)), pathname, true)
   }
 
   // 미인증 사용자가 보호된 경로 접근 시 로그인으로 리다이렉트
   if (!user && (isProtected || isAdmin)) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+    return applyNoStore(NextResponse.redirect(loginUrl), pathname, !!user)
   }
 
   // 인증된 사용자에 대한 추가 체크 (차단 여부, 관리자 권한)
@@ -139,7 +154,7 @@ export async function proxy(request: NextRequest) {
 
     if (banned) {
       await supabase.auth.signOut()
-      return NextResponse.redirect(new URL('/', request.url))
+      return applyNoStore(NextResponse.redirect(new URL('/', request.url)), pathname, true)
     }
 
     if (isAdmin) {
@@ -150,7 +165,7 @@ export async function proxy(request: NextRequest) {
         .single()
 
       if (profileError || !profile || profile.role !== 'admin') {
-        return NextResponse.redirect(new URL('/', request.url))
+        return applyNoStore(NextResponse.redirect(new URL('/', request.url)), pathname, true)
       }
     }
   }
@@ -169,7 +184,11 @@ export async function proxy(request: NextRequest) {
       .maybeSingle()
 
     if (!profile?.onboarding_completed) {
-      return NextResponse.redirect(new URL('/auth/terms-agreement', request.url))
+      return applyNoStore(
+        NextResponse.redirect(new URL('/auth/terms-agreement', request.url)),
+        pathname,
+        true
+      )
     }
 
     // 온보딩 완료 → 30일 확인 쿠키 발급 (이후 DB 조회 생략)
@@ -182,7 +201,7 @@ export async function proxy(request: NextRequest) {
     })
   }
 
-  return response
+  return applyNoStore(response, pathname, hasSessionCookie)
 }
 
 export const config = {

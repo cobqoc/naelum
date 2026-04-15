@@ -25,6 +25,7 @@ export default function TermsAgreementPage() {
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [checking, setChecking] = useState(true);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
@@ -60,6 +61,30 @@ export default function TermsAgreementPage() {
 
     checkSession();
   }, [router, supabase]);
+
+  const handleCancel = async () => {
+    if (cancelling || loading) return;
+    if (!window.confirm(t.auth.termsCancelConfirm)) return;
+
+    setCancelling(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/cancel-signup', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('cancel-signup failed:', body);
+        setError(t.auth.processErrorText);
+        setCancelling(false);
+        return;
+      }
+      // 세션 쿠키를 완전히 비우기 위해 full reload
+      window.location.href = '/signup';
+    } catch (err) {
+      console.error('cancel-signup error:', err);
+      setError(t.auth.processErrorText);
+      setCancelling(false);
+    }
+  };
 
   const handleAgree = async () => {
     if (!agreedToTerms || !agreedToPrivacy) {
@@ -288,7 +313,7 @@ export default function TermsAgreementPage() {
 
         <button
           onClick={handleAgree}
-          disabled={loading}
+          disabled={loading || cancelling}
           className="w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary transition-all hover:bg-accent-hover disabled:opacity-50"
         >
           {loading ? (
@@ -297,6 +322,19 @@ export default function TermsAgreementPage() {
               {t.auth.processingText}
             </span>
           ) : t.auth.termsAgreeCta}
+        </button>
+
+        <button
+          onClick={handleCancel}
+          disabled={loading || cancelling}
+          className="mt-3 w-full rounded-xl border border-white/10 bg-transparent py-3 text-sm text-text-muted transition-all hover:border-error/40 hover:text-error disabled:opacity-50"
+        >
+          {cancelling ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              {t.auth.processingText}
+            </span>
+          ) : t.auth.termsCancelCta}
         </button>
 
         <p className="mt-6 text-center text-xs text-text-muted">
