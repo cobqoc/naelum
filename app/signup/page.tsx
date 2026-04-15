@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(180);
   // 여러 채널(BroadcastChannel, storage, onAuthStateChange)이 동시에 발화해도 한 번만 이동
   const navigatingRef = useRef(false);
 
@@ -60,16 +61,23 @@ export default function SignupPage() {
       }
     );
 
-    // 30초 후에도 이동 안 됐으면 대기 상태 초기화 (이메일 재시도 유도)
-    const timeout = setTimeout(() => {
-      if (!navigatingRef.current) setEmailSent(false);
-    }, 30_000);
+    // 3분 카운트다운 — 매 초 감소, 0이 되면 재시도 UI로 복귀
+    const interval = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!navigatingRef.current) setEmailSent(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
     return () => {
       channel.close();
       window.removeEventListener('storage', handleStorageEvent);
       subscription.unsubscribe();
-      clearTimeout(timeout);
+      clearInterval(interval);
     };
   }, [emailSent, router, supabase.auth]);
 
@@ -127,6 +135,7 @@ export default function SignupPage() {
       }
       setLoading(false);
     } else {
+      setRemainingSeconds(180);
       setEmailSent(true);
       setLoading(false);
     }
@@ -281,6 +290,12 @@ export default function SignupPage() {
               <p className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
                 {t.auth.autoMoveNext}
+              </p>
+              <p className="mt-2 text-center text-2xl font-mono font-bold tabular-nums text-accent-warm">
+                {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
+              </p>
+              <p className="mt-1 text-center text-xs text-text-muted">
+                {t.auth.verifyTimeRemaining}
               </p>
             </div>
 

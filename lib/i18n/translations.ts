@@ -38,6 +38,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: '이미 가입된 이메일입니다. 로그인해주세요.',
       autoMoveNext: '자동으로 다음 단계로 이동합니다',
+      verifyTimeRemaining: '남은 인증 대기 시간',
       autoNextStep: '자동으로 다음 단계로 이동합니다',
       changePassword: '비밀번호 변경',
       changingPassword: '비밀번호 변경 중...',
@@ -588,6 +589,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'This email is already registered. Please log in.',
       autoMoveNext: 'Automatically moving to the next step',
+      verifyTimeRemaining: 'Time remaining',
       autoNextStep: 'Automatically moving to the next step',
       changePassword: 'Change Password',
       changingPassword: 'Changing password...',
@@ -1138,6 +1140,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'このメールアドレスは既に登録されています。ログインしてください。',
       autoMoveNext: '自動的に次のステップに移動します',
+      verifyTimeRemaining: '認証待ち残り時間',
       autoNextStep: '自動的に次のステップに移動します',
       changePassword: 'パスワード変更',
       changingPassword: 'パスワード変更中...',
@@ -1688,6 +1691,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: '该邮箱已注册，请登录。',
       autoMoveNext: '自动进入下一步',
+      verifyTimeRemaining: '剩余验证等待时间',
       autoNextStep: '自动进入下一步',
       changePassword: '修改密码',
       changingPassword: '修改密码中...',
@@ -2238,6 +2242,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'Este correo ya está registrado. Inicia sesión.',
       autoMoveNext: 'Avanzando al siguiente paso',
+      verifyTimeRemaining: 'Tiempo restante',
       autoNextStep: 'Avanzando al siguiente paso',
       changePassword: 'Cambiar contraseña',
       changingPassword: 'Cambiando contraseña...',
@@ -2788,6 +2793,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'Cet email est déjà enregistré. Connectez-vous.',
       autoMoveNext: "Passage automatique à l'étape suivante",
+      verifyTimeRemaining: 'Temps restant',
       autoNextStep: "Passage automatique à l'étape suivante",
       changePassword: 'Changer le mot de passe',
       changingPassword: 'Changement du mot de passe...',
@@ -3338,6 +3344,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'Diese E-Mail ist bereits registriert. Bitte anmelden.',
       autoMoveNext: 'Automatisch zum nächsten Schritt',
+      verifyTimeRemaining: 'Verbleibende Zeit',
       autoNextStep: 'Automatisch zum nächsten Schritt',
       changePassword: 'Passwort ändern',
       changingPassword: 'Passwort wird geändert...',
@@ -3888,6 +3895,7 @@ export const translations = {
     auth: {
       alreadyRegisteredLogin: 'Questa email è già registrata. Effettua il login.',
       autoMoveNext: 'Passaggio automatico al prossimo step',
+      verifyTimeRemaining: 'Tempo rimanente',
       autoNextStep: 'Passaggio automatico al prossimo step',
       changePassword: 'Cambia password',
       changingPassword: 'Modifica password in corso...',
