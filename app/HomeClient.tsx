@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import SearchBar from "@/components/SearchBar";
@@ -149,10 +148,11 @@ interface HomeClientProps {
   initialFeed: FeedItem[];
   initialTrending: RecipeItem[];
   initialFeedOffset: number;
+  /** 서버에서 fetch한 로그인 유저의 onboarding_step (미로그인/미fetch 시 null) */
+  onboardingStep: number | null;
 }
 
-export default function HomeClient({ initialFeed, initialTrending, initialFeedOffset }: HomeClientProps) {
-  const router = useRouter();
+export default function HomeClient({ initialFeed, initialTrending, initialFeedOffset, onboardingStep }: HomeClientProps) {
   const { t } = useI18n();
 
   const { user, loading: authLoading } = useAuth();
@@ -226,29 +226,13 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
   // auth 상태 변화(undefined→userId)로 인한 불필요한 re-fetch 방지
   const feedInitializedRef = useRef(false);
 
-  // 온보딩 체크 (user가 로드된 후 1번만 실행)
+  // 온보딩 배너 표시 여부 결정 (미들웨어가 이미 onboarding_completed를 서버에서 검증하므로
+  // 여기선 "나중에 하기"로 스킵한 유저의 배너 표시만 판단. onboarding_step은 서버에서 prop으로 받음)
   useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    supabase
-      .from('profiles')
-      .select('onboarding_completed, onboarding_step')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data: profile }) => {
-        if (!profile) return;
-        // 약관 미동의 상태 → terms-agreement로 (안전망)
-        if (!profile.onboarding_completed) {
-          router.push('/auth/terms-agreement');
-          return;
-        }
-        // 약관 동의했지만 프로필 설정 미완료 (나중에 하기 클릭한 유저)
-        if (profile.onboarding_step < 4) {
-          const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
-          if (!dismissed) setShowOnboardingBanner(true);
-        }
-      });
-  }, [user, router]);
+    if (!user || onboardingStep == null || onboardingStep >= 4) return;
+    const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
+    if (!dismissed) setShowOnboardingBanner(true);
+  }, [user, onboardingStep]);
 
   // 스크롤 감지
   useEffect(() => {
