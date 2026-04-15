@@ -85,6 +85,7 @@ export async function POST(
   }
 
   // 평균 평점 재계산 (SECURITY DEFINER 함수 사용)
+  // RPC는 TABLE(avg_rating numeric, count_ratings integer)를 반환하므로 컬럼명이 다르다.
   const { data: result, error: rpcError } = await supabase
     .rpc('update_recipe_ratings', { recipe_id: recipeId })
     .single()
@@ -94,7 +95,7 @@ export async function POST(
     return NextResponse.json({ error: '평점 업데이트에 실패했습니다' }, { status: 500 })
   }
 
-  const typedResult = result as { average_rating: number; ratings_count: number }
+  const typedResult = result as { avg_rating: number; count_ratings: number }
 
   // 알림 생성 (새 평점일 때만)
   if (!existingRating) {
@@ -127,7 +128,7 @@ export async function POST(
     success: true,
     rating,
     review,
-    averageRating: typedResult.average_rating,
-    ratingsCount: typedResult.ratings_count
+    averageRating: typedResult.avg_rating,
+    ratingsCount: typedResult.count_ratings
   })
 }

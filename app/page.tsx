@@ -7,8 +7,11 @@ const INITIAL_TIPS = 4;
 async function fetchHomeData() {
   const supabase = await createClient();
 
-  // 초기 피드만 병렬로 fetch — 트렌딩은 클라이언트에서 requestIdleCallback으로 로드
-  const [recipesResult, tipsResult] = await Promise.all([
+  // 로그인 유저의 onboarding_step을 함께 병렬로 가져와 HomeClient가 중복 쿼리하지 않도록 한다.
+  // (미들웨어가 onboarding_completed 체크를 이미 수행하므로 여기선 배너 표시용 step만 필요)
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const [recipesResult, tipsResult, profileResult] = await Promise.all([
     supabase
       .from('recipes')
       .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
@@ -21,6 +24,13 @@ async function fetchHomeData() {
       .eq('is_public', true)
       .order('created_at', { ascending: false })
       .range(0, INITIAL_TIPS - 1),
+    user
+      ? supabase
+          .from('profiles')
+          .select('onboarding_step')
+          .eq('id', user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as { onboarding_step: number | null } | null }),
   ]);
 
   // 초기 피드 혼합 (레시피 2개 : 팁 1개 비율)
@@ -46,15 +56,19 @@ async function fetchHomeData() {
     if (ti < tipFeed.length) initialFeed.push(tipFeed[ti++]);
   }
 
-  return { initialFeed };
+  const onboardingStep = profileResult?.data?.onboarding_step ?? null;
+
+  return { initialFeed, onboardingStep };
 }
 
 export default async function Home() {
   let initialFeed: FeedItem[] = [];
+  let onboardingStep: number | null = null;
 
   try {
     const data = await fetchHomeData();
     initialFeed = data.initialFeed;
+    onboardingStep = data.onboardingStep;
   } catch {
     // 서버 fetch 실패 시 클라이언트에서 직접 로드
   }
@@ -64,6 +78,7 @@ export default async function Home() {
       initialFeed={initialFeed}
       initialTrending={[]}
       initialFeedOffset={initialFeed.length > 0 ? INITIAL_RECIPES : 0}
+      onboardingStep={onboardingStep}
     />
   );
 }

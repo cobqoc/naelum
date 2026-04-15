@@ -100,7 +100,7 @@ export default function RecipeCookMode({
   }, []);
 
   const currentStep = sortedSteps[currentStepIndex];
-  const progress = (completedSteps.size / sortedSteps.length) * 100;
+  const progress = sortedSteps.length > 0 ? (completedSteps.size / sortedSteps.length) * 100 : 0;
   const isLastStep = currentStepIndex === sortedSteps.length - 1;
 
   const goToStep = useCallback((index: number) => {
@@ -130,6 +130,27 @@ export default function RecipeCookMode({
     // currentStep은 currentStepIndex 변경 시에만 변경되므로 deps 중복
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStepIndex, voice.isEnabled]);
+
+  // 조리 단계가 없는 레시피에서 쿠킹 모드가 열린 경우 방어적 early return.
+  // (호출부 RecipeDetailClient가 미리 검증해 토스트를 띄우지만, 여기서도 한 번 더 막음)
+  // 주의: 모든 hook 호출 이후에 배치해야 React Hook 규칙 위반 아님.
+  if (sortedSteps.length === 0 || !currentStep) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background-primary text-text-primary flex items-center justify-center px-6">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">🍳</div>
+          <h2 className="text-xl font-bold mb-2">조리 단계가 없어요</h2>
+          <p className="text-text-muted mb-6 text-sm">이 레시피는 아직 조리 단계가 등록되지 않았어요.</p>
+          <button
+            onClick={onClose}
+            className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isIngredientOwned = (name: string) =>
     userIngredients.some(ui => name.includes(ui) || ui.includes(name));

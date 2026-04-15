@@ -1,7 +1,26 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from '@sentry/nextjs';
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // @supabase/supabase-js가 realtime-js와 functions-js를 무조건 import하는데 우리 앱은 둘 다
+  // 사용하지 않는다. 클라이언트 번들을 약 80~90KB 줄이기 위해 두 패키지를 가벼운 shim으로
+  // 대체한다. 필요해지면 alias만 제거하면 원본이 다시 번들에 포함된다.
+  turbopack: {
+    resolveAlias: {
+      '@supabase/realtime-js': './lib/supabase/shims/realtime-js.ts',
+      '@supabase/functions-js': './lib/supabase/shims/functions-js.ts',
+    },
+  },
+  webpack: (config) => {
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@supabase/realtime-js': path.resolve(__dirname, 'lib/supabase/shims/realtime-js.ts'),
+      '@supabase/functions-js': path.resolve(__dirname, 'lib/supabase/shims/functions-js.ts'),
+    }
+    return config
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 768, 1024, 1280, 1536],

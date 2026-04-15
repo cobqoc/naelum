@@ -4,10 +4,30 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
-import { Home, User } from 'lucide-react';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import { useAuth } from '@/lib/auth/context';
 import UserDropdown from './Header/UserDropdown';
+
+// lucide-react(85KB)를 번들에서 제거하기 위해 실제로 사용하는 Home 아이콘만 인라인 SVG로 대체.
+// Props는 lucide의 서명과 동일하게 유지해 교체가 투명함.
+function Home({ size = 22, strokeWidth = 2, className = '' }: { size?: number; strokeWidth?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
 
 function FridgeIcon({ size = 22, className = '' }: { size?: number; className?: string }) {
   return (
@@ -86,10 +106,12 @@ export default function BottomNav() {
   }, []);
 
   const navItems: NavItem[] = [
+    // 참고: profile/cart 탭의 Icon은 실제 렌더되지 않음 (UserDropdown 또는 emoji 사용)
+    // 타입 만족을 위해 Home으로 통일.
     { href: '/', Icon: Home, label: t.bottomNav.home },
     { href: '/fridge', Icon: FridgeIcon, label: t.bottomNav.fridge },
     { href: '/cart', Icon: Home, label: t.bottomNav.cart },
-    { href: '/profile', Icon: User, label: t.bottomNav.profile },
+    { href: '/profile', Icon: Home, label: t.bottomNav.profile },
   ];
 
   const getHref = (item: NavItem) => {
