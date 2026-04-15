@@ -156,20 +156,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = recipe.description?.slice(0, 150) || `${recipe.title} 레시피`;
   const fullTitleForOG = `${recipe.title} | 낼름`;
 
+  // 일부 레거시 레시피의 thumbnail_url이 http://로 시작 (foodsafetykorea.go.kr 등).
+  // HTTPS-only 환경의 SNS 미리보기에서 차단되므로 https로 강제 변환하거나 폴백 사용.
+  const ogImage = recipe.thumbnail_url
+    ? recipe.thumbnail_url.replace(/^http:\/\//, 'https://')
+    : '/icons/icon-512.png';
+
   return {
     title,
     description,
     openGraph: {
       title: fullTitleForOG,
       description,
-      ...(recipe.thumbnail_url ? { images: [recipe.thumbnail_url] } : {}),
+      images: [ogImage],
       type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
       title: fullTitleForOG,
       description,
-      ...(recipe.thumbnail_url ? { images: [recipe.thumbnail_url] } : {}),
+      images: [ogImage],
     },
   };
 }

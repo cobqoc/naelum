@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!env.example
+
+# 이 프로젝트는 npm을 사용. 다른 패키지 매니저 lock 파일 추적 차단
+pnpm-lock.yaml
+yarn.lock
 
 # vercel
 .vercel

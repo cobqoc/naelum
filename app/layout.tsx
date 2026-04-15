@@ -40,11 +40,21 @@ export const metadata: Metadata = {
     title: "낼름 - 레시피 공유 플랫폼",
     description: "재료 기반 스마트 레시피 추천 및 공유 플랫폼",
     url: BASE_URL,
+    // 카톡/슬랙 등 공유 시 미리보기 이미지 (1200×630 권장이지만 512 PWA 아이콘으로 일단 대체)
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "낼름",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "낼름 - 레시피 공유 플랫폼",
     description: "재료 기반 스마트 레시피 추천 및 공유 플랫폼",
+    images: ["/icons/icon-512.png"],
   },
   appleWebApp: {
     capable: true,
