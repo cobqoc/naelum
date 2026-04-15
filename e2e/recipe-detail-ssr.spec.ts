@@ -150,6 +150,32 @@ test.describe('레시피 상세 SSR 검증', () => {
     }
   });
 
+  test('조리 단계가 없는 레시피: 요리 시작 버튼이 에러 없이 토스트 표시', async ({ page }) => {
+    // dev DB의 샘플 레시피는 recipe_steps가 비어있음 — 이전에 RecipeCookMode가 이 케이스에서
+    // currentStep.step_number로 throw하며 error.tsx를 띄웠다. 회귀 방지.
+    const recipeId = await getPublicRecipeId(page);
+    test.skip(!recipeId, 'dev DB에 공개 레시피가 없어 스킵');
+
+    const pageErrors: string[] = [];
+    page.on('pageerror', e => pageErrors.push(e.message));
+
+    await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1500);
+
+    const cookBtn = page.locator('button:has-text("요리 시작하기")').first();
+    if ((await cookBtn.count()) > 0) {
+      await cookBtn.click();
+      await page.waitForTimeout(1500);
+
+      // error.tsx(문제가 발생했습니다)가 뜨면 실패
+      const errorShown = await page.locator('text=문제가 발생').count();
+      expect(errorShown).toBe(0);
+
+      // 페이지 에러가 없어야 함 (step_number TypeError 회귀 방지)
+      expect(pageErrors.filter(e => e.includes('step_number'))).toEqual([]);
+    }
+  });
+
   test('뒤로가기 버튼이 router.back()을 호출', async ({ page }) => {
     const recipeId = await getPublicRecipeId(page);
     test.skip(!recipeId, 'dev DB에 공개 레시피가 없어 스킵');

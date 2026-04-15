@@ -432,7 +432,13 @@ export default function RecipeDetailClient({
         onUpdateMemo={handleUpdateMemo}
         actionLoading={actionLoading}
         hasCooked={hasCooked}
-        onStartCooking={() => setIsCookMode(true)}
+        onStartCooking={() => {
+          if (!recipe.steps || recipe.steps.length === 0) {
+            toast.warning('이 레시피는 아직 조리 단계가 없어요');
+            return;
+          }
+          setIsCookMode(true);
+        }}
         onShowFridge={() => setShowFridgeModal(true)}
         isLiked={isLiked}
         likesCount={likesCount}
