@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { translations, Language, TranslationKeys } from './translations';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { defaultLocale, loadLocale, SUPPORTED_LANGUAGES, type Language, type TranslationKeys } from './locales';
 
 interface I18nContextType {
   language: Language;
@@ -15,28 +15,49 @@ interface I18nProviderProps {
   children: ReactNode;
 }
 
-function getInitialLanguage(): Language {
+function detectBrowserLanguage(): Language {
   if (typeof window === 'undefined') return 'ko';
-  const savedLang = localStorage.getItem('language') as Language;
-  if (savedLang && translations[savedLang]) {
-    return savedLang;
-  }
+  const savedLang = localStorage.getItem('language') as Language | null;
+  if (savedLang && SUPPORTED_LANGUAGES.includes(savedLang)) return savedLang;
   const browserLang = navigator.language.split('-')[0] as Language;
-  if (translations[browserLang]) {
-    return browserLang;
-  }
+  if (SUPPORTED_LANGUAGES.includes(browserLang)) return browserLang;
   return 'ko';
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+  // SSR 및 초기 client 렌더는 항상 ko (정적 번들에 포함된 유일한 locale)
+  // hydration 후 useEffect에서 실제 사용자 언어를 감지해 dynamic import
+  const [language, setLanguageState] = useState<Language>('ko');
+  const [t, setT] = useState<TranslationKeys>(defaultLocale);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('language', lang);
+  // 브라우저 언어 감지 후 필요 시 dynamic load
+  useEffect(() => {
+    const detected = detectBrowserLanguage();
+    if (detected === 'ko') return; // 이미 기본값
+
+    let cancelled = false;
+    loadLocale(detected).then((loaded) => {
+      if (cancelled) return;
+      setLanguageState(detected);
+      setT(loaded);
+    }).catch(() => {
+      // 로드 실패 시 ko 유지
+    });
+    return () => { cancelled = true };
+  }, []);
+
+  const setLanguage = async (lang: Language) => {
+    // 현재 언어와 동일하면 noop
+    if (lang === language) return;
+    try {
+      const loaded = await loadLocale(lang);
+      setLanguageState(lang);
+      setT(loaded);
+      localStorage.setItem('language', lang);
+    } catch (err) {
+      console.error('Failed to load locale:', lang, err);
+    }
   };
-
-  const t = translations[language];
 
   return (
     <I18nContext.Provider value={{ language, setLanguage, t }}>

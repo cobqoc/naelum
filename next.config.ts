@@ -2,10 +2,6 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    // lucide-react를 named import 패턴에서 개별 아이콘 경로로 변환해 번들 크기 축소
-    optimizePackageImports: ['lucide-react'],
-  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 768, 1024, 1280, 1536],
