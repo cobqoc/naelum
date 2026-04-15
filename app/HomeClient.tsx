@@ -476,6 +476,18 @@ export default function HomeClient({
           isScrolled && !searchFocused ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
         } z-10`}>
 
+          {/* 비로그인 유저용 value proposition — 첫 유저가 "뭐 하는 앱인지" 0.5초 안에 이해하도록 */}
+          {!isAuthenticated && (
+            <div className="text-center mb-6 px-4">
+              <h1 className="text-2xl md:text-4xl font-bold text-text-primary leading-tight">
+                {t.home?.tagline || '냉장고 열고 바로 만드는 한식 레시피'}
+              </h1>
+              <p className="mt-2 md:mt-3 text-sm md:text-base text-text-muted">
+                {t.home?.taglineSub || '보유한 재료로 만들 수 있는 요리를 추천해드려요'}
+              </p>
+            </div>
+          )}
+
           {/* 비로그인: 서버에서 확인 후 정적 컴포넌트로 즉시 렌더 (JS 로드/하이드레이션 대기 없음) */}
           {!isAuthenticated && (
             <div className="flex justify-center mb-6">
@@ -491,10 +503,10 @@ export default function HomeClient({
         <div className="w-full max-w-5xl mt-4 md:mt-8 space-y-10">
 
           {/* 1. 카테고리 탐색 */}
-          <section aria-label="카테고리">
+          <section aria-label={t.home?.categoryTitle || '카테고리'}>
             {/* 탭 토글 */}
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold">카테고리</h2>
+              <h2 className="text-base font-bold">{t.home?.categoryTitle || '카테고리'}</h2>
               <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
                 <button
                   onClick={() => setCategoryTab('cuisine')}
@@ -504,7 +516,7 @@ export default function HomeClient({
                       : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
-                  국가별
+                  {t.home?.categoryByCuisine || '국가별'}
                 </button>
                 <button
                   onClick={() => setCategoryTab('dish')}
@@ -514,7 +526,7 @@ export default function HomeClient({
                       : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
-                  요리별
+                  {t.home?.categoryByDish || '요리별'}
                 </button>
               </div>
             </div>
@@ -544,6 +556,13 @@ export default function HomeClient({
                   {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label }) => {
                     const color = categoryTab === 'cuisine' ? CUISINE_COLORS[value] : DISH_COLORS[value];
                     const icon = categoryTab === 'cuisine' ? CUISINE_ICONS[value] : DISH_ICONS[value];
+                    // i18n 번역 사용 — CUISINE_TYPES/DISH_TYPES의 하드코딩 한국어 label은 fallback.
+                    // 이걸로 다국어 유저가 자기 언어로 카테고리를 봄 (wedge 전략 핵심).
+                    const tCuisine = (t as unknown as { cuisineLabels?: Record<string, string> }).cuisineLabels;
+                    const tDish = (t as unknown as { dishLabels?: Record<string, string> }).dishLabels;
+                    const localizedLabel = categoryTab === 'cuisine'
+                      ? (tCuisine?.[value] ?? label)
+                      : (tDish?.[value] ?? label);
                     const href = categoryTab === 'cuisine'
                       ? `/recipes?cuisine_type=${value}`
                       : `/recipes?dish_type=${value}`;
@@ -572,7 +591,7 @@ export default function HomeClient({
                           <span className="text-2xl leading-none">{icon}</span>
                         )}
                         <span className="text-[11px] font-medium text-text-secondary leading-tight text-center px-1">
-                          {label}
+                          {localizedLabel}
                         </span>
                       </Link>
                     );
@@ -674,11 +693,11 @@ export default function HomeClient({
           )}
 
           {/* 3. 이번 주 인기 */}
-          <section aria-label="이번 주 인기">
+          <section aria-label={t.home?.sectionTrending || '🔥 이번 주 인기'}>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-base font-bold">🔥 이번 주 인기</h2>
-                <p className="text-xs text-text-muted mt-0.5">가장 많이 만들어진 레시피</p>
+                <h2 className="text-base font-bold">{t.home?.sectionTrending || '🔥 이번 주 인기'}</h2>
+                <p className="text-xs text-text-muted mt-0.5">{t.home?.sectionTrendingSub || '가장 많이 만들어진 레시피'}</p>
               </div>
               <Link href="/recipes?sort=trending" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors flex-shrink-0">더 보기 →</Link>
             </div>
@@ -695,9 +714,9 @@ export default function HomeClient({
           </section>
 
           {/* 4. 최신 레시피 & 팁 혼합 (무한 스크롤) */}
-          <section aria-label="최신 레시피 & 팁">
+          <section aria-label={t.home?.sectionLatest || '✨ 최신 레시피 & 팁'}>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold">✨ 최신 레시피 &amp; 팁</h2>
+              <h2 className="text-base font-bold">{t.home?.sectionLatest || '✨ 최신 레시피 & 팁'}</h2>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Link href="/recipes" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">레시피 전체 →</Link>
                 <Link href="/tip" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">팁 전체 →</Link>
