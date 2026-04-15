@@ -4,18 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
-
-interface ShoppingItem {
-  id: string;
-  ingredient_name: string;
-  category: string;
-  quantity: number | null;
-  unit: string | null;
-  recipe_id: string | null;
-  recipe_title: string | null;
-  is_checked: boolean;
-  is_owned: boolean;
-}
+import {
+  loadShoppingList,
+  subscribeShoppingList,
+  getCachedShoppingList,
+  setCachedShoppingList,
+  type ShoppingItem,
+} from '@/lib/shopping-list/cache';
 
 interface Suggestion {
   id: string;
@@ -54,8 +49,9 @@ interface Props {
 export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = false }: Props) {
   const router = useRouter();
   const { success: toastSuccess, error: toastError } = useToast();
-  const [items, setItems] = useState<ShoppingItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  // 초기 state를 공유 캐시에서 바로 읽어옴 — 이미 로드된 경우 dropdown 열림 즉시 표시
+  const [items, setItems] = useState<ShoppingItem[]>(() => getCachedShoppingList() ?? []);
+  const [loading, setLoading] = useState(() => getCachedShoppingList() == null);
   const [addingToFridge, setAddingToFridge] = useState(false);
 
   // 재료 추가 / 필터 입력
@@ -68,18 +64,26 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchItems = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/shopping-list');
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data.items || []);
-      }
-    } catch {
-      // silent
-    } finally {
+    // 캐시가 있으면 UI 즉시 업데이트, 백그라운드에서 리프레시
+    const cached = getCachedShoppingList();
+    if (cached) {
+      setItems(cached);
       setLoading(false);
     }
+    const fresh = await loadShoppingList(true);
+    setItems(fresh);
+    setLoading(false);
+  }, []);
+
+  // 공유 캐시 구독 — 다른 곳에서 업데이트되면 이 dropdown도 자동으로 따라감
+  useEffect(() => {
+    const unsub = subscribeShoppingList((cached) => {
+      if (cached) {
+        setItems(cached);
+        setLoading(false);
+      }
+    });
+    return unsub;
   }, []);
 
   useEffect(() => {
@@ -147,7 +151,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   const toggleCheck = async (item: ShoppingItem) => {
     const next = !item.is_checked;
-    setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_checked: next } : i));
+    const updated = items.map(i => (i.id === item.id ? { ...i, is_checked: next } : i));
+    setItems(updated);
+    setCachedShoppingList(updated); // 공유 캐시에 동기화 (useCartCount 등에 전파)
     await fetch('/api/shopping-list', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -156,7 +162,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   };
 
   const deleteItem = async (id: string) => {
-    setItems(prev => prev.filter(i => i.id !== id));
+    const updated = items.filter(i => i.id !== id);
+    setItems(updated);
+    setCachedShoppingList(updated);
     await fetch(`/api/shopping-list?id=${id}`, { method: 'DELETE' });
   };
 
@@ -180,7 +188,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       if (res.ok) {
         await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
         toastSuccess(`${checked.length}개 재료가 냉장고에 추가됐어요!`);
-        setItems(prev => prev.filter(i => !i.is_checked));
+        const remaining = items.filter(i => !i.is_checked);
+        setItems(remaining);
+        setCachedShoppingList(remaining);
         router.refresh();
       } else {
         toastError('냉장고 추가에 실패했어요.');
@@ -193,7 +203,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   };
 
   const clearChecked = async () => {
-    setItems(prev => prev.filter(i => !i.is_checked));
+    const remaining = items.filter(i => !i.is_checked);
+    setItems(remaining);
+    setCachedShoppingList(remaining);
     await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
   };
 
@@ -390,36 +402,36 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
 export function useCartCount() {
   const { user } = useAuth();
-  const [count, setCount] = useState(0);
-
-  const fetchCount = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch('/api/shopping-list');
-      if (res.ok) {
-        const data = await res.json();
-        const unchecked = (data.items || []).filter((i: ShoppingItem) => !i.is_checked).length;
-        setCount(unchecked);
-      }
-    } catch {
-      // silent
-    }
-  }, [user]);
+  // 캐시에 이미 있으면 즉시 반영
+  const [count, setCount] = useState(() => {
+    const cached = getCachedShoppingList();
+    return cached ? cached.filter(i => !i.is_checked).length : 0;
+  });
 
   useEffect(() => {
     if (!user) {
+      // setState in effect body is flagged — 비동기로 옮겨 cascading render 방지
       queueMicrotask(() => setCount(0));
       return;
     }
-    // 초기 로드 지연 — 페이지 렌더링 블로킹 방지
-    const timer = setTimeout(fetchCount, 2500);
-    const handler = () => fetchCount();
+    // 첫 렌더 시 바로 fetch 시작 (2.5s 지연 제거) — 공유 캐시에 들어가면
+    // dropdown을 열 때 즉시 사용 가능.
+    loadShoppingList();
+
+    // 캐시 구독 — 다른 곳에서 업데이트되면 자동 반영
+    const unsub = subscribeShoppingList((items) => {
+      if (!items) return;
+      setCount(items.filter(i => !i.is_checked).length);
+    });
+
+    // 외부 이벤트(레시피에서 재료 추가 등) → 강제 리프레시
+    const handler = () => loadShoppingList(true);
     window.addEventListener('shopping-list-updated', handler);
     return () => {
-      clearTimeout(timer);
+      unsub();
       window.removeEventListener('shopping-list-updated', handler);
     };
-  }, [user, fetchCount]);
+  }, [user]);
 
-  return { count, refetch: fetchCount };
+  return { count, refetch: () => loadShoppingList(true) };
 }

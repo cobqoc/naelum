@@ -15,10 +15,9 @@ import { useAuth } from '@/lib/auth/context';
 import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
 import dynamic from 'next/dynamic';
 
-const InteractiveFridge = dynamic(() => import('@/components/Fridge/InteractiveFridge'), {
-  ssr: false,
-  loading: () => <div className="w-full max-w-xs mx-auto md:max-w-sm"><div className="w-full rounded-2xl bg-background-secondary animate-pulse" style={{ aspectRatio: '3/4' }} /></div>
-});
+// 비로그인 유저용 정적 냉장고는 서버에서 즉시 렌더되도록 정적 import.
+// (홈에서는 로그인 유저에게도 InteractiveFridge를 쓰지 않고 fridge recommendation 섹션을 사용)
+import StaticAnonymousFridge from '@/components/Fridge/StaticAnonymousFridge';
 
 const OnboardingWizard = dynamic(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -150,9 +149,11 @@ interface HomeClientProps {
   initialFeedOffset: number;
   /** 서버에서 fetch한 로그인 유저의 onboarding_step (미로그인/미fetch 시 null) */
   onboardingStep: number | null;
+  /** 서버에서 확인한 로그인 상태 — useAuth 초기 상태 대기 없이 즉시 판단 가능 */
+  isAuthenticated: boolean;
 }
 
-export default function HomeClient({ initialFeed, initialTrending, initialFeedOffset, onboardingStep }: HomeClientProps) {
+export default function HomeClient({ initialFeed, initialTrending, initialFeedOffset, onboardingStep, isAuthenticated }: HomeClientProps) {
   const { t } = useI18n();
 
   const { user, profile: authProfile, loading: authLoading } = useAuth();
@@ -492,10 +493,10 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
           isScrolled && !searchFocused ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
         } z-10`}>
 
-          {/* 비로그인: Interactive Fridge를 검색바 위에 표시 */}
-          {!authLoading && !isLoggedIn && (
+          {/* 비로그인: 서버에서 확인 후 정적 컴포넌트로 즉시 렌더 (JS 로드/하이드레이션 대기 없음) */}
+          {!isAuthenticated && (
             <div className="flex justify-center mb-6">
-              <InteractiveFridge />
+              <StaticAnonymousFridge />
             </div>
           )}
 
