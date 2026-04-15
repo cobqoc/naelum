@@ -89,20 +89,20 @@ export async function GET(request: Request) {
           }
         }
 
-        // 약관 동의 페이지로 — 미동의 상태를 쿠키로 마킹 (미들웨어에서 강제 리다이렉트)
-        const termsRedirect = NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
-        termsRedirect.cookies.set('naelum_needs_terms', '1', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24, // 24시간
-        })
-        return termsRedirect
+        // 약관 동의 페이지로 — 미들웨어의 naelum_terms_ok 부재로 강제 리다이렉트됨
+        return NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
       }
 
-      // 온보딩 완료된 기존 사용자 → 홈으로
-      return NextResponse.redirect(`${baseUrl}${next}`)
+      // 온보딩 완료된 기존 사용자 → 홈으로 (terms_ok 쿠키 발급)
+      const homeRedirect = NextResponse.redirect(`${baseUrl}${next}`)
+      homeRedirect.cookies.set('naelum_terms_ok', '1', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30,
+      })
+      return homeRedirect
     }
   }
 

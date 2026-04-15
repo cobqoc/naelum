@@ -155,10 +155,12 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 약관 미동의 유저 강제 리다이렉트
-  // naelum_needs_terms 쿠키 있고, 로그인됐고, /auth/ · /api/ 경로가 아닌 경우
-  const needsTerms = request.cookies.get('naelum_needs_terms')?.value === '1'
-  if (needsTerms && user && !pathname.startsWith('/auth/') && !pathname.startsWith('/api/')) {
+  // 약관/온보딩 게이트
+  // naelum_terms_ok 쿠키가 없는 로그인 유저는 DB 프로필 확인
+  // onboarding_completed: true → 30일짜리 확인 쿠키 발급 후 통과
+  // onboarding_completed: false 또는 프로필 없음 → terms-agreement 리다이렉트
+  const termsOk = request.cookies.get('naelum_terms_ok')?.value === '1'
+  if (user && !termsOk && !pathname.startsWith('/auth/') && !pathname.startsWith('/api/')) {
     const supabase = createSupabaseClient(request)
     const { data: profile } = await supabase
       .from('profiles')
@@ -169,8 +171,15 @@ export async function proxy(request: NextRequest) {
     if (!profile?.onboarding_completed) {
       return NextResponse.redirect(new URL('/auth/terms-agreement', request.url))
     }
-    // 온보딩 완료됨 → 쿠키 제거 후 통과
-    response.cookies.delete('naelum_needs_terms')
+
+    // 온보딩 완료 → 30일 확인 쿠키 발급 (이후 DB 조회 생략)
+    response.cookies.set('naelum_terms_ok', '1', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    })
   }
 
   return response
