@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic';
 // 비로그인 유저용 정적 냉장고는 서버에서 즉시 렌더되도록 정적 import.
 // (홈에서는 로그인 유저에게도 InteractiveFridge를 쓰지 않고 fridge recommendation 섹션을 사용)
 import StaticAnonymousFridge from '@/components/Fridge/StaticAnonymousFridge';
+import WaitlistForm from '@/components/WaitlistForm';
 
 const OnboardingWizard = dynamic(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -490,9 +491,15 @@ export default function HomeClient({
 
           {/* 비로그인: 서버에서 확인 후 정적 컴포넌트로 즉시 렌더 (JS 로드/하이드레이션 대기 없음) */}
           {!isAuthenticated && (
-            <div className="flex justify-center mb-6">
-              <StaticAnonymousFridge />
-            </div>
+            <>
+              <div className="flex justify-center mb-6">
+                <StaticAnonymousFridge />
+              </div>
+              {/* 이메일 수집 — 런칭 전/후 초기 유저 유치용. 검색바 아래 배치. */}
+              <div className="flex justify-center mb-6">
+                <WaitlistForm source="home_hero" compact />
+              </div>
+            </>
           )}
 
           <div onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}>

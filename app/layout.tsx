@@ -7,6 +7,7 @@ import { ToastProvider } from "@/lib/toast/context";
 import ToastContainer from "@/components/Common/ToastContainer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import CookieConsent from "@/components/CookieConsent";
+import FloatingFeedbackButton from "@/components/FloatingFeedbackButton";
 import AccessibilityProvider from "@/components/Common/AccessibilityProvider";
 import { AuthProvider } from "@/lib/auth/context";
 
@@ -106,6 +107,7 @@ export default function RootLayout({
                 <AccessibilityProvider>
                   {children}
                   <CookieConsent />
+                  <FloatingFeedbackButton />
                   <ToastContainer />
                 </AccessibilityProvider>
               </ToastProvider>
