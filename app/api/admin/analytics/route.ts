@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       title,
       views_count,
       saves_count,
-      author:profiles(username)
+      author:profiles!recipes_author_id_fkey(username)
     `)
     .gte('created_at', startDate.toISOString())
     .order('views_count', { ascending: false })

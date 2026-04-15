@@ -307,7 +307,7 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
       const [{ data: recipes }, tipRes] = await Promise.all([
         supabase
           .from('recipes')
-          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles(username)')
+          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
           .eq('status', 'published')
           .order('created_at', { ascending: false })
           .range(offset, offset + RECIPES_PER_PAGE - 1),

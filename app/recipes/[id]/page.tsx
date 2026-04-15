@@ -179,7 +179,7 @@ export default function RecipeDetailPage(props: PageProps) {
         .from('recipes')
         .select(`
           *,
-          author:profiles(username, avatar_url, bio),
+          author:profiles!recipes_author_id_fkey(username, avatar_url, bio),
           ingredients:recipe_ingredients(*),
           steps:recipe_steps(*)
         `)

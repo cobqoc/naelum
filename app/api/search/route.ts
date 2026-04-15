@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
           id, title, description, thumbnail_url, display_image,
           prep_time_minutes, cook_time_minutes, difficulty_level,
           average_rating, views_count, cuisine_type,
-          author:profiles(username, avatar_url)
+          author:profiles!recipes_author_id_fkey(username, avatar_url)
         `, { count: 'exact' })
         .eq('status', 'published')
         .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
-            author:profiles(username, avatar_url),
+            author:profiles!recipes_author_id_fkey(username, avatar_url),
             status
           )
         `, { count: 'exact' })

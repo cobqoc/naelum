@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     .from('recipes')
     .select(`
       *,
-      author:profiles(id, username, avatar_url),
+      author:profiles!recipes_author_id_fkey(id, username, avatar_url),
       ingredients:recipe_ingredients(ingredient_name),
       tags:recipe_tags(tag_name)
     `, { count: 'exact' })
