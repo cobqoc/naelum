@@ -89,7 +89,7 @@ export async function GET(
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
-            author:profiles(username, avatar_url)
+            author:profiles!recipes_author_id_fkey(username, avatar_url)
           )
         `, { count: 'exact' })
         .eq('user_id', profile.id)
@@ -110,7 +110,7 @@ export async function GET(
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
-            author:profiles(username, avatar_url)
+            author:profiles!recipes_author_id_fkey(username, avatar_url)
           )
         `, { count: 'exact' })
         .eq('user_id', profile.id)
@@ -133,7 +133,7 @@ export async function GET(
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
-            author:profiles(username, avatar_url)
+            author:profiles!recipes_author_id_fkey(username, avatar_url)
           )
         `, { count: 'exact' })
         .eq('user_id', profile.id)

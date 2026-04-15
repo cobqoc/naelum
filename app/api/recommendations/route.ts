@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, servings,
-            author:profiles(username, avatar_url),
+            author:profiles!recipes_author_id_fkey(username, avatar_url),
             ingredients:recipe_ingredients(ingredient_name)
           `)
           .eq('status', 'published')
@@ -291,7 +291,7 @@ export async function GET(request: NextRequest) {
               id, title, description, thumbnail_url, display_image,
               prep_time_minutes, cook_time_minutes, difficulty_level,
               average_rating,
-              author:profiles(username, avatar_url)
+              author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)
             .eq('status', 'published')
             .order('average_rating', { ascending: false })
@@ -314,7 +314,7 @@ export async function GET(request: NextRequest) {
               id, title, description, thumbnail_url, display_image,
               prep_time_minutes, cook_time_minutes, difficulty_level,
               average_rating, cuisine_type,
-              author:profiles(username, avatar_url),
+              author:profiles!recipes_author_id_fkey(username, avatar_url),
               ingredients:recipe_ingredients(ingredient_name)
             `)
             .eq('status', 'published')
@@ -368,7 +368,7 @@ export async function GET(request: NextRequest) {
                 id, title, description, thumbnail_url, display_image,
                 prep_time_minutes, cook_time_minutes, difficulty_level,
                 average_rating, views_count,
-                author:profiles(username, avatar_url)
+                author:profiles!recipes_author_id_fkey(username, avatar_url)
               `)
               .eq('status', 'published')
               .in('id', topRecipeIds)
@@ -388,7 +388,7 @@ export async function GET(request: NextRequest) {
               id, title, description, thumbnail_url, display_image,
               prep_time_minutes, cook_time_minutes, difficulty_level,
               average_rating, views_count,
-              author:profiles(username, avatar_url)
+              author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)
             .eq('status', 'published')
             .order('average_rating', { ascending: false })
@@ -419,7 +419,7 @@ export async function GET(request: NextRequest) {
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, meal_type,
-            author:profiles(username, avatar_url)
+            author:profiles!recipes_author_id_fkey(username, avatar_url)
           `)
           .eq('status', 'published')
           .eq('meal_type', mealType)
@@ -435,7 +435,7 @@ export async function GET(request: NextRequest) {
               id, title, description, thumbnail_url, display_image,
               prep_time_minutes, cook_time_minutes, difficulty_level,
               average_rating,
-              author:profiles(username, avatar_url)
+              author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)
             .eq('status', 'published')
             .order('average_rating', { ascending: false })

@@ -12,7 +12,7 @@ async function fetchHomeData() {
   const [recipesResult, tipsResult, cookedResult] = await Promise.all([
     supabase
       .from('recipes')
-      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles(username)')
+      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .range(0, INITIAL_RECIPES - 1),
@@ -69,7 +69,7 @@ async function fetchHomeData() {
     if (topIds.length > 0) {
       const { data: trendingData } = await supabase
         .from('recipes')
-        .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles(username, avatar_url)')
+        .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username, avatar_url)')
         .eq('status', 'published')
         .in('id', topIds);
 
@@ -85,7 +85,7 @@ async function fetchHomeData() {
   if (initialTrending.length === 0) {
     const { data: fallback } = await supabase
       .from('recipes')
-      .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles(username, avatar_url)')
+      .select('id, title, thumbnail_url, display_image, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username, avatar_url)')
       .eq('status', 'published')
       .order('average_rating', { ascending: false })
       .limit(4);
