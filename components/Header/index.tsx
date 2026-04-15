@@ -27,7 +27,7 @@ const LANG_OPTIONS = [
 ];
 
 export default function Header() {
-  const { language, setLanguage } = useI18n();
+  const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -372,7 +372,7 @@ export default function Header() {
                   href="/login"
                   className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
-                  로그인
+                  {t.common.login}
                 </Link>
               </>
             )}

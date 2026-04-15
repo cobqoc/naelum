@@ -107,6 +107,47 @@ export default function UserDropdown({
                 <Link href="/settings" onClick={handleClose} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors">
                   <span>⚙️</span> {t.common.settings}
                 </Link>
+
+                <div className="px-4 py-2">
+                  <button
+                    onClick={() => setShowLangPanel(p => !p)}
+                    className="w-full flex items-center justify-between py-1.5"
+                    aria-expanded={showLangPanel}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>🌐</span>
+                      <span className="text-sm">{t.common.language ?? '언어'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-text-muted flex items-center gap-1.5">
+                        <span className={`${LANGUAGES.find(l => l.code === language)?.flagClass ?? 'fi fi-kr'} text-xs`} />
+                        {LANGUAGES.find(l => l.code === language)?.label}
+                      </span>
+                      <svg className={`w-3.5 h-3.5 text-text-muted transition-transform duration-200 ${showLangPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                  {showLangPanel && (
+                    <div className="mt-1.5 grid grid-cols-2 gap-1">
+                      {LANGUAGES.map(({ code, label, flagClass }) => (
+                        <button
+                          key={code}
+                          onClick={() => { setLanguage(code); setShowLangPanel(false); }}
+                          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                            language === code
+                              ? 'bg-accent-warm/15 text-accent-warm font-medium'
+                              : 'hover:bg-white/5 text-text-secondary'
+                          }`}
+                        >
+                          <span className={`${flagClass} text-xs`} />
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={() => { onShowContact(); handleClose(); }}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors w-full text-left"
