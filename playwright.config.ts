@@ -1,4 +1,26 @@
 import { defineConfig, devices } from '@playwright/test';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+
+// .env.local을 Playwright Node 프로세스로 주입해 e2e/helpers에서 Supabase 서비스 롤 키 등을 쓸 수 있게 한다.
+// Next.js 서버는 자체적으로 .env.local을 읽지만, Playwright 테스트 러너는 별도 프로세스이므로 수동으로 파싱한다.
+(function loadEnvLocal() {
+  const envPath = join(process.cwd(), '.env.local');
+  if (!existsSync(envPath)) return;
+  const content = readFileSync(envPath, 'utf-8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = value;
+  }
+})();
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
