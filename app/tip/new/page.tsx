@@ -146,8 +146,8 @@ export default function TipNewPage() {
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).single();
-      router.push(`/@${profile?.username}?tab=drafts`);
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).maybeSingle();
+      router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch {
       setError('오류가 발생했습니다.');
     } finally {

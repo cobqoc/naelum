@@ -16,8 +16,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Fetch all public user profiles
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('username, updated_at')
-    .order('updated_at', { ascending: false })
+    .select('username, created_at')
+    .order('created_at', { ascending: false })
     .limit(1000);
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -37,12 +37,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  const profilePages: MetadataRoute.Sitemap = (profiles || []).map((profile) => ({
-    url: `${BASE_URL}/@${profile.username}`,
-    lastModified: new Date(profile.updated_at),
-    changeFrequency: 'weekly' as const,
-    priority: 0.5,
-  }));
+  const profilePages: MetadataRoute.Sitemap = (profiles || [])
+    .filter((profile) => profile.username)
+    .map((profile) => ({
+      url: `${BASE_URL}/@${profile.username}`,
+      lastModified: new Date(profile.created_at),
+      changeFrequency: 'weekly' as const,
+      priority: 0.5,
+    }));
 
   return [...staticPages, ...recipePages, ...profilePages];
 }
