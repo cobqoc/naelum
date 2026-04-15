@@ -83,7 +83,10 @@ export async function deleteTestUser(userId: string): Promise<void> {
 export interface CreateTestRecipeOptions {
   title?: string
   status?: 'published' | 'draft'
+  /** 기본 3단계 스텝 추가 (timer_minutes 없음) */
   withSteps?: boolean
+  /** withSteps 대신 timer_minutes가 포함된 스텝을 추가 (타이머 테스트용) */
+  withTimerStep?: boolean
 }
 
 export async function createTestRecipe(
@@ -113,7 +116,12 @@ export async function createTestRecipe(
     throw new Error(`createTestRecipe failed: ${error?.message}`)
   }
 
-  if (opts.withSteps) {
+  if (opts.withTimerStep) {
+    // 1분 타이머가 붙은 단일 스텝 — page.clock으로 시간 가속해 타이머 완료를 테스트
+    await admin.from('recipe_steps').insert([
+      { recipe_id: recipe.id, step_number: 1, instruction: '1분간 끓인다.', timer_minutes: 1 },
+    ])
+  } else if (opts.withSteps) {
     await admin.from('recipe_steps').insert([
       { recipe_id: recipe.id, step_number: 1, instruction: '재료를 준비한다.' },
       { recipe_id: recipe.id, step_number: 2, instruction: '볶는다.' },
