@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUserIdFromHeaders } from '@/lib/supabase/middleware';
 import HomeClient, { type FeedItem, type RecipeItem } from './HomeClient';
@@ -7,6 +8,54 @@ const INITIAL_RECIPES = 8;
 const INITIAL_TIPS = 4;
 const INITIAL_TRENDING = 4;
 const INITIAL_FRIDGE_RECS = 4;
+
+// 공유 쿼리(모든 유저가 같은 결과)는 서버 메모리에 60초 캐싱.
+// 유저별 쿼리(profile, fridge recs)는 캐싱 대상 아님 — 계속 force-dynamic 유지.
+// 새 레시피/팁이 published되면 /api/recipes/new 등에서 revalidateTag('recipes-public')를 호출해 즉시 무효화.
+const getCachedLatestRecipes = unstable_cache(
+  async (limit: number) => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('recipes')
+      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .range(0, limit - 1);
+    return data ?? [];
+  },
+  ['home-latest-recipes'],
+  { tags: ['recipes-public'], revalidate: 60 }
+);
+
+const getCachedLatestTips = unstable_cache(
+  async (limit: number) => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('tip')
+      .select('id, title, thumbnail_url, category, duration_minutes, author:profiles!tip_author_id_fkey(username)')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .range(0, limit - 1);
+    return data ?? [];
+  },
+  ['home-latest-tips'],
+  { tags: ['tips-public'], revalidate: 60 }
+);
+
+const getCachedTrendingRecipes = unstable_cache(
+  async (limit: number) => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('recipes')
+      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
+      .eq('status', 'published')
+      .order('views_count', { ascending: false })
+      .range(0, limit - 1);
+    return data ?? [];
+  },
+  ['home-trending-recipes'],
+  { tags: ['recipes-public'], revalidate: 60 }
+);
 
 /**
  * 로그인 유저의 냉장고 기반 추천을 내부 API 라우트를 통해 가져온다.
@@ -55,36 +104,22 @@ async function fetchHomeData() {
         .maybeSingle()
     : Promise.resolve({ data: null });
 
-  const [recipesResult, tipsResult, trendingResult, initialFridgeRecs, profileResult] = await Promise.all([
-    supabase
-      .from('recipes')
-      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .range(0, INITIAL_RECIPES - 1),
-    supabase
-      .from('tip')
-      .select('id, title, thumbnail_url, category, duration_minutes, author:profiles!tip_author_id_fkey(username)')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
-      .range(0, INITIAL_TIPS - 1),
-    supabase
-      .from('recipes')
-      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
-      .eq('status', 'published')
-      .order('views_count', { ascending: false })
-      .range(0, INITIAL_TRENDING - 1),
+  // 공유 쿼리는 unstable_cache 래퍼를 거쳐 Supabase round trip 없이 바로 리턴될 수 있음
+  const [latestRecipes, latestTips, trendingRecipes, initialFridgeRecs, profileResult] = await Promise.all([
+    getCachedLatestRecipes(INITIAL_RECIPES),
+    getCachedLatestTips(INITIAL_TIPS),
+    getCachedTrendingRecipes(INITIAL_TRENDING),
     fridgeRecsPromise,
     profileQuery,
   ]);
 
   // 초기 피드 혼합 (레시피 2개 : 팁 1개 비율)
-  const recipeFeed: FeedItem[] = (recipesResult.data || []).map(r => ({
+  const recipeFeed: FeedItem[] = latestRecipes.map(r => ({
     type: 'recipe' as const,
     ...r,
     author: Array.isArray(r.author) ? r.author[0] : r.author,
   }));
-  const tipFeed: FeedItem[] = (tipsResult.data || []).map(tip => ({
+  const tipFeed: FeedItem[] = latestTips.map(tip => ({
     type: 'tip' as const,
     id: tip.id,
     title: tip.title,
@@ -101,7 +136,7 @@ async function fetchHomeData() {
     if (ti < tipFeed.length) initialFeed.push(tipFeed[ti++]);
   }
 
-  const initialTrending: RecipeItem[] = (trendingResult.data || []).map(r => ({
+  const initialTrending: RecipeItem[] = trendingRecipes.map(r => ({
     ...r,
     author: Array.isArray(r.author) ? r.author[0] : r.author,
   }));
