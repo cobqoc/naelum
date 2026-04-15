@@ -146,6 +146,8 @@ function CardSkeleton() {
 interface HomeClientProps {
   initialFeed: FeedItem[];
   initialTrending: RecipeItem[];
+  /** 서버에서 fetch한 로그인 유저의 냉장고 기반 추천 (미로그인/냉장고 비어있음 시 빈 배열) */
+  initialFridgeRecs: RecipeItem[];
   initialFeedOffset: number;
   /** 서버에서 fetch한 로그인 유저의 onboarding_step (미로그인/미fetch 시 null) */
   onboardingStep: number | null;
@@ -153,7 +155,14 @@ interface HomeClientProps {
   isAuthenticated: boolean;
 }
 
-export default function HomeClient({ initialFeed, initialTrending, initialFeedOffset, onboardingStep, isAuthenticated }: HomeClientProps) {
+export default function HomeClient({
+  initialFeed,
+  initialTrending,
+  initialFridgeRecs,
+  initialFeedOffset,
+  onboardingStep,
+  isAuthenticated,
+}: HomeClientProps) {
   const { t } = useI18n();
 
   const { user, profile: authProfile, loading: authLoading } = useAuth();
@@ -219,9 +228,10 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
   const [trendingItems, setTrendingItems] = useState<RecipeItem[]>(initialTrending);
   const [trendingLoading, setTrendingLoading] = useState(initialTrending.length === 0);
 
-  const [fridgeRecs, setFridgeRecs] = useState<RecipeItem[]>([]);
-  const [fridgeLoading, setFridgeLoading] = useState(false);
-  const [hasFridgeItems, setHasFridgeItems] = useState(false);
+  // 서버에서 이미 fetch한 fridge 추천을 초기값으로 사용 → lazy load effect 불필요
+  const [fridgeRecs] = useState<RecipeItem[]>(initialFridgeRecs);
+  const [fridgeLoading] = useState(false);
+  const hasFridgeItems = fridgeRecs.length > 0;
 
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
@@ -378,35 +388,8 @@ export default function HomeClient({ initialFeed, initialTrending, initialFeedOf
     return () => observer.disconnect();
   }, [feedHasMore, fetchFeedPage, feedItems.length]);
 
-  // 냉장고 기반 추천 (로그인 사용자) — 유휴 시간에 로드
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setHasFridgeItems(false);
-      setFridgeRecs([]);
-      return;
-    }
-    setFridgeLoading(true);
-    const load = () => {
-      fetch('/api/recommendations?type=ingredients&limit=4')
-        .then(r => r.json())
-        .then(data => {
-          if (data.recommendations?.length > 0) {
-            setHasFridgeItems(true);
-            setFridgeRecs(data.recommendations);
-          } else {
-            setHasFridgeItems(false);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setFridgeLoading(false));
-    };
-    if (typeof requestIdleCallback !== 'undefined') {
-      const id = requestIdleCallback(load, { timeout: 3000 });
-      return () => cancelIdleCallback(id);
-    }
-    const t = setTimeout(load, 500);
-    return () => clearTimeout(t);
-  }, [isLoggedIn, user?.id]);
+  // 냉장고 추천은 서버에서 이미 fetch됨 (app/page.tsx의 fetchFridgeRecommendations).
+  // 따로 useEffect 불필요 — fridgeRecs가 initialFridgeRecs로 초기화돼 즉시 렌더.
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
