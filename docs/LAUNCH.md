@@ -64,11 +64,15 @@
 - [ ] 이메일 수집 폼 (홈 또는 /waitlist)
 - [ ] Kakao 공유 SDK 동작 확인
 
-### Day 4: 다국어 타겟 준비 + 유튜브 영상 첫 업로드 준비 ⬜
-- [ ] 홈 페이지에 언어 감지/전환 UX 점검 (외국인 친화적?)
-- [ ] AI 영상 제작 워크플로우 세팅 (Gemini 스크립트 + TTS + 스톡 이미지)
-- [ ] 첫 영상 스크립트 작성 (유튜브 1번째 업로드용)
-- [ ] 앱 → 영상 딥링크, 영상 → 앱 QR 코드 준비
+### Day 4: 다국어 타겟 준비 + 유튜브 영상 첫 업로드 준비 ✅
+- [x] 홈 페이지에 언어 감지/전환 UX 점검 (외국인 친화적?)
+  - 헤더 로그인 버튼 i18n 처리
+  - 모바일 BottomNav UserDropdown에 언어 스위처 추가
+- [x] AI 영상 제작 워크플로우 세팅 → `docs/VIDEO_WORKFLOW.md`
+- [x] 첫 영상 스크립트 작성 → `docs/launch/intro_video_script.md`
+- [x] 앱 → 영상 딥링크, 영상 → 앱 QR 코드 준비
+  - `docs/launch/deeplinks.md` (UTM 딥링크 표)
+  - `public/qr/` (3종 QR PNG)
 
 ### Day 5: Soft launch — 지인 10명 ⬜
 - [ ] 너 아는 사람 10명에게 DM: "솔직한 피드백 부탁"
