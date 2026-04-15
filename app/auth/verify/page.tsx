@@ -38,10 +38,12 @@ export default function VerifyPage() {
               timestamp: Date.now()
             }));
           } catch {}
-          // 이 탭은 잠시 후 닫기 시도
+          // 탭 닫기 시도 → 실패 시 set-password로 직접 이동 (원래 탭이 없는 경우 대비)
           setTimeout(() => {
             window.close();
-            // 닫히지 않으면 안내 메시지 표시 (아래 UI에서 처리)
+            setTimeout(() => {
+              router.push('/signup/set-password');
+            }, 500);
           }, 1500);
           return;
         } else {
@@ -73,9 +75,12 @@ export default function VerifyPage() {
                 timestamp: Date.now()
               }));
             } catch {}
-            // 이 탭은 잠시 후 닫기 시도
+            // 탭 닫기 시도 → 실패 시 set-password로 직접 이동
             setTimeout(() => {
               window.close();
+              setTimeout(() => {
+                router.push('/signup/set-password');
+              }, 500);
             }, 1500);
             return;
           } else {

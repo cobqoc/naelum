@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -17,20 +17,28 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(300);
+  // 여러 채널(BroadcastChannel, storage, onAuthStateChange)이 동시에 발화해도 한 번만 이동
+  const navigatingRef = useRef(false);
 
   // 이메일 인증 완료 감지 - BroadcastChannel을 통해 다른 탭에서 인증 완료 시 감지
   useEffect(() => {
     if (!emailSent) return;
 
+    navigatingRef.current = false;
+
+    const navigate = () => {
+      if (navigatingRef.current) return;
+      navigatingRef.current = true;
+      supabase.auth.getSession().then(() => {
+        router.push('/signup/set-password');
+      });
+    };
+
     // BroadcastChannel로 다른 탭에서의 인증 완료 감지
     const channel = new BroadcastChannel('auth-channel');
     channel.onmessage = (event) => {
-      if (event.data.type === 'AUTH_SUCCESS') {
-        // 세션 새로고침 후 이동
-        supabase.auth.getSession().then(() => {
-          router.push('/signup/set-password');
-        });
-      }
+      if (event.data.type === 'AUTH_SUCCESS') navigate();
     };
 
     const handleStorageEvent = (event: StorageEvent) => {
@@ -39,9 +47,7 @@ export default function SignupPage() {
           const data = JSON.parse(event.newValue || '{}');
           if (data.type === 'AUTH_SUCCESS') {
             localStorage.removeItem('naelum_auth_event');
-            supabase.auth.getSession().then(() => {
-              router.push('/signup/set-password');
-            });
+            navigate();
           }
         } catch {}
       }
@@ -51,16 +57,28 @@ export default function SignupPage() {
     // 기존 onAuthStateChange도 유지 (같은 탭에서 인증되는 경우 대비)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          router.push('/signup/set-password');
-        }
+        if (event === 'SIGNED_IN' && session?.user) navigate();
       }
     );
+
+    // 5분 카운트다운 — Supabase mailer_otp_exp(300초)와 동기화
+    // 0이 되면 매직 링크도 서버에서 만료되므로 재시도 UI로 복귀
+    const interval = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!navigatingRef.current) setEmailSent(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
     return () => {
       channel.close();
       window.removeEventListener('storage', handleStorageEvent);
       subscription.unsubscribe();
+      clearInterval(interval);
     };
   }, [emailSent, router, supabase.auth]);
 
@@ -118,6 +136,7 @@ export default function SignupPage() {
       }
       setLoading(false);
     } else {
+      setRemainingSeconds(300);
       setEmailSent(true);
       setLoading(false);
     }
@@ -130,6 +149,9 @@ export default function SignupPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          prompt: 'select_account',
+        },
       },
     });
 
@@ -269,6 +291,12 @@ export default function SignupPage() {
               <p className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
                 {t.auth.autoMoveNext}
+              </p>
+              <p className="mt-2 text-center text-2xl font-mono font-bold tabular-nums text-accent-warm">
+                {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
+              </p>
+              <p className="mt-1 text-center text-xs text-text-muted">
+                {t.auth.verifyTimeRemaining}
               </p>
             </div>
 

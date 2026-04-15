@@ -25,6 +25,7 @@ export default function TermsAgreementPage() {
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [checking, setChecking] = useState(true);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
@@ -61,6 +62,30 @@ export default function TermsAgreementPage() {
     checkSession();
   }, [router, supabase]);
 
+  const handleCancel = async () => {
+    if (cancelling || loading) return;
+    if (!window.confirm(t.auth.termsCancelConfirm)) return;
+
+    setCancelling(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/cancel-signup', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('cancel-signup failed:', body);
+        setError(t.auth.processErrorText);
+        setCancelling(false);
+        return;
+      }
+      // 세션 쿠키를 완전히 비우기 위해 full reload
+      window.location.href = '/signup';
+    } catch (err) {
+      console.error('cancel-signup error:', err);
+      setError(t.auth.processErrorText);
+      setCancelling(false);
+    }
+  };
+
   const handleAgree = async () => {
     if (!agreedToTerms || !agreedToPrivacy) {
       setError(t.auth.termsRequired);
@@ -87,13 +112,14 @@ export default function TermsAgreementPage() {
         .maybeSingle();
 
       if (!existingProfile) {
-        // 프로필이 없으면 생성 (Google/Kakao OAuth 신규 가입자)
+        // 프로필이 없으면 생성 — 마케팅 동의까지 한 번에 INSERT
         const { error: insertError } = await createProfile(supabase, {
           id: user.id,
           email: user.email!,
           authProvider: provider,
           onboardingCompleted: false,
           onboardingStep: 0,
+          marketingConsent: agreedToMarketing,
         });
         if (insertError) {
           console.error('Profile insert error:', insertError);
@@ -101,15 +127,15 @@ export default function TermsAgreementPage() {
           setLoading(false);
           return;
         }
-      }
-
-      // 약관 동의 상태 업데이트 (마케팅 동의 포함)
-      const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
-      if (updateError) {
-        console.error('Profile update error:', updateError);
-        setError(t.auth.profileUpdateError);
-        setLoading(false);
-        return;
+      } else {
+        // 기존 프로필 — 마케팅 동의 업데이트 및 온보딩 초기화
+        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
+        if (updateError) {
+          console.error('Profile update error:', updateError);
+          setError(t.auth.profileUpdateError);
+          setLoading(false);
+          return;
+        }
       }
 
       // 세션 갱신 → auth context에서 profile 재조회 (드롭다운에 사용자 정보 표시)
@@ -287,7 +313,7 @@ export default function TermsAgreementPage() {
 
         <button
           onClick={handleAgree}
-          disabled={loading}
+          disabled={loading || cancelling}
           className="w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary transition-all hover:bg-accent-hover disabled:opacity-50"
         >
           {loading ? (
@@ -296,6 +322,19 @@ export default function TermsAgreementPage() {
               {t.auth.processingText}
             </span>
           ) : t.auth.termsAgreeCta}
+        </button>
+
+        <button
+          onClick={handleCancel}
+          disabled={loading || cancelling}
+          className="mt-3 w-full rounded-xl border border-white/10 bg-transparent py-3 text-sm text-text-muted transition-all hover:border-error/40 hover:text-error disabled:opacity-50"
+        >
+          {cancelling ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              {t.auth.processingText}
+            </span>
+          ) : t.auth.termsCancelCta}
         </button>
 
         <p className="mt-6 text-center text-xs text-text-muted">
