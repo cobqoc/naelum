@@ -170,12 +170,11 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 약관/온보딩 게이트
-  // naelum_terms_ok 쿠키가 없는 로그인 유저는 DB 프로필 확인
-  // onboarding_completed: true → 30일짜리 확인 쿠키 발급 후 통과
-  // onboarding_completed: false 또는 프로필 없음 → terms-agreement 리다이렉트
-  const termsOk = request.cookies.get('naelum_terms_ok')?.value === '1'
-  if (user && !termsOk && !pathname.startsWith('/auth/') && !pathname.startsWith('/api/')) {
+  // 약관/온보딩 게이트 — 항상 DB를 소스 오브 트루스로 조회한다.
+  // 과거에 naelum_terms_ok 쿠키로 fast-path를 썼지만, profile 상태가 서버에서
+  // 변경될 때(삭제/재생성, admin 리셋 등) 쿠키가 stale 상태로 남아 게이트를
+  // 우회하는 버그가 있었다. 정확성 > 성능 원칙으로 매 요청마다 DB 체크.
+  if (user && !pathname.startsWith('/auth/') && !pathname.startsWith('/api/')) {
     const supabase = createSupabaseClient(request)
     const { data: profile } = await supabase
       .from('profiles')
@@ -190,15 +189,12 @@ export async function proxy(request: NextRequest) {
         true
       )
     }
+  }
 
-    // 온보딩 완료 → 30일 확인 쿠키 발급 (이후 DB 조회 생략)
-    response.cookies.set('naelum_terms_ok', '1', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    })
+  // 과거 버전에서 발급된 naelum_terms_ok 쿠키는 더 이상 사용하지 않으므로 제거한다.
+  // (브라우저에 남아있어도 무해하지만 이번 기회에 청소)
+  if (request.cookies.get('naelum_terms_ok')) {
+    response.cookies.delete('naelum_terms_ok')
   }
 
   return applyNoStore(response, pathname, hasSessionCookie)

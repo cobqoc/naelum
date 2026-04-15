@@ -114,16 +114,8 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${baseUrl}/auth/terms-agreement`)
       }
 
-      // 온보딩 완료된 기존 사용자 → 홈으로 (terms_ok 쿠키 발급)
-      const homeRedirect = NextResponse.redirect(`${baseUrl}${next}`)
-      homeRedirect.cookies.set('naelum_terms_ok', '1', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 30,
-      })
-      return homeRedirect
+      // 온보딩 완료된 기존 사용자 → 홈으로
+      return NextResponse.redirect(`${baseUrl}${next}`)
     }
   }
 
