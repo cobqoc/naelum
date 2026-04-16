@@ -250,7 +250,7 @@ export default function FridgeHomeClient() {
           <div
             className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
             style={{
-              left: doorOpen ? '-68px' : '-1px',
+              left: doorOpen ? '-80px' : '-1px',
               transform: doorOpen ? 'perspective(800px) rotateY(42deg)' : 'rotateY(0deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
@@ -289,7 +289,7 @@ export default function FridgeHomeClient() {
           <div
             className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
             style={{
-              right: doorOpen ? '-68px' : '-1px',
+              right: doorOpen ? '-80px' : '-1px',
               transform: doorOpen ? 'perspective(800px) rotateY(-42deg)' : 'rotateY(0deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
