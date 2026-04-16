@@ -237,7 +237,7 @@ export default function FridgeHomeClient() {
 
       {/* === SVG 냉장고 === */}
       <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-20 md:pb-8">
-        <div className="relative w-full max-w-xs md:max-w-sm mx-auto h-[calc(100dvh-220px)] md:h-[calc(100dvh-300px)]">
+        <div className="relative w-full max-w-xs md:max-w-md lg:max-w-lg mx-auto h-[calc(100dvh-220px)] md:h-[calc(100dvh-300px)]">
           {/* SVG 냉장고 프레임 */}
           <FridgeSVG />
 
