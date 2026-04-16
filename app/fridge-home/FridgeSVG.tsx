@@ -183,4 +183,4 @@ export default function FridgeSVG() {
       <path d="M 415,629 L 420,626 L 420,638 L 415,641 Z" fill="#602018" />
     </svg>
   );
-}
+} 1776376992
