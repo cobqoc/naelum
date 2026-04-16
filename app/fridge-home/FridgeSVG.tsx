@@ -87,6 +87,12 @@ export default function FridgeSVG() {
       <path d="M 10,404 L 0,408 L 18,620 L 26,624 Z" fill="url(#bodyDark)" />
       <path d="M 10,404 L 0,408 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
       <path d="M 34,420 L 152,416 L 152,608 L 44,608 Z" fill="url(#freezerG)" />
+      {/* ── 좌측 냉동 문 선반 ── */}
+      <path d="M 39,508 L 37,512 L 38,535 L 40,531 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 39,508 L 152,505 L 150,509 L 37,512 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 37,512 L 150,509 L 150,535 L 38,535 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 39,536 L 150,536" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2" />
+
       {/* 바 — 좌측 냉동 문 (3면) */}
       <path d="M 18,421 L 19,418 L 35,417 L 34,420 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 34,420 L 35,417 L 45,605 L 44,608 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
@@ -153,6 +159,23 @@ export default function FridgeSVG() {
       <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
 
+      {/* ====== 냉동 본체 3D 선반 ====== */}
+      {/* 선반1 */}
+      <path d="M 178,475 L 186,467 L 414,467 L 422,475 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,475 L 422,475 L 422,500 L 178,500 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,490 L 178,500 L 188,500 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M 422,490 L 422,500 L 412,500 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M 178,475 L 422,475" fill="none" stroke="#F8E060" strokeWidth="1.5" />
+      <path d="M 180,502 L 420,502" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
+
+      {/* 선반2 */}
+      <path d="M 178,550 L 186,542 L 414,542 L 422,550 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,550 L 422,550 L 422,575 L 178,575 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,565 L 178,575 L 188,575 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M 422,565 L 422,575 L 412,575 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M 178,550 L 422,550" fill="none" stroke="#F8E060" strokeWidth="1.5" />
+      <path d="M 180,577 L 420,577" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
+
 
 
       {/* ====== 우측 냉장 문 (극적 V자) ====== */}
@@ -191,6 +214,12 @@ export default function FridgeSVG() {
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
       <path d="M 430,402 L 442,406 L 590,404 L 600,408 Z" fill="url(#bodyLight)" />
       <path d="M 448,416 L 566,422 L 556,608 L 448,604 Z" fill="url(#freezerG)" />
+      {/* ── 우측 냉동 문 선반 ── */}
+      <path d="M 561,510 L 563,514 L 561,537 L 559,533 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,506 L 561,510 L 563,514 L 450,510 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,510 L 563,514 L 561,537 L 450,536 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,538 L 561,538" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="2" />
+
       {/* 바 — 우측 냉동 문 (3면) */}
       <path d="M 566,422 L 565,419 L 581,420 L 582,423 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 566,422 L 565,419 L 555,605 L 556,608 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
@@ -210,4 +239,4 @@ export default function FridgeSVG() {
       <path d="M 415,629 L 420,626 L 420,638 L 415,641 Z" fill="#602018" />
     </svg>
   );
-} 1776376992
+}
