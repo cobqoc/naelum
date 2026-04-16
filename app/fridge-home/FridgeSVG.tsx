@@ -99,22 +99,6 @@ export default function FridgeSVG() {
       <path d="M 163,489 L 163,545" stroke="rgba(0,0,0,0.12)" strokeWidth="8" strokeLinecap="round" />
       <path d="M 161,487 L 161,547" stroke="url(#handleG)" strokeWidth="6" strokeLinecap="round" />
 
-      {/* ====== 문-본체 연결부 (어두운 톤, 은은하게) ====== */}
-      {/* 좌측 냉장 */}
-      <rect x="166" y="60" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="166" y="200" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="166" y="340" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      {/* 좌측 냉동 */}
-      <rect x="166" y="450" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="166" y="570" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      {/* 우측 냉장 */}
-      <rect x="428" y="60" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="428" y="200" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="428" y="340" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      {/* 우측 냉동 */}
-      <rect x="428" y="450" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-      <rect x="428" y="570" width="6" height="14" rx="1.5" fill="#7a2818" opacity="0.5" />
-
       {/* ====== 냉장고 본체 ====== */}
       {/* 우측면 */}
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
