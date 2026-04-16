@@ -350,11 +350,7 @@ export default function FridgeHomeClient() {
                 flex="1 1 auto"
               />
 
-              {/* 냉장/냉동 구분 */}
-              <div className="h-[6px] flex-shrink-0" style={{
-                background: 'linear-gradient(180deg, #7a5a30 0%, #5a3f1a 100%)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-              }} />
+              {/* 냉장/냉동 구분 — 선반 구분선과 동일 스타일 */}
 
               {/* ❄️ 냉동칸 (선반 2단) */}
               <FridgeInterior
@@ -480,11 +476,7 @@ function FridgeInterior({
                 <div className="flex-1 flex flex-wrap gap-1 items-end px-2.5 pb-1 min-h-[28px]">
                   {loading && idx === 0 ? (
                     <span className="text-[9px]" style={{ color: style.emptyText }}>로딩...</span>
-                  ) : shelfItems.length === 0 ? (
-                    <span className="text-[9px] italic" style={{ color: style.emptyText }}>
-                      빈 선반 — 재료를 추가해보세요
-                    </span>
-                  ) : (
+                  ) : shelfItems.length === 0 ? null : (
                     shelfItems.map(item => <ItemChip key={item.id} item={item} onRemove={onRemove} />)
                   )}
                 </div>
@@ -546,97 +538,146 @@ function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
 }
 
 function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
-  // 2단 선반으로 나누기
+  const [cabinetOpen, setCabinetOpen] = useState(false);
   const mid = Math.ceil(items.length / 2);
-  const top = items.slice(0, mid);
-  const bottom = items.slice(mid);
+  const leftItems = items.slice(0, mid);
+  const rightItems = items.slice(mid);
 
   return (
     <div className="flex justify-center px-4 mb-4">
       <div className="w-full max-w-xs md:max-w-sm">
         <h3 className="text-xs font-bold text-text-secondary mb-2 flex items-center gap-1.5">
-          <span>🏠</span> 상온 선반
+          <span>🏠</span> 상온 수납장
         </h3>
 
-        {/* 벽 배경 */}
+        {/* 수납장 본체 */}
         <div
-          className="relative rounded-xl p-3 pb-4"
+          className="relative rounded-xl overflow-hidden"
           style={{
-            background: 'linear-gradient(180deg, #f5e6c8 0%, #e8d5b0 100%)',
-            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.15)',
-            border: '1px solid rgba(180,150,100,0.3)',
+            height: '160px',
+            background: 'linear-gradient(180deg, #6b4a2e 0%, #5a3d24 100%)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+            border: '3px solid #4a3018',
+            perspective: '800px',
           }}
         >
-          {/* 벽 패턴 (미세한 다이아몬드) */}
-          <div className="absolute inset-0 rounded-xl opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%)', backgroundSize: '16px 16px' }}
-          />
+          {/* 내부 (나무톤 벽) */}
+          <div className="absolute inset-[4px] rounded-lg overflow-hidden flex" style={{
+            background: cabinetOpen
+              ? 'linear-gradient(180deg, #e8d5b8 0%, #d9c4a2 100%)'
+              : '#3a2818',
+            transition: 'background 0.4s ease',
+          }}>
+            {cabinetOpen && (
+              <>
+                {/* 왼쪽 칸 */}
+                <div className="flex-1 flex flex-col border-r border-amber-800/20">
+                  <CabinetShelfRow items={leftItems} onRemove={onRemove} />
+                  <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
+                  <CabinetShelfRow items={[]} onRemove={onRemove} />
+                </div>
+                {/* 오른쪽 칸 */}
+                <div className="flex-1 flex flex-col">
+                  <CabinetShelfRow items={rightItems} onRemove={onRemove} />
+                  <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
+                  <CabinetShelfRow items={[]} onRemove={onRemove} />
+                </div>
+              </>
+            )}
+          </div>
 
-          {/* 상단 선반 */}
-          <WoodShelf items={top} onRemove={onRemove} />
-
-          {/* 하단 선반 */}
-          {bottom.length > 0 && (
-            <div className="mt-3">
-              <WoodShelf items={bottom} onRemove={onRemove} />
+          {/* 좌측 문 */}
+          <div
+            onClick={() => setCabinetOpen(o => !o)}
+            className="absolute top-0 bottom-0 cursor-pointer"
+            style={{
+              width: cabinetOpen ? '40px' : '50%',
+              left: cabinetOpen ? '-28px' : '0',
+              transform: cabinetOpen ? 'perspective(600px) rotateY(55deg)' : 'perspective(600px) rotateY(0deg)',
+              transformOrigin: 'right center',
+              transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              zIndex: 10,
+            }}
+          >
+            <div className="w-full h-full rounded-l-lg" style={{
+              background: 'linear-gradient(135deg, #7a5a38 0%, #664a2c 50%, #5a4024 100%)',
+              boxShadow: cabinetOpen
+                ? '-2px 0 8px rgba(0,0,0,0.3)'
+                : 'inset -1px 0 3px rgba(0,0,0,0.2)',
+            }}>
+              {!cabinetOpen && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-amber-200/60" style={{
+                  boxShadow: '1px 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
+                }} />
+              )}
+              {!cabinetOpen && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <p className="text-[9px] text-white/40">탭해서 열기</p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* 비어있을 때 */}
-          {items.length === 0 && (
-            <div className="text-center py-4">
-              <p className="text-xs text-amber-800/40 italic">상온 재료가 없어요</p>
-              <p className="text-[10px] text-amber-800/30 mt-1">양파, 감자, 간장 같은 재료를 추가해보세요</p>
+          {/* 우측 문 */}
+          <div
+            onClick={() => setCabinetOpen(o => !o)}
+            className="absolute top-0 bottom-0 cursor-pointer"
+            style={{
+              width: cabinetOpen ? '40px' : '50%',
+              right: cabinetOpen ? '-28px' : '0',
+              transform: cabinetOpen ? 'perspective(600px) rotateY(-55deg)' : 'perspective(600px) rotateY(0deg)',
+              transformOrigin: 'left center',
+              transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              zIndex: 10,
+            }}
+          >
+            <div className="w-full h-full rounded-r-lg" style={{
+              background: 'linear-gradient(225deg, #7a5a38 0%, #664a2c 50%, #5a4024 100%)',
+              boxShadow: cabinetOpen
+                ? '2px 0 8px rgba(0,0,0,0.3)'
+                : 'inset 1px 0 3px rgba(0,0,0,0.2)',
+            }}>
+              {!cabinetOpen && (
+                <>
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-amber-200/60" style={{
+                    boxShadow: '-1px 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
+                  }} />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-xs text-white/50 font-bold">{items.length}개</p>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function WoodShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+function CabinetShelfRow({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
   return (
-    <div className="relative">
-      {/* 재료들 */}
-      <div className="flex flex-wrap gap-1.5 px-1 pb-2 min-h-[36px] items-end">
-        {items.map(item => (
-          <PantryItem key={item.id} item={item} onRemove={onRemove} />
-        ))}
-      </div>
-      {/* 나무 선반 판 */}
-      <div className="relative h-[6px] rounded-sm" style={{
-        background: 'linear-gradient(180deg, #8B6914 0%, #6b4f10 60%, #5a3f0e 100%)',
-        boxShadow: '0 3px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
-      }} />
-      {/* 선반 브래킷 (좌/우) */}
-      <div className="absolute -bottom-2 left-2 w-3 h-4 rounded-b-sm" style={{
-        background: 'linear-gradient(180deg, #6b4f10 0%, #5a3f0e 100%)',
-        boxShadow: '1px 2px 3px rgba(0,0,0,0.2)',
-      }} />
-      <div className="absolute -bottom-2 right-2 w-3 h-4 rounded-b-sm" style={{
-        background: 'linear-gradient(180deg, #6b4f10 0%, #5a3f0e 100%)',
-        boxShadow: '-1px 2px 3px rgba(0,0,0,0.2)',
-      }} />
+    <div className="flex-1 flex flex-wrap gap-1 items-end px-2 pb-1 min-h-[32px]">
+      {items.length === 0 ? null : (
+        items.map(item => {
+          const days = daysUntilExpiry(item.expiry_date);
+          const border = freshBorder(days);
+          const label = freshLabel(days);
+          const emoji = getEmoji(item.ingredient_name, item.category);
+          return (
+            <button
+              key={item.id}
+              onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+              className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
+              title={`${item.ingredient_name} ${label}`}
+            >
+              <span className="text-xl drop-shadow">{emoji}</span>
+              <span className="text-[7px] font-bold text-amber-900/70">{item.ingredient_name.slice(0, 4)}</span>
+              {label && <span className="text-[6px] font-bold" style={{ color: border }}>{label}</span>}
+            </button>
+          );
+        })
+      )}
     </div>
-  );
-}
-
-function PantryItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
-  const days = daysUntilExpiry(item.expiry_date);
-  const border = freshBorder(days);
-  const label = freshLabel(days);
-  const emoji = getEmoji(item.ingredient_name, item.category);
-
-  return (
-    <button
-      onClick={() => onRemove(item.id)}
-      className="flex flex-col items-center gap-0 hover:scale-110 active:scale-90 transition-transform"
-      title={`${item.ingredient_name} ${label} · 탭해서 먹기`}
-    >
-      <span className="text-2xl drop-shadow-md">{emoji}</span>
-      <span className="text-[8px] font-bold text-amber-900/70 whitespace-nowrap">{item.ingredient_name}</span>
-      {label && <span className="text-[7px] font-bold" style={{ color: border }}>{label}</span>}
-    </button>
   );
 }
