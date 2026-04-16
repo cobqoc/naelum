@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './quickAddList';
+import FridgeSVG from './FridgeSVG';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -242,168 +243,66 @@ export default function FridgeHomeClient() {
       <div className="md:mt-6" />
       <KitchenShelf items={sections.pantry} onRemove={removeItem} />
 
-      {/* === 냉장고 + 열린 문 === */}
-      <div className="flex-1 flex justify-center items-end px-[72px] md:px-24 pb-20 md:pb-16">
-        <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
+      {/* === SVG 냉장고 === */}
+      <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-20 md:pb-8">
+        <div className="relative w-full max-w-xs md:max-w-sm mx-auto h-[calc(100dvh-220px)] md:h-[calc(100dvh-300px)]">
+          {/* SVG 냉장고 프레임 */}
+          <FridgeSVG doorOpen={doorOpen} />
 
-          {/* 좌측 문 — transition으로 밀려나며 열림 */}
+          {/* 재료 오버레이 — SVG 위에 absolute 배치 */}
           <div
-            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
-            style={{
-              left: doorOpen ? '-80px' : '-1px',
-              transform: doorOpen ? 'perspective(800px) rotateY(42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
-              transformStyle: 'preserve-3d',
-              transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
-            }}
+            className="absolute inset-0 pointer-events-none"
+            style={{ opacity: doorOpen ? 1 : 0, transition: 'opacity 1.5s ease 0.8s' }}
           >
-            <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
-              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorOpen ? '-4px 0 12px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.3)',
-              border: '2px solid #b84a42',
-              borderRight: 'none',
-            }}>
-              {!doorOpen && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[9px] font-bold tracking-[0.15em] text-white/50 mb-2">NAELUM</span>
-                  <span className="text-3xl">🧊</span>
-                  <div className="absolute right-2 top-[40%] w-[5px] h-[40px] rounded-full"
-                    style={{ background: 'linear-gradient(180deg, #9a9a9a 0%, #6a6a6a 100%)', boxShadow: '1px 1px 3px rgba(0,0,0,0.4)' }}
-                  />
-                </div>
-              )}
-              {doorOpen && (
-                <div className="h-full flex flex-col" style={{ opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards' }}>
-                  <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
-                  <DoorRail />
-                  <DoorShelfSlot items={sections.doorL.slice(1, 2)} onRemove={removeItem} decoEmoji="🧴" />
-                  <DoorRail />
-                  <DoorShelfSlot items={sections.doorL.slice(2)} onRemove={removeItem} decoEmoji="🫙" />
-                  <DoorRail />
-                </div>
-              )}
+            {/* 냉장 선반 1 (top: 10%~24%) */}
+            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
+              style={{ top: '10%', left: '27%', right: '27%', height: '14%' }}>
+              {[...sections.main, ...sections.veggie].slice(0, 4).map(item => (
+                <ItemChip key={item.id} item={item} onRemove={removeItem} />
+              ))}
+            </div>
+
+            {/* 냉장 선반 2 (top: 25%~40%) */}
+            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
+              style={{ top: '25%', left: '27%', right: '27%', height: '15%' }}>
+              {[...sections.main, ...sections.veggie].slice(4, 8).map(item => (
+                <ItemChip key={item.id} item={item} onRemove={removeItem} />
+              ))}
+            </div>
+
+            {/* 냉장 선반 3 (top: 41%~55%) */}
+            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
+              style={{ top: '41%', left: '27%', right: '27%', height: '14%' }}>
+              {[...sections.main, ...sections.veggie].slice(8, 12).map(item => (
+                <ItemChip key={item.id} item={item} onRemove={removeItem} />
+              ))}
+            </div>
+
+            {/* 냉동 선반 1 (top: 67%~78%) */}
+            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
+              style={{ top: '67%', left: '27%', right: '27%', height: '11%' }}>
+              {sections.freezer.slice(0, 3).map(item => (
+                <ItemChip key={item.id} item={item} onRemove={removeItem} />
+              ))}
+            </div>
+
+            {/* 냉동 선반 2 (top: 80%~90%) */}
+            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
+              style={{ top: '80%', left: '27%', right: '27%', height: '10%' }}>
+              {sections.freezer.slice(3, 6).map(item => (
+                <ItemChip key={item.id} item={item} onRemove={removeItem} />
+              ))}
             </div>
           </div>
 
-          {/* 우측 문 */}
-          <div
-            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
-            style={{
-              right: doorOpen ? '-80px' : '-1px',
-              transform: doorOpen ? 'perspective(800px) rotateY(-42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
-              transformStyle: 'preserve-3d',
-              transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
-            }}
+          {/* + 추가 버튼 */}
+          <button
+            onClick={() => setShowAddSheet(true)}
+            className="absolute bottom-[6%] right-[20%] z-20 w-10 h-10 rounded-full bg-accent-warm text-background-primary text-xl font-bold shadow-lg hover:bg-accent-hover active:scale-90 transition-all flex items-center justify-center pointer-events-auto"
+            aria-label="재료 추가"
           >
-            <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
-              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorOpen ? '4px 0 12px rgba(0,0,0,0.3)' : '-2px 0 8px rgba(0,0,0,0.3)',
-              border: '2px solid #b84a42',
-              borderLeft: 'none',
-            }}>
-              {!doorOpen && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-sm text-white/50 font-bold">{items.length}개</span>
-                  <div className="absolute left-2 top-[40%] w-[5px] h-[40px] rounded-full"
-                    style={{ background: 'linear-gradient(180deg, #9a9a9a 0%, #6a6a6a 100%)', boxShadow: '-1px 1px 3px rgba(0,0,0,0.4)' }}
-                  />
-                </div>
-              )}
-              {doorOpen && (
-                <div className="h-full flex flex-col" style={{ opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards' }}>
-                  <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
-                  <DoorRail />
-                  <DoorShelfSlot items={sections.doorR.slice(1, 2)} onRemove={removeItem} decoEmoji="🧈" />
-                  <DoorRail />
-                  <DoorShelfSlot items={sections.doorR.slice(2)} onRemove={removeItem} decoEmoji="🍯" />
-                  <DoorRail />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 냉장고 본체 */}
-          <div
-            className="relative rounded-xl overflow-hidden h-[calc(100dvh-240px)] md:h-[calc(100dvh-340px)]"
-            style={{
-              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
-              border: '2px solid #b84a42',
-            }}
-          >
-            {/* 브랜드 */}
-            <div className="absolute top-1 left-0 right-0 z-10 text-center">
-              <span className="text-[9px] font-bold tracking-[0.2em] text-white/50">NAELUM</span>
-            </div>
-
-            {/* 프레임 상단 곡선 */}
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/10 to-transparent rounded-t-xl" />
-
-            {/* 내부 */}
-            <div
-              className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col"
-              style={{ opacity: doorOpen ? 1 : 0, transition: 'opacity 1.8s ease-out 0.3s' }}
-            >
-              {/* 내부 조명 */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6 z-10" style={{
-                background: 'radial-gradient(ellipse, rgba(255,248,220,0.5) 0%, transparent 100%)',
-              }} />
-
-              {/* 🧊 냉장칸 */}
-              <FridgeInterior
-                label="냉장"
-                icon="🧊"
-                items={[...sections.main, ...sections.veggie]}
-                onRemove={removeItem}
-                loading={loading}
-                style={FRIDGE_STYLE}
-                shelfCount={3}
-                shelfCap={4}
-                flex="1 1 auto"
-                inlineActive={inlineAddSection === 'fridge'}
-                inlineChips={FRIDGE_CHIPS}
-                inlineSearch={inlineSearch}
-                onInlineSearchChange={setInlineSearch}
-                onShelfTap={() => setInlineAddSection(s => s === 'fridge' ? null : 'fridge')}
-                onInlineAdd={handleInlineAdd}
-              />
-
-              {/* ❄️ 냉동칸 */}
-              <FridgeInterior
-                label="냉동"
-                icon="❄️"
-                items={sections.freezer}
-                onRemove={removeItem}
-                loading={loading}
-                style={FREEZER_STYLE}
-                shelfCount={2}
-                shelfCap={3}
-                flex="0 0 32%"
-                inlineActive={inlineAddSection === 'freezer'}
-                inlineChips={FREEZER_CHIPS}
-                inlineSearch={inlineSearch}
-                onInlineSearchChange={setInlineSearch}
-                onShelfTap={() => setInlineAddSection(s => s === 'freezer' ? null : 'freezer')}
-                onInlineAdd={handleInlineAdd}
-              />
-            </div>
-
-            {/* + 추가 버튼 (냉장고 우하단) */}
-            <button
-              onClick={() => setShowAddSheet(true)}
-              className="absolute bottom-2 right-2 z-20 w-10 h-10 rounded-full bg-accent-warm text-background-primary text-xl font-bold shadow-lg hover:bg-accent-hover active:scale-90 transition-all flex items-center justify-center"
-              aria-label="재료 추가"
-            >
-              +
-            </button>
-          </div>
-
-          {/* 냉장고 다리 */}
-          <div className="flex justify-between px-8 -mt-0.5">
-            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#9a4a44' }} />
-            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#9a4a44' }} />
-          </div>
+            +
+          </button>
         </div>
       </div>
 
