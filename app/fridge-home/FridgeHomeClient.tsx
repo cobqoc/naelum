@@ -214,24 +214,25 @@ export default function FridgeHomeClient() {
 
       {/* === 냉장고 + 열린 문 === */}
       <div className="flex justify-center px-1 mb-2">
-        <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg" style={{ perspective: '1200px' }}>
+        <div className="relative w-full max-w-[280px] md:max-w-xs lg:max-w-sm mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 (열린 상태, 선반 레일 포함) */}
+          {/* 좌측 문 (넓고 선명하게) */}
           <div
             className="absolute top-0 bottom-[8%] z-10"
             style={{
-              width: '54px',
-              left: '-30px',
-              transform: 'rotateY(50deg)',
+              width: '90px',
+              left: '-56px',
+              transform: 'rotateY(45deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
             }}
           >
-            <div className="w-full h-full rounded-l-lg overflow-hidden" style={{
+            <div className="w-full h-full rounded-l-xl overflow-hidden" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset 2px 0 4px rgba(255,255,255,0.15), -3px 0 10px rgba(0,0,0,0.25)',
+              boxShadow: 'inset 2px 0 6px rgba(255,255,255,0.2), -4px 0 12px rgba(0,0,0,0.3)',
+              border: '2px solid #b84a42',
+              borderRight: 'none',
             }}>
-              {/* 문 안쪽: 선반 레일 3단 */}
               <div className="h-full flex flex-col">
                 <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
                 <DoorRail />
@@ -243,20 +244,22 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 우측 문 (열린 상태, 선반 레일 포함) */}
+          {/* 우측 문 (넓고 선명하게) */}
           <div
             className="absolute top-0 bottom-[8%] z-10"
             style={{
-              width: '54px',
-              right: '-30px',
-              transform: 'rotateY(-50deg)',
+              width: '90px',
+              right: '-56px',
+              transform: 'rotateY(-45deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
             }}
           >
-            <div className="w-full h-full rounded-r-lg overflow-hidden" style={{
+            <div className="w-full h-full rounded-r-xl overflow-hidden" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset -2px 0 4px rgba(255,255,255,0.15), 3px 0 10px rgba(0,0,0,0.25)',
+              boxShadow: 'inset -2px 0 6px rgba(255,255,255,0.2), 4px 0 12px rgba(0,0,0,0.3)',
+              border: '2px solid #b84a42',
+              borderLeft: 'none',
             }}>
               <div className="h-full flex flex-col">
                 <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
@@ -269,11 +272,11 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 냉장고 본체 */}
+          {/* 냉장고 본체 (약간 작게) */}
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              aspectRatio: '5 / 5.5',
+              aspectRatio: '5 / 4.5',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '3px solid #b84a42',
@@ -510,10 +513,9 @@ function ItemChip({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
 
 function DoorRail() {
   return (
-    <div className="h-[5px] flex-shrink-0 mx-1" style={{
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.1) 100%)',
-      borderRadius: '2px',
-      boxShadow: '0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
+    <div className="h-[6px] flex-shrink-0 mx-1.5 rounded-sm" style={{
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.25) 50%, rgba(0,0,0,0.15) 100%)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.4)',
     }} />
   );
 }
@@ -522,7 +524,7 @@ function DoorShelfSlot({ items, onRemove, decoEmoji }: {
   items: FridgeItem[]; onRemove: (id: string) => void; decoEmoji: string;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-end pb-0.5 px-0.5">
+    <div className="flex-1 flex flex-col items-center justify-end pb-1 px-1">
       {items.length > 0 ? (
         items.map(item => {
           const emoji = getEmoji(item.ingredient_name, item.category);
@@ -533,13 +535,13 @@ function DoorShelfSlot({ items, onRemove, decoEmoji }: {
               className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
               title={`${item.ingredient_name} · 탭해서 먹기`}
             >
-              <span className="text-lg drop-shadow">{emoji}</span>
-              <span className="text-[5px] text-white/60 font-medium">{item.ingredient_name.slice(0, 3)}</span>
+              <span className="text-2xl drop-shadow-md">{emoji}</span>
+              <span className="text-[7px] text-white/80 font-bold">{item.ingredient_name.slice(0, 3)}</span>
             </button>
           );
         })
       ) : (
-        <span className="text-base opacity-20">{decoEmoji}</span>
+        <span className="text-2xl opacity-60">{decoEmoji}</span>
       )}
     </div>
   );
@@ -570,7 +572,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
           {['🍴', '🥊', '🫙'].map((e, i) => (
             <div key={i} className="flex flex-col items-center">
               <div className={`w-px bg-text-muted/20 ${compact ? 'h-2' : 'h-3'}`} />
-              <span className={`opacity-40 ${compact ? 'text-sm' : 'text-lg'}`}>{e}</span>
+              <span className={`opacity-70 ${compact ? 'text-sm' : 'text-lg'}`}>{e}</span>
             </div>
           ))}
         </div>
@@ -591,7 +593,7 @@ function WallShelf({ items, deco, onRemove, compact }: {
       <div className={`flex items-end gap-2 px-2 pb-0.5 ${compact ? 'min-h-[36px]' : 'min-h-[48px]'}`}>
         {/* 데코 (왼쪽 끝) */}
         {deco[0] && items.length === 0 && (
-          <span className={`${emojiSize} opacity-30 mb-0.5`}>{deco[0]}</span>
+          <span className={`${emojiSize} opacity-60 mb-0.5`}>{deco[0]}</span>
         )}
 
         {/* 실제 재료 */}
@@ -617,7 +619,7 @@ function WallShelf({ items, deco, onRemove, compact }: {
 
         {/* 데코 (오른쪽) */}
         {deco.slice(items.length > 0 ? 0 : 1).map((e, i) => (
-          <span key={i} className={`${decoSize} opacity-25 mb-0.5`}>{e}</span>
+          <span key={i} className={`${decoSize} opacity-60 mb-0.5`}>{e}</span>
         ))}
       </div>
 
