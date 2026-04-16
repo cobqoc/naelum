@@ -208,7 +208,10 @@ export default function FridgeHomeClient() {
         )}
       </header>
 
-      {/* === 냉장고 (항상 열린 상태) === */}
+      {/* === 상온 벽 선반 (위) === */}
+      <KitchenShelf items={sections.pantry} onRemove={removeItem} />
+
+      {/* === 냉장고 (아래) === */}
       <div className="flex justify-center px-2 mb-4">
         <div className="relative" style={{ width: '340px', maxWidth: '92vw' }}>
 
@@ -272,9 +275,6 @@ export default function FridgeHomeClient() {
           </div>
         </div>
       </div>
-
-      {/* === 상온 선반 (냉장고 밖) === */}
-      <PantryShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 재료 추가 === */}
       <section className="relative z-20 max-w-sm mx-auto px-4 mt-2 pb-32">
@@ -432,72 +432,92 @@ function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
   );
 }
 
-function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+// 주방 데코 아이템 (선반 빈 공간에 배치)
+const DECO_TOP = ['🪴', '🫕', '☕'];
+const DECO_BOTTOM = ['🍳', '🔪', '🥄', '🧤'];
+
+function KitchenShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
   const mid = Math.ceil(items.length / 2);
-  const leftItems = items.slice(0, mid);
-  const rightItems = items.slice(mid);
+  const topItems = items.slice(0, mid);
+  const bottomItems = items.slice(mid);
 
   return (
-    <div className="flex justify-center px-4 mb-4">
+    <div className="flex justify-center px-4 mb-6">
       <div className="w-full max-w-xs md:max-w-sm">
-        <h3 className="text-xs font-bold text-text-secondary mb-2 flex items-center gap-1.5">
-          <span>🏠</span> 상온 수납장
-        </h3>
+        {/* 상단 선반 */}
+        <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} />
 
-        {/* 수납장 본체 (항상 열림) */}
-        <div
-          className="relative rounded-xl overflow-hidden"
-          style={{
-            minHeight: '120px',
-            background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 100%)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
-            border: '3px solid #b84a42',
-          }}
-        >
-          <div className="absolute inset-[4px] rounded-lg overflow-hidden flex" style={{
-            background: 'linear-gradient(180deg, #e8d5b8 0%, #d9c4a2 100%)',
-          }}>
-            {/* 왼쪽 칸 */}
-            <div className="flex-1 flex flex-col border-r border-amber-800/20">
-              <CabinetShelfRow items={leftItems} onRemove={onRemove} />
-              <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
-              <CabinetShelfRow items={[]} onRemove={onRemove} />
+        {/* 하단 선반 */}
+        <div className="mt-1">
+          <WallShelf items={bottomItems} deco={DECO_BOTTOM} onRemove={onRemove} />
+        </div>
+
+        {/* 걸이형 주방 도구 (하단 선반 아래에 매달림) */}
+        <div className="flex justify-center gap-4 mt-1 mb-2">
+          {['🍴', '🥊', '🫙'].map((e, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className="w-px h-3 bg-text-muted/20" />
+              <span className="text-lg opacity-40">{e}</span>
             </div>
-            {/* 오른쪽 칸 */}
-            <div className="flex-1 flex flex-col">
-              <CabinetShelfRow items={rightItems} onRemove={onRemove} />
-              <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
-              <CabinetShelfRow items={[]} onRemove={onRemove} />
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-function CabinetShelfRow({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+function WallShelf({ items, deco, onRemove }: {
+  items: FridgeItem[]; deco: string[]; onRemove: (id: string) => void;
+}) {
   return (
-    <div className="flex-1 flex flex-wrap gap-1.5 items-end px-2.5 pb-1.5 min-h-[44px]">
-      {items.map(item => {
-        const days = daysUntilExpiry(item.expiry_date);
-        const border = freshBorder(days);
-        const label = freshLabel(days);
-        const emoji = getEmoji(item.ingredient_name, item.category);
-        const isDanger = days <= 3;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onRemove(item.id)}
-            className={`flex flex-col items-center hover:scale-110 active:scale-90 transition-transform ${isDanger ? 'animate-pulse' : ''}`}
-            title={`${item.ingredient_name} ${label}`}
-          >
-            <span className="text-xl drop-shadow">{emoji}</span>
-            <span className="text-[7px] font-bold text-amber-900/70">{item.ingredient_name.slice(0, 4)}</span>
-            {label && <span className="text-[6px] font-bold" style={{ color: border }}>{label}</span>}
-          </button>
-        );
-      })}
+    <div className="relative">
+      {/* 재료 + 데코 아이템 */}
+      <div className="flex items-end gap-2 px-2 pb-1 min-h-[48px]">
+        {/* 데코 (왼쪽 끝) */}
+        {deco[0] && items.length === 0 && (
+          <span className="text-2xl opacity-30 mb-0.5">{deco[0]}</span>
+        )}
+
+        {/* 실제 재료 */}
+        {items.map(item => {
+          const days = daysUntilExpiry(item.expiry_date);
+          const border = freshBorder(days);
+          const label = freshLabel(days);
+          const emoji = getEmoji(item.ingredient_name, item.category);
+          const isDanger = days <= 3;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onRemove(item.id)}
+              className={`flex flex-col items-center hover:scale-110 active:scale-90 transition-transform ${isDanger ? 'animate-pulse' : ''}`}
+              title={`${item.ingredient_name} ${label}`}
+            >
+              <span className="text-2xl drop-shadow-md">{emoji}</span>
+              <span className="text-[8px] font-bold text-text-secondary whitespace-nowrap">{item.ingredient_name.slice(0, 4)}</span>
+              {label && <span className="text-[6px] font-bold" style={{ color: border }}>{label}</span>}
+            </button>
+          );
+        })}
+
+        {/* 데코 (오른쪽) */}
+        {deco.slice(items.length > 0 ? 0 : 1).map((e, i) => (
+          <span key={i} className="text-xl opacity-25 mb-0.5">{e}</span>
+        ))}
+      </div>
+
+      {/* 나무 선반 판 */}
+      <div className="relative h-[7px] rounded-sm" style={{
+        background: 'linear-gradient(180deg, #a0764a 0%, #7a5a34 60%, #6a4c2c 100%)',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
+      }} />
+
+      {/* 브래킷 */}
+      <div className="absolute -bottom-3 left-4">
+        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-t-[12px] border-t-[#6a4c2c] border-r-[8px] border-r-transparent" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.2))' }} />
+      </div>
+      <div className="absolute -bottom-3 right-4">
+        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-t-[12px] border-t-[#6a4c2c] border-r-[8px] border-r-transparent" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.2))' }} />
+      </div>
     </div>
   );
 }
