@@ -121,7 +121,7 @@ export default function FridgeHomeClient() {
 
   // 페이지 로드 시 문 열기 애니메이션
   useEffect(() => {
-    const timer = setTimeout(() => setDoorAnimated(true), 500);
+    const timer = setTimeout(() => setDoorAnimated(true), 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -205,7 +205,13 @@ export default function FridgeHomeClient() {
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
   return (
-    <div className="h-dvh overflow-hidden bg-background-primary text-text-primary">
+    <div
+      className="h-dvh overflow-hidden bg-background-primary text-text-primary transition-all"
+      style={{
+        filter: doorAnimated ? 'brightness(1)' : 'brightness(0)',
+        transition: 'filter 1.8s ease-out',
+      }}
+    >
       {/* 헤더 */}
       <header className="relative z-20 px-4 pt-3 pb-1 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
@@ -232,7 +238,7 @@ export default function FridgeHomeClient() {
               transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden" style={{
@@ -261,7 +267,7 @@ export default function FridgeHomeClient() {
               transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden" style={{
@@ -302,8 +308,8 @@ export default function FridgeHomeClient() {
 
             {/* 내부 */}
             <div
-              className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col transition-opacity duration-700"
-              style={{ opacity: doorAnimated ? 1 : 0.2 }}
+              className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col"
+              style={{ opacity: doorAnimated ? 1 : 0, transition: 'opacity 1.8s ease-out 0.3s' }}
             >
               {/* 내부 조명 */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6 z-10" style={{
