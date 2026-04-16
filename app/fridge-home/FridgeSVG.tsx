@@ -87,20 +87,26 @@ export default function FridgeSVG() {
       <path d="M 22,213 L 152,219 L 152,220 L 24,214 Z" fill="rgba(255,255,255,0.25)" />
       <path d="M 22,300 L 152,302 L 152,305 L 24,303 Z" fill="url(#glassShelf)" />
       <path d="M 24,303 L 152,305 L 152,306 L 26,304 Z" fill="rgba(255,255,255,0.25)" />
-      {/* 손잡이 */}
+      {/* 손잡이 (입체) */}
+      <path d="M 163,172 L 163,258" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
       <path d="M 161,170 L 161,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 159,172 L 159,258" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
 
       {/* ====== 좌측 냉동 문 (V자) ====== */}
       <path d="M 170,402 L 10,404 L 26,624 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 10,404 L 0,408 L 18,620 L 26,624 Z" fill="url(#bodyDark)" />
+      {/* 상단면 */}
+      <path d="M 10,404 L 0,408 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
       <path d="M 30,416 L 156,412 L 156,612 L 40,612 Z" fill="url(#freezerG)" />
       {/* 고무 패킹 (문 전체) */}
       <path d="M 170,402 L 10,404 L 26,624 L 170,622 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
       <path d="M 34,515 L 152,513 L 152,516 L 36,518 Z" fill="url(#glassShelf)" />
       <path d="M 36,518 L 152,516 L 152,517 L 38,519 Z" fill="rgba(255,255,255,0.25)" />
-      {/* 손잡이 */}
+      {/* 손잡이 (입체) */}
+      <path d="M 163,489 L 163,545" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
       <path d="M 161,487 L 161,547" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 159,489 L 159,545" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
 
       {/* ====== 냉장고 본체 ====== */}
       {/* 우측면 */}
@@ -125,8 +131,8 @@ export default function FridgeSVG() {
       <rect x="170" y="398" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
 
       {/* 환기구 */}
-      {[0,1,2,3,4,5,6,7,8,9].map(i => (
-        <rect key={`v${i}`} x={220 + i * 16} y="22" width="10" height="2" rx="1" fill="rgba(0,0,0,0.07)" />
+      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
+        <rect key={`v${i}`} x={205 + i * 17} y="20" width="12" height="3" rx="1.5" fill="rgba(0,0,0,0.1)" />
       ))}
 
       {/* 브랜드 */}
@@ -175,24 +181,30 @@ export default function FridgeSVG() {
       <path d="M 448,219 L 568,213 L 568,214 L 448,220 Z" fill="rgba(255,255,255,0.25)" />
       <path d="M 448,302 L 568,300 L 568,303 L 448,305 Z" fill="url(#glassShelf)" />
       <path d="M 448,305 L 568,303 L 568,304 L 448,306 Z" fill="rgba(255,255,255,0.25)" />
-      {/* 손잡이 */}
+      {/* 손잡이 (입체) */}
+      <path d="M 437,172 L 437,258" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
       <path d="M 439,170 L 439,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 441,172 L 441,258" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
 
       {/* ====== 우측 냉동 문 (V자) ====== */}
       <path d="M 430,402 L 590,404 L 574,624 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
+      {/* 상단면 */}
+      <path d="M 430,402 L 442,406 L 590,404 L 600,408 Z" fill="url(#bodyLight)" />
       <path d="M 444,412 L 572,418 L 560,612 L 444,608 Z" fill="url(#freezerG)" />
       {/* 고무 패킹 (문 전체) */}
       <path d="M 430,402 L 590,404 L 574,624 L 430,622 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
       <path d="M 448,515 L 558,513 L 558,516 L 448,518 Z" fill="url(#glassShelf)" />
       <path d="M 448,518 L 558,516 L 558,517 L 448,519 Z" fill="rgba(255,255,255,0.25)" />
-      {/* 손잡이 */}
+      {/* 손잡이 (입체) */}
+      <path d="M 437,489 L 437,545" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
       <path d="M 439,487 L 439,547" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 441,489 L 441,545" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
 
       {/* 킥플레이트 (다리 위 패널) */}
-      <rect x="170" y="627" width="260" height="6" rx="1" fill="url(#bodyDark)" />
-      <rect x="172" y="627" width="256" height="1.5" rx="0.5" fill="rgba(255,255,255,0.06)" />
+      <rect x="168" y="624" width="264" height="10" rx="2" fill="url(#bodyDark)" stroke="#8a3020" strokeWidth="0.5" />
+      <rect x="170" y="625" width="260" height="2" rx="1" fill="rgba(255,255,255,0.08)" />
 
       {/* 다리 (3D) */}
       <path d="M 185,629 L 185,641 L 203,641 L 203,629 Z" fill="#7a2818" />
