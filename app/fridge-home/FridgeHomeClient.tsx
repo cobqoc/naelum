@@ -100,6 +100,7 @@ export default function FridgeHomeClient() {
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
+  const [doorAnimated, setDoorAnimated] = useState(false);
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
@@ -117,6 +118,12 @@ export default function FridgeHomeClient() {
     if (authLoading) return;
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
+
+  // 페이지 로드 시 문 열기 애니메이션
+  useEffect(() => {
+    const timer = setTimeout(() => setDoorAnimated(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -221,10 +228,11 @@ export default function FridgeHomeClient() {
             className="absolute top-0 bottom-[10px] z-10"
             style={{
               width: '90px',
-              left: '-68px',
-              transform: 'rotateY(42deg)',
+              left: doorAnimated ? '-68px' : '0px',
+              transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
+              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden" style={{
@@ -249,10 +257,11 @@ export default function FridgeHomeClient() {
             className="absolute top-0 bottom-[10px] z-10"
             style={{
               width: '90px',
-              right: '-68px',
-              transform: 'rotateY(-42deg)',
+              right: doorAnimated ? '-68px' : '0px',
+              transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
+              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden" style={{
@@ -292,7 +301,10 @@ export default function FridgeHomeClient() {
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/10 to-transparent rounded-t-xl" />
 
             {/* 내부 */}
-            <div className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col">
+            <div
+              className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col transition-opacity duration-700"
+              style={{ opacity: doorAnimated ? 1 : 0.2 }}
+            >
               {/* 내부 조명 */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6 z-10" style={{
                 background: 'radial-gradient(ellipse, rgba(255,248,220,0.5) 0%, transparent 100%)',
