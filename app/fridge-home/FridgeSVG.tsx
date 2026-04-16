@@ -95,12 +95,51 @@ export default function FridgeSVG() {
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
       <rect x="178" y="28" width="244" height="80" rx="4" fill="url(#lightG)" />
 
-      {/* 냉장/냉동 구분 */}
-      <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
+      {/* ===== 냉장 선반 1 (나무/금색 3D) ===== */}
+      {/* 윗면 (밝은 금) */}
+      <rect x="178" y="120" width="244" height="5" fill="#ecd070" />
+      {/* 앞면 (어두운 금) */}
+      <rect x="178" y="125" width="244" height="10" rx="1" fill="#c89030" />
+      {/* 앞면 하이라이트 */}
+      <rect x="178" y="125" width="244" height="2" fill="rgba(255,255,255,0.12)" />
+      {/* 아래 그림자 */}
+      <rect x="182" y="135" width="236" height="5" rx="2" fill="rgba(0,0,0,0.04)" />
+
+      {/* ===== 냉장 선반 2 ===== */}
+      <rect x="178" y="220" width="244" height="5" fill="#ecd070" />
+      <rect x="178" y="225" width="244" height="10" rx="1" fill="#c89030" />
+      <rect x="178" y="225" width="244" height="2" fill="rgba(255,255,255,0.12)" />
+      <rect x="182" y="235" width="236" height="5" rx="2" fill="rgba(0,0,0,0.04)" />
+
+      {/* ===== 냉장 선반 3 (야채칸 위, 더 두꺼움) ===== */}
+      <rect x="178" y="310" width="244" height="6" fill="#ecd070" />
+      <rect x="178" y="316" width="244" height="12" rx="1" fill="#c89030" />
+      <rect x="178" y="316" width="244" height="2" fill="rgba(255,255,255,0.12)" />
+      <rect x="182" y="328" width="236" height="5" rx="2" fill="rgba(0,0,0,0.05)" />
+
+      {/* ===== 야채 서랍 2칸 ===== */}
+      <rect x="182" y="334" width="116" height="46" rx="3" fill="rgba(215,230,215,0.3)" stroke="#c89030" strokeWidth="1.5" />
+      <rect x="218" y="333" width="42" height="3" rx="1.5" fill="#dab050" />
+      <rect x="302" y="334" width="116" height="46" rx="3" fill="rgba(215,230,215,0.3)" stroke="#c89030" strokeWidth="1.5" />
+      <rect x="338" y="333" width="42" height="3" rx="1.5" fill="#dab050" />
+
+      {/* ===== 냉장/냉동 구분 (두꺼운 나무 프레임) ===== */}
+      <rect x="168" y="382" width="264" height="6" fill="#ecd070" />
+      <rect x="168" y="388" width="264" height="12" rx="1" fill="#c89030" />
+      <rect x="168" y="388" width="264" height="2" fill="rgba(255,255,255,0.1)" />
 
       {/* ====== 내부 — 냉동 ====== */}
-      <rect x="176" y="393" width="248" height="224" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
-      <rect x="178" y="395" width="244" height="220" rx="4" fill="url(#freezerG)" />
+      <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
+      <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
+
+      {/* 냉동 격자 칸막이 (2x2) */}
+      {/* 세로 칸막이 */}
+      <rect x="296" y="399" width="4" height="216" fill="#ecd070" />
+      <rect x="300" y="399" width="6" height="216" fill="#c89030" />
+      {/* 가로 칸막이 */}
+      <rect x="178" y="500" width="244" height="4" fill="#ecd070" />
+      <rect x="178" y="504" width="244" height="8" rx="1" fill="#c89030" />
+      <rect x="178" y="504" width="244" height="2" fill="rgba(255,255,255,0.1)" />
 
       {/* ====== 우측 냉장 문 (극적 V자) ====== */}
       <path d="M 430,24 L 610,0 L 590,392 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
