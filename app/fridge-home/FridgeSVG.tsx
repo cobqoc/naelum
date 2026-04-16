@@ -56,37 +56,51 @@ export default function FridgeSVG() {
       <path d="M -10,0 L -22,8 L 158,28 L 170,24 Z" fill="url(#bodyLight)" />
       {/* 내부 패널 */}
       <path d="M 18,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" />
-      {/* ── 좌측 냉장 문 내부 3D 포켓 선반 ── */}
+      {/* ══ 좌측 냉장 문 — 3D 포켓 선반 ══ */}
 
-      {/* 포켓1 — 안쪽 바닥(깊이) + 앞벽(두꺼운 벽면) */}
-      {/* 포켓 내부 그림자 (안쪽 어두움) */}
-      <path d="M 21,115 L 152,125" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      {/* 안쪽 바닥면 (패널→앞벽, 원근 사다리꼴) */}
-      <path d="M 21,121 L 152,131 L 149,134 L 15,124 Z" fill="#DDD0B8" />
-      <path d="M 21,121 L 152,131" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      {/* 앞벽 정면 (포켓 벽) */}
-      <path d="M 15,124 L 149,134 L 149,152 L 16,142 Z" fill="#C4A050" />
-      <path d="M 15,124 L 149,134" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 16,142 L 149,152" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 17,143 L 149,153" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓1 ── */}
+      {/* 포켓 내부 깊이 그림자 (그라데이션) */}
+      <path d="M 20,118 L 152,128" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 21,125 L 152,135" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      {/* 트레이 바닥면 (패널→앞벽, 원근 사다리꼴) */}
+      <path d="M 22,128 L 152,138 L 148,142 L 14,132 Z" fill="#D8B060" />
+      <path d="M 22,128 L 152,138" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      {/* 왼쪽 옆벽 (포켓 깊이) */}
+      <path d="M 22,128 L 14,132 L 15,150 L 23,146 Z" fill="#A88838" />
+      {/* 앞벽 정면 */}
+      <path d="M 14,132 L 148,142 L 148,160 L 15,150 Z" fill="#C4A050" />
+      {/* 앞벽 상단 밝은 존 */}
+      <path d="M 14,132 L 148,142 L 148,148 L 14,138 Z" fill="rgba(255,255,230,0.12)" />
+      {/* 스펙큘러 하이라이트 */}
+      <path d="M 14,132 L 148,142" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      {/* 앞벽 하단 다크 엣지 */}
+      <path d="M 15,150 L 148,160" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      {/* 드리움 그림자 */}
+      <path d="M 16,151 L 148,161" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
-      {/* 포켓2 */}
-      <path d="M 24,200 L 152,207" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      <path d="M 24,206 L 152,213 L 149,216 L 18,209 Z" fill="#DDD0B8" />
-      <path d="M 24,206 L 152,213" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      <path d="M 18,209 L 149,216 L 149,234 L 19,227 Z" fill="#C4A050" />
-      <path d="M 18,209 L 149,216" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 19,227 L 149,234" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 20,228 L 149,235" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓2 ── */}
+      <path d="M 23,207 L 152,214" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 24,214 L 152,220" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      <path d="M 25,217 L 152,223 L 148,227 L 17,221 Z" fill="#D8B060" />
+      <path d="M 25,217 L 152,223" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      <path d="M 25,217 L 17,221 L 18,239 L 26,235 Z" fill="#A88838" />
+      <path d="M 17,221 L 148,227 L 148,245 L 18,239 Z" fill="#C4A050" />
+      <path d="M 17,221 L 148,227 L 148,233 L 17,227 Z" fill="rgba(255,255,230,0.12)" />
+      <path d="M 17,221 L 148,227" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      <path d="M 18,239 L 148,245" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      <path d="M 19,240 L 148,246" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
-      {/* 포켓3 */}
-      <path d="M 27,285 L 152,288" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      <path d="M 27,291 L 152,294 L 149,297 L 21,294 Z" fill="#DDD0B8" />
-      <path d="M 27,291 L 152,294" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      <path d="M 21,294 L 149,297 L 149,315 L 22,312 Z" fill="#C4A050" />
-      <path d="M 21,294 L 149,297" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 22,312 L 149,315" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 23,313 L 149,316" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓3 ── */}
+      <path d="M 26,290 L 152,293" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 27,296 L 152,299" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      <path d="M 27,298 L 152,301 L 148,305 L 19,302 Z" fill="#D8B060" />
+      <path d="M 27,298 L 152,301" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      <path d="M 27,298 L 19,302 L 20,320 L 28,316 Z" fill="#A88838" />
+      <path d="M 19,302 L 148,305 L 148,323 L 20,320 Z" fill="#C4A050" />
+      <path d="M 19,302 L 148,305 L 148,311 L 19,308 Z" fill="rgba(255,255,230,0.12)" />
+      <path d="M 19,302 L 148,305" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      <path d="M 20,320 L 148,323" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      <path d="M 21,321 L 148,324" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
       {/* 3D 경계선 — 좌측 냉장 문 */}
       {/* 윗면 (빛 받는 돌출면) */}
@@ -150,34 +164,43 @@ export default function FridgeSVG() {
       <path d="M 610,0 L 622,8 L 600,396 L 590,392 Z" fill="url(#bodyDark)" />
       <path d="M 430,24 L 442,28 L 610,0 L 622,8 Z" fill="url(#bodyLight)" />
       <path d="M 448,37 L 568,22 L 566,376 L 448,376 Z" fill="url(#interiorG)" />
-      {/* ── 우측 냉장 문 내부 3D 포켓 선반 ── */}
+      {/* ══ 우측 냉장 문 — 3D 포켓 선반 ══ */}
 
-      {/* 포켓1 */}
-      <path d="M 448,125 L 567,115" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      <path d="M 448,132 L 567,121 L 573,124 L 451,135 Z" fill="#DDD0B8" />
-      <path d="M 448,132 L 567,121" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      <path d="M 451,135 L 573,124 L 573,142 L 451,153 Z" fill="#C4A050" />
-      <path d="M 451,135 L 573,124" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 451,153 L 573,142" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 451,154 L 573,143" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓1 ── */}
+      <path d="M 448,129 L 567,118" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 448,135 L 567,125" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      <path d="M 448,139 L 567,128 L 575,132 L 452,143 Z" fill="#D8B060" />
+      <path d="M 448,139 L 567,128" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      <path d="M 567,128 L 575,132 L 575,150 L 567,146 Z" fill="#A88838" />
+      <path d="M 452,143 L 575,132 L 575,150 L 452,161 Z" fill="#C4A050" />
+      <path d="M 452,143 L 575,132 L 575,138 L 452,149 Z" fill="rgba(255,255,230,0.12)" />
+      <path d="M 452,143 L 575,132" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      <path d="M 452,161 L 575,150" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      <path d="M 452,162 L 575,151" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
-      {/* 포켓2 */}
-      <path d="M 448,207 L 567,200" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      <path d="M 448,213 L 567,206 L 573,209 L 451,216 Z" fill="#DDD0B8" />
-      <path d="M 448,213 L 567,206" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      <path d="M 451,216 L 573,209 L 573,227 L 451,234 Z" fill="#C4A050" />
-      <path d="M 451,216 L 573,209" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 451,234 L 573,227" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 451,235 L 573,228" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓2 ── */}
+      <path d="M 448,214 L 567,207" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 448,220 L 567,214" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      <path d="M 448,224 L 567,217 L 575,221 L 452,228 Z" fill="#D8B060" />
+      <path d="M 448,224 L 567,217" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      <path d="M 567,217 L 575,221 L 575,239 L 567,235 Z" fill="#A88838" />
+      <path d="M 452,228 L 575,221 L 575,239 L 452,246 Z" fill="#C4A050" />
+      <path d="M 452,228 L 575,221 L 575,227 L 452,234 Z" fill="rgba(255,255,230,0.12)" />
+      <path d="M 452,228 L 575,221" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      <path d="M 452,246 L 575,239" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      <path d="M 452,247 L 575,240" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
-      {/* 포켓3 */}
-      <path d="M 448,288 L 567,285" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="6" />
-      <path d="M 448,294 L 567,291 L 573,294 L 451,297 Z" fill="#DDD0B8" />
-      <path d="M 448,294 L 567,291" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.8" />
-      <path d="M 451,297 L 573,294 L 573,312 L 451,315 Z" fill="#C4A050" />
-      <path d="M 451,297 L 573,294" fill="none" stroke="rgba(255,255,230,0.4)" strokeWidth="1.5" />
-      <path d="M 451,315 L 573,312" fill="none" stroke="#9A7830" strokeWidth="1.5" />
-      <path d="M 451,316 L 573,313" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+      {/* ── 포켓3 ── */}
+      <path d="M 448,291 L 566,288" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="12" />
+      <path d="M 448,297 L 566,294" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="6" />
+      <path d="M 448,301 L 566,298 L 574,302 L 452,305 Z" fill="#D8B060" />
+      <path d="M 448,301 L 566,298" fill="none" stroke="rgba(100,70,20,0.25)" strokeWidth="1" />
+      <path d="M 566,298 L 574,302 L 574,320 L 566,316 Z" fill="#A88838" />
+      <path d="M 452,305 L 574,302 L 574,320 L 452,323 Z" fill="#C4A050" />
+      <path d="M 452,305 L 574,302 L 574,308 L 452,311 Z" fill="rgba(255,255,230,0.12)" />
+      <path d="M 452,305 L 574,302" fill="none" stroke="rgba(255,255,220,0.5)" strokeWidth="1.5" />
+      <path d="M 452,323 L 574,320" fill="none" stroke="#8A6828" strokeWidth="1.5" />
+      <path d="M 452,324 L 574,321" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3" />
 
       {/* 3D 경계선 — 우측 냉장 문 */}
       <path d="M 568,22 L 567,19 L 581,19 L 582,22 Z" fill="#F2D858" />
