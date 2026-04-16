@@ -95,72 +95,12 @@ export default function FridgeSVG() {
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
       <rect x="178" y="28" width="244" height="80" rx="4" fill="url(#lightG)" />
 
-      {/* ===== 냉장 유리 선반 1 ===== */}
-      {/* 선반 아래 그림자 */}
-      <rect x="185" y="128" width="230" height="8" rx="3" fill="rgba(0,0,0,0.04)" />
-      {/* 메탈 브래킷 좌 */}
-      <rect x="178" y="118" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="178" y="118" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      {/* 메탈 브래킷 우 */}
-      <rect x="416" y="118" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="416" y="118" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      {/* 유리 윗면 */}
-      <rect x="184" y="118" width="232" height="3" rx="1" fill="rgba(200,220,240,0.2)" />
-      {/* 유리 앞면 (두꺼운 유리 단면) */}
-      <rect x="184" y="121" width="232" height="5" rx="1" fill="rgba(180,210,235,0.25)" />
-      {/* 유리 하이라이트 */}
-      <rect x="200" y="119" width="100" height="1" fill="rgba(255,255,255,0.35)" />
-
-      {/* ===== 냉장 유리 선반 2 ===== */}
-      <rect x="185" y="225" width="230" height="8" rx="3" fill="rgba(0,0,0,0.04)" />
-      <rect x="178" y="215" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="178" y="215" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      <rect x="416" y="215" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="416" y="215" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      <rect x="184" y="215" width="232" height="3" rx="1" fill="rgba(200,220,240,0.2)" />
-      <rect x="184" y="218" width="232" height="5" rx="1" fill="rgba(180,210,235,0.25)" />
-      <rect x="240" y="216" width="80" height="1" fill="rgba(255,255,255,0.35)" />
-
-      {/* ===== 냉장 유리 선반 3 ===== */}
-      <rect x="185" y="310" width="230" height="8" rx="3" fill="rgba(0,0,0,0.04)" />
-      <rect x="178" y="300" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="178" y="300" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      <rect x="416" y="300" width="6" height="12" rx="1" fill="url(#chromeG)" />
-      <rect x="416" y="300" width="6" height="12" rx="1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-      <rect x="184" y="300" width="232" height="3" rx="1" fill="rgba(200,220,240,0.2)" />
-      <rect x="184" y="303" width="232" height="5" rx="1" fill="rgba(180,210,235,0.25)" />
-      <rect x="190" y="301" width="120" height="1" fill="rgba(255,255,255,0.35)" />
-
-      {/* ===== 야채 서랍 (선반3 아래) ===== */}
-      {/* 서랍 좌 */}
-      <rect x="182" y="316" width="117" height="60" rx="3" fill="rgba(220,235,225,0.25)" />
-      <rect x="182" y="316" width="117" height="60" rx="3" fill="none" stroke="rgba(160,180,170,0.4)" strokeWidth="1.5" />
-      {/* 서랍 손잡이 좌 */}
-      <rect x="220" y="315" width="40" height="3" rx="1.5" fill="url(#chromeG)" />
-      {/* 서랍 우 */}
-      <rect x="303" y="316" width="117" height="60" rx="3" fill="rgba(220,235,225,0.25)" />
-      <rect x="303" y="316" width="117" height="60" rx="3" fill="none" stroke="rgba(160,180,170,0.4)" strokeWidth="1.5" />
-      {/* 서랍 손잡이 우 */}
-      <rect x="340" y="315" width="40" height="3" rx="1.5" fill="url(#chromeG)" />
-
       {/* 냉장/냉동 구분 */}
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
       {/* ====== 내부 — 냉동 ====== */}
       <rect x="176" y="393" width="248" height="224" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="178" y="395" width="244" height="220" rx="4" fill="url(#freezerG)" />
-
-      {/* 냉동 와이어 랙 */}
-      {/* 랙 1 */}
-      <rect x="185" y="495" width="230" height="6" rx="2" fill="rgba(0,0,0,0.03)" />
-      <rect x="178" y="488" width="6" height="10" rx="1" fill="url(#chromeG)" />
-      <rect x="416" y="488" width="6" height="10" rx="1" fill="url(#chromeG)" />
-      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
-        <rect key={`wr${i}`} x={184 + i * 20} y="490" width="12" height="2" rx="1" fill="rgba(160,170,180,0.35)" />
-      ))}
-      <rect x="184" y="492" width="232" height="2" rx="1" fill="rgba(160,170,180,0.3)" />
-      {/* 랙 앞면 */}
-      <rect x="184" y="494" width="232" height="3" rx="1" fill="rgba(140,155,170,0.3)" />
 
       {/* ====== 우측 냉장 문 (극적 V자) ====== */}
       <path d="M 430,24 L 610,0 L 590,392 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
