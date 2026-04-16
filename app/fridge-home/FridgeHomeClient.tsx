@@ -218,7 +218,7 @@ export default function FridgeHomeClient() {
 
           {/* 좌측 문 */}
           <div
-            className="absolute top-0 bottom-[8%] z-10"
+            className="absolute top-0 bottom-[10px] z-10"
             style={{
               width: '90px',
               left: '-68px',
@@ -246,7 +246,7 @@ export default function FridgeHomeClient() {
 
           {/* 우측 문 */}
           <div
-            className="absolute top-0 bottom-[8%] z-10"
+            className="absolute top-0 bottom-[10px] z-10"
             style={{
               width: '90px',
               right: '-68px',
