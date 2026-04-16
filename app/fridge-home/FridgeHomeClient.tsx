@@ -229,22 +229,22 @@ export default function FridgeHomeClient() {
       <div className="flex justify-center px-[72px] md:px-24 mb-2">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 — 닫힘: 본체 덮음 → 열림: 바깥으로 당겨짐 */}
+          {/* 좌측 문 — 힌지 왼쪽, 가운데에서 바깥으로 열림 */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: doorAnimated ? '90px' : '52%',
-              left: doorAnimated ? '-68px' : '-1px',
-              transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+              width: '50%',
+              left: '-1px',
+              transform: doorAnimated ? 'rotateY(-58deg)' : 'rotateY(0deg)',
+              transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: 'transform 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: doorAnimated
-                ? 'inset 2px 0 6px rgba(255,255,255,0.2), -4px 0 12px rgba(0,0,0,0.3)'
+                ? '-4px 0 12px rgba(0,0,0,0.3)'
                 : '2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderRight: 'none',
@@ -273,22 +273,22 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 우측 문 — 닫힘: 본체 덮음 → 열림: 바깥으로 당겨짐 */}
+          {/* 우측 문 — 힌지 오른쪽, 가운데에서 바깥으로 열림 */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: doorAnimated ? '90px' : '52%',
-              right: doorAnimated ? '-68px' : '-1px',
-              transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+              width: '50%',
+              right: '-1px',
+              transform: doorAnimated ? 'rotateY(58deg)' : 'rotateY(0deg)',
+              transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: 'transform 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: doorAnimated
-                ? 'inset -2px 0 6px rgba(255,255,255,0.2), 4px 0 12px rgba(0,0,0,0.3)'
+                ? '4px 0 12px rgba(0,0,0,0.3)'
                 : '-2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderLeft: 'none',
@@ -321,7 +321,6 @@ export default function FridgeHomeClient() {
             className="relative rounded-xl overflow-hidden"
             style={{
               height: 'calc(100dvh - 260px)',
-              maxHeight: '480px',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
