@@ -247,14 +247,14 @@ export default function FridgeHomeClient() {
 
           {/* 좌측 문 */}
           <div
-            className="absolute top-0 bottom-[10px] z-10"
+            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenLeft' : ''}`}
             style={{
-              width: '50%',
-              left: '-1px',
-              transform: doorOpen ? 'rotateY(-55deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+              width: doorOpen ? '90px' : '50%',
+              left: doorOpen ? '-68px' : '-1px',
+              transform: doorOpen ? 'rotateY(42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'transform 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              ...(!doorOpen ? {} : {}),
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
@@ -291,14 +291,13 @@ export default function FridgeHomeClient() {
 
           {/* 우측 문 */}
           <div
-            className="absolute top-0 bottom-[10px] z-10"
+            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenRight' : ''}`}
             style={{
-              width: '50%',
-              right: '-1px',
-              transform: doorOpen ? 'rotateY(55deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+              width: doorOpen ? '90px' : '50%',
+              right: doorOpen ? '-68px' : '-1px',
+              transform: doorOpen ? 'rotateY(-42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'transform 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
@@ -470,6 +469,66 @@ export default function FridgeHomeClient() {
             }
             .animate-slideUp {
               animation: slideUp 0.3s ease-out;
+            }
+          `}</style>
+          <style jsx global>{`
+            @keyframes doorOpenLeft {
+              0% {
+                width: 50%;
+                left: -1px;
+                transform: rotateY(0deg);
+                transform-origin: left center;
+              }
+              40% {
+                width: 50%;
+                left: -1px;
+                transform: rotateY(-45deg);
+                transform-origin: left center;
+              }
+              70% {
+                width: 30%;
+                left: -40px;
+                transform: rotateY(50deg);
+                transform-origin: right center;
+              }
+              100% {
+                width: 90px;
+                left: -68px;
+                transform: rotateY(42deg);
+                transform-origin: right center;
+              }
+            }
+            @keyframes doorOpenRight {
+              0% {
+                width: 50%;
+                right: -1px;
+                transform: rotateY(0deg);
+                transform-origin: right center;
+              }
+              40% {
+                width: 50%;
+                right: -1px;
+                transform: rotateY(45deg);
+                transform-origin: right center;
+              }
+              70% {
+                width: 30%;
+                right: -40px;
+                transform: rotateY(-50deg);
+                transform-origin: left center;
+              }
+              100% {
+                width: 90px;
+                right: -68px;
+                transform: rotateY(-42deg);
+                transform-origin: left center;
+              }
+            }
+            .animate-doorOpenLeft {
+              animation: doorOpenLeft 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+            }
+            .animate-doorOpenRight {
+              animation: doorOpenRight 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
             }
           `}</style>
         </>
