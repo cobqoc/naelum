@@ -135,27 +135,6 @@ export default function FridgeSVG() {
       <rect x="178" y="504" width="244" height="8" rx="1" fill="#c89030" />
       <rect x="178" y="504" width="244" height="2" fill="rgba(255,255,255,0.1)" />
 
-      {/* ===== 냉동 서랍장 (선반 아래) ===== */}
-      {/* 서랍 프레임 */}
-      <rect x="183" y="518" width="234" height="92" rx="4" fill="rgba(200,215,230,0.15)" />
-
-      {/* 서랍 1 (상단) */}
-      <rect x="187" y="522" width="226" height="40" rx="3" fill="rgba(220,235,245,0.3)" />
-      <rect x="187" y="522" width="226" height="40" rx="3" fill="none" stroke="rgba(160,180,200,0.35)" strokeWidth="1.5" />
-      {/* 서랍1 손잡이 — 금속 바 */}
-      <rect x="270" y="538" width="60" height="5" rx="2.5" fill="url(#chromeG)" />
-      <rect x="270" y="538" width="60" height="5" rx="2.5" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5" />
-      {/* 서랍1 상단 빛 반사 */}
-      <rect x="190" y="523" width="100" height="1.5" rx="0.5" fill="rgba(255,255,255,0.15)" />
-
-      {/* 서랍 2 (하단) */}
-      <rect x="187" y="566" width="226" height="40" rx="3" fill="rgba(220,235,245,0.3)" />
-      <rect x="187" y="566" width="226" height="40" rx="3" fill="none" stroke="rgba(160,180,200,0.35)" strokeWidth="1.5" />
-      {/* 서랍2 손잡이 */}
-      <rect x="270" y="582" width="60" height="5" rx="2.5" fill="url(#chromeG)" />
-      <rect x="270" y="582" width="60" height="5" rx="2.5" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5" />
-      {/* 서랍2 상단 빛 반사 */}
-      <rect x="190" y="567" width="80" height="1.5" rx="0.5" fill="rgba(255,255,255,0.15)" />
 
       {/* ====== 우측 냉장 문 (극적 V자) ====== */}
       <path d="M 430,24 L 610,0 L 590,392 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
