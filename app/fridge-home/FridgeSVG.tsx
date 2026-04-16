@@ -110,43 +110,114 @@ export default function FridgeSVG() {
       {/* 상단 하이라이트 */}
       <rect x="172" y="20" width="256" height="5" rx="2" fill="rgba(255,255,255,0.12)" />
 
-      {/* 내부 — 냉장 */}
+      {/* ========== 내부 — 냉장 영역 ========== */}
+      {/* 내부 벽 배경 */}
       <rect x="178" y="28" width="244" height="385" rx="4" fill="url(#interiorG)" />
-      <rect x="178" y="28" width="244" height="100" rx="4" fill="url(#lightG)" />
+      {/* 내부 양쪽 벽 약간 어두운 그림자 (깊이감) */}
+      <rect x="178" y="28" width="8" height="385" rx="2" fill="rgba(0,0,0,0.04)" />
+      <rect x="414" y="28" width="8" height="385" rx="2" fill="rgba(0,0,0,0.04)" />
+      {/* 천장 조명 glow */}
+      <rect x="178" y="28" width="244" height="80" rx="4" fill="url(#lightG)" />
+      {/* 뒷벽 미세한 반사 라인 */}
+      <line x1="200" y1="32" x2="200" y2="410" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+      <line x1="400" y1="32" x2="400" y2="410" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
 
-      {/* 냉장 선반 1 */}
-      <rect x="178" y="130" width="244" height="10" rx="2" fill="url(#shelfG)" />
-      <rect x="178" y="140" width="244" height="3" fill="rgba(0,0,0,0.06)" />
+      {/* ── 선반 1 (3D 깊이감) ── */}
+      {/* 선반 윗면 (밝은 면) */}
+      <rect x="178" y="126" width="244" height="4" rx="1" fill="#e8c860" />
+      {/* 선반 앞면 (그라데이션) */}
+      <rect x="178" y="130" width="244" height="12" rx="1" fill="url(#shelfG)" />
+      {/* 선반 아래 그림자 */}
+      <rect x="182" y="142" width="236" height="6" rx="2" fill="rgba(0,0,0,0.06)" />
+      {/* 선반 앞면 하이라이트 */}
+      <rect x="178" y="130" width="244" height="2" fill="rgba(255,255,255,0.15)" />
 
-      {/* 냉장 선반 2 */}
-      <rect x="178" y="245" width="244" height="10" rx="2" fill="url(#shelfG)" />
-      <rect x="178" y="255" width="244" height="3" fill="rgba(0,0,0,0.06)" />
+      {/* ── 선반 2 (3D 깊이감) ── */}
+      <rect x="178" y="241" width="244" height="4" rx="1" fill="#e8c860" />
+      <rect x="178" y="245" width="244" height="12" rx="1" fill="url(#shelfG)" />
+      <rect x="182" y="257" width="236" height="6" rx="2" fill="rgba(0,0,0,0.06)" />
+      <rect x="178" y="245" width="244" height="2" fill="rgba(255,255,255,0.15)" />
 
-      {/* 냉장 선반 3 */}
-      <rect x="178" y="340" width="244" height="10" rx="2" fill="url(#shelfG)" />
-      <rect x="178" y="350" width="244" height="3" fill="rgba(0,0,0,0.06)" />
+      {/* ── 선반 3 (야채칸 위, 두꺼움) ── */}
+      <rect x="178" y="336" width="244" height="4" rx="1" fill="#e8c860" />
+      <rect x="178" y="340" width="244" height="14" rx="1" fill="url(#shelfG)" />
+      <rect x="182" y="354" width="236" height="6" rx="2" fill="rgba(0,0,0,0.08)" />
+      <rect x="178" y="340" width="244" height="2" fill="rgba(255,255,255,0.15)" />
 
-      {/* 냉장/냉동 구분 프레임 */}
-      <rect x="170" y="413" width="260" height="14" rx="3" fill="url(#frameG)" stroke="#9a7028" strokeWidth="0.5" />
+      {/* ── 야채 서랍 (선반3 아래) ── */}
+      {/* 서랍 프레임 좌 */}
+      <rect x="182" y="360" width="116" height="48" rx="3" fill="rgba(220,235,220,0.4)" stroke="url(#frameG)" strokeWidth="2" />
+      {/* 서랍 손잡이 좌 */}
+      <rect x="220" y="359" width="40" height="4" rx="2" fill="url(#shelfFront)" />
+      {/* 서랍 프레임 우 */}
+      <rect x="302" y="360" width="116" height="48" rx="3" fill="rgba(220,235,220,0.4)" stroke="url(#frameG)" strokeWidth="2" />
+      {/* 서랍 손잡이 우 */}
+      <rect x="340" y="359" width="40" height="4" rx="2" fill="url(#shelfFront)" />
 
-      {/* 내부 — 냉동 */}
-      <rect x="178" y="430" width="244" height="185" rx="4" fill="url(#freezerG)" />
+      {/* ── 선반 위 식품 (크기/위치 세밀 배치) ── */}
+      {/* 1단: 큰 아이템 */}
+      <text x="195" y="122" fontSize="28">🥬</text>
+      <text x="240" y="118" fontSize="22">🧀</text>
+      <text x="285" y="124" fontSize="30">🫕</text>
+      <text x="340" y="120" fontSize="24">🥚</text>
+      <text x="385" y="116" fontSize="20">🫙</text>
+
+      {/* 2단: 과일/채소 */}
+      <text x="192" y="238" fontSize="26">🍎</text>
+      <text x="235" y="234" fontSize="30">🥝</text>
+      <text x="285" y="240" fontSize="22">🥕</text>
+      <text x="330" y="236" fontSize="28">🍊</text>
+      <text x="385" y="232" fontSize="20">🧄</text>
+
+      {/* 3단: 조리/반찬류 */}
+      <text x="195" y="333" fontSize="24">🥒</text>
+      <text x="240" y="330" fontSize="28">🍅</text>
+      <text x="290" y="336" fontSize="22">🫑</text>
+      <text x="338" y="332" fontSize="26">🍆</text>
+      <text x="390" y="328" fontSize="20">🌽</text>
+
+      {/* 야채 서랍 안 */}
+      <text x="210" y="394" fontSize="24">🥦</text>
+      <text x="260" y="398" fontSize="20">🥬</text>
+      <text x="330" y="394" fontSize="26">🍉</text>
+      <text x="385" y="398" fontSize="20">🥜</text>
+
+      {/* ========== 냉장/냉동 구분 프레임 ========== */}
+      <rect x="170" y="410" width="260" height="18" rx="3" fill="url(#frameG)" stroke="#9a7028" strokeWidth="0.5" />
+      {/* 프레임 하이라이트 */}
+      <rect x="172" y="411" width="256" height="3" rx="1" fill="rgba(255,255,255,0.2)" />
+
+      {/* ========== 내부 — 냉동 영역 ========== */}
+      <rect x="178" y="432" width="244" height="183" rx="4" fill="url(#freezerG)" />
+      {/* 양쪽 벽 깊이감 */}
+      <rect x="178" y="432" width="6" height="183" rx="2" fill="rgba(0,0,0,0.05)" />
+      <rect x="416" y="432" width="6" height="183" rx="2" fill="rgba(0,0,0,0.05)" />
+
       {/* 냉동 선반 */}
-      <rect x="178" y="520" width="244" height="7" rx="2" fill="url(#shelfG)" />
+      <rect x="178" y="520" width="244" height="4" rx="1" fill="#e8c860" />
+      <rect x="178" y="524" width="244" height="10" rx="1" fill="url(#shelfG)" />
+      <rect x="182" y="534" width="236" height="4" rx="1" fill="rgba(0,0,0,0.06)" />
+
       {/* 냉동 중앙 칸막이 */}
-      <rect x="298" y="430" width="8" height="185" rx="2" fill="url(#frameG)" />
+      <rect x="296" y="432" width="10" height="183" rx="2" fill="url(#frameG)" />
+      <rect x="297" y="432" width="2" height="183" fill="rgba(255,255,255,0.15)" />
 
-      {/* 냉동 유리 패널 */}
-      <rect x="183" y="434" width="111" height="82" rx="3" fill="url(#glassG)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <rect x="183" y="530" width="111" height="80" rx="3" fill="url(#glassG)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <rect x="310" y="434" width="108" height="82" rx="3" fill="url(#glassG)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-      <rect x="310" y="530" width="108" height="80" rx="3" fill="url(#glassG)" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      {/* 냉동 유리 패널 — 앞면 + 반사 */}
+      <rect x="183" y="436" width="109" height="80" rx="4" fill="url(#glassG)" stroke="rgba(200,200,210,0.4)" strokeWidth="1.5" />
+      <path d="M 188,440 L 220,440 L 200,510 L 188,510 Z" fill="rgba(255,255,255,0.08)" /> {/* 반사 */}
+      <rect x="183" y="540" width="109" height="70" rx="4" fill="url(#glassG)" stroke="rgba(200,200,210,0.4)" strokeWidth="1.5" />
+      <path d="M 188,544 L 215,544 L 200,604 L 188,604 Z" fill="rgba(255,255,255,0.08)" />
 
-      {/* 냉동 데코 */}
-      <text x="238" y="490" textAnchor="middle" fontSize="28">🐟</text>
-      <text x="364" y="490" textAnchor="middle" fontSize="26">🥩</text>
-      <text x="238" y="585" textAnchor="middle" fontSize="28">🍕</text>
-      <text x="364" y="585" textAnchor="middle" fontSize="24">🧊</text>
+      <rect x="310" y="436" width="108" height="80" rx="4" fill="url(#glassG)" stroke="rgba(200,200,210,0.4)" strokeWidth="1.5" />
+      <path d="M 315,440 L 345,440 L 328,510 L 315,510 Z" fill="rgba(255,255,255,0.08)" />
+      <rect x="310" y="540" width="108" height="70" rx="4" fill="url(#glassG)" stroke="rgba(200,200,210,0.4)" strokeWidth="1.5" />
+      <path d="M 315,544 L 340,544 L 325,604 L 315,604 Z" fill="rgba(255,255,255,0.08)" />
+
+      {/* 냉동 식품 */}
+      <text x="237" y="492" textAnchor="middle" fontSize="30">🐟</text>
+      <text x="364" y="490" textAnchor="middle" fontSize="28">🥩</text>
+      <text x="237" y="588" textAnchor="middle" fontSize="28">🍕</text>
+      <text x="364" y="586" textAnchor="middle" fontSize="26">🧊</text>
 
       {/* ========== 우측 문 (SVG path, 본체에 붙어있음) ========== */}
       <path d="M 430,18 L 560,6 L 560,614 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2" />
