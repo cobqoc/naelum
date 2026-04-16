@@ -56,21 +56,6 @@ export default function FridgeSVG() {
       <path d="M -10,0 L -22,8 L 158,28 L 170,24 Z" fill="url(#bodyLight)" />
       {/* 내부 패널 */}
       <path d="M 18,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" />
-      {/* 3D 포켓 선반 1 */}
-      <path d="M 20,95 L 150,104 L 150,108 L 20,99 Z" fill="#ecd070" /> {/* 윗면 */}
-      <path d="M 20,99 L 150,108 L 150,120 L 20,111 Z" fill="#c89030" /> {/* 앞면 */}
-      <path d="M 20,99 L 20,111 L 14,108 L 14,96 Z" fill="#a07028" /> {/* 좌측면 */}
-      <path d="M 20,95 L 14,96 L 14,66 L 20,65 Z" fill="rgba(200,170,130,0.2)" /> {/* 뒷벽 */}
-      {/* 3D 포켓 선반 2 */}
-      <path d="M 22,195 L 150,200 L 150,204 L 22,199 Z" fill="#ecd070" />
-      <path d="M 22,199 L 150,204 L 150,216 L 22,211 Z" fill="#c89030" />
-      <path d="M 22,199 L 22,211 L 16,208 L 16,196 Z" fill="#a07028" />
-      <path d="M 22,195 L 16,196 L 16,158 L 22,157 Z" fill="rgba(200,170,130,0.2)" />
-      {/* 3D 포켓 선반 3 */}
-      <path d="M 24,295 L 150,298 L 150,302 L 24,299 Z" fill="#ecd070" />
-      <path d="M 24,299 L 150,302 L 150,314 L 24,311 Z" fill="#c89030" />
-      <path d="M 24,299 L 24,311 L 18,308 L 18,296 Z" fill="#a07028" />
-      <path d="M 24,295 L 18,296 L 18,254 L 24,253 Z" fill="rgba(200,170,130,0.2)" />
       {/* 인셋 라인 */}
       <path d="M 18,22 L 152,36 L 152,376 L 30,376 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
@@ -81,11 +66,6 @@ export default function FridgeSVG() {
       <path d="M 10,404 L 0,408 L 18,620 L 26,624 Z" fill="url(#bodyDark)" />
       <path d="M 10,404 L 0,408 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
       <path d="M 34,420 L 152,416 L 152,608 L 44,608 Z" fill="url(#freezerG)" />
-      {/* 3D 포켓 선반 */}
-      <path d="M 38,510 L 150,508 L 150,512 L 38,514 Z" fill="#ecd070" />
-      <path d="M 38,514 L 150,512 L 150,524 L 38,526 Z" fill="#c89030" />
-      <path d="M 38,514 L 38,526 L 32,523 L 32,511 Z" fill="#a07028" />
-      <path d="M 38,510 L 32,511 L 32,470 L 38,469 Z" fill="rgba(200,170,130,0.2)" />
       {/* 인셋 라인 */}
       <path d="M 34,420 L 152,416 L 152,608 L 44,608 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
@@ -150,21 +130,6 @@ export default function FridgeSVG() {
       <path d="M 610,0 L 622,8 L 600,396 L 590,392 Z" fill="url(#bodyDark)" />
       <path d="M 430,24 L 442,28 L 610,0 L 622,8 Z" fill="url(#bodyLight)" />
       <path d="M 448,37 L 568,22 L 566,376 L 448,376 Z" fill="url(#interiorG)" />
-      {/* 3D 포켓 선반 1 */}
-      <path d="M 450,104 L 560,95 L 560,99 L 450,108 Z" fill="#ecd070" />
-      <path d="M 450,108 L 560,99 L 560,111 L 450,120 Z" fill="#c89030" />
-      <path d="M 560,99 L 560,111 L 566,108 L 566,96 Z" fill="#a07028" />
-      <path d="M 560,95 L 566,96 L 566,66 L 560,65 Z" fill="rgba(200,170,130,0.2)" />
-      {/* 3D 포켓 선반 2 */}
-      <path d="M 450,200 L 560,195 L 560,199 L 450,204 Z" fill="#ecd070" />
-      <path d="M 450,204 L 560,199 L 560,211 L 450,216 Z" fill="#c89030" />
-      <path d="M 560,199 L 560,211 L 566,208 L 566,196 Z" fill="#a07028" />
-      <path d="M 560,195 L 566,196 L 566,158 L 560,157 Z" fill="rgba(200,170,130,0.2)" />
-      {/* 3D 포켓 선반 3 */}
-      <path d="M 450,298 L 560,295 L 560,299 L 450,302 Z" fill="#ecd070" />
-      <path d="M 450,302 L 560,299 L 560,311 L 450,314 Z" fill="#c89030" />
-      <path d="M 560,299 L 560,311 L 566,308 L 566,296 Z" fill="#a07028" />
-      <path d="M 560,295 L 566,296 L 566,254 L 560,253 Z" fill="rgba(200,170,130,0.2)" />
       {/* 인셋 라인 */}
       <path d="M 448,37 L 568,22 L 566,376 L 448,376 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
@@ -175,11 +140,6 @@ export default function FridgeSVG() {
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
       <path d="M 430,402 L 442,406 L 590,404 L 600,408 Z" fill="url(#bodyLight)" />
       <path d="M 448,416 L 566,422 L 556,608 L 448,604 Z" fill="url(#freezerG)" />
-      {/* 3D 포켓 선반 */}
-      <path d="M 450,508 L 554,510 L 554,514 L 450,512 Z" fill="#ecd070" />
-      <path d="M 450,512 L 554,514 L 554,526 L 450,524 Z" fill="#c89030" />
-      <path d="M 554,514 L 554,526 L 560,523 L 560,511 Z" fill="#a07028" />
-      <path d="M 554,510 L 560,511 L 560,470 L 554,469 Z" fill="rgba(200,170,130,0.2)" />
       {/* 인셋 라인 */}
       <path d="M 448,416 L 566,422 L 556,608 L 448,604 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
