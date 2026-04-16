@@ -80,7 +80,6 @@ export default function FridgeSVG() {
       <path d="M 22,300 L 152,302 L 152,305 L 24,303 Z" fill="url(#glassShelf)" />
       <path d="M 24,303 L 152,305 L 152,306 L 26,304 Z" fill="rgba(255,255,255,0.25)" />
       {/* 손잡이 */}
-      <path d="M 163,172 L 163,258" stroke="rgba(0,0,0,0.12)" strokeWidth="8" strokeLinecap="round" />
       <path d="M 161,170 L 161,260" stroke="url(#handleG)" strokeWidth="6" strokeLinecap="round" />
 
       {/* ====== 좌측 냉동 문 (V자) ====== */}
@@ -92,7 +91,6 @@ export default function FridgeSVG() {
       <path d="M 34,515 L 152,513 L 152,516 L 36,518 Z" fill="url(#glassShelf)" />
       <path d="M 36,518 L 152,516 L 152,517 L 38,519 Z" fill="rgba(255,255,255,0.25)" />
       {/* 손잡이 */}
-      <path d="M 163,489 L 163,545" stroke="rgba(0,0,0,0.12)" strokeWidth="8" strokeLinecap="round" />
       <path d="M 161,487 L 161,547" stroke="url(#handleG)" strokeWidth="6" strokeLinecap="round" />
 
       {/* ====== 냉장고 본체 ====== */}
@@ -163,7 +161,6 @@ export default function FridgeSVG() {
       <path d="M 448,302 L 568,300 L 568,303 L 448,305 Z" fill="url(#glassShelf)" />
       <path d="M 448,305 L 568,303 L 568,304 L 448,306 Z" fill="rgba(255,255,255,0.25)" />
       {/* 손잡이 */}
-      <path d="M 437,172 L 437,258" stroke="rgba(0,0,0,0.12)" strokeWidth="8" strokeLinecap="round" />
       <path d="M 439,170 L 439,260" stroke="url(#handleG)" strokeWidth="6" strokeLinecap="round" />
 
       {/* ====== 우측 냉동 문 (V자) ====== */}
@@ -175,7 +172,6 @@ export default function FridgeSVG() {
       <path d="M 448,515 L 558,513 L 558,516 L 448,518 Z" fill="url(#glassShelf)" />
       <path d="M 448,518 L 558,516 L 558,517 L 448,519 Z" fill="rgba(255,255,255,0.25)" />
       {/* 손잡이 */}
-      <path d="M 437,489 L 437,545" stroke="rgba(0,0,0,0.12)" strokeWidth="8" strokeLinecap="round" />
       <path d="M 439,487 L 439,547" stroke="url(#handleG)" strokeWidth="6" strokeLinecap="round" />
 
       {/* 킥플레이트 (다리 위 패널) */}
