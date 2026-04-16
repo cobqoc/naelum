@@ -276,7 +276,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              aspectRatio: '5 / 4.5',
+              aspectRatio: '5 / 7',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '3px solid #b84a42',
@@ -557,7 +557,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
   const bottomItems = items.slice(mid);
 
   return (
-    <div className={`flex justify-center px-4 ${compact ? 'mb-2' : 'mb-6'}`}>
+    <div className={`flex justify-center px-4 ${compact ? 'mb-1' : 'mb-6'}`}>
       <div className="w-full">
         {/* 상단 선반 */}
         <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
