@@ -68,10 +68,10 @@ export default function FridgeSVG() {
       <path d="M 24,210 L 152,216 L 152,233 L 25,227 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
       <path d="M 24,210 L 152,216" fill="none" stroke="#F0D868" strokeWidth="2" />
 
-      {/* 포켓3 */}
-      <path d="M 26,249 L 152,254 L 152,298 L 27,295 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 27,295 L 152,298 L 152,315 L 28,312 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 27,295 L 152,298" fill="none" stroke="#F0D868" strokeWidth="2" />
+      {/* 포켓3 (하단 프레임에 밀착) */}
+      <path d="M 28,312 L 152,315 L 152,359 L 29,358 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 29,358 L 152,359 L 152,376 L 30,376 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 29,358 L 152,359" fill="none" stroke="#F0D868" strokeWidth="2" />
 
       {/* 3D 경계선 — 좌측 냉장 문 */}
       {/* 윗면 (빛 받는 돌출면) */}
@@ -147,10 +147,10 @@ export default function FridgeSVG() {
       <path d="M 448,217 L 567,210 L 567,227 L 448,234 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
       <path d="M 448,217 L 567,210" fill="none" stroke="#F0D868" strokeWidth="2" />
 
-      {/* 포켓3 */}
-      <path d="M 448,254 L 567,249 L 566,295 L 448,298 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 448,298 L 566,295 L 566,312 L 448,315 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 448,298 L 566,295" fill="none" stroke="#F0D868" strokeWidth="2" />
+      {/* 포켓3 (하단 프레임에 밀착) */}
+      <path d="M 448,315 L 566,312 L 566,358 L 448,359 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 448,359 L 566,358 L 566,376 L 448,376 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 448,359 L 566,358" fill="none" stroke="#F0D868" strokeWidth="2" />
 
       {/* 3D 경계선 — 우측 냉장 문 */}
       <path d="M 568,22 L 567,19 L 581,19 L 582,22 Z" fill="#F2D858" />
