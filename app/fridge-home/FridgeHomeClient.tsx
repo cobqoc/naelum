@@ -248,9 +248,8 @@ export default function FridgeHomeClient() {
 
           {/* 좌측 문 — transition으로 밀려나며 열림 */}
           <div
-            className="absolute top-0 bottom-[10px] z-10"
+            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
             style={{
-              width: doorOpen ? '90px' : '50%',
               left: doorOpen ? '-68px' : '-1px',
               transform: doorOpen ? 'perspective(800px) rotateY(42deg)' : 'rotateY(0deg)',
               transformOrigin: 'right center',
@@ -288,9 +287,8 @@ export default function FridgeHomeClient() {
 
           {/* 우측 문 */}
           <div
-            className="absolute top-0 bottom-[10px] z-10"
+            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'w-[90px] md:w-[130px]' : 'w-1/2'}`}
             style={{
-              width: doorOpen ? '90px' : '50%',
               right: doorOpen ? '-68px' : '-1px',
               transform: doorOpen ? 'perspective(800px) rotateY(-42deg)' : 'rotateY(0deg)',
               transformOrigin: 'left center',
