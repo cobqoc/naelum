@@ -111,17 +111,6 @@ export default function FridgeSVG() {
       <rect x="178" y="225" width="244" height="2" fill="rgba(255,255,255,0.12)" />
       <rect x="182" y="235" width="236" height="5" rx="2" fill="rgba(0,0,0,0.04)" />
 
-      {/* ===== 냉장 선반 3 (야채칸 위, 더 두꺼움) ===== */}
-      <rect x="178" y="310" width="244" height="6" fill="#ecd070" />
-      <rect x="178" y="316" width="244" height="12" rx="1" fill="#c89030" />
-      <rect x="178" y="316" width="244" height="2" fill="rgba(255,255,255,0.12)" />
-      <rect x="182" y="328" width="236" height="5" rx="2" fill="rgba(0,0,0,0.05)" />
-
-      {/* ===== 야채 서랍 2칸 ===== */}
-      <rect x="182" y="334" width="116" height="46" rx="3" fill="rgba(215,230,215,0.3)" stroke="#c89030" strokeWidth="1.5" />
-      <rect x="218" y="333" width="42" height="3" rx="1.5" fill="#dab050" />
-      <rect x="302" y="334" width="116" height="46" rx="3" fill="rgba(215,230,215,0.3)" stroke="#c89030" strokeWidth="1.5" />
-      <rect x="338" y="333" width="42" height="3" rx="1.5" fill="#dab050" />
 
       {/* ===== 냉장/냉동 구분 ===== */}
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
