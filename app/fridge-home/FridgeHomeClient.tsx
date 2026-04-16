@@ -229,7 +229,7 @@ export default function FridgeHomeClient() {
       }}
     >
       {/* 헤더 */}
-      <header className="relative z-20 px-4 pt-3 pb-1 flex items-center justify-between">
+      <header className="relative z-20 px-4 pt-1 pb-0 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
         {dangerCount > 0 && (
           <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
@@ -242,7 +242,7 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-[72px] md:px-24 mb-2">
+      <div className="flex justify-center px-[72px] md:px-24 mb-1">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
           {/* 좌측 문 */}
@@ -335,7 +335,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              height: 'calc(100dvh - 280px)',
+              height: 'calc(100dvh - 240px)',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
@@ -746,7 +746,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
   const bottomItems = items.slice(mid);
 
   return (
-    <div className={`flex justify-center px-4 ${compact ? 'mb-1' : 'mb-6'}`}>
+    <div className={`flex justify-center px-4 ${compact ? 'mb-0' : 'mb-1'}`}>
       <div className="w-full max-w-lg mx-auto">
         {/* 상단 선반 */}
         <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
