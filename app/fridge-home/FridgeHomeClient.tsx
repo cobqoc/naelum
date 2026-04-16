@@ -100,7 +100,7 @@ export default function FridgeHomeClient() {
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [doorAnimated, setDoorAnimated] = useState(false);
+  const [doorPhase, setDoorPhase] = useState<'closed' | 'opening' | 'open'>('closed');
   const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
   const [inlineSearch, setInlineSearch] = useState('');
 
@@ -121,10 +121,13 @@ export default function FridgeHomeClient() {
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 페이지 로드 시 문 열기 애니메이션
+  // 페이지 로드 시 2단계 문 열기 애니메이션
   useEffect(() => {
-    const timer = setTimeout(() => setDoorAnimated(true), 300);
-    return () => clearTimeout(timer);
+    // Phase 1: 가운데에서 바깥으로 벌어짐 (연출)
+    const t1 = setTimeout(() => setDoorPhase('opening'), 300);
+    // Phase 2: 사이드 패널로 정착 (최종 모습)
+    const t2 = setTimeout(() => setDoorPhase('open'), 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   useEffect(() => {
@@ -224,7 +227,7 @@ export default function FridgeHomeClient() {
     <div
       className="h-dvh overflow-hidden bg-background-primary text-text-primary transition-all"
       style={{
-        filter: doorAnimated ? 'brightness(1)' : 'brightness(0)',
+        filter: doorPhase !== 'closed' ? 'brightness(1)' : 'brightness(0)',
         transition: 'filter 1.8s ease-out',
       }}
     >
@@ -245,28 +248,34 @@ export default function FridgeHomeClient() {
       <div className="flex justify-center px-[72px] md:px-24 mb-2">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 — 닫힘(본체 덮음) → 열림(사이드 패널) */}
+          {/* 좌측 문 — closed→opening→open */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: doorAnimated ? '90px' : '50%',
-              left: doorAnimated ? '-68px' : '-1px',
-              transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+              width: doorPhase === 'open' ? '90px' : '50%',
+              left: doorPhase === 'open' ? '-68px' : '-1px',
+              transform:
+                doorPhase === 'closed' ? 'rotateY(0deg)' :
+                doorPhase === 'opening' ? 'rotateY(-55deg)' :
+                'rotateY(42deg)',
+              transformOrigin:
+                doorPhase === 'open' ? 'right center' : 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: doorPhase === 'open'
+                ? 'all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)'
+                : 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorAnimated
+              boxShadow: doorPhase !== 'closed'
                 ? '-4px 0 12px rgba(0,0,0,0.3)'
                 : '2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderRight: 'none',
             }}>
               {/* 닫힌 상태 앞면 */}
-              {!doorAnimated && (
+              {doorPhase === 'closed' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-[9px] font-bold tracking-[0.15em] text-white/50 mb-2">NAELUM</span>
                   <span className="text-3xl">🧊</span>
@@ -276,7 +285,7 @@ export default function FridgeHomeClient() {
                 </div>
               )}
               {/* 열린 상태 안쪽 선반 */}
-              {doorAnimated && (
+              {doorPhase === 'open' && (
                 <div className="h-full flex flex-col">
                   <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
                   <DoorRail />
@@ -289,28 +298,34 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 우측 문 — 닫힘(본체 덮음) → 열림(사이드 패널) */}
+          {/* 우측 문 — closed→opening→open */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: doorAnimated ? '90px' : '50%',
-              right: doorAnimated ? '-68px' : '-1px',
-              transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+              width: doorPhase === 'open' ? '90px' : '50%',
+              right: doorPhase === 'open' ? '-68px' : '-1px',
+              transform:
+                doorPhase === 'closed' ? 'rotateY(0deg)' :
+                doorPhase === 'opening' ? 'rotateY(55deg)' :
+                'rotateY(-42deg)',
+              transformOrigin:
+                doorPhase === 'open' ? 'left center' : 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: doorPhase === 'open'
+                ? 'all 0.6s cubic-bezier(0.25, 0.1, 0.25, 1)'
+                : 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorAnimated
+              boxShadow: doorPhase !== 'closed'
                 ? '4px 0 12px rgba(0,0,0,0.3)'
                 : '-2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderLeft: 'none',
             }}>
               {/* 닫힌 상태 앞면 */}
-              {!doorAnimated && (
+              {doorPhase === 'closed' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-sm text-white/50 font-bold">{items.length}개</span>
                   <div className="absolute left-2 top-[40%] w-[5px] h-[40px] rounded-full"
@@ -319,7 +334,7 @@ export default function FridgeHomeClient() {
                 </div>
               )}
               {/* 열린 상태 안쪽 선반 */}
-              {doorAnimated && (
+              {doorPhase === 'open' && (
                 <div className="h-full flex flex-col">
                   <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
                   <DoorRail />
@@ -336,7 +351,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              height: 'calc(100dvh - 260px)',
+              height: 'clamp(300px, calc(100dvh - 260px), 550px)',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
@@ -353,7 +368,7 @@ export default function FridgeHomeClient() {
             {/* 내부 */}
             <div
               className="absolute inset-[3px] rounded-lg overflow-hidden flex flex-col"
-              style={{ opacity: doorAnimated ? 1 : 0, transition: 'opacity 1.8s ease-out 0.3s' }}
+              style={{ opacity: doorPhase !== 'closed' ? 1 : 0, transition: 'opacity 1.8s ease-out 0.3s' }}
             >
               {/* 내부 조명 */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6 z-10" style={{
