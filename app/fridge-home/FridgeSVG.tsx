@@ -70,14 +70,39 @@ export default function FridgeSVG() {
       <ellipse cx="300" cy="640" rx="230" ry="14" fill="url(#shadowG)" />
 
       {/* ========== 좌측 냉장 문 (6) ========== */}
+      {/* 문 외곽 */}
       <path d="M 170,18 L 40,6 L 40,385 L 170,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
+      {/* 문 측면 두께 */}
       <path d="M 40,6 L 30,10 L 30,381 L 40,385 Z" fill="url(#bodyDark)" />
-      <path d="M 48,16 L 162,24 L 162,383 L 48,378 Z" fill="url(#pocketBg)" />
+      {/* 인셋 그림자 (프레임 깊이감) */}
+      <path d="M 46,13 L 164,21 L 164,386 L 46,381 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      {/* 내부 패널 */}
+      <path d="M 52,19 L 158,26 L 158,380 L 52,375 Z" fill="url(#pocketBg)" />
+      {/* 상단 몰딩 */}
+      <path d="M 42,8 L 168,17 L 168,22 L 42,13 Z" fill="url(#shelfFront)" opacity="0.7" />
+      {/* 하단 몰딩 */}
+      <path d="M 42,380 L 168,386 L 168,391 L 42,385 Z" fill="url(#shelfFront)" opacity="0.7" />
+      {/* 힌지 3개 */}
+      <rect x="164" y="55" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="164" y="195" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="164" y="340" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      {/* 하단 장식 패턴 (작은 사각형들) */}
+      {[0,1,2,3,4,5,6,7].map(i => (
+        <rect key={`ldeco${i}`} x={48 + i * 14} y={370 + (i * 0.4)} width="10" height="5" rx="1" fill="rgba(138,48,32,0.3)" />
+      ))}
 
       {/* ========== 좌측 냉동 문 (4) ========== */}
       <path d="M 170,402 L 40,399 L 40,614 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 40,399 L 30,402 L 30,610 L 40,614 Z" fill="url(#bodyDark)" />
-      <path d="M 48,406 L 162,404 L 162,612 L 48,608 Z" fill="url(#pocketBg)" />
+      <path d="M 46,405 L 164,403 L 164,616 L 46,612 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 52,410 L 158,408 L 158,610 L 52,606 Z" fill="url(#pocketBg)" />
+      <path d="M 42,399 L 168,397 L 168,402 L 42,404 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <path d="M 42,612 L 168,618 L 168,623 L 42,617 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <rect x="164" y="445" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="164" y="565" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      {[0,1,2,3,4,5,6,7].map(i => (
+        <rect key={`lfdeco${i}`} x={48 + i * 14} y={602 + (i * 0.2)} width="10" height="5" rx="1" fill="rgba(138,48,32,0.3)" />
+      ))}
 
       {/* ========== 냉장고 본체 ========== */}
       <rect x="166" y="14" width="268" height="613" rx="8" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="4" />
@@ -163,14 +188,29 @@ export default function FridgeSVG() {
       {/* ========== 우측 냉장 문 (6) ========== */}
       <path d="M 430,18 L 560,6 L 560,385 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 560,6 L 570,10 L 570,381 L 560,385 Z" fill="url(#bodyDark)" />
-      <path d="M 438,24 L 552,16 L 552,383 L 438,378 Z" fill="url(#pocketBg)" />
+      <path d="M 436,21 L 554,13 L 554,386 L 436,381 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 442,26 L 548,19 L 548,380 L 442,375 Z" fill="url(#pocketBg)" />
+      <path d="M 432,17 L 558,8 L 558,13 L 432,22 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <path d="M 432,386 L 558,380 L 558,385 L 432,391 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <rect x="429" y="55" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="429" y="195" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="429" y="340" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      {[0,1,2,3,4,5,6,7].map(i => (
+        <rect key={`rdeco${i}`} x={440 + i * 14} y={370 - (i * 0.4)} width="10" height="5" rx="1" fill="rgba(138,48,32,0.3)" />
+      ))}
 
       {/* ========== 우측 냉동 문 (4) ========== */}
       <path d="M 430,402 L 560,399 L 560,614 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 560,399 L 570,402 L 570,610 L 560,614 Z" fill="url(#bodyDark)" />
-      <path d="M 438,406 L 552,404 L 552,612 L 438,608 Z" fill="url(#pocketBg)" />
-
-      {/* 우측 문 내부 — 선반 없이 깔끔하게 */}
+      <path d="M 436,405 L 554,403 L 554,616 L 436,612 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 442,410 L 548,408 L 548,610 L 442,606 Z" fill="url(#pocketBg)" />
+      <path d="M 432,402 L 558,399 L 558,404 L 432,407 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <path d="M 432,618 L 558,612 L 558,617 L 432,623 Z" fill="url(#shelfFront)" opacity="0.7" />
+      <rect x="429" y="445" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      <rect x="429" y="565" width="7" height="16" rx="2" fill="#8a6020" stroke="#6a4810" strokeWidth="0.5" />
+      {[0,1,2,3,4,5,6,7].map(i => (
+        <rect key={`rfdeco${i}`} x={440 + i * 14} y={602 - (i * 0.2)} width="10" height="5" rx="1" fill="rgba(138,48,32,0.3)" />
+      ))}
 
       {/* ========== 내부 데코 식품 ========== */}
       {/* 선반 1 위 */}
