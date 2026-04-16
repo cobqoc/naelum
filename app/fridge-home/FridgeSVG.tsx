@@ -21,8 +21,8 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#dce2ec" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#d0dce8" />
-          <stop offset="100%" stopColor="#b0c4d8" />
+          <stop offset="0%" stopColor="#e2e8f0" />
+          <stop offset="100%" stopColor="#d0d8e4" />
         </linearGradient>
         <linearGradient id="handleG" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#999" />
@@ -88,7 +88,7 @@ export default function FridgeSVG() {
       <path d="M 170,402 L 10,404 L 26,624 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 10,404 L 0,408 L 18,620 L 26,624 Z" fill="url(#bodyDark)" />
       <path d="M 20,410 L 162,405 L 162,618 L 34,618 Z" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="2" />
-      <path d="M 30,416 L 156,412 L 156,612 L 40,612 Z" fill="url(#interiorG)" />
+      <path d="M 30,416 L 156,412 L 156,612 L 40,612 Z" fill="url(#freezerG)" />
       <path d="M 30,416 L 38,417 L 44,610 L 40,612 Z" fill="rgba(0,0,0,0.06)" />
       {/* 유리 선반 */}
       <path d="M 34,515 L 152,513 L 152,516 L 36,518 Z" fill="url(#glassShelf)" />
@@ -188,7 +188,7 @@ export default function FridgeSVG() {
       <path d="M 430,402 L 590,404 L 574,624 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
       <path d="M 438,405 L 580,412 L 566,618 L 438,616 Z" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="2" />
-      <path d="M 444,412 L 572,418 L 560,612 L 444,608 Z" fill="url(#interiorG)" />
+      <path d="M 444,412 L 572,418 L 560,612 L 444,608 Z" fill="url(#freezerG)" />
       <path d="M 564,419 L 572,418 L 560,612 L 554,611 Z" fill="rgba(0,0,0,0.06)" />
       {/* 유리 선반 */}
       <path d="M 448,515 L 558,513 L 558,516 L 448,518 Z" fill="url(#glassShelf)" />
