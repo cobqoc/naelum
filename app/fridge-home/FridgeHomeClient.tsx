@@ -1,19 +1,17 @@
 'use client';
 
 /**
- * 낼름 — 수명선(Lifeline) + 손전등(Flashlight) 실험 홈
+ * 낼름 — 자기부상(Buoyancy) 냉장고 실험 홈
  *
- * 컨셉: 냉장고를 "공간"으로 그리지 않는다. 시간으로 그린다.
- * - 화면 = 어둠 속 냉장고 안쪽
- * - 가로축 = 시간 (왼쪽=오늘, 오른쪽=2주 후)
- * - 각 재료는 자기 만료일 위치에 떠있다
- * - 위험 재료(D-3 이내)는 어둠 속에서도 빨갛게 깜빡이며 시야에 들어옴
- * - 마우스/손가락 주변만 손전등으로 환해짐 — "까먹은 재료를 비춰본다"
- *
- * 만개·Yummly 누구도 만든 적 없는 형태. 진짜 차별화 시도.
+ * 컨셉: 신선도 = 부력. 신선한 재료는 위에 둥둥, 시들수록 가라앉는다.
+ * - 세로 화면 = 물속. 위가 신선, 아래가 위험.
+ * - 각 재료가 자기 만료일 기반으로 떠있거나 가라앉음
+ * - 만료 재료는 바닥에 가라앉아 회색으로 시들어감
+ * - 탭하면 위로 솟구쳤다 사라짐 ("먹었다")
+ * - 모바일 세로 레이아웃에 최적화. 터치 퍼스트. 마우스 의존 없음.
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
@@ -29,16 +27,12 @@ type FridgeItem = {
   storage_location: string | null;
 };
 
-const TIMELINE_DAYS = 14; // 가로축이 표현하는 최대 일수
-const FLASHLIGHT_RADIUS = 220; // 손전등 반경(px)
-const DANGER_THRESHOLD = 3; // D-3 이내면 어둠 속에서도 보임
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function daysUntilExpiry(expiry_date: string | null): number {
-  if (!expiry_date) return TIMELINE_DAYS;
+function daysUntilExpiry(d: string | null): number {
+  if (!d) return 14;
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const exp = new Date(expiry_date); exp.setHours(0, 0, 0, 0);
+  const exp = new Date(d); exp.setHours(0, 0, 0, 0);
   return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
@@ -52,7 +46,6 @@ function genDemoId(): string {
   return `demo-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// 한 줄 다중 입력 파서
 function parseMultiInput(text: string): string[] {
   return text
     .split(/[\s,，、]+/)
@@ -60,17 +53,21 @@ function parseMultiInput(text: string): string[] {
     .filter(t => t.length > 0 && t.length <= 30);
 }
 
-// 데모 데이터: 위험/경고/안전 분포가 골고루 보이도록 큐레이션
-const DEMO_ITEMS: FridgeItem[] = [
-  { id: 'demo-d0', ingredient_name: '두부', category: 'other', expiry_date: addDaysISO(0), storage_location: '냉장' },
-  { id: 'demo-d1', ingredient_name: '대파', category: 'veggie', expiry_date: addDaysISO(1), storage_location: '냉장' },
-  { id: 'demo-d2', ingredient_name: '시금치', category: 'veggie', expiry_date: addDaysISO(2), storage_location: '냉장' },
-  { id: 'demo-d4', ingredient_name: '돼지고기', category: 'meat', expiry_date: addDaysISO(4), storage_location: '냉장' },
-  { id: 'demo-d6', ingredient_name: '양파', category: 'veggie', expiry_date: addDaysISO(6), storage_location: '상온' },
-  { id: 'demo-d8', ingredient_name: '계란', category: 'dairy', expiry_date: addDaysISO(8), storage_location: '냉장' },
-  { id: 'demo-d11', ingredient_name: '김치', category: 'other', expiry_date: addDaysISO(11), storage_location: '냉장' },
-  { id: 'demo-d13', ingredient_name: '된장', category: 'seasoning', expiry_date: addDaysISO(13), storage_location: '냉장' },
-];
+// 신선도(일수) → 수직 위치 (0%=꼭대기, 100%=바닥)
+function freshnessToPct(days: number): number {
+  if (days <= 0) return 88 + Math.random() * 8;        // 만료: 바닥에 가라앉음
+  if (days <= 3) return 65 + Math.random() * 15;       // 위험: 아래쪽
+  if (days <= 7) return 35 + Math.random() * 20;       // 경고: 중간
+  return 5 + Math.random() * 25;                       // 안전: 위쪽 둥둥
+}
+
+// 가로 분포: 아이템 index 기반으로 고르게 분산 + 약간 랜덤
+function spreadX(index: number, total: number): number {
+  if (total <= 1) return 50;
+  const base = 12 + ((index / (total - 1)) * 76);     // 12%~88% 균등 분배
+  const jitter = (Math.random() - 0.5) * 14;          // ±7% 랜덤 오프셋
+  return Math.min(88, Math.max(12, base + jitter));
+}
 
 function getEmojiForName(name: string, category: string): string {
   const found = QUICK_ADD.find(q => q.name === name || name.includes(q.name) || q.name.includes(name));
@@ -82,6 +79,17 @@ function getEmojiForName(name: string, category: string): string {
   return cat[category] ?? '📦';
 }
 
+const DEMO_ITEMS: FridgeItem[] = [
+  { id: 'demo-d0', ingredient_name: '두부', category: 'other', expiry_date: addDaysISO(0), storage_location: '냉장' },
+  { id: 'demo-d1', ingredient_name: '대파', category: 'veggie', expiry_date: addDaysISO(1), storage_location: '냉장' },
+  { id: 'demo-d2', ingredient_name: '시금치', category: 'veggie', expiry_date: addDaysISO(2), storage_location: '냉장' },
+  { id: 'demo-d4', ingredient_name: '돼지고기', category: 'meat', expiry_date: addDaysISO(4), storage_location: '냉장' },
+  { id: 'demo-d6', ingredient_name: '양파', category: 'veggie', expiry_date: addDaysISO(6), storage_location: '상온' },
+  { id: 'demo-d8', ingredient_name: '계란', category: 'dairy', expiry_date: addDaysISO(8), storage_location: '냉장' },
+  { id: 'demo-d11', ingredient_name: '김치', category: 'other', expiry_date: addDaysISO(11), storage_location: '냉장' },
+  { id: 'demo-d13', ingredient_name: '된장', category: 'seasoning', expiry_date: addDaysISO(13), storage_location: '냉장' },
+];
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function FridgeHomeClient() {
@@ -92,21 +100,10 @@ export default function FridgeHomeClient() {
   const [multiInput, setMultiInput] = useState('');
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [flashlight, setFlashlight] = useState<{ x: number; y: number; visible: boolean }>({
-    x: 0, y: 0, visible: false,
-  });
-  const [alwaysLit, setAlwaysLit] = useState(false);
-
-  const canvasRef = useRef<HTMLDivElement>(null);
-
-  // ── Data ────────────────────────────────────────────────────────────────────
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
 
   const fetchItems = useCallback(async () => {
-    if (!user) {
-      setItems(DEMO_ITEMS);
-      setLoading(false);
-      return;
-    }
+    if (!user) { setItems(DEMO_ITEMS); setLoading(false); return; }
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
@@ -130,22 +127,15 @@ export default function FridgeHomeClient() {
 
   const showToast = (msg: string) => setToast(msg);
 
-  // ── Add / Remove ────────────────────────────────────────────────────────────
+  // ── Add / Remove ───────────────────────────────────────────────────────────
 
   const addQuickItem = async (item: QuickAddIngredient) => {
     if (adding) return;
     setAdding(true);
     if (!user) {
       const newItem: FridgeItem = {
-        id: genDemoId(),
-        ingredient_name: item.name,
-        category: item.category,
-        expiry_date: addDaysISO(
-          item.category === 'seasoning' ? 14 :
-          item.category === 'dairy' ? 7 :
-          item.category === 'meat' || item.category === 'seafood' ? 5 :
-          7
-        ),
+        id: genDemoId(), ingredient_name: item.name, category: item.category,
+        expiry_date: addDaysISO(item.category === 'seasoning' ? 14 : item.category === 'dairy' ? 7 : item.category === 'meat' ? 5 : 7),
         storage_location: item.storage,
       };
       setItems(prev => [...prev, newItem]);
@@ -155,7 +145,7 @@ export default function FridgeHomeClient() {
     }
     const client = createClient();
     const { error } = await client.from('user_ingredients').insert(quickAddToPayload(item, user.id));
-    if (error) showToast('추가 실패: ' + error.message);
+    if (error) showToast('추가 실패');
     else {
       showToast(`${item.name} 추가 완료`);
       window.dispatchEvent(new Event('fridge-updated'));
@@ -171,93 +161,67 @@ export default function FridgeHomeClient() {
     let added = 0;
     for (const token of tokens) {
       const match = QUICK_ADD.find(q => q.name === token || q.name.includes(token) || token.includes(q.name));
-      const fallback: QuickAddIngredient = match ?? {
-        name: token, emoji: '📦', category: 'other', storage: '냉장',
-      };
+      const fallback: QuickAddIngredient = match ?? { name: token, emoji: '📦', category: 'other', storage: '냉장' };
       if (!user) {
-        const newItem: FridgeItem = {
-          id: genDemoId(),
-          ingredient_name: fallback.name,
-          category: fallback.category,
-          expiry_date: addDaysISO(5),
-          storage_location: fallback.storage,
-        };
-        setItems(prev => [...prev, newItem]);
+        setItems(prev => [...prev, {
+          id: genDemoId(), ingredient_name: fallback.name, category: fallback.category,
+          expiry_date: addDaysISO(5), storage_location: fallback.storage,
+        }]);
       } else {
         const client = createClient();
         await client.from('user_ingredients').insert(quickAddToPayload(fallback, user.id));
       }
       added++;
     }
-    if (user) {
-      window.dispatchEvent(new Event('fridge-updated'));
-      await fetchItems();
-    }
+    if (user) { window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
     showToast(`${added}개 재료 추가`);
     setMultiInput('');
     setAdding(false);
   };
 
   const removeItem = async (id: string) => {
-    if (id.startsWith('demo-')) {
-      setItems(prev => prev.filter(i => i.id !== id));
-      showToast('먹었어요 👅');
-      return;
-    }
-    const client = createClient();
-    setItems(prev => prev.filter(i => i.id !== id));
-    await client.from('user_ingredients').delete().eq('id', id);
-    window.dispatchEvent(new Event('fridge-updated'));
-    showToast('먹었어요 👅');
+    // 위로 솟구치는 애니 후 제거
+    setRemovingIds(prev => new Set(prev).add(id));
+    setTimeout(async () => {
+      if (id.startsWith('demo-')) {
+        setItems(prev => prev.filter(i => i.id !== id));
+      } else {
+        setItems(prev => prev.filter(i => i.id !== id));
+        const client = createClient();
+        await client.from('user_ingredients').delete().eq('id', id);
+        window.dispatchEvent(new Event('fridge-updated'));
+      }
+      setRemovingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }, 500);
+    showToast('👅 낼름!');
   };
 
-  // ── Flashlight ──────────────────────────────────────────────────────────────
+  // ── Positioned Items ───────────────────────────────────────────────────────
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    setFlashlight({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      visible: true,
-    });
-  };
-  const handlePointerLeave = () => {
-    setFlashlight(f => ({ ...f, visible: false }));
-  };
-
-  // ── Item positioning ────────────────────────────────────────────────────────
-
-  // 같은 시간대 충돌 방지: 같은 day에 있는 재료는 Y로 stagger
   const positioned = useMemo(() => {
-    const byDay: Record<number, number> = {};
-    return items.map(item => {
-      const days = Math.max(0, Math.min(daysUntilExpiry(item.expiry_date), TIMELINE_DAYS));
-      const dayKey = Math.round(days);
-      const stackIndex = byDay[dayKey] ?? 0;
-      byDay[dayKey] = stackIndex + 1;
-      // 가로: 0(오늘)~14(2주 후) → 5%~95%
-      const xPct = 5 + (days / TIMELINE_DAYS) * 90;
-      // 세로: stagger 패턴 (위/아래 번갈아)
-      const stackOffset = stackIndex * 56;
+    return items.map((item, idx) => {
+      const days = daysUntilExpiry(item.expiry_date);
       return {
         ...item,
         days,
-        xPct,
-        stackOffset,
+        yPct: freshnessToPct(days),
+        xPct: spreadX(idx, items.length),
+        bobDelay: (idx * 0.7) % 4,
+        bobDuration: 2.5 + (idx % 3) * 0.8,
       };
     });
   }, [items]);
 
-  const dangerCount = positioned.filter(p => p.days <= DANGER_THRESHOLD).length;
+  const dangerCount = positioned.filter(p => p.days <= 3).length;
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#050505] text-text-primary overflow-x-hidden">
+    <div className="min-h-screen bg-[#0a0f1a] text-text-primary overflow-hidden">
+
       {/* 헤더 */}
-      <header className="relative z-20 px-4 pt-4 md:pt-6 pb-2 flex items-center justify-between gap-3">
+      <header className="relative z-20 px-4 pt-4 md:pt-6 pb-1 flex items-center justify-between">
         <Link href="/" className="text-xl md:text-2xl font-bold text-accent-warm">낼름</Link>
         <div className="flex items-center gap-2">
           {dangerCount > 0 && (
@@ -265,81 +229,68 @@ export default function FridgeHomeClient() {
               ⚠️ {dangerCount}개 임박
             </span>
           )}
-          <button
-            onClick={() => setAlwaysLit(v => !v)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              alwaysLit
-                ? 'bg-accent-warm text-background-primary'
-                : 'bg-white/5 text-text-muted hover:text-text-primary'
-            }`}
-          >
-            {alwaysLit ? '🔦 전체 보기' : '🌙 어둠 모드'}
-          </button>
+          <span className="text-xs text-text-muted">{items.length}개 재료</span>
         </div>
       </header>
 
-      {/* 인트로 텍스트 */}
-      <div className="relative z-20 px-4 mb-4 text-center">
-        <p className="text-xs md:text-sm text-text-muted">
-          {alwaysLit
-            ? '재료의 수명선 — 왼쪽일수록 곧 시들어요'
-            : '커서를 움직여 냉장고 안을 비춰보세요. 시들기 직전 재료는 어둠 속에서도 빛납니다.'}
-        </p>
+      {/* 수면 가이드 */}
+      <div className="relative z-10 px-4 mb-1">
+        <div className="flex justify-between items-center text-[10px] text-white/25 tracking-wider">
+          <span>🟢 신선</span>
+          <span>탭하면 먹어요</span>
+          <span>🔴 위험</span>
+        </div>
       </div>
 
-      {/* === 메인 캔버스 === */}
+      {/* === 메인 캔버스: 물속 === */}
       <div
-        ref={canvasRef}
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-        onTouchMove={(e) => {
-          if (!canvasRef.current) return;
-          const t = e.touches[0];
-          const rect = canvasRef.current.getBoundingClientRect();
-          setFlashlight({ x: t.clientX - rect.left, y: t.clientY - rect.top, visible: true });
+        className="relative w-full overflow-hidden"
+        style={{
+          height: '58vh', minHeight: '360px', maxHeight: '540px',
+          background: 'linear-gradient(180deg, #0d1b2a 0%, #0a1628 25%, #091220 50%, #0f0a18 75%, #1a0a0a 100%)',
         }}
-        className="relative w-full"
-        style={{ height: '60vh', minHeight: '380px', maxHeight: '560px' }}
       >
-        {/* 시간축 라벨 */}
-        <TimelineAxis />
+        {/* 수면 효과 (상단 빛 라인) */}
+        <div
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent 10%, rgba(34,197,94,0.4) 50%, transparent 90%)' }}
+        />
+        {/* 바닥 위험 영역 표시 */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-1/4 pointer-events-none"
+          style={{ background: 'linear-gradient(0deg, rgba(220,38,38,0.12) 0%, transparent 100%)' }}
+        />
+        {/* 수심 라벨 (오른쪽) */}
+        <div className="absolute right-2 top-[10%] text-[9px] text-white/15 writing-mode-vertical">안전</div>
+        <div className="absolute right-2 top-[45%] text-[9px] text-white/15">경고</div>
+        <div className="absolute right-2 bottom-[8%] text-[9px] text-error/30 font-bold">위험</div>
 
-        {/* 재료들 */}
+        {/* 거품 배경 데코레이션 */}
+        <Bubbles />
+
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center text-text-muted text-sm">
             로딩중...
           </div>
         ) : positioned.length === 0 ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center px-6">
-            <div className="text-5xl opacity-30">🌑</div>
-            <p className="text-sm text-text-muted">냉장고가 비어있어요.<br />아래에서 재료를 추가하면 시간선에 떠올라요.</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6">
+            <div className="text-5xl opacity-30">🫧</div>
+            <p className="text-sm text-text-muted">재료를 추가하면<br />신선도에 따라 떠올라요</p>
           </div>
         ) : (
           positioned.map(p => (
-            <ItemCard
+            <FloatingItem
               key={p.id}
               item={p}
+              removing={removingIds.has(p.id)}
               onRemove={removeItem}
             />
           ))
         )}
-
-        {/* 손전등 마스크 — z-20에 위치 (일반 아이템 위, 위험 아이템 아래) */}
-        {!alwaysLit && (
-          <div
-            className="absolute inset-0 pointer-events-none transition-opacity duration-300"
-            style={{
-              zIndex: 20,
-              background: flashlight.visible
-                ? `radial-gradient(circle ${FLASHLIGHT_RADIUS}px at ${flashlight.x}px ${flashlight.y}px, transparent 0%, rgba(5,5,5,0.4) 40%, rgba(5,5,5,0.92) 100%)`
-                : 'rgba(5,5,5,0.92)',
-            }}
-          />
-        )}
       </div>
 
       {/* === 재료 추가 패널 === */}
-      <section className="relative z-20 max-w-md md:max-w-lg mx-auto px-4 mt-4 pb-32">
+      <section className="relative z-20 max-w-md md:max-w-lg mx-auto px-4 mt-5 pb-32">
         <h2 className="text-sm font-bold text-text-secondary mb-2">⚡ 빠른 추가</h2>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {visibleChips.map(item => (
@@ -347,7 +298,7 @@ export default function FridgeHomeClient() {
               key={item.name}
               onClick={() => addQuickItem(item)}
               disabled={adding}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 text-xs hover:border-accent-warm/50 hover:bg-accent-warm/10 transition-all disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs hover:border-accent-warm/50 hover:bg-accent-warm/10 transition-all disabled:opacity-50 active:scale-95"
             >
               <span>{item.emoji}</span>
               <span>{item.name}</span>
@@ -356,7 +307,7 @@ export default function FridgeHomeClient() {
           {!showAllChips && (
             <button
               onClick={() => setShowAllChips(true)}
-              className="px-3 py-1.5 rounded-full bg-background-tertiary text-xs text-text-muted hover:text-text-primary transition-colors"
+              className="px-3 py-1.5 rounded-full bg-white/[0.06] text-xs text-text-muted hover:text-text-primary transition-colors"
             >
               + 더보기
             </button>
@@ -371,7 +322,7 @@ export default function FridgeHomeClient() {
             onKeyDown={e => { if (e.key === 'Enter') addMultiFromText(); }}
             placeholder="양파2 두부 김치 계란5"
             aria-label="한 줄에 여러 재료 입력"
-            className="flex-1 rounded-xl bg-background-secondary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
+            className="flex-1 rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
           />
           <button
             onClick={addMultiFromText}
@@ -387,7 +338,7 @@ export default function FridgeHomeClient() {
       </section>
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-[#1a2030] border border-accent-warm/30 text-sm shadow-2xl">
           {toast}
         </div>
       )}
@@ -397,90 +348,116 @@ export default function FridgeHomeClient() {
 
 // ── Subcomponents ─────────────────────────────────────────────────────────────
 
-function TimelineAxis() {
-  const marks = [
-    { label: '오늘', xPct: 5, accent: true },
-    { label: '3일', xPct: 5 + (3 / TIMELINE_DAYS) * 90 },
-    { label: '1주', xPct: 5 + (7 / TIMELINE_DAYS) * 90 },
-    { label: '2주', xPct: 95 },
-  ];
-  return (
-    <>
-      {/* 가로 시간축 라인 */}
-      <div
-        className="absolute left-0 right-0 top-1/2 h-px"
-        style={{
-          background: 'linear-gradient(90deg, rgba(220,38,38,0.5) 0%, rgba(234,179,8,0.3) 25%, rgba(34,197,94,0.2) 60%, rgba(255,255,255,0.05) 100%)',
-        }}
-      />
-      {/* 위험 영역 강조 (왼쪽 1/4) */}
-      <div
-        className="absolute left-0 top-0 bottom-0 pointer-events-none"
-        style={{
-          width: `${5 + (DANGER_THRESHOLD / TIMELINE_DAYS) * 90}%`,
-          background: 'linear-gradient(90deg, rgba(220,38,38,0.08) 0%, transparent 100%)',
-        }}
-      />
-      {/* 라벨 */}
-      {marks.map(m => (
-        <div
-          key={m.label}
-          className="absolute top-1/2 mt-3 -translate-x-1/2 text-[10px] tracking-wider"
-          style={{ left: `${m.xPct}%`, color: m.accent ? '#dc2626' : 'rgba(255,255,255,0.3)' }}
-        >
-          {m.label}
-        </div>
-      ))}
-    </>
-  );
-}
+type PositionedItem = FridgeItem & {
+  days: number; yPct: number; xPct: number; bobDelay: number; bobDuration: number;
+};
 
-type PositionedItem = FridgeItem & { days: number; xPct: number; stackOffset: number };
-
-function ItemCard({
-  item, onRemove,
+function FloatingItem({
+  item, removing, onRemove,
 }: {
   item: PositionedItem;
+  removing: boolean;
   onRemove: (id: string) => void;
 }) {
-  const isDanger = item.days <= DANGER_THRESHOLD;
+  const isDanger = item.days <= 3;
   const isExpired = item.days <= 0;
-  const isWarning = item.days > DANGER_THRESHOLD && item.days <= 7;
+  const isWarning = item.days > 3 && item.days <= 7;
   const emoji = getEmojiForName(item.ingredient_name, item.category);
-  const color = isExpired ? '#7a1f1f' : isDanger ? '#dc2626' : isWarning ? '#eab308' : '#ffffff';
-  const glow = isDanger ? `0 0 24px ${color}, 0 0 48px ${color}aa` : 'none';
+
+  // 색상 체계
+  const ringColor = isExpired ? '#7a1f1f' : isDanger ? '#dc2626' : isWarning ? '#ca8a04' : '#22c55e';
+  const bgColor = isExpired ? 'rgba(120,30,30,0.35)' : isDanger ? 'rgba(220,38,38,0.20)' : isWarning ? 'rgba(202,138,4,0.15)' : 'rgba(34,197,94,0.10)';
+  const textColor = isExpired ? '#b07070' : isDanger ? '#fca5a5' : isWarning ? '#fde68a' : '#d1fae5';
+  const glow = isDanger ? `0 0 16px ${ringColor}80, 0 0 32px ${ringColor}40` : `0 0 8px ${ringColor}30`;
+
+  // 크기: 위험할수록 약간 커짐 (주목도↑)
+  const scale = isDanger ? 'scale-110' : '';
 
   return (
     <button
       onClick={() => onRemove(item.id)}
-      className={`absolute -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110 active:scale-95 ${
-        isDanger ? 'animate-pulse' : ''
+      className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-[1.15] active:scale-90 ${scale} ${
+        removing ? 'animate-eaten' : 'animate-float'
       }`}
       style={{
         left: `${item.xPct}%`,
-        top: `calc(50% - 80px + ${item.stackOffset}px)`,
-        zIndex: isDanger ? 30 : 5,
+        top: removing ? '-10%' : `${item.yPct}%`,
+        opacity: removing ? 0 : 1,
+        animationDelay: `${item.bobDelay}s`,
+        animationDuration: `${item.bobDuration}s`,
+        zIndex: isDanger ? 15 : 10,
       }}
-      title={`${item.ingredient_name} · D-${Math.max(item.days, 0)} · 탭해서 먹기`}
     >
       <div
-        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl backdrop-blur-sm"
+        className="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl backdrop-blur-md"
         style={{
-          background: isDanger ? 'rgba(220,38,38,0.18)' : 'rgba(255,255,255,0.06)',
+          background: bgColor,
           boxShadow: glow,
-          border: `1px solid ${isDanger ? color : 'rgba(255,255,255,0.15)'}`,
+          border: `1.5px solid ${ringColor}`,
         }}
       >
-        <span className="text-2xl md:text-3xl" style={{ filter: isExpired ? 'grayscale(60%)' : 'none' }}>
+        <span
+          className="text-3xl md:text-4xl drop-shadow-lg"
+          style={{ filter: isExpired ? 'grayscale(50%) brightness(0.7)' : 'none' }}
+        >
           {emoji}
         </span>
-        <span className="text-[10px] font-medium whitespace-nowrap" style={{ color }}>
+        <span className="text-[11px] font-semibold whitespace-nowrap" style={{ color: textColor }}>
           {item.ingredient_name}
         </span>
-        <span className="text-[9px] font-bold tracking-wider" style={{ color }}>
-          D-{Math.max(item.days, 0)}
+        <span
+          className="text-[9px] font-bold tracking-widest uppercase"
+          style={{ color: ringColor }}
+        >
+          {isExpired ? '만료' : `D-${item.days}`}
         </span>
       </div>
     </button>
+  );
+}
+
+function Bubbles() {
+  // 미세한 거품 데코 (CSS only, 성능 영향 없음)
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white/[0.03] animate-bubble"
+          style={{
+            width: `${8 + i * 4}px`,
+            height: `${8 + i * 4}px`,
+            left: `${15 + i * 14}%`,
+            bottom: '-20px',
+            animationDelay: `${i * 1.5}s`,
+            animationDuration: `${6 + i * 2}s`,
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+          50% { transform: translate(-50%, -50%) translateY(-12px); }
+        }
+        @keyframes eaten {
+          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          100% { transform: translate(-50%, -200%) scale(0.3); opacity: 0; }
+        }
+        @keyframes bubble {
+          0% { transform: translateY(0) scale(0.5); opacity: 0; }
+          20% { opacity: 0.6; }
+          100% { transform: translateY(-65vh) scale(1.2); opacity: 0; }
+        }
+        :global(.animate-float) {
+          animation: float ease-in-out infinite;
+        }
+        :global(.animate-eaten) {
+          animation: eaten 0.5s ease-out forwards !important;
+        }
+        :global(.animate-bubble) {
+          animation: bubble linear infinite;
+        }
+      `}</style>
+    </div>
   );
 }
