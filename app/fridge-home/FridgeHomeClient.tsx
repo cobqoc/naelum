@@ -99,6 +99,7 @@ export default function FridgeHomeClient() {
   const [multiInput, setMultiInput] = useState('');
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showAddSheet, setShowAddSheet] = useState(false);
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
@@ -211,9 +212,68 @@ export default function FridgeHomeClient() {
       {/* === 상온 벽 선반 (위) — 컴팩트 === */}
       <KitchenShelf items={sections.pantry} onRemove={removeItem} compact />
 
-      {/* === 냉장고 (아래) === */}
-      <div className="flex justify-center px-4 mb-4">
-        <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md">
+      {/* === 냉장고 + 열린 문 === */}
+      <div className="flex justify-center px-2 mb-4">
+        <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md" style={{ perspective: '1000px' }}>
+
+          {/* 좌측 문 (열린 상태, 고정) */}
+          <div
+            className="absolute top-0 bottom-[10%] z-10"
+            style={{
+              width: '42px',
+              left: '-24px',
+              transform: 'rotateY(50deg)',
+              transformOrigin: 'right center',
+              transformStyle: 'preserve-3d',
+            }}
+          >
+            <div className="w-full h-full rounded-l-lg" style={{
+              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
+              boxShadow: 'inset 2px 0 4px rgba(255,255,255,0.15), -2px 0 8px rgba(0,0,0,0.2)',
+            }}>
+              {/* 문 안쪽 선반 */}
+              <div className="h-full flex flex-col justify-around py-3 px-0.5">
+                {sections.doorL.map(item => (
+                  <DoorShelfItem key={item.id} item={item} onRemove={removeItem} />
+                ))}
+                {sections.doorL.length === 0 && (
+                  <div className="flex flex-col items-center gap-2 opacity-30">
+                    <span className="text-sm">🍶</span>
+                    <span className="text-sm">🧴</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 우측 문 (열린 상태, 고정) */}
+          <div
+            className="absolute top-0 bottom-[10%] z-10"
+            style={{
+              width: '42px',
+              right: '-24px',
+              transform: 'rotateY(-50deg)',
+              transformOrigin: 'left center',
+              transformStyle: 'preserve-3d',
+            }}
+          >
+            <div className="w-full h-full rounded-r-lg" style={{
+              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
+              boxShadow: 'inset -2px 0 4px rgba(255,255,255,0.15), 2px 0 8px rgba(0,0,0,0.2)',
+            }}>
+              <div className="h-full flex flex-col justify-around py-3 px-0.5">
+                {sections.doorR.map(item => (
+                  <DoorShelfItem key={item.id} item={item} onRemove={removeItem} />
+                ))}
+                {sections.doorR.length === 0 && (
+                  <div className="flex flex-col items-center gap-2 opacity-30">
+                    <span className="text-sm">🫙</span>
+                    <span className="text-sm">🥫</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* 냉장고 본체 */}
           <div
@@ -240,20 +300,20 @@ export default function FridgeHomeClient() {
                 background: 'radial-gradient(ellipse, rgba(255,248,220,0.5) 0%, transparent 100%)',
               }} />
 
-              {/* 🧊 냉장칸 (메인, 선반 4단) */}
+              {/* 🧊 냉장칸 */}
               <FridgeInterior
                 label="냉장"
                 icon="🧊"
-                items={[...sections.main, ...sections.veggie, ...sections.doorL, ...sections.doorR]}
+                items={[...sections.main, ...sections.veggie]}
                 onRemove={removeItem}
                 loading={loading}
                 style={FRIDGE_STYLE}
-                shelfCount={4}
+                shelfCount={3}
                 shelfCap={4}
                 flex="1 1 auto"
               />
 
-              {/* ❄️ 냉동칸 (선반 2단) */}
+              {/* ❄️ 냉동칸 */}
               <FridgeInterior
                 label="냉동"
                 icon="❄️"
@@ -266,6 +326,15 @@ export default function FridgeHomeClient() {
                 flex="0 0 32%"
               />
             </div>
+
+            {/* + 추가 버튼 (냉장고 우하단) */}
+            <button
+              onClick={() => setShowAddSheet(true)}
+              className="absolute bottom-2 right-2 z-20 w-10 h-10 rounded-full bg-accent-warm text-background-primary text-xl font-bold shadow-lg hover:bg-accent-hover active:scale-90 transition-all flex items-center justify-center"
+              aria-label="재료 추가"
+            >
+              +
+            </button>
           </div>
 
           {/* 냉장고 다리 */}
@@ -276,34 +345,63 @@ export default function FridgeHomeClient() {
         </div>
       </div>
 
-      {/* === 재료 추가 === */}
-      <section className="relative z-20 max-w-xs md:max-w-sm lg:max-w-md mx-auto px-4 mt-4 pb-32">
-        <h2 className="text-sm font-bold text-text-secondary mb-2">⚡ 빠른 추가</h2>
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {visibleChips.map(item => (
-            <button key={item.name} onClick={() => addQuickItem(item)} disabled={adding}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 text-xs hover:border-accent-warm/50 hover:bg-accent-warm/10 transition-all disabled:opacity-50 active:scale-95"
-            ><span>{item.emoji}</span><span>{item.name}</span></button>
-          ))}
-          {!showAllChips && (
-            <button onClick={() => setShowAllChips(true)}
-              className="px-3 py-1.5 rounded-full bg-background-tertiary text-xs text-text-muted">+ 더보기</button>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <input type="text" value={multiInput} onChange={e => setMultiInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') addMultiFromText(); }}
-            placeholder="양파2 두부 김치 계란5" aria-label="한 줄에 여러 재료 입력"
-            className="flex-1 rounded-xl bg-background-secondary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
-          />
-          <button onClick={addMultiFromText} disabled={adding || multiInput.trim().length === 0}
-            className="px-5 py-3 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-all disabled:opacity-50"
-          >추가</button>
-        </div>
-        <p className="mt-2 text-[11px] text-text-muted">
-          공백/콤마로 구분 {!user && '· 체험 모드'}
-        </p>
-      </section>
+      {/* === 재료 추가 바텀시트 === */}
+      {showAddSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAddSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background-secondary rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto animate-slideUp">
+            <div className="p-4 pb-8">
+              {/* 핸들 */}
+              <div className="flex justify-center mb-3">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
+              <h2 className="text-sm font-bold text-text-primary mb-3">재료 추가</h2>
+
+              {/* 한 줄 입력 */}
+              <div className="flex gap-2 mb-4">
+                <input type="text" value={multiInput} onChange={e => setMultiInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { addMultiFromText(); setShowAddSheet(false); } }}
+                  placeholder="양파2 두부 김치 계란5"
+                  aria-label="한 줄에 여러 재료 입력"
+                  className="flex-1 rounded-xl bg-background-tertiary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
+                  autoFocus
+                />
+                <button onClick={() => { addMultiFromText(); setShowAddSheet(false); }}
+                  disabled={adding || multiInput.trim().length === 0}
+                  className="px-4 py-3 rounded-xl bg-accent-warm text-background-primary text-sm font-bold disabled:opacity-50"
+                >추가</button>
+              </div>
+
+              {/* Quick-add 칩 */}
+              <p className="text-xs text-text-muted mb-2">빠른 추가</p>
+              <div className="flex flex-wrap gap-1.5">
+                {visibleChips.map(item => (
+                  <button key={item.name} onClick={() => { addQuickItem(item); }}
+                    disabled={adding}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary border border-white/10 text-xs hover:border-accent-warm/50 active:scale-95 transition-all disabled:opacity-50"
+                  ><span>{item.emoji}</span><span>{item.name}</span></button>
+                ))}
+                {!showAllChips && (
+                  <button onClick={() => setShowAllChips(true)}
+                    className="px-3 py-1.5 rounded-full bg-white/5 text-xs text-text-muted">+ 더보기</button>
+                )}
+              </div>
+              <p className="mt-3 text-[10px] text-text-muted">
+                공백/콤마로 구분 · 숫자/단위 자동 무시 {!user && '· 체험 모드'}
+              </p>
+            </div>
+          </div>
+          <style jsx>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+            .animate-slideUp {
+              animation: slideUp 0.3s ease-out;
+            }
+          `}</style>
+        </>
+      )}
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl">
@@ -416,7 +514,7 @@ function ItemChip({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
   );
 }
 
-function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
+function DoorShelfItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
   const emoji = getEmoji(item.ingredient_name, item.category);
   return (
     <button
@@ -424,8 +522,8 @@ function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
       className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
       title={`${item.ingredient_name} · 탭해서 먹기`}
     >
-      <span className="text-lg drop-shadow">{emoji}</span>
-      <span className="text-[7px] text-white/70 font-medium truncate w-full text-center">
+      <span className="text-base drop-shadow">{emoji}</span>
+      <span className="text-[6px] text-white/60 font-medium truncate w-full text-center">
         {item.ingredient_name.slice(0, 3)}
       </span>
     </button>
