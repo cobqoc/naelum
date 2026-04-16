@@ -222,7 +222,7 @@ export default function FridgeHomeClient() {
 
   return (
     <div
-      className="h-dvh overflow-hidden bg-background-primary text-text-primary transition-all"
+      className="h-dvh overflow-hidden bg-background-primary text-text-primary flex flex-col transition-all"
       style={{
         filter: doorOpen ? 'brightness(1)' : 'brightness(0)',
         transition: 'filter 1.8s ease-out',
@@ -242,28 +242,27 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-[72px] md:px-24 mb-1">
+      <div className="flex-1 flex justify-center items-end px-[72px] md:px-24 pb-2">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 */}
+          {/* 좌측 문 — transition으로 밀려나며 열림 */}
           <div
-            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenLeft' : ''}`}
-            style={doorOpen ? { transformStyle: 'preserve-3d' } : {
-              width: '50%',
-              left: '-1px',
-              transform: 'rotateY(0deg)',
+            className="absolute top-0 bottom-[10px] z-10"
+            style={{
+              width: doorOpen ? '90px' : '50%',
+              left: doorOpen ? '-68px' : '-1px',
+              transform: doorOpen ? 'perspective(800px) rotateY(42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
+              transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorOpen
-                ? '-4px 0 12px rgba(0,0,0,0.3)'
-                : '2px 0 8px rgba(0,0,0,0.3)',
+              boxShadow: doorOpen ? '-4px 0 12px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderRight: 'none',
             }}>
-              {/* 닫힌 상태 앞면 */}
               {!doorOpen && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-[9px] font-bold tracking-[0.15em] text-white/50 mb-2">NAELUM</span>
@@ -273,9 +272,8 @@ export default function FridgeHomeClient() {
                   />
                 </div>
               )}
-              {/* 열린 상태 안쪽 선반 */}
               {doorOpen && (
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col" style={{ opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards' }}>
                   <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
                   <DoorRail />
                   <DoorShelfSlot items={sections.doorL.slice(1, 2)} onRemove={removeItem} decoEmoji="🧴" />
@@ -289,23 +287,22 @@ export default function FridgeHomeClient() {
 
           {/* 우측 문 */}
           <div
-            className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenRight' : ''}`}
-            style={doorOpen ? { transformStyle: 'preserve-3d' } : {
-              width: '50%',
-              right: '-1px',
-              transform: 'rotateY(0deg)',
+            className="absolute top-0 bottom-[10px] z-10"
+            style={{
+              width: doorOpen ? '90px' : '50%',
+              right: doorOpen ? '-68px' : '-1px',
+              transform: doorOpen ? 'perspective(800px) rotateY(-42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
+              transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: doorOpen
-                ? '4px 0 12px rgba(0,0,0,0.3)'
-                : '-2px 0 8px rgba(0,0,0,0.3)',
+              boxShadow: doorOpen ? '4px 0 12px rgba(0,0,0,0.3)' : '-2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderLeft: 'none',
             }}>
-              {/* 닫힌 상태 앞면 */}
               {!doorOpen && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-sm text-white/50 font-bold">{items.length}개</span>
@@ -314,9 +311,8 @@ export default function FridgeHomeClient() {
                   />
                 </div>
               )}
-              {/* 열린 상태 안쪽 선반 */}
               {doorOpen && (
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col" style={{ opacity: 0, animation: 'fadeIn 0.5s ease 1.5s forwards' }}>
                   <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
                   <DoorRail />
                   <DoorShelfSlot items={sections.doorR.slice(1, 2)} onRemove={removeItem} decoEmoji="🧈" />
@@ -328,12 +324,11 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 냉장고 본체 (약간 작게) */}
+          {/* 냉장고 본체 */}
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
               height: 'calc(100dvh - 240px)',
-              maxHeight: 'min(calc(100dvh - 240px), 65vh)',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
@@ -470,63 +465,9 @@ export default function FridgeHomeClient() {
             }
           `}</style>
           <style jsx global>{`
-            @keyframes doorOpenLeft {
-              0% {
-                width: 50%;
-                left: -1px;
-                transform: rotateY(0deg);
-                transform-origin: left center;
-              }
-              40% {
-                width: 50%;
-                left: -1px;
-                transform: rotateY(-45deg);
-                transform-origin: left center;
-              }
-              70% {
-                width: 30%;
-                left: -40px;
-                transform: rotateY(50deg);
-                transform-origin: right center;
-              }
-              100% {
-                width: 90px;
-                left: -68px;
-                transform: rotateY(42deg);
-                transform-origin: right center;
-              }
-            }
-            @keyframes doorOpenRight {
-              0% {
-                width: 50%;
-                right: -1px;
-                transform: rotateY(0deg);
-                transform-origin: right center;
-              }
-              40% {
-                width: 50%;
-                right: -1px;
-                transform: rotateY(45deg);
-                transform-origin: right center;
-              }
-              70% {
-                width: 30%;
-                right: -40px;
-                transform: rotateY(-50deg);
-                transform-origin: left center;
-              }
-              100% {
-                width: 90px;
-                right: -68px;
-                transform: rotateY(-42deg);
-                transform-origin: left center;
-              }
-            }
-            .animate-doorOpenLeft {
-              animation: doorOpenLeft 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-            }
-            .animate-doorOpenRight {
-              animation: doorOpenRight 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
             }
           `}</style>
         </>
