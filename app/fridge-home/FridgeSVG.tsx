@@ -35,8 +35,8 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#b08030" />
         </linearGradient>
         <linearGradient id="pocketBg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f0e0c8" />
-          <stop offset="100%" stopColor="#e0c8a8" />
+          <stop offset="0%" stopColor="#eef2f8" />
+          <stop offset="100%" stopColor="#dce2ec" />
         </linearGradient>
         <linearGradient id="pocketRail" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#e8c060" />
@@ -88,7 +88,7 @@ export default function FridgeSVG() {
 
       {/* ── 포켓 1 구역 ── */}
       {/* 포켓 배경 */}
-      <path d="M 58,42 L 154,48 L 154,160 L 58,154 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 58,42 L 154,48 L 154,160 L 58,154 Z" fill="rgba(220,230,240,0.3)" />
       {/* 금색 선반 (두꺼운 U자) */}
       <path d="M 58,42 L 58,48 L 154,54 L 154,48 Z" fill="url(#pocketRail)" />
       <path d="M 58,48 L 66,49 L 66,150 L 58,149 Z" fill="url(#pocketRail)" />
@@ -109,7 +109,7 @@ export default function FridgeSVG() {
       <path d="M 48,174 L 164,180 L 164,177 L 48,171 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 2 구역 ── */}
-      <path d="M 58,192 L 154,198 L 154,300 L 58,294 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 58,192 L 154,198 L 154,300 L 58,294 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 58,192 L 58,198 L 154,204 L 154,198 Z" fill="url(#pocketRail)" />
       <path d="M 58,198 L 66,199 L 66,290 L 58,289 Z" fill="url(#pocketRail)" />
       <path d="M 146,205 L 154,204 L 154,297 L 146,296 Z" fill="url(#pocketRail)" />
@@ -128,7 +128,7 @@ export default function FridgeSVG() {
       <path d="M 48,314 L 164,320 L 164,317 L 48,311 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 3 구역 ── */}
-      <path d="M 58,332 L 154,338 L 154,440 L 58,434 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 58,332 L 154,338 L 154,440 L 58,434 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 58,332 L 58,338 L 154,344 L 154,338 Z" fill="url(#pocketRail)" />
       <path d="M 58,338 L 66,339 L 66,430 L 58,429 Z" fill="url(#pocketRail)" />
       <path d="M 146,345 L 154,344 L 154,437 L 146,436 Z" fill="url(#pocketRail)" />
@@ -283,7 +283,7 @@ export default function FridgeSVG() {
       <path d="M 542,42 L 552,43 L 552,598 L 542,597 Z" fill="url(#bodyDark)" />
 
       {/* ── 포켓 1 ── */}
-      <path d="M 446,48 L 542,42 L 542,160 L 446,154 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 446,48 L 542,42 L 542,160 L 446,154 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 446,48 L 446,54 L 542,48 L 542,42 Z" fill="url(#pocketRail)" />
       <path d="M 446,54 L 454,55 L 454,150 L 446,149 Z" fill="url(#pocketRail)" />
       <path d="M 534,49 L 542,48 L 542,157 L 534,156 Z" fill="url(#pocketRail)" />
@@ -302,7 +302,7 @@ export default function FridgeSVG() {
       <path d="M 436,174 L 552,180 L 552,177 L 436,171 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 2 ── */}
-      <path d="M 446,198 L 542,192 L 542,300 L 446,294 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 446,198 L 542,192 L 542,300 L 446,294 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 446,198 L 446,204 L 542,198 L 542,192 Z" fill="url(#pocketRail)" />
       <path d="M 446,204 L 454,205 L 454,290 L 446,289 Z" fill="url(#pocketRail)" />
       <path d="M 534,199 L 542,198 L 542,297 L 534,296 Z" fill="url(#pocketRail)" />
@@ -321,7 +321,7 @@ export default function FridgeSVG() {
       <path d="M 436,314 L 552,320 L 552,317 L 436,311 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 3 ── */}
-      <path d="M 446,338 L 542,332 L 542,440 L 446,434 Z" fill="rgba(200,170,130,0.3)" />
+      <path d="M 446,338 L 542,332 L 542,440 L 446,434 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 446,338 L 446,344 L 542,338 L 542,332 Z" fill="url(#pocketRail)" />
       <path d="M 446,344 L 454,345 L 454,430 L 446,429 Z" fill="url(#pocketRail)" />
       <path d="M 534,339 L 542,338 L 542,437 L 534,436 Z" fill="url(#pocketRail)" />
