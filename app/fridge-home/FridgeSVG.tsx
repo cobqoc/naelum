@@ -117,7 +117,7 @@ export default function FridgeSVG({ doorOpen }: FridgeSVGProps) {
         className="transition-all duration-[1800ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]"
         style={{
           transformOrigin: '175px 340px',
-          transform: doorOpen ? 'perspective(600px) rotateY(50deg) translateX(-30px)' : 'none',
+          transform: doorOpen ? 'perspective(600px) rotateY(50deg)' : 'none',
         }}
       >
         {/* 문 외곽 */}
@@ -180,7 +180,7 @@ export default function FridgeSVG({ doorOpen }: FridgeSVGProps) {
         className="transition-all duration-[1800ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]"
         style={{
           transformOrigin: '425px 340px',
-          transform: doorOpen ? 'perspective(600px) rotateY(-50deg) translateX(30px)' : 'none',
+          transform: doorOpen ? 'perspective(600px) rotateY(-50deg)' : 'none',
         }}
       >
         {/* 문 외곽 */}
