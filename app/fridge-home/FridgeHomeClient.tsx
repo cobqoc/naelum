@@ -213,16 +213,16 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} compact />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-14 md:px-20 mb-2">
+      <div className="flex justify-center px-16 md:px-24 mb-2">
         <div className="relative w-full mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 (넓고 선명하게) */}
+          {/* 좌측 문 */}
           <div
             className="absolute top-0 bottom-[8%] z-10"
             style={{
               width: '90px',
-              left: '-56px',
-              transform: 'rotateY(45deg)',
+              left: '-68px',
+              transform: 'rotateY(42deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
             }}
@@ -244,13 +244,13 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 우측 문 (넓고 선명하게) */}
+          {/* 우측 문 */}
           <div
             className="absolute top-0 bottom-[8%] z-10"
             style={{
               width: '90px',
-              right: '-56px',
-              transform: 'rotateY(-45deg)',
+              right: '-68px',
+              transform: 'rotateY(-42deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
             }}
@@ -276,7 +276,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              aspectRatio: '5 / 7',
+              aspectRatio: '5 / 7.5',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '3px solid #b84a42',
