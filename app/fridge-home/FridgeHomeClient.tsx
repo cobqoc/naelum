@@ -546,13 +546,40 @@ function KitchenCounter({ items, onRemove }: { items: FridgeItem[]; onRemove: (i
   return (
     <div className="flex justify-center px-4 mb-1">
       <div className="w-full max-w-lg mx-auto">
-        {/* 재료 위에 올려진 영역 */}
-        <div className="flex items-end gap-2 px-4 pb-1 min-h-[40px]">
+        {/* 선반 SVG — 3D 일러스트 스타일 */}
+        <svg viewBox="0 0 400 80" className="w-full" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
+          {/* 벽 배경 */}
+          <rect x="0" y="0" width="400" height="55" rx="4" fill="rgba(255,255,255,0.03)" />
+
+          {/* 나무 받침대 (왼쪽) */}
+          <path d="M 30,15 L 30,55" stroke="#3A1A08" strokeWidth="3" strokeLinecap="round" />
+          <path d="M 28,15 L 32,15 L 34,12 L 26,12 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" />
+
+          {/* 나무 받침대 (오른쪽) */}
+          <path d="M 370,15 L 370,55" stroke="#3A1A08" strokeWidth="3" strokeLinecap="round" />
+          <path d="M 368,15 L 372,15 L 374,12 L 366,12 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" />
+
+          {/* 3D 선반 — 윗면 */}
+          <path d="M 20,55 L 28,48 L 372,48 L 380,55 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+          {/* 3D 선반 — 정면 */}
+          <path d="M 20,55 L 380,55 L 380,70 L 20,70 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+          {/* 브래킷 (좌) */}
+          <path d="M 20,62 L 20,70 L 30,70 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+          {/* 브래킷 (우) */}
+          <path d="M 380,62 L 380,70 L 370,70 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
+          {/* 하이라이트 */}
+          <path d="M 20,55 L 380,55" fill="none" stroke="#F8E060" strokeWidth="1.5" />
+          {/* 그림자 */}
+          <path d="M 25,72 L 375,72" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
+        </svg>
+
+        {/* 재료 오버레이 (선반 위) */}
+        <div className="flex items-end justify-center gap-3 -mt-[52px] mb-[22px] px-8 min-h-[36px] relative z-10">
           {items.length === 0 ? (
             <>
-              <span className="text-xl opacity-50">🫙</span>
-              <span className="text-xl opacity-50">🧂</span>
-              <span className="text-xl opacity-50">🫒</span>
+              <span className="text-2xl opacity-40 drop-shadow">🫙</span>
+              <span className="text-2xl opacity-40 drop-shadow">🧂</span>
+              <span className="text-2xl opacity-40 drop-shadow">🫒</span>
             </>
           ) : (
             items.map(item => {
@@ -565,31 +592,13 @@ function KitchenCounter({ items, onRemove }: { items: FridgeItem[]; onRemove: (i
                   className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
                   title={`${item.ingredient_name} ${label}`}
                 >
-                  <span className="text-xl drop-shadow-md">{emoji}</span>
+                  <span className="text-2xl drop-shadow-md">{emoji}</span>
                   <span className="text-[7px] font-bold text-text-secondary">{item.ingredient_name.slice(0, 4)}</span>
                   {label && <span className="text-[5px] font-bold" style={{ color: border }}>{label}</span>}
                 </button>
               );
             })
           )}
-        </div>
-        {/* 3D 카운터 상판 */}
-        <div className="relative">
-          {/* 윗면 (원근감) */}
-          <div className="h-[6px] rounded-t-sm" style={{
-            background: '#F0D050',
-            borderTop: '2px solid #3A1A08',
-            borderLeft: '2px solid #3A1A08',
-            borderRight: '2px solid #3A1A08',
-          }} />
-          {/* 정면 */}
-          <div className="h-[10px] rounded-b-sm" style={{
-            background: '#E8C840',
-            borderBottom: '2px solid #3A1A08',
-            borderLeft: '2px solid #3A1A08',
-            borderRight: '2px solid #3A1A08',
-            boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
-          }} />
         </div>
       </div>
     </div>
