@@ -242,7 +242,7 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex-1 flex justify-center items-end px-[72px] md:px-24 pb-4">
+      <div className="flex-1 flex justify-center items-end px-[72px] md:px-24 pb-20 md:pb-4">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
           {/* 좌측 문 — transition으로 밀려나며 열림 */}
