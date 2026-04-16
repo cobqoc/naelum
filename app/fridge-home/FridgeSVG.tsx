@@ -120,6 +120,22 @@ export default function FridgeSVG() {
 
 
 
+      {/* ====== 본체 내부 3D 선반 ====== */}
+      {/* 선반1 */}
+      <path d="M 178,115 L 184,110 L 416,110 L 422,115 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,115 L 422,115 L 422,140 L 178,140 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,141 L 422,141" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="2" />
+
+      {/* 선반2 */}
+      <path d="M 178,210 L 184,205 L 416,205 L 422,210 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,210 L 422,210 L 422,235 L 178,235 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,236 L 422,236" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="2" />
+
+      {/* 선반3 */}
+      <path d="M 178,305 L 184,300 L 416,300 L 422,305 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,305 L 422,305 L 422,330 L 178,330 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,331 L 422,331" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="2" />
+
       {/* ===== 냉장/냉동 구분 ===== */}
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 

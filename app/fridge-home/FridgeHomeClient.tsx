@@ -222,18 +222,40 @@ export default function FridgeHomeClient() {
       className="h-dvh overflow-hidden bg-background-primary text-text-primary flex flex-col"
     >
       {/* 헤더 */}
-      <header className="relative z-20 px-4 pt-1 pb-0 flex items-center justify-between">
+      <header className="relative z-20 px-4 pt-2 pb-0 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
-        {dangerCount > 0 && (
-          <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
-            ⚠️ {dangerCount}개 임박
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {dangerCount > 0 && (
+            <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
+              ⚠️ {dangerCount}개 임박
+            </span>
+          )}
+          {user ? (
+            <Link href="/settings" className="w-8 h-8 rounded-full bg-accent-warm/20 flex items-center justify-center text-sm">
+              👤
+            </Link>
+          ) : (
+            <Link href="/login" className="px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover transition-colors">
+              로그인
+            </Link>
+          )}
+        </div>
       </header>
 
-      {/* === 상온 벽 선반 (위) === */}
-      <div className="md:mt-6" />
-      <KitchenShelf items={sections.pantry} onRemove={removeItem} />
+      {/* 검색바 */}
+      <div className="px-4 mt-2 mb-2">
+        <Link href="/search" className="block max-w-lg mx-auto">
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">🔍</div>
+            <div className="w-full rounded-2xl bg-background-secondary border border-accent-warm/20 px-10 py-3 text-sm text-text-muted cursor-pointer hover:border-accent-warm/50 hover:shadow-[0_0_20px_rgba(255,153,102,0.15)] transition-all">
+              재료, 요리, 레시피 검색...
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* === 상온 재료 (3D 카운터) === */}
+      <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
       {/* === SVG 냉장고 === */}
       <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-20 md:pb-8">
@@ -520,94 +542,55 @@ function DoorShelfSlot({ items, onRemove, decoEmoji }: {
   );
 }
 
-// 주방 데코 아이템 (선반 빈 공간에 배치)
-const DECO_TOP = ['🪴', '🫕', '☕'];
-const DECO_BOTTOM = ['🍳', '🔪', '🥄', '🧤'];
-
-function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRemove: (id: string) => void; compact?: boolean }) {
-  const mid = Math.ceil(items.length / 2);
-  const topItems = items.slice(0, mid);
-  const bottomItems = items.slice(mid);
-
+function KitchenCounter({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
   return (
-    <div className={`flex justify-center px-4 ${compact ? 'mb-0' : 'mb-1'} md:mb-3`}>
+    <div className="flex justify-center px-4 mb-1">
       <div className="w-full max-w-lg mx-auto">
-        {/* 상단 선반 */}
-        <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
-
-        {/* 하단 선반 */}
-        <div className={compact ? 'mt-0.5' : 'mt-1'}>
-          <WallShelf items={bottomItems} deco={DECO_BOTTOM} onRemove={onRemove} compact={compact} />
+        {/* 재료 위에 올려진 영역 */}
+        <div className="flex items-end gap-2 px-4 pb-1 min-h-[40px]">
+          {items.length === 0 ? (
+            <>
+              <span className="text-xl opacity-50">🫙</span>
+              <span className="text-xl opacity-50">🧂</span>
+              <span className="text-xl opacity-50">🫒</span>
+            </>
+          ) : (
+            items.map(item => {
+              const days = daysUntilExpiry(item.expiry_date);
+              const border = freshBorder(days);
+              const label = freshLabel(days);
+              const emoji = getEmoji(item.ingredient_name, item.category);
+              return (
+                <button key={item.id} onClick={() => onRemove(item.id)}
+                  className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
+                  title={`${item.ingredient_name} ${label}`}
+                >
+                  <span className="text-xl drop-shadow-md">{emoji}</span>
+                  <span className="text-[7px] font-bold text-text-secondary">{item.ingredient_name.slice(0, 4)}</span>
+                  {label && <span className="text-[5px] font-bold" style={{ color: border }}>{label}</span>}
+                </button>
+              );
+            })
+          )}
         </div>
-
-        {/* 걸이형 주방 도구 */}
-        <div className={`flex justify-center gap-4 ${compact ? 'mt-0.5 mb-1' : 'mt-1 mb-2'}`}>
-          {['🍴', '🥊', '🫙'].map((e, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className={`w-px bg-text-muted/20 ${compact ? 'h-2' : 'h-3'}`} />
-              <span className={`opacity-70 ${compact ? 'text-sm' : 'text-lg'}`}>{e}</span>
-            </div>
-          ))}
+        {/* 3D 카운터 상판 */}
+        <div className="relative">
+          {/* 윗면 (원근감) */}
+          <div className="h-[6px] rounded-t-sm" style={{
+            background: '#F0D050',
+            borderTop: '2px solid #3A1A08',
+            borderLeft: '2px solid #3A1A08',
+            borderRight: '2px solid #3A1A08',
+          }} />
+          {/* 정면 */}
+          <div className="h-[10px] rounded-b-sm" style={{
+            background: '#E8C840',
+            borderBottom: '2px solid #3A1A08',
+            borderLeft: '2px solid #3A1A08',
+            borderRight: '2px solid #3A1A08',
+            boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
+          }} />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function WallShelf({ items, deco, onRemove, compact }: {
-  items: FridgeItem[]; deco: string[]; onRemove: (id: string) => void; compact?: boolean;
-}) {
-  const emojiSize = compact ? 'text-xl' : 'text-2xl';
-  const decoSize = compact ? 'text-base' : 'text-xl';
-
-  return (
-    <div className="relative">
-      {/* 재료 + 데코 아이템 */}
-      <div className={`flex items-end gap-2 px-2 pb-0.5 ${compact ? 'min-h-[36px]' : 'min-h-[48px]'}`}>
-        {/* 데코 (왼쪽 끝) */}
-        {deco[0] && items.length === 0 && (
-          <span className={`${emojiSize} opacity-60 mb-0.5`}>{deco[0]}</span>
-        )}
-
-        {/* 실제 재료 */}
-        {items.map(item => {
-          const days = daysUntilExpiry(item.expiry_date);
-          const border = freshBorder(days);
-          const label = freshLabel(days);
-          const emoji = getEmoji(item.ingredient_name, item.category);
-          const isDanger = days <= 3;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onRemove(item.id)}
-              className={`flex flex-col items-center hover:scale-110 active:scale-90 transition-transform ${isDanger ? 'animate-pulse' : ''}`}
-              title={`${item.ingredient_name} ${label}`}
-            >
-              <span className={`${emojiSize} drop-shadow-md`}>{emoji}</span>
-              <span className="text-[7px] font-bold text-text-secondary whitespace-nowrap">{item.ingredient_name.slice(0, 4)}</span>
-              {label && <span className="text-[5px] font-bold" style={{ color: border }}>{label}</span>}
-            </button>
-          );
-        })}
-
-        {/* 데코 (오른쪽) */}
-        {deco.slice(items.length > 0 ? 0 : 1).map((e, i) => (
-          <span key={i} className={`${decoSize} opacity-60 mb-0.5`}>{e}</span>
-        ))}
-      </div>
-
-      {/* 나무 선반 판 */}
-      <div className={`relative ${compact ? 'h-[5px]' : 'h-[7px]'} rounded-sm`} style={{
-        background: 'linear-gradient(180deg, #a0764a 0%, #7a5a34 60%, #6a4c2c 100%)',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)',
-      }} />
-
-      {/* 브래킷 */}
-      <div className="absolute -bottom-3 left-4">
-        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-t-[12px] border-t-[#6a4c2c] border-r-[8px] border-r-transparent" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.2))' }} />
-      </div>
-      <div className="absolute -bottom-3 right-4">
-        <div className="w-0 h-0 border-l-[8px] border-l-transparent border-t-[12px] border-t-[#6a4c2c] border-r-[8px] border-r-transparent" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.2))' }} />
       </div>
     </div>
   );
