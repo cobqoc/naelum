@@ -239,6 +239,7 @@ export default function FridgeHomeClient() {
       </header>
 
       {/* === 상온 벽 선반 (위) === */}
+      <div className="md:mt-6" />
       <KitchenShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 냉장고 + 열린 문 === */}
