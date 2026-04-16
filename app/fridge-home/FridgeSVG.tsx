@@ -55,38 +55,36 @@ export default function FridgeSVG() {
       <rect x="80" y="630" width="440" height="25" rx="6" fill="url(#reflectG)" />
       <ellipse cx="300" cy="648" rx="260" ry="18" fill="url(#shadowG)" />
 
-      {/* ====== 좌측 냉장 문 (직사각형) ====== */}
-      <rect x="20" y="18" width="150" height="372" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
-      {/* 문 좌측면 두께 */}
-      <path d="M 20,18 L 8,24 L 8,386 L 20,390 Z" fill="url(#bodyDark)" />
-      {/* 문 상단면 */}
-      <path d="M 20,18 L 8,24 L 158,24 L 170,18 Z" fill="url(#bodyLight)" />
+      {/* ====== 좌측 냉장 문 (살짝 원근) ====== */}
+      <path d="M 170,20 L 20,10 L 24,392 L 170,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 20,10 L 8,16 L 14,388 L 24,392 Z" fill="url(#bodyDark)" />
+      <path d="M 20,10 L 8,16 L 158,24 L 170,20 Z" fill="url(#bodyLight)" />
       {/* 내부 패널 */}
-      <rect x="34" y="32" width="122" height="344" rx="4" fill="url(#interiorG)" />
+      <path d="M 36,24 L 156,30 L 156,378 L 38,378 Z" fill="url(#interiorG)" />
       {/* 인셋 라인 */}
-      <rect x="34" y="32" width="122" height="344" rx="4" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" />
+      <path d="M 36,24 L 156,30 L 156,378 L 38,378 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
-      <rect x="20" y="18" width="150" height="372" rx="6" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" />
+      <path d="M 170,20 L 20,10 L 24,392 L 170,390 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
-      <rect x="38" y="118" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="38" y="121" width="114" height="1" fill="rgba(255,255,255,0.25)" />
-      <rect x="38" y="210" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="38" y="213" width="114" height="1" fill="rgba(255,255,255,0.25)" />
-      <rect x="38" y="298" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="38" y="301" width="114" height="1" fill="rgba(255,255,255,0.25)" />
+      <path d="M 40,118 L 152,122 L 152,125 L 42,121 Z" fill="url(#glassShelf)" />
+      <path d="M 42,121 L 152,125 L 152,126 L 44,122 Z" fill="rgba(255,255,255,0.25)" />
+      <path d="M 40,210 L 152,213 L 152,216 L 42,213 Z" fill="url(#glassShelf)" />
+      <path d="M 42,213 L 152,216 L 152,217 L 44,214 Z" fill="rgba(255,255,255,0.25)" />
+      <path d="M 40,298 L 152,300 L 152,303 L 42,301 Z" fill="url(#glassShelf)" />
+      <path d="M 42,301 L 152,303 L 152,304 L 44,302 Z" fill="rgba(255,255,255,0.25)" />
 
-      {/* ====== 좌측 냉동 문 (직사각형) ====== */}
-      <rect x="20" y="402" width="150" height="222" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
-      <path d="M 20,402 L 8,408 L 8,620 L 20,624 Z" fill="url(#bodyDark)" />
-      <path d="M 20,402 L 8,408 L 158,408 L 170,402 Z" fill="url(#bodyLight)" />
-      <rect x="34" y="416" width="122" height="194" rx="4" fill="url(#freezerG)" />
+      {/* ====== 좌측 냉동 문 (살짝 원근) ====== */}
+      <path d="M 170,402 L 24,400 L 30,624 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 24,400 L 12,406 L 20,620 L 30,624 Z" fill="url(#bodyDark)" />
+      <path d="M 24,400 L 12,406 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
+      <path d="M 40,414 L 156,412 L 156,610 L 44,610 Z" fill="url(#freezerG)" />
       {/* 인셋 라인 */}
-      <rect x="34" y="416" width="122" height="194" rx="4" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" />
+      <path d="M 40,414 L 156,412 L 156,610 L 44,610 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
-      <rect x="20" y="402" width="150" height="222" rx="6" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" />
+      <path d="M 170,402 L 24,400 L 30,624 L 170,622 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
-      <rect x="38" y="515" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="38" y="518" width="114" height="1" fill="rgba(255,255,255,0.25)" />
+      <path d="M 44,515 L 152,513 L 152,516 L 46,518 Z" fill="url(#glassShelf)" />
+      <path d="M 46,518 L 152,516 L 152,517 L 48,519 Z" fill="rgba(255,255,255,0.25)" />
 
       {/* ====== 냉장고 본체 ====== */}
       {/* 우측면 */}
@@ -128,35 +126,35 @@ export default function FridgeSVG() {
       <rect x="182" y="505" width="236" height="4" rx="2" fill="url(#glassShelf)" />
       <rect x="182" y="509" width="236" height="1" fill="rgba(255,255,255,0.3)" />
 
-      {/* ====== 우측 냉장 문 (직사각형) ====== */}
-      <rect x="430" y="18" width="150" height="372" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
-      <path d="M 580,18 L 592,24 L 592,386 L 580,390 Z" fill="url(#bodyDark)" />
-      <path d="M 430,18 L 442,24 L 592,24 L 580,18 Z" fill="url(#bodyLight)" />
-      <rect x="444" y="32" width="122" height="344" rx="4" fill="url(#interiorG)" />
+      {/* ====== 우측 냉장 문 (살짝 원근) ====== */}
+      <path d="M 430,20 L 580,10 L 576,392 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 580,10 L 592,16 L 586,388 L 576,392 Z" fill="url(#bodyDark)" />
+      <path d="M 430,20 L 442,24 L 592,16 L 580,10 Z" fill="url(#bodyLight)" />
+      <path d="M 444,30 L 564,24 L 562,378 L 444,378 Z" fill="url(#interiorG)" />
       {/* 인셋 라인 */}
-      <rect x="444" y="32" width="122" height="344" rx="4" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" />
+      <path d="M 444,30 L 564,24 L 562,378 L 444,378 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
-      <rect x="430" y="18" width="150" height="372" rx="6" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" />
+      <path d="M 430,20 L 580,10 L 576,392 L 430,390 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
-      <rect x="448" y="118" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="448" y="121" width="114" height="1" fill="rgba(255,255,255,0.25)" />
-      <rect x="448" y="210" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="448" y="213" width="114" height="1" fill="rgba(255,255,255,0.25)" />
-      <rect x="448" y="298" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="448" y="301" width="114" height="1" fill="rgba(255,255,255,0.25)" />
+      <path d="M 448,122 L 558,118 L 558,121 L 448,125 Z" fill="url(#glassShelf)" />
+      <path d="M 448,125 L 558,121 L 558,122 L 448,126 Z" fill="rgba(255,255,255,0.25)" />
+      <path d="M 448,213 L 558,210 L 558,213 L 448,216 Z" fill="url(#glassShelf)" />
+      <path d="M 448,216 L 558,213 L 558,214 L 448,217 Z" fill="rgba(255,255,255,0.25)" />
+      <path d="M 448,300 L 558,298 L 558,301 L 448,303 Z" fill="url(#glassShelf)" />
+      <path d="M 448,303 L 558,301 L 558,302 L 448,304 Z" fill="rgba(255,255,255,0.25)" />
 
-      {/* ====== 우측 냉동 문 (직사각형) ====== */}
-      <rect x="430" y="402" width="150" height="222" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
-      <path d="M 580,402 L 592,408 L 592,620 L 580,624 Z" fill="url(#bodyDark)" />
-      <path d="M 430,402 L 442,408 L 592,408 L 580,402 Z" fill="url(#bodyLight)" />
-      <rect x="444" y="416" width="122" height="194" rx="4" fill="url(#freezerG)" />
+      {/* ====== 우측 냉동 문 (살짝 원근) ====== */}
+      <path d="M 430,402 L 576,400 L 570,624 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 576,400 L 588,406 L 580,620 L 570,624 Z" fill="url(#bodyDark)" />
+      <path d="M 430,402 L 442,406 L 588,406 L 576,400 Z" fill="url(#bodyLight)" />
+      <path d="M 444,412 L 562,416 L 556,610 L 444,608 Z" fill="url(#freezerG)" />
       {/* 인셋 라인 */}
-      <rect x="444" y="416" width="122" height="194" rx="4" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" />
+      <path d="M 444,412 L 562,416 L 556,610 L 444,608 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       {/* 고무 패킹 */}
-      <rect x="430" y="402" width="150" height="222" rx="6" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" />
+      <path d="M 430,402 L 576,400 L 570,624 L 430,622 Z" fill="none" stroke="rgba(40,40,40,0.3)" strokeWidth="3" strokeLinejoin="round" />
       {/* 유리 선반 */}
-      <rect x="448" y="515" width="114" height="3" rx="1.5" fill="url(#glassShelf)" />
-      <rect x="448" y="518" width="114" height="1" fill="rgba(255,255,255,0.25)" />
+      <path d="M 448,515 L 552,513 L 552,516 L 448,518 Z" fill="url(#glassShelf)" />
+      <path d="M 448,518 L 552,516 L 552,517 L 448,519 Z" fill="rgba(255,255,255,0.25)" />
 
       {/* 킥플레이트 */}
       <rect x="168" y="624" width="264" height="10" rx="2" fill="url(#bodyDark)" stroke="#8a3020" strokeWidth="0.5" />
