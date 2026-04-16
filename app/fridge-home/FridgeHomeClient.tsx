@@ -213,64 +213,58 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} compact />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-2 mb-4">
-        <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md" style={{ perspective: '1000px' }}>
+      <div className="flex justify-center px-1 mb-2">
+        <div className="relative w-full max-w-sm md:max-w-md lg:max-w-lg" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 (열린 상태, 고정) */}
+          {/* 좌측 문 (열린 상태, 선반 레일 포함) */}
           <div
-            className="absolute top-0 bottom-[10%] z-10"
+            className="absolute top-0 bottom-[8%] z-10"
             style={{
-              width: '42px',
-              left: '-24px',
+              width: '54px',
+              left: '-30px',
               transform: 'rotateY(50deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
             }}
           >
-            <div className="w-full h-full rounded-l-lg" style={{
+            <div className="w-full h-full rounded-l-lg overflow-hidden" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset 2px 0 4px rgba(255,255,255,0.15), -2px 0 8px rgba(0,0,0,0.2)',
+              boxShadow: 'inset 2px 0 4px rgba(255,255,255,0.15), -3px 0 10px rgba(0,0,0,0.25)',
             }}>
-              {/* 문 안쪽 선반 */}
-              <div className="h-full flex flex-col justify-around py-3 px-0.5">
-                {sections.doorL.map(item => (
-                  <DoorShelfItem key={item.id} item={item} onRemove={removeItem} />
-                ))}
-                {sections.doorL.length === 0 && (
-                  <div className="flex flex-col items-center gap-2 opacity-30">
-                    <span className="text-sm">🍶</span>
-                    <span className="text-sm">🧴</span>
-                  </div>
-                )}
+              {/* 문 안쪽: 선반 레일 3단 */}
+              <div className="h-full flex flex-col">
+                <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
+                <DoorRail />
+                <DoorShelfSlot items={sections.doorL.slice(1, 2)} onRemove={removeItem} decoEmoji="🧴" />
+                <DoorRail />
+                <DoorShelfSlot items={sections.doorL.slice(2)} onRemove={removeItem} decoEmoji="🫙" />
+                <DoorRail />
               </div>
             </div>
           </div>
 
-          {/* 우측 문 (열린 상태, 고정) */}
+          {/* 우측 문 (열린 상태, 선반 레일 포함) */}
           <div
-            className="absolute top-0 bottom-[10%] z-10"
+            className="absolute top-0 bottom-[8%] z-10"
             style={{
-              width: '42px',
-              right: '-24px',
+              width: '54px',
+              right: '-30px',
               transform: 'rotateY(-50deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
             }}
           >
-            <div className="w-full h-full rounded-r-lg" style={{
+            <div className="w-full h-full rounded-r-lg overflow-hidden" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset -2px 0 4px rgba(255,255,255,0.15), 2px 0 8px rgba(0,0,0,0.2)',
+              boxShadow: 'inset -2px 0 4px rgba(255,255,255,0.15), 3px 0 10px rgba(0,0,0,0.25)',
             }}>
-              <div className="h-full flex flex-col justify-around py-3 px-0.5">
-                {sections.doorR.map(item => (
-                  <DoorShelfItem key={item.id} item={item} onRemove={removeItem} />
-                ))}
-                {sections.doorR.length === 0 && (
-                  <div className="flex flex-col items-center gap-2 opacity-30">
-                    <span className="text-sm">🫙</span>
-                    <span className="text-sm">🥫</span>
-                  </div>
-                )}
+              <div className="h-full flex flex-col">
+                <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
+                <DoorRail />
+                <DoorShelfSlot items={sections.doorR.slice(1, 2)} onRemove={removeItem} decoEmoji="🧈" />
+                <DoorRail />
+                <DoorShelfSlot items={sections.doorR.slice(2)} onRemove={removeItem} decoEmoji="🍯" />
+                <DoorRail />
               </div>
             </div>
           </div>
@@ -279,7 +273,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              aspectRatio: '5 / 5',
+              aspectRatio: '5 / 5.5',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '3px solid #b84a42',
@@ -514,19 +508,40 @@ function ItemChip({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
   );
 }
 
-function DoorShelfItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
-  const emoji = getEmoji(item.ingredient_name, item.category);
+function DoorRail() {
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
-      className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
-      title={`${item.ingredient_name} · 탭해서 먹기`}
-    >
-      <span className="text-base drop-shadow">{emoji}</span>
-      <span className="text-[6px] text-white/60 font-medium truncate w-full text-center">
-        {item.ingredient_name.slice(0, 3)}
-      </span>
-    </button>
+    <div className="h-[5px] flex-shrink-0 mx-1" style={{
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 50%, rgba(0,0,0,0.1) 100%)',
+      borderRadius: '2px',
+      boxShadow: '0 2px 3px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
+    }} />
+  );
+}
+
+function DoorShelfSlot({ items, onRemove, decoEmoji }: {
+  items: FridgeItem[]; onRemove: (id: string) => void; decoEmoji: string;
+}) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-end pb-0.5 px-0.5">
+      {items.length > 0 ? (
+        items.map(item => {
+          const emoji = getEmoji(item.ingredient_name, item.category);
+          return (
+            <button
+              key={item.id}
+              onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+              className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
+              title={`${item.ingredient_name} · 탭해서 먹기`}
+            >
+              <span className="text-lg drop-shadow">{emoji}</span>
+              <span className="text-[5px] text-white/60 font-medium">{item.ingredient_name.slice(0, 3)}</span>
+            </button>
+          );
+        })
+      ) : (
+        <span className="text-base opacity-20">{decoEmoji}</span>
+      )}
+    </div>
   );
 }
 
