@@ -543,62 +543,28 @@ function DoorShelfSlot({ items, onRemove, decoEmoji }: {
 }
 
 function KitchenCounter({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+  if (items.length === 0) return null;
   return (
-    <div className="flex justify-center px-4 mb-1">
-      <div className="w-full max-w-lg mx-auto">
-        {/* 선반 SVG — 3D 일러스트 스타일 */}
-        <svg viewBox="0 0 400 80" className="w-full" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
-          {/* 벽 배경 */}
-          <rect x="0" y="0" width="400" height="55" rx="4" fill="rgba(255,255,255,0.03)" />
-
-          {/* 나무 받침대 (왼쪽) */}
-          <path d="M 30,15 L 30,55" stroke="#3A1A08" strokeWidth="3" strokeLinecap="round" />
-          <path d="M 28,15 L 32,15 L 34,12 L 26,12 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" />
-
-          {/* 나무 받침대 (오른쪽) */}
-          <path d="M 370,15 L 370,55" stroke="#3A1A08" strokeWidth="3" strokeLinecap="round" />
-          <path d="M 368,15 L 372,15 L 374,12 L 366,12 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" />
-
-          {/* 3D 선반 — 윗면 */}
-          <path d="M 20,55 L 28,48 L 372,48 L 380,55 Z" fill="#F0D050" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-          {/* 3D 선반 — 정면 */}
-          <path d="M 20,55 L 380,55 L 380,70 L 20,70 Z" fill="#E8C840" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-          {/* 브래킷 (좌) */}
-          <path d="M 20,62 L 20,70 L 30,70 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
-          {/* 브래킷 (우) */}
-          <path d="M 380,62 L 380,70 L 370,70 Z" fill="#C8A830" stroke="#3A1A08" strokeWidth="1.5" strokeLinejoin="round" />
-          {/* 하이라이트 */}
-          <path d="M 20,55 L 380,55" fill="none" stroke="#F8E060" strokeWidth="1.5" />
-          {/* 그림자 */}
-          <path d="M 25,72 L 375,72" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="3" />
-        </svg>
-
-        {/* 재료 오버레이 (선반 위) */}
-        <div className="flex items-end justify-center gap-3 -mt-[52px] mb-[22px] px-8 min-h-[36px] relative z-10">
-          {items.length === 0 ? (
-            <>
-              <span className="text-2xl opacity-40 drop-shadow">🫙</span>
-              <span className="text-2xl opacity-40 drop-shadow">🧂</span>
-              <span className="text-2xl opacity-40 drop-shadow">🫒</span>
-            </>
-          ) : (
-            items.map(item => {
-              const days = daysUntilExpiry(item.expiry_date);
-              const border = freshBorder(days);
-              const label = freshLabel(days);
-              const emoji = getEmoji(item.ingredient_name, item.category);
-              return (
-                <button key={item.id} onClick={() => onRemove(item.id)}
-                  className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
-                  title={`${item.ingredient_name} ${label}`}
-                >
-                  <span className="text-2xl drop-shadow-md">{emoji}</span>
-                  <span className="text-[7px] font-bold text-text-secondary">{item.ingredient_name.slice(0, 4)}</span>
-                  {label && <span className="text-[5px] font-bold" style={{ color: border }}>{label}</span>}
-                </button>
-              );
-            })
-          )}
+    <div className="flex justify-center px-4 mb-0">
+      <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-hide">
+          <span className="text-[10px] text-text-muted whitespace-nowrap mr-1">🏠 상온</span>
+          {items.map(item => {
+            const days = daysUntilExpiry(item.expiry_date);
+            const border = freshBorder(days);
+            const label = freshLabel(days);
+            const emoji = getEmoji(item.ingredient_name, item.category);
+            return (
+              <button key={item.id} onClick={() => onRemove(item.id)}
+                className="flex items-center gap-0.5 px-2 py-1 rounded-full border border-accent-warm/20 bg-background-secondary hover:border-accent-warm/50 active:scale-95 transition-all whitespace-nowrap"
+                title={`${item.ingredient_name} ${label}`}
+              >
+                <span className="text-sm">{emoji}</span>
+                <span className="text-[9px] font-bold text-text-secondary">{item.ingredient_name}</span>
+                {label && <span className="text-[7px] font-bold ml-0.5" style={{ color: border }}>{label}</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
