@@ -213,8 +213,8 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} compact />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-1 mb-2">
-        <div className="relative w-full max-w-[280px] md:max-w-xs lg:max-w-sm mx-auto" style={{ perspective: '1200px' }}>
+      <div className="flex justify-center px-14 md:px-20 mb-2">
+        <div className="relative w-full mx-auto" style={{ perspective: '1200px' }}>
 
           {/* 좌측 문 (넓고 선명하게) */}
           <div
@@ -558,7 +558,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
 
   return (
     <div className={`flex justify-center px-4 ${compact ? 'mb-2' : 'mb-6'}`}>
-      <div className="w-full max-w-xs md:max-w-sm lg:max-w-md">
+      <div className="w-full">
         {/* 상단 선반 */}
         <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
 
