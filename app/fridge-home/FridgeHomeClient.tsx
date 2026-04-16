@@ -248,13 +248,11 @@ export default function FridgeHomeClient() {
           {/* 좌측 문 */}
           <div
             className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenLeft' : ''}`}
-            style={{
-              width: doorOpen ? '90px' : '50%',
-              left: doorOpen ? '-68px' : '-1px',
-              transform: doorOpen ? 'rotateY(42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+            style={doorOpen ? { transformStyle: 'preserve-3d' } : {
+              width: '50%',
+              left: '-1px',
+              transform: 'rotateY(0deg)',
               transformStyle: 'preserve-3d',
-              ...(!doorOpen ? {} : {}),
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
@@ -292,11 +290,10 @@ export default function FridgeHomeClient() {
           {/* 우측 문 */}
           <div
             className={`absolute top-0 bottom-[10px] z-10 ${doorOpen ? 'animate-doorOpenRight' : ''}`}
-            style={{
-              width: doorOpen ? '90px' : '50%',
-              right: doorOpen ? '-68px' : '-1px',
-              transform: doorOpen ? 'rotateY(-42deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+            style={doorOpen ? { transformStyle: 'preserve-3d' } : {
+              width: '50%',
+              right: '-1px',
+              transform: 'rotateY(0deg)',
               transformStyle: 'preserve-3d',
             }}
           >
@@ -336,6 +333,7 @@ export default function FridgeHomeClient() {
             className="relative rounded-xl overflow-hidden"
             style={{
               height: 'calc(100dvh - 240px)',
+              maxHeight: 'min(calc(100dvh - 240px), 65vh)',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
@@ -746,7 +744,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
   const bottomItems = items.slice(mid);
 
   return (
-    <div className={`flex justify-center px-4 ${compact ? 'mb-0' : 'mb-1'}`}>
+    <div className={`flex justify-center px-4 ${compact ? 'mb-0' : 'mb-1'} md:mb-3`}>
       <div className="w-full max-w-lg mx-auto">
         {/* 상단 선반 */}
         <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
