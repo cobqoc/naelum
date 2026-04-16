@@ -252,8 +252,8 @@ export default function FridgeHomeClient() {
             style={{
               width: doorOpen ? '90px' : '50%',
               left: doorOpen ? '-68px' : '-1px',
-              transform: doorOpen ? 'perspective(800px) rotateY(62deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+              transform: doorOpen ? 'perspective(800px) rotateY(-50deg)' : 'rotateY(0deg)',
+              transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
               transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
@@ -292,8 +292,8 @@ export default function FridgeHomeClient() {
             style={{
               width: doorOpen ? '90px' : '50%',
               right: doorOpen ? '-68px' : '-1px',
-              transform: doorOpen ? 'perspective(800px) rotateY(-62deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+              transform: doorOpen ? 'perspective(800px) rotateY(50deg)' : 'rotateY(0deg)',
+              transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
               transition: 'all 1.8s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
