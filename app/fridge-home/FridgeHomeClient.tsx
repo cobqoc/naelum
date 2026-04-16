@@ -198,7 +198,7 @@ export default function FridgeHomeClient() {
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
   return (
-    <div className="min-h-screen bg-background-primary text-text-primary">
+    <div className="h-dvh overflow-hidden bg-background-primary text-text-primary">
       {/* 헤더 */}
       <header className="relative z-20 px-4 pt-3 pb-1 flex items-center justify-between">
         <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
