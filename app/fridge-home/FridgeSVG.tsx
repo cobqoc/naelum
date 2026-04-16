@@ -88,8 +88,11 @@ export default function FridgeSVG() {
       {/* 베벨 효과 (프레임↔패널 단차) */}
       <path d="M 14,18 L 156,33 L 156,380 L 26,380 Z" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="1.5" />
       <path d="M 16,20 L 154,34 L 154,34 L 16,20 Z" fill="rgba(255,255,255,0.06)" />
-      {/* 고무 패킹 라인 */}
-      <path d="M 10,386 L 164,388 L 164,390 L 10,388 Z" fill="rgba(0,0,0,0.2)" />
+      {/* 고무 패킹 (4면) */}
+      <path d="M 12,16 L 158,30 L 158,32 L 12,18 Z" fill="rgba(0,0,0,0.15)" /> {/* 상 */}
+      <path d="M 10,386 L 164,388 L 164,390 L 10,388 Z" fill="rgba(0,0,0,0.15)" /> {/* 하 */}
+      <path d="M 12,16 L 14,16 L 24,386 L 22,386 Z" fill="rgba(0,0,0,0.12)" /> {/* 좌 */}
+      <path d="M 156,30 L 158,30 L 158,386 L 156,386 Z" fill="rgba(0,0,0,0.12)" /> {/* 우 */}
       {/* 손잡이 */}
       <path d="M 161,170 L 161,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
 
@@ -97,13 +100,11 @@ export default function FridgeSVG() {
       <path d="M 170,402 L 10,404 L 26,624 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 10,404 L 0,408 L 18,620 L 26,624 Z" fill="url(#bodyDark)" />
       <path d="M 30,416 L 156,412 L 156,612 L 40,612 Z" fill="url(#freezerG)" />
-      {/* 냉동 문 서리 힌트 */}
-      <path d="M 32,418 L 154,414 L 154,420 L 32,424 Z" fill="rgba(200,230,255,0.15)" />
-      <path d="M 32,606 L 154,606 L 154,612 L 32,612 Z" fill="rgba(200,230,255,0.12)" />
-      <path d="M 32,418 L 38,419 L 44,610 L 32,612 Z" fill="rgba(200,230,255,0.08)" />
-      {/* 패킹 */}
-      <path d="M 10,398 L 164,400 L 164,402 L 10,400 Z" fill="rgba(0,0,0,0.2)" />
-      <path d="M 16,618 L 164,620 L 164,622 L 16,620 Z" fill="rgba(0,0,0,0.2)" />
+      {/* 고무 패킹 (4면) */}
+      <path d="M 28,412 L 158,410 L 158,412 L 28,414 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 36,614 L 158,614 L 158,616 L 36,616 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 28,412 L 30,412 L 38,614 L 36,614 Z" fill="rgba(0,0,0,0.12)" />
+      <path d="M 156,410 L 158,410 L 158,614 L 156,614 Z" fill="rgba(0,0,0,0.12)" />
       {/* 유리 선반 */}
       <path d="M 34,515 L 152,513 L 152,516 L 36,518 Z" fill="url(#glassShelf)" />
       <path d="M 36,518 L 152,516 L 152,517 L 38,519 Z" fill="rgba(255,255,255,0.25)" />
@@ -138,7 +139,7 @@ export default function FridgeSVG() {
       ))}
 
       {/* 브랜드 */}
-      <text x="300" y="622" textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="10" fontWeight="bold" letterSpacing="4" fontFamily="sans-serif">NAELUM</text>
+      <text x="300" y="622" textAnchor="middle" fill="#ffd700" fontSize="11" fontWeight="bold" letterSpacing="4" fontFamily="sans-serif" opacity="0.8">NAELUM</text>
 
       {/* ====== 내부 — 냉장 ====== */}
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
@@ -166,7 +167,6 @@ export default function FridgeSVG() {
       <rect x="417" y="395" width="5" height="220" fill="rgba(0,0,0,0.05)" />
       <rect x="178" y="395" width="244" height="5" fill="rgba(0,0,0,0.04)" />
       <rect x="178" y="395" width="244" height="220" rx="4" fill="none" stroke="#7a2818" strokeWidth="2" />
-      <rect x="178" y="395" width="244" height="220" rx="4" fill="url(#frostG)" />
       <rect x="182" y="505" width="236" height="4" rx="2" fill="url(#glassShelf)" />
       <rect x="182" y="509" width="236" height="1" fill="rgba(255,255,255,0.3)" />
 
@@ -182,9 +182,13 @@ export default function FridgeSVG() {
       <path d="M 448,219 L 568,213 L 568,214 L 448,220 Z" fill="rgba(255,255,255,0.25)" />
       <path d="M 448,302 L 568,300 L 568,303 L 448,305 Z" fill="url(#glassShelf)" />
       <path d="M 448,305 L 568,303 L 568,304 L 448,306 Z" fill="rgba(255,255,255,0.25)" />
-      {/* 베벨 + 패킹 */}
+      {/* 베벨 */}
       <path d="M 444,33 L 574,18 L 572,380 L 444,380 Z" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="1.5" />
-      <path d="M 436,386 L 590,388 L 590,390 L 436,388 Z" fill="rgba(0,0,0,0.2)" />
+      {/* 고무 패킹 (4면) */}
+      <path d="M 442,30 L 576,16 L 576,18 L 442,32 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 436,386 L 590,388 L 590,390 L 436,388 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 442,30 L 444,30 L 444,386 L 442,386 Z" fill="rgba(0,0,0,0.12)" />
+      <path d="M 572,18 L 574,18 L 574,382 L 572,382 Z" fill="rgba(0,0,0,0.12)" />
       {/* 손잡이 */}
       <path d="M 439,170 L 439,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
 
@@ -192,13 +196,11 @@ export default function FridgeSVG() {
       <path d="M 430,402 L 590,404 L 574,624 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2.5" />
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
       <path d="M 444,412 L 572,418 L 560,612 L 444,608 Z" fill="url(#freezerG)" />
-      {/* 서리 힌트 */}
-      <path d="M 446,414 L 570,420 L 570,426 L 446,420 Z" fill="rgba(200,230,255,0.15)" />
-      <path d="M 446,604 L 558,608 L 558,612 L 446,608 Z" fill="rgba(200,230,255,0.12)" />
-      <path d="M 558,420 L 570,420 L 558,610 L 550,610 Z" fill="rgba(200,230,255,0.08)" />
-      {/* 패킹 */}
-      <path d="M 436,398 L 590,400 L 590,402 L 436,400 Z" fill="rgba(0,0,0,0.2)" />
-      <path d="M 436,618 L 580,620 L 580,622 L 436,620 Z" fill="rgba(0,0,0,0.2)" />
+      {/* 고무 패킹 (4면) */}
+      <path d="M 442,410 L 574,416 L 574,418 L 442,412 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 442,610 L 562,614 L 562,616 L 442,612 Z" fill="rgba(0,0,0,0.15)" />
+      <path d="M 442,410 L 444,410 L 444,610 L 442,610 Z" fill="rgba(0,0,0,0.12)" />
+      <path d="M 560,416 L 562,416 L 560,612 L 558,612 Z" fill="rgba(0,0,0,0.12)" />
       {/* 유리 선반 */}
       <path d="M 448,515 L 558,513 L 558,516 L 448,518 Z" fill="url(#glassShelf)" />
       <path d="M 448,518 L 558,516 L 558,517 L 448,519 Z" fill="rgba(255,255,255,0.25)" />
