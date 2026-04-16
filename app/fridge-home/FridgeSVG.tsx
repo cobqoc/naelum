@@ -104,6 +104,31 @@ export default function FridgeSVG() {
 
 
 
+      {/* ====== 냉장 선반 3개 (3D) ====== */}
+      {/* — 선반 1 — */}
+      <rect x="180" y="125" width="240" height="5" rx="2" fill="rgba(0,0,0,0.06)" />
+      <path d="M 178,117 L 184,112 L 416,112 L 422,117 Z" fill="#D4C0A0" />
+      <path d="M 184,112 L 416,112" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.8" />
+      <rect x="178" y="117" width="244" height="8" rx="1" fill="#C0A880" />
+      <rect x="178" y="117" width="244" height="2" rx="0.5" fill="rgba(255,255,255,0.25)" />
+      <rect x="178" y="123" width="244" height="2" rx="0.5" fill="rgba(0,0,0,0.1)" />
+
+      {/* — 선반 2 — */}
+      <rect x="180" y="214" width="240" height="5" rx="2" fill="rgba(0,0,0,0.06)" />
+      <path d="M 178,206 L 184,201 L 416,201 L 422,206 Z" fill="#D4C0A0" />
+      <path d="M 184,201 L 416,201" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.8" />
+      <rect x="178" y="206" width="244" height="8" rx="1" fill="#C0A880" />
+      <rect x="178" y="206" width="244" height="2" rx="0.5" fill="rgba(255,255,255,0.25)" />
+      <rect x="178" y="212" width="244" height="2" rx="0.5" fill="rgba(0,0,0,0.1)" />
+
+      {/* — 선반 3 — */}
+      <rect x="180" y="303" width="240" height="5" rx="2" fill="rgba(0,0,0,0.06)" />
+      <path d="M 178,295 L 184,290 L 416,290 L 422,295 Z" fill="#D4C0A0" />
+      <path d="M 184,290 L 416,290" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="0.8" />
+      <rect x="178" y="295" width="244" height="8" rx="1" fill="#C0A880" />
+      <rect x="178" y="295" width="244" height="2" rx="0.5" fill="rgba(255,255,255,0.25)" />
+      <rect x="178" y="301" width="244" height="2" rx="0.5" fill="rgba(0,0,0,0.1)" />
+
       {/* ===== 냉장/냉동 구분 ===== */}
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
