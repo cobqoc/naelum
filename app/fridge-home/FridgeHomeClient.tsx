@@ -99,7 +99,6 @@ export default function FridgeHomeClient() {
   const [multiInput, setMultiInput] = useState('');
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [doorOpen, setDoorOpen] = useState(false);
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
@@ -135,7 +134,7 @@ export default function FridgeHomeClient() {
         storage_location: item.storage,
       }]);
       showToast(`${item.name} 추가 (체험)`);
-      if (!doorOpen) setDoorOpen(true);
+
       setAdding(false); return;
     }
     const client = createClient();
@@ -145,7 +144,7 @@ export default function FridgeHomeClient() {
       showToast(`${item.name} 추가`);
       window.dispatchEvent(new Event('fridge-updated'));
       await fetchItems();
-      if (!doorOpen) setDoorOpen(true);
+
     }
     setAdding(false);
   };
@@ -169,7 +168,6 @@ export default function FridgeHomeClient() {
     if (user) { window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
     showToast(`${added}개 추가`);
     setMultiInput('');
-    if (!doorOpen) setDoorOpen(true);
     setAdding(false);
   };
 
@@ -210,147 +208,47 @@ export default function FridgeHomeClient() {
         )}
       </header>
 
-      {/* === 양문형 냉장고 === */}
+      {/* === 냉장고 (항상 열린 상태) === */}
       <div className="flex justify-center px-2 mb-4">
-        <div className="relative" style={{ width: '340px', maxWidth: '92vw', perspective: '900px' }}>
-
-          {/* 좌측 문 */}
-          <div
-            className="absolute top-0 bottom-[22%] z-20 cursor-pointer"
-            onClick={() => setDoorOpen(o => !o)}
-            style={{
-              width: doorOpen ? '48px' : '50%',
-              left: doorOpen ? '-36px' : '0',
-              transform: doorOpen ? 'rotateY(55deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
-              transition: 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            <div className="w-full h-full rounded-l-xl relative" style={{
-              background: 'linear-gradient(180deg, #c0623a 0%, #a8502e 50%, #964828 100%)',
-              boxShadow: doorOpen
-                ? 'inset 2px 0 6px rgba(255,255,255,0.15), -3px 0 10px rgba(0,0,0,0.3)'
-                : 'inset -1px 0 4px rgba(0,0,0,0.2), 2px 0 8px rgba(0,0,0,0.15)',
-            }}>
-              {/* 문 앞면 (닫혀있을 때만 보임) */}
-              {!doorOpen && (
-                <>
-                  <div className="absolute top-3 left-3 text-[9px] font-bold tracking-[0.15em] text-white/50">NAELUM</div>
-                  <div className="absolute right-2 top-[40%] w-[5px] h-[50px] rounded-full"
-                    style={{ background: 'linear-gradient(180deg, #6a7a80 0%, #4a5a60 100%)', boxShadow: '1px 1px 4px rgba(0,0,0,0.4)' }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center">
-                      <p className="text-3xl mb-1">🧊</p>
-                      <p className="text-[10px] text-white/50">탭해서 열기</p>
-                    </div>
-                  </div>
-                </>
-              )}
-              {/* 문 안쪽 (열려있을 때 보임) */}
-              {doorOpen && (
-                <div className="p-1 flex flex-col justify-around h-full">
-                  {sections.doorL.map(item => (
-                    <DoorItem key={item.id} item={item} onRemove={removeItem} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 우측 문 */}
-          <div
-            className="absolute top-0 bottom-[22%] z-20 cursor-pointer"
-            onClick={() => setDoorOpen(o => !o)}
-            style={{
-              width: doorOpen ? '48px' : '50%',
-              right: doorOpen ? '-36px' : '0',
-              transform: doorOpen ? 'rotateY(-55deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
-              transition: 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-              transformStyle: 'preserve-3d',
-            }}
-          >
-            <div className="w-full h-full rounded-r-xl relative" style={{
-              background: 'linear-gradient(180deg, #c0623a 0%, #a8502e 50%, #964828 100%)',
-              boxShadow: doorOpen
-                ? 'inset -2px 0 6px rgba(255,255,255,0.15), 3px 0 10px rgba(0,0,0,0.3)'
-                : 'inset 1px 0 4px rgba(0,0,0,0.2), -2px 0 8px rgba(0,0,0,0.15)',
-            }}>
-              {/* 문 앞면 (닫혀있을 때) */}
-              {!doorOpen && (
-                <>
-                  <div className="absolute left-2 top-[40%] w-[5px] h-[50px] rounded-full"
-                    style={{ background: 'linear-gradient(180deg, #6a7a80 0%, #4a5a60 100%)', boxShadow: '-1px 1px 4px rgba(0,0,0,0.4)' }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-white/70">{items.length}개</p>
-                      {dangerCount > 0 && (
-                        <p className="text-[9px] text-red-300 animate-pulse mt-0.5">⚠️ {dangerCount} 임박</p>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-              {/* 문 안쪽 */}
-              {doorOpen && (
-                <div className="p-1 flex flex-col justify-around h-full">
-                  {sections.doorR.map(item => (
-                    <DoorItem key={item.id} item={item} onRemove={removeItem} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="relative" style={{ width: '340px', maxWidth: '92vw' }}>
 
           {/* 냉장고 본체 */}
           <div
-            onClick={() => { if (!doorOpen) setDoorOpen(true); }}
-            className={`relative rounded-xl overflow-hidden ${!doorOpen ? 'cursor-pointer' : ''}`}
+            className="relative rounded-xl overflow-hidden"
             style={{
               aspectRatio: '5 / 6',
-              background: 'linear-gradient(180deg, #8B4513 0%, #7a3b10 100%)',
-              boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)',
-              border: '3px solid #6b3410',
+              background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
+              border: '3px solid #b84a42',
             }}
           >
+            {/* 브랜드 */}
+            <div className="absolute top-1 left-0 right-0 z-10 text-center">
+              <span className="text-[9px] font-bold tracking-[0.2em] text-white/50">NAELUM</span>
+            </div>
+
             {/* 프레임 상단 곡선 */}
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/10 to-transparent rounded-t-xl" />
 
             {/* 내부 */}
-            <div
-              className="absolute inset-[6px] rounded-lg overflow-hidden flex flex-col transition-all duration-500"
-              style={{
-                background: doorOpen
-                  ? 'linear-gradient(180deg, #e8e0d0 0%, #ddd5c5 100%)'
-                  : '#444',
-                opacity: doorOpen ? 1 : 0.3,
-              }}
-            >
-              {/* 내부 조명 (문 열릴 때) */}
-              {doorOpen && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6" style={{
-                  background: 'radial-gradient(ellipse, rgba(255,248,220,0.6) 0%, transparent 100%)',
-                }} />
-              )}
+            <div className="absolute inset-[6px] rounded-lg overflow-hidden flex flex-col">
+              {/* 내부 조명 */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6 z-10" style={{
+                background: 'radial-gradient(ellipse, rgba(255,248,220,0.5) 0%, transparent 100%)',
+              }} />
 
               {/* 🧊 냉장칸 (메인, 선반 4단) */}
               <FridgeInterior
                 label="냉장"
                 icon="🧊"
-                items={[...sections.main, ...sections.veggie]}
+                items={[...sections.main, ...sections.veggie, ...sections.doorL, ...sections.doorR]}
                 onRemove={removeItem}
                 loading={loading}
-                doorOpen={doorOpen}
                 style={FRIDGE_STYLE}
                 shelfCount={4}
                 shelfCap={4}
                 flex="1 1 auto"
               />
-
-              {/* 냉장/냉동 구분 — 선반 구분선과 동일 스타일 */}
 
               {/* ❄️ 냉동칸 (선반 2단) */}
               <FridgeInterior
@@ -359,7 +257,6 @@ export default function FridgeHomeClient() {
                 items={sections.freezer}
                 onRemove={removeItem}
                 loading={loading}
-                doorOpen={doorOpen}
                 style={FREEZER_STYLE}
                 shelfCount={2}
                 shelfCap={3}
@@ -370,8 +267,8 @@ export default function FridgeHomeClient() {
 
           {/* 냉장고 다리 */}
           <div className="flex justify-between px-8 -mt-0.5">
-            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#5a2d0e' }} />
-            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#5a2d0e' }} />
+            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#9a4a44' }} />
+            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#9a4a44' }} />
           </div>
         </div>
       </div>
@@ -448,18 +345,17 @@ const FREEZER_STYLE = {
 };
 
 function FridgeInterior({
-  label, icon, items, onRemove, loading, doorOpen, style, shelfCount, shelfCap, flex,
+  label, icon, items, onRemove, loading, style, shelfCount, shelfCap, flex,
 }: {
   label: string; icon: string; items: FridgeItem[]; onRemove: (id: string) => void;
-  loading: boolean; doorOpen: boolean; flex: string; shelfCount: number; shelfCap: number;
+  loading: boolean; flex: string; shelfCount: number; shelfCap: number;
   style: typeof FRIDGE_STYLE;
 }) {
   const shelves = splitToShelves(items, shelfCount, shelfCap);
 
   return (
-    <div className="relative overflow-hidden" style={{ flex, background: doorOpen ? style.bg : 'transparent' }}>
-      {doorOpen && (
-        <div className="h-full flex flex-col">
+    <div className="relative overflow-hidden" style={{ flex, background: style.bg }}>
+      <div className="h-full flex flex-col">
           {/* 섹션 헤더 */}
           <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
             <span className="text-[10px] font-bold flex items-center gap-1" style={{ color: style.headerColor }}>
@@ -489,7 +385,6 @@ function FridgeInterior({
             ))}
           </div>
         </div>
-      )}
     </div>
   );
 }
@@ -538,7 +433,6 @@ function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
 }
 
 function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
-  const [cabinetOpen, setCabinetOpen] = useState(false);
   const mid = Math.ceil(items.length / 2);
   const leftItems = items.slice(0, mid);
   const rightItems = items.slice(mid);
@@ -550,103 +444,30 @@ function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: 
           <span>🏠</span> 상온 수납장
         </h3>
 
-        {/* 수납장 본체 */}
+        {/* 수납장 본체 (항상 열림) */}
         <div
           className="relative rounded-xl overflow-hidden"
           style={{
-            height: '160px',
-            background: 'linear-gradient(180deg, #6b4a2e 0%, #5a3d24 100%)',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-            border: '3px solid #4a3018',
-            perspective: '800px',
+            minHeight: '120px',
+            background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 100%)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+            border: '3px solid #b84a42',
           }}
         >
-          {/* 내부 (나무톤 벽) */}
           <div className="absolute inset-[4px] rounded-lg overflow-hidden flex" style={{
-            background: cabinetOpen
-              ? 'linear-gradient(180deg, #e8d5b8 0%, #d9c4a2 100%)'
-              : '#3a2818',
-            transition: 'background 0.4s ease',
+            background: 'linear-gradient(180deg, #e8d5b8 0%, #d9c4a2 100%)',
           }}>
-            {cabinetOpen && (
-              <>
-                {/* 왼쪽 칸 */}
-                <div className="flex-1 flex flex-col border-r border-amber-800/20">
-                  <CabinetShelfRow items={leftItems} onRemove={onRemove} />
-                  <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
-                  <CabinetShelfRow items={[]} onRemove={onRemove} />
-                </div>
-                {/* 오른쪽 칸 */}
-                <div className="flex-1 flex flex-col">
-                  <CabinetShelfRow items={rightItems} onRemove={onRemove} />
-                  <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
-                  <CabinetShelfRow items={[]} onRemove={onRemove} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* 좌측 문 */}
-          <div
-            onClick={() => setCabinetOpen(o => !o)}
-            className="absolute top-0 bottom-0 cursor-pointer"
-            style={{
-              width: cabinetOpen ? '40px' : '50%',
-              left: cabinetOpen ? '-28px' : '0',
-              transform: cabinetOpen ? 'perspective(600px) rotateY(55deg)' : 'perspective(600px) rotateY(0deg)',
-              transformOrigin: 'right center',
-              transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-              zIndex: 10,
-            }}
-          >
-            <div className="w-full h-full rounded-l-lg" style={{
-              background: 'linear-gradient(135deg, #7a5a38 0%, #664a2c 50%, #5a4024 100%)',
-              boxShadow: cabinetOpen
-                ? '-2px 0 8px rgba(0,0,0,0.3)'
-                : 'inset -1px 0 3px rgba(0,0,0,0.2)',
-            }}>
-              {!cabinetOpen && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-amber-200/60" style={{
-                  boxShadow: '1px 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
-                }} />
-              )}
-              {!cabinetOpen && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <p className="text-[9px] text-white/40">탭해서 열기</p>
-                </div>
-              )}
+            {/* 왼쪽 칸 */}
+            <div className="flex-1 flex flex-col border-r border-amber-800/20">
+              <CabinetShelfRow items={leftItems} onRemove={onRemove} />
+              <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
+              <CabinetShelfRow items={[]} onRemove={onRemove} />
             </div>
-          </div>
-
-          {/* 우측 문 */}
-          <div
-            onClick={() => setCabinetOpen(o => !o)}
-            className="absolute top-0 bottom-0 cursor-pointer"
-            style={{
-              width: cabinetOpen ? '40px' : '50%',
-              right: cabinetOpen ? '-28px' : '0',
-              transform: cabinetOpen ? 'perspective(600px) rotateY(-55deg)' : 'perspective(600px) rotateY(0deg)',
-              transformOrigin: 'left center',
-              transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-              zIndex: 10,
-            }}
-          >
-            <div className="w-full h-full rounded-r-lg" style={{
-              background: 'linear-gradient(225deg, #7a5a38 0%, #664a2c 50%, #5a4024 100%)',
-              boxShadow: cabinetOpen
-                ? '2px 0 8px rgba(0,0,0,0.3)'
-                : 'inset 1px 0 3px rgba(0,0,0,0.2)',
-            }}>
-              {!cabinetOpen && (
-                <>
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-amber-200/60" style={{
-                    boxShadow: '-1px 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
-                  }} />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <p className="text-xs text-white/50 font-bold">{items.length}개</p>
-                  </div>
-                </>
-              )}
+            {/* 오른쪽 칸 */}
+            <div className="flex-1 flex flex-col">
+              <CabinetShelfRow items={rightItems} onRemove={onRemove} />
+              <div className="h-[3px] flex-shrink-0" style={{ background: 'linear-gradient(90deg, #a08050, #8a6a3a, #a08050)' }} />
+              <CabinetShelfRow items={[]} onRemove={onRemove} />
             </div>
           </div>
         </div>
@@ -657,27 +478,26 @@ function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: 
 
 function CabinetShelfRow({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
   return (
-    <div className="flex-1 flex flex-wrap gap-1 items-end px-2 pb-1 min-h-[32px]">
-      {items.length === 0 ? null : (
-        items.map(item => {
-          const days = daysUntilExpiry(item.expiry_date);
-          const border = freshBorder(days);
-          const label = freshLabel(days);
-          const emoji = getEmoji(item.ingredient_name, item.category);
-          return (
-            <button
-              key={item.id}
-              onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
-              className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
-              title={`${item.ingredient_name} ${label}`}
-            >
-              <span className="text-xl drop-shadow">{emoji}</span>
-              <span className="text-[7px] font-bold text-amber-900/70">{item.ingredient_name.slice(0, 4)}</span>
-              {label && <span className="text-[6px] font-bold" style={{ color: border }}>{label}</span>}
-            </button>
-          );
-        })
-      )}
+    <div className="flex-1 flex flex-wrap gap-1.5 items-end px-2.5 pb-1.5 min-h-[44px]">
+      {items.map(item => {
+        const days = daysUntilExpiry(item.expiry_date);
+        const border = freshBorder(days);
+        const label = freshLabel(days);
+        const emoji = getEmoji(item.ingredient_name, item.category);
+        const isDanger = days <= 3;
+        return (
+          <button
+            key={item.id}
+            onClick={() => onRemove(item.id)}
+            className={`flex flex-col items-center hover:scale-110 active:scale-90 transition-transform ${isDanger ? 'animate-pulse' : ''}`}
+            title={`${item.ingredient_name} ${label}`}
+          >
+            <span className="text-xl drop-shadow">{emoji}</span>
+            <span className="text-[7px] font-bold text-amber-900/70">{item.ingredient_name.slice(0, 4)}</span>
+            {label && <span className="text-[6px] font-bold" style={{ color: border }}>{label}</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }
