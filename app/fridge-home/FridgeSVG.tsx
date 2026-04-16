@@ -78,12 +78,18 @@ export default function FridgeSVG() {
       <path d="M 46,13 L 164,21 L 164,386 L 46,381 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
       {/* 내부 패널 */}
       <path d="M 52,19 L 158,26 L 158,380 L 52,375 Z" fill="url(#pocketBg)" />
+      {/* 손잡이 */}
+      <path d="M 160,170 L 160,250" stroke="url(#handleG)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 160,170 L 160,250" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* ========== 좌측 냉동 문 (4) ========== */}
       <path d="M 170,402 L 40,399 L 40,614 L 170,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 40,399 L 30,402 L 30,610 L 40,614 Z" fill="url(#bodyDark)" />
       <path d="M 46,405 L 164,403 L 164,616 L 46,612 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
       <path d="M 52,410 L 158,408 L 158,610 L 52,606 Z" fill="url(#pocketBg)" />
+      {/* 손잡이 */}
+      <path d="M 160,480 L 160,540" stroke="url(#handleG)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 160,480 L 160,540" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* ========== 냉장고 본체 ========== */}
       {/* 본체 우측면 (3D) */}
@@ -98,21 +104,33 @@ export default function FridgeSVG() {
       {/* ========== 내부 — 냉장 (6) ========== */}
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
       <rect x="178" y="28" width="244" height="60" rx="4" fill="url(#lightG)" />
+      {/* 프레임 안쪽 어두운 테두리 (깊이감) */}
+      <rect x="178" y="28" width="244" height="355" rx="4" fill="none" stroke="#7a2818" strokeWidth="3" />
+
+      {/* 냉장/냉동 구분 (프레임 색상) */}
+      <rect x="170" y="383" width="260" height="12" rx="2" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
       {/* ========== 내부 — 냉동 (4) ========== */}
       <rect x="178" y="395" width="244" height="220" rx="4" fill="url(#freezerG)" />
+      <rect x="178" y="395" width="244" height="220" rx="4" fill="none" stroke="#7a2818" strokeWidth="3" />
 
       {/* ========== 우측 냉장 문 (6) ========== */}
       <path d="M 430,18 L 560,6 L 560,385 L 430,390 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 560,6 L 570,10 L 570,381 L 560,385 Z" fill="url(#bodyDark)" />
       <path d="M 436,21 L 554,13 L 554,386 L 436,381 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
       <path d="M 442,26 L 548,19 L 548,380 L 442,375 Z" fill="url(#pocketBg)" />
+      {/* 손잡이 — 세로 바 */}
+      <path d="M 438,170 L 438,250" stroke="url(#handleG)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 438,170 L 438,250" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* ========== 우측 냉동 문 (4) ========== */}
       <path d="M 430,402 L 560,399 L 560,614 L 430,622 Z" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
       <path d="M 560,399 L 570,402 L 570,610 L 560,614 Z" fill="url(#bodyDark)" />
       <path d="M 436,405 L 554,403 L 554,616 L 436,612 Z" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
       <path d="M 442,410 L 548,408 L 548,610 L 442,606 Z" fill="url(#pocketBg)" />
+      {/* 손잡이 */}
+      <path d="M 438,480 L 438,540" stroke="url(#handleG)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 438,480 L 438,540" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" />
 
       {/* 냉장고 다리 */}
       <rect x="185" y="623" width="18" height="14" rx="4" fill="#8a3828" />
