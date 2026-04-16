@@ -130,11 +130,7 @@ export default function FridgeSVG() {
       <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
 
-      {/* 냉동 격자 칸막이 (2x2) */}
-      {/* 세로 칸막이 */}
-      <rect x="296" y="399" width="4" height="216" fill="#ecd070" />
-      <rect x="300" y="399" width="6" height="216" fill="#c89030" />
-      {/* 가로 칸막이 */}
+      {/* 냉동 가로 칸막이 */}
       <rect x="178" y="500" width="244" height="4" fill="#ecd070" />
       <rect x="178" y="504" width="244" height="8" rx="1" fill="#c89030" />
       <rect x="178" y="504" width="244" height="2" fill="rgba(255,255,255,0.1)" />
