@@ -241,50 +241,7 @@ export default function FridgeHomeClient() {
           {/* SVG 냉장고 프레임 */}
           <FridgeSVG />
 
-          {/* 재료 오버레이 — SVG 위에 absolute 배치 */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-          >
-            {/* 냉장 선반 1 (top: 10%~24%) */}
-            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
-              style={{ top: '10%', left: '27%', right: '27%', height: '14%' }}>
-              {[...sections.main, ...sections.veggie].slice(0, 4).map(item => (
-                <ItemChip key={item.id} item={item} onRemove={removeItem} />
-              ))}
-            </div>
-
-            {/* 냉장 선반 2 (top: 25%~40%) */}
-            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
-              style={{ top: '25%', left: '27%', right: '27%', height: '15%' }}>
-              {[...sections.main, ...sections.veggie].slice(4, 8).map(item => (
-                <ItemChip key={item.id} item={item} onRemove={removeItem} />
-              ))}
-            </div>
-
-            {/* 냉장 선반 3 (top: 41%~55%) */}
-            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
-              style={{ top: '41%', left: '27%', right: '27%', height: '14%' }}>
-              {[...sections.main, ...sections.veggie].slice(8, 12).map(item => (
-                <ItemChip key={item.id} item={item} onRemove={removeItem} />
-              ))}
-            </div>
-
-            {/* 냉동 선반 1 (top: 67%~78%) */}
-            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
-              style={{ top: '67%', left: '27%', right: '27%', height: '11%' }}>
-              {sections.freezer.slice(0, 3).map(item => (
-                <ItemChip key={item.id} item={item} onRemove={removeItem} />
-              ))}
-            </div>
-
-            {/* 냉동 선반 2 (top: 80%~90%) */}
-            <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
-              style={{ top: '80%', left: '27%', right: '27%', height: '10%' }}>
-              {sections.freezer.slice(3, 6).map(item => (
-                <ItemChip key={item.id} item={item} onRemove={removeItem} />
-              ))}
-            </div>
-          </div>
+          {/* 재료 오버레이 — 일단 제거 */}
 
           {/* + 추가 버튼 */}
           <button
