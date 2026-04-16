@@ -79,61 +79,7 @@ export default function FridgeSVG() {
       <path d="M 40,432 L 30,435 L 30,610 L 40,614 Z" fill="url(#bodyDark)" />
       <path d="M 48,440 L 162,438 L 162,612 L 48,608 Z" fill="url(#pocketBg)" />
 
-      {/* ── 포켓 1 구역 ── */}
-      {/* 포켓 배경 */}
-      <path d="M 58,42 L 154,48 L 154,160 L 58,154 Z" fill="rgba(220,230,240,0.3)" />
-      {/* 금색 선반 (두꺼운 U자) */}
-      <path d="M 58,42 L 58,48 L 154,54 L 154,48 Z" fill="url(#pocketRail)" />
-      <path d="M 58,48 L 66,49 L 66,150 L 58,149 Z" fill="url(#pocketRail)" />
-      <path d="M 146,55 L 154,54 L 154,157 L 146,156 Z" fill="url(#pocketRail)" />
-      <path d="M 58,149 L 154,155 L 154,166 L 58,160 Z" fill="url(#shelfG)" />
-      <path d="M 58,160 L 154,166 L 154,174 L 58,168 Z" fill="url(#shelfFront)" />
-      <path d="M 58,160 L 154,166 L 154,168 L 58,162 Z" fill="rgba(255,255,255,0.15)" />
-      {/* 아이템 + 그림자 */}
-      <ellipse cx="85" cy="152" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="73" y="148" fontSize="26">🍶</text>
-      <ellipse cx="118" cy="150" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="108" y="146" fontSize="22">🧃</text>
-      <ellipse cx="144" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="136" y="150" fontSize="18">🥤</text>
-
-      {/* ── 포켓 2 구역 ── */}
-      <path d="M 58,192 L 154,198 L 154,300 L 58,294 Z" fill="rgba(220,230,240,0.3)" />
-      <path d="M 58,192 L 58,198 L 154,204 L 154,198 Z" fill="url(#pocketRail)" />
-      <path d="M 58,198 L 66,199 L 66,290 L 58,289 Z" fill="url(#pocketRail)" />
-      <path d="M 146,205 L 154,204 L 154,297 L 146,296 Z" fill="url(#pocketRail)" />
-      <path d="M 58,289 L 154,295 L 154,306 L 58,300 Z" fill="url(#shelfG)" />
-      <path d="M 58,300 L 154,306 L 154,314 L 58,308 Z" fill="url(#shelfFront)" />
-      <path d="M 58,300 L 154,306 L 154,308 L 58,302 Z" fill="rgba(255,255,255,0.15)" />
-      <ellipse cx="82" cy="292" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="68" y="287" fontSize="26">🫙</text>
-      <ellipse cx="118" cy="290" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="105" y="285" fontSize="22">🧴</text>
-      <ellipse cx="144" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="136" y="289" fontSize="18">🍾</text>
-
-      {/* ── 포켓 3 구역 ── */}
-      <path d="M 58,332 L 154,338 L 154,440 L 58,434 Z" fill="rgba(220,230,240,0.3)" />
-      <path d="M 58,332 L 58,338 L 154,344 L 154,338 Z" fill="url(#pocketRail)" />
-      <path d="M 58,338 L 66,339 L 66,430 L 58,429 Z" fill="url(#pocketRail)" />
-      <path d="M 146,345 L 154,344 L 154,437 L 146,436 Z" fill="url(#pocketRail)" />
-      <path d="M 58,429 L 154,435 L 154,446 L 58,440 Z" fill="url(#shelfG)" />
-      <path d="M 58,440 L 154,446 L 154,454 L 58,448 Z" fill="url(#shelfFront)" />
-      <path d="M 58,440 L 154,446 L 154,448 L 58,442 Z" fill="rgba(255,255,255,0.15)" />
-      <ellipse cx="82" cy="432" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="70" y="428" fontSize="26">🥫</text>
-      <ellipse cx="118" cy="428" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="108" y="424" fontSize="22">🍯</text>
-      <ellipse cx="144" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="136" y="430" fontSize="18">🫒</text>
-
-      {/* ── 좌측 냉동 문 내부 — 유리 패널 ── */}
-      <path d="M 52,445 L 158,443 L 158,530 L 52,528 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="2" />
-      <path d="M 56,448 L 76,448 L 66,526 L 56,526 Z" fill="rgba(255,255,255,0.1)" />
-      <text x="95" y="500" fontSize="24">🥛</text>
-      <path d="M 52,538 L 158,536 L 158,604 L 52,602 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="2" />
-      <path d="M 56,541 L 76,541 L 66,600 L 56,600 Z" fill="rgba(255,255,255,0.1)" />
-      <text x="95" y="580" fontSize="24">🧈</text>
+      {/* 좌측 문 내부 — 선반 없이 깔끔하게 */}
 
       {/* ========== 냉장고 본체 ========== */}
       <rect x="166" y="14" width="268" height="613" rx="8" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="4" />
@@ -226,58 +172,7 @@ export default function FridgeSVG() {
       <path d="M 560,432 L 570,435 L 570,610 L 560,614 Z" fill="url(#bodyDark)" />
       <path d="M 438,440 L 552,438 L 552,612 L 438,608 Z" fill="url(#pocketBg)" />
 
-      {/* ── 포켓 1 ── */}
-      <path d="M 446,48 L 542,42 L 542,160 L 446,154 Z" fill="rgba(220,230,240,0.3)" />
-      <path d="M 446,48 L 446,54 L 542,48 L 542,42 Z" fill="url(#pocketRail)" />
-      <path d="M 446,54 L 454,55 L 454,150 L 446,149 Z" fill="url(#pocketRail)" />
-      <path d="M 534,49 L 542,48 L 542,157 L 534,156 Z" fill="url(#pocketRail)" />
-      <path d="M 446,149 L 542,155 L 542,166 L 446,160 Z" fill="url(#shelfG)" />
-      <path d="M 446,160 L 542,166 L 542,174 L 446,168 Z" fill="url(#shelfFront)" />
-      <path d="M 446,160 L 542,166 L 542,168 L 446,162 Z" fill="rgba(255,255,255,0.15)" />
-      <ellipse cx="475" cy="152" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="463" y="148" fontSize="24">🥤</text>
-      <ellipse cx="508" cy="150" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="498" y="146" fontSize="22">🍶</text>
-      <ellipse cx="534" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="526" y="150" fontSize="18">🧃</text>
-
-      {/* ── 포켓 2 ── */}
-      <path d="M 446,198 L 542,192 L 542,300 L 446,294 Z" fill="rgba(220,230,240,0.3)" />
-      <path d="M 446,198 L 446,204 L 542,198 L 542,192 Z" fill="url(#pocketRail)" />
-      <path d="M 446,204 L 454,205 L 454,290 L 446,289 Z" fill="url(#pocketRail)" />
-      <path d="M 534,199 L 542,198 L 542,297 L 534,296 Z" fill="url(#pocketRail)" />
-      <path d="M 446,289 L 542,295 L 542,306 L 446,300 Z" fill="url(#shelfG)" />
-      <path d="M 446,300 L 542,306 L 542,314 L 446,308 Z" fill="url(#shelfFront)" />
-      <path d="M 446,300 L 542,306 L 542,308 L 446,302 Z" fill="rgba(255,255,255,0.15)" />
-      <ellipse cx="475" cy="292" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="460" y="287" fontSize="24">🫒</text>
-      <ellipse cx="508" cy="290" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="498" y="285" fontSize="22">🥫</text>
-      <ellipse cx="534" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="526" y="289" fontSize="18">🍾</text>
-
-      {/* ── 포켓 3 ── */}
-      <path d="M 446,338 L 542,332 L 542,440 L 446,434 Z" fill="rgba(220,230,240,0.3)" />
-      <path d="M 446,338 L 446,344 L 542,338 L 542,332 Z" fill="url(#pocketRail)" />
-      <path d="M 446,344 L 454,345 L 454,430 L 446,429 Z" fill="url(#pocketRail)" />
-      <path d="M 534,339 L 542,338 L 542,437 L 534,436 Z" fill="url(#pocketRail)" />
-      <path d="M 446,429 L 542,435 L 542,446 L 446,440 Z" fill="url(#shelfG)" />
-      <path d="M 446,440 L 542,446 L 542,454 L 446,448 Z" fill="url(#shelfFront)" />
-      <path d="M 446,440 L 542,446 L 542,448 L 446,442 Z" fill="rgba(255,255,255,0.15)" />
-      <ellipse cx="475" cy="432" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="465" y="428" fontSize="24">🧉</text>
-      <ellipse cx="508" cy="428" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
-      <text x="498" y="424" fontSize="22">🍯</text>
-      <ellipse cx="534" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
-      <text x="526" y="430" fontSize="18">🫙</text>
-
-      {/* ── 우측 냉동 문 내부 — 유리 패널 ── */}
-      <path d="M 442,445 L 548,443 L 548,530 L 442,528 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="2" />
-      <path d="M 524,448 L 544,448 L 534,526 L 524,526 Z" fill="rgba(255,255,255,0.1)" />
-      <text x="485" y="500" fontSize="24">🥛</text>
-      <path d="M 442,538 L 548,536 L 548,604 L 442,602 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="2" />
-      <path d="M 524,541 L 544,541 L 534,600 L 524,600 Z" fill="rgba(255,255,255,0.1)" />
-      <text x="485" y="580" fontSize="24">🧴</text>
+      {/* 우측 문 내부 — 선반 없이 깔끔하게 */}
 
       {/* ========== 내부 데코 식품 ========== */}
       {/* 선반 1 위 */}
