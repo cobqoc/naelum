@@ -101,6 +101,8 @@ export default function FridgeHomeClient() {
   const [toast, setToast] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
   const [doorAnimated, setDoorAnimated] = useState(false);
+  const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
+  const [inlineSearch, setInlineSearch] = useState('');
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
@@ -195,6 +197,20 @@ export default function FridgeHomeClient() {
     showToast('👅 낼름!');
   };
 
+  // 선반별 추천 칩 (빈 선반 탭 시 표시)
+  const FRIDGE_CHIPS = QUICK_ADD.filter(q => q.storage !== '상온' && q.category !== 'seasoning').slice(0, 6);
+  const FREEZER_CHIPS = [
+    { name: '만두', emoji: '🥟', category: 'grain' as const, storage: '냉동' as const },
+    { name: '아이스크림', emoji: '🍦', category: 'dairy' as const, storage: '냉동' as const },
+    ...QUICK_ADD.filter(q => q.storage === '냉동').slice(0, 2),
+  ];
+
+  const handleInlineAdd = async (item: QuickAddIngredient) => {
+    await addQuickItem(item);
+    setInlineAddSection(null);
+    setInlineSearch('');
+  };
+
   const sections = useMemo(() => {
     const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[], pantry:[] };
     items.forEach((item, idx) => m[assignSection(item, idx)].push(item));
@@ -229,16 +245,16 @@ export default function FridgeHomeClient() {
       <div className="flex justify-center px-[72px] md:px-24 mb-2">
         <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 — 힌지 왼쪽, 가운데에서 바깥으로 열림 */}
+          {/* 좌측 문 — 닫힘(본체 덮음) → 열림(사이드 패널) */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: '50%',
-              left: '-1px',
-              transform: doorAnimated ? 'rotateY(-58deg)' : 'rotateY(0deg)',
-              transformOrigin: 'left center',
+              width: doorAnimated ? '90px' : '50%',
+              left: doorAnimated ? '-68px' : '-1px',
+              transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'transform 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
@@ -273,16 +289,16 @@ export default function FridgeHomeClient() {
             </div>
           </div>
 
-          {/* 우측 문 — 힌지 오른쪽, 가운데에서 바깥으로 열림 */}
+          {/* 우측 문 — 닫힘(본체 덮음) → 열림(사이드 패널) */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: '50%',
-              right: '-1px',
-              transform: doorAnimated ? 'rotateY(58deg)' : 'rotateY(0deg)',
-              transformOrigin: 'right center',
+              width: doorAnimated ? '90px' : '50%',
+              right: doorAnimated ? '-68px' : '-1px',
+              transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
+              transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'transform 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
+              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
             <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
@@ -355,6 +371,12 @@ export default function FridgeHomeClient() {
                 shelfCount={3}
                 shelfCap={4}
                 flex="1 1 auto"
+                inlineActive={inlineAddSection === 'fridge'}
+                inlineChips={FRIDGE_CHIPS}
+                inlineSearch={inlineSearch}
+                onInlineSearchChange={setInlineSearch}
+                onShelfTap={() => setInlineAddSection(s => s === 'fridge' ? null : 'fridge')}
+                onInlineAdd={handleInlineAdd}
               />
 
               {/* ❄️ 냉동칸 */}
@@ -368,6 +390,12 @@ export default function FridgeHomeClient() {
                 shelfCount={2}
                 shelfCap={3}
                 flex="0 0 32%"
+                inlineActive={inlineAddSection === 'freezer'}
+                inlineChips={FREEZER_CHIPS}
+                inlineSearch={inlineSearch}
+                onInlineSearchChange={setInlineSearch}
+                onShelfTap={() => setInlineAddSection(s => s === 'freezer' ? null : 'freezer')}
+                onInlineAdd={handleInlineAdd}
               />
             </div>
 
@@ -488,12 +516,24 @@ const FREEZER_STYLE = {
 
 function FridgeInterior({
   label, icon, items, onRemove, loading, style, shelfCount, shelfCap, flex,
+  inlineActive, inlineChips, inlineSearch, onInlineSearchChange, onShelfTap, onInlineAdd,
 }: {
   label: string; icon: string; items: FridgeItem[]; onRemove: (id: string) => void;
   loading: boolean; flex: string; shelfCount: number; shelfCap: number;
   style: typeof FRIDGE_STYLE;
+  inlineActive?: boolean;
+  inlineChips?: QuickAddIngredient[];
+  inlineSearch?: string;
+  onInlineSearchChange?: (v: string) => void;
+  onShelfTap?: () => void;
+  onInlineAdd?: (item: QuickAddIngredient) => void;
 }) {
   const shelves = splitToShelves(items, shelfCount, shelfCap);
+
+  // 인라인 검색 필터
+  const filteredChips = inlineChips?.filter(c =>
+    !inlineSearch || c.name.includes(inlineSearch)
+  ) ?? [];
 
   return (
     <div className="relative overflow-hidden" style={{ flex, background: style.bg }}>
@@ -510,11 +550,24 @@ function FridgeInterior({
           <div className="flex-1 flex flex-col">
             {shelves.map((shelfItems, idx) => (
               <div key={idx} className="flex-1 flex flex-col">
-                {/* 선반 내용 */}
-                <div className="flex-1 flex flex-wrap gap-1 items-end px-2.5 pb-1 min-h-[28px]">
+                {/* 선반 내용 — 빈 선반은 탭 가능 */}
+                <div
+                  className={`flex-1 flex flex-wrap gap-1 items-end px-2.5 pb-1 min-h-[28px] ${
+                    shelfItems.length === 0 && !loading ? 'cursor-pointer hover:bg-white/10 transition-colors rounded' : ''
+                  }`}
+                  onClick={() => {
+                    if (shelfItems.length === 0 && !loading && onShelfTap) onShelfTap();
+                  }}
+                >
                   {loading && idx === 0 ? (
                     <span className="text-[9px]" style={{ color: style.emptyText }}>로딩...</span>
-                  ) : shelfItems.length === 0 ? null : (
+                  ) : shelfItems.length === 0 ? (
+                    !inlineActive && (
+                      <span className="text-[9px] italic" style={{ color: style.emptyText, opacity: 0.5 }}>
+                        + 탭해서 추가
+                      </span>
+                    )
+                  ) : (
                     shelfItems.map(item => <ItemChip key={item.id} item={item} onRemove={onRemove} />)
                   )}
                 </div>
@@ -526,6 +579,36 @@ function FridgeInterior({
               </div>
             ))}
           </div>
+
+          {/* 인라인 추가 UI (선반 탭 시 표시) */}
+          {inlineActive && (
+            <div className="absolute inset-x-0 bottom-0 z-20 p-2 rounded-b-lg" style={{
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+            }}>
+              <input
+                type="text"
+                value={inlineSearch ?? ''}
+                onChange={e => onInlineSearchChange?.(e.target.value)}
+                placeholder="재료 검색..."
+                autoFocus
+                className="w-full rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-accent-warm/50 mb-2"
+              />
+              <div className="flex flex-wrap gap-1">
+                {filteredChips.slice(0, 8).map(chip => (
+                  <button
+                    key={chip.name}
+                    onClick={() => onInlineAdd?.(chip)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-[10px] text-gray-700 hover:bg-accent-warm/20 active:scale-95 transition-all"
+                  >
+                    <span>{chip.emoji}</span>
+                    <span>{chip.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
     </div>
   );
