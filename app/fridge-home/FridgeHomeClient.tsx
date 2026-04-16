@@ -336,53 +336,39 @@ export default function FridgeHomeClient() {
                 }} />
               )}
 
-              {/* ❄️ 냉동칸 */}
-              <FridgeShelf
-                label="❄️ 냉동"
+              {/* 🧊 냉장칸 (메인, 선반 4단) */}
+              <FridgeInterior
+                label="냉장"
+                icon="🧊"
+                items={[...sections.main, ...sections.veggie]}
+                onRemove={removeItem}
+                loading={loading}
+                doorOpen={doorOpen}
+                style={FRIDGE_STYLE}
+                shelfCount={4}
+                shelfCap={4}
+                flex="1 1 auto"
+              />
+
+              {/* 냉장/냉동 구분 */}
+              <div className="h-[6px] flex-shrink-0" style={{
+                background: 'linear-gradient(180deg, #7a5a30 0%, #5a3f1a 100%)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }} />
+
+              {/* ❄️ 냉동칸 (선반 2단) */}
+              <FridgeInterior
+                label="냉동"
+                icon="❄️"
                 items={sections.freezer}
                 onRemove={removeItem}
                 loading={loading}
                 doorOpen={doorOpen}
-                color="#c8d8e8"
-                flex="0 0 18%"
+                style={FREEZER_STYLE}
+                shelfCount={2}
+                shelfCap={3}
+                flex="0 0 32%"
               />
-              <ShelfDivider />
-
-              {/* 🧊 냉장 칸 (가장 큼) */}
-              <FridgeShelf
-                label="🧊 냉장"
-                items={sections.main}
-                onRemove={removeItem}
-                loading={loading}
-                doorOpen={doorOpen}
-                color="#d8dce0"
-                flex="1 1 auto"
-              />
-              <ShelfDivider />
-
-              {/* 🥬 야채칸 (서랍형) */}
-              <div className="relative" style={{ flex: '0 0 24%' }}>
-                {doorOpen && (
-                  <div className="absolute inset-1 rounded-lg overflow-hidden" style={{
-                    background: 'linear-gradient(180deg, rgba(200,220,200,0.4) 0%, rgba(180,210,180,0.3) 100%)',
-                    border: '2px solid rgba(160,180,160,0.3)',
-                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
-                  }}>
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-b bg-gray-400/40" />
-                    <div className="px-2 pt-3 pb-1">
-                      <span className="text-[8px] font-bold text-green-800/40 tracking-wider">🥬 야채칸</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {sections.veggie.length === 0 && !loading && (
-                          <span className="text-[9px] text-gray-400 italic">비어있음</span>
-                        )}
-                        {sections.veggie.map(item => (
-                          <ItemChip key={item.id} item={item} onRemove={removeItem} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
@@ -437,36 +423,80 @@ export default function FridgeHomeClient() {
 
 // ── Subcomponents ─────────────────────────────────────────────────────────────
 
-function ShelfDivider() {
-  return (
-    <div className="relative h-[3px] flex-shrink-0" style={{
-      background: 'linear-gradient(180deg, #b8b0a0 0%, #a8a090 100%)',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-    }} />
-  );
+// 선반별 아이템 분배: 한 선반에 최대 shelfCap개씩
+function splitToShelves(items: FridgeItem[], shelfCount: number, shelfCap: number): FridgeItem[][] {
+  const shelves: FridgeItem[][] = Array.from({ length: shelfCount }, () => []);
+  items.forEach((item, i) => {
+    const idx = Math.min(Math.floor(i / shelfCap), shelfCount - 1);
+    shelves[idx].push(item);
+  });
+  return shelves;
 }
 
-function FridgeShelf({ label, items, onRemove, loading, doorOpen, color, flex }: {
-  label: string; items: FridgeItem[]; onRemove: (id: string) => void;
-  loading: boolean; doorOpen: boolean; color: string; flex: string;
+// 냉장 스타일
+const FRIDGE_STYLE = {
+  bg: 'linear-gradient(180deg, rgba(244,249,255,0.97) 0%, rgba(226,240,252,0.97) 100%)',
+  headerColor: '#4a7a9a',
+  subColor: '#7aa8c0',
+  divider: 'linear-gradient(180deg, #8ab4d4 0%, #6a94b4 100%)',
+  emptyText: '#7aa8c0',
+};
+
+// 냉동 스타일
+const FREEZER_STYLE = {
+  bg: 'linear-gradient(180deg, rgba(141,189,224,0.90) 0%, rgba(106,158,200,0.90) 100%)',
+  headerColor: '#1a3a6a',
+  subColor: 'rgba(42,90,154,0.7)',
+  divider: 'linear-gradient(180deg, rgba(70,120,170,0.92) 0%, rgba(50,90,140,0.92) 100%)',
+  emptyText: 'rgba(255,255,255,0.4)',
+};
+
+function FridgeInterior({
+  label, icon, items, onRemove, loading, doorOpen, style, shelfCount, shelfCap, flex,
+}: {
+  label: string; icon: string; items: FridgeItem[]; onRemove: (id: string) => void;
+  loading: boolean; doorOpen: boolean; flex: string; shelfCount: number; shelfCap: number;
+  style: typeof FRIDGE_STYLE;
 }) {
+  const shelves = splitToShelves(items, shelfCount, shelfCap);
+
   return (
-    <div className="relative overflow-hidden" style={{ flex, background: doorOpen ? color : 'transparent' }}>
+    <div className="relative overflow-hidden" style={{ flex, background: doorOpen ? style.bg : 'transparent' }}>
       {doorOpen && (
-        <>
-          <div className="px-2 pt-1">
-            <span className="text-[8px] font-bold text-black/30 tracking-wider">{label}</span>
+        <div className="h-full flex flex-col">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center justify-between px-2.5 pt-1.5 pb-1">
+            <span className="text-[10px] font-bold flex items-center gap-1" style={{ color: style.headerColor }}>
+              {icon} {label}
+              <span className="font-normal" style={{ color: style.subColor }}>({items.length})</span>
+            </span>
           </div>
-          <div className="flex flex-wrap gap-1 px-2 pt-0.5 pb-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 20px)' }}>
-            {loading ? (
-              <span className="text-[9px] text-black/30">로딩...</span>
-            ) : items.length === 0 ? (
-              <span className="text-[9px] text-black/20 italic">비어있음</span>
-            ) : (
-              items.map(item => <ItemChip key={item.id} item={item} onRemove={onRemove} />)
-            )}
+
+          {/* 선반들 */}
+          <div className="flex-1 flex flex-col">
+            {shelves.map((shelfItems, idx) => (
+              <div key={idx} className="flex-1 flex flex-col">
+                {/* 선반 내용 */}
+                <div className="flex-1 flex flex-wrap gap-1 items-end px-2.5 pb-1 min-h-[28px]">
+                  {loading && idx === 0 ? (
+                    <span className="text-[9px]" style={{ color: style.emptyText }}>로딩...</span>
+                  ) : shelfItems.length === 0 ? (
+                    <span className="text-[9px] italic" style={{ color: style.emptyText }}>
+                      빈 선반 — 재료를 추가해보세요
+                    </span>
+                  ) : (
+                    shelfItems.map(item => <ItemChip key={item.id} item={item} onRemove={onRemove} />)
+                  )}
+                </div>
+                {/* 선반 구분선 */}
+                <div className="h-[4px] flex-shrink-0" style={{
+                  background: style.divider,
+                  boxShadow: '0 3px 6px rgba(0,0,0,0.2)',
+                }} />
+              </div>
+            ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
