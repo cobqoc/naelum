@@ -77,15 +77,6 @@ export default function FridgeSVG() {
       {/* 문 안쪽 배경 */}
       <path d="M 46,14 L 166,22 L 166,618 L 46,610 Z" fill="url(#pocketBg)" />
 
-      {/* ── 두꺼운 내부 프레임 (문 테두리) ── */}
-      {/* 상단 바 */}
-      <path d="M 48,16 L 164,23 L 164,42 L 48,35 Z" fill="url(#bodyDark)" />
-      <path d="M 48,16 L 164,23 L 164,26 L 48,19 Z" fill="rgba(255,255,255,0.08)" />
-      {/* 좌측 세로 바 */}
-      <path d="M 48,35 L 58,36 L 58,598 L 48,597 Z" fill="url(#bodyDark)" />
-      {/* 우측 세로 바 */}
-      <path d="M 154,42 L 164,43 L 164,605 L 154,604 Z" fill="url(#bodyDark)" />
-
       {/* ── 포켓 1 구역 ── */}
       {/* 포켓 배경 */}
       <path d="M 58,42 L 154,48 L 154,160 L 58,154 Z" fill="rgba(220,230,240,0.3)" />
@@ -104,10 +95,6 @@ export default function FridgeSVG() {
       <ellipse cx="144" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="136" y="150" fontSize="18">🥤</text>
 
-      {/* 가로 구분 바 1 */}
-      <path d="M 48,174 L 164,180 L 164,192 L 48,186 Z" fill="url(#bodyDark)" />
-      <path d="M 48,174 L 164,180 L 164,177 L 48,171 Z" fill="rgba(255,255,255,0.06)" />
-
       {/* ── 포켓 2 구역 ── */}
       <path d="M 58,192 L 154,198 L 154,300 L 58,294 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 58,192 L 58,198 L 154,204 L 154,198 Z" fill="url(#pocketRail)" />
@@ -122,10 +109,6 @@ export default function FridgeSVG() {
       <text x="105" y="285" fontSize="22">🧴</text>
       <ellipse cx="144" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="136" y="289" fontSize="18">🍾</text>
-
-      {/* 가로 구분 바 2 */}
-      <path d="M 48,314 L 164,320 L 164,332 L 48,326 Z" fill="url(#bodyDark)" />
-      <path d="M 48,314 L 164,320 L 164,317 L 48,311 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 3 구역 ── */}
       <path d="M 58,332 L 154,338 L 154,440 L 58,434 Z" fill="rgba(220,230,240,0.3)" />
@@ -142,16 +125,10 @@ export default function FridgeSVG() {
       <ellipse cx="144" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="136" y="430" fontSize="18">🫒</text>
 
-      {/* 가로 구분 바 3 */}
-      <path d="M 48,454 L 164,460 L 164,472 L 48,466 Z" fill="url(#bodyDark)" />
-      <path d="M 48,454 L 164,460 L 164,457 L 48,451 Z" fill="rgba(255,255,255,0.06)" />
-
       {/* ── 하단 유리 패널 (냉동 문) ── */}
       <path d="M 58,472 L 154,478 L 154,598 L 58,592 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="3" />
       <path d="M 62,476 L 85,476 L 72,588 L 62,588 Z" fill="rgba(255,255,255,0.1)" />
       <path d="M 58,535 L 154,540 L 154,544 L 58,539 Z" fill="url(#frameG)" />
-      {/* 하단 바 */}
-      <path d="M 48,598 L 164,604 L 164,614 L 48,608 Z" fill="url(#bodyDark)" />
       <text x="95" y="518" fontSize="22">🥛</text>
       <text x="95" y="578" fontSize="24">🧈</text>
 
@@ -243,12 +220,6 @@ export default function FridgeSVG() {
       {/* 문 안쪽 배경 */}
       <path d="M 434,22 L 554,14 L 554,610 L 434,618 Z" fill="url(#pocketBg)" />
 
-      {/* ── 두꺼운 내부 프레임 ── */}
-      <path d="M 436,23 L 552,16 L 552,42 L 436,35 Z" fill="url(#bodyDark)" />
-      <path d="M 436,23 L 552,16 L 552,19 L 436,26 Z" fill="rgba(255,255,255,0.08)" />
-      <path d="M 436,35 L 446,36 L 446,605 L 436,604 Z" fill="url(#bodyDark)" />
-      <path d="M 542,42 L 552,43 L 552,598 L 542,597 Z" fill="url(#bodyDark)" />
-
       {/* ── 포켓 1 ── */}
       <path d="M 446,48 L 542,42 L 542,160 L 446,154 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 446,48 L 446,54 L 542,48 L 542,42 Z" fill="url(#pocketRail)" />
@@ -263,10 +234,6 @@ export default function FridgeSVG() {
       <text x="498" y="146" fontSize="22">🍶</text>
       <ellipse cx="534" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="526" y="150" fontSize="18">🧃</text>
-
-      {/* 가로 구분 바 1 */}
-      <path d="M 436,174 L 552,180 L 552,192 L 436,186 Z" fill="url(#bodyDark)" />
-      <path d="M 436,174 L 552,180 L 552,177 L 436,171 Z" fill="rgba(255,255,255,0.06)" />
 
       {/* ── 포켓 2 ── */}
       <path d="M 446,198 L 542,192 L 542,300 L 446,294 Z" fill="rgba(220,230,240,0.3)" />
@@ -283,10 +250,6 @@ export default function FridgeSVG() {
       <ellipse cx="534" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="526" y="289" fontSize="18">🍾</text>
 
-      {/* 가로 구분 바 2 */}
-      <path d="M 436,314 L 552,320 L 552,332 L 436,326 Z" fill="url(#bodyDark)" />
-      <path d="M 436,314 L 552,320 L 552,317 L 436,311 Z" fill="rgba(255,255,255,0.06)" />
-
       {/* ── 포켓 3 ── */}
       <path d="M 446,338 L 542,332 L 542,440 L 446,434 Z" fill="rgba(220,230,240,0.3)" />
       <path d="M 446,338 L 446,344 L 542,338 L 542,332 Z" fill="url(#pocketRail)" />
@@ -302,15 +265,10 @@ export default function FridgeSVG() {
       <ellipse cx="534" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
       <text x="526" y="430" fontSize="18">🫙</text>
 
-      {/* 가로 구분 바 3 */}
-      <path d="M 436,454 L 552,460 L 552,472 L 436,466 Z" fill="url(#bodyDark)" />
-      <path d="M 436,454 L 552,460 L 552,457 L 436,451 Z" fill="rgba(255,255,255,0.06)" />
-
       {/* ── 하단 유리 패널 ── */}
       <path d="M 446,472 L 542,478 L 542,598 L 446,592 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="3" />
       <path d="M 450,476 L 475,476 L 460,588 L 450,588 Z" fill="rgba(255,255,255,0.1)" />
       <path d="M 446,535 L 542,540 L 542,544 L 446,539 Z" fill="url(#frameG)" />
-      <path d="M 436,598 L 552,604 L 552,614 L 436,608 Z" fill="url(#bodyDark)" />
       <text x="485" y="518" fontSize="22">🥛</text>
       <text x="485" y="578" fontSize="24">🧴</text>
 
