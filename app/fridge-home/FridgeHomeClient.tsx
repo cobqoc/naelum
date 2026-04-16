@@ -213,7 +213,7 @@ export default function FridgeHomeClient() {
       <KitchenShelf items={sections.pantry} onRemove={removeItem} compact />
 
       {/* === 냉장고 + 열린 문 === */}
-      <div className="flex justify-center px-12 md:px-20 mb-2">
+      <div className="flex justify-center px-[72px] md:px-24 mb-2">
         <div className="relative w-full mx-auto" style={{ perspective: '1200px' }}>
 
           {/* 좌측 문 */}
@@ -276,7 +276,7 @@ export default function FridgeHomeClient() {
           <div
             className="relative rounded-xl overflow-hidden"
             style={{
-              aspectRatio: '5 / 6',
+              aspectRatio: '5 / 7',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
