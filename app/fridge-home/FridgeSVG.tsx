@@ -24,15 +24,6 @@ export default function FridgeSVG() {
           <stop offset="0%" stopColor="#f0ebe4" />
           <stop offset="100%" stopColor="#e4ddd4" />
         </linearGradient>
-        <linearGradient id="handleG" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#aaa" />
-          <stop offset="20%" stopColor="#ddd" />
-          <stop offset="40%" stopColor="#f5f5f5" />
-          <stop offset="50%" stopColor="#ffffff" />
-          <stop offset="60%" stopColor="#f5f5f5" />
-          <stop offset="80%" stopColor="#ddd" />
-          <stop offset="100%" stopColor="#999" />
-        </linearGradient>
         <linearGradient id="glassShelf" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(200,210,220,0.35)" />
           <stop offset="50%" stopColor="rgba(200,210,220,0.1)" />
@@ -49,10 +40,6 @@ export default function FridgeSVG() {
         <radialGradient id="lightG" cx="50%" cy="0%" r="70%">
           <stop offset="0%" stopColor="rgba(255,250,220,0.4)" />
           <stop offset="100%" stopColor="rgba(255,250,220,0)" />
-        </radialGradient>
-        <radialGradient id="frostG" cx="50%" cy="50%" r="50%">
-          <stop offset="60%" stopColor="rgba(200,230,255,0)" />
-          <stop offset="100%" stopColor="rgba(200,230,255,0.2)" />
         </radialGradient>
         <radialGradient id="shadowG" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="rgba(0,0,0,0.3)" />
@@ -108,7 +95,6 @@ export default function FridgeSVG() {
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
       {/* 상단면 */}
       <path d="M 166,14 L 180,6 L 448,6 L 434,14 Z" fill="url(#bodyLight)" />
-      <path d="M 172,14 L 184,8 L 442,8 L 430,14 Z" fill="rgba(255,255,255,0.06)" />
       {/* 정면 */}
       <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="3" />
 
@@ -135,10 +121,8 @@ export default function FridgeSVG() {
       <rect x="182" y="300" width="236" height="4" rx="2" fill="url(#glassShelf)" />
       <rect x="182" y="304" width="236" height="1" fill="rgba(255,255,255,0.3)" />
 
-      {/* 냉장/냉동 구분 (3D) */}
-      <rect x="168" y="383" width="264" height="3" rx="1" fill="rgba(255,255,255,0.08)" />
-      <rect x="168" y="386" width="264" height="10" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
-      <rect x="168" y="396" width="264" height="2" rx="1" fill="rgba(0,0,0,0.1)" />
+      {/* 냉장/냉동 구분 */}
+      <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
       {/* ====== 내부 — 냉동 ====== */}
       <rect x="176" y="393" width="248" height="224" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
@@ -168,7 +152,7 @@ export default function FridgeSVG() {
       <path d="M 590,404 L 600,408 L 582,620 L 574,624 Z" fill="url(#bodyDark)" />
       {/* 상단면 */}
       <path d="M 430,402 L 442,406 L 590,404 L 600,408 Z" fill="url(#bodyLight)" />
-      {/* 프레임 하이라이트 */}
+      {/* 내부 패널 */}
       <path d="M 448,416 L 566,422 L 556,608 L 448,604 Z" fill="url(#freezerG)" />
       {/* 인셋 라인 */}
       <path d="M 448,416 L 566,422 L 556,608 L 448,604 Z" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
@@ -178,9 +162,8 @@ export default function FridgeSVG() {
       <path d="M 448,515 L 558,513 L 558,516 L 448,518 Z" fill="url(#glassShelf)" />
       <path d="M 448,518 L 558,516 L 558,517 L 448,519 Z" fill="rgba(255,255,255,0.25)" />
 
-      {/* 킥플레이트 (다리 위 패널) */}
+      {/* 킥플레이트 */}
       <rect x="168" y="624" width="264" height="10" rx="2" fill="url(#bodyDark)" stroke="#8a3020" strokeWidth="0.5" />
-      <rect x="170" y="625" width="260" height="2" rx="1" fill="rgba(255,255,255,0.08)" />
 
       {/* 다리 (3D) */}
       <path d="M 185,629 L 185,641 L 203,641 L 203,629 Z" fill="#7a2818" />
