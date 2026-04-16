@@ -227,63 +227,92 @@ export default function FridgeHomeClient() {
 
       {/* === 냉장고 + 열린 문 === */}
       <div className="flex justify-center px-[72px] md:px-24 mb-2">
-        <div className="relative w-full mx-auto" style={{ perspective: '1200px' }}>
+        <div className="relative w-full max-w-sm md:max-w-md mx-auto" style={{ perspective: '1200px' }}>
 
-          {/* 좌측 문 */}
+          {/* 좌측 문 — 닫힘: 본체 덮음 → 열림: 바깥으로 당겨짐 */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: '90px',
-              left: doorAnimated ? '-68px' : '0px',
+              width: doorAnimated ? '90px' : '52%',
+              left: doorAnimated ? '-68px' : '-1px',
               transform: doorAnimated ? 'rotateY(42deg)' : 'rotateY(0deg)',
               transformOrigin: 'right center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
-            <div className="w-full h-full rounded-l-xl overflow-hidden" style={{
+            <div className="w-full h-full rounded-l-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset 2px 0 6px rgba(255,255,255,0.2), -4px 0 12px rgba(0,0,0,0.3)',
+              boxShadow: doorAnimated
+                ? 'inset 2px 0 6px rgba(255,255,255,0.2), -4px 0 12px rgba(0,0,0,0.3)'
+                : '2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderRight: 'none',
             }}>
-              <div className="h-full flex flex-col">
-                <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
-                <DoorRail />
-                <DoorShelfSlot items={sections.doorL.slice(1, 2)} onRemove={removeItem} decoEmoji="🧴" />
-                <DoorRail />
-                <DoorShelfSlot items={sections.doorL.slice(2)} onRemove={removeItem} decoEmoji="🫙" />
-                <DoorRail />
-              </div>
+              {/* 닫힌 상태 앞면 */}
+              {!doorAnimated && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-[9px] font-bold tracking-[0.15em] text-white/50 mb-2">NAELUM</span>
+                  <span className="text-3xl">🧊</span>
+                  <div className="absolute right-2 top-[40%] w-[5px] h-[40px] rounded-full"
+                    style={{ background: 'linear-gradient(180deg, #9a9a9a 0%, #6a6a6a 100%)', boxShadow: '1px 1px 3px rgba(0,0,0,0.4)' }}
+                  />
+                </div>
+              )}
+              {/* 열린 상태 안쪽 선반 */}
+              {doorAnimated && (
+                <div className="h-full flex flex-col">
+                  <DoorShelfSlot items={sections.doorL.slice(0, 1)} onRemove={removeItem} decoEmoji="🍶" />
+                  <DoorRail />
+                  <DoorShelfSlot items={sections.doorL.slice(1, 2)} onRemove={removeItem} decoEmoji="🧴" />
+                  <DoorRail />
+                  <DoorShelfSlot items={sections.doorL.slice(2)} onRemove={removeItem} decoEmoji="🫙" />
+                  <DoorRail />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 우측 문 */}
+          {/* 우측 문 — 닫힘: 본체 덮음 → 열림: 바깥으로 당겨짐 */}
           <div
             className="absolute top-0 bottom-[10px] z-10"
             style={{
-              width: '90px',
-              right: doorAnimated ? '-68px' : '0px',
+              width: doorAnimated ? '90px' : '52%',
+              right: doorAnimated ? '-68px' : '-1px',
               transform: doorAnimated ? 'rotateY(-42deg)' : 'rotateY(0deg)',
               transformOrigin: 'left center',
               transformStyle: 'preserve-3d',
-              transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
+              transition: 'all 1.6s cubic-bezier(0.22, 0.61, 0.36, 1)',
             }}
           >
-            <div className="w-full h-full rounded-r-xl overflow-hidden" style={{
+            <div className="w-full h-full rounded-r-xl overflow-hidden relative" style={{
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
-              boxShadow: 'inset -2px 0 6px rgba(255,255,255,0.2), 4px 0 12px rgba(0,0,0,0.3)',
+              boxShadow: doorAnimated
+                ? 'inset -2px 0 6px rgba(255,255,255,0.2), 4px 0 12px rgba(0,0,0,0.3)'
+                : '-2px 0 8px rgba(0,0,0,0.3)',
               border: '2px solid #b84a42',
               borderLeft: 'none',
             }}>
-              <div className="h-full flex flex-col">
-                <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
-                <DoorRail />
-                <DoorShelfSlot items={sections.doorR.slice(1, 2)} onRemove={removeItem} decoEmoji="🧈" />
-                <DoorRail />
-                <DoorShelfSlot items={sections.doorR.slice(2)} onRemove={removeItem} decoEmoji="🍯" />
-                <DoorRail />
-              </div>
+              {/* 닫힌 상태 앞면 */}
+              {!doorAnimated && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-sm text-white/50 font-bold">{items.length}개</span>
+                  <div className="absolute left-2 top-[40%] w-[5px] h-[40px] rounded-full"
+                    style={{ background: 'linear-gradient(180deg, #9a9a9a 0%, #6a6a6a 100%)', boxShadow: '-1px 1px 3px rgba(0,0,0,0.4)' }}
+                  />
+                </div>
+              )}
+              {/* 열린 상태 안쪽 선반 */}
+              {doorAnimated && (
+                <div className="h-full flex flex-col">
+                  <DoorShelfSlot items={sections.doorR.slice(0, 1)} onRemove={removeItem} decoEmoji="🥫" />
+                  <DoorRail />
+                  <DoorShelfSlot items={sections.doorR.slice(1, 2)} onRemove={removeItem} decoEmoji="🧈" />
+                  <DoorRail />
+                  <DoorShelfSlot items={sections.doorR.slice(2)} onRemove={removeItem} decoEmoji="🍯" />
+                  <DoorRail />
+                </div>
+              )}
             </div>
           </div>
 
@@ -292,7 +321,7 @@ export default function FridgeHomeClient() {
             className="relative rounded-xl overflow-hidden"
             style={{
               height: 'calc(100dvh - 260px)',
-              maxHeight: '520px',
+              maxHeight: '480px',
               background: 'linear-gradient(180deg, #e8756a 0%, #d4635a 50%, #c75550 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.2)',
               border: '2px solid #b84a42',
@@ -577,7 +606,7 @@ function KitchenShelf({ items, onRemove, compact }: { items: FridgeItem[]; onRem
 
   return (
     <div className={`flex justify-center px-4 ${compact ? 'mb-1' : 'mb-6'}`}>
-      <div className="w-full">
+      <div className="w-full max-w-lg mx-auto">
         {/* 상단 선반 */}
         <WallShelf items={topItems} deco={DECO_TOP} onRemove={onRemove} compact={compact} />
 
