@@ -76,56 +76,84 @@ export default function FridgeSVG() {
       <path d="M 40,6 L 32,10 L 32,610 L 40,614 Z" fill="url(#bodyDark)" />
       {/* 문 안쪽 배경 */}
       <path d="M 46,14 L 166,22 L 166,618 L 46,610 Z" fill="url(#pocketBg)" />
-      {/* 금색 내부 프레임 */}
-      <path d="M 50,18 L 162,25 L 162,615 L 50,607 Z" fill="none" stroke="url(#frameG)" strokeWidth="4" />
 
-      {/* 좌측 포켓 선반 1 — U자형 컨테이너 */}
-      {/* 좌측 벽 */}
-      <path d="M 54,50 L 54,155 L 60,156 L 60,51 Z" fill="url(#pocketRail)" />
-      {/* 우측 벽 */}
-      <path d="M 156,56 L 156,161 L 162,162 L 162,57 Z" fill="url(#pocketRail)" />
-      {/* 뒷면 */}
-      <path d="M 60,51 L 156,56 L 156,161 L 60,156 Z" fill="rgba(140,70,35,0.2)" />
-      {/* 바닥 */}
-      <path d="M 54,155 L 162,161 L 162,168 L 54,162 Z" fill="url(#shelfG)" />
-      {/* 앞면 립 */}
-      <path d="M 54,162 L 162,168 L 162,176 L 54,170 Z" fill="url(#shelfFront)" />
-      <path d="M 54,162 L 162,168 L 162,170 L 54,164 Z" fill="rgba(255,255,255,0.12)" />
-      {/* 아이템 */}
-      <text x="72" y="148" fontSize="26">🍶</text>
-      <text x="108" y="145" fontSize="22">🧃</text>
-      <text x="138" y="150" fontSize="18">🥤</text>
+      {/* ── 두꺼운 내부 프레임 (문 테두리) ── */}
+      {/* 상단 바 */}
+      <path d="M 48,16 L 164,23 L 164,42 L 48,35 Z" fill="url(#bodyDark)" />
+      <path d="M 48,16 L 164,23 L 164,26 L 48,19 Z" fill="rgba(255,255,255,0.08)" />
+      {/* 좌측 세로 바 */}
+      <path d="M 48,35 L 58,36 L 58,598 L 48,597 Z" fill="url(#bodyDark)" />
+      {/* 우측 세로 바 */}
+      <path d="M 154,42 L 164,43 L 164,605 L 154,604 Z" fill="url(#bodyDark)" />
 
-      {/* 좌측 포켓 선반 2 */}
-      <path d="M 54,195 L 54,290 L 60,291 L 60,196 Z" fill="url(#pocketRail)" />
-      <path d="M 156,200 L 156,295 L 162,296 L 162,201 Z" fill="url(#pocketRail)" />
-      <path d="M 60,196 L 156,200 L 156,295 L 60,291 Z" fill="rgba(140,70,35,0.2)" />
-      <path d="M 54,290 L 162,295 L 162,302 L 54,297 Z" fill="url(#shelfG)" />
-      <path d="M 54,297 L 162,302 L 162,310 L 54,305 Z" fill="url(#shelfFront)" />
-      <path d="M 54,297 L 162,302 L 162,304 L 54,299 Z" fill="rgba(255,255,255,0.12)" />
-      <text x="68" y="283" fontSize="24">🫙</text>
-      <text x="105" y="280" fontSize="22">🧴</text>
-      <text x="138" y="285" fontSize="20">🍾</text>
+      {/* ── 포켓 1 구역 ── */}
+      {/* 포켓 배경 */}
+      <path d="M 58,42 L 154,48 L 154,160 L 58,154 Z" fill="rgba(100,50,30,0.25)" />
+      {/* 금색 선반 (두꺼운 U자) */}
+      <path d="M 58,42 L 58,48 L 154,54 L 154,48 Z" fill="url(#pocketRail)" />
+      <path d="M 58,48 L 66,49 L 66,150 L 58,149 Z" fill="url(#pocketRail)" />
+      <path d="M 146,55 L 154,54 L 154,157 L 146,156 Z" fill="url(#pocketRail)" />
+      <path d="M 58,149 L 154,155 L 154,166 L 58,160 Z" fill="url(#shelfG)" />
+      <path d="M 58,160 L 154,166 L 154,174 L 58,168 Z" fill="url(#shelfFront)" />
+      <path d="M 58,160 L 154,166 L 154,168 L 58,162 Z" fill="rgba(255,255,255,0.15)" />
+      {/* 아이템 + 그림자 */}
+      <ellipse cx="85" cy="152" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="73" y="148" fontSize="26">🍶</text>
+      <ellipse cx="118" cy="150" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="108" y="146" fontSize="22">🧃</text>
+      <ellipse cx="144" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="136" y="150" fontSize="18">🥤</text>
 
-      {/* 좌측 포켓 선반 3 */}
-      <path d="M 54,330 L 54,430 L 60,431 L 60,331 Z" fill="url(#pocketRail)" />
-      <path d="M 156,335 L 156,435 L 162,436 L 162,336 Z" fill="url(#pocketRail)" />
-      <path d="M 60,331 L 156,335 L 156,435 L 60,431 Z" fill="rgba(140,70,35,0.2)" />
-      <path d="M 54,430 L 162,435 L 162,442 L 54,437 Z" fill="url(#shelfG)" />
-      <path d="M 54,437 L 162,442 L 162,450 L 54,445 Z" fill="url(#shelfFront)" />
-      <path d="M 54,437 L 162,442 L 162,444 L 54,439 Z" fill="rgba(255,255,255,0.12)" />
-      <text x="70" y="422" fontSize="26">🥫</text>
-      <text x="110" y="418" fontSize="22">🍯</text>
-      <text x="140" y="425" fontSize="18">🫒</text>
+      {/* 가로 구분 바 1 */}
+      <path d="M 48,174 L 164,180 L 164,192 L 48,186 Z" fill="url(#bodyDark)" />
+      <path d="M 48,174 L 164,180 L 164,177 L 48,171 Z" fill="rgba(255,255,255,0.06)" />
 
-      {/* 좌측 하단 — 유리 패널 (냉동 문) */}
-      <path d="M 54,470 L 162,475 L 162,600 L 54,595 Z" fill="rgba(220,230,240,0.5)" stroke="url(#frameG)" strokeWidth="3" />
-      {/* 유리 반사 */}
-      <path d="M 60,475 L 90,475 L 70,590 L 60,590 Z" fill="rgba(255,255,255,0.12)" />
-      {/* 냉동 문 가로 구분 */}
-      <path d="M 54,535 L 162,540 L 162,543 L 54,538 Z" fill="url(#frameG)" />
-      <text x="95" y="515" fontSize="22">🥛</text>
-      <text x="95" y="580" fontSize="24">🧈</text>
+      {/* ── 포켓 2 구역 ── */}
+      <path d="M 58,192 L 154,198 L 154,300 L 58,294 Z" fill="rgba(100,50,30,0.25)" />
+      <path d="M 58,192 L 58,198 L 154,204 L 154,198 Z" fill="url(#pocketRail)" />
+      <path d="M 58,198 L 66,199 L 66,290 L 58,289 Z" fill="url(#pocketRail)" />
+      <path d="M 146,205 L 154,204 L 154,297 L 146,296 Z" fill="url(#pocketRail)" />
+      <path d="M 58,289 L 154,295 L 154,306 L 58,300 Z" fill="url(#shelfG)" />
+      <path d="M 58,300 L 154,306 L 154,314 L 58,308 Z" fill="url(#shelfFront)" />
+      <path d="M 58,300 L 154,306 L 154,308 L 58,302 Z" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="82" cy="292" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="68" y="287" fontSize="26">🫙</text>
+      <ellipse cx="118" cy="290" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="105" y="285" fontSize="22">🧴</text>
+      <ellipse cx="144" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="136" y="289" fontSize="18">🍾</text>
+
+      {/* 가로 구분 바 2 */}
+      <path d="M 48,314 L 164,320 L 164,332 L 48,326 Z" fill="url(#bodyDark)" />
+      <path d="M 48,314 L 164,320 L 164,317 L 48,311 Z" fill="rgba(255,255,255,0.06)" />
+
+      {/* ── 포켓 3 구역 ── */}
+      <path d="M 58,332 L 154,338 L 154,440 L 58,434 Z" fill="rgba(100,50,30,0.25)" />
+      <path d="M 58,332 L 58,338 L 154,344 L 154,338 Z" fill="url(#pocketRail)" />
+      <path d="M 58,338 L 66,339 L 66,430 L 58,429 Z" fill="url(#pocketRail)" />
+      <path d="M 146,345 L 154,344 L 154,437 L 146,436 Z" fill="url(#pocketRail)" />
+      <path d="M 58,429 L 154,435 L 154,446 L 58,440 Z" fill="url(#shelfG)" />
+      <path d="M 58,440 L 154,446 L 154,454 L 58,448 Z" fill="url(#shelfFront)" />
+      <path d="M 58,440 L 154,446 L 154,448 L 58,442 Z" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="82" cy="432" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="70" y="428" fontSize="26">🥫</text>
+      <ellipse cx="118" cy="428" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="108" y="424" fontSize="22">🍯</text>
+      <ellipse cx="144" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="136" y="430" fontSize="18">🫒</text>
+
+      {/* 가로 구분 바 3 */}
+      <path d="M 48,454 L 164,460 L 164,472 L 48,466 Z" fill="url(#bodyDark)" />
+      <path d="M 48,454 L 164,460 L 164,457 L 48,451 Z" fill="rgba(255,255,255,0.06)" />
+
+      {/* ── 하단 유리 패널 (냉동 문) ── */}
+      <path d="M 58,472 L 154,478 L 154,598 L 58,592 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="3" />
+      <path d="M 62,476 L 85,476 L 72,588 L 62,588 Z" fill="rgba(255,255,255,0.1)" />
+      <path d="M 58,535 L 154,540 L 154,544 L 58,539 Z" fill="url(#frameG)" />
+      {/* 하단 바 */}
+      <path d="M 48,598 L 164,604 L 164,614 L 48,608 Z" fill="url(#bodyDark)" />
+      <text x="95" y="518" fontSize="22">🥛</text>
+      <text x="95" y="578" fontSize="24">🧈</text>
 
       {/* ========== 냉장고 본체 ========== */}
       <rect x="170" y="18" width="260" height="605" rx="6" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="2" />
@@ -247,48 +275,77 @@ export default function FridgeSVG() {
       <path d="M 560,6 L 568,10 L 568,610 L 560,614 Z" fill="url(#bodyDark)" />
       {/* 문 안쪽 배경 */}
       <path d="M 434,22 L 554,14 L 554,610 L 434,618 Z" fill="url(#pocketBg)" />
-      {/* 금색 내부 프레임 */}
-      <path d="M 438,25 L 550,18 L 550,607 L 438,615 Z" fill="none" stroke="url(#frameG)" strokeWidth="4" />
 
-      {/* 우측 포켓 선반 1 — U자형 */}
-      <path d="M 438,56 L 438,161 L 444,162 L 444,57 Z" fill="url(#pocketRail)" />
-      <path d="M 544,50 L 544,155 L 550,156 L 550,51 Z" fill="url(#pocketRail)" />
-      <path d="M 444,57 L 544,50 L 544,155 L 444,162 Z" fill="rgba(140,70,35,0.2)" />
-      <path d="M 438,161 L 550,155 L 550,162 L 438,168 Z" fill="url(#shelfG)" />
-      <path d="M 438,168 L 550,162 L 550,170 L 438,176 Z" fill="url(#shelfFront)" />
-      <path d="M 438,168 L 550,162 L 550,164 L 438,170 Z" fill="rgba(255,255,255,0.12)" />
-      <text x="462" y="148" fontSize="24">🥤</text>
-      <text x="498" y="145" fontSize="22">🍶</text>
-      <text x="530" y="150" fontSize="18">🧃</text>
+      {/* ── 두꺼운 내부 프레임 ── */}
+      <path d="M 436,23 L 552,16 L 552,42 L 436,35 Z" fill="url(#bodyDark)" />
+      <path d="M 436,23 L 552,16 L 552,19 L 436,26 Z" fill="rgba(255,255,255,0.08)" />
+      <path d="M 436,35 L 446,36 L 446,605 L 436,604 Z" fill="url(#bodyDark)" />
+      <path d="M 542,42 L 552,43 L 552,598 L 542,597 Z" fill="url(#bodyDark)" />
 
-      {/* 우측 포켓 선반 2 */}
-      <path d="M 438,200 L 438,295 L 444,296 L 444,201 Z" fill="url(#pocketRail)" />
-      <path d="M 544,195 L 544,290 L 550,291 L 550,196 Z" fill="url(#pocketRail)" />
-      <path d="M 444,201 L 544,195 L 544,290 L 444,296 Z" fill="rgba(140,70,35,0.2)" />
-      <path d="M 438,295 L 550,290 L 550,297 L 438,302 Z" fill="url(#shelfG)" />
-      <path d="M 438,302 L 550,297 L 550,305 L 438,310 Z" fill="url(#shelfFront)" />
-      <path d="M 438,302 L 550,297 L 550,299 L 438,304 Z" fill="rgba(255,255,255,0.12)" />
-      <text x="460" y="283" fontSize="24">🫒</text>
-      <text x="500" y="280" fontSize="22">🥫</text>
-      <text x="532" y="285" fontSize="18">🍾</text>
+      {/* ── 포켓 1 ── */}
+      <path d="M 446,48 L 542,42 L 542,160 L 446,154 Z" fill="rgba(100,50,30,0.25)" />
+      <path d="M 446,48 L 446,54 L 542,48 L 542,42 Z" fill="url(#pocketRail)" />
+      <path d="M 446,54 L 454,55 L 454,150 L 446,149 Z" fill="url(#pocketRail)" />
+      <path d="M 534,49 L 542,48 L 542,157 L 534,156 Z" fill="url(#pocketRail)" />
+      <path d="M 446,149 L 542,155 L 542,166 L 446,160 Z" fill="url(#shelfG)" />
+      <path d="M 446,160 L 542,166 L 542,174 L 446,168 Z" fill="url(#shelfFront)" />
+      <path d="M 446,160 L 542,166 L 542,168 L 446,162 Z" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="475" cy="152" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="463" y="148" fontSize="24">🥤</text>
+      <ellipse cx="508" cy="150" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="498" y="146" fontSize="22">🍶</text>
+      <ellipse cx="534" cy="153" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="526" y="150" fontSize="18">🧃</text>
 
-      {/* 우측 포켓 선반 3 */}
-      <path d="M 438,335 L 438,435 L 444,436 L 444,336 Z" fill="url(#pocketRail)" />
-      <path d="M 544,330 L 544,430 L 550,431 L 550,331 Z" fill="url(#pocketRail)" />
-      <path d="M 444,336 L 544,330 L 544,430 L 444,436 Z" fill="rgba(140,70,35,0.2)" />
-      <path d="M 438,435 L 550,430 L 550,437 L 438,442 Z" fill="url(#shelfG)" />
-      <path d="M 438,442 L 550,437 L 550,445 L 438,450 Z" fill="url(#shelfFront)" />
-      <path d="M 438,442 L 550,437 L 550,439 L 438,444 Z" fill="rgba(255,255,255,0.12)" />
-      <text x="465" y="422" fontSize="24">🧉</text>
-      <text x="505" y="418" fontSize="22">🍯</text>
-      <text x="535" y="425" fontSize="18">🫙</text>
+      {/* 가로 구분 바 1 */}
+      <path d="M 436,174 L 552,180 L 552,192 L 436,186 Z" fill="url(#bodyDark)" />
+      <path d="M 436,174 L 552,180 L 552,177 L 436,171 Z" fill="rgba(255,255,255,0.06)" />
 
-      {/* 우측 하단 — 유리 패널 */}
-      <path d="M 438,475 L 550,470 L 550,600 L 438,605 Z" fill="rgba(220,230,240,0.5)" stroke="url(#frameG)" strokeWidth="3" />
-      <path d="M 444,476 L 472,476 L 455,596 L 444,596 Z" fill="rgba(255,255,255,0.12)" />
-      <path d="M 438,540 L 550,535 L 550,538 L 438,543 Z" fill="url(#frameG)" />
-      <text x="485" y="515" fontSize="22">🥛</text>
-      <text x="485" y="580" fontSize="24">🧴</text>
+      {/* ── 포켓 2 ── */}
+      <path d="M 446,198 L 542,192 L 542,300 L 446,294 Z" fill="rgba(100,50,30,0.25)" />
+      <path d="M 446,198 L 446,204 L 542,198 L 542,192 Z" fill="url(#pocketRail)" />
+      <path d="M 446,204 L 454,205 L 454,290 L 446,289 Z" fill="url(#pocketRail)" />
+      <path d="M 534,199 L 542,198 L 542,297 L 534,296 Z" fill="url(#pocketRail)" />
+      <path d="M 446,289 L 542,295 L 542,306 L 446,300 Z" fill="url(#shelfG)" />
+      <path d="M 446,300 L 542,306 L 542,314 L 446,308 Z" fill="url(#shelfFront)" />
+      <path d="M 446,300 L 542,306 L 542,308 L 446,302 Z" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="475" cy="292" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="460" y="287" fontSize="24">🫒</text>
+      <ellipse cx="508" cy="290" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="498" y="285" fontSize="22">🥫</text>
+      <ellipse cx="534" cy="293" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="526" y="289" fontSize="18">🍾</text>
+
+      {/* 가로 구분 바 2 */}
+      <path d="M 436,314 L 552,320 L 552,332 L 436,326 Z" fill="url(#bodyDark)" />
+      <path d="M 436,314 L 552,320 L 552,317 L 436,311 Z" fill="rgba(255,255,255,0.06)" />
+
+      {/* ── 포켓 3 ── */}
+      <path d="M 446,338 L 542,332 L 542,440 L 446,434 Z" fill="rgba(100,50,30,0.25)" />
+      <path d="M 446,338 L 446,344 L 542,338 L 542,332 Z" fill="url(#pocketRail)" />
+      <path d="M 446,344 L 454,345 L 454,430 L 446,429 Z" fill="url(#pocketRail)" />
+      <path d="M 534,339 L 542,338 L 542,437 L 534,436 Z" fill="url(#pocketRail)" />
+      <path d="M 446,429 L 542,435 L 542,446 L 446,440 Z" fill="url(#shelfG)" />
+      <path d="M 446,440 L 542,446 L 542,454 L 446,448 Z" fill="url(#shelfFront)" />
+      <path d="M 446,440 L 542,446 L 542,448 L 446,442 Z" fill="rgba(255,255,255,0.15)" />
+      <ellipse cx="475" cy="432" rx="12" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="465" y="428" fontSize="24">🧉</text>
+      <ellipse cx="508" cy="428" rx="10" ry="3" fill="rgba(0,0,0,0.08)" />
+      <text x="498" y="424" fontSize="22">🍯</text>
+      <ellipse cx="534" cy="433" rx="8" ry="2" fill="rgba(0,0,0,0.06)" />
+      <text x="526" y="430" fontSize="18">🫙</text>
+
+      {/* 가로 구분 바 3 */}
+      <path d="M 436,454 L 552,460 L 552,472 L 436,466 Z" fill="url(#bodyDark)" />
+      <path d="M 436,454 L 552,460 L 552,457 L 436,451 Z" fill="rgba(255,255,255,0.06)" />
+
+      {/* ── 하단 유리 패널 ── */}
+      <path d="M 446,472 L 542,478 L 542,598 L 446,592 Z" fill="rgba(210,225,240,0.45)" stroke="url(#frameG)" strokeWidth="3" />
+      <path d="M 450,476 L 475,476 L 460,588 L 450,588 Z" fill="rgba(255,255,255,0.1)" />
+      <path d="M 446,535 L 542,540 L 542,544 L 446,539 Z" fill="url(#frameG)" />
+      <path d="M 436,598 L 552,604 L 552,614 L 436,608 Z" fill="url(#bodyDark)" />
+      <text x="485" y="518" fontSize="22">🥛</text>
+      <text x="485" y="578" fontSize="24">🧴</text>
 
       {/* ========== 내부 데코 식품 ========== */}
       {/* 선반 1 위 */}
