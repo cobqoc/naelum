@@ -123,10 +123,8 @@ export default function FridgeSVG() {
       <rect x="302" y="334" width="116" height="46" rx="3" fill="rgba(215,230,215,0.3)" stroke="#c89030" strokeWidth="1.5" />
       <rect x="338" y="333" width="42" height="3" rx="1.5" fill="#dab050" />
 
-      {/* ===== 냉장/냉동 구분 (두꺼운 나무 프레임) ===== */}
-      <rect x="168" y="382" width="264" height="6" fill="#ecd070" />
-      <rect x="168" y="388" width="264" height="12" rx="1" fill="#c89030" />
-      <rect x="168" y="388" width="264" height="2" fill="rgba(255,255,255,0.1)" />
+      {/* ===== 냉장/냉동 구분 ===== */}
+      <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
       {/* ====== 내부 — 냉동 ====== */}
       <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
