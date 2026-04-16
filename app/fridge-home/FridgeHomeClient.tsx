@@ -101,7 +101,7 @@ export default function FridgeHomeClient() {
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [doorOpen, setDoorOpen] = useState(false);
+  // doorOpen 제거 — SVG가 항상 열린 상태
   const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
   const [inlineSearch, setInlineSearch] = useState('');
 
@@ -122,11 +122,7 @@ export default function FridgeHomeClient() {
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 페이지 로드 시 문 열기 (한 방향으로 끝까지)
-  useEffect(() => {
-    const t = setTimeout(() => setDoorOpen(true), 400);
-    return () => clearTimeout(t);
-  }, []);
+  // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
   useEffect(() => {
     if (!toast) return;
@@ -223,11 +219,7 @@ export default function FridgeHomeClient() {
 
   return (
     <div
-      className="h-dvh overflow-hidden bg-background-primary text-text-primary flex flex-col transition-all"
-      style={{
-        filter: doorOpen ? 'brightness(1)' : 'brightness(0)',
-        transition: 'filter 1.8s ease-out',
-      }}
+      className="h-dvh overflow-hidden bg-background-primary text-text-primary flex flex-col"
     >
       {/* 헤더 */}
       <header className="relative z-20 px-4 pt-1 pb-0 flex items-center justify-between">
@@ -247,12 +239,11 @@ export default function FridgeHomeClient() {
       <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-20 md:pb-8">
         <div className="relative w-full max-w-xs md:max-w-sm mx-auto h-[calc(100dvh-220px)] md:h-[calc(100dvh-300px)]">
           {/* SVG 냉장고 프레임 */}
-          <FridgeSVG doorOpen={doorOpen} />
+          <FridgeSVG />
 
           {/* 재료 오버레이 — SVG 위에 absolute 배치 */}
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ opacity: doorOpen ? 1 : 0, transition: 'opacity 1.5s ease 0.8s' }}
           >
             {/* 냉장 선반 1 (top: 10%~24%) */}
             <div className="absolute pointer-events-auto flex flex-wrap gap-1 items-end px-1"
