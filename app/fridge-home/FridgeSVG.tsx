@@ -193,31 +193,6 @@ export default function FridgeSVG() {
       <path d="M 397,629 L 397,641 L 415,641 L 415,629 Z" fill="#7a2818" />
       <path d="M 397,629 L 402,626 L 420,626 L 415,629 Z" fill="#a04030" />
       <path d="M 415,629 L 420,626 L 420,638 L 415,641 Z" fill="#602018" />
-      {/* ====== 최상위 레이어: 환기구 + 손잡이 ====== */}
-      {/* 환기구 */}
-      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
-        <rect key={`v${i}`} x={205 + i * 17} y="20" width="12" height="3" rx="1.5" fill="rgba(0,0,0,0.1)" />
-      ))}
-
-      {/* 좌측 냉장 손잡이 */}
-      <path d="M 163,172 L 163,258" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
-      <path d="M 161,170 L 161,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 159,172 L 159,258" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-
-      {/* 좌측 냉동 손잡이 */}
-      <path d="M 163,489 L 163,545" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
-      <path d="M 161,487 L 161,547" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 159,489 L 159,545" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-
-      {/* 우측 냉장 손잡이 */}
-      <path d="M 437,172 L 437,258" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
-      <path d="M 439,170 L 439,260" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 441,172 L 441,258" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
-
-      {/* 우측 냉동 손잡이 */}
-      <path d="M 437,489 L 437,545" stroke="rgba(0,0,0,0.15)" strokeWidth="10" strokeLinecap="round" />
-      <path d="M 439,487 L 439,547" stroke="url(#handleG)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 441,489 L 441,545" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
     </svg>
   );
 }
