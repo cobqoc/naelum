@@ -24,7 +24,7 @@ type FridgeItem = {
   storage_location: string | null;
 };
 
-type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR';
+type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR' | 'pantry';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,8 +51,12 @@ function getEmoji(name: string, category: string): string {
 }
 
 function assignSection(item: FridgeItem, idx: number): Section {
+  if (item.storage_location === '상온') return 'pantry';
   if (item.storage_location === '냉동') return 'freezer';
-  if (item.category === 'seasoning' || item.category === 'condiment') return idx % 2 === 0 ? 'doorL' : 'doorR';
+  if (item.category === 'seasoning' || item.category === 'condiment') {
+    if (item.storage_location === '냉장') return idx % 2 === 0 ? 'doorL' : 'doorR';
+    return 'pantry';
+  }
   if (item.category === 'veggie' || item.category === 'fruit') return 'veggie';
   return 'main';
 }
@@ -186,7 +190,7 @@ export default function FridgeHomeClient() {
   };
 
   const sections = useMemo(() => {
-    const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[] };
+    const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[], pantry:[] };
     items.forEach((item, idx) => m[assignSection(item, idx)].push(item));
     return m;
   }, [items]);
@@ -306,7 +310,7 @@ export default function FridgeHomeClient() {
             onClick={() => { if (!doorOpen) setDoorOpen(true); }}
             className={`relative rounded-xl overflow-hidden ${!doorOpen ? 'cursor-pointer' : ''}`}
             style={{
-              aspectRatio: '5 / 8',
+              aspectRatio: '5 / 6',
               background: 'linear-gradient(180deg, #8B4513 0%, #7a3b10 100%)',
               boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)',
               border: '3px solid #6b3410',
@@ -389,6 +393,9 @@ export default function FridgeHomeClient() {
           </div>
         </div>
       </div>
+
+      {/* === 상온 선반 (냉장고 밖) === */}
+      <PantryShelf items={sections.pantry} onRemove={removeItem} />
 
       {/* === 재료 추가 === */}
       <section className="relative z-20 max-w-sm mx-auto px-4 mt-2 pb-32">
@@ -504,6 +511,102 @@ function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string)
       <span className="text-[7px] text-white/70 font-medium truncate w-full text-center">
         {item.ingredient_name.slice(0, 3)}
       </span>
+    </button>
+  );
+}
+
+function PantryShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+  // 2단 선반으로 나누기
+  const mid = Math.ceil(items.length / 2);
+  const top = items.slice(0, mid);
+  const bottom = items.slice(mid);
+
+  return (
+    <div className="flex justify-center px-4 mb-4">
+      <div className="w-full max-w-xs md:max-w-sm">
+        <h3 className="text-xs font-bold text-text-secondary mb-2 flex items-center gap-1.5">
+          <span>🏠</span> 상온 선반
+        </h3>
+
+        {/* 벽 배경 */}
+        <div
+          className="relative rounded-xl p-3 pb-4"
+          style={{
+            background: 'linear-gradient(180deg, #f5e6c8 0%, #e8d5b0 100%)',
+            boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.15)',
+            border: '1px solid rgba(180,150,100,0.3)',
+          }}
+        >
+          {/* 벽 패턴 (미세한 다이아몬드) */}
+          <div className="absolute inset-0 rounded-xl opacity-[0.04] pointer-events-none"
+            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%)', backgroundSize: '16px 16px' }}
+          />
+
+          {/* 상단 선반 */}
+          <WoodShelf items={top} onRemove={onRemove} />
+
+          {/* 하단 선반 */}
+          {bottom.length > 0 && (
+            <div className="mt-3">
+              <WoodShelf items={bottom} onRemove={onRemove} />
+            </div>
+          )}
+
+          {/* 비어있을 때 */}
+          {items.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-xs text-amber-800/40 italic">상온 재료가 없어요</p>
+              <p className="text-[10px] text-amber-800/30 mt-1">양파, 감자, 간장 같은 재료를 추가해보세요</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WoodShelf({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+  return (
+    <div className="relative">
+      {/* 재료들 */}
+      <div className="flex flex-wrap gap-1.5 px-1 pb-2 min-h-[36px] items-end">
+        {items.map(item => (
+          <PantryItem key={item.id} item={item} onRemove={onRemove} />
+        ))}
+      </div>
+      {/* 나무 선반 판 */}
+      <div className="relative h-[6px] rounded-sm" style={{
+        background: 'linear-gradient(180deg, #8B6914 0%, #6b4f10 60%, #5a3f0e 100%)',
+        boxShadow: '0 3px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.2)',
+      }} />
+      {/* 선반 브래킷 (좌/우) */}
+      <div className="absolute -bottom-2 left-2 w-3 h-4 rounded-b-sm" style={{
+        background: 'linear-gradient(180deg, #6b4f10 0%, #5a3f0e 100%)',
+        boxShadow: '1px 2px 3px rgba(0,0,0,0.2)',
+      }} />
+      <div className="absolute -bottom-2 right-2 w-3 h-4 rounded-b-sm" style={{
+        background: 'linear-gradient(180deg, #6b4f10 0%, #5a3f0e 100%)',
+        boxShadow: '-1px 2px 3px rgba(0,0,0,0.2)',
+      }} />
+    </div>
+  );
+}
+
+function PantryItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
+  const days = daysUntilExpiry(item.expiry_date);
+  const border = freshBorder(days);
+  const label = freshLabel(days);
+  const emoji = getEmoji(item.ingredient_name, item.category);
+
+  return (
+    <button
+      onClick={() => onRemove(item.id)}
+      className="flex flex-col items-center gap-0 hover:scale-110 active:scale-90 transition-transform"
+      title={`${item.ingredient_name} ${label} · 탭해서 먹기`}
+    >
+      <span className="text-2xl drop-shadow-md">{emoji}</span>
+      <span className="text-[8px] font-bold text-amber-900/70 whitespace-nowrap">{item.ingredient_name}</span>
+      {label && <span className="text-[7px] font-bold" style={{ color: border }}>{label}</span>}
     </button>
   );
 }
