@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * 낼름 — 진짜 냉장고처럼 보이는 실험 홈 v4
+ * 낼름 — 카툰 양문형 냉장고 v5
  *
- * CSS 3D perspective로 문이 진짜로 열리는 프리미엄 냉장고.
- * 브랜드 청록색 + 선반 3단 + 재료가 선반에 앉아있는 구조.
+ * 레퍼런스: 따뜻한 갈색 카툰 일러스트 양문형 냉장고.
+ * 문이 기본 열려있고 재료가 선반에 바로 보임.
+ * CSS로 양문 V자 + 선반 + 재료 칩 구현.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -23,7 +24,7 @@ type FridgeItem = {
   storage_location: string | null;
 };
 
-type Shelf = '냉동' | '냉장' | '야채칸';
+type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,56 +34,55 @@ function daysUntilExpiry(d: string | null): number {
   const exp = new Date(d); exp.setHours(0, 0, 0, 0);
   return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
-
 function addDaysISO(d: number): string {
   const date = new Date(); date.setDate(date.getDate() + d);
   return date.toISOString().slice(0, 10);
 }
-
-function genDemoId(): string {
-  return `demo-${Math.random().toString(36).slice(2, 10)}`;
-}
-
+function genDemoId(): string { return `demo-${Math.random().toString(36).slice(2, 10)}`; }
 function parseMultiInput(text: string): string[] {
-  return text
-    .split(/[\s,，、]+/)
+  return text.split(/[\s,，、]+/)
     .map(t => t.replace(/\d+(개|g|kg|ml|l|모|장|컵|큰술|작은술|줌|봉|통|병|포기)?$/i, '').trim())
     .filter(t => t.length > 0 && t.length <= 30);
 }
-
-function getEmojiForName(name: string, category: string): string {
+function getEmoji(name: string, category: string): string {
   const found = QUICK_ADD.find(q => q.name === name || name.includes(q.name) || q.name.includes(name));
   if (found) return found.emoji;
-  const cat: Record<string, string> = {
-    veggie: '🥬', meat: '🥩', seafood: '🐟', dairy: '🥛',
-    grain: '🌾', seasoning: '🧂', other: '📦',
-  };
-  return cat[category] ?? '📦';
+  return ({ veggie:'🥬', meat:'🥩', seafood:'🐟', dairy:'🥛', grain:'🌾', seasoning:'🧂' } as Record<string,string>)[category] ?? '📦';
 }
 
-function itemToShelf(item: FridgeItem): Shelf {
-  if (item.storage_location === '냉동') return '냉동';
-  if (item.category === 'veggie' || item.category === 'fruit') return '야채칸';
-  return '냉장';
+function assignSection(item: FridgeItem, idx: number): Section {
+  if (item.storage_location === '냉동') return 'freezer';
+  if (item.category === 'seasoning' || item.category === 'condiment') return idx % 2 === 0 ? 'doorL' : 'doorR';
+  if (item.category === 'veggie' || item.category === 'fruit') return 'veggie';
+  return 'main';
 }
 
-function freshnessStyle(days: number): { ring: string; text: string; badge: string; pulse: boolean } {
-  if (days <= 0) return { ring: '#991b1b', text: '#fca5a5', badge: '만료', pulse: true };
-  if (days <= 3) return { ring: '#dc2626', text: '#fca5a5', badge: `D-${days}`, pulse: true };
-  if (days <= 7) return { ring: '#ca8a04', text: '#fde68a', badge: `D-${days}`, pulse: false };
-  return { ring: '#16a34a', text: '#bbf7d0', badge: '', pulse: false };
+function freshBorder(days: number): string {
+  if (days <= 0) return '#991b1b';
+  if (days <= 3) return '#dc2626';
+  if (days <= 7) return '#d97706';
+  return '#4d7c0f';
+}
+function freshLabel(days: number): string {
+  if (days <= 0) return '만료';
+  if (days <= 7) return `D-${days}`;
+  return '';
 }
 
-const DEMO_ITEMS: FridgeItem[] = [
-  { id: 'demo-1', ingredient_name: '아이스크림', category: 'dairy', expiry_date: addDaysISO(30), storage_location: '냉동' },
-  { id: 'demo-2', ingredient_name: '새우', category: 'seafood', expiry_date: addDaysISO(8), storage_location: '냉동' },
-  { id: 'demo-3', ingredient_name: '두부', category: 'other', expiry_date: addDaysISO(1), storage_location: '냉장' },
-  { id: 'demo-4', ingredient_name: '계란', category: 'dairy', expiry_date: addDaysISO(10), storage_location: '냉장' },
-  { id: 'demo-5', ingredient_name: '우유', category: 'dairy', expiry_date: addDaysISO(3), storage_location: '냉장' },
-  { id: 'demo-6', ingredient_name: '김치', category: 'other', expiry_date: addDaysISO(14), storage_location: '냉장' },
-  { id: 'demo-7', ingredient_name: '시금치', category: 'veggie', expiry_date: addDaysISO(2), storage_location: '냉장' },
-  { id: 'demo-8', ingredient_name: '당근', category: 'veggie', expiry_date: addDaysISO(6), storage_location: '냉장' },
-  { id: 'demo-9', ingredient_name: '양파', category: 'veggie', expiry_date: addDaysISO(12), storage_location: '상온' },
+const DEMO: FridgeItem[] = [
+  { id:'d1', ingredient_name:'아이스크림', category:'dairy', expiry_date: addDaysISO(30), storage_location:'냉동' },
+  { id:'d2', ingredient_name:'만두', category:'grain', expiry_date: addDaysISO(60), storage_location:'냉동' },
+  { id:'d3', ingredient_name:'두부', category:'other', expiry_date: addDaysISO(1), storage_location:'냉장' },
+  { id:'d4', ingredient_name:'계란', category:'dairy', expiry_date: addDaysISO(10), storage_location:'냉장' },
+  { id:'d5', ingredient_name:'우유', category:'dairy', expiry_date: addDaysISO(3), storage_location:'냉장' },
+  { id:'d6', ingredient_name:'김치', category:'other', expiry_date: addDaysISO(14), storage_location:'냉장' },
+  { id:'d7', ingredient_name:'돼지고기', category:'meat', expiry_date: addDaysISO(2), storage_location:'냉장' },
+  { id:'d8', ingredient_name:'시금치', category:'veggie', expiry_date: addDaysISO(2), storage_location:'냉장' },
+  { id:'d9', ingredient_name:'당근', category:'veggie', expiry_date: addDaysISO(8), storage_location:'냉장' },
+  { id:'d10', ingredient_name:'양파', category:'veggie', expiry_date: addDaysISO(12), storage_location:'냉장' },
+  { id:'d11', ingredient_name:'간장', category:'seasoning', expiry_date: addDaysISO(90), storage_location:'상온' },
+  { id:'d12', ingredient_name:'참기름', category:'seasoning', expiry_date: addDaysISO(60), storage_location:'상온' },
+  { id:'d13', ingredient_name:'고추장', category:'seasoning', expiry_date: addDaysISO(45), storage_location:'냉장' },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -95,10 +95,9 @@ export default function FridgeHomeClient() {
   const [multiInput, setMultiInput] = useState('');
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [doorOpen, setDoorOpen] = useState(false);
 
   const fetchItems = useCallback(async () => {
-    if (!user) { setItems(DEMO_ITEMS); setLoading(false); return; }
+    if (!user) { setItems(DEMO); setLoading(false); return; }
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
@@ -119,7 +118,6 @@ export default function FridgeHomeClient() {
     const t = setTimeout(() => setToast(null), 2000);
     return () => clearTimeout(t);
   }, [toast]);
-
   const showToast = (msg: string) => setToast(msg);
 
   const addQuickItem = async (item: QuickAddIngredient) => {
@@ -131,20 +129,13 @@ export default function FridgeHomeClient() {
         expiry_date: addDaysISO(item.category === 'seasoning' ? 14 : item.category === 'dairy' ? 7 : 5),
         storage_location: item.storage,
       }]);
-      showToast(`${item.name} 추가 (체험 모드)`);
-      if (!doorOpen) setDoorOpen(true);
-      setAdding(false);
-      return;
+      showToast(`${item.name} 추가 (체험)`);
+      setAdding(false); return;
     }
     const client = createClient();
     const { error } = await client.from('user_ingredients').insert(quickAddToPayload(item, user.id));
     if (error) showToast('추가 실패');
-    else {
-      showToast(`${item.name} 추가 완료`);
-      window.dispatchEvent(new Event('fridge-updated'));
-      await fetchItems();
-      if (!doorOpen) setDoorOpen(true);
-    }
+    else { showToast(`${item.name} 추가`); window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
     setAdding(false);
   };
 
@@ -155,42 +146,41 @@ export default function FridgeHomeClient() {
     let added = 0;
     for (const token of tokens) {
       const match = QUICK_ADD.find(q => q.name === token || q.name.includes(token) || token.includes(q.name));
-      const fallback: QuickAddIngredient = match ?? { name: token, emoji: '📦', category: 'other', storage: '냉장' };
+      const fb: QuickAddIngredient = match ?? { name: token, emoji:'📦', category:'other', storage:'냉장' };
       if (!user) {
-        setItems(prev => [...prev, {
-          id: genDemoId(), ingredient_name: fallback.name, category: fallback.category,
-          expiry_date: addDaysISO(5), storage_location: fallback.storage,
-        }]);
+        setItems(prev => [...prev, { id: genDemoId(), ingredient_name: fb.name, category: fb.category, expiry_date: addDaysISO(5), storage_location: fb.storage }]);
       } else {
         const client = createClient();
-        await client.from('user_ingredients').insert(quickAddToPayload(fallback, user.id));
+        await client.from('user_ingredients').insert(quickAddToPayload(fb, user.id));
       }
       added++;
     }
     if (user) { window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
-    showToast(`${added}개 재료 추가`);
+    showToast(`${added}개 추가`);
     setMultiInput('');
-    if (!doorOpen) setDoorOpen(true);
     setAdding(false);
   };
 
   const removeItem = async (id: string) => {
-    if (id.startsWith('demo-')) {
+    if (id.startsWith('d') && !id.startsWith('demo')) {
       setItems(prev => prev.filter(i => i.id !== id));
-    } else {
-      setItems(prev => prev.filter(i => i.id !== id));
-      const client = createClient();
-      await client.from('user_ingredients').delete().eq('id', id);
-      window.dispatchEvent(new Event('fridge-updated'));
+      showToast('👅 낼름!'); return;
     }
+    if (id.startsWith('demo')) {
+      setItems(prev => prev.filter(i => i.id !== id));
+      showToast('👅 낼름!'); return;
+    }
+    setItems(prev => prev.filter(i => i.id !== id));
+    const client = createClient();
+    await client.from('user_ingredients').delete().eq('id', id);
+    window.dispatchEvent(new Event('fridge-updated'));
     showToast('👅 낼름!');
   };
 
-  // 선반별 재료 분류
-  const shelves = useMemo(() => {
-    const map: Record<Shelf, FridgeItem[]> = { '냉동': [], '냉장': [], '야채칸': [] };
-    for (const item of items) map[itemToShelf(item)].push(item);
-    return map;
+  const sections = useMemo(() => {
+    const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[] };
+    items.forEach((item, idx) => m[assignSection(item, idx)].push(item));
+    return m;
   }, [items]);
 
   const dangerCount = items.filter(i => daysUntilExpiry(i.expiry_date) <= 3).length;
@@ -199,8 +189,8 @@ export default function FridgeHomeClient() {
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
       {/* 헤더 */}
-      <header className="relative z-20 px-4 pt-4 md:pt-6 pb-2 flex items-center justify-between">
-        <Link href="/" className="text-xl md:text-2xl font-bold text-accent-warm">낼름</Link>
+      <header className="relative z-20 px-4 pt-4 pb-2 flex items-center justify-between">
+        <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
         {dangerCount > 0 && (
           <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
             ⚠️ {dangerCount}개 임박
@@ -208,192 +198,150 @@ export default function FridgeHomeClient() {
         )}
       </header>
 
-      {/* === 냉장고 === */}
-      <div className="flex justify-center px-4 mb-4">
-        <div
-          style={{ perspective: '1200px' }}
-          className="relative w-full max-w-xs md:max-w-sm"
-        >
-          {/* 냉장고 본체 */}
+      {/* === 양문형 냉장고 === */}
+      <div className="flex justify-center px-2 mb-4">
+        <div className="relative" style={{ width: '340px', maxWidth: '92vw' }}>
+          {/* 좌측 문 (열린 상태) */}
           <div
-            className="relative rounded-2xl overflow-hidden shadow-2xl"
+            className="absolute top-0 bottom-[22%] z-10"
             style={{
-              aspectRatio: '3 / 5',
-              background: '#3a3a3a',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+              width: '48px',
+              left: '-36px',
+              transform: 'perspective(600px) rotateY(55deg)',
+              transformOrigin: 'right center',
             }}
           >
-            {/* 내부 — 선반 3단 */}
-            <div
-              className="absolute inset-1 rounded-xl overflow-hidden"
-              style={{
-                background: doorOpen
-                  ? 'linear-gradient(180deg, #f5f0e0 0%, #ede5d0 50%, #e8dfc5 100%)'
-                  : '#333',
-                transition: 'background 0.5s ease',
-              }}
-            >
-              {/* 내부 조명 (문 열릴 때) */}
-              {doorOpen && (
-                <div
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-8 rounded-b-full"
-                  style={{
-                    background: 'radial-gradient(ellipse at center, rgba(255,248,200,0.7) 0%, transparent 100%)',
-                  }}
-                />
-              )}
-
-              {/* 냉동 칸 */}
-              <ShelfSection
-                label="❄️ 냉동"
-                items={shelves['냉동']}
-                onRemove={removeItem}
-                doorOpen={doorOpen}
-                style={{ height: '22%' }}
-                bgColor="rgba(180,210,230,0.3)"
-              />
-
-              {/* 냉동/냉장 구분선 */}
-              <div className="relative h-[3%]" style={{ background: doorOpen ? 'linear-gradient(90deg, #c0b090, #a89878, #c0b090)' : '#444' }} />
-
-              {/* 냉장 칸 */}
-              <ShelfSection
-                label="🧊 냉장"
-                items={shelves['냉장']}
-                onRemove={removeItem}
-                doorOpen={doorOpen}
-                style={{ height: '45%' }}
-                bgColor="rgba(200,220,240,0.15)"
-              />
-
-              {/* 냉장/야채 구분선 */}
-              <div className="relative h-[3%]" style={{ background: doorOpen ? 'linear-gradient(90deg, #c0b090, #a89878, #c0b090)' : '#444' }} />
-
-              {/* 야채칸 */}
-              <ShelfSection
-                label="🥬 야채칸"
-                items={shelves['야채칸']}
-                onRemove={removeItem}
-                doorOpen={doorOpen}
-                style={{ height: '27%' }}
-                bgColor="rgba(180,220,180,0.15)"
-              />
+            <div className="w-full h-full rounded-l-xl" style={{
+              background: 'linear-gradient(180deg, #c0623a 0%, #a8502e 50%, #964828 100%)',
+              boxShadow: 'inset 2px 0 6px rgba(255,255,255,0.15), -3px 0 10px rgba(0,0,0,0.3)',
+            }}>
+              {/* 문 안쪽 선반들 */}
+              <div className="p-1 flex flex-col justify-around h-full">
+                {sections.doorL.map(item => (
+                  <DoorItem key={item.id} item={item} onRemove={removeItem} />
+                ))}
+              </div>
             </div>
+          </div>
 
-            {/* === 문 (3D 회전) === */}
-            <div
-              onClick={() => setDoorOpen(o => !o)}
-              className="absolute inset-0 cursor-pointer"
-              style={{
-                transformOrigin: 'left center',
-                transform: doorOpen ? 'rotateY(-75deg)' : 'rotateY(0deg)',
-                transition: 'transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
-                transformStyle: 'preserve-3d',
-                backfaceVisibility: 'hidden',
-                zIndex: 10,
-              }}
-            >
-              {/* 문 외관 */}
-              <div
-                className="absolute inset-0 rounded-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, #65b5c0 0%, #4a9aa5 30%, #3d8690 60%, #357a84 100%)',
-                  boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.2)',
-                }}
-              >
-                {/* 상/하 분할선 */}
-                <div className="absolute top-[25%] left-3 right-3 h-[2px] bg-black/15 rounded-full" />
+          {/* 우측 문 (열린 상태) */}
+          <div
+            className="absolute top-0 bottom-[22%] z-10"
+            style={{
+              width: '48px',
+              right: '-36px',
+              transform: 'perspective(600px) rotateY(-55deg)',
+              transformOrigin: 'left center',
+            }}
+          >
+            <div className="w-full h-full rounded-r-xl" style={{
+              background: 'linear-gradient(180deg, #c0623a 0%, #a8502e 50%, #964828 100%)',
+              boxShadow: 'inset -2px 0 6px rgba(255,255,255,0.15), 3px 0 10px rgba(0,0,0,0.3)',
+            }}>
+              <div className="p-1 flex flex-col justify-around h-full">
+                {sections.doorR.map(item => (
+                  <DoorItem key={item.id} item={item} onRemove={removeItem} />
+                ))}
+              </div>
+            </div>
+          </div>
 
-                {/* 브랜드 */}
-                <div className="absolute top-3 left-4 text-[11px] font-bold tracking-[0.15em] text-white/60">
-                  NAELUM
-                </div>
+          {/* 냉장고 본체 */}
+          <div
+            className="relative rounded-xl overflow-hidden"
+            style={{
+              aspectRatio: '5 / 8',
+              background: 'linear-gradient(180deg, #8B4513 0%, #7a3b10 100%)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1)',
+              border: '3px solid #6b3410',
+            }}
+          >
+            {/* 프레임 상단 곡선 */}
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/10 to-transparent rounded-t-xl" />
 
-                {/* 상태 LED */}
-                <div className="absolute top-3.5 right-4 flex items-center gap-1.5">
-                  <div className={`w-2 h-2 rounded-full ${dangerCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
-                </div>
+            {/* 내부 */}
+            <div className="absolute inset-[6px] rounded-lg overflow-hidden flex flex-col" style={{
+              background: 'linear-gradient(180deg, #e8e0d0 0%, #ddd5c5 100%)',
+            }}>
+              {/* 내부 조명 */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-6" style={{
+                background: 'radial-gradient(ellipse, rgba(255,248,220,0.6) 0%, transparent 100%)',
+              }} />
 
-                {/* 손잡이 (상단) */}
-                <div
-                  className="absolute right-4 top-[8%] w-[6px] rounded-full"
-                  style={{
-                    height: '14%',
-                    background: 'linear-gradient(180deg, #6a7a80 0%, #4a5a60 100%)',
-                    boxShadow: '2px 2px 6px rgba(0,0,0,0.4), inset 1px 0 0 rgba(255,255,255,0.2)',
-                  }}
-                />
+              {/* ❄️ 냉동칸 */}
+              <FridgeShelf
+                label="❄️ 냉동"
+                items={sections.freezer}
+                onRemove={removeItem}
+                loading={loading}
+                color="#c8d8e8"
+                flex="0 0 18%"
+              />
+              <ShelfDivider />
 
-                {/* 손잡이 (하단) */}
-                <div
-                  className="absolute right-4 top-[35%] w-[6px] rounded-full"
-                  style={{
-                    height: '14%',
-                    background: 'linear-gradient(180deg, #6a7a80 0%, #4a5a60 100%)',
-                    boxShadow: '2px 2px 6px rgba(0,0,0,0.4), inset 1px 0 0 rgba(255,255,255,0.2)',
-                  }}
-                />
+              {/* 🧊 냉장 칸 (가장 큼) */}
+              <FridgeShelf
+                label="🧊 냉장"
+                items={sections.main}
+                onRemove={removeItem}
+                loading={loading}
+                color="#d8dce0"
+                flex="1 1 auto"
+              />
+              <ShelfDivider />
 
-                {/* 문 중앙 정보 */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="text-5xl mb-3 drop-shadow-lg">🧊</p>
-                  <p className="text-sm font-bold text-white/80 mb-1">
-                    {items.length > 0 ? `${items.length}개 재료` : '비어있어요'}
-                  </p>
-                  <p className="text-xs text-white/50">탭해서 열기</p>
+              {/* 🥬 야채칸 (서랍형) */}
+              <div className="relative" style={{ flex: '0 0 24%' }}>
+                {/* 서랍 프레임 */}
+                <div className="absolute inset-1 rounded-lg overflow-hidden" style={{
+                  background: 'linear-gradient(180deg, rgba(200,220,200,0.4) 0%, rgba(180,210,180,0.3) 100%)',
+                  border: '2px solid rgba(160,180,160,0.3)',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)',
+                }}>
+                  {/* 서랍 손잡이 */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-b bg-gray-400/40" />
+                  <div className="px-2 pt-3 pb-1">
+                    <span className="text-[8px] font-bold text-green-800/40 tracking-wider">🥬 야채칸</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {sections.veggie.length === 0 && !loading && (
+                        <span className="text-[9px] text-gray-400 italic">비어있음</span>
+                      )}
+                      {sections.veggie.map(item => (
+                        <ItemChip key={item.id} item={item} onRemove={removeItem} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* 문 그림자 (열릴 때 바닥에 생김) */}
-            {doorOpen && (
-              <div
-                className="absolute -left-4 top-[5%] bottom-[5%] w-8 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(90deg, rgba(0,0,0,0.3) 0%, transparent 100%)',
-                  zIndex: 9,
-                }}
-              />
-            )}
           </div>
 
           {/* 냉장고 다리 */}
-          <div className="flex justify-between px-6 -mt-1">
-            <div className="w-5 h-2 rounded-b bg-[#2a2a2a]" />
-            <div className="w-5 h-2 rounded-b bg-[#2a2a2a]" />
+          <div className="flex justify-between px-8 -mt-0.5">
+            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#5a2d0e' }} />
+            <div className="w-6 h-2 rounded-b-sm" style={{ background: '#5a2d0e' }} />
           </div>
         </div>
       </div>
 
       {/* === 재료 추가 === */}
-      <section className="relative z-20 max-w-sm md:max-w-md mx-auto px-4 mt-2 pb-32">
+      <section className="relative z-20 max-w-sm mx-auto px-4 mt-2 pb-32">
         <h2 className="text-sm font-bold text-text-secondary mb-2">⚡ 빠른 추가</h2>
         <div className="flex flex-wrap gap-1.5 mb-3">
           {visibleChips.map(item => (
-            <button
-              key={item.name}
-              onClick={() => addQuickItem(item)}
-              disabled={adding}
+            <button key={item.name} onClick={() => addQuickItem(item)} disabled={adding}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 text-xs hover:border-accent-warm/50 hover:bg-accent-warm/10 transition-all disabled:opacity-50 active:scale-95"
-            >
-              <span>{item.emoji}</span>
-              <span>{item.name}</span>
-            </button>
+            ><span>{item.emoji}</span><span>{item.name}</span></button>
           ))}
           {!showAllChips && (
             <button onClick={() => setShowAllChips(true)}
-              className="px-3 py-1.5 rounded-full bg-background-tertiary text-xs text-text-muted"
-            >+ 더보기</button>
+              className="px-3 py-1.5 rounded-full bg-background-tertiary text-xs text-text-muted">+ 더보기</button>
           )}
         </div>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={multiInput}
-            onChange={e => setMultiInput(e.target.value)}
+          <input type="text" value={multiInput} onChange={e => setMultiInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') addMultiFromText(); }}
-            placeholder="양파2 두부 김치 계란5"
-            aria-label="한 줄에 여러 재료 입력"
+            placeholder="양파2 두부 김치 계란5" aria-label="한 줄에 여러 재료 입력"
             className="flex-1 rounded-xl bg-background-secondary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
           />
           <button onClick={addMultiFromText} disabled={adding || multiInput.trim().length === 0}
@@ -401,7 +349,7 @@ export default function FridgeHomeClient() {
           >추가</button>
         </div>
         <p className="mt-2 text-[11px] text-text-muted">
-          공백/콤마로 구분 {!user && '· 체험 모드 (로그인 시 저장)'}
+          공백/콤마로 구분 {!user && '· 체험 모드'}
         </p>
       </section>
 
@@ -414,63 +362,78 @@ export default function FridgeHomeClient() {
   );
 }
 
-// ── Shelf Section ─────────────────────────────────────────────────────────────
+// ── Subcomponents ─────────────────────────────────────────────────────────────
 
-function ShelfSection({
-  label, items, onRemove, doorOpen, style, bgColor,
-}: {
-  label: string;
-  items: FridgeItem[];
-  onRemove: (id: string) => void;
-  doorOpen: boolean;
-  style: React.CSSProperties;
-  bgColor: string;
+function ShelfDivider() {
+  return (
+    <div className="relative h-[3px] flex-shrink-0" style={{
+      background: 'linear-gradient(180deg, #b8b0a0 0%, #a8a090 100%)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+    }} />
+  );
+}
+
+function FridgeShelf({ label, items, onRemove, loading, color, flex }: {
+  label: string; items: FridgeItem[]; onRemove: (id: string) => void;
+  loading: boolean; color: string; flex: string;
 }) {
   return (
-    <div className="relative overflow-hidden" style={{ ...style, background: doorOpen ? bgColor : 'transparent' }}>
-      {doorOpen && (
-        <>
-          {/* 선반 라벨 */}
-          <div className="px-2 pt-1">
-            <span className="text-[9px] font-bold text-black/40 tracking-wider uppercase">{label}</span>
-          </div>
-          {/* 재료 목록 */}
-          <div className="flex flex-wrap gap-1 px-2 pt-1 pb-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 24px)' }}>
-            {items.length === 0 ? (
-              <span className="text-[10px] text-black/25 italic">비어있음</span>
-            ) : (
-              items.map(item => <IngredientChip key={item.id} item={item} onRemove={onRemove} />)
-            )}
-          </div>
-        </>
-      )}
+    <div className="relative overflow-hidden" style={{ flex, background: color }}>
+      <div className="px-2 pt-1">
+        <span className="text-[8px] font-bold text-black/30 tracking-wider">{label}</span>
+      </div>
+      <div className="flex flex-wrap gap-1 px-2 pt-0.5 pb-1 overflow-y-auto" style={{ maxHeight: 'calc(100% - 20px)' }}>
+        {loading ? (
+          <span className="text-[9px] text-black/30">로딩...</span>
+        ) : items.length === 0 ? (
+          <span className="text-[9px] text-black/20 italic">비어있음</span>
+        ) : (
+          items.map(item => <ItemChip key={item.id} item={item} onRemove={onRemove} />)
+        )}
+      </div>
     </div>
   );
 }
 
-function IngredientChip({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
+function ItemChip({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
   const days = daysUntilExpiry(item.expiry_date);
-  const f = freshnessStyle(days);
-  const emoji = getEmojiForName(item.ingredient_name, item.category);
+  const border = freshBorder(days);
+  const label = freshLabel(days);
+  const emoji = getEmoji(item.ingredient_name, item.category);
+  const isDanger = days <= 3;
 
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
-      className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all hover:scale-105 active:scale-95 ${f.pulse ? 'animate-pulse' : ''}`}
+      className={`flex items-center gap-0.5 pl-1 pr-1.5 py-0.5 rounded-lg transition-all hover:scale-105 active:scale-95 ${isDanger ? 'animate-pulse' : ''}`}
       style={{
-        background: 'rgba(255,255,255,0.75)',
-        border: `1.5px solid ${f.ring}`,
-        boxShadow: f.pulse ? `0 0 8px ${f.ring}50` : '0 1px 3px rgba(0,0,0,0.1)',
+        background: 'rgba(255,255,255,0.85)',
+        border: `2px solid ${border}`,
+        boxShadow: isDanger ? `0 0 6px ${border}40` : '0 1px 2px rgba(0,0,0,0.1)',
       }}
-      title={`${item.ingredient_name} ${f.badge} · 탭해서 먹기`}
+      title={`${item.ingredient_name} ${label} · 탭해서 먹기`}
     >
-      <span className="text-base">{emoji}</span>
-      <span className="text-[10px] font-semibold text-gray-800">{item.ingredient_name}</span>
-      {f.badge && (
-        <span className="text-[8px] font-bold px-1 rounded" style={{ color: f.ring, background: `${f.ring}15` }}>
-          {f.badge}
-        </span>
+      <span className="text-sm">{emoji}</span>
+      <span className="text-[9px] font-bold text-gray-700">{item.ingredient_name}</span>
+      {label && (
+        <span className="text-[7px] font-bold ml-0.5" style={{ color: border }}>{label}</span>
       )}
+    </button>
+  );
+}
+
+function DoorItem({ item, onRemove }: { item: FridgeItem; onRemove: (id: string) => void }) {
+  const emoji = getEmoji(item.ingredient_name, item.category);
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+      className="flex flex-col items-center hover:scale-110 active:scale-90 transition-transform"
+      title={`${item.ingredient_name} · 탭해서 먹기`}
+    >
+      <span className="text-lg drop-shadow">{emoji}</span>
+      <span className="text-[7px] text-white/70 font-medium truncate w-full text-center">
+        {item.ingredient_name.slice(0, 3)}
+      </span>
     </button>
   );
 }
