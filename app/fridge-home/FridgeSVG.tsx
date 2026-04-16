@@ -68,10 +68,10 @@ export default function FridgeSVG() {
       <path d="M 24,210 L 152,216 L 152,233 L 25,227 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
       <path d="M 24,210 L 152,216" fill="none" stroke="#F0D868" strokeWidth="2" />
 
-      {/* 포켓3 (하단 프레임에 밀착) */}
-      <path d="M 28,312 L 152,315 L 152,359 L 29,358 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 29,358 L 152,359 L 152,376 L 30,376 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M 29,358 L 152,359" fill="none" stroke="#F0D868" strokeWidth="2" />
+      {/* 포켓3 (문 패널 최하단 밀착) */}
+      <path d="M 28,312 L 152,315 L 152,358 L 29,357 Z" fill="#E0D4BE" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 29,357 L 152,358 L 152,376 L 30,376 Z" fill="#D4A040" stroke="#4A2A10" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M 29,357 L 152,358" fill="none" stroke="#F0D868" strokeWidth="2" />
 
       {/* 3D 경계선 — 좌측 냉장 문 */}
       {/* 윗면 (빛 받는 돌출면) */}
