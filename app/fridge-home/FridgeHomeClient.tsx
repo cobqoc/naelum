@@ -240,12 +240,12 @@ export default function FridgeHomeClient() {
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
       <div className="flex-1 flex flex-col items-center px-4 md:px-12 pb-4 md:pb-8">
-        <div className="flex-1 flex items-center justify-center w-full">
-          <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
-            <KitchenSVG />
-          </div>
+        <div className="flex-1 w-full" />
+        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+          <KitchenSVG />
         </div>
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-360px)] md:h-[calc(100dvh-400px)]">
+        <div className="flex-1 w-full" />
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto aspect-[660/670] max-h-[55vh]">
           <FridgeSVG />
         </div>
       </div>
