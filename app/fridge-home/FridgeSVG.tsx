@@ -102,15 +102,13 @@ export default function FridgeSVG() {
       <path d="M 7,230 L 150,237" fill="none" stroke="#2A1408" strokeWidth="1.5" />
       <path d="M 8,232 L 150,239" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="4" />
 
-      {/* 선반3 */}
-      <path d="M 12,310 L 10,322 L 11,347 L 13,335 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 12,310 L 152,313 L 150,325 L 10,322 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 10,322 L 150,325 L 150,350 L 11,347 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 12,310 L 152,313" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
-      <path d="M 10,322 L 150,325" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 10.5,325 L 150,328" fill="none" stroke="rgba(100,80,30,0.25)" strokeWidth="1" />
-      <path d="M 11,347 L 150,350" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 12,349 L 150,352" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="4" />
+      {/* 선반3 (하단 밀착 y=376) */}
+      <path d="M 13,339 L 11,351 L 14,376 L 15,364 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 13,339 L 152,341 L 150,353 L 11,351 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 11,351 L 150,353 L 150,376 L 14,376 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 13,339 L 152,341" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
+      <path d="M 11,351 L 150,353" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 11.5,354 L 150,356" fill="none" stroke="rgba(100,80,30,0.25)" strokeWidth="1" />
 
       {/* 바 — 좌측 냉장 문 (3면 입체) */}
       <path d="M 2,22 L 3,19 L 19,19 L 18,22 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
@@ -255,15 +253,13 @@ export default function FridgeSVG() {
       <path d="M 450,238 L 585,230" fill="none" stroke="#2A1408" strokeWidth="1.5" />
       <path d="M 450,240 L 585,232" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="4" />
 
-      {/* 선반3 */}
-      <path d="M 582,310 L 584,322 L 582,347 L 580,335 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 448,313 L 582,310 L 584,322 L 450,325 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 450,325 L 584,322 L 582,347 L 450,350 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 448,313 L 582,310" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
-      <path d="M 450,325 L 584,322" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 450,328 L 584,325" fill="none" stroke="rgba(100,80,30,0.25)" strokeWidth="1" />
-      <path d="M 450,350 L 582,347" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 450,352 L 582,349" fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth="4" />
+      {/* 선반3 (하단 밀착 y=376) */}
+      <path d="M 582,339 L 584,351 L 582,376 L 580,364 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,341 L 582,339 L 584,351 L 450,353 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,353 L 584,351 L 582,376 L 448,376 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,341 L 582,339" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
+      <path d="M 450,353 L 584,351" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 450,356 L 584,354" fill="none" stroke="rgba(100,80,30,0.25)" strokeWidth="1" />
 
       {/* 바 — 우측 냉장 문 (3면) */}
       <path d="M 568,22 L 567,19 L 583,19 L 584,22 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
