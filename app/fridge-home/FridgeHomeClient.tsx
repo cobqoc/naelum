@@ -225,14 +225,8 @@ export default function FridgeHomeClient() {
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      <div className="px-4 pt-2 pb-3 flex justify-center">
+      <div className="px-4 pt-8 md:pt-10 pb-3 flex justify-center">
         <SearchBar className="w-full max-w-md" />
-      </div>
-
-      <div className="px-4 pb-2 flex justify-center">
-        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl">
-          <KitchenSVG />
-        </div>
       </div>
 
       {dangerCount > 0 && (
@@ -243,13 +237,13 @@ export default function FridgeHomeClient() {
         </div>
       )}
 
-      {/* === 상온 재료 (3D 카운터) === */}
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
-      {/* === SVG 냉장고 === */}
-      <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-4 md:pb-8">
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-180px)] md:h-[calc(100dvh-200px)]">
-          {/* SVG 냉장고 프레임 */}
+      <div className="flex-1 flex flex-col justify-end items-center px-4 md:px-12 pb-4 md:pb-8">
+        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto mb-[-6px] md:mb-[-10px] relative z-10">
+          <KitchenSVG />
+        </div>
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-280px)] md:h-[calc(100dvh-320px)]">
           <FridgeSVG />
 
           {/* 재료 오버레이 — 일단 제거 */}

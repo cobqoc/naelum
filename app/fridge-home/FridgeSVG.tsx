@@ -18,13 +18,25 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#d84a30" />
         </linearGradient>
         <linearGradient id="interiorG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f6fafd" />
-          <stop offset="100%" stopColor="#e4eef5" />
+          <stop offset="0%" stopColor="#fafdff" />
+          <stop offset="100%" stopColor="#b8cad6" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#eef3f8" />
-          <stop offset="100%" stopColor="#d8e4ec" />
+          <stop offset="0%" stopColor="#eaf2f9" />
+          <stop offset="100%" stopColor="#a0b4c4" />
         </linearGradient>
+        <linearGradient id="vignetteL" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(20,40,60,0.32)" />
+          <stop offset="100%" stopColor="rgba(20,40,60,0)" />
+        </linearGradient>
+        <linearGradient id="vignetteR" x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(20,40,60,0.32)" />
+          <stop offset="100%" stopColor="rgba(20,40,60,0)" />
+        </linearGradient>
+        <radialGradient id="innerGlow" cx="50%" cy="25%" r="75%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#d0d0d0" />
           <stop offset="30%" stopColor="#f0f0f0" />
@@ -134,6 +146,9 @@ export default function FridgeSVG() {
 
       <rect x="166" y="38" width="248" height="335" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="188" y="40" width="224" height="331" rx="4" fill="url(#interiorG)" />
+      <rect x="188" y="40" width="224" height="331" rx="4" fill="url(#innerGlow)" />
+      <rect x="188" y="40" width="50" height="331" fill="url(#vignetteL)" />
+      <rect x="362" y="40" width="50" height="331" fill="url(#vignetteR)" />
       <rect x="188" y="40" width="224" height="331" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
 
       <path d="M 188,100 L 202,86 L 398,86 L 412,100 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
@@ -142,7 +157,7 @@ export default function FridgeSVG() {
       <path d="M 188,105 L 412,105" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 188,111 L 412,111" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 188,117 L 412,117" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="121" rx="108" ry="2.5" fill="rgba(0,0,0,0.22)" />
+      <ellipse cx="300" cy="121" rx="108" ry="2.5" fill="rgba(0,0,0,0.38)" />
 
       <path d="M 188,190 L 202,176 L 398,176 L 412,190 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 188,190 L 412,190 L 412,207 L 188,207 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
@@ -150,7 +165,7 @@ export default function FridgeSVG() {
       <path d="M 188,195 L 412,195" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 188,201 L 412,201" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 188,207 L 412,207" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="211" rx="108" ry="2.5" fill="rgba(0,0,0,0.22)" />
+      <ellipse cx="300" cy="211" rx="108" ry="2.5" fill="rgba(0,0,0,0.38)" />
 
       <path d="M 192,316 L 298,316 L 298,326 L 192,326 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
       <path d="M 192,326 L 298,326 L 298,368 L 192,368 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
@@ -166,6 +181,9 @@ export default function FridgeSVG() {
 
       <rect x="188" y="409" width="224" height="196" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="190" y="411" width="220" height="192" rx="4" fill="url(#freezerG)" />
+      <rect x="190" y="411" width="220" height="192" rx="4" fill="url(#innerGlow)" />
+      <rect x="190" y="411" width="48" height="192" fill="url(#vignetteL)" />
+      <rect x="362" y="411" width="48" height="192" fill="url(#vignetteR)" />
       <rect x="190" y="411" width="220" height="192" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
 
       <path d="M 190,480 L 204,466 L 396,466 L 410,480 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
@@ -174,7 +192,7 @@ export default function FridgeSVG() {
       <path d="M 190,485 L 410,485" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 190,491 L 410,491" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 190,497 L 410,497" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="501" rx="105" ry="2.2" fill="rgba(0,0,0,0.22)" />
+      <ellipse cx="300" cy="501" rx="105" ry="2.2" fill="rgba(0,0,0,0.38)" />
 
       <path d="M 192,548 L 408,548 L 408,558 L 192,558 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 192,558 L 408,558 L 408,598 L 192,598 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
