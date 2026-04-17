@@ -58,27 +58,29 @@ export default function KitchenSVG() {
       <rect x="12" y="30" width="636" height="5" fill="url(#redBarBottom)" />
 
       <g>
+        <path d="M 22,30 L 16,36 L 18,130 L 20,128 Z" fill="url(#cabDoorLight)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+        <path d="M 22,30 L 16,36" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
         <path d="M 22,30 L 166,30 L 168,128 L 20,128 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="34" y="40" width="124" height="78" rx="6" fill="rgba(0,0,0,0.22)" stroke="rgba(0,0,0,0.5)" strokeWidth="2" />
-        <rect x="37" y="43" width="118" height="72" rx="5" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.25)" strokeWidth="1.2" />
-        <path d="M 37,45 L 155,45" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
-        <path d="M 37,113 L 155,113" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
-        <ellipse cx="148" cy="86" rx="8" ry="1.8" fill="rgba(0,0,0,0.28)" />
-        <circle cx="148" cy="78" r="8" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="145" cy="75" rx="3.2" ry="2" fill="rgba(255,255,255,0.55)" />
-        <circle cx="144" cy="74" r="1.2" fill="rgba(255,255,255,0.95)" />
+        <rect x="34" y="40" width="124" height="78" rx="7" fill="rgba(0,0,0,0.18)" stroke="rgba(0,0,0,0.45)" strokeWidth="2" />
+        <rect x="37" y="43" width="118" height="72" rx="6" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.2)" strokeWidth="1.2" />
+        <path d="M 37,45 L 155,45" fill="none" stroke="rgba(0,0,0,0.26)" strokeWidth="1.3" />
+        <path d="M 37,113 L 155,113" fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.1" />
+        <ellipse cx="150" cy="84" rx="8" ry="1.8" fill="rgba(0,0,0,0.28)" />
+        <circle cx="150" cy="76" r="8" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
+        <ellipse cx="147" cy="73" rx="3.2" ry="2" fill="rgba(255,255,255,0.55)" />
+        <circle cx="146" cy="72" r="1.2" fill="rgba(255,255,255,0.95)" />
       </g>
 
       <g>
         <path d="M 170,30 L 314,30 L 316,128 L 168,128 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="182" y="40" width="124" height="78" rx="6" fill="rgba(0,0,0,0.22)" stroke="rgba(0,0,0,0.5)" strokeWidth="2" />
-        <rect x="185" y="43" width="118" height="72" rx="5" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.25)" strokeWidth="1.2" />
-        <path d="M 185,45 L 303,45" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
-        <path d="M 185,113 L 303,113" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
-        <ellipse cx="186" cy="86" rx="8" ry="1.8" fill="rgba(0,0,0,0.28)" />
-        <circle cx="186" cy="78" r="8" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="183" cy="75" rx="3.2" ry="2" fill="rgba(255,255,255,0.55)" />
-        <circle cx="182" cy="74" r="1.2" fill="rgba(255,255,255,0.95)" />
+        <rect x="181" y="39" width="126" height="80" rx="4" fill="rgba(0,0,0,0.24)" stroke="rgba(0,0,0,0.52)" strokeWidth="2.2" />
+        <rect x="186" y="44" width="116" height="70" rx="4" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.3)" strokeWidth="1.4" />
+        <path d="M 186,46 L 302,46" fill="none" stroke="rgba(0,0,0,0.34)" strokeWidth="1.8" />
+        <path d="M 186,112 L 302,112" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.9" />
+        <ellipse cx="184" cy="89" rx="7.5" ry="1.7" fill="rgba(0,0,0,0.3)" />
+        <circle cx="184" cy="81" r="7.5" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
+        <ellipse cx="181" cy="78" rx="3" ry="1.9" fill="rgba(255,255,255,0.5)" />
+        <circle cx="180" cy="77" r="1.1" fill="rgba(255,255,255,0.92)" />
       </g>
 
       <g>
@@ -119,14 +121,14 @@ export default function KitchenSVG() {
         <path d="M 610,30 L 616,36 L 618,130 L 612,128 Z" fill="url(#cabDoorDeep)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M 610,30 L 616,36" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
         <path d="M 466,30 L 610,30 L 612,128 L 464,128 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="478" y="40" width="124" height="78" rx="6" fill="rgba(0,0,0,0.22)" stroke="rgba(0,0,0,0.5)" strokeWidth="2" />
-        <rect x="481" y="43" width="118" height="72" rx="5" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.25)" strokeWidth="1.2" />
-        <path d="M 481,45 L 599,45" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
-        <path d="M 481,113 L 599,113" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
-        <ellipse cx="482" cy="86" rx="8" ry="1.8" fill="rgba(0,0,0,0.28)" />
-        <circle cx="482" cy="78" r="8" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="479" cy="75" rx="3.2" ry="2" fill="rgba(255,255,255,0.55)" />
-        <circle cx="478" cy="74" r="1.2" fill="rgba(255,255,255,0.95)" />
+        <rect x="477" y="38" width="126" height="82" rx="9" fill="rgba(0,0,0,0.3)" stroke="rgba(0,0,0,0.55)" strokeWidth="2.2" />
+        <rect x="482" y="44" width="116" height="70" rx="7" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.3)" strokeWidth="1.3" />
+        <path d="M 482,46 L 598,46" fill="none" stroke="rgba(0,0,0,0.38)" strokeWidth="2" />
+        <path d="M 482,112 L 598,112" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+        <ellipse cx="484" cy="85" rx="8.5" ry="1.9" fill="rgba(0,0,0,0.32)" />
+        <circle cx="484" cy="77" r="8.5" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
+        <ellipse cx="481" cy="73.5" rx="3.4" ry="2.1" fill="rgba(255,255,255,0.58)" />
+        <circle cx="479.5" cy="72.5" r="1.3" fill="rgba(255,255,255,0.95)" />
       </g>
 
       <rect x="8" y="128" width="644" height="32" fill="url(#woodG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />

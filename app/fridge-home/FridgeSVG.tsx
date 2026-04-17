@@ -26,15 +26,15 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#a0b4c4" />
         </linearGradient>
         <linearGradient id="vignetteL" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(20,40,60,0.32)" />
+          <stop offset="0%" stopColor="rgba(20,40,60,0.18)" />
           <stop offset="100%" stopColor="rgba(20,40,60,0)" />
         </linearGradient>
         <linearGradient id="vignetteR" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0%" stopColor="rgba(20,40,60,0.32)" />
+          <stop offset="0%" stopColor="rgba(20,40,60,0.38)" />
           <stop offset="100%" stopColor="rgba(20,40,60,0)" />
         </linearGradient>
-        <radialGradient id="innerGlow" cx="50%" cy="25%" r="75%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+        <radialGradient id="innerGlow" cx="28%" cy="18%" r="85%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.42)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </radialGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
@@ -80,9 +80,9 @@ export default function FridgeSVG() {
       <path d="M 14,2 L -10,10 L -4,396 L 16,392 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 14,2 L 2,10 L 158,28 L 170,24 Z" fill="url(#bodyLight)" />
       <path d="M 28,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 28,22 L 48,24 L 50,376 L 30,376 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 132,34 L 152,36 L 152,376 L 132,376 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 28,22 L 152,36 L 148,46 L 32,32 Z" fill="rgba(255,255,255,0.18)" />
+      <path d="M 28,22 L 42,23 L 44,376 L 30,376 Z" fill="rgba(20,40,60,0.12)" />
+      <path d="M 120,33 L 152,36 L 152,376 L 122,376 Z" fill="rgba(20,40,60,0.38)" />
+      <path d="M 28,22 L 152,36 L 140,48 L 34,30 Z" fill="rgba(255,255,255,0.22)" />
 
       <path d="M 14,22 L 15,19 L 29,19 L 28,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 28,22 L 29,19 L 31,373 L 30,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -125,9 +125,9 @@ export default function FridgeSVG() {
       <path d="M 26,406 L 6,410 L 8,620 L 28,624 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 26,406 L 16,410 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
       <path d="M 44,420 L 152,416 L 152,608 L 46,608 Z" fill="url(#freezerG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 44,420 L 64,420 L 66,608 L 46,608 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 132,416 L 152,416 L 152,608 L 132,608 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 44,420 L 152,416 L 148,428 L 48,432 Z" fill="rgba(255,255,255,0.18)" />
+      <path d="M 44,420 L 58,419 L 60,608 L 46,608 Z" fill="rgba(20,40,60,0.13)" />
+      <path d="M 124,416 L 152,416 L 152,608 L 126,608 Z" fill="rgba(20,40,60,0.4)" />
+      <path d="M 44,420 L 152,416 L 140,430 L 50,434 Z" fill="rgba(255,255,255,0.22)" />
 
       <path d="M 30,421 L 31,418 L 45,417 L 44,420 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 44,420 L 45,417 L 47,605 L 46,608 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -163,7 +163,7 @@ export default function FridgeSVG() {
 
       <path d="M 188,100 L 202,86 L 398,86 L 412,100 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 188,100 L 412,100 L 412,117 L 188,117 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,100 L 194,100 L 194,117 L 188,117 Z" fill="url(#creamDarkG)" />
+      <path d="M 188,100 L 193,100 L 193,117 L 188,117 Z" fill="url(#creamTopG)" opacity="0.75" />
       <path d="M 406,100 L 412,100 L 412,117 L 406,117 Z" fill="url(#creamDarkG)" />
       <path d="M 188,100 L 412,100" fill="none" stroke="#FFF4D8" strokeWidth="2" />
       <path d="M 188,105 L 412,105" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
@@ -173,8 +173,8 @@ export default function FridgeSVG() {
 
       <path d="M 188,190 L 202,176 L 398,176 L 412,190 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 188,190 L 412,190 L 412,207 L 188,207 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,190 L 194,190 L 194,207 L 188,207 Z" fill="url(#creamDarkG)" />
-      <path d="M 406,190 L 412,190 L 412,207 L 406,207 Z" fill="url(#creamDarkG)" />
+      <path d="M 188,190 L 192,190 L 192,207 L 188,207 Z" fill="url(#creamTopG)" opacity="0.7" />
+      <path d="M 405,190 L 412,190 L 412,207 L 405,207 Z" fill="url(#creamDarkG)" />
       <path d="M 188,190 L 412,190" fill="none" stroke="#FFF4D8" strokeWidth="2" />
       <path d="M 188,195 L 412,195" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 188,201 L 412,201" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
@@ -202,8 +202,8 @@ export default function FridgeSVG() {
 
       <path d="M 190,480 L 204,466 L 396,466 L 410,480 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M 190,480 L 410,480 L 410,497 L 190,497 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,480 L 196,480 L 196,497 L 190,497 Z" fill="url(#creamDarkG)" />
-      <path d="M 404,480 L 410,480 L 410,497 L 404,497 Z" fill="url(#creamDarkG)" />
+      <path d="M 190,480 L 195,480 L 195,497 L 190,497 Z" fill="url(#creamTopG)" opacity="0.72" />
+      <path d="M 403,480 L 410,480 L 410,497 L 403,497 Z" fill="url(#creamDarkG)" />
       <path d="M 190,480 L 410,480" fill="none" stroke="#FFF4D8" strokeWidth="2" />
       <path d="M 190,485 L 410,485" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
       <path d="M 190,491 L 410,491" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
@@ -221,9 +221,9 @@ export default function FridgeSVG() {
       <path d="M 586,2 L 610,10 L 604,396 L 584,392 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 430,24 L 442,28 L 586,2 L 598,10 Z" fill="url(#bodyLight)" />
       <path d="M 448,37 L 572,22 L 570,376 L 448,376 Z" fill="url(#interiorG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 448,37 L 468,35 L 468,376 L 448,376 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 552,24 L 572,22 L 570,376 L 552,376 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 448,37 L 572,22 L 568,34 L 452,49 Z" fill="rgba(255,255,255,0.18)" />
+      <path d="M 448,37 L 478,34 L 476,376 L 448,376 Z" fill="rgba(20,40,60,0.4)" />
+      <path d="M 560,23 L 572,22 L 570,376 L 558,376 Z" fill="rgba(20,40,60,0.14)" />
+      <path d="M 448,37 L 572,22 L 564,30 L 452,45 Z" fill="rgba(255,255,255,0.12)" />
 
       <path d="M 572,22 L 571,19 L 585,19 L 586,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 572,22 L 571,19 L 569,373 L 570,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -260,9 +260,9 @@ export default function FridgeSVG() {
       <path d="M 574,406 L 594,410 L 592,620 L 572,624 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 430,402 L 442,406 L 574,406 L 584,410 Z" fill="url(#bodyLight)" />
       <path d="M 448,416 L 556,422 L 554,608 L 448,604 Z" fill="url(#freezerG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 448,416 L 468,418 L 468,604 L 448,604 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 536,420 L 556,422 L 554,608 L 536,608 Z" fill="rgba(20,40,60,0.25)" />
-      <path d="M 448,416 L 556,422 L 552,432 L 452,428 Z" fill="rgba(255,255,255,0.18)" />
+      <path d="M 448,416 L 476,418 L 476,604 L 448,604 Z" fill="rgba(20,40,60,0.42)" />
+      <path d="M 544,421 L 556,422 L 554,608 L 542,608 Z" fill="rgba(20,40,60,0.13)" />
+      <path d="M 448,416 L 556,422 L 548,430 L 452,425 Z" fill="rgba(255,255,255,0.12)" />
 
       <path d="M 556,422 L 555,419 L 569,420 L 570,423 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 556,422 L 555,419 L 553,605 L 554,608 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
