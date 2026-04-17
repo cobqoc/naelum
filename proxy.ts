@@ -107,7 +107,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const isProtected =
-    PROTECTED_ROUTES.some((r) => pathname.startsWith(r)) ||
+    PROTECTED_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/')) ||
     PROTECTED_PATTERNS.some((p) => p.test(pathname))
   const isAdmin = ADMIN_ROUTES.some((r) => pathname.startsWith(r))
   const isAuthOnly = AUTH_ONLY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + '/'))
