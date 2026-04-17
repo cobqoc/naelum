@@ -26,7 +26,7 @@ const LANG_OPTIONS = [
   { code: 'it' as Language, label: 'Italiano', flag: '🇮🇹' },
 ];
 
-export default function Header() {
+export default function Header({ alwaysShowSearch = false }: { alwaysShowSearch?: boolean } = {}) {
   const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -123,7 +123,7 @@ export default function Header() {
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
             className={`flex-1 justify-center px-4 md:px-8 transition-all duration-500 ${
-              isScrolled || searchFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none'
+              isScrolled || searchFocused || alwaysShowSearch ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none'
             } flex`}>
             <SearchBar className="max-w-md" isSmall={true} />
           </div>

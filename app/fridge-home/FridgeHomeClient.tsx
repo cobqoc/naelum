@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './quickAddList';
 import FridgeSVG from './FridgeSVG';
+import Header from '@/components/Header';
+import BottomNav from '@/components/BottomNav';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -218,48 +219,24 @@ export default function FridgeHomeClient() {
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
   return (
-    <div
-      className="h-dvh overflow-hidden bg-background-primary text-text-primary flex flex-col"
-    >
-      {/* 헤더 */}
-      <header className="relative z-20 px-4 pt-2 pb-0 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
-        <div className="flex items-center gap-2">
-          {dangerCount > 0 && (
-            <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
-              ⚠️ {dangerCount}개 임박
-            </span>
-          )}
-          {user ? (
-            <Link href="/settings" className="w-8 h-8 rounded-full bg-accent-warm/20 flex items-center justify-center text-sm">
-              👤
-            </Link>
-          ) : (
-            <Link href="/login" className="px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover transition-colors">
-              로그인
-            </Link>
-          )}
-        </div>
-      </header>
+    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
+      <Header alwaysShowSearch />
+      <div className="h-14 md:h-20 flex-shrink-0" />
 
-      {/* 검색바 */}
-      <div className="px-4 mt-2 mb-2">
-        <Link href="/search" className="block max-w-lg mx-auto">
-          <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-sm">🔍</div>
-            <div className="w-full rounded-2xl bg-background-secondary border border-accent-warm/20 px-10 py-3 text-sm text-text-muted cursor-pointer hover:border-accent-warm/50 hover:shadow-[0_0_20px_rgba(255,153,102,0.15)] transition-all">
-              재료, 요리, 레시피 검색...
-            </div>
-          </div>
-        </Link>
-      </div>
+      {dangerCount > 0 && (
+        <div className="px-4 pt-2 flex justify-end">
+          <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
+            ⚠️ {dangerCount}개 임박
+          </span>
+        </div>
+      )}
 
       {/* === 상온 재료 (3D 카운터) === */}
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
       {/* === SVG 냉장고 === */}
-      <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-20 md:pb-8">
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-220px)] md:h-[calc(100dvh-240px)]">
+      <div className="flex-1 flex justify-center items-end px-4 md:px-12 pb-4 md:pb-8">
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-180px)] md:h-[calc(100dvh-200px)]">
           {/* SVG 냉장고 프레임 */}
           <FridgeSVG />
 
@@ -341,10 +318,12 @@ export default function FridgeHomeClient() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl">
+        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl">
           {toast}
         </div>
       )}
+
+      <BottomNav />
     </div>
   );
 }
