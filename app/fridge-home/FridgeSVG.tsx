@@ -137,19 +137,21 @@ export default function FridgeSVG() {
       <rect x="188" y="40" width="224" height="331" rx="4" fill="url(#interiorG)" />
       <rect x="188" y="40" width="224" height="331" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
 
-      <path d="M 188,126 L 193,121 L 407,121 L 412,126 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,126 L 412,126 L 412,138 L 188,138 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,126 L 412,126" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 188,130 L 412,130" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,134 L 412,134" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,138 L 412,138" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 188,90 L 195,83 L 405,83 L 412,90 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 188,90 L 412,90 L 412,107 L 188,107 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 188,90 L 412,90" fill="none" stroke="#FFF4D8" strokeWidth="2" />
+      <path d="M 188,95 L 412,95" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 188,101 L 412,101" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 188,107 L 412,107" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <ellipse cx="300" cy="111" rx="108" ry="2.5" fill="rgba(0,0,0,0.22)" />
 
-      <path d="M 188,216 L 193,211 L 407,211 L 412,216 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,216 L 412,216 L 412,228 L 188,228 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,216 L 412,216" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 188,220 L 412,220" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,224 L 412,224" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,228 L 412,228" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 188,182 L 195,175 L 405,175 L 412,182 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 188,182 L 412,182 L 412,199 L 188,199 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 188,182 L 412,182" fill="none" stroke="#FFF4D8" strokeWidth="2" />
+      <path d="M 188,187 L 412,187" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 188,193 L 412,193" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 188,199 L 412,199" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <ellipse cx="300" cy="203" rx="108" ry="2.5" fill="rgba(0,0,0,0.22)" />
 
       <path d="M 192,316 L 298,316 L 298,326 L 192,326 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
       <path d="M 192,326 L 298,326 L 298,368 L 192,368 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
@@ -167,17 +169,27 @@ export default function FridgeSVG() {
       <rect x="190" y="411" width="220" height="192" rx="4" fill="url(#freezerG)" />
       <rect x="190" y="411" width="220" height="192" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
 
-      <path d="M 190,472 L 195,467 L 405,467 L 410,472 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,472 L 410,472 L 410,482 L 190,482 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,472 L 410,472" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 190,476 L 410,476" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 190,482 L 410,482" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 190,450 L 196,444 L 404,444 L 410,450 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 190,450 L 410,450 L 410,464 L 190,464 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 190,450 L 410,450" fill="none" stroke="#FFF4D8" strokeWidth="2" />
+      <path d="M 190,455 L 410,455" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 190,460 L 410,460" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 190,464 L 410,464" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <ellipse cx="300" cy="467" rx="105" ry="2.2" fill="rgba(0,0,0,0.22)" />
 
-      <path d="M 190,538 L 195,533 L 405,533 L 410,538 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,538 L 410,538 L 410,548 L 190,548 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,538 L 410,538" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 190,542 L 410,542" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 190,548 L 410,548" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 190,500 L 196,494 L 404,494 L 410,500 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 190,500 L 410,500 L 410,514 L 190,514 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 190,500 L 410,500" fill="none" stroke="#FFF4D8" strokeWidth="2" />
+      <path d="M 190,505 L 410,505" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 190,510 L 410,510" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
+      <path d="M 190,514 L 410,514" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <ellipse cx="300" cy="517" rx="105" ry="2.2" fill="rgba(0,0,0,0.22)" />
+
+      <path d="M 192,548 L 408,548 L 408,558 L 192,558 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 192,558 L 408,558 L 408,598 L 192,598 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 192,558 L 408,558" fill="none" stroke="#FFF4D8" strokeWidth="2" />
+      <rect x="285" y="572" width="30" height="7" rx="2" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+      <path d="M 192,598 L 408,598" fill="none" stroke="#2A1408" strokeWidth="2" />
 
       <g transform="matrix(0.69,0,0,1,133.3,0)">
       <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />

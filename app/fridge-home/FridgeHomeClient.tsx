@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './quickAddList';
 import FridgeSVG from './FridgeSVG';
 import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -220,8 +221,12 @@ export default function FridgeHomeClient() {
 
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
-      <Header alwaysShowSearch />
+      <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
+
+      <div className="px-4 pt-2 pb-3 flex justify-center">
+        <SearchBar className="w-full max-w-md" />
+      </div>
 
       {dangerCount > 0 && (
         <div className="px-4 pt-2 flex justify-end">
