@@ -239,23 +239,14 @@ export default function FridgeHomeClient() {
 
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
-      <div className="flex-1 flex flex-col justify-end items-center px-4 md:px-12 pb-4 md:pb-8">
-        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto mb-[-6px] md:mb-[-10px] relative z-10">
-          <KitchenSVG />
+      <div className="flex-1 flex flex-col items-center px-4 md:px-12 pb-4 md:pb-8">
+        <div className="flex-1 flex items-center justify-center w-full">
+          <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+            <KitchenSVG />
+          </div>
         </div>
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-280px)] md:h-[calc(100dvh-320px)]">
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto h-[calc(100dvh-360px)] md:h-[calc(100dvh-400px)]">
           <FridgeSVG />
-
-          {/* 재료 오버레이 — 일단 제거 */}
-
-          {/* + 추가 버튼 */}
-          <button
-            onClick={() => setShowAddSheet(true)}
-            className="absolute bottom-[6%] right-[20%] z-20 w-10 h-10 rounded-full bg-accent-warm text-background-primary text-xl font-bold shadow-lg hover:bg-accent-hover active:scale-90 transition-all flex items-center justify-center pointer-events-auto"
-            aria-label="재료 추가"
-          >
-            +
-          </button>
         </div>
       </div>
 
