@@ -72,34 +72,29 @@ export default function FridgeSVG() {
       <path d="M 18,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" />
       {/* ══ 좌측 냉장 문 — 선반 (바까지 확장) ══ */}
 
-      {/* 선반1 (윗면10 + 정면30 = 40px) */}
-      <path d="M 5,101 L 3,111 L 4,141 L 6,131 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 5,101 L 152,111 L 150,121 L 3,111 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 3,111 L 150,121 L 150,151 L 4,141 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      {/* 디테일: 표면 + 립 + 하단 + 그림자 */}
-      <path d="M 4,106 L 151,116" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 3,111 L 150,121" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 3.5,126 L 150,136" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-      <path d="M 4,141 L 150,151" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 5,143 L 150,153" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      {/* 선반1 (트레이: 윗면12 + 정면25 = 37px) */}
+      <path d="M 5,103 L 3,115 L 4,140 L 6,128 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 5,103 L 152,113 L 150,125 L 3,115 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 3,115 L 150,125 L 150,150 L 4,140 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 3,115 L 150,125" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 4,140 L 150,150" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 5,142 L 150,152" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
       {/* 선반2 */}
-      <path d="M 8,189 L 6,199 L 7,229 L 9,219 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 8,189 L 152,196 L 150,206 L 6,199 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 6,199 L 150,206 L 150,236 L 7,229 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 7,194 L 151,201" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 6,199 L 150,206" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 6.5,214 L 150,221" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-      <path d="M 7,229 L 150,236" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 8,231 L 150,238" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 8,193 L 6,205 L 7,230 L 9,218 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 8,193 L 152,200 L 150,212 L 6,205 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 6,205 L 150,212 L 150,237 L 7,230 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 6,205 L 150,212" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 7,230 L 150,237" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 8,232 L 150,239" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
-      {/* 선반3 (최하단) */}
-      <path d="M 13,336 L 11,346 L 14,376 L 15,366 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 13,336 L 152,338 L 150,348 L 11,346 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 11,346 L 150,348 L 150,376 L 14,376 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 12,341 L 151,343" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 11,346 L 150,348" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 12,361 L 150,362" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      {/* 선반3 */}
+      <path d="M 11,283 L 9,295 L 10,320 L 12,308 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 11,283 L 152,286 L 150,298 L 9,295 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 9,295 L 150,298 L 150,323 L 10,320 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 9,295 L 150,298" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 10,320 L 150,323" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 11,322 L 150,325" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
       {/* 바 — 좌측 냉장 문 (3면 입체) */}
       <path d="M 2,22 L 3,19 L 19,19 L 18,22 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
@@ -157,12 +152,44 @@ export default function FridgeSVG() {
 
 
 
+      {/* ====== 본체 냉장 3D 선반 ====== */}
+      {/* 선반1 */}
+      <path d="M 178,120 L 186,108 L 414,108 L 422,120 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,120 L 422,120 L 422,140 L 178,140 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,120 L 422,120" fill="none" stroke="#FFF0A0" strokeWidth="1" />
+      <path d="M 178,140 L 422,140" fill="none" stroke="#2A1408" strokeWidth="1" />
+
+      {/* 선반2 */}
+      <path d="M 178,215 L 186,203 L 414,203 L 422,215 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,215 L 422,215 L 422,235 L 178,235 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,215 L 422,215" fill="none" stroke="#FFF0A0" strokeWidth="1" />
+      <path d="M 178,235 L 422,235" fill="none" stroke="#2A1408" strokeWidth="1" />
+
+      {/* 선반3 */}
+      <path d="M 178,310 L 186,298 L 414,298 L 422,310 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,310 L 422,310 L 422,330 L 178,330 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,310 L 422,310" fill="none" stroke="#FFF0A0" strokeWidth="1" />
+      <path d="M 178,330 L 422,330" fill="none" stroke="#2A1408" strokeWidth="1" />
+
       {/* ===== 냉장/냉동 구분 ===== */}
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#8a3020" strokeWidth="1" />
 
       {/* ====== 내부 — 냉동 ====== */}
       <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
+
+      {/* ====== 냉동 본체 선반 ====== */}
+      {/* 선반1 */}
+      <path d="M 178,470 L 186,458 L 414,458 L 422,470 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,470 L 422,470 L 422,490 L 178,490 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,470 L 422,470" fill="none" stroke="#FFF0A0" strokeWidth="1" />
+      <path d="M 178,490 L 422,490" fill="none" stroke="#2A1408" strokeWidth="1" />
+
+      {/* 선반2 */}
+      <path d="M 178,545 L 186,533 L 414,533 L 422,545 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,545 L 422,545 L 422,565 L 178,565 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 178,545 L 422,545" fill="none" stroke="#FFF0A0" strokeWidth="1" />
+      <path d="M 178,565 L 422,565" fill="none" stroke="#2A1408" strokeWidth="1" />
 
 
 
@@ -175,32 +202,28 @@ export default function FridgeSVG() {
       {/* ══ 우측 냉장 문 — 선반 (바까지 확장) ══ */}
 
       {/* 선반1 */}
-      <path d="M 583,101 L 585,111 L 585,141 L 583,131 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 448,112 L 583,101 L 585,111 L 450,122 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 450,122 L 585,111 L 585,141 L 450,152 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 449,117 L 584,106" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 450,122 L 585,111" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 450,137 L 585,126" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-      <path d="M 450,152 L 585,141" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 450,154 L 585,143" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 583,103 L 585,115 L 585,140 L 583,128 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,114 L 583,103 L 585,115 L 450,126 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,126 L 585,115 L 585,140 L 450,151 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,126 L 585,115" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 450,151 L 585,140" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 450,153 L 585,142" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
       {/* 선반2 */}
-      <path d="M 583,189 L 585,199 L 585,229 L 583,219 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 448,197 L 583,189 L 585,199 L 450,207 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 450,207 L 585,199 L 585,229 L 450,237 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 449,202 L 584,194" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 450,207 L 585,199" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 450,222 L 585,214" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-      <path d="M 450,237 L 585,229" fill="none" stroke="#2A1408" strokeWidth="1.5" />
-      <path d="M 450,239 L 585,231" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
+      <path d="M 583,193 L 585,205 L 585,230 L 583,218 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,201 L 583,193 L 585,205 L 450,213 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,213 L 585,205 L 585,230 L 450,238 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,213 L 585,205" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 450,238 L 585,230" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 450,240 L 585,232" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
-      {/* 선반3 (최하단) */}
-      <path d="M 582,336 L 584,346 L 582,376 L 580,366 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 448,338 L 582,336 L 584,346 L 450,348 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 450,348 L 584,346 L 582,376 L 448,376 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 449,343 L 583,341" fill="none" stroke="rgba(255,255,230,0.2)" strokeWidth="1" />
-      <path d="M 450,348 L 584,346" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
-      <path d="M 450,362 L 583,361" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+      {/* 선반3 */}
+      <path d="M 582,283 L 584,295 L 582,320 L 580,308 Z" fill="url(#shelfSideG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 448,286 L 582,283 L 584,295 L 450,298 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,298 L 584,295 L 582,320 L 450,323 Z" fill="url(#shelfFrontG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
+      <path d="M 450,298 L 584,295" fill="none" stroke="#FFF0A0" strokeWidth="1.5" />
+      <path d="M 450,323 L 582,320" fill="none" stroke="#2A1408" strokeWidth="1.5" />
+      <path d="M 450,325 L 582,322" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="3" />
 
       {/* 바 — 우측 냉장 문 (3면) */}
       <path d="M 568,22 L 567,19 L 583,19 L 584,22 Z" fill="url(#shelfTopG)" stroke="#3A1A08" strokeWidth="2.5" strokeLinejoin="round" />
