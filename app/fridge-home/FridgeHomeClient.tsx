@@ -9,6 +9,7 @@
  */
 
 import Link from 'next/link';
+import dynamicImport from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
@@ -18,10 +19,16 @@ import KitchenSVG from './KitchenSVG';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
+import Footer from '@/components/Footer';
+import WaitlistForm from '@/components/WaitlistForm';
 import ExpiringIngredientsAlert from '@/components/Ingredients/ExpiringIngredientsAlert';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import IngredientCategoryFilter from '@/components/Ingredients/IngredientCategoryFilter';
+
+const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
+  ssr: false,
+});
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -126,7 +133,7 @@ const DEMO: FridgeItem[] = [
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function FridgeHomeClient() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -143,6 +150,18 @@ export default function FridgeHomeClient() {
 
   // 큰 냉장고 모달 (홈에서 작은 냉장고 탭 시)
   const [showFridgeModal, setShowFridgeModal] = useState(false);
+
+  // 온보딩 배너 (임시 username 사용 중인 유저용)
+  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const hasTempUsername = !!profile?.username && /^user_[a-f0-9]{12}$/.test(profile.username);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!hasTempUsername) return;
+    const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
+    if (!dismissed) setShowOnboardingBanner(true);
+  }, [user, hasTempUsername]);
 
   // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
   useEffect(() => {
@@ -433,6 +452,61 @@ export default function FridgeHomeClient() {
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
+      {/* 온보딩 미완료 / 임시 유저명 배너 */}
+      {showOnboardingBanner && (
+        <div className="sticky top-16 md:top-[68px] z-30 w-full bg-accent-warm/10 border-b border-accent-warm/20 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-sm text-text-secondary truncate">
+              아직 기본 이름 <span className="font-mono text-accent-warm">@{profile?.username}</span>을 쓰고 있어요. <span className="text-accent-warm font-medium">진짜 이름</span>으로 바꿔볼까요?
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowOnboardingModal(true)}
+                className="text-xs font-medium text-accent-warm hover:underline whitespace-nowrap"
+              >
+                완성하기 →
+              </button>
+              <button
+                onClick={() => {
+                  if (user) localStorage.setItem(`naelum_onboarding_banner_${user.id}`, '1');
+                  setShowOnboardingBanner(false);
+                }}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                aria-label="닫기"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 온보딩 위자드 */}
+      {showOnboardingModal && (
+        <OnboardingWizard
+          isOpen={showOnboardingModal}
+          onClose={() => setShowOnboardingModal(false)}
+          onComplete={() => {
+            setShowOnboardingModal(false);
+            setShowOnboardingBanner(false);
+          }}
+        />
+      )}
+
+      {/* Hero Tagline */}
+      <div className="px-4 pt-3 pb-1 text-center">
+        <h1 className="text-lg md:text-2xl font-bold text-text-primary">
+          냉장고 열고 <span className="text-accent-warm">바로 만드는</span> 한식
+        </h1>
+        {!user && (
+          <p className="mt-1 text-xs md:text-sm text-text-muted">
+            재료 등록하면 내 냉장고로 만들 수 있는 레시피를 추천해드려요
+          </p>
+        )}
+      </div>
+
       <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
         <SearchBar className="w-full max-w-md" />
       </div>
@@ -466,6 +540,13 @@ export default function FridgeHomeClient() {
             탭해서 크게 보기 🔍
           </span>
         </button>
+
+        {/* 비로그인 유저: Waitlist + 회원가입 CTA */}
+        {!user && !authLoading && (
+          <div className="w-full max-w-md md:max-w-xl px-4 mt-6">
+            <WaitlistForm source="fridge_home" compact />
+          </div>
+        )}
 
         {/* CTA 3개 — 재료 추가 + 레시피 찾기 + 장보기 */}
         <div className="w-full max-w-md md:max-w-xl px-4 mt-6 flex gap-2">
@@ -733,6 +814,11 @@ export default function FridgeHomeClient() {
         onAddIngredient={addIngredientFromModal}
         onAddFromPhoto={addIngredientsFromPhoto}
       />
+
+      {/* Footer */}
+      <div className="hidden md:block mt-8">
+        <Footer />
+      </div>
 
       <BottomNav />
 
