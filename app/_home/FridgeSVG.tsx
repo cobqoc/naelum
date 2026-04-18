@@ -19,14 +19,14 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#d84a30" />
         </linearGradient>
         <linearGradient id="interiorG" x1="0" y1="0" x2="0" y2="1">
-          {/* 냉장실: 연한 아이스 블루 — 최대한 시원하고 옅은 파란 계열 */}
-          <stop offset="0%" stopColor="#f4faff" />
-          <stop offset="100%" stopColor="#d4e8f5" />
+          {/* 냉장실: 확실히 눈에 띄는 하늘색 (연한 계열 내에선 가장 파란 쪽) */}
+          <stop offset="0%" stopColor="#c2e3f5" />
+          <stop offset="100%" stopColor="#7fb6d9" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          {/* 냉동실: 살얼음 낀 듯한 파랑 — 냉장실보다 조금 진하게 구분 */}
-          <stop offset="0%" stopColor="#e4f0f9" />
-          <stop offset="100%" stopColor="#b5cfe4" />
+          {/* 냉동실: 더 짙은 시원한 얼음 블루 — 냉장실과 확실히 대비 */}
+          <stop offset="0%" stopColor="#a8d0ea" />
+          <stop offset="100%" stopColor="#5598c4" />
         </linearGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#d0d0d0" />
