@@ -252,32 +252,7 @@ export default function FridgeHomeClient() {
         <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="relative flex-1 w-full flex items-center justify-center">
-          {/* 인라인 모바일 검색바 (하단 네비 검색 아이콘이 토글) */}
-          <div
-            aria-hidden={!showMobileSearch}
-            className={`absolute left-0 right-0 px-4 md:hidden origin-bottom transition-all duration-300 ease-out ${
-              showMobileSearch
-                ? 'opacity-100 translate-y-0 scale-100'
-                : 'opacity-0 translate-y-6 scale-95 pointer-events-none'
-            }`}
-          >
-            <div className="flex items-center gap-2 max-w-md mx-auto">
-              <div className="flex-1">
-                <SearchBar autoFocus={showMobileSearch} />
-              </div>
-              <button
-                onClick={() => setShowMobileSearch(false)}
-                aria-label="검색 닫기"
-                className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-tertiary hover:bg-white/10 text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <div className="flex-1 w-full" />
         <div className="relative w-full md:max-w-3xl lg:max-w-4xl md:mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
           <FridgeSVG />
         </div>
@@ -354,6 +329,40 @@ export default function FridgeHomeClient() {
       )}
 
       <BottomNav />
+
+      {/* 모바일 검색 오버레이 (배경 블러 + 아이콘에서 나오는 애니메이션) */}
+      <div
+        onClick={() => setShowMobileSearch(false)}
+        aria-hidden={!showMobileSearch}
+        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ease-out ${
+          showMobileSearch
+            ? 'opacity-100 bg-black/50 backdrop-blur-md pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
+      <div
+        aria-hidden={!showMobileSearch}
+        className={`fixed left-0 right-0 top-[38vh] px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
+          showMobileSearch
+            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+            : 'opacity-0 translate-y-[45vh] scale-[0.25] pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-2 max-w-md mx-auto">
+          <div className="flex-1">
+            <SearchBar autoFocus={showMobileSearch} />
+          </div>
+          <button
+            onClick={() => setShowMobileSearch(false)}
+            aria-label="검색 닫기"
+            className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
