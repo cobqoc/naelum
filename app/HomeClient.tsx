@@ -306,7 +306,7 @@ export default function HomeClient({
       };
       setItems(prev => [...prev, newItem]);
       setAddModalLocation(null);
-      showToast('👅 추가!');
+      showToast('👅 추가! (체험 — 새로고침 시 리셋)');
       return;
     }
     const client = createClient();
@@ -335,7 +335,7 @@ export default function HomeClient({
       }));
       setItems(prev => [...prev, ...newItems]);
       setAddModalLocation(null);
-      showToast(`📸 ${labels.length}개 추가!`);
+      showToast(`📸 ${labels.length}개 추가! (체험 — 새로고침 시 리셋)`);
       return;
     }
     const client = createClient();

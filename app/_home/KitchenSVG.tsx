@@ -37,30 +37,47 @@ export default function KitchenSVG() {
 
       <ellipse cx="330" cy="214" rx="320" ry="4" fill="url(#kitShadowG)" />
 
+      {/* 왼쪽 선반장 — 문 열림 (어두운 내부 + 선반 2단) */}
       <g>
+        {/* 3D 측면 도어 (열려있는 왼쪽 문) */}
         <path d="M 22,10 L 16,22 L 18,214 L 20,210 Z" fill="url(#cabDoorLight)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M 22,10 L 16,22" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.2" />
-        <path d="M 22,10 L 166,10 L 168,210 L 20,210 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="34" y="30" width="124" height="160" rx="10" fill="rgba(0,0,0,0.18)" stroke="rgba(0,0,0,0.45)" strokeWidth="2" />
-        <rect x="37" y="36" width="118" height="148" rx="8" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.2)" strokeWidth="1.2" />
-        <path d="M 37,40 L 155,40" fill="none" stroke="rgba(0,0,0,0.26)" strokeWidth="1.3" />
-        <path d="M 37,180 L 155,180" fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.1" />
-        <ellipse cx="150" cy="118" rx="9" ry="2" fill="rgba(0,0,0,0.28)" />
-        <circle cx="150" cy="108" r="10" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="146" cy="104" rx="4" ry="2.5" fill="rgba(255,255,255,0.55)" />
-        <circle cx="144.5" cy="102.5" r="1.5" fill="rgba(255,255,255,0.95)" />
+        {/* 내부 (어두운 나무 톤) */}
+        <path d="M 22,10 L 166,10 L 168,210 L 20,210 Z" fill="url(#cabInnerG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+        {/* 상단 음영 */}
+        <path d="M 24,14 L 164,14" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.5" />
+        {/* 선반 2단 */}
+        <rect x="22" y="80" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        <rect x="22" y="140" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        {/* 샘플 재료들 (항아리 + 그릇) */}
+        <ellipse cx="55" cy="72" rx="18" ry="3.5" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="55" cy="66" rx="17" ry="3.2" fill="#f5f5f5" stroke="#000" strokeWidth="1.2" />
+        <path d="M 95,56 Q 130,56 130,80 L 95,80 Z" fill="#e8d0a0" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="112.5" cy="56" rx="17.5" ry="2.5" fill="#d8b080" stroke="#000" strokeWidth="1.2" />
+        <rect x="40" y="120" width="18" height="20" rx="2" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="49" cy="120" rx="9" ry="2" fill="#e8e8e8" stroke="#000" strokeWidth="1" />
+        <path d="M 75,116 Q 120,116 120,140 L 75,140 Z" fill="#f0f0f0" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="97.5" cy="116" rx="22.5" ry="3" fill="#e0e0e0" stroke="#000" strokeWidth="1.2" />
       </g>
 
+      {/* 중앙 선반장 — 문 열림 */}
       <g>
-        <path d="M 170,10 L 314,10 L 316,210 L 168,210 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="181" y="28" width="126" height="164" rx="6" fill="rgba(0,0,0,0.24)" stroke="rgba(0,0,0,0.52)" strokeWidth="2.2" />
-        <rect x="186" y="34" width="116" height="150" rx="6" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.3)" strokeWidth="1.4" />
-        <path d="M 186,38 L 302,38" fill="none" stroke="rgba(0,0,0,0.34)" strokeWidth="1.8" />
-        <path d="M 186,180 L 302,180" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.9" />
-        <ellipse cx="184" cy="128" rx="8.5" ry="1.9" fill="rgba(0,0,0,0.3)" />
-        <circle cx="184" cy="118" r="9.5" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="180" cy="114" rx="3.8" ry="2.4" fill="rgba(255,255,255,0.5)" />
-        <circle cx="178.5" cy="112.5" r="1.4" fill="rgba(255,255,255,0.92)" />
+        <path d="M 170,10 L 314,10 L 316,210 L 168,210 Z" fill="url(#cabInnerG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M 176,14 L 314,14" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.5" />
+        {/* 선반 2단 */}
+        <rect x="170" y="80" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        <rect x="170" y="140" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        {/* 샘플 재료들 */}
+        <rect x="185" y="50" width="14" height="30" rx="2" fill="#f5d090" stroke="#000" strokeWidth="1.5" />
+        <rect x="205" y="55" width="12" height="25" rx="2" fill="#e8b070" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="245" cy="72" rx="20" ry="3.5" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="245" cy="66" rx="19" ry="3.2" fill="#f0f0f0" stroke="#000" strokeWidth="1.2" />
+        <path d="M 270,55 Q 305,55 305,80 L 270,80 Z" fill="#d8b890" stroke="#000" strokeWidth="1.5" />
+        {/* 하단 선반 */}
+        <path d="M 185,115 Q 225,115 225,140 L 185,140 Z" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="205" cy="115" rx="20" ry="3" fill="#e8e8e8" stroke="#000" strokeWidth="1.2" />
+        <rect x="240" y="120" width="16" height="20" rx="2" fill="#f0f0f0" stroke="#000" strokeWidth="1.5" />
+        <path d="M 265,116 Q 300,116 300,140 L 265,140 Z" fill="#e8d0a0" stroke="#000" strokeWidth="1.5" />
       </g>
 
       <g>
@@ -97,18 +114,29 @@ export default function KitchenSVG() {
         <ellipse cx="418.5" cy="160" rx="23.5" ry="3" fill="#e8e8e8" stroke="#000" strokeWidth="1.2" />
       </g>
 
+      {/* 오른쪽 선반장 — 문 열림 */}
       <g>
+        {/* 3D 측면 도어 (열려있는 오른쪽 문) */}
         <path d="M 610,10 L 620,22 L 622,214 L 612,210 Z" fill="url(#cabDoorDeep)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M 610,10 L 620,22" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-        <path d="M 466,10 L 610,10 L 612,210 L 464,210 Z" fill="url(#cabDoorG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <rect x="477" y="26" width="126" height="168" rx="12" fill="rgba(0,0,0,0.3)" stroke="rgba(0,0,0,0.55)" strokeWidth="2.2" />
-        <rect x="482" y="34" width="116" height="150" rx="9" fill="url(#cabDoorLight)" stroke="rgba(0,0,0,0.3)" strokeWidth="1.3" />
-        <path d="M 482,38 L 598,38" fill="none" stroke="rgba(0,0,0,0.38)" strokeWidth="2" />
-        <path d="M 482,180 L 598,180" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-        <ellipse cx="484" cy="118" rx="10" ry="2.2" fill="rgba(0,0,0,0.32)" />
-        <circle cx="484" cy="108" r="11" fill="url(#knob3D)" stroke="#000" strokeWidth="2" />
-        <ellipse cx="479" cy="103" rx="4.3" ry="2.7" fill="rgba(255,255,255,0.58)" />
-        <circle cx="477" cy="101" r="1.7" fill="rgba(255,255,255,0.95)" />
+        {/* 내부 (어두운 나무 톤) */}
+        <path d="M 466,10 L 610,10 L 612,210 L 464,210 Z" fill="url(#cabInnerG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M 472,14 L 610,14" fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth="1.5" />
+        {/* 선반 2단 */}
+        <rect x="466" y="80" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        <rect x="466" y="140" width="146" height="3.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+        {/* 샘플 재료들 */}
+        <path d="M 480,55 Q 520,55 520,80 L 480,80 Z" fill="#e8d0a0" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="500" cy="55" rx="20" ry="3" fill="#d8b080" stroke="#000" strokeWidth="1.2" />
+        <ellipse cx="548" cy="72" rx="18" ry="3.5" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="548" cy="66" rx="17" ry="3.2" fill="#f5f5f5" stroke="#000" strokeWidth="1.2" />
+        <rect x="580" y="50" width="14" height="30" rx="2" fill="#f5d090" stroke="#000" strokeWidth="1.5" />
+        {/* 하단 선반 */}
+        <rect x="475" y="120" width="18" height="20" rx="2" fill="#fafafa" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="484" cy="120" rx="9" ry="2" fill="#e8e8e8" stroke="#000" strokeWidth="1" />
+        <path d="M 505,116 Q 545,116 545,140 L 505,140 Z" fill="#f0f0f0" stroke="#000" strokeWidth="1.5" />
+        <ellipse cx="525" cy="116" rx="20" ry="3" fill="#e0e0e0" stroke="#000" strokeWidth="1.2" />
+        <path d="M 560,115 Q 600,115 600,140 L 560,140 Z" fill="#e8d0a0" stroke="#000" strokeWidth="1.5" />
       </g>
     </svg>
   );
