@@ -408,9 +408,67 @@ export default function HomeClient({
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 flex flex-col items-center justify-end gap-3 md:gap-6 md:px-12 pb-2 md:pb-8">
-        {/* KitchenSVG — 모든 사이즈에서 노출. 모바일은 max-w-[220px]로 컴팩트 (약 73px 높이) */}
-        <div className="w-full max-w-[220px] sm:max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
+            빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
+        <div className="relative w-full max-w-[280px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
+          {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
+          <button
+            type="button"
+            onClick={() => setAddModalLocation('상온')}
+            aria-label="상온 재료 추가"
+            className="absolute inset-0 z-10 w-full h-full cursor-pointer"
+          />
+          {/* 상온 chip overlay — 하단 중앙에 가로로 배치 (상온 재료가 "선반 위에 놓인" 느낌) */}
+          {(() => {
+            const pantry = [...items]
+              .filter(i => i.storage_location === '상온')
+              .sort((a, b) => urgencyScore(a) - urgencyScore(b));
+            const MAX = 6;
+            const visible = pantry.slice(0, MAX);
+            const overflow = pantry.length - visible.length;
+            return (
+              <div className="absolute inset-x-1 bottom-[6%] z-20 flex items-end justify-center gap-0.5 flex-wrap pointer-events-none">
+                {visible.map(item => {
+                  const { border, label, isDanger } = freshState(item);
+                  const emoji = getEmoji(item.ingredient_name, item.category);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
+                      className={`pointer-events-auto flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
+                      style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
+                      title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                    >
+                      <span className="text-sm md:text-base leading-none">{emoji}</span>
+                      {isDanger && (
+                        <span className="text-[8px] md:text-[9px] font-bold text-gray-800 leading-none max-w-[40px] truncate">
+                          {item.ingredient_name}
+                        </span>
+                      )}
+                      {label && (
+                        <span className="text-[7px] md:text-[8px] font-bold leading-none" style={{ color: border }}>{label}</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {overflow > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setAddModalLocation('상온'); }}
+                    className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0"
+                    title={`${overflow}개 더 보기`}
+                  >
+                    +{overflow}
+                  </button>
+                )}
+                {pantry.length === 0 && (
+                  <span className="text-[10px] italic text-white/80 select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                    + 상온 재료 추가
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
@@ -421,7 +479,7 @@ export default function HomeClient({
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
         <div className="relative w-full max-w-[420px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 300px)' }}>
+          style={{ maxHeight: 'calc(100dvh - 245px)' }}>
           <FridgeSVG />
 
           {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
@@ -447,8 +505,8 @@ export default function HomeClient({
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
-              // 선반별 아이템 분배: 냉장 선반 3개에 fridge items 긴급도순 채우고, 냉동 선반에 freezer items
-              const fridgeItems = [...items].filter(i => i.storage_location !== '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
+              // 선반별 아이템 분배: 냉장은 '냉장' 또는 미지정만 (상온은 KitchenSVG 선반장으로 분리), 냉동은 '냉동'.
+              const fridgeItems = [...items].filter(i => i.storage_location === '냉장' || !i.storage_location).sort((a, b) => urgencyScore(a) - urgencyScore(b));
               const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
               const shelfItems: FridgeItem[][] = [[], [], [], []];
               fridgeItems.forEach((it, i) => {
