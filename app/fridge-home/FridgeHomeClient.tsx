@@ -247,12 +247,12 @@ export default function FridgeHomeClient() {
 
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
-      <div className="flex-1 flex flex-col items-center px-4 md:px-12 pb-4 md:pb-8">
+      <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
         <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="relative flex-1 w-full flex items-center justify-center px-4">
+        <div className="relative flex-1 w-full flex items-center justify-center">
           {/* 인라인 모바일 검색바 (하단 네비 검색 아이콘이 토글) */}
           <div
             aria-hidden={!showMobileSearch}
@@ -278,7 +278,7 @@ export default function FridgeHomeClient() {
             </div>
           </div>
         </div>
-        <div className="relative w-full md:max-w-3xl lg:max-w-4xl -mx-4 md:mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
+        <div className="relative w-full md:max-w-3xl lg:max-w-4xl md:mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
           <FridgeSVG />
         </div>
       </div>
