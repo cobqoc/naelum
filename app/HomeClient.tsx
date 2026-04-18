@@ -482,20 +482,20 @@ export default function HomeClient({
           style={{ maxHeight: 'calc(100dvh - 213px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
-          {/* FAB(+) 재료 추가 — 왼쪽 도어 (SVG의 left door 영역 ~10%) */}
+          {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역 */}
           <button
             onClick={() => setAddModalLocation('냉장')}
             aria-label="재료 추가"
-            className="absolute top-[50%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+            className="absolute top-[63%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
           >
             +
           </button>
 
-          {/* 레시피 추천 말풍선 — 오른쪽 도어 (SVG의 right door 영역) */}
+          {/* 레시피 추천 말풍선 — 오른쪽 냉동고 도어 내부 상단 (도어 선반 바로 위) */}
           {showRecipeBubble && (
             <Link
               href="/recommendations"
-              className="absolute top-[50%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+              className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
               style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
               aria-label="재료로 만들 수 있는 레시피 보기"
             >
