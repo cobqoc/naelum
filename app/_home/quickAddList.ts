@@ -53,7 +53,12 @@ export const QUICK_ADD: QuickAddIngredient[] = [
   { name: '김', emoji: '🌿', category: 'other', storage: '상온' },
 ];
 
-/** 칩 클릭으로 추가 시 user_ingredients insert 페이로드 생성 */
+/**
+ * 칩 클릭으로 추가 시 user_ingredients insert 페이로드 생성.
+ * expiry_date는 저장하지 않음 — 추정치를 넣으면 만료 경고의 신뢰성이 떨어지고,
+ * CLAUDE.md 데이터 무결성 원칙("확인할 수 없는 값은 NULL")과도 어긋남.
+ * 만료 경고는 유저가 명시적으로 입력한 expiry_date, 또는 purchase_date 기반 "묵힌 기간" fallback으로 처리.
+ */
 export function quickAddToPayload(item: QuickAddIngredient, userId: string) {
   return {
     user_id: userId,
@@ -63,19 +68,5 @@ export function quickAddToPayload(item: QuickAddIngredient, userId: string) {
     quantity: 1,
     unit: '개',
     purchase_date: new Date().toISOString().slice(0, 10),
-    // 기본 신선도: 채소/단백질 5일, 유제품 7일, 조미료 30일, 기타 14일
-    expiry_date: defaultExpiryFor(item.category),
   };
-}
-
-function defaultExpiryFor(category: QuickAddIngredient['category']): string {
-  const days =
-    category === 'seasoning' ? 30 :
-    category === 'dairy' ? 7 :
-    category === 'meat' || category === 'seafood' ? 5 :
-    category === 'veggie' ? 7 :
-    14;
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
 }

@@ -19,7 +19,6 @@ import KitchenSVG from './_home/KitchenSVG';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
-import WaitlistForm from '@/components/WaitlistForm';
 import ExpiringIngredientsAlert from '@/components/Ingredients/ExpiringIngredientsAlert';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
@@ -74,6 +73,14 @@ function daysUntilExpiry(d: string | null): number {
   const exp = new Date(d); exp.setHours(0, 0, 0, 0);
   return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
+
+/** 구매 후 경과일. purchase_date 없으면 음수(미확인) 반환. */
+function daysSincePurchase(d: string | null | undefined): number {
+  if (!d) return -1;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const pur = new Date(d); pur.setHours(0, 0, 0, 0);
+  return Math.floor((today.getTime() - pur.getTime()) / (1000 * 60 * 60 * 24));
+}
 function addDaysISO(d: number): string {
   const date = new Date(); date.setDate(date.getDate() + d);
   return date.toISOString().slice(0, 10);
@@ -101,32 +108,53 @@ function assignSection(item: FridgeItem, idx: number): Section {
   return 'main';
 }
 
-function freshBorder(days: number): string {
-  if (days <= 0) return '#991b1b';
-  if (days <= 3) return '#dc2626';
-  if (days <= 7) return '#d97706';
-  return '#4d7c0f';
-}
-function freshLabel(days: number): string {
-  if (days <= 0) return '만료';
-  if (days <= 7) return `D-${days}`;
-  return '';
+/**
+ * 재료의 신선도 상태를 결정.
+ * - expiry_date가 있으면 그걸 기준으로 D-N 계산 (정확한 만료일)
+ * - 없으면 purchase_date 기준 "묵힌 기간" fallback (추정)
+ *     3-6일: 주의(노랑), 7일+: 위험(빨강)
+ * - 둘 다 없으면: 중립(경고 없음)
+ */
+function freshState(item: Pick<FridgeItem, 'expiry_date' | 'purchase_date'>): {
+  border: string;
+  label: string;
+  isDanger: boolean;
+} {
+  const days = daysUntilExpiry(item.expiry_date);
+  if (item.expiry_date) {
+    if (days <= 0) return { border: '#991b1b', label: '만료', isDanger: true };
+    if (days <= 3) return { border: '#dc2626', label: `D-${days}`, isDanger: true };
+    if (days <= 7) return { border: '#d97706', label: `D-${days}`, isDanger: false };
+    return { border: '#4d7c0f', label: '', isDanger: false };
+  }
+  const since = daysSincePurchase(item.purchase_date);
+  if (since >= 7) return { border: '#dc2626', label: `${since}일째`, isDanger: true };
+  if (since >= 3) return { border: '#d97706', label: `${since}일째`, isDanger: false };
+  // 방금 샀거나 purchase_date 없음 — 경고 없음, 기본 테두리
+  return { border: '#4d7c0f', label: '', isDanger: false };
 }
 
+// DEMO 재료 — 비로그인 체험용. 3가지 상태 섞어서 실제 UX 보여줌:
+//   (a) expiry 설정됨 + 만료 임박 (유저가 명시 입력한 경우)
+//   (b) expiry null + purchase_date 최근 (안전/신선)
+//   (c) expiry null + purchase_date 오래됨 (fallback으로 노랑/빨강)
 const DEMO: FridgeItem[] = [
-  { id:'d1', ingredient_name:'아이스크림', category:'dairy', expiry_date: addDaysISO(30), storage_location:'냉동' },
-  { id:'d2', ingredient_name:'만두', category:'grain', expiry_date: addDaysISO(60), storage_location:'냉동' },
-  { id:'d3', ingredient_name:'두부', category:'other', expiry_date: addDaysISO(1), storage_location:'냉장' },
-  { id:'d4', ingredient_name:'계란', category:'dairy', expiry_date: addDaysISO(10), storage_location:'냉장' },
-  { id:'d5', ingredient_name:'우유', category:'dairy', expiry_date: addDaysISO(3), storage_location:'냉장' },
-  { id:'d6', ingredient_name:'김치', category:'other', expiry_date: addDaysISO(14), storage_location:'냉장' },
-  { id:'d7', ingredient_name:'돼지고기', category:'meat', expiry_date: addDaysISO(2), storage_location:'냉장' },
-  { id:'d8', ingredient_name:'시금치', category:'veggie', expiry_date: addDaysISO(2), storage_location:'냉장' },
-  { id:'d9', ingredient_name:'당근', category:'veggie', expiry_date: addDaysISO(8), storage_location:'냉장' },
-  { id:'d10', ingredient_name:'양파', category:'veggie', expiry_date: addDaysISO(12), storage_location:'냉장' },
-  { id:'d11', ingredient_name:'간장', category:'seasoning', expiry_date: addDaysISO(90), storage_location:'상온' },
-  { id:'d12', ingredient_name:'참기름', category:'seasoning', expiry_date: addDaysISO(60), storage_location:'상온' },
-  { id:'d13', ingredient_name:'고추장', category:'seasoning', expiry_date: addDaysISO(45), storage_location:'냉장' },
+  // (a) 유저가 expiry 입력한 case — 긴급도 표시
+  { id:'d1', ingredient_name:'두부', category:'other', expiry_date: addDaysISO(1), storage_location:'냉장', purchase_date: addDaysISO(-3) },
+  { id:'d2', ingredient_name:'우유', category:'dairy', expiry_date: addDaysISO(3), storage_location:'냉장', purchase_date: addDaysISO(-4) },
+  { id:'d3', ingredient_name:'돼지고기', category:'meat', expiry_date: addDaysISO(2), storage_location:'냉장', purchase_date: addDaysISO(-3) },
+  { id:'d4', ingredient_name:'시금치', category:'veggie', expiry_date: addDaysISO(2), storage_location:'냉장', purchase_date: addDaysISO(-5) },
+  // (b) expiry 없음 + 방금 산 것 — 표시 없음
+  { id:'d5', ingredient_name:'양파', category:'veggie', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(0) },
+  { id:'d6', ingredient_name:'마늘', category:'veggie', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-1) },
+  { id:'d7', ingredient_name:'김치', category:'other', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d8', ingredient_name:'간장', category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d9', ingredient_name:'참기름', category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d10', ingredient_name:'고추장', category:'seasoning', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  // (c) expiry 없음 + 묵힌 것 — purchase_date fallback으로 색 표시
+  { id:'d11', ingredient_name:'당근', category:'veggie', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-5) },
+  { id:'d12', ingredient_name:'계란', category:'dairy', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-8) },
+  { id:'d13', ingredient_name:'만두', category:'grain', expiry_date: null, storage_location:'냉동', purchase_date: addDaysISO(-3) },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -162,6 +190,10 @@ export default function HomeClient({
 
   // 큰 냉장고 모달 (홈에서 작은 냉장고 탭 시)
   const [showFridgeModal, setShowFridgeModal] = useState(false);
+
+  // 현재 재료로 만들 수 있는 레시피가 실제 존재하는지 — 버튼 노출 조건.
+  // 비로그인 유저는 DEMO 재료가 흔한 조합이라 API 호출 없이 true로 유지.
+  const [hasMatchingRecipes, setHasMatchingRecipes] = useState<boolean>(!isAuthenticated);
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
@@ -227,6 +259,30 @@ export default function HomeClient({
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
+  // 매칭 레시피 존재 여부 확인 — items 변화마다 재확인. 버튼 노출을 정확히 gating.
+  // 비로그인: DEMO 재료는 항상 true (API는 로그인 필요). 빈 냉장고: false (버튼은 items.length에서 이미 숨겨짐).
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setHasMatchingRecipes(true);
+      return;
+    }
+    if (items.length === 0) {
+      setHasMatchingRecipes(false);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/recommendations?type=ingredients&limit=1')
+      .then(r => r.ok ? r.json() : { recommendations: [] })
+      .then(data => {
+        if (cancelled) return;
+        setHasMatchingRecipes(Array.isArray(data.recommendations) && data.recommendations.length > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHasMatchingRecipes(false);
+      });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, items.length]);
+
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
   useEffect(() => {
@@ -242,8 +298,9 @@ export default function HomeClient({
     if (!user) {
       setItems(prev => [...prev, {
         id: genDemoId(), ingredient_name: item.name, category: item.category,
-        expiry_date: addDaysISO(item.category === 'seasoning' ? 14 : item.category === 'dairy' ? 7 : 5),
+        expiry_date: null,
         storage_location: item.storage,
+        purchase_date: addDaysISO(0),
       }]);
       showToast(`${item.name} 추가 (체험)`);
 
@@ -270,7 +327,7 @@ export default function HomeClient({
       const match = QUICK_ADD.find(q => q.name === token || q.name.includes(token) || token.includes(q.name));
       const fb: QuickAddIngredient = match ?? { name: token, emoji:'📦', category:'other', storage:'냉장' };
       if (!user) {
-        setItems(prev => [...prev, { id: genDemoId(), ingredient_name: fb.name, category: fb.category, expiry_date: addDaysISO(5), storage_location: fb.storage }]);
+        setItems(prev => [...prev, { id: genDemoId(), ingredient_name: fb.name, category: fb.category, expiry_date: null, storage_location: fb.storage, purchase_date: addDaysISO(0) }]);
       } else {
         const client = createClient();
         await client.from('user_ingredients').insert(quickAddToPayload(fb, user.id));
@@ -447,7 +504,6 @@ export default function HomeClient({
     return m;
   }, [items]);
 
-  const dangerCount = items.filter(i => daysUntilExpiry(i.expiry_date) <= 3).length;
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
   // 카테고리 필터 적용된 섹션별 재료
@@ -509,19 +565,6 @@ export default function HomeClient({
         />
       )}
 
-      {/* Hero Tagline — 비로그인 유저한테만 노출. SSR에서 isAuthenticated로 판정해 flicker 제거.
-          (이전엔 !user만 썼는데, useAuth의 초기 undefined 단계에서 로그인 유저에게 잠깐 노출됨) */}
-      {!isAuthenticated && (
-        <div className="px-4 pt-3 pb-1 text-center">
-          <h1 className="text-lg md:text-2xl font-bold text-text-primary">
-            냉장고 열고 <span className="text-accent-warm">바로 만드는</span> 한식
-          </h1>
-          <p className="mt-1 text-xs md:text-sm text-text-muted">
-            재료 등록하면 내 냉장고로 만들 수 있는 레시피를 추천해드려요
-          </p>
-        </div>
-      )}
-
       <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
         <SearchBar className="w-full max-w-md" />
       </div>
@@ -550,23 +593,16 @@ export default function HomeClient({
           </span>
         </button>
 
-        {/* 비로그인 유저: Waitlist + 회원가입 CTA — SSR isAuthenticated로 즉시 판정 */}
-        {!isAuthenticated && (
-          <div className="w-full max-w-md md:max-w-xl px-4 mt-6">
-            <WaitlistForm source="fridge_home" compact />
-          </div>
-        )}
-
-        {/* 레시피 추천 버튼 — 냉장고에 재료가 있을 때만 노출.
-            비로그인 유저는 DEMO 13개가 초기 상태라 항상 보임(체험 유도).
-            로그인 후 빈 냉장고면 숨겨서 "먼저 재료 넣기"를 자연스럽게 유도. */}
-        {items.length > 0 && (
-          <div className="w-full max-w-md md:max-w-xl px-4 mt-6">
+        {/* 레시피 추천 버튼 — 냉장고에 재료가 있고 실제로 매칭되는 레시피가 있을 때만 노출.
+            비로그인 유저는 DEMO 기준 항상 true (API는 로그인 필요, DEMO는 매칭 보장됨).
+            로그인 유저는 mount 후 items.length 변화 시 /api/recommendations로 유무 확인. */}
+        {items.length > 0 && hasMatchingRecipes && (
+          <div className="mt-6 flex justify-center">
             <Link
               href="/recommendations"
-              className="w-full flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
+              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-full bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
             >
-              🔍 이 재료로 만들 수 있는 레시피 보기
+              🔍 현재 재료로 만들 수 있는 레시피 보기
             </Link>
           </div>
         )}
@@ -927,9 +963,7 @@ function SectionRow({
       ) : (
         <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
           {items.map((item) => {
-            const days = daysUntilExpiry(item.expiry_date);
-            const border = freshBorder(days);
-            const label = freshLabel(days);
+            const { border, label } = freshState(item);
             const emoji = getEmoji(item.ingredient_name, item.category);
             const isSelected = selectedIds.includes(item.id);
             return (
