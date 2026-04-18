@@ -10,19 +10,17 @@
 
 import Link from 'next/link';
 import dynamicImport from 'next/dynamic';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
-import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './_home/quickAddList';
+import { QUICK_ADD } from './_home/quickAddList';
 import FridgeSVG from './_home/FridgeSVG';
 import KitchenSVG from './_home/KitchenSVG';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
-import ExpiringIngredientsAlert from '@/components/Ingredients/ExpiringIngredientsAlert';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
-import IngredientCategoryFilter from '@/components/Ingredients/IngredientCategoryFilter';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -63,8 +61,6 @@ type PhotoLabel = {
   storage_location?: string | null;
 };
 
-type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR' | 'pantry';
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function daysUntilExpiry(d: string | null): number {
@@ -85,27 +81,10 @@ function addDaysISO(d: number): string {
   const date = new Date(); date.setDate(date.getDate() + d);
   return date.toISOString().slice(0, 10);
 }
-function genDemoId(): string { return `demo-${Math.random().toString(36).slice(2, 10)}`; }
-function parseMultiInput(text: string): string[] {
-  return text.split(/[\s,，、]+/)
-    .map(t => t.replace(/\d+(개|g|kg|ml|l|모|장|컵|큰술|작은술|줌|봉|통|병|포기)?$/i, '').trim())
-    .filter(t => t.length > 0 && t.length <= 30);
-}
 function getEmoji(name: string, category: string): string {
   const found = QUICK_ADD.find(q => q.name === name || name.includes(q.name) || q.name.includes(name));
   if (found) return found.emoji;
   return ({ veggie:'🥬', meat:'🥩', seafood:'🐟', dairy:'🥛', grain:'🌾', seasoning:'🧂' } as Record<string,string>)[category] ?? '📦';
-}
-
-function assignSection(item: FridgeItem, idx: number): Section {
-  if (item.storage_location === '상온') return 'pantry';
-  if (item.storage_location === '냉동') return 'freezer';
-  if (item.category === 'seasoning' || item.category === 'condiment') {
-    if (item.storage_location === '냉장') return idx % 2 === 0 ? 'doorL' : 'doorR';
-    return 'pantry';
-  }
-  if (item.category === 'veggie' || item.category === 'fruit') return 'veggie';
-  return 'main';
 }
 
 /**
@@ -133,6 +112,32 @@ function freshState(item: Pick<FridgeItem, 'expiry_date' | 'purchase_date'>): {
   // 방금 샀거나 purchase_date 없음 — 경고 없음, 기본 테두리
   return { border: '#4d7c0f', label: '', isDanger: false };
 }
+
+/** 긴급도 스코어 — 작을수록 우선(만료 임박). 선반 정렬에 사용. */
+function urgencyScore(item: FridgeItem): number {
+  if (item.expiry_date) return daysUntilExpiry(item.expiry_date);
+  const since = daysSincePurchase(item.purchase_date);
+  if (since < 0) return 99; // purchase_date 없음 → 맨 뒤
+  // null expiry + 7일 지나면 "실질적 만료"로 간주해 상위로
+  return Math.max(-1, 7 - since);
+}
+
+/**
+ * FridgeSVG 내부 선반 좌표 매핑 (viewBox: 30 -5 540 670 기준).
+ * 실제 선반 rail y좌표를 읽어 percentage로 변환.
+ * - 냉장 3선반: y=35~119 / 135~213 / 230~319
+ * - 냉동 1선반: y=420~525 (서랍 위)
+ * - x는 모두 184~416 (width 232)
+ */
+const SHELF_LEFT = '28.5%';
+const SHELF_WIDTH = '43%';
+const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
+  { top: '6%',  height: '12%', kind: 'fridge' },   // 냉장 top
+  { top: '21%', height: '12%', kind: 'fridge' },   // 냉장 middle
+  { top: '35%', height: '13%', kind: 'fridge' },   // 냉장 bottom (drawer 위)
+  { top: '63%', height: '16%', kind: 'freezer' },  // 냉동 top
+];
+const MAX_CHIPS_PER_SHELF = 5;
 
 // DEMO 재료 — 비로그인 체험용. 3가지 상태 섞어서 실제 UX 보여줌:
 //   (a) expiry 설정됨 + 만료 임박 (유저가 명시 입력한 경우)
@@ -176,24 +181,20 @@ export default function HomeClient({
   const { user, profile, loading: authLoading } = useAuth();
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [multiInput, setMultiInput] = useState('');
-  const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [showAddSheet, setShowAddSheet] = useState(false);
-  const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
-  const [inlineSearch, setInlineSearch] = useState('');
 
-  // 추가 모달 (사진 업로드 포함)
+  // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
 
-  // 큰 냉장고 모달 (홈에서 작은 냉장고 탭 시)
-  const [showFridgeModal, setShowFridgeModal] = useState(false);
-
-  // 현재 재료로 만들 수 있는 레시피가 실제 존재하는지 — 버튼 노출 조건.
-  // 비로그인 유저는 DEMO 재료가 흔한 조합이라 API 호출 없이 true로 유지.
-  const [hasMatchingRecipes, setHasMatchingRecipes] = useState<boolean>(!isAuthenticated);
+  // 현재 재료로 만들 수 있는 레시피 존재 여부 — 버튼 gating에 사용.
+  // 비로그인/빈 냉장고는 render 시 파생, 로그인+재료 있음일 때만 API 결과를 state로 보관.
+  const [fetchedMatchingRecipes, setFetchedMatchingRecipes] = useState<boolean | null>(null);
+  const hasMatchingRecipes: boolean = !isAuthenticated
+    ? true
+    : items.length === 0
+      ? false
+      : fetchedMatchingRecipes ?? false;
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
@@ -206,6 +207,7 @@ export default function HomeClient({
     if (!user) return;
     if (!hasTempUsername) return;
     const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
     if (!dismissed) setShowOnboardingBanner(true);
   }, [user, hasTempUsername]);
 
@@ -216,31 +218,18 @@ export default function HomeClient({
     return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
 
-  // ESC 키로 모달 닫기
+  // ESC 키로 모바일 검색 닫기
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (showFridgeModal) setShowFridgeModal(false);
-      else if (showMobileSearch) setShowMobileSearch(false);
+      if (e.key !== 'Escape' || !showMobileSearch) return;
+      setShowMobileSearch(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [showFridgeModal, showMobileSearch]);
+  }, [showMobileSearch]);
 
-  // 재료 상세 수정 모달
+  // 재료 상세 수정 모달 (chip 탭 시 열림)
   const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
-
-  // 카테고리 필터
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-
-  // 장보기 모드
-  const [shoppingMode, setShoppingMode] = useState(false);
-  const [selectedForShopping, setSelectedForShopping] = useState<string[]>([]);
-  const [addingToCart, setAddingToCart] = useState(false);
-
-  // 삭제 undo
-  const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const deletedItemRef = useRef<FridgeItem | null>(null);
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
@@ -259,26 +248,18 @@ export default function HomeClient({
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 매칭 레시피 존재 여부 확인 — items 변화마다 재확인. 버튼 노출을 정확히 gating.
-  // 비로그인: DEMO 재료는 항상 true (API는 로그인 필요). 빈 냉장고: false (버튼은 items.length에서 이미 숨겨짐).
+  // 매칭 레시피 fetch — 로그인 + 재료 있음일 때만. 비로그인/빈 냉장고는 render 시 파생됨.
   useEffect(() => {
-    if (!isAuthenticated) {
-      setHasMatchingRecipes(true);
-      return;
-    }
-    if (items.length === 0) {
-      setHasMatchingRecipes(false);
-      return;
-    }
+    if (!isAuthenticated || items.length === 0) return;
     let cancelled = false;
     fetch('/api/recommendations?type=ingredients&limit=1')
       .then(r => r.ok ? r.json() : { recommendations: [] })
       .then(data => {
         if (cancelled) return;
-        setHasMatchingRecipes(Array.isArray(data.recommendations) && data.recommendations.length > 0);
+        setFetchedMatchingRecipes(Array.isArray(data.recommendations) && data.recommendations.length > 0);
       })
       .catch(() => {
-        if (!cancelled) setHasMatchingRecipes(false);
+        if (!cancelled) setFetchedMatchingRecipes(false);
       });
     return () => { cancelled = true; };
   }, [isAuthenticated, items.length]);
@@ -291,83 +272,6 @@ export default function HomeClient({
     return () => clearTimeout(t);
   }, [toast]);
   const showToast = (msg: string) => setToast(msg);
-
-  const addQuickItem = async (item: QuickAddIngredient) => {
-    if (adding) return;
-    setAdding(true);
-    if (!user) {
-      setItems(prev => [...prev, {
-        id: genDemoId(), ingredient_name: item.name, category: item.category,
-        expiry_date: null,
-        storage_location: item.storage,
-        purchase_date: addDaysISO(0),
-      }]);
-      showToast(`${item.name} 추가 (체험)`);
-
-      setAdding(false); return;
-    }
-    const client = createClient();
-    const { error } = await client.from('user_ingredients').insert(quickAddToPayload(item, user.id));
-    if (error) showToast('추가 실패');
-    else {
-      showToast(`${item.name} 추가`);
-      window.dispatchEvent(new Event('fridge-updated'));
-      await fetchItems();
-
-    }
-    setAdding(false);
-  };
-
-  const addMultiFromText = async () => {
-    const tokens = parseMultiInput(multiInput);
-    if (tokens.length === 0) return;
-    setAdding(true);
-    let added = 0;
-    for (const token of tokens) {
-      const match = QUICK_ADD.find(q => q.name === token || q.name.includes(token) || token.includes(q.name));
-      const fb: QuickAddIngredient = match ?? { name: token, emoji:'📦', category:'other', storage:'냉장' };
-      if (!user) {
-        setItems(prev => [...prev, { id: genDemoId(), ingredient_name: fb.name, category: fb.category, expiry_date: null, storage_location: fb.storage, purchase_date: addDaysISO(0) }]);
-      } else {
-        const client = createClient();
-        await client.from('user_ingredients').insert(quickAddToPayload(fb, user.id));
-      }
-      added++;
-    }
-    if (user) { window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
-    showToast(`${added}개 추가`);
-    setMultiInput('');
-    setAdding(false);
-  };
-
-  const removeItem = async (id: string) => {
-    const target = items.find(i => i.id === id);
-    if (!target) return;
-
-    // 낙관적 제거 + undo 타이머
-    setItems(prev => prev.filter(i => i.id !== id));
-    deletedItemRef.current = target;
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-
-    showToast('👅 낼름! · 되돌리기 4초');
-
-    undoTimerRef.current = setTimeout(async () => {
-      deletedItemRef.current = null;
-      if (id.startsWith('d') || id.startsWith('demo')) return;
-      const client = createClient();
-      await client.from('user_ingredients').delete().eq('id', id);
-      window.dispatchEvent(new Event('fridge-updated'));
-    }, 4000);
-  };
-
-  const undoDelete = () => {
-    const restored = deletedItemRef.current;
-    if (!restored) return;
-    setItems(prev => [...prev, restored]);
-    deletedItemRef.current = null;
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    setToast(null);
-  };
 
   // IngredientDetailModal onUpdate
   const updateIngredient = async (id: string, formData: IngredientFormData) => {
@@ -450,73 +354,6 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
-  // 장보기 모드 토글
-  const toggleShoppingSelect = (id: string) => {
-    setSelectedForShopping(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
-  };
-
-  const addSelectedToCart = async () => {
-    if (selectedForShopping.length === 0 || addingToCart) return;
-    setAddingToCart(true);
-    const selected = items.filter(i => selectedForShopping.includes(i.id));
-    try {
-      if (user) {
-        const client = createClient();
-        const rows = selected.map(i => ({
-          user_id: user.id,
-          ingredient_name: i.ingredient_name,
-          category: i.category,
-          quantity: i.quantity ?? 1,
-          unit: i.unit ?? null,
-        }));
-        await client.from('shopping_cart').insert(rows);
-      }
-      showToast(`🛒 ${selected.length}개 추가!`);
-      setSelectedForShopping([]);
-      setShoppingMode(false);
-      window.dispatchEvent(new Event('cart-updated'));
-    } catch {
-      showToast('❌ 장보기 추가 실패');
-    } finally {
-      setAddingToCart(false);
-    }
-  };
-
-  // 선반별 추천 칩 (빈 선반 탭 시 표시)
-  const FRIDGE_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '냉장').slice(0, 6);
-  const FREEZER_RECO: QuickAddIngredient[] = [
-    { name: '만두', emoji: '🥟', category: 'grain', storage: '냉동' },
-    { name: '아이스크림', emoji: '🍦', category: 'dairy', storage: '냉동' },
-    { name: '새우', emoji: '🦐', category: 'seafood', storage: '냉동' },
-    { name: '냉동블루베리', emoji: '🫐', category: 'other', storage: '냉동' },
-  ];
-  const PANTRY_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '상온').slice(0, 6);
-
-  const handleInlineAdd = async (item: QuickAddIngredient) => {
-    await addQuickItem(item);
-    setInlineAddSection(null);
-    setInlineSearch('');
-  };
-
-  const sections = useMemo(() => {
-    const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[], pantry:[] };
-    items.forEach((item, idx) => m[assignSection(item, idx)].push(item));
-    return m;
-  }, [items]);
-
-  const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
-
-  // 카테고리 필터 적용된 섹션별 재료
-  const applyFilter = (arr: FridgeItem[]) =>
-    selectedCategories.length === 0 ? arr : arr.filter(i => selectedCategories.includes(i.category));
-
-  const filteredPantry = useMemo(() => applyFilter(sections.pantry), [sections.pantry, selectedCategories]);
-  const filteredFridge = useMemo(
-    () => applyFilter([...sections.main, ...sections.veggie, ...sections.doorL, ...sections.doorR]),
-    [sections.main, sections.veggie, sections.doorL, sections.doorR, selectedCategories]
-  );
-  const filteredFreezer = useMemo(() => applyFilter(sections.freezer), [sections.freezer, selectedCategories]);
-
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
       <Header />
@@ -569,29 +406,112 @@ export default function HomeClient({
         <SearchBar className="w-full max-w-md" />
       </div>
 
-      {/* 만료 임박 알림 배너 */}
-      <div className="px-4 pt-2">
-        <ExpiringIngredientsAlert />
-      </div>
-
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
         <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
         <div className="flex-1 w-full" />
-        {/* 홈: 작은 냉장고 (클릭하면 모달로 확대) */}
-        <button
-          onClick={() => setShowFridgeModal(true)}
-          aria-label="냉장고 크게 보기"
-          className="relative w-full max-w-[280px] md:max-w-md mx-auto aspect-[540/670] md:aspect-[660/670] max-h-[50vh] md:max-h-[58vh] cursor-pointer group"
-        >
+
+        {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
+            냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
+            냉동 선반 1개: storage_location === '냉동'
+            chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달 */}
+        <div className="relative w-full max-w-[380px] md:max-w-[500px] mx-auto aspect-[540/670]">
           <FridgeSVG />
-          <div className="absolute inset-0 rounded-xl group-hover:bg-accent-warm/5 transition-all" />
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-background-secondary/80 backdrop-blur-sm border border-white/10 text-[10px] text-text-muted whitespace-nowrap">
-            탭해서 크게 보기 🔍
-          </span>
-        </button>
+
+          {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
+          <div className="absolute inset-0 pointer-events-none">
+            {(() => {
+              // 선반별 아이템 분배: 냉장 선반 3개에 fridge items 긴급도순 채우고, 냉동 선반에 freezer items
+              const fridgeItems = [...items].filter(i => i.storage_location !== '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
+              const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
+              const shelfItems: FridgeItem[][] = [[], [], [], []];
+              fridgeItems.forEach((it, i) => {
+                const shelfIdx = Math.min(Math.floor(i / MAX_CHIPS_PER_SHELF), 2);
+                shelfItems[shelfIdx].push(it);
+              });
+              shelfItems[3] = freezerItems;
+
+              return SHELVES.map((shelf, idx) => {
+                const list = shelfItems[idx];
+                const visible = list.slice(0, MAX_CHIPS_PER_SHELF);
+                const overflow = list.length - visible.length;
+                const isEmpty = list.length === 0;
+                const addLocation = shelf.kind === 'freezer' ? '냉동' : '냉장';
+                return (
+                  <div
+                    key={idx}
+                    className="absolute flex flex-wrap items-end justify-center gap-0.5 pointer-events-auto cursor-pointer"
+                    style={{
+                      left: SHELF_LEFT,
+                      width: SHELF_WIDTH,
+                      top: shelf.top,
+                      height: shelf.height,
+                    }}
+                    onClick={(e) => {
+                      // 빈 선반 영역 탭 시에만 add modal. chip 자체 탭은 handler에서 stopPropagation.
+                      if (isEmpty) {
+                        e.stopPropagation();
+                        setAddModalLocation(addLocation);
+                      }
+                    }}
+                  >
+                    {visible.map(item => {
+                      const { border, label, isDanger } = freshState(item);
+                      const emoji = getEmoji(item.ingredient_name, item.category);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
+                          className={`flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/90 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
+                          style={{
+                            borderColor: border,
+                            boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
+                          }}
+                          title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                        >
+                          <span className="text-sm md:text-base leading-none">{emoji}</span>
+                          {isDanger && (
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-800 leading-none max-w-[40px] truncate">
+                              {item.ingredient_name}
+                            </span>
+                          )}
+                          {label && (
+                            <span className="text-[7px] md:text-[8px] font-bold leading-none" style={{ color: border }}>
+                              {label}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    {overflow > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setAddModalLocation(addLocation); }}
+                        className="flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0"
+                        title={`${overflow}개 더 보기`}
+                      >
+                        +{overflow}
+                      </button>
+                    )}
+                    {isEmpty && (
+                      <span className="text-[9px] italic text-black/40 select-none">+ 탭해서 추가</span>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {/* FAB — 재료 추가 */}
+          <button
+            onClick={() => setAddModalLocation('냉장')}
+            aria-label="재료 추가"
+            className="absolute bottom-3 right-3 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
+          >
+            +
+          </button>
+        </div>
 
         {/* 레시피 추천 버튼 — 냉장고에 재료가 있고 실제로 매칭되는 레시피가 있을 때만 노출.
             비로그인 유저는 DEMO 기준 항상 true (API는 로그인 필요, DEMO는 매칭 보장됨).
@@ -608,91 +528,9 @@ export default function HomeClient({
         )}
       </div>
 
-      {/* === 재료 추가 바텀시트 === */}
-      {showAddSheet && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAddSheet(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background-secondary rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto animate-slideUp">
-            <div className="p-4 pb-8">
-              {/* 핸들 */}
-              <div className="flex justify-center mb-3">
-                <div className="w-10 h-1 rounded-full bg-white/20" />
-              </div>
-              <h2 className="text-sm font-bold text-text-primary mb-3">재료 추가</h2>
-
-              {/* 한 줄 입력 */}
-              <div className="flex gap-2 mb-4">
-                <input type="text" value={multiInput} onChange={e => setMultiInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { addMultiFromText(); setShowAddSheet(false); } }}
-                  placeholder="양파2 두부 김치 계란5"
-                  aria-label="한 줄에 여러 재료 입력"
-                  className="flex-1 rounded-xl bg-background-tertiary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
-                  autoFocus
-                />
-                <button onClick={() => { addMultiFromText(); setShowAddSheet(false); }}
-                  disabled={adding || multiInput.trim().length === 0}
-                  className="px-4 py-3 rounded-xl bg-accent-warm text-background-primary text-sm font-bold disabled:opacity-50"
-                >추가</button>
-              </div>
-
-              {/* Quick-add 칩 */}
-              <p className="text-xs text-text-muted mb-2">빠른 추가</p>
-              <div className="flex flex-wrap gap-1.5">
-                {visibleChips.map(item => (
-                  <button key={item.name} onClick={() => { addQuickItem(item); }}
-                    disabled={adding}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary border border-white/10 text-xs hover:border-accent-warm/50 active:scale-95 transition-all disabled:opacity-50"
-                  ><span>{item.emoji}</span><span>{item.name}</span></button>
-                ))}
-                {!showAllChips && (
-                  <button onClick={() => setShowAllChips(true)}
-                    className="px-3 py-1.5 rounded-full bg-white/5 text-xs text-text-muted">+ 더보기</button>
-                )}
-              </div>
-              <p className="mt-3 text-[10px] text-text-muted">
-                공백/콤마로 구분 · 숫자/단위 자동 무시 {!user && '· 체험 모드'}
-              </p>
-            </div>
-          </div>
-          <style jsx>{`
-            @keyframes slideUp {
-              from { transform: translateY(100%); }
-              to { transform: translateY(0); }
-            }
-            .animate-slideUp {
-              animation: slideUp 0.3s ease-out;
-            }
-          `}</style>
-          <style jsx global>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-          `}</style>
-        </>
-      )}
-
       {toast && (
         <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl flex items-center gap-2">
           <span>{toast}</span>
-          {deletedItemRef.current && (
-            <button onClick={undoDelete} className="text-accent-warm font-bold hover:underline">
-              되돌리기
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* 장보기 모드 하단 액션 바 */}
-      {shoppingMode && selectedForShopping.length > 0 && (
-        <div className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
-          <button
-            onClick={addSelectedToCart}
-            disabled={addingToCart}
-            className="w-full md:w-auto md:min-w-[280px] px-6 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm shadow-2xl hover:bg-accent-hover disabled:opacity-50 transition-all"
-          >
-            🛒 장보기 목록에 추가 ({selectedForShopping.length}개)
-          </button>
         </div>
       )}
 
@@ -715,132 +553,6 @@ export default function HomeClient({
           onClose={() => setDetailItem(null)}
           onUpdate={updateIngredient}
         />
-      )}
-
-      {/* 큰 냉장고 모달 (홈 작은 냉장고 탭 시 확대) */}
-      {showFridgeModal && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center p-3 md:p-6 bg-black/70 backdrop-blur-md"
-          onClick={() => setShowFridgeModal(false)}
-          role="dialog"
-          aria-label="냉장고 크게 보기"
-        >
-          <div
-            className="relative w-full max-w-md md:max-w-2xl max-h-[95vh] flex flex-col bg-background-secondary rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 헤더: 타이틀 + 장보기 토글 + 닫기 */}
-            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
-              <span className="text-sm font-bold text-text-primary flex-shrink-0">🧊 내 냉장고</span>
-              <button
-                onClick={() => { setShoppingMode(m => !m); setSelectedForShopping([]); }}
-                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-                  shoppingMode
-                    ? 'bg-accent-warm text-background-primary'
-                    : 'bg-white/10 text-text-secondary hover:bg-white/15'
-                }`}
-                title={shoppingMode ? '장보기 모드 끄기' : '장보기 모드'}
-              >
-                🛒 {shoppingMode ? '취소' : '장보기'}
-              </button>
-              <button
-                onClick={() => setShowFridgeModal(false)}
-                aria-label="닫기"
-                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 text-text-primary transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* 카테고리 필터 */}
-            <div className="px-3 pt-3">
-              <IngredientCategoryFilter
-                selectedCategories={selectedCategories}
-                onChange={setSelectedCategories}
-              />
-            </div>
-
-            {/* 스크롤 가능 콘텐츠 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* 큰 냉장고 + 섹션별 추가 버튼 */}
-              <div className="relative w-full aspect-[540/670] md:aspect-[660/670] max-h-[45vh] md:max-h-[50vh] mx-auto">
-                <FridgeSVG />
-                <button
-                  onClick={() => setAddModalLocation('냉장')}
-                  aria-label="냉장실에 재료 추가"
-                  className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => setAddModalLocation('냉동')}
-                  aria-label="냉동실에 재료 추가"
-                  className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
-                >
-                  +
-                </button>
-              </div>
-
-              {/* 3섹션 리스트 (냉장/냉동/상온) */}
-              <div className="space-y-2">
-                <SectionRow
-                  title="냉장"
-                  icon="❄️"
-                  items={filteredFridge}
-                  onAdd={() => setAddModalLocation('냉장')}
-                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
-                  shoppingMode={shoppingMode}
-                  selectedIds={selectedForShopping}
-                  hasFilter={selectedCategories.length > 0}
-                  onResetFilter={() => setSelectedCategories([])}
-                  recommendedChips={FRIDGE_RECO}
-                  onQuickAdd={addQuickItem}
-                />
-                <SectionRow
-                  title="냉동"
-                  icon="🧊"
-                  items={filteredFreezer}
-                  onAdd={() => setAddModalLocation('냉동')}
-                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
-                  shoppingMode={shoppingMode}
-                  selectedIds={selectedForShopping}
-                  hasFilter={selectedCategories.length > 0}
-                  onResetFilter={() => setSelectedCategories([])}
-                  recommendedChips={FREEZER_RECO}
-                  onQuickAdd={addQuickItem}
-                />
-                <SectionRow
-                  title="상온"
-                  icon="🏠"
-                  items={filteredPantry}
-                  onAdd={() => setAddModalLocation('상온')}
-                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
-                  shoppingMode={shoppingMode}
-                  selectedIds={selectedForShopping}
-                  hasFilter={selectedCategories.length > 0}
-                  onResetFilter={() => setSelectedCategories([])}
-                  recommendedChips={PANTRY_RECO}
-                  onQuickAdd={addQuickItem}
-                />
-              </div>
-
-              {/* 팁 섹션 (상세) */}
-              <div className="px-3 py-2.5 rounded-lg bg-background-tertiary/50 border border-white/5 space-y-1">
-                <p className="text-[11px] text-text-muted leading-relaxed">
-                  💡 <strong className="text-text-secondary">칩 탭</strong> — 재료 수정/삭제
-                </p>
-                <p className="text-[11px] text-text-muted leading-relaxed">
-                  ⚠️ <strong className="text-text-secondary">만료 임박</strong> — D-Day 색상으로 상단 배너에 표시
-                </p>
-                <p className="text-[11px] text-text-muted leading-relaxed">
-                  🔍 <strong className="text-text-secondary">레시피 찾기</strong> — 홈 CTA에서 현재 재료 기반 추천
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* 재료 추가 모달 (사진 업로드 포함) */}
@@ -891,104 +603,3 @@ export default function HomeClient({
   );
 }
 
-// ── SectionRow: 모달 안에서 섹션별 재료 표시 ───────────────────────────
-function SectionRow({
-  title,
-  icon,
-  items,
-  onAdd,
-  onSelect,
-  shoppingMode = false,
-  selectedIds = [],
-  hasFilter = false,
-  onResetFilter,
-  recommendedChips = [],
-  onQuickAdd,
-}: {
-  title: string;
-  icon: string;
-  items: FridgeItem[];
-  onAdd: () => void;
-  onSelect: (item: FridgeItem) => void;
-  shoppingMode?: boolean;
-  selectedIds?: string[];
-  hasFilter?: boolean;
-  onResetFilter?: () => void;
-  recommendedChips?: QuickAddIngredient[];
-  onQuickAdd?: (item: QuickAddIngredient) => void | Promise<void>;
-}) {
-  const isEmpty = items.length === 0;
-  return (
-    <div className="rounded-xl bg-background-primary/40 border border-white/5">
-      <div className="flex items-center justify-between px-3 pt-2 pb-1">
-        <span className="text-xs font-bold text-text-secondary">
-          {icon} {title} <span className="text-text-muted">({items.length})</span>
-        </span>
-        <button
-          onClick={onAdd}
-          className="text-[11px] text-accent-warm font-semibold hover:text-accent-hover px-2 py-0.5 rounded"
-        >
-          + 추가
-        </button>
-      </div>
-      {isEmpty ? (
-        hasFilter ? (
-          <div className="px-3 pb-2 flex items-center gap-2">
-            <span className="flex-1 text-[11px] text-text-muted">필터 결과 없음</span>
-            <button
-              onClick={onResetFilter}
-              className="text-[11px] px-2 py-1 rounded-md bg-accent-warm/15 text-accent-warm font-semibold hover:bg-accent-warm/25 transition-colors"
-            >
-              모두 보기
-            </button>
-          </div>
-        ) : (
-          <div className="px-3 pb-2">
-            <p className="text-[10px] text-text-muted mb-1">빈 선반 — 자주 쓰는 재료로 빠르게 추가</p>
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-              {recommendedChips.map((chip) => (
-                <button
-                  key={chip.name}
-                  onClick={() => onQuickAdd?.(chip)}
-                  className="flex items-center gap-0.5 px-2 py-1 rounded-full border border-white/10 bg-background-tertiary/60 hover:border-accent-warm/50 active:scale-95 transition-all whitespace-nowrap"
-                  title={`${chip.name} 추가`}
-                >
-                  <span className="text-sm">{chip.emoji}</span>
-                  <span className="text-[9px] font-bold text-text-secondary">{chip.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      ) : (
-        <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
-          {items.map((item) => {
-            const { border, label } = freshState(item);
-            const emoji = getEmoji(item.ingredient_name, item.category);
-            const isSelected = selectedIds.includes(item.id);
-            return (
-              <button
-                key={item.id}
-                onClick={() => onSelect(item)}
-                className={`flex items-center gap-0.5 px-2 py-1 rounded-full border bg-background-secondary active:scale-95 transition-all whitespace-nowrap ${
-                  shoppingMode && isSelected
-                    ? 'border-accent-warm ring-2 ring-accent-warm line-through'
-                    : 'border-accent-warm/20 hover:border-accent-warm/50'
-                }`}
-                title={`${item.ingredient_name} ${label}`}
-              >
-                <span className="text-sm">{emoji}</span>
-                <span className="text-[9px] font-bold text-text-secondary">{item.ingredient_name}</span>
-                {label && (
-                  <span className="text-[7px] font-bold ml-0.5" style={{ color: border }}>
-                    {label}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
