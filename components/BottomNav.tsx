@@ -245,6 +245,20 @@ export default function BottomNav() {
             );
           }
 
+          // 비로그인 상태의 프로필 탭 — 아이콘 대신 "로그인" 필 버튼으로 노출 (Header의 로그인 버튼 모바일 대체).
+          if (isProfileTab && !authLoading && !user) {
+            return (
+              <Link
+                key={item.href}
+                href="/login"
+                aria-label="로그인"
+                className="flex items-center justify-center px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover active:scale-95 transition-all min-w-[4rem]"
+              >
+                로그인
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={item.href}

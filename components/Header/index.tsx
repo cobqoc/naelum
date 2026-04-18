@@ -28,7 +28,6 @@ const LANG_OPTIONS = [
 export default function Header() {
   const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [showLangSelector, setShowLangSelector] = useState(false);
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -55,22 +54,6 @@ export default function Header() {
       });
     }
   }, [user]);
-
-  // 스크롤 감지
-  useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 50);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // 장보기 힌트 닫히면 냉장고 힌트 표시
   useEffect(() => {
@@ -101,13 +84,7 @@ export default function Header() {
 
   return (
     <>
-      <header
-        className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-          isScrolled
-            ? 'bg-background-secondary/90 py-2 md:py-3 backdrop-blur-xl shadow-lg'
-            : 'bg-transparent py-3 md:py-6'
-        }`}
-      >
+      <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6">
         <nav className="container mx-auto flex items-center justify-between px-4 md:px-6" aria-label="메인 네비게이션">
           {/* Logo */}
           <div className="flex items-center gap-4 md:gap-6">
@@ -356,9 +333,10 @@ export default function Header() {
                     </>
                   )}
                 </div>
+                {/* 로그인 버튼은 데스크톱에서만 — 모바일은 BottomNav에 전용 "로그인" 탭이 대신 노출됨 */}
                 <Link
                   href="/login"
-                  className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                  className="hidden md:inline-flex px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
                   {t.common.login}
                 </Link>

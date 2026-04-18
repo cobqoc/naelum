@@ -647,10 +647,10 @@ export default function HomeClient({
       />
       <div
         aria-hidden={!showMobileSearch}
-        className={`fixed left-0 right-0 top-[50vh] px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
+        className={`fixed left-0 right-0 top-20 px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
           showMobileSearch
             ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-            : 'opacity-0 translate-y-[45vh] scale-[0.25] pointer-events-none'
+            : 'opacity-0 translate-y-[20vh] scale-[0.5] pointer-events-none'
         }`}
       >
         <div className="flex items-center gap-2 max-w-md mx-auto">
