@@ -417,7 +417,7 @@ export default function HomeClient({
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
             냉동 선반 1개: storage_location === '냉동'
             chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달 */}
-        <div className="relative w-full max-w-[380px] md:max-w-[500px] mx-auto aspect-[540/670]">
+        <div className="relative w-full max-w-[300px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]">
           <FridgeSVG />
 
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
