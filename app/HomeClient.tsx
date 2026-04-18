@@ -407,10 +407,10 @@ export default function HomeClient({
       </div>
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
-      <div className="flex-1 flex flex-col items-center justify-end gap-3 md:gap-6 md:px-12 pb-2 md:pb-8">
+      <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[280px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="relative w-full max-w-[320px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
@@ -478,7 +478,7 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
-        <div className="relative w-full max-w-[420px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
+        <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
           style={{ maxHeight: 'calc(100dvh - 245px)' }}>
           <FridgeSVG />
 
@@ -488,7 +488,7 @@ export default function HomeClient({
           {showRecipeBubble && (
             <Link
               href="/recommendations"
-              className="absolute -top-2 left-1/2 -translate-x-1/2 md:-top-3 z-20 flex items-center gap-1 px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+              className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
               style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
               aria-label="재료로 만들 수 있는 레시피 보기"
             >
@@ -589,7 +589,7 @@ export default function HomeClient({
           <button
             onClick={() => setAddModalLocation('냉장')}
             aria-label="재료 추가"
-            className="absolute bottom-3 right-3 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
+            className="absolute bottom-3 left-3 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
           >
             +
           </button>
