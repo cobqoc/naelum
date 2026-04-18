@@ -415,11 +415,16 @@ export default function FridgeHomeClient() {
   const dangerCount = items.filter(i => daysUntilExpiry(i.expiry_date) <= 3).length;
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
-  // 카테고리 필터 적용된 상온 재료
-  const filteredPantry = useMemo(() => {
-    if (selectedCategories.length === 0) return sections.pantry;
-    return sections.pantry.filter(i => selectedCategories.includes(i.category));
-  }, [sections.pantry, selectedCategories]);
+  // 카테고리 필터 적용된 섹션별 재료
+  const applyFilter = (arr: FridgeItem[]) =>
+    selectedCategories.length === 0 ? arr : arr.filter(i => selectedCategories.includes(i.category));
+
+  const filteredPantry = useMemo(() => applyFilter(sections.pantry), [sections.pantry, selectedCategories]);
+  const filteredFridge = useMemo(
+    () => applyFilter([...sections.main, ...sections.veggie, ...sections.doorL, ...sections.doorR]),
+    [sections.main, sections.veggie, sections.doorL, sections.doorR, selectedCategories]
+  );
+  const filteredFreezer = useMemo(() => applyFilter(sections.freezer), [sections.freezer, selectedCategories]);
 
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
@@ -618,53 +623,87 @@ export default function FridgeHomeClient() {
       {/* 큰 냉장고 모달 (홈 작은 냉장고 탭 시 확대) */}
       {showFridgeModal && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+          className="fixed inset-0 z-40 flex items-center justify-center p-3 md:p-6 bg-black/70 backdrop-blur-md"
           onClick={() => setShowFridgeModal(false)}
           role="dialog"
           aria-label="냉장고 크게 보기"
         >
           <div
-            className="relative w-full max-w-md md:max-w-2xl"
+            className="relative w-full max-w-md md:max-w-2xl max-h-[95vh] flex flex-col bg-background-secondary rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 닫기 버튼 */}
-            <button
-              onClick={() => setShowFridgeModal(false)}
-              aria-label="닫기"
-              className="absolute -top-12 right-0 md:-top-14 w-10 h-10 flex items-center justify-center rounded-full bg-background-secondary border border-white/10 text-text-primary hover:bg-background-tertiary transition-colors shadow-lg"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* 큰 냉장고 + 섹션별 추가 버튼 */}
-            <div className="relative w-full aspect-[540/670] md:aspect-[660/670] max-h-[82vh] md:max-h-[85vh]">
-              <FridgeSVG />
+            {/* 헤더: 타이틀 + 닫기 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <span className="text-sm font-bold text-text-primary">🧊 내 냉장고</span>
               <button
-                onClick={() => setAddModalLocation('냉장')}
-                aria-label="냉장실에 재료 추가"
-                className="absolute top-[26%] left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95"
+                onClick={() => setShowFridgeModal(false)}
+                aria-label="닫기"
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-text-primary transition-colors"
               >
-                +
-              </button>
-              <button
-                onClick={() => setAddModalLocation('냉동')}
-                aria-label="냉동실에 재료 추가"
-                className="absolute top-[72%] left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95"
-              >
-                +
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
-            {/* 모달 하단: 상온 추가 + 보기 정보 */}
-            <div className="mt-4 flex justify-center gap-2">
-              <button
-                onClick={() => setAddModalLocation('상온')}
-                className="px-4 py-2.5 rounded-xl bg-background-secondary border border-accent-warm/40 text-text-primary font-bold text-sm hover:bg-background-tertiary transition-colors"
-              >
-                🏠 상온에 추가
-              </button>
+            {/* 스크롤 가능 콘텐츠 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* 큰 냉장고 + 섹션별 추가 버튼 */}
+              <div className="relative w-full aspect-[540/670] md:aspect-[660/670] max-h-[45vh] md:max-h-[50vh] mx-auto">
+                <FridgeSVG />
+                <button
+                  onClick={() => setAddModalLocation('냉장')}
+                  aria-label="냉장실에 재료 추가"
+                  className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => setAddModalLocation('냉동')}
+                  aria-label="냉동실에 재료 추가"
+                  className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* 3섹션 리스트 (냉장/냉동/상온) */}
+              <div className="space-y-2">
+                <SectionRow
+                  title="냉장"
+                  icon="❄️"
+                  items={filteredFridge}
+                  onAdd={() => setAddModalLocation('냉장')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                />
+                <SectionRow
+                  title="냉동"
+                  icon="🧊"
+                  items={filteredFreezer}
+                  onAdd={() => setAddModalLocation('냉동')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                />
+                <SectionRow
+                  title="상온"
+                  icon="🏠"
+                  items={filteredPantry}
+                  onAdd={() => setAddModalLocation('상온')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                />
+              </div>
+
+              {/* 팁 */}
+              <div className="px-3 py-2 rounded-lg bg-background-tertiary/50 border border-white/5">
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  💡 칩을 탭하면 수정/삭제할 수 있어요 · 장보기 모드에서는 체크하여 일괄 추가
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -955,6 +994,79 @@ function KitchenCounter({
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── SectionRow: 모달 안에서 섹션별 재료 표시 ───────────────────────────
+function SectionRow({
+  title,
+  icon,
+  items,
+  onAdd,
+  onSelect,
+  shoppingMode = false,
+  selectedIds = [],
+}: {
+  title: string;
+  icon: string;
+  items: FridgeItem[];
+  onAdd: () => void;
+  onSelect: (item: FridgeItem) => void;
+  shoppingMode?: boolean;
+  selectedIds?: string[];
+}) {
+  return (
+    <div className="rounded-xl bg-background-primary/40 border border-white/5">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        <span className="text-xs font-bold text-text-secondary">
+          {icon} {title} <span className="text-text-muted">({items.length})</span>
+        </span>
+        <button
+          onClick={onAdd}
+          className="text-[11px] text-accent-warm font-semibold hover:text-accent-hover px-2 py-0.5 rounded"
+        >
+          + 추가
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <button
+          onClick={onAdd}
+          className="w-full px-3 py-2 text-left text-[11px] text-text-muted hover:bg-white/5 transition-colors"
+        >
+          빈 선반 — 탭해서 재료 추가하기
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
+          {items.map((item) => {
+            const days = daysUntilExpiry(item.expiry_date);
+            const border = freshBorder(days);
+            const label = freshLabel(days);
+            const emoji = getEmoji(item.ingredient_name, item.category);
+            const isSelected = selectedIds.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item)}
+                className={`flex items-center gap-0.5 px-2 py-1 rounded-full border bg-background-secondary active:scale-95 transition-all whitespace-nowrap ${
+                  shoppingMode && isSelected
+                    ? 'border-accent-warm ring-2 ring-accent-warm line-through'
+                    : 'border-accent-warm/20 hover:border-accent-warm/50'
+                }`}
+                title={`${item.ingredient_name} ${label}`}
+              >
+                <span className="text-sm">{emoji}</span>
+                <span className="text-[9px] font-bold text-text-secondary">{item.ingredient_name}</span>
+                {label && (
+                  <span className="text-[7px] font-bold ml-0.5" style={{ color: border }}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
