@@ -115,7 +115,7 @@ export default function RecommendationsPage() {
           <div className="mb-6 p-4 rounded-xl bg-accent-warm/10 border border-accent-warm/20">
             <p className="text-sm text-text-secondary">
               <span className="font-bold text-accent-warm">{t.recommendations.byIngredients}</span> {t.recommendations.ingredientBasedDesc}
-              <Link href="/fridge" className="ml-2 text-accent-warm underline">{t.recommendations.manageIngredients}</Link>
+              <Link href="/fridge-home" className="ml-2 text-accent-warm underline">{t.recommendations.manageIngredients}</Link>
             </p>
           </div>
         )}
@@ -138,7 +138,7 @@ export default function RecommendationsPage() {
             <p className="text-text-muted">{message}</p>
             {activeTab === 'ingredients' && (
               <Link
-                href="/fridge"
+                href="/fridge-home"
                 className="mt-4 inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold"
               >
                 {t.recommendations.registerIngredients}

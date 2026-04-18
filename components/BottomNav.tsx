@@ -131,7 +131,7 @@ export default function BottomNav() {
     // 타입 만족을 위해 Home으로 통일.
     { href: '/', Icon: Home, label: t.bottomNav.home },
     { href: '#search', Icon: SearchIcon, label: t.bottomNav.search },
-    { href: '/fridge', Icon: FridgeIcon, label: t.bottomNav.fridge },
+    { href: '/fridge-home', Icon: FridgeIcon, label: t.bottomNav.fridge },
     { href: '/cart', Icon: Home, label: t.bottomNav.cart },
     { href: '/profile', Icon: Home, label: t.bottomNav.profile },
   ];
@@ -162,7 +162,7 @@ export default function BottomNav() {
           const { Icon } = item;
           const isProfileTab = item.href === '/profile';
           const isCartTab = item.href === '/cart';
-          const isFridgeTab = item.href === '/fridge';
+          const isFridgeTab = item.href === '/fridge-home';
           const isSearchTab = item.href === '#search';
           const label = isProfileTab && !authLoading && !user ? '로그인' : item.label;
 

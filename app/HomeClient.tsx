@@ -689,7 +689,7 @@ export default function HomeClient({
                   <p className="text-sm font-medium text-text-primary mb-1">냉장고가 비어있어요</p>
                   <p className="text-xs text-text-muted mb-4">재료를 등록하면 지금 바로 만들 수 있는 레시피를 추천해드려요!</p>
                   <Link
-                    href="/fridge"
+                    href="/fridge-home"
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                   >
                     재료 등록하기

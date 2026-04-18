@@ -393,12 +393,14 @@ export default function FridgeHomeClient() {
   };
 
   // 선반별 추천 칩 (빈 선반 탭 시 표시)
-  const FRIDGE_CHIPS = QUICK_ADD.filter(q => q.storage !== '상온' && q.category !== 'seasoning').slice(0, 6);
-  const FREEZER_CHIPS = [
-    { name: '만두', emoji: '🥟', category: 'grain' as const, storage: '냉동' as const },
-    { name: '아이스크림', emoji: '🍦', category: 'dairy' as const, storage: '냉동' as const },
-    ...QUICK_ADD.filter(q => q.storage === '냉동').slice(0, 2),
+  const FRIDGE_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '냉장').slice(0, 6);
+  const FREEZER_RECO: QuickAddIngredient[] = [
+    { name: '만두', emoji: '🥟', category: 'grain', storage: '냉동' },
+    { name: '아이스크림', emoji: '🍦', category: 'dairy', storage: '냉동' },
+    { name: '새우', emoji: '🦐', category: 'seafood', storage: '냉동' },
+    { name: '냉동블루베리', emoji: '🫐', category: 'other', storage: '냉동' },
   ];
+  const PANTRY_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '상온').slice(0, 6);
 
   const handleInlineAdd = async (item: QuickAddIngredient) => {
     await addQuickItem(item);
@@ -440,33 +442,10 @@ export default function FridgeHomeClient() {
         <ExpiringIngredientsAlert />
       </div>
 
-      {/* 카테고리 필터 + 장보기 모드 토글 */}
-      <div className="px-4 pt-2 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <IngredientCategoryFilter
-            selectedCategories={selectedCategories}
-            onChange={setSelectedCategories}
-          />
-        </div>
-        <button
-          onClick={() => { setShoppingMode(m => !m); setSelectedForShopping([]); }}
-          className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
-            shoppingMode
-              ? 'bg-accent-warm text-background-primary'
-              : 'bg-white/10 text-text-secondary hover:bg-white/15'
-          }`}
-          title={shoppingMode ? '장보기 모드 끄기' : '장보기 모드'}
-        >
-          🛒 {shoppingMode ? '취소' : '장보기'}
-        </button>
-      </div>
-
       <KitchenCounter
-        items={filteredPantry}
+        items={sections.pantry}
         onRemove={removeItem}
-        onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
-        shoppingMode={shoppingMode}
-        selectedIds={selectedForShopping}
+        onSelect={(item) => setDetailItem(item)}
       />
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
@@ -632,18 +611,37 @@ export default function FridgeHomeClient() {
             className="relative w-full max-w-md md:max-w-2xl max-h-[95vh] flex flex-col bg-background-secondary rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 헤더: 타이틀 + 닫기 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <span className="text-sm font-bold text-text-primary">🧊 내 냉장고</span>
+            {/* 헤더: 타이틀 + 장보기 토글 + 닫기 */}
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
+              <span className="text-sm font-bold text-text-primary flex-shrink-0">🧊 내 냉장고</span>
+              <button
+                onClick={() => { setShoppingMode(m => !m); setSelectedForShopping([]); }}
+                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  shoppingMode
+                    ? 'bg-accent-warm text-background-primary'
+                    : 'bg-white/10 text-text-secondary hover:bg-white/15'
+                }`}
+                title={shoppingMode ? '장보기 모드 끄기' : '장보기 모드'}
+              >
+                🛒 {shoppingMode ? '취소' : '장보기'}
+              </button>
               <button
                 onClick={() => setShowFridgeModal(false)}
                 aria-label="닫기"
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 text-text-primary transition-colors"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 text-text-primary transition-colors"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            {/* 카테고리 필터 */}
+            <div className="px-3 pt-3">
+              <IngredientCategoryFilter
+                selectedCategories={selectedCategories}
+                onChange={setSelectedCategories}
+              />
             </div>
 
             {/* 스크롤 가능 콘텐츠 */}
@@ -677,6 +675,10 @@ export default function FridgeHomeClient() {
                   onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
                   shoppingMode={shoppingMode}
                   selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={FRIDGE_RECO}
+                  onQuickAdd={addQuickItem}
                 />
                 <SectionRow
                   title="냉동"
@@ -686,6 +688,10 @@ export default function FridgeHomeClient() {
                   onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
                   shoppingMode={shoppingMode}
                   selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={FREEZER_RECO}
+                  onQuickAdd={addQuickItem}
                 />
                 <SectionRow
                   title="상온"
@@ -695,13 +701,23 @@ export default function FridgeHomeClient() {
                   onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
                   shoppingMode={shoppingMode}
                   selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={PANTRY_RECO}
+                  onQuickAdd={addQuickItem}
                 />
               </div>
 
-              {/* 팁 */}
-              <div className="px-3 py-2 rounded-lg bg-background-tertiary/50 border border-white/5">
+              {/* 팁 섹션 (상세) */}
+              <div className="px-3 py-2.5 rounded-lg bg-background-tertiary/50 border border-white/5 space-y-1">
                 <p className="text-[11px] text-text-muted leading-relaxed">
-                  💡 칩을 탭하면 수정/삭제할 수 있어요 · 장보기 모드에서는 체크하여 일괄 추가
+                  💡 <strong className="text-text-secondary">칩 탭</strong> — 재료 수정/삭제
+                </p>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  ⚠️ <strong className="text-text-secondary">만료 임박</strong> — D-Day 색상으로 상단 배너에 표시
+                </p>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  🔍 <strong className="text-text-secondary">레시피 찾기</strong> — 홈 CTA에서 현재 재료 기반 추천
                 </p>
               </div>
             </div>
@@ -1007,6 +1023,10 @@ function SectionRow({
   onSelect,
   shoppingMode = false,
   selectedIds = [],
+  hasFilter = false,
+  onResetFilter,
+  recommendedChips = [],
+  onQuickAdd,
 }: {
   title: string;
   icon: string;
@@ -1015,7 +1035,12 @@ function SectionRow({
   onSelect: (item: FridgeItem) => void;
   shoppingMode?: boolean;
   selectedIds?: string[];
+  hasFilter?: boolean;
+  onResetFilter?: () => void;
+  recommendedChips?: QuickAddIngredient[];
+  onQuickAdd?: (item: QuickAddIngredient) => void | Promise<void>;
 }) {
+  const isEmpty = items.length === 0;
   return (
     <div className="rounded-xl bg-background-primary/40 border border-white/5">
       <div className="flex items-center justify-between px-3 pt-2 pb-1">
@@ -1029,13 +1054,35 @@ function SectionRow({
           + 추가
         </button>
       </div>
-      {items.length === 0 ? (
-        <button
-          onClick={onAdd}
-          className="w-full px-3 py-2 text-left text-[11px] text-text-muted hover:bg-white/5 transition-colors"
-        >
-          빈 선반 — 탭해서 재료 추가하기
-        </button>
+      {isEmpty ? (
+        hasFilter ? (
+          <div className="px-3 pb-2 flex items-center gap-2">
+            <span className="flex-1 text-[11px] text-text-muted">필터 결과 없음</span>
+            <button
+              onClick={onResetFilter}
+              className="text-[11px] px-2 py-1 rounded-md bg-accent-warm/15 text-accent-warm font-semibold hover:bg-accent-warm/25 transition-colors"
+            >
+              모두 보기
+            </button>
+          </div>
+        ) : (
+          <div className="px-3 pb-2">
+            <p className="text-[10px] text-text-muted mb-1">빈 선반 — 자주 쓰는 재료로 빠르게 추가</p>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              {recommendedChips.map((chip) => (
+                <button
+                  key={chip.name}
+                  onClick={() => onQuickAdd?.(chip)}
+                  className="flex items-center gap-0.5 px-2 py-1 rounded-full border border-white/10 bg-background-tertiary/60 hover:border-accent-warm/50 active:scale-95 transition-all whitespace-nowrap"
+                  title={`${chip.name} 추가`}
+                >
+                  <span className="text-sm">{chip.emoji}</span>
+                  <span className="text-[9px] font-bold text-text-secondary">{chip.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
       ) : (
         <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
           {items.map((item) => {

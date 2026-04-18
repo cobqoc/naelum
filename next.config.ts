@@ -58,6 +58,11 @@ const nextConfig: NextConfig = {
         destination: '/ingredients',
         permanent: true,
       },
+      {
+        source: '/fridge',
+        destination: '/fridge-home',
+        permanent: true,
+      },
     ];
   },
   async headers() {
