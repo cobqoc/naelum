@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `naelum-${CACHE_VERSION}`;
 const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
 const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
