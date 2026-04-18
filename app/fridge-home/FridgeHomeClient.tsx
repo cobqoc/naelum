@@ -9,7 +9,7 @@
  */
 
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './quickAddList';
@@ -18,6 +18,10 @@ import KitchenSVG from './KitchenSVG';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
+import ExpiringIngredientsAlert from '@/components/Ingredients/ExpiringIngredientsAlert';
+import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
+import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
+import IngredientCategoryFilter from '@/components/Ingredients/IngredientCategoryFilter';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,6 +31,31 @@ type FridgeItem = {
   category: string;
   expiry_date: string | null;
   storage_location: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  purchase_date?: string | null;
+  notes?: string | null;
+  expiry_alert?: boolean;
+};
+
+type IngredientFormData = {
+  ingredient_name: string;
+  category: string;
+  quantity?: number | null;
+  unit?: string | null;
+  purchase_date?: string | null;
+  expiry_date?: string | null;
+  storage_location?: string | null;
+  notes?: string | null;
+  expiry_alert?: boolean;
+};
+
+type PhotoLabel = {
+  name: string;
+  category: string;
+  quantity?: number | null;
+  unit?: string | null;
+  storage_location?: string | null;
 };
 
 type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR' | 'pantry';
@@ -113,16 +142,33 @@ export default function FridgeHomeClient() {
     return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
   const [showAddSheet, setShowAddSheet] = useState(false);
-  // doorOpen 제거 — SVG가 항상 열린 상태
   const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
   const [inlineSearch, setInlineSearch] = useState('');
+
+  // 추가 모달 (사진 업로드 포함)
+  const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
+
+  // 재료 상세 수정 모달
+  const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
+
+  // 카테고리 필터
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // 장보기 모드
+  const [shoppingMode, setShoppingMode] = useState(false);
+  const [selectedForShopping, setSelectedForShopping] = useState<string[]>([]);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  // 삭제 undo
+  const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const deletedItemRef = useRef<FridgeItem | null>(null);
 
   const fetchItems = useCallback(async () => {
     if (!user) { setItems(DEMO); setLoading(false); return; }
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
-      .select('id, ingredient_name, category, expiry_date, storage_location')
+      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert')
       .eq('user_id', user.id)
       .order('expiry_date', { ascending: true, nullsFirst: false });
     setItems((data ?? []) as FridgeItem[]);
@@ -191,19 +237,145 @@ export default function FridgeHomeClient() {
   };
 
   const removeItem = async (id: string) => {
-    if (id.startsWith('d') && !id.startsWith('demo')) {
-      setItems(prev => prev.filter(i => i.id !== id));
-      showToast('👅 낼름!'); return;
-    }
-    if (id.startsWith('demo')) {
-      setItems(prev => prev.filter(i => i.id !== id));
-      showToast('👅 낼름!'); return;
-    }
+    const target = items.find(i => i.id === id);
+    if (!target) return;
+
+    // 낙관적 제거 + undo 타이머
     setItems(prev => prev.filter(i => i.id !== id));
+    deletedItemRef.current = target;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
+    showToast('👅 낼름! · 되돌리기 4초');
+
+    undoTimerRef.current = setTimeout(async () => {
+      deletedItemRef.current = null;
+      if (id.startsWith('d') || id.startsWith('demo')) return;
+      const client = createClient();
+      await client.from('user_ingredients').delete().eq('id', id);
+      window.dispatchEvent(new Event('fridge-updated'));
+    }, 4000);
+  };
+
+  const undoDelete = () => {
+    const restored = deletedItemRef.current;
+    if (!restored) return;
+    setItems(prev => [...prev, restored]);
+    deletedItemRef.current = null;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setToast(null);
+  };
+
+  // IngredientDetailModal onUpdate
+  const updateIngredient = async (id: string, formData: IngredientFormData) => {
+    if (id.startsWith('d') || id.startsWith('demo')) {
+      setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
+      setDetailItem(null);
+      showToast('✅ 수정 완료');
+      return;
+    }
     const client = createClient();
-    await client.from('user_ingredients').delete().eq('id', id);
+    await client.from('user_ingredients').update({ ...formData }).eq('id', id);
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
+    setDetailItem(null);
+    showToast('✅ 수정 완료');
     window.dispatchEvent(new Event('fridge-updated'));
-    showToast('👅 낼름!');
+  };
+
+  // AddIngredientModal onAddIngredient
+  const addIngredientFromModal = async (formData: IngredientFormData) => {
+    if (!user) {
+      const newItem: FridgeItem = {
+        id: `d${Date.now()}`,
+        ingredient_name: formData.ingredient_name,
+        category: formData.category,
+        expiry_date: formData.expiry_date ?? null,
+        storage_location: formData.storage_location ?? null,
+        quantity: formData.quantity ?? null,
+        unit: formData.unit ?? null,
+        purchase_date: formData.purchase_date ?? null,
+        notes: formData.notes ?? null,
+        expiry_alert: formData.expiry_alert ?? false,
+      };
+      setItems(prev => [...prev, newItem]);
+      setAddModalLocation(null);
+      showToast('👅 추가!');
+      return;
+    }
+    const client = createClient();
+    const { data } = await client
+      .from('user_ingredients')
+      .insert({ ...formData, user_id: user.id })
+      .select()
+      .single();
+    if (data) setItems(prev => [...prev, data as FridgeItem]);
+    setAddModalLocation(null);
+    showToast('👅 추가!');
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // AddIngredientModal onAddFromPhoto
+  const addIngredientsFromPhoto = async (labels: PhotoLabel[]) => {
+    if (!user) {
+      const newItems: FridgeItem[] = labels.map((lbl, i) => ({
+        id: `d${Date.now()}-${i}`,
+        ingredient_name: lbl.name,
+        category: lbl.category,
+        expiry_date: null,
+        storage_location: lbl.storage_location ?? addModalLocation ?? null,
+        quantity: lbl.quantity ?? null,
+        unit: lbl.unit ?? null,
+      }));
+      setItems(prev => [...prev, ...newItems]);
+      setAddModalLocation(null);
+      showToast(`📸 ${labels.length}개 추가!`);
+      return;
+    }
+    const client = createClient();
+    const rows = labels.map(lbl => ({
+      user_id: user.id,
+      ingredient_name: lbl.name,
+      category: lbl.category,
+      quantity: lbl.quantity ?? null,
+      unit: lbl.unit ?? null,
+      storage_location: lbl.storage_location ?? addModalLocation ?? null,
+    }));
+    const { data } = await client.from('user_ingredients').insert(rows).select();
+    if (data) setItems(prev => [...prev, ...(data as FridgeItem[])]);
+    setAddModalLocation(null);
+    showToast(`📸 ${labels.length}개 추가!`);
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // 장보기 모드 토글
+  const toggleShoppingSelect = (id: string) => {
+    setSelectedForShopping(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  };
+
+  const addSelectedToCart = async () => {
+    if (selectedForShopping.length === 0 || addingToCart) return;
+    setAddingToCart(true);
+    const selected = items.filter(i => selectedForShopping.includes(i.id));
+    try {
+      if (user) {
+        const client = createClient();
+        const rows = selected.map(i => ({
+          user_id: user.id,
+          ingredient_name: i.ingredient_name,
+          category: i.category,
+          quantity: i.quantity ?? 1,
+          unit: i.unit ?? null,
+        }));
+        await client.from('shopping_cart').insert(rows);
+      }
+      showToast(`🛒 ${selected.length}개 추가!`);
+      setSelectedForShopping([]);
+      setShoppingMode(false);
+      window.dispatchEvent(new Event('cart-updated'));
+    } catch {
+      showToast('❌ 장보기 추가 실패');
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   // 선반별 추천 칩 (빈 선반 탭 시 표시)
@@ -229,6 +401,12 @@ export default function FridgeHomeClient() {
   const dangerCount = items.filter(i => daysUntilExpiry(i.expiry_date) <= 3).length;
   const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
+  // 카테고리 필터 적용된 상온 재료
+  const filteredPantry = useMemo(() => {
+    if (selectedCategories.length === 0) return sections.pantry;
+    return sections.pantry.filter(i => selectedCategories.includes(i.category));
+  }, [sections.pantry, selectedCategories]);
+
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
       <Header />
@@ -238,22 +416,46 @@ export default function FridgeHomeClient() {
         <SearchBar className="w-full max-w-md" />
       </div>
 
-      {dangerCount > 0 && (
-        <div className="px-4 pt-2 flex justify-end">
-          <span className="px-2.5 py-1 rounded-full bg-error/15 text-error text-xs font-bold animate-pulse">
-            ⚠️ {dangerCount}개 임박
-          </span>
-        </div>
-      )}
+      {/* 만료 임박 알림 배너 */}
+      <div className="px-4 pt-2">
+        <ExpiringIngredientsAlert />
+      </div>
 
-      <KitchenCounter items={sections.pantry} onRemove={removeItem} />
+      {/* 카테고리 필터 + 장보기 모드 토글 */}
+      <div className="px-4 pt-2 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <IngredientCategoryFilter
+            selectedCategories={selectedCategories}
+            onChange={setSelectedCategories}
+          />
+        </div>
+        <button
+          onClick={() => { setShoppingMode(m => !m); setSelectedForShopping([]); }}
+          className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+            shoppingMode
+              ? 'bg-accent-warm text-background-primary'
+              : 'bg-white/10 text-text-secondary hover:bg-white/15'
+          }`}
+          title={shoppingMode ? '장보기 모드 끄기' : '장보기 모드'}
+        >
+          🛒 {shoppingMode ? '취소' : '장보기'}
+        </button>
+      </div>
+
+      <KitchenCounter
+        items={filteredPantry}
+        onRemove={removeItem}
+        onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+        shoppingMode={shoppingMode}
+        selectedIds={selectedForShopping}
+      />
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
         <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
           <button
-            onClick={() => setShowAddSheet(true)}
+            onClick={() => setAddModalLocation('상온')}
             aria-label="선반장에 재료 추가"
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
           >
@@ -265,7 +467,7 @@ export default function FridgeHomeClient() {
           <FridgeSVG />
           {/* 냉장실 추가 버튼 */}
           <button
-            onClick={() => setShowAddSheet(true)}
+            onClick={() => setAddModalLocation('냉장')}
             aria-label="냉장실에 재료 추가"
             className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
           >
@@ -273,7 +475,7 @@ export default function FridgeHomeClient() {
           </button>
           {/* 냉동실 추가 버튼 */}
           <button
-            onClick={() => setShowAddSheet(true)}
+            onClick={() => setAddModalLocation('냉동')}
             aria-label="냉동실에 재료 추가"
             className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
           >
@@ -364,10 +566,58 @@ export default function FridgeHomeClient() {
       )}
 
       {toast && (
-        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl">
-          {toast}
+        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl flex items-center gap-2">
+          <span>{toast}</span>
+          {deletedItemRef.current && (
+            <button onClick={undoDelete} className="text-accent-warm font-bold hover:underline">
+              되돌리기
+            </button>
+          )}
         </div>
       )}
+
+      {/* 장보기 모드 하단 액션 바 */}
+      {shoppingMode && selectedForShopping.length > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
+          <button
+            onClick={addSelectedToCart}
+            disabled={addingToCart}
+            className="w-full md:w-auto md:min-w-[280px] px-6 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm shadow-2xl hover:bg-accent-hover disabled:opacity-50 transition-all"
+          >
+            🛒 장보기 목록에 추가 ({selectedForShopping.length}개)
+          </button>
+        </div>
+      )}
+
+      {/* 재료 상세 수정 모달 */}
+      {detailItem && (
+        <IngredientDetailModal
+          ingredient={{
+            id: detailItem.id,
+            ingredient_name: detailItem.ingredient_name,
+            category: detailItem.category,
+            quantity: detailItem.quantity ?? null,
+            unit: detailItem.unit ?? null,
+            purchase_date: detailItem.purchase_date ?? null,
+            expiry_date: detailItem.expiry_date ?? null,
+            storage_location: detailItem.storage_location ?? null,
+            notes: detailItem.notes ?? null,
+            expiry_alert: detailItem.expiry_alert ?? false,
+          }}
+          isOpen={!!detailItem}
+          onClose={() => setDetailItem(null)}
+          onUpdate={updateIngredient}
+        />
+      )}
+
+      {/* 재료 추가 모달 (사진 업로드 포함) */}
+      <AddIngredientModal
+        isOpen={addModalLocation !== null}
+        location={addModalLocation}
+        onClose={() => setAddModalLocation(null)}
+        onAddIngredient={addIngredientFromModal}
+        onAddFromPhoto={addIngredientsFromPhoto}
+      />
 
       <BottomNav />
 
@@ -601,21 +851,40 @@ function DoorShelfSlot({ items, onRemove, decoEmoji }: {
   );
 }
 
-function KitchenCounter({ items, onRemove }: { items: FridgeItem[]; onRemove: (id: string) => void }) {
+function KitchenCounter({
+  items,
+  onRemove,
+  onSelect,
+  shoppingMode = false,
+  selectedIds = [],
+}: {
+  items: FridgeItem[];
+  onRemove: (id: string) => void;
+  onSelect?: (item: FridgeItem) => void;
+  shoppingMode?: boolean;
+  selectedIds?: string[];
+}) {
   if (items.length === 0) return null;
   return (
     <div className="flex justify-center px-4 mb-0">
       <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
         <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto scrollbar-hide">
-          <span className="text-[10px] text-text-muted whitespace-nowrap mr-1">🏠 상온</span>
+          <span className="text-[10px] text-text-muted whitespace-nowrap mr-1">🏠 상온 ({items.length})</span>
           {items.map(item => {
             const days = daysUntilExpiry(item.expiry_date);
             const border = freshBorder(days);
             const label = freshLabel(days);
             const emoji = getEmoji(item.ingredient_name, item.category);
+            const isSelected = selectedIds.includes(item.id);
             return (
-              <button key={item.id} onClick={() => onRemove(item.id)}
-                className="flex items-center gap-0.5 px-2 py-1 rounded-full border border-accent-warm/20 bg-background-secondary hover:border-accent-warm/50 active:scale-95 transition-all whitespace-nowrap"
+              <button
+                key={item.id}
+                onClick={() => (onSelect ? onSelect(item) : onRemove(item.id))}
+                className={`flex items-center gap-0.5 px-2 py-1 rounded-full border bg-background-secondary active:scale-95 transition-all whitespace-nowrap ${
+                  shoppingMode && isSelected
+                    ? 'border-accent-warm ring-2 ring-accent-warm line-through'
+                    : 'border-accent-warm/20 hover:border-accent-warm/50'
+                }`}
                 title={`${item.ingredient_name} ${label}`}
               >
                 <span className="text-sm">{emoji}</span>
