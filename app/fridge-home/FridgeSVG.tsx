@@ -198,21 +198,11 @@ export default function FridgeSVG() {
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
       {/* 추가 상단 아이템들 */}
 
-      <path d="M 178,114 L 188,106 L 412,106 L 422,114 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 178,114 L 422,114 L 422,132 L 178,132 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 178,114 L 422,114" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
-      <path d="M 178,120 L 422,120" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1" />
-      <path d="M 178,126 L 422,126" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
-      <path d="M 178,132 L 422,132" fill="none" stroke="#2A1408" strokeWidth="1.8" />
-      <path d="M 178,134 L 422,134" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
+      <rect x="200" y="320" width="100" height="42" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="232" y="336" width="36" height="6" rx="1.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
 
-      <path d="M 178,209 L 188,201 L 412,201 L 422,209 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 178,209 L 422,209 L 422,227 L 178,227 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 178,209 L 422,209" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
-      <path d="M 178,215 L 422,215" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1" />
-      <path d="M 178,221 L 422,221" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
-      <path d="M 178,227 L 422,227" fill="none" stroke="#2A1408" strokeWidth="1.8" />
-      <path d="M 178,229 L 422,229" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
+      <rect x="300" y="320" width="100" height="42" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="332" y="336" width="36" height="6" rx="1.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
 
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#000" strokeWidth="1" />
 
@@ -228,9 +218,6 @@ export default function FridgeSVG() {
 
       {/* === 본체 하단(냉동): 음식 — 중앙 배치 === */}
 
-      {/* 본체 하단 가로 선반 2개 (드로어 스타일) */}
-      <rect x="180" y="468" width="240" height="8" fill="url(#creamFrontG)" stroke="#000" strokeWidth="1.6" rx="1" />
-      <rect x="180" y="552" width="240" height="8" fill="url(#creamFrontG)" stroke="#000" strokeWidth="1.6" rx="1" />
 
       {/* ====== 우측 냉장 문 (살짝만 열림 — 가로 0.55배 축소) ====== */}
       <g transform="matrix(0.69,0,0,1,133.3,0)">
