@@ -134,6 +134,15 @@ export default function FridgeHomeClient() {
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+  const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
+  const [inlineSearch, setInlineSearch] = useState('');
+
+  // 추가 모달 (사진 업로드 포함)
+  const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
+
+  // 큰 냉장고 모달 (홈에서 작은 냉장고 탭 시)
+  const [showFridgeModal, setShowFridgeModal] = useState(false);
 
   // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
   useEffect(() => {
@@ -141,12 +150,17 @@ export default function FridgeHomeClient() {
     window.addEventListener('toggle-fridge-search', handler);
     return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
-  const [showAddSheet, setShowAddSheet] = useState(false);
-  const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
-  const [inlineSearch, setInlineSearch] = useState('');
 
-  // 추가 모달 (사진 업로드 포함)
-  const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showFridgeModal) setShowFridgeModal(false);
+      else if (showMobileSearch) setShowMobileSearch(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showFridgeModal, showMobileSearch]);
 
   // 재료 상세 수정 모달
   const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
@@ -452,51 +466,42 @@ export default function FridgeHomeClient() {
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
-          <button
-            onClick={() => setAddModalLocation('상온')}
-            aria-label="선반장에 재료 추가"
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
-          >
-            +
-          </button>
         </div>
         <div className="flex-1 w-full" />
-        <div className="relative w-full md:max-w-3xl lg:max-w-4xl md:mx-auto aspect-[540/670] md:aspect-[660/670] max-h-[75vh] md:max-h-[78vh]">
+        {/* 홈: 작은 냉장고 (클릭하면 모달로 확대) */}
+        <button
+          onClick={() => setShowFridgeModal(true)}
+          aria-label="냉장고 크게 보기"
+          className="relative w-full max-w-[280px] md:max-w-md mx-auto aspect-[540/670] md:aspect-[660/670] max-h-[50vh] md:max-h-[58vh] cursor-pointer group"
+        >
           <FridgeSVG />
-          {/* 냉장실 추가 버튼 */}
+          <div className="absolute inset-0 rounded-xl group-hover:bg-accent-warm/5 transition-all" />
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-background-secondary/80 backdrop-blur-sm border border-white/10 text-[10px] text-text-muted whitespace-nowrap">
+            탭해서 크게 보기 🔍
+          </span>
+        </button>
+
+        {/* CTA 3개 — 재료 추가 + 레시피 찾기 + 장보기 */}
+        <div className="w-full max-w-md md:max-w-xl px-4 mt-6 flex gap-2">
           <button
             onClick={() => setAddModalLocation('냉장')}
-            aria-label="냉장실에 재료 추가"
-            className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
+            className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-background-secondary border border-accent-warm/40 text-text-primary font-bold text-xs sm:text-sm hover:bg-background-tertiary hover:border-accent-warm/70 active:scale-[0.98] transition-all"
           >
-            +
+            ➕ 재료 추가
           </button>
-          {/* 냉동실 추가 버튼 */}
-          <button
-            onClick={() => setAddModalLocation('냉동')}
-            aria-label="냉동실에 재료 추가"
-            className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
-          >
-            +
-          </button>
-        </div>
-
-        {/* 레시피 찾기 + 장보기 액션 */}
-        <div className="w-full max-w-md md:max-w-xl px-4 mt-4 flex gap-2">
           <Link
             href="/recommendations"
-            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
+            className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-accent-warm text-background-primary font-bold text-xs sm:text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
           >
-            🔍 이 재료로 레시피 찾기
+            🔍 레시피
           </Link>
           <Link
             href="/cart"
-            aria-label="장보기"
-            className="flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl bg-background-secondary border border-accent-warm/30 text-text-primary font-bold text-sm hover:bg-background-tertiary hover:border-accent-warm/60 active:scale-[0.98] transition-all"
+            className="flex-1 flex items-center justify-center gap-1 py-3 rounded-xl bg-background-secondary border border-accent-warm/40 text-text-primary font-bold text-xs sm:text-sm hover:bg-background-tertiary hover:border-accent-warm/70 active:scale-[0.98] transition-all"
           >
-            🛒 <span className="hidden sm:inline">장보기</span>
+            🛒 장보기
           </Link>
         </div>
       </div>
@@ -608,6 +613,61 @@ export default function FridgeHomeClient() {
           onClose={() => setDetailItem(null)}
           onUpdate={updateIngredient}
         />
+      )}
+
+      {/* 큰 냉장고 모달 (홈 작은 냉장고 탭 시 확대) */}
+      {showFridgeModal && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+          onClick={() => setShowFridgeModal(false)}
+          role="dialog"
+          aria-label="냉장고 크게 보기"
+        >
+          <div
+            className="relative w-full max-w-md md:max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setShowFridgeModal(false)}
+              aria-label="닫기"
+              className="absolute -top-12 right-0 md:-top-14 w-10 h-10 flex items-center justify-center rounded-full bg-background-secondary border border-white/10 text-text-primary hover:bg-background-tertiary transition-colors shadow-lg"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* 큰 냉장고 + 섹션별 추가 버튼 */}
+            <div className="relative w-full aspect-[540/670] md:aspect-[660/670] max-h-[82vh] md:max-h-[85vh]">
+              <FridgeSVG />
+              <button
+                onClick={() => setAddModalLocation('냉장')}
+                aria-label="냉장실에 재료 추가"
+                className="absolute top-[26%] left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95"
+              >
+                +
+              </button>
+              <button
+                onClick={() => setAddModalLocation('냉동')}
+                aria-label="냉동실에 재료 추가"
+                className="absolute top-[72%] left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95"
+              >
+                +
+              </button>
+            </div>
+
+            {/* 모달 하단: 상온 추가 + 보기 정보 */}
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                onClick={() => setAddModalLocation('상온')}
+                className="px-4 py-2.5 rounded-xl bg-background-secondary border border-accent-warm/40 text-text-primary font-bold text-sm hover:bg-background-tertiary transition-colors"
+              >
+                🏠 상온에 추가
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 재료 추가 모달 (사진 업로드 포함) */}
