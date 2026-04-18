@@ -18,12 +18,12 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#d84a30" />
         </linearGradient>
         <linearGradient id="interiorG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f4f8fc" />
-          <stop offset="100%" stopColor="#e8eff5" />
+          <stop offset="0%" stopColor="#f5fbff" />
+          <stop offset="100%" stopColor="#dceaf4" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f4f8fc" />
-          <stop offset="100%" stopColor="#e8eff5" />
+          <stop offset="0%" stopColor="#eef6ff" />
+          <stop offset="100%" stopColor="#cee0ee" />
         </linearGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#d0d0d0" />
@@ -185,10 +185,10 @@ export default function FridgeSVG() {
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
       <path d="M 166,14 L 180,6 L 448,6 L 434,14 Z" fill="url(#bodyLight)" />
       <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" />
-      <rect x="166" y="14" width="3" height="615" fill="#000" />
-      <rect x="431" y="14" width="3" height="615" fill="#000" />
-      <rect x="166" y="14" width="268" height="3" fill="#000" />
-      <rect x="166" y="626" width="268" height="3" fill="#000" />
+      <rect x="166" y="14" width="2" height="615" fill="#000" />
+      <rect x="432" y="14" width="2" height="615" fill="#000" />
+      <rect x="166" y="14" width="268" height="2" fill="#000" />
+      <rect x="166" y="627" width="268" height="2" fill="#000" />
       <rect x="170" y="16" width="260" height="3" rx="1" fill="url(#chromeG)" />
       <rect x="170" y="383" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
       <rect x="170" y="398" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
@@ -196,7 +196,6 @@ export default function FridgeSVG() {
 
       <rect x="176" y="26" width="248" height="359" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
-      <rect x="178" y="28" width="244" height="80" rx="4" fill="url(#lightG)" />
       {/* 추가 상단 아이템들 */}
 
       <path d="M 178,114 L 188,106 L 412,106 L 422,114 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -332,12 +331,6 @@ export default function FridgeSVG() {
       <path d="M 397,629 L 397,641 L 415,641 L 415,629 Z" fill="#7a2818" />
       <path d="M 397,629 L 402,626 L 420,626 L 415,629 Z" fill="#a04030" />
       <path d="M 415,629 L 420,626 L 420,638 L 415,641 Z" fill="#602018" />
-    
-      {/* 3D basic: cast shadow on body interior near hinges */}
-      <ellipse cx="180" cy="200" rx="40" ry="180" fill="url(#castShadow)" opacity="0.5" />
-      <ellipse cx="420" cy="200" rx="40" ry="180" fill="url(#castShadow)" opacity="0.5" />
-      <ellipse cx="180" cy="500" rx="35" ry="100" fill="url(#castShadow)" opacity="0.5" />
-      <ellipse cx="420" cy="500" rx="35" ry="100" fill="url(#castShadow)" opacity="0.5" />
     </svg>
   );
 }
