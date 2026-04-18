@@ -245,7 +245,7 @@ export default function FridgeHomeClient() {
           <KitchenSVG />
         </div>
         <div className="flex-1 w-full" />
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto aspect-[660/670] max-h-[55vh]">
+        <div className="relative w-full max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
           <FridgeSVG />
         </div>
       </div>
