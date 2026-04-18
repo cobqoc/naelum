@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './quickAddList';
 import FridgeSVG from './FridgeSVG';
+import KitchenSVG from './KitchenSVG';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
@@ -238,8 +239,13 @@ export default function FridgeHomeClient() {
 
       <KitchenCounter items={sections.pantry} onRemove={removeItem} />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-12 pb-4 md:pb-8">
-        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto aspect-[660/670] max-h-[80vh]">
+      <div className="flex-1 flex flex-col items-center px-4 md:px-12 pb-4 md:pb-8">
+        <div className="flex-1 w-full" />
+        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+          <KitchenSVG />
+        </div>
+        <div className="flex-1 w-full" />
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto aspect-[660/670] max-h-[55vh]">
           <FridgeSVG />
         </div>
       </div>
