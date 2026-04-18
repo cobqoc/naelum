@@ -406,22 +406,30 @@ export default function HomeClient({
         <SearchBar className="w-full max-w-md" />
       </div>
 
-      <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
-        <div className="flex-1 w-full" />
-        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+      <div className="flex-1 flex flex-col items-center justify-end md:justify-center gap-3 md:gap-6 md:px-12 pb-3 md:pb-8">
+        {/* KitchenSVG — 장식용. 모바일에선 공간 부족하므로 sm+에서만 노출 */}
+        <div className="hidden sm:block w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="flex-1 w-full" />
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
             냉동 선반 1개: storage_location === '냉동'
-            chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달 */}
-        <div className="relative w-full max-w-[380px] md:max-w-[500px] mx-auto aspect-[540/670]">
-          <FridgeSVG />
+            chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달
 
-          {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
-          <div className="absolute inset-0 pointer-events-none">
+            반응형 크기 (viewport 기준):
+            - 모바일 (<sm): aspect 540/540 (정사각에 가깝게), max-w 340 → 세로 많이 짧게, 스크롤 없이 한 화면에 fit
+            - 태블릿 (sm): aspect 540/620, max-w 460
+            - 데스크톱 (md+): aspect 540/670 원본 유지, max-w 560
+            - 큰 화면 (lg+): max-w 640
+            내부 레이어는 항상 원본 aspect 540/670로 렌더되어 chip 좌표(SHELVES)가 일관. */}
+        <div className="relative w-full max-w-[340px] sm:max-w-[460px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/540] sm:aspect-[540/620] md:aspect-[540/670] overflow-hidden">
+          {/* 내부 레이어 — 원본 aspect 540/670 유지, 모바일에선 하단이 overflow로 클립됨 */}
+          <div className="absolute top-0 left-0 w-full aspect-[540/670]">
+            <FridgeSVG />
+
+            {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
+            <div className="absolute inset-0 pointer-events-none">
             {(() => {
               // 선반별 아이템 분배: 냉장 선반 3개에 fridge items 긴급도순 채우고, 냉동 선반에 freezer items
               const fridgeItems = [...items].filter(i => i.storage_location !== '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
@@ -501,9 +509,10 @@ export default function HomeClient({
                 );
               });
             })()}
+            </div>
           </div>
 
-          {/* FAB — 재료 추가 */}
+          {/* FAB — 재료 추가. 외부 컨테이너 기준이라 모바일에선 클립된 하단이 아닌 "보이는 영역" 하단에 위치. */}
           <button
             onClick={() => setAddModalLocation('냉장')}
             aria-label="재료 추가"
