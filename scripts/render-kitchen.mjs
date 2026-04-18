@@ -6,8 +6,8 @@ import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const SOURCE = path.join(ROOT, 'app/fridge-home/KitchenSVG.tsx');
-const OUT_DIR = path.join(ROOT, '.fridge-backups');
+const SOURCE = path.join(ROOT, 'app/_home/KitchenSVG.tsx');
+const OUT_DIR = ROOT;
 
 const r2s = (x) => x
   .replace(/strokeWidth=/g,'stroke-width=').replace(/strokeLinejoin=/g,'stroke-linejoin=')
