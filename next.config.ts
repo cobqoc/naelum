@@ -58,9 +58,15 @@ const nextConfig: NextConfig = {
         destination: '/ingredients',
         permanent: true,
       },
+      // 홈이 곧 냉장고 UI가 되면서 /fridge-home을 /로 흡수. 이전 북마크/외부 링크가 깨지지 않도록 308 redirect.
+      {
+        source: '/fridge-home',
+        destination: '/',
+        permanent: true,
+      },
       {
         source: '/fridge',
-        destination: '/fridge-home',
+        destination: '/',
         permanent: true,
       },
     ];

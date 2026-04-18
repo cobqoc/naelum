@@ -1,435 +1,477 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import Header from "@/components/Header";
-import BottomNav from "@/components/BottomNav";
-import SearchBar from "@/components/SearchBar";
-import RecipeCard from "@/components/RecipeCard";
-import FridgeRecipeCard from "@/components/FridgeRecipeCard";
-import Link from "next/link";
-import Footer from "@/components/Footer";
-import SafeImage from "@/components/Common/SafeImage";
-import { createClient } from '@/lib/supabase/client';
-import { useI18n } from '@/lib/i18n/context';
+/**
+ * 낼름 — 카툰 양문형 냉장고 v5
+ *
+ * 레퍼런스: 따뜻한 갈색 카툰 일러스트 양문형 냉장고.
+ * 문이 기본 열려있고 재료가 선반에 바로 보임.
+ * CSS로 양문 V자 + 선반 + 재료 칩 구현.
+ */
+
+import Link from 'next/link';
+import dynamicImport from 'next/dynamic';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
-import dynamic from 'next/dynamic';
-
-// 비로그인 유저용 정적 냉장고는 서버에서 즉시 렌더되도록 정적 import.
-// (홈에서는 로그인 유저에게도 InteractiveFridge를 쓰지 않고 fridge recommendation 섹션을 사용)
-import StaticAnonymousFridge from '@/components/Fridge/StaticAnonymousFridge';
+import { createClient } from '@/lib/supabase/client';
+import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './_home/quickAddList';
+import FridgeSVG from './_home/FridgeSVG';
+import KitchenSVG from './_home/KitchenSVG';
+import Header from '@/components/Header';
+import SearchBar from '@/components/SearchBar';
+import BottomNav from '@/components/BottomNav';
 import WaitlistForm from '@/components/WaitlistForm';
+import ExpiringIngredientsAlert from '@/components/Ingredients/ExpiringIngredientsAlert';
+import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
+import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
+import IngredientCategoryFilter from '@/components/Ingredients/IngredientCategoryFilter';
 
-const OnboardingWizard = dynamic(() => import('@/components/Onboarding/OnboardingWizard'), {
+const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
 });
 
-const BG_EMOJIS = [
-  { e: '🍳', top: '8%',  left: '7%',  size: '1.4rem', op: 0.07, dur: '28s', delay: '0s'  },
-  { e: '🥕', top: '12%', left: '82%', size: '1.1rem', op: 0.06, dur: '33s', delay: '4s'  },
-  { e: '🌿', top: '22%', left: '15%', size: '1.0rem', op: 0.05, dur: '38s', delay: '8s'  },
-  { e: '🍜', top: '30%', left: '90%', size: '1.5rem', op: 0.06, dur: '25s', delay: '2s'  },
-  { e: '🫐', top: '40%', left: '3%',  size: '1.0rem', op: 0.05, dur: '31s', delay: '6s'  },
-  { e: '🧄', top: '48%', left: '75%', size: '1.2rem', op: 0.07, dur: '36s', delay: '10s' },
-  { e: '🍖', top: '58%', left: '20%', size: '1.3rem', op: 0.06, dur: '29s', delay: '3s'  },
-  { e: '🥦', top: '65%', left: '88%', size: '1.1rem', op: 0.05, dur: '34s', delay: '7s'  },
-  // ↑ 8개: 모바일에서는 여기까지만 표시
-  { e: '🍅', top: '72%', left: '10%', size: '1.4rem', op: 0.07, dur: '27s', delay: '5s'  },
-  { e: '🧅', top: '80%', left: '60%', size: '1.0rem', op: 0.05, dur: '32s', delay: '9s'  },
-  { e: '🫑', top: '18%', left: '50%', size: '1.2rem', op: 0.06, dur: '30s', delay: '1s'  },
-  { e: '🍄', top: '35%', left: '40%', size: '1.1rem', op: 0.05, dur: '35s', delay: '11s' },
-  { e: '🥚', top: '52%', left: '55%', size: '1.0rem', op: 0.06, dur: '26s', delay: '13s' },
-  { e: '🧂', top: '88%', left: '30%', size: '1.3rem', op: 0.07, dur: '37s', delay: '15s' },
-  { e: '🫒', top: '92%', left: '78%', size: '1.1rem', op: 0.05, dur: '29s', delay: '2s'  },
-  { e: '🍋', top: '5%',  left: '40%', size: '1.2rem', op: 0.06, dur: '33s', delay: '7s'  },
-  { e: '🥩', top: '75%', left: '45%', size: '1.4rem', op: 0.05, dur: '31s', delay: '12s' },
-  { e: '🌶️', top: '45%', left: '28%', size: '1.0rem', op: 0.06, dur: '28s', delay: '4s'  },
-] as const;
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const CUISINE_IMAGES: Partial<Record<string, string>> = {
-  korean: '/images/categories/korean.svg',
-  chinese: '/images/categories/chinese.svg',
-  italian: '/images/categories/italian.svg',
-};
-
-const CUISINE_ICONS: Record<string, string> = {
-  korean: '🇰🇷',
-  chinese: '🥢',
-  japanese: '🍣',
-  western: '🥩',
-  italian: '🍝',
-  french: '🥐',
-  mexican: '🌮',
-  indian: '🍛',
-  thai: '🌶️',
-  vietnamese: '🍜',
-  other: '🍽️',
-};
-
-const CUISINE_COLORS: Record<string, string> = {
-  korean: '#ef4444',
-  chinese: '#f59e0b',
-  japanese: '#ec4899',
-  western: '#3b82f6',
-  italian: '#22c55e',
-  french: '#a855f7',
-  mexican: '#f97316',
-  indian: '#eab308',
-  thai: '#84cc16',
-  vietnamese: '#10b981',
-  other: '#6b7280',
-};
-
-const DISH_ICONS: Record<string, string> = {
-  main: '🍖',
-  soup: '🍲',
-  side: '🍱',
-  noodle: '🍜',
-  rice: '🍚',
-  dessert: '🍰',
-  beverage: '☕',
-  snack: '🍿',
-  salad: '🥗',
-  baking: '🍞',
-  other: '🍽️',
-};
-
-const DISH_COLORS: Record<string, string> = {
-  main: '#ef4444',
-  soup: '#f97316',
-  side: '#22c55e',
-  noodle: '#f59e0b',
-  rice: '#84cc16',
-  dessert: '#ec4899',
-  beverage: '#3b82f6',
-  snack: '#a855f7',
-  salad: '#34d399',
-  baking: '#d97706',
-  other: '#6b7280',
-};
-
-export interface RecipeItem {
+type FridgeItem = {
   id: string;
-  title: string;
-  thumbnail_url: string | null;
-  display_image?: string | null;
-  prep_time_minutes: number | null;
-  cook_time_minutes: number | null;
-  difficulty_level: string | null;
-  views_count?: number;
-  likes_count?: number;
-  cooked_count?: number;
-  average_rating?: number;
-  author?: { username: string; avatar_url?: string | null };
-  matchRate?: number;
-  matchedCount?: number;
-  totalIngredients?: number;
-  missingIngredientNames?: string[];
-}
-
-export interface TipItem {
-  id: string;
-  title: string;
-  thumbnail_url: string | null;
+  ingredient_name: string;
   category: string;
-  duration_minutes: number | null;
-  author?: { username: string } | null;
+  expiry_date: string | null;
+  storage_location: string | null;
+  quantity?: number | null;
+  unit?: string | null;
+  purchase_date?: string | null;
+  notes?: string | null;
+  expiry_alert?: boolean;
+};
+
+type IngredientFormData = {
+  ingredient_name: string;
+  category: string;
+  quantity?: number | null;
+  unit?: string | null;
+  purchase_date?: string | null;
+  expiry_date?: string | null;
+  storage_location?: string | null;
+  notes?: string | null;
+  expiry_alert?: boolean;
+};
+
+type PhotoLabel = {
+  name: string;
+  category: string;
+  quantity?: number | null;
+  unit?: string | null;
+  storage_location?: string | null;
+};
+
+type Section = 'freezer' | 'main' | 'veggie' | 'doorL' | 'doorR' | 'pantry';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function daysUntilExpiry(d: string | null): number {
+  if (!d) return 99;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const exp = new Date(d); exp.setHours(0, 0, 0, 0);
+  return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+function addDaysISO(d: number): string {
+  const date = new Date(); date.setDate(date.getDate() + d);
+  return date.toISOString().slice(0, 10);
+}
+function genDemoId(): string { return `demo-${Math.random().toString(36).slice(2, 10)}`; }
+function parseMultiInput(text: string): string[] {
+  return text.split(/[\s,，、]+/)
+    .map(t => t.replace(/\d+(개|g|kg|ml|l|모|장|컵|큰술|작은술|줌|봉|통|병|포기)?$/i, '').trim())
+    .filter(t => t.length > 0 && t.length <= 30);
+}
+function getEmoji(name: string, category: string): string {
+  const found = QUICK_ADD.find(q => q.name === name || name.includes(q.name) || q.name.includes(name));
+  if (found) return found.emoji;
+  return ({ veggie:'🥬', meat:'🥩', seafood:'🐟', dairy:'🥛', grain:'🌾', seasoning:'🧂' } as Record<string,string>)[category] ?? '📦';
 }
 
-export type FeedItem =
-  | { type: 'recipe' } & RecipeItem
-  | { type: 'tip' } & TipItem;
-
-function CardSkeleton() {
-  return <div className="rounded-2xl bg-background-secondary animate-pulse aspect-[4/3]" />;
+function assignSection(item: FridgeItem, idx: number): Section {
+  if (item.storage_location === '상온') return 'pantry';
+  if (item.storage_location === '냉동') return 'freezer';
+  if (item.category === 'seasoning' || item.category === 'condiment') {
+    if (item.storage_location === '냉장') return idx % 2 === 0 ? 'doorL' : 'doorR';
+    return 'pantry';
+  }
+  if (item.category === 'veggie' || item.category === 'fruit') return 'veggie';
+  return 'main';
 }
+
+function freshBorder(days: number): string {
+  if (days <= 0) return '#991b1b';
+  if (days <= 3) return '#dc2626';
+  if (days <= 7) return '#d97706';
+  return '#4d7c0f';
+}
+function freshLabel(days: number): string {
+  if (days <= 0) return '만료';
+  if (days <= 7) return `D-${days}`;
+  return '';
+}
+
+const DEMO: FridgeItem[] = [
+  { id:'d1', ingredient_name:'아이스크림', category:'dairy', expiry_date: addDaysISO(30), storage_location:'냉동' },
+  { id:'d2', ingredient_name:'만두', category:'grain', expiry_date: addDaysISO(60), storage_location:'냉동' },
+  { id:'d3', ingredient_name:'두부', category:'other', expiry_date: addDaysISO(1), storage_location:'냉장' },
+  { id:'d4', ingredient_name:'계란', category:'dairy', expiry_date: addDaysISO(10), storage_location:'냉장' },
+  { id:'d5', ingredient_name:'우유', category:'dairy', expiry_date: addDaysISO(3), storage_location:'냉장' },
+  { id:'d6', ingredient_name:'김치', category:'other', expiry_date: addDaysISO(14), storage_location:'냉장' },
+  { id:'d7', ingredient_name:'돼지고기', category:'meat', expiry_date: addDaysISO(2), storage_location:'냉장' },
+  { id:'d8', ingredient_name:'시금치', category:'veggie', expiry_date: addDaysISO(2), storage_location:'냉장' },
+  { id:'d9', ingredient_name:'당근', category:'veggie', expiry_date: addDaysISO(8), storage_location:'냉장' },
+  { id:'d10', ingredient_name:'양파', category:'veggie', expiry_date: addDaysISO(12), storage_location:'냉장' },
+  { id:'d11', ingredient_name:'간장', category:'seasoning', expiry_date: addDaysISO(90), storage_location:'상온' },
+  { id:'d12', ingredient_name:'참기름', category:'seasoning', expiry_date: addDaysISO(60), storage_location:'상온' },
+  { id:'d13', ingredient_name:'고추장', category:'seasoning', expiry_date: addDaysISO(45), storage_location:'냉장' },
+];
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 interface HomeClientProps {
-  initialFeed: FeedItem[];
-  initialTrending: RecipeItem[];
-  /** 서버에서 fetch한 로그인 유저의 냉장고 기반 추천 (미로그인/냉장고 비어있음 시 빈 배열) */
-  initialFridgeRecs: RecipeItem[];
-  initialFeedOffset: number;
-  /** 서버에서 fetch한 로그인 유저의 onboarding_step (미로그인/미fetch 시 null) */
-  onboardingStep: number | null;
-  /** 서버에서 확인한 로그인 상태 — useAuth 초기 상태 대기 없이 즉시 판단 가능 */
+  /** SSR에서 확인한 로그인 상태 — useAuth 초기 undefined 단계를 건너뛰고 hero/waitlist를 즉시 올바르게 렌더. */
   isAuthenticated: boolean;
+  /** SSR에서 fetch한 profiles.username — 첫 렌더에서 임시 username 배너를 즉시 판정. */
+  initialUsername: string | null;
+  /** SSR에서 fetch한 profiles.onboarding_step — 미완료 유저 식별용(향후 배너 확장 여지). */
+  initialOnboardingStep: number | null;
 }
 
 export default function HomeClient({
-  initialFeed,
-  initialTrending,
-  initialFridgeRecs,
-  initialFeedOffset,
-  onboardingStep,
   isAuthenticated,
+  initialUsername,
+  initialOnboardingStep: _initialOnboardingStep,
 }: HomeClientProps) {
-  const { t } = useI18n();
+  const { user, profile, loading: authLoading } = useAuth();
+  const [items, setItems] = useState<FridgeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [multiInput, setMultiInput] = useState('');
+  const [showAllChips, setShowAllChips] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
+  const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
+  const [inlineSearch, setInlineSearch] = useState('');
 
-  const { user, profile: authProfile, loading: authLoading } = useAuth();
-  const isLoggedIn = !!user;
+  // 추가 모달 (사진 업로드 포함)
+  const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
 
-  // 임시 username 패턴: handle_new_user 트리거가 생성하는 user_<12hex>
-  // 예: user_1f764c544d92 (UUID 앞 12자리)
-  const hasTempUsername = !!authProfile?.username && /^user_[a-f0-9]{12}$/.test(authProfile.username);
+  // 큰 냉장고 모달 (홈에서 작은 냉장고 탭 시)
+  const [showFridgeModal, setShowFridgeModal] = useState(false);
 
-  const [mounted, setMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [categoryTab, setCategoryTab] = useState<'cuisine' | 'dish'>('cuisine');
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
-  const [catScrollLeft, setCatScrollLeft] = useState(false);
-  const [catScrollRight, setCatScrollRight] = useState(true);
-  const [catScrollPct, setCatScrollPct] = useState(0);
-
-  const updateCatScroll = () => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    setCatScrollLeft(el.scrollLeft > 0);
-    setCatScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-    setCatScrollPct(maxScroll > 0 ? el.scrollLeft / maxScroll : 0);
-  };
-
-  // PC: 마우스 휠 → 가로 스크롤 변환
-  useEffect(() => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (e.deltaY === 0) return;
-      e.preventDefault();
-      el.scrollBy({ left: e.deltaY * 1.5, behavior: 'auto' });
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
-
-  // 탭 변경 시 스크롤 초기화 + 화살표 상태 재계산
-  useEffect(() => {
-    const el = categoryScrollRef.current;
-    if (!el) return;
-    el.scrollLeft = 0;
-    requestAnimationFrame(updateCatScroll);
-  }, [categoryTab]);
-
-  // SSR/클라이언트 hydration 불일치 방지 + 모바일 감지
-  useEffect(() => {
-    setMounted(true);
-    setIsMobile(window.innerWidth < 768);
-  }, []);
-
-  const [feedItems, setFeedItems] = useState<FeedItem[]>(initialFeed);
-  const [feedLoading, setFeedLoading] = useState(initialFeed.length === 0);
-  const [feedHasMore, setFeedHasMore] = useState(true);
-  const feedOffsetRef = useRef(initialFeedOffset);
-  const isFetchingFeedRef = useRef(false);
-  const feedSentinelRef = useRef<HTMLDivElement>(null);
-
-  const [trendingItems, setTrendingItems] = useState<RecipeItem[]>(initialTrending);
-  const [trendingLoading, setTrendingLoading] = useState(initialTrending.length === 0);
-
-  // 서버에서 이미 fetch한 fridge 추천을 초기값으로 사용 → lazy load effect 불필요
-  const [fridgeRecs] = useState<RecipeItem[]>(initialFridgeRecs);
-  const [fridgeLoading] = useState(false);
-  const hasFridgeItems = fridgeRecs.length > 0;
-
+  // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  // 클라이언트 hydration 후엔 useAuth의 profile을, SSR 초기 HTML에선 initialUsername을 사용.
+  const currentUsername = profile?.username ?? initialUsername;
+  const hasTempUsername = !!currentUsername && /^user_[a-f0-9]{12}$/.test(currentUsername);
 
-  // 서버에서 초기 데이터를 로드했는지 추적 (첫 번째 effect 실행 시 fetch 스킵용)
-  const skipInitialFetchRef = useRef(initialFeed.length > 0);
-  // auth 상태 변화(undefined→userId)로 인한 불필요한 re-fetch 방지
-  const feedInitializedRef = useRef(false);
-
-  // 온보딩 / 임시 유저명 배너 표시 여부 결정
-  // - 미들웨어가 이미 onboarding_completed를 서버에서 검증하므로 여기선 "나중에 하기"로
-  //   스킵한 유저의 배너 표시만 판단
-  // - onboarding_step < 4 이거나, handle_new_user 트리거가 만든 임시 username을 아직 쓰고 있으면 노출
   useEffect(() => {
     if (!user) return;
-    const needsOnboarding = onboardingStep != null && onboardingStep < 4;
-    if (!needsOnboarding && !hasTempUsername) return;
+    if (!hasTempUsername) return;
     const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
     if (!dismissed) setShowOnboardingBanner(true);
-  }, [user, onboardingStep, hasTempUsername]);
+  }, [user, hasTempUsername]);
 
-  // 스크롤 감지
+  // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
   useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 50);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handler = () => setShowMobileSearch((prev) => !prev);
+    window.addEventListener('toggle-fridge-search', handler);
+    return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
 
-  // 이번 주 인기 레시피 — 서버에서 로드하지 못한 경우에만 클라이언트에서 fetch
+  // ESC 키로 모달 닫기
   useEffect(() => {
-    if (initialTrending.length > 0) return; // 서버에서 이미 로드함
-    const load = () => {
-      fetch('/api/recommendations?type=trending&limit=4')
-        .then(r => r.json())
-        .then(data => setTrendingItems(data.recommendations || []))
-        .catch(() => {})
-        .finally(() => setTrendingLoading(false));
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showFridgeModal) setShowFridgeModal(false);
+      else if (showMobileSearch) setShowMobileSearch(false);
     };
-    if (typeof requestIdleCallback !== 'undefined') {
-      const id = requestIdleCallback(load, { timeout: 3000 });
-      return () => cancelIdleCallback(id);
-    }
-    const t = setTimeout(load, 500);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showFridgeModal, showMobileSearch]);
+
+  // 재료 상세 수정 모달
+  const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
+
+  // 카테고리 필터
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // 장보기 모드
+  const [shoppingMode, setShoppingMode] = useState(false);
+  const [selectedForShopping, setSelectedForShopping] = useState<string[]>([]);
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  // 삭제 undo
+  const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const deletedItemRef = useRef<FridgeItem | null>(null);
+
+  const fetchItems = useCallback(async () => {
+    if (!user) { setItems(DEMO); setLoading(false); return; }
+    const client = createClient();
+    const { data } = await client
+      .from('user_ingredients')
+      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert')
+      .eq('user_id', user.id)
+      .order('expiry_date', { ascending: true, nullsFirst: false });
+    setItems((data ?? []) as FridgeItem[]);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    queueMicrotask(() => { fetchItems(); });
+  }, [authLoading, fetchItems]);
+
+  // 문 애니메이션 제거 — SVG 기본 디자인 우선
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2000);
     return () => clearTimeout(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [toast]);
+  const showToast = (msg: string) => setToast(msg);
 
-  // 최신 레시피 + 팁 혼합 피드 (무한 스크롤)
-  const RECIPES_PER_PAGE = 8;
-  const TIPS_PER_PAGE = 4;
-  const FEED_AUTO_LIMIT = 100; // 이 개수 이후엔 수동 버튼으로 전환
+  const addQuickItem = async (item: QuickAddIngredient) => {
+    if (adding) return;
+    setAdding(true);
+    if (!user) {
+      setItems(prev => [...prev, {
+        id: genDemoId(), ingredient_name: item.name, category: item.category,
+        expiry_date: addDaysISO(item.category === 'seasoning' ? 14 : item.category === 'dairy' ? 7 : 5),
+        storage_location: item.storage,
+      }]);
+      showToast(`${item.name} 추가 (체험)`);
 
-  const fetchFeedPage = useCallback(async (reset = false) => {
-    if (isFetchingFeedRef.current) return;
-    isFetchingFeedRef.current = true;
-
-    if (reset) {
-      feedOffsetRef.current = 0;
-      setFeedItems([]);
-      setFeedHasMore(true);
-      setFeedLoading(true);
+      setAdding(false); return;
     }
+    const client = createClient();
+    const { error } = await client.from('user_ingredients').insert(quickAddToPayload(item, user.id));
+    if (error) showToast('추가 실패');
+    else {
+      showToast(`${item.name} 추가`);
+      window.dispatchEvent(new Event('fridge-updated'));
+      await fetchItems();
 
-    const offset = feedOffsetRef.current;
+    }
+    setAdding(false);
+  };
 
-    try {
-      const supabase = createClient();
-      const tipOffset = Math.floor(offset / 2);
-
-      const [{ data: recipes }, tipRes] = await Promise.all([
-        supabase
-          .from('recipes')
-          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, views_count, likes_count, average_rating, author:profiles!recipes_author_id_fkey(username)')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .range(offset, offset + RECIPES_PER_PAGE - 1),
-        fetch(`/api/tip?limit=${TIPS_PER_PAGE}&offset=${tipOffset}`)
-          .then(r => r.json())
-          .catch(() => ({ tips: [] })),
-      ]);
-
-      const recipeFeed: FeedItem[] = (recipes || []).map(r => ({
-        type: 'recipe' as const,
-        ...r,
-        author: Array.isArray(r.author) ? r.author[0] : r.author,
-      }));
-
-      const tipFeed: FeedItem[] = (tipRes.tips || []).map((tip: TipItem) => ({
-        type: 'tip' as const,
-        ...tip,
-      }));
-
-      // 레시피 2개마다 팁 1개 끼워넣기
-      const mixed: FeedItem[] = [];
-      let ri = 0, ti = 0;
-      while (ri < recipeFeed.length || ti < tipFeed.length) {
-        if (ri < recipeFeed.length) mixed.push(recipeFeed[ri++]);
-        if (ri < recipeFeed.length) mixed.push(recipeFeed[ri++]);
-        if (ti < tipFeed.length) mixed.push(tipFeed[ti++]);
-      }
-
-      if (reset) {
-        setFeedItems(mixed);
+  const addMultiFromText = async () => {
+    const tokens = parseMultiInput(multiInput);
+    if (tokens.length === 0) return;
+    setAdding(true);
+    let added = 0;
+    for (const token of tokens) {
+      const match = QUICK_ADD.find(q => q.name === token || q.name.includes(token) || token.includes(q.name));
+      const fb: QuickAddIngredient = match ?? { name: token, emoji:'📦', category:'other', storage:'냉장' };
+      if (!user) {
+        setItems(prev => [...prev, { id: genDemoId(), ingredient_name: fb.name, category: fb.category, expiry_date: addDaysISO(5), storage_location: fb.storage }]);
       } else {
-        setFeedItems(prev => [...prev, ...mixed]);
+        const client = createClient();
+        await client.from('user_ingredients').insert(quickAddToPayload(fb, user.id));
       }
+      added++;
+    }
+    if (user) { window.dispatchEvent(new Event('fridge-updated')); await fetchItems(); }
+    showToast(`${added}개 추가`);
+    setMultiInput('');
+    setAdding(false);
+  };
 
-      feedOffsetRef.current = offset + RECIPES_PER_PAGE;
-      setFeedHasMore((recipes?.length ?? 0) >= RECIPES_PER_PAGE);
+  const removeItem = async (id: string) => {
+    const target = items.find(i => i.id === id);
+    if (!target) return;
+
+    // 낙관적 제거 + undo 타이머
+    setItems(prev => prev.filter(i => i.id !== id));
+    deletedItemRef.current = target;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
+    showToast('👅 낼름! · 되돌리기 4초');
+
+    undoTimerRef.current = setTimeout(async () => {
+      deletedItemRef.current = null;
+      if (id.startsWith('d') || id.startsWith('demo')) return;
+      const client = createClient();
+      await client.from('user_ingredients').delete().eq('id', id);
+      window.dispatchEvent(new Event('fridge-updated'));
+    }, 4000);
+  };
+
+  const undoDelete = () => {
+    const restored = deletedItemRef.current;
+    if (!restored) return;
+    setItems(prev => [...prev, restored]);
+    deletedItemRef.current = null;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setToast(null);
+  };
+
+  // IngredientDetailModal onUpdate
+  const updateIngredient = async (id: string, formData: IngredientFormData) => {
+    if (id.startsWith('d') || id.startsWith('demo')) {
+      setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
+      setDetailItem(null);
+      showToast('✅ 수정 완료');
+      return;
+    }
+    const client = createClient();
+    await client.from('user_ingredients').update({ ...formData }).eq('id', id);
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
+    setDetailItem(null);
+    showToast('✅ 수정 완료');
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // AddIngredientModal onAddIngredient
+  const addIngredientFromModal = async (formData: IngredientFormData) => {
+    if (!user) {
+      const newItem: FridgeItem = {
+        id: `d${Date.now()}`,
+        ingredient_name: formData.ingredient_name,
+        category: formData.category,
+        expiry_date: formData.expiry_date ?? null,
+        storage_location: formData.storage_location ?? null,
+        quantity: formData.quantity ?? null,
+        unit: formData.unit ?? null,
+        purchase_date: formData.purchase_date ?? null,
+        notes: formData.notes ?? null,
+        expiry_alert: formData.expiry_alert ?? false,
+      };
+      setItems(prev => [...prev, newItem]);
+      setAddModalLocation(null);
+      showToast('👅 추가!');
+      return;
+    }
+    const client = createClient();
+    const { data } = await client
+      .from('user_ingredients')
+      .insert({ ...formData, user_id: user.id })
+      .select()
+      .single();
+    if (data) setItems(prev => [...prev, data as FridgeItem]);
+    setAddModalLocation(null);
+    showToast('👅 추가!');
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // AddIngredientModal onAddFromPhoto
+  const addIngredientsFromPhoto = async (labels: PhotoLabel[]) => {
+    if (!user) {
+      const newItems: FridgeItem[] = labels.map((lbl, i) => ({
+        id: `d${Date.now()}-${i}`,
+        ingredient_name: lbl.name,
+        category: lbl.category,
+        expiry_date: null,
+        storage_location: lbl.storage_location ?? addModalLocation ?? null,
+        quantity: lbl.quantity ?? null,
+        unit: lbl.unit ?? null,
+      }));
+      setItems(prev => [...prev, ...newItems]);
+      setAddModalLocation(null);
+      showToast(`📸 ${labels.length}개 추가!`);
+      return;
+    }
+    const client = createClient();
+    const rows = labels.map(lbl => ({
+      user_id: user.id,
+      ingredient_name: lbl.name,
+      category: lbl.category,
+      quantity: lbl.quantity ?? null,
+      unit: lbl.unit ?? null,
+      storage_location: lbl.storage_location ?? addModalLocation ?? null,
+    }));
+    const { data } = await client.from('user_ingredients').insert(rows).select();
+    if (data) setItems(prev => [...prev, ...(data as FridgeItem[])]);
+    setAddModalLocation(null);
+    showToast(`📸 ${labels.length}개 추가!`);
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // 장보기 모드 토글
+  const toggleShoppingSelect = (id: string) => {
+    setSelectedForShopping(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
+  };
+
+  const addSelectedToCart = async () => {
+    if (selectedForShopping.length === 0 || addingToCart) return;
+    setAddingToCart(true);
+    const selected = items.filter(i => selectedForShopping.includes(i.id));
+    try {
+      if (user) {
+        const client = createClient();
+        const rows = selected.map(i => ({
+          user_id: user.id,
+          ingredient_name: i.ingredient_name,
+          category: i.category,
+          quantity: i.quantity ?? 1,
+          unit: i.unit ?? null,
+        }));
+        await client.from('shopping_cart').insert(rows);
+      }
+      showToast(`🛒 ${selected.length}개 추가!`);
+      setSelectedForShopping([]);
+      setShoppingMode(false);
+      window.dispatchEvent(new Event('cart-updated'));
     } catch {
-      // ignore
+      showToast('❌ 장보기 추가 실패');
     } finally {
-      isFetchingFeedRef.current = false;
-      setFeedLoading(false);
+      setAddingToCart(false);
     }
-  }, []);
+  };
 
-  // 피드 로드 — 서버에서 초기 데이터를 받은 경우 첫 번째 fetch 스킵
-  // auth 상태 변화(undefined→userId) 시 SSR 데이터를 버리지 않도록 feedInitializedRef로 보호
-  useEffect(() => {
-    if (feedInitializedRef.current) return; // 이미 초기화 완료 — auth 변화로 인한 재실행 무시
-    feedInitializedRef.current = true;
+  // 선반별 추천 칩 (빈 선반 탭 시 표시)
+  const FRIDGE_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '냉장').slice(0, 6);
+  const FREEZER_RECO: QuickAddIngredient[] = [
+    { name: '만두', emoji: '🥟', category: 'grain', storage: '냉동' },
+    { name: '아이스크림', emoji: '🍦', category: 'dairy', storage: '냉동' },
+    { name: '새우', emoji: '🦐', category: 'seafood', storage: '냉동' },
+    { name: '냉동블루베리', emoji: '🫐', category: 'other', storage: '냉동' },
+  ];
+  const PANTRY_RECO: QuickAddIngredient[] = QUICK_ADD.filter(q => q.storage === '상온').slice(0, 6);
 
-    if (skipInitialFetchRef.current) {
-      skipInitialFetchRef.current = false;
-      return; // 서버 pre-fetch 데이터 유지
-    }
-    fetchFeedPage(true);
-  }, [user?.id, fetchFeedPage]);
+  const handleInlineAdd = async (item: QuickAddIngredient) => {
+    await addQuickItem(item);
+    setInlineAddSection(null);
+    setInlineSearch('');
+  };
 
-  // 무한 스크롤 - sentinel이 보이면 다음 페이지 로드 (100개 미만일 때만)
-  useEffect(() => {
-    const sentinel = feedSentinelRef.current;
-    if (!sentinel || !feedHasMore || feedItems.length >= FEED_AUTO_LIMIT) return;
+  const sections = useMemo(() => {
+    const m: Record<Section, FridgeItem[]> = { freezer:[], main:[], veggie:[], doorL:[], doorR:[], pantry:[] };
+    items.forEach((item, idx) => m[assignSection(item, idx)].push(item));
+    return m;
+  }, [items]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetchFeedPage(false);
-        }
-      },
-      { rootMargin: '300px' }
-    );
+  const dangerCount = items.filter(i => daysUntilExpiry(i.expiry_date) <= 3).length;
+  const visibleChips = showAllChips ? QUICK_ADD : QUICK_ADD.slice(0, 12);
 
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [feedHasMore, fetchFeedPage, feedItems.length]);
+  // 카테고리 필터 적용된 섹션별 재료
+  const applyFilter = (arr: FridgeItem[]) =>
+    selectedCategories.length === 0 ? arr : arr.filter(i => selectedCategories.includes(i.category));
 
-  // 냉장고 추천은 서버에서 이미 fetch됨 (app/page.tsx의 fetchFridgeRecommendations).
-  // 따로 useEffect 불필요 — fridgeRecs가 initialFridgeRecs로 초기화돼 즉시 렌더.
+  const filteredPantry = useMemo(() => applyFilter(sections.pantry), [sections.pantry, selectedCategories]);
+  const filteredFridge = useMemo(
+    () => applyFilter([...sections.main, ...sections.veggie, ...sections.doorL, ...sections.doorR]),
+    [sections.main, sections.veggie, sections.doorL, sections.doorR, selectedCategories]
+  );
+  const filteredFreezer = useMemo(() => applyFilter(sections.freezer), [sections.freezer, selectedCategories]);
 
   return (
-    <div className="min-h-screen bg-background-primary text-text-primary">
-      {mounted && (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
-          {(isMobile ? BG_EMOJIS.slice(0, 8) : BG_EMOJIS).map((item, i) => (
-            <span
-              key={i}
-              className="absolute select-none"
-              style={{
-                top: item.top,
-                left: item.left,
-                fontSize: item.size,
-                opacity: item.op,
-                animation: isMobile ? 'none' : `food-float ${item.dur} ease-in-out infinite`,
-                animationDelay: isMobile ? undefined : item.delay,
-              }}
-            >
-              {item.e}
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
       <Header />
+      <div className="h-14 md:h-20 flex-shrink-0" />
 
       {/* 온보딩 미완료 / 임시 유저명 배너 */}
       {showOnboardingBanner && (
         <div className="sticky top-16 md:top-[68px] z-30 w-full bg-accent-warm/10 border-b border-accent-warm/20 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
             <p className="text-sm text-text-secondary truncate">
-              {hasTempUsername ? (
-                <>
-                  아직 기본 이름 <span className="font-mono text-accent-warm">@{authProfile?.username}</span>을 쓰고 있어요. <span className="text-accent-warm font-medium">진짜 이름</span>으로 바꿔볼까요?
-                </>
-              ) : (
-                <>
-                  <span className="text-accent-warm font-medium">프로필을 완성</span>하면 더 정확한 맞춤 레시피 추천을 받을 수 있어요!
-                </>
-              )}
+              아직 기본 이름 <span className="font-mono text-accent-warm">@{currentUsername}</span>을 쓰고 있어요. <span className="text-accent-warm font-medium">진짜 이름</span>으로 바꿔볼까요?
             </p>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -455,7 +497,7 @@ export default function HomeClient({
         </div>
       )}
 
-      {/* 온보딩 위자드 (배너에서 열기) */}
+      {/* 온보딩 위자드 */}
       {showOnboardingModal && (
         <OnboardingWizard
           isOpen={showOnboardingModal}
@@ -467,340 +509,452 @@ export default function HomeClient({
         />
       )}
 
-      <main id="main-content" className="relative flex min-h-screen flex-col items-center px-4 md:px-6 pt-16 md:pt-20 pb-24 md:pb-12">
-        {/* 배경 장식 */}
-        <div className="absolute top-1/4 -left-20 h-48 w-48 md:h-64 md:w-64 rounded-full bg-accent-warm/5 md:bg-accent-warm/10 blur-[80px] md:blur-[100px]" />
-        <div className="absolute bottom-1/4 -right-20 h-48 w-48 md:h-64 md:w-64 rounded-full bg-accent-warm/3 md:bg-accent-warm/5 blur-[80px] md:blur-[100px]" />
-
-        {/* Hero */}
-        <div className={`w-full max-w-2xl mt-4 md:mt-8 transition-all duration-500 ${
-          isScrolled && !searchFocused ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'
-        } z-10`}>
-
-          {/* 비로그인 유저용 value proposition — 첫 유저가 "뭐 하는 앱인지" 0.5초 안에 이해하도록 */}
-          {!isAuthenticated && (
-            <div className="text-center mb-6 px-4">
-              <h1 className="text-2xl md:text-4xl font-bold text-text-primary leading-tight">
-                {t.home?.tagline || '냉장고 열고 바로 만드는 한식 레시피'}
-              </h1>
-              <p className="mt-2 md:mt-3 text-sm md:text-base text-text-muted">
-                {t.home?.taglineSub || '보유한 재료로 만들 수 있는 요리를 추천해드려요'}
-              </p>
-            </div>
-          )}
-
-          {/* 비로그인: 서버에서 확인 후 정적 컴포넌트로 즉시 렌더 (JS 로드/하이드레이션 대기 없음) */}
-          {!isAuthenticated && (
-            <>
-              <div className="flex justify-center mb-6">
-                <StaticAnonymousFridge />
-              </div>
-              {/* 이메일 수집 — 런칭 전/후 초기 유저 유치용. 검색바 아래 배치. */}
-              <div className="flex justify-center mb-6">
-                <WaitlistForm source="home_hero" compact />
-              </div>
-            </>
-          )}
-
-          <div onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}>
-            <SearchBar />
-          </div>
+      {/* Hero Tagline — 비로그인 유저한테만 노출. SSR에서 isAuthenticated로 판정해 flicker 제거.
+          (이전엔 !user만 썼는데, useAuth의 초기 undefined 단계에서 로그인 유저에게 잠깐 노출됨) */}
+      {!isAuthenticated && (
+        <div className="px-4 pt-3 pb-1 text-center">
+          <h1 className="text-lg md:text-2xl font-bold text-text-primary">
+            냉장고 열고 <span className="text-accent-warm">바로 만드는</span> 한식
+          </h1>
+          <p className="mt-1 text-xs md:text-sm text-text-muted">
+            재료 등록하면 내 냉장고로 만들 수 있는 레시피를 추천해드려요
+          </p>
         </div>
+      )}
 
-        <div className="w-full max-w-5xl mt-4 md:mt-8 space-y-10">
+      <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
+        <SearchBar className="w-full max-w-md" />
+      </div>
 
-          {/* 1. 카테고리 탐색 */}
-          <section aria-label={t.home?.categoryTitle || '카테고리'}>
-            {/* 탭 토글 */}
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold">{t.home?.categoryTitle || '카테고리'}</h2>
-              <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
-                <button
-                  onClick={() => setCategoryTab('cuisine')}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    categoryTab === 'cuisine'
-                      ? 'bg-accent-warm text-background-primary'
-                      : 'text-text-muted hover:text-text-secondary'
-                  }`}
-                >
-                  {t.home?.categoryByCuisine || '국가별'}
-                </button>
-                <button
-                  onClick={() => setCategoryTab('dish')}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    categoryTab === 'dish'
-                      ? 'bg-accent-warm text-background-primary'
-                      : 'text-text-muted hover:text-text-secondary'
-                  }`}
-                >
-                  {t.home?.categoryByDish || '요리별'}
-                </button>
+      {/* 만료 임박 알림 배너 */}
+      <div className="px-4 pt-2">
+        <ExpiringIngredientsAlert />
+      </div>
+
+      <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
+        <div className="flex-1 w-full" />
+        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+          <KitchenSVG />
+        </div>
+        <div className="flex-1 w-full" />
+        {/* 홈: 작은 냉장고 (클릭하면 모달로 확대) */}
+        <button
+          onClick={() => setShowFridgeModal(true)}
+          aria-label="냉장고 크게 보기"
+          className="relative w-full max-w-[280px] md:max-w-md mx-auto aspect-[540/670] md:aspect-[660/670] max-h-[50vh] md:max-h-[58vh] cursor-pointer group"
+        >
+          <FridgeSVG />
+          <div className="absolute inset-0 rounded-xl group-hover:bg-accent-warm/5 transition-all" />
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-background-secondary/80 backdrop-blur-sm border border-white/10 text-[10px] text-text-muted whitespace-nowrap">
+            탭해서 크게 보기 🔍
+          </span>
+        </button>
+
+        {/* 비로그인 유저: Waitlist + 회원가입 CTA — SSR isAuthenticated로 즉시 판정 */}
+        {!isAuthenticated && (
+          <div className="w-full max-w-md md:max-w-xl px-4 mt-6">
+            <WaitlistForm source="fridge_home" compact />
+          </div>
+        )}
+
+        {/* 레시피 추천 버튼 — 냉장고에 재료가 있을 때만 노출.
+            비로그인 유저는 DEMO 13개가 초기 상태라 항상 보임(체험 유도).
+            로그인 후 빈 냉장고면 숨겨서 "먼저 재료 넣기"를 자연스럽게 유도. */}
+        {items.length > 0 && (
+          <div className="w-full max-w-md md:max-w-xl px-4 mt-6">
+            <Link
+              href="/recommendations"
+              className="w-full flex items-center justify-center gap-1.5 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
+            >
+              🔍 이 재료로 만들 수 있는 레시피 보기
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* === 재료 추가 바텀시트 === */}
+      {showAddSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowAddSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background-secondary rounded-t-2xl shadow-2xl max-h-[70vh] overflow-y-auto animate-slideUp">
+            <div className="p-4 pb-8">
+              {/* 핸들 */}
+              <div className="flex justify-center mb-3">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
               </div>
-            </div>
+              <h2 className="text-sm font-bold text-text-primary mb-3">재료 추가</h2>
 
-            {/* 1행 가로 스크롤 카드 */}
-            <div className="relative -mx-4 overflow-hidden">
-              {/* 왼쪽 페이드 + 화살표 */}
-              {catScrollLeft && <>
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background-primary to-transparent z-10" />
-                <button
-                  onClick={() => categoryScrollRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}
-                  className="hidden md:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 items-center justify-center rounded-full bg-background-secondary/90 border border-white/10 text-text-secondary hover:text-text-primary shadow-lg transition-all hover:scale-110 text-lg leading-none"
-                >‹</button>
-              </>}
-              {/* 오른쪽 페이드 + 화살표 */}
-              {catScrollRight && <>
-                <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background-primary to-transparent z-10" />
-                <button
-                  onClick={() => categoryScrollRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}
-                  className="hidden md:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 items-center justify-center rounded-full bg-background-secondary/90 border border-white/10 text-text-secondary hover:text-text-primary shadow-lg transition-all hover:scale-110 text-lg leading-none"
-                >›</button>
-              </>}
-
-              {/* 스크롤 컨테이너 — 오른쪽에 반 카드 여백을 남겨 "더 있음" 암시 */}
-              <div ref={categoryScrollRef} onScroll={updateCatScroll} className="overflow-x-auto scrollbar-hide px-4 pr-10">
-                <div className="flex gap-2 w-max">
-                  {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label }) => {
-                    const color = categoryTab === 'cuisine' ? CUISINE_COLORS[value] : DISH_COLORS[value];
-                    const icon = categoryTab === 'cuisine' ? CUISINE_ICONS[value] : DISH_ICONS[value];
-                    // i18n 번역 사용 — CUISINE_TYPES/DISH_TYPES의 하드코딩 한국어 label은 fallback.
-                    // 이걸로 다국어 유저가 자기 언어로 카테고리를 봄 (wedge 전략 핵심).
-                    const tCuisine = (t as unknown as { cuisineLabels?: Record<string, string> }).cuisineLabels;
-                    const tDish = (t as unknown as { dishLabels?: Record<string, string> }).dishLabels;
-                    const localizedLabel = categoryTab === 'cuisine'
-                      ? (tCuisine?.[value] ?? label)
-                      : (tDish?.[value] ?? label);
-                    const href = categoryTab === 'cuisine'
-                      ? `/recipes?cuisine_type=${value}`
-                      : `/recipes?dish_type=${value}`;
-                    return (
-                      <Link
-                        key={value}
-                        href={href}
-                        className="w-20 h-20 md:w-[88px] md:h-[88px] rounded-xl border border-white/10 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-                        style={{ background: `linear-gradient(135deg, ${color}22 0%, transparent 100%)` }}
-                        onMouseEnter={e => {
-                          const el = e.currentTarget as HTMLElement;
-                          el.style.borderColor = `${color}55`;
-                          el.style.boxShadow = `0 0 14px ${color}33`;
-                        }}
-                        onMouseLeave={e => {
-                          const el = e.currentTarget as HTMLElement;
-                          el.style.borderColor = '';
-                          el.style.boxShadow = '';
-                        }}
-                      >
-                        {categoryTab === 'cuisine' && CUISINE_IMAGES[value] ? (
-                          <div className="w-10 h-10 rounded-lg overflow-hidden">
-                            <SafeImage src={CUISINE_IMAGES[value]!} alt={label} width={40} height={40} className="object-cover w-full h-full" />
-                          </div>
-                        ) : (
-                          <span className="text-2xl leading-none">{icon}</span>
-                        )}
-                        <span className="text-[11px] font-medium text-text-secondary leading-tight text-center px-1">
-                          {localizedLabel}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
+              {/* 한 줄 입력 */}
+              <div className="flex gap-2 mb-4">
+                <input type="text" value={multiInput} onChange={e => setMultiInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { addMultiFromText(); setShowAddSheet(false); } }}
+                  placeholder="양파2 두부 김치 계란5"
+                  aria-label="한 줄에 여러 재료 입력"
+                  className="flex-1 rounded-xl bg-background-tertiary border border-white/10 px-4 py-3 text-sm placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50"
+                  autoFocus
+                />
+                <button onClick={() => { addMultiFromText(); setShowAddSheet(false); }}
+                  disabled={adding || multiInput.trim().length === 0}
+                  className="px-4 py-3 rounded-xl bg-accent-warm text-background-primary text-sm font-bold disabled:opacity-50"
+                >추가</button>
               </div>
-            </div>
 
-            {/* 스크롤 진행 바 — 모바일/데스크탑 모두 표시 */}
-            <div className="mt-2 h-0.5 rounded-full bg-white/5 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-accent-warm/50 transition-all duration-150"
-                style={{ width: `${Math.max(20, catScrollPct * 100)}%` }}
-              />
-            </div>
-          </section>
-
-          {/* 2. 냉장고 추천 (로그인 사용자) */}
-          {isLoggedIn && (
-            <section aria-label="냉장고 추천">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-base font-bold flex items-center gap-1.5">
-                    <svg width="18" height="18" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="4" width="60" height="92" rx="6" fill="#5BA8B5" stroke="#111" strokeWidth="5"/>
-                      <rect x="4" y="4" width="28" height="62" rx="6" fill="#4A8F9C"/>
-                      <rect x="4" y="66" width="60" height="4" fill="#111"/>
-                      <rect x="9" y="14" width="17" height="10" rx="2" fill="#F5C842" stroke="#111" strokeWidth="2.5"/>
-                      <rect x="32" y="4" width="32" height="62" fill="#A8DDE8"/>
-                      <rect x="55" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
-                      <rect x="59" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
-                      <ellipse cx="47" cy="30" rx="7" ry="5" fill="#C8925A" stroke="#111" strokeWidth="2"/>
-                      <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#B07840" stroke="#111" strokeWidth="2"/>
-                      <rect x="42" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
-                      <rect x="48" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
-                      <rect x="64" y="4" width="20" height="62" rx="4" fill="#5BA8B5" stroke="#111" strokeWidth="4"/>
-                      <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="28" y="20" width="8" height="14" rx="4" fill="#111"/>
-                      <rect x="28" y="42" width="8" height="14" rx="4" fill="#111"/>
-                      <rect x="4" y="70" width="60" height="26" rx="6" fill="#5BA8B5"/>
-                      <rect x="28" y="80" width="12" height="6" rx="3" fill="#111"/>
-                    </svg>
-                    냉장고 재료로 만들 수 있어요
-                  </h2>
-                  <p className="text-xs text-text-muted mt-0.5">보유한 재료와 가장 잘 맞는 레시피</p>
-                </div>
-                {hasFridgeItems && (
-                  <Link href="/recommendations" className="px-3 py-1 rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors flex-shrink-0">더 보기 →</Link>
+              {/* Quick-add 칩 */}
+              <p className="text-xs text-text-muted mb-2">빠른 추가</p>
+              <div className="flex flex-wrap gap-1.5">
+                {visibleChips.map(item => (
+                  <button key={item.name} onClick={() => { addQuickItem(item); }}
+                    disabled={adding}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary border border-white/10 text-xs hover:border-accent-warm/50 active:scale-95 transition-all disabled:opacity-50"
+                  ><span>{item.emoji}</span><span>{item.name}</span></button>
+                ))}
+                {!showAllChips && (
+                  <button onClick={() => setShowAllChips(true)}
+                    className="px-3 py-1.5 rounded-full bg-white/5 text-xs text-text-muted">+ 더보기</button>
                 )}
               </div>
-              {fridgeLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[...Array(4)].map((_, i) => <CardSkeleton key={i} />)}
-                </div>
-              ) : hasFridgeItems ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {fridgeRecs.map((recipe, i) => (
-                    <FridgeRecipeCard key={recipe.id} recipe={recipe} priority={i === 0} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-background-secondary border border-white/5 px-6 py-8 text-center">
-                  <div className="flex justify-center mb-3">
-                    <svg width="52" height="52" viewBox="0 0 90 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="4" y="4" width="60" height="92" rx="6" fill="#5BA8B5" stroke="#111" strokeWidth="5"/>
-                      <rect x="4" y="4" width="28" height="62" rx="6" fill="#4A8F9C"/>
-                      <rect x="4" y="66" width="60" height="4" fill="#111"/>
-                      <rect x="9" y="14" width="17" height="10" rx="2" fill="#F5C842" stroke="#111" strokeWidth="2.5"/>
-                      <rect x="32" y="4" width="32" height="62" fill="#A8DDE8"/>
-                      <rect x="55" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
-                      <rect x="59" y="12" width="3" height="16" rx="1" fill="#111" opacity="0.4"/>
-                      <ellipse cx="47" cy="30" rx="7" ry="5" fill="#C8925A" stroke="#111" strokeWidth="2"/>
-                      <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#B07840" stroke="#111" strokeWidth="2"/>
-                      <rect x="42" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
-                      <rect x="48" y="52" width="4" height="8" rx="1" fill="#E07070" stroke="#111" strokeWidth="2"/>
-                      <rect x="64" y="4" width="20" height="62" rx="4" fill="#5BA8B5" stroke="#111" strokeWidth="4"/>
-                      <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#111" opacity="0.3"/>
-                      <rect x="28" y="20" width="8" height="14" rx="4" fill="#111"/>
-                      <rect x="28" y="42" width="8" height="14" rx="4" fill="#111"/>
-                      <rect x="4" y="70" width="60" height="26" rx="6" fill="#5BA8B5"/>
-                      <rect x="28" y="80" width="12" height="6" rx="3" fill="#111"/>
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium text-text-primary mb-1">냉장고가 비어있어요</p>
-                  <p className="text-xs text-text-muted mb-4">재료를 등록하면 지금 바로 만들 수 있는 레시피를 추천해드려요!</p>
-                  <Link
-                    href="/fridge-home"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
-                  >
-                    재료 등록하기
-                  </Link>
-                </div>
-              )}
-            </section>
+              <p className="mt-3 text-[10px] text-text-muted">
+                공백/콤마로 구분 · 숫자/단위 자동 무시 {!user && '· 체험 모드'}
+              </p>
+            </div>
+          </div>
+          <style jsx>{`
+            @keyframes slideUp {
+              from { transform: translateY(100%); }
+              to { transform: translateY(0); }
+            }
+            .animate-slideUp {
+              animation: slideUp 0.3s ease-out;
+            }
+          `}</style>
+          <style jsx global>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+        </>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl flex items-center gap-2">
+          <span>{toast}</span>
+          {deletedItemRef.current && (
+            <button onClick={undoDelete} className="text-accent-warm font-bold hover:underline">
+              되돌리기
+            </button>
           )}
+        </div>
+      )}
 
-          {/* 3. 이번 주 인기 */}
-          <section aria-label={t.home?.sectionTrending || '🔥 이번 주 인기'}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="text-base font-bold">{t.home?.sectionTrending || '🔥 이번 주 인기'}</h2>
-                <p className="text-xs text-text-muted mt-0.5">{t.home?.sectionTrendingSub || '가장 많이 만들어진 레시피'}</p>
-              </div>
-              <Link href="/recipes?sort=trending" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors flex-shrink-0">더 보기 →</Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {trendingLoading
-                ? [...Array(4)].map((_, i) => <CardSkeleton key={i} />)
-                : trendingItems.length === 0
-                  ? <p className="col-span-2 md:col-span-4 text-sm text-text-muted text-center py-8">아직 데이터가 없습니다</p>
-                  : trendingItems.map((recipe, i) => (
-                      <RecipeCard key={recipe.id} recipe={recipe} showAuthor priority={i < 4} />
-                    ))
-              }
-            </div>
-          </section>
+      {/* 장보기 모드 하단 액션 바 */}
+      {shoppingMode && selectedForShopping.length > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-4 right-4 z-50 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-auto">
+          <button
+            onClick={addSelectedToCart}
+            disabled={addingToCart}
+            className="w-full md:w-auto md:min-w-[280px] px-6 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm shadow-2xl hover:bg-accent-hover disabled:opacity-50 transition-all"
+          >
+            🛒 장보기 목록에 추가 ({selectedForShopping.length}개)
+          </button>
+        </div>
+      )}
 
-          {/* 4. 최신 레시피 & 팁 혼합 (무한 스크롤) */}
-          <section aria-label={t.home?.sectionLatest || '✨ 최신 레시피 & 팁'}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-bold">{t.home?.sectionLatest || '✨ 최신 레시피 & 팁'}</h2>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Link href="/recipes" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">레시피 전체 →</Link>
-                <Link href="/tip" className="px-3 py-2 min-h-[36px] flex items-center rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors">팁 전체 →</Link>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {feedLoading && feedItems.length === 0
-                ? [...Array(8)].map((_, i) => <CardSkeleton key={i} />)
-                : feedItems.length === 0
-                  ? <p className="col-span-2 md:col-span-3 lg:col-span-4 text-sm text-text-muted text-center py-8">{t.home.noRecipes}</p>
-                  : feedItems.map((item, i) =>
-                      item.type === 'recipe' ? (
-                        <RecipeCard key={`r-${item.id}`} recipe={item} showAuthor priority={i < 4} />
-                      ) : (
-                        <Link key={`t-${item.id}`} href={`/tip/${item.id}`} className="block group">
-                          <div className="rounded-2xl bg-background-secondary overflow-hidden border border-white/5 transition-all group-hover:border-accent-warm/50 group-hover:shadow-lg group-hover:shadow-accent-warm/10">
-                            <div className="aspect-[4/3] w-full relative">
-                              {item.thumbnail_url ? (
-                                <SafeImage
-                                  src={item.thumbnail_url}
-                                  alt={item.title}
-                                  fill
-                                  className="object-cover transition-transform group-hover:scale-105"
-                                  sizes="(max-width: 640px) 50vw, 33vw"
-                                />
-                              ) : (
-                                <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">💡</div>
-                              )}
-                              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-accent-warm/90 text-background-primary text-[10px] font-bold backdrop-blur-sm">팁</div>
-                            </div>
-                            <div className="p-3">
-                              <h3 className="font-bold text-sm truncate">{item.title}</h3>
-                              {item.author && (
-                                <p className="text-[11px] text-text-muted mt-1">@{item.author.username}</p>
-                              )}
-                              <p className="text-xs text-text-muted mt-0.5">
-                                {item.category}{item.duration_minutes ? ` · ${item.duration_minutes}분` : ''}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
-                      )
-                    )
-              }
-              {/* 추가 로딩 중 skeleton */}
-              {feedLoading && feedItems.length > 0 &&
-                [...Array(3)].map((_, i) => <CardSkeleton key={`more-${i}`} />)
-              }
+      {/* 재료 상세 수정 모달 */}
+      {detailItem && (
+        <IngredientDetailModal
+          ingredient={{
+            id: detailItem.id,
+            ingredient_name: detailItem.ingredient_name,
+            category: detailItem.category,
+            quantity: detailItem.quantity ?? null,
+            unit: detailItem.unit ?? null,
+            purchase_date: detailItem.purchase_date ?? null,
+            expiry_date: detailItem.expiry_date ?? null,
+            storage_location: detailItem.storage_location ?? null,
+            notes: detailItem.notes ?? null,
+            expiry_alert: detailItem.expiry_alert ?? false,
+          }}
+          isOpen={!!detailItem}
+          onClose={() => setDetailItem(null)}
+          onUpdate={updateIngredient}
+        />
+      )}
+
+      {/* 큰 냉장고 모달 (홈 작은 냉장고 탭 시 확대) */}
+      {showFridgeModal && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center p-3 md:p-6 bg-black/70 backdrop-blur-md"
+          onClick={() => setShowFridgeModal(false)}
+          role="dialog"
+          aria-label="냉장고 크게 보기"
+        >
+          <div
+            className="relative w-full max-w-md md:max-w-2xl max-h-[95vh] flex flex-col bg-background-secondary rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더: 타이틀 + 장보기 토글 + 닫기 */}
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
+              <span className="text-sm font-bold text-text-primary flex-shrink-0">🧊 내 냉장고</span>
+              <button
+                onClick={() => { setShoppingMode(m => !m); setSelectedForShopping([]); }}
+                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                  shoppingMode
+                    ? 'bg-accent-warm text-background-primary'
+                    : 'bg-white/10 text-text-secondary hover:bg-white/15'
+                }`}
+                title={shoppingMode ? '장보기 모드 끄기' : '장보기 모드'}
+              >
+                🛒 {shoppingMode ? '취소' : '장보기'}
+              </button>
+              <button
+                onClick={() => setShowFridgeModal(false)}
+                aria-label="닫기"
+                className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-white/10 text-text-primary transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            {/* 100개 미만: 자동 로드 sentinel */}
-            {feedHasMore && feedItems.length < FEED_AUTO_LIMIT && (
-              <div ref={feedSentinelRef} className="h-4" />
-            )}
-            {/* 100개 이상: 수동 더 보기 버튼 */}
-            {feedHasMore && feedItems.length >= FEED_AUTO_LIMIT && (
-              <div className="flex justify-center pt-6 pb-2">
+            {/* 카테고리 필터 */}
+            <div className="px-3 pt-3">
+              <IngredientCategoryFilter
+                selectedCategories={selectedCategories}
+                onChange={setSelectedCategories}
+              />
+            </div>
+
+            {/* 스크롤 가능 콘텐츠 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* 큰 냉장고 + 섹션별 추가 버튼 */}
+              <div className="relative w-full aspect-[540/670] md:aspect-[660/670] max-h-[45vh] md:max-h-[50vh] mx-auto">
+                <FridgeSVG />
                 <button
-                  onClick={() => fetchFeedPage(false)}
-                  disabled={feedLoading}
-                  className="px-6 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:border-accent-warm/50 hover:text-accent-warm transition-colors disabled:opacity-50"
+                  onClick={() => setAddModalLocation('냉장')}
+                  aria-label="냉장실에 재료 추가"
+                  className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
                 >
-                  {feedLoading ? '불러오는 중...' : '더 보기'}
+                  +
+                </button>
+                <button
+                  onClick={() => setAddModalLocation('냉동')}
+                  aria-label="냉동실에 재료 추가"
+                  className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+                >
+                  +
                 </button>
               </div>
-            )}
-            {!feedHasMore && feedItems.length > 0 && (
-              <p className="text-center text-xs text-text-muted pt-6 pb-2">모든 레시피 & 팁을 불러왔습니다</p>
-            )}
-          </section>
 
+              {/* 3섹션 리스트 (냉장/냉동/상온) */}
+              <div className="space-y-2">
+                <SectionRow
+                  title="냉장"
+                  icon="❄️"
+                  items={filteredFridge}
+                  onAdd={() => setAddModalLocation('냉장')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={FRIDGE_RECO}
+                  onQuickAdd={addQuickItem}
+                />
+                <SectionRow
+                  title="냉동"
+                  icon="🧊"
+                  items={filteredFreezer}
+                  onAdd={() => setAddModalLocation('냉동')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={FREEZER_RECO}
+                  onQuickAdd={addQuickItem}
+                />
+                <SectionRow
+                  title="상온"
+                  icon="🏠"
+                  items={filteredPantry}
+                  onAdd={() => setAddModalLocation('상온')}
+                  onSelect={(item) => shoppingMode ? toggleShoppingSelect(item.id) : setDetailItem(item)}
+                  shoppingMode={shoppingMode}
+                  selectedIds={selectedForShopping}
+                  hasFilter={selectedCategories.length > 0}
+                  onResetFilter={() => setSelectedCategories([])}
+                  recommendedChips={PANTRY_RECO}
+                  onQuickAdd={addQuickItem}
+                />
+              </div>
+
+              {/* 팁 섹션 (상세) */}
+              <div className="px-3 py-2.5 rounded-lg bg-background-tertiary/50 border border-white/5 space-y-1">
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  💡 <strong className="text-text-secondary">칩 탭</strong> — 재료 수정/삭제
+                </p>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  ⚠️ <strong className="text-text-secondary">만료 임박</strong> — D-Day 색상으로 상단 배너에 표시
+                </p>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  🔍 <strong className="text-text-secondary">레시피 찾기</strong> — 홈 CTA에서 현재 재료 기반 추천
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
+      )}
 
-      <Footer />
+      {/* 재료 추가 모달 (사진 업로드 포함) */}
+      <AddIngredientModal
+        isOpen={addModalLocation !== null}
+        location={addModalLocation}
+        onClose={() => setAddModalLocation(null)}
+        onAddIngredient={addIngredientFromModal}
+        onAddFromPhoto={addIngredientsFromPhoto}
+      />
 
       <BottomNav />
+
+      {/* 모바일 검색 오버레이 (배경 블러 + 아이콘에서 나오는 애니메이션) */}
+      <div
+        onClick={() => setShowMobileSearch(false)}
+        aria-hidden={!showMobileSearch}
+        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ease-out ${
+          showMobileSearch
+            ? 'opacity-100 bg-black/50 backdrop-blur-md pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
+      <div
+        aria-hidden={!showMobileSearch}
+        className={`fixed left-0 right-0 top-[50vh] px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
+          showMobileSearch
+            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+            : 'opacity-0 translate-y-[45vh] scale-[0.25] pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-2 max-w-md mx-auto">
+          <div className="flex-1">
+            <SearchBar autoFocus={showMobileSearch} />
+          </div>
+          <button
+            onClick={() => setShowMobileSearch(false)}
+            aria-label="검색 닫기"
+            className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SectionRow: 모달 안에서 섹션별 재료 표시 ───────────────────────────
+function SectionRow({
+  title,
+  icon,
+  items,
+  onAdd,
+  onSelect,
+  shoppingMode = false,
+  selectedIds = [],
+  hasFilter = false,
+  onResetFilter,
+  recommendedChips = [],
+  onQuickAdd,
+}: {
+  title: string;
+  icon: string;
+  items: FridgeItem[];
+  onAdd: () => void;
+  onSelect: (item: FridgeItem) => void;
+  shoppingMode?: boolean;
+  selectedIds?: string[];
+  hasFilter?: boolean;
+  onResetFilter?: () => void;
+  recommendedChips?: QuickAddIngredient[];
+  onQuickAdd?: (item: QuickAddIngredient) => void | Promise<void>;
+}) {
+  const isEmpty = items.length === 0;
+  return (
+    <div className="rounded-xl bg-background-primary/40 border border-white/5">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+        <span className="text-xs font-bold text-text-secondary">
+          {icon} {title} <span className="text-text-muted">({items.length})</span>
+        </span>
+        <button
+          onClick={onAdd}
+          className="text-[11px] text-accent-warm font-semibold hover:text-accent-hover px-2 py-0.5 rounded"
+        >
+          + 추가
+        </button>
+      </div>
+      {isEmpty ? (
+        hasFilter ? (
+          <div className="px-3 pb-2 flex items-center gap-2">
+            <span className="flex-1 text-[11px] text-text-muted">필터 결과 없음</span>
+            <button
+              onClick={onResetFilter}
+              className="text-[11px] px-2 py-1 rounded-md bg-accent-warm/15 text-accent-warm font-semibold hover:bg-accent-warm/25 transition-colors"
+            >
+              모두 보기
+            </button>
+          </div>
+        ) : (
+          <div className="px-3 pb-2">
+            <p className="text-[10px] text-text-muted mb-1">빈 선반 — 자주 쓰는 재료로 빠르게 추가</p>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+              {recommendedChips.map((chip) => (
+                <button
+                  key={chip.name}
+                  onClick={() => onQuickAdd?.(chip)}
+                  className="flex items-center gap-0.5 px-2 py-1 rounded-full border border-white/10 bg-background-tertiary/60 hover:border-accent-warm/50 active:scale-95 transition-all whitespace-nowrap"
+                  title={`${chip.name} 추가`}
+                >
+                  <span className="text-sm">{chip.emoji}</span>
+                  <span className="text-[9px] font-bold text-text-secondary">{chip.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      ) : (
+        <div className="flex items-center gap-1.5 px-3 pb-2 overflow-x-auto scrollbar-hide">
+          {items.map((item) => {
+            const days = daysUntilExpiry(item.expiry_date);
+            const border = freshBorder(days);
+            const label = freshLabel(days);
+            const emoji = getEmoji(item.ingredient_name, item.category);
+            const isSelected = selectedIds.includes(item.id);
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item)}
+                className={`flex items-center gap-0.5 px-2 py-1 rounded-full border bg-background-secondary active:scale-95 transition-all whitespace-nowrap ${
+                  shoppingMode && isSelected
+                    ? 'border-accent-warm ring-2 ring-accent-warm line-through'
+                    : 'border-accent-warm/20 hover:border-accent-warm/50'
+                }`}
+                title={`${item.ingredient_name} ${label}`}
+              >
+                <span className="text-sm">{emoji}</span>
+                <span className="text-[9px] font-bold text-text-secondary">{item.ingredient_name}</span>
+                {label && (
+                  <span className="text-[7px] font-bold ml-0.5" style={{ color: border }}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

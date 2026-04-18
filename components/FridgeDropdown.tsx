@@ -524,7 +524,7 @@ export default function FridgeDropdown({ isOpen, onClose }: Props) {
         {/* 하단 링크 */}
         <div className="border-t border-white/10 px-4 py-3 flex-shrink-0">
           <Link
-            href="/fridge-home"
+            href="/"
             onClick={onClose}
             className="block w-full py-1.5 px-3 rounded-lg bg-white/5 border border-white/10 text-center text-xs text-text-secondary hover:text-text-primary hover:bg-white/10 transition-colors"
           >
