@@ -288,7 +288,7 @@ export default function FridgeSVG() {
 
       <rect x="182" y="33" width="236" height="345" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#interiorG)" />
-      <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#shRadBot)" pointerEvents="none" />
+      {/* 냉장실 그림자 오버레이 제거 */}
 
       {/* 냉장실 LED 조명바 제거 */}
 
@@ -296,7 +296,7 @@ export default function FridgeSVG() {
 
       <rect x="182" y="404" width="236" height="206" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#freezerG)" />
-      <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#shL)" pointerEvents="none" />
+      {/* 냉동실 그림자 오버레이 제거 */}
 
       {/* 냉동실 LED 조명바 제거 */}
 
@@ -317,7 +317,6 @@ export default function FridgeSVG() {
       <rect x="188" y="228" width="224" height="5" fill="rgba(40,20,5,0.18)"/>
       {/* ====== 본체 냉장실 서랍장 2개 (좌우 나란히) ====== */}
       <rect x="188" y="320" width="110" height="54" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <rect x="188" y="320" width="110" height="54" rx="3" fill="url(#shR)" pointerEvents="none" />
       <rect x="188" y="320" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="192" y1="324" x2="296" y2="324" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="216" y="342" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -326,7 +325,6 @@ export default function FridgeSVG() {
       <line x1="188" y1="374" x2="298" y2="374" stroke="#2A1408" strokeWidth="1" />
 
       <rect x="302" y="320" width="110" height="54" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <rect x="302" y="320" width="110" height="54" rx="3" fill="url(#shL)" pointerEvents="none" />
       <rect x="302" y="320" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="306" y1="324" x2="410" y2="324" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="330" y="342" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -336,7 +334,6 @@ export default function FridgeSVG() {
 
       {/* ====== 본체 냉동실 서랍장 2개 (좌우 나란히) ====== */}
       <rect x="188" y="526" width="110" height="78" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <rect x="188" y="526" width="110" height="78" rx="3" fill="url(#shRadCornerTL)" pointerEvents="none" />
       <rect x="188" y="526" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="192" y1="530" x2="296" y2="530" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="216" y="560" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -345,7 +342,6 @@ export default function FridgeSVG() {
       <line x1="188" y1="604" x2="298" y2="604" stroke="#2A1408" strokeWidth="1" />
 
       <rect x="302" y="526" width="110" height="78" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <rect x="302" y="526" width="110" height="78" rx="3" fill="url(#shRadCornerBR)" pointerEvents="none" />
       <rect x="302" y="526" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="306" y1="530" x2="410" y2="530" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="330" y="560" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>

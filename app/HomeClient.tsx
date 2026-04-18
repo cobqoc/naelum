@@ -355,7 +355,7 @@ export default function HomeClient({
   };
 
   return (
-    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0 overflow-hidden md:overflow-visible overscroll-y-none">
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
@@ -410,7 +410,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[220px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="relative w-full max-w-[280px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
@@ -479,28 +479,36 @@ export default function HomeClient({
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 193px - env(safe-area-inset-bottom))' }}>
+          style={{ maxHeight: 'calc(100dvh - 213px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
-          {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
-              공간 차지 0: 냉장고 상단 모서리에 absolute로 떠있음.
-              비로그인: 개수 불명이라 일반 문구, 로그인: "N개 가능!" 숫자 표시. */}
-          {showRecipeBubble && (
-            <Link
-              href="/recommendations"
-              className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
-              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-              aria-label="재료로 만들 수 있는 레시피 보기"
+          {/* 냉동고 문 중앙 액션 — 레시피 추천 말풍선 + 재료 추가 FAB을 한 줄로 배치.
+              freezer 선반이 SVG 내부적으로 y=63~79% 영역. 중앙은 약 72%. */}
+          <div className="absolute top-[72%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center gap-2.5">
+            {showRecipeBubble && (
+              <Link
+                href="/recommendations"
+                className="flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+                style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+                aria-label="재료로 만들 수 있는 레시피 보기"
+              >
+                <span className="text-sm md:text-base leading-none">💡</span>
+                <span>
+                  {matchingCount !== null && matchingCount > 0
+                    ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
+                    : '레시피 추천'}
+                </span>
+                <span className="leading-none">→</span>
+              </Link>
+            )}
+            <button
+              onClick={() => setAddModalLocation('냉장')}
+              aria-label="재료 추가"
+              className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 flex-shrink-0"
             >
-              <span className="text-sm md:text-base leading-none">💡</span>
-              <span>
-                {matchingCount !== null && matchingCount > 0
-                  ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
-                  : '레시피 추천'}
-              </span>
-              <span className="leading-none">→</span>
-            </Link>
-          )}
+              +
+            </button>
+          </div>
 
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
           <div className="absolute inset-0 pointer-events-none">
@@ -585,14 +593,6 @@ export default function HomeClient({
             })()}
           </div>
 
-          {/* FAB — 재료 추가 */}
-          <button
-            onClick={() => setAddModalLocation('냉장')}
-            aria-label="재료 추가"
-            className="absolute bottom-3 left-3 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
-          >
-            +
-          </button>
         </div>
 
       </div>
