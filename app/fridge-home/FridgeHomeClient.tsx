@@ -8,6 +8,7 @@
  * CSS로 양문 V자 + 선반 + 재료 칩 구현.
  */
 
+import Link from 'next/link';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
@@ -278,6 +279,23 @@ export default function FridgeHomeClient() {
           >
             +
           </button>
+        </div>
+
+        {/* 레시피 찾기 + 장보기 액션 */}
+        <div className="w-full max-w-md md:max-w-xl px-4 mt-4 flex gap-2">
+          <Link
+            href="/recommendations"
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
+          >
+            🔍 이 재료로 레시피 찾기
+          </Link>
+          <Link
+            href="/cart"
+            aria-label="장보기"
+            className="flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl bg-background-secondary border border-accent-warm/30 text-text-primary font-bold text-sm hover:bg-background-tertiary hover:border-accent-warm/60 active:scale-[0.98] transition-all"
+          >
+            🛒 <span className="hidden sm:inline">장보기</span>
+          </Link>
         </div>
       </div>
 
