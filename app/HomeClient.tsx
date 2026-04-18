@@ -482,33 +482,32 @@ export default function HomeClient({
           style={{ maxHeight: 'calc(100dvh - 213px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
-          {/* 냉동고 문 중앙 액션 — 레시피 추천 말풍선 + 재료 추가 FAB을 한 줄로 배치.
-              freezer 선반이 SVG 내부적으로 y=63~79% 영역. 중앙은 약 72%. */}
-          <div className="absolute top-[72%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center gap-2.5">
-            {showRecipeBubble && (
-              <Link
-                href="/recommendations"
-                className="flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
-                style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-                aria-label="재료로 만들 수 있는 레시피 보기"
-              >
-                <span className="text-sm md:text-base leading-none">💡</span>
-                <span>
-                  {matchingCount !== null && matchingCount > 0
-                    ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
-                    : '레시피 추천'}
-                </span>
-                <span className="leading-none">→</span>
-              </Link>
-            )}
-            <button
-              onClick={() => setAddModalLocation('냉장')}
-              aria-label="재료 추가"
-              className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 flex-shrink-0"
+          {/* FAB(+) 재료 추가 — 왼쪽 도어 (SVG의 left door 영역 ~10%) */}
+          <button
+            onClick={() => setAddModalLocation('냉장')}
+            aria-label="재료 추가"
+            className="absolute top-[50%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+          >
+            +
+          </button>
+
+          {/* 레시피 추천 말풍선 — 오른쪽 도어 (SVG의 right door 영역) */}
+          {showRecipeBubble && (
+            <Link
+              href="/recommendations"
+              className="absolute top-[50%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+              aria-label="재료로 만들 수 있는 레시피 보기"
             >
-              +
-            </button>
-          </div>
+              <span className="text-sm md:text-base leading-none">💡</span>
+              <span>
+                {matchingCount !== null && matchingCount > 0
+                  ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
+                  : '레시피 추천'}
+              </span>
+              <span className="leading-none">→</span>
+            </Link>
+          )}
 
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
           <div className="absolute inset-0 pointer-events-none">
