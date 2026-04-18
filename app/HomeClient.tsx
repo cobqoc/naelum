@@ -187,14 +187,14 @@ export default function HomeClient({
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
 
-  // 현재 재료로 만들 수 있는 레시피 존재 여부 — 버튼 gating에 사용.
-  // 비로그인/빈 냉장고는 render 시 파생, 로그인+재료 있음일 때만 API 결과를 state로 보관.
-  const [fetchedMatchingRecipes, setFetchedMatchingRecipes] = useState<boolean | null>(null);
-  const hasMatchingRecipes: boolean = !isAuthenticated
-    ? true
-    : items.length === 0
-      ? false
-      : fetchedMatchingRecipes ?? false;
+  // 현재 재료로 만들 수 있는 레시피 개수 — 말풍선 CTA 노출 + "N개 가능!" 숫자 표시에 사용.
+  // 비로그인: API 호출 불가(로그인 필요). count는 null로 두고 "레시피 추천 →" 일반 문구 표시.
+  // 로그인 + 빈 냉장고: fetch 스킵, count 0 (bubble 숨김).
+  // 로그인 + 재료 있음: fetch로 count 채움.
+  const [matchingCount, setMatchingCount] = useState<number | null>(null);
+  const showRecipeBubble = items.length > 0 && (
+    !isAuthenticated || (matchingCount !== null && matchingCount > 0)
+  );
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
@@ -248,18 +248,18 @@ export default function HomeClient({
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 매칭 레시피 fetch — 로그인 + 재료 있음일 때만. 비로그인/빈 냉장고는 render 시 파생됨.
+  // 매칭 레시피 개수 fetch — 로그인 + 재료 있음일 때만. limit=30은 "30+개"로 cap.
   useEffect(() => {
     if (!isAuthenticated || items.length === 0) return;
     let cancelled = false;
-    fetch('/api/recommendations?type=ingredients&limit=1')
+    fetch('/api/recommendations?type=ingredients&limit=30')
       .then(r => r.ok ? r.json() : { recommendations: [] })
       .then(data => {
         if (cancelled) return;
-        setFetchedMatchingRecipes(Array.isArray(data.recommendations) && data.recommendations.length > 0);
+        setMatchingCount(Array.isArray(data.recommendations) ? data.recommendations.length : 0);
       })
       .catch(() => {
-        if (!cancelled) setFetchedMatchingRecipes(false);
+        if (!cancelled) setMatchingCount(0);
       });
     return () => { cancelled = true; };
   }, [isAuthenticated, items.length]);
@@ -425,6 +425,26 @@ export default function HomeClient({
           style={{ maxHeight: 'calc(100dvh - 220px)' }}>
           <FridgeSVG />
 
+          {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
+              공간 차지 0: 냉장고 상단 모서리에 absolute로 떠있음.
+              비로그인: 개수 불명이라 일반 문구, 로그인: "N개 가능!" 숫자 표시. */}
+          {showRecipeBubble && (
+            <Link
+              href="/recommendations"
+              className="absolute top-1 right-1 md:top-2 md:right-2 z-20 flex items-center gap-1 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+              aria-label="재료로 만들 수 있는 레시피 보기"
+            >
+              <span className="text-sm md:text-base leading-none">💡</span>
+              <span>
+                {matchingCount !== null && matchingCount > 0
+                  ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
+                  : '레시피 추천'}
+              </span>
+              <span className="leading-none">→</span>
+            </Link>
+          )}
+
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
@@ -518,19 +538,6 @@ export default function HomeClient({
           </button>
         </div>
 
-        {/* 레시피 추천 버튼 — 냉장고에 재료가 있고 실제로 매칭되는 레시피가 있을 때만 노출.
-            비로그인 유저는 DEMO 기준 항상 true (API는 로그인 필요, DEMO는 매칭 보장됨).
-            로그인 유저는 mount 후 items.length 변화 시 /api/recommendations로 유무 확인. */}
-        {items.length > 0 && hasMatchingRecipes && (
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/recommendations"
-              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-full bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/30"
-            >
-              🔍 현재 재료로 만들 수 있는 레시피 보기
-            </Link>
-          </div>
-        )}
       </div>
 
       {toast && (
