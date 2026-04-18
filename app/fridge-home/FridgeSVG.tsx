@@ -1,6 +1,6 @@
 'use client';
 
-// naelum-centered 디자인 복원본
+// v7 — 원근감 극단 축소 (세로바·선반·내부 패널 모든 기울기 2px)
 export default function FridgeSVG() {
   return (
     <svg viewBox="-30 -5 660 670" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -18,25 +18,13 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#d84a30" />
         </linearGradient>
         <linearGradient id="interiorG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fafdff" />
-          <stop offset="100%" stopColor="#b8cad6" />
+          <stop offset="0%" stopColor="#f4f8fc" />
+          <stop offset="100%" stopColor="#e8eff5" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#eaf2f9" />
-          <stop offset="100%" stopColor="#a0b4c4" />
+          <stop offset="0%" stopColor="#f4f8fc" />
+          <stop offset="100%" stopColor="#e8eff5" />
         </linearGradient>
-        <linearGradient id="vignetteL" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(20,40,60,0.18)" />
-          <stop offset="100%" stopColor="rgba(20,40,60,0)" />
-        </linearGradient>
-        <linearGradient id="vignetteR" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0%" stopColor="rgba(20,40,60,0.38)" />
-          <stop offset="100%" stopColor="rgba(20,40,60,0)" />
-        </linearGradient>
-        <radialGradient id="innerGlow" cx="28%" cy="18%" r="85%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.42)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-        </radialGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#d0d0d0" />
           <stop offset="30%" stopColor="#f0f0f0" />
@@ -64,26 +52,42 @@ export default function FridgeSVG() {
           <stop offset="0%" stopColor="#c08820" />
           <stop offset="100%" stopColor="#c08820" />
         </linearGradient>
-        <linearGradient id="creamDarkG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8a5810" />
-          <stop offset="100%" stopColor="#6a3808" />
-        </linearGradient>
+        <radialGradient id="lightG" cx="50%" cy="0%" r="70%">
+          <stop offset="0%" stopColor="rgba(255,250,220,0.4)" /><stop offset="100%" stopColor="rgba(255,250,220,0)" />
+        </radialGradient>
         <radialGradient id="shadowG" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="rgba(0,0,0,0.3)" /><stop offset="100%" stopColor="rgba(0,0,0,0)" />
         </radialGradient>
+        <linearGradient id="reflectG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(180,80,50,0.1)" /><stop offset="100%" stopColor="rgba(180,80,50,0)" />
+        </linearGradient>
+              <linearGradient id="doorShadow" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="80%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.35)" />
+        </linearGradient>
+        <linearGradient id="doorShadowR" x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="80%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.35)" />
+        </linearGradient>
+        <radialGradient id="castShadow" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="rgba(0,0,0,0.18)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+        </radialGradient>
       </defs>
 
+      <rect x="80" y="630" width="440" height="25" rx="6" fill="url(#reflectG)" />
       <ellipse cx="300" cy="648" rx="260" ry="18" fill="url(#shadowG)" />
 
+      {/* ====== 좌측 냉장 문 (살짝만 열림 — 가로 0.55배 축소) ====== */}
       <g transform="matrix(0.69,0,0,1,52.70000000000001,0)">
-      <path d="M 170,24 L 14,2 L 0,400 L 170,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 14,2 L -10,10 L -22,404 L 0,400 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 170,24 L 14,2 L 16,392 L 170,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 14,2 L 2,10 L 6,396 L 16,392 Z" fill="url(#bodyDark)" />
       <path d="M 14,2 L 2,10 L 158,28 L 170,24 Z" fill="url(#bodyLight)" />
-      <path d="M 28,22 L 152,36 L 152,376 L 14,384 Z" fill="url(#interiorG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 28,22 L 42,23 L 30,384 L 14,384 Z" fill="rgba(20,40,60,0.12)" />
-      <path d="M 120,33 L 152,36 L 152,376 L 122,376 Z" fill="rgba(20,40,60,0.38)" />
-      <path d="M 28,22 L 152,36 L 140,48 L 34,30 Z" fill="rgba(255,255,255,0.22)" />
+      <path d="M 28,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" />
 
+      {/* 세로바 (거의 수직) */}
       <path d="M 14,22 L 15,19 L 29,19 L 28,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 28,22 L 29,19 L 31,373 L 30,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 14,22 L 28,22 L 30,376 L 16,376 Z" fill="url(#railFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -98,37 +102,52 @@ export default function FridgeSVG() {
       <path d="M 16,352 L 30,352" fill="none" stroke="rgba(255,240,200,0.4)" strokeWidth="0.7" />
       <path d="M 16,376 L 30,376" fill="none" stroke="#2A1408" strokeWidth="1.8" />
 
-      <path d="M 29,110 L 152,120 L 150,128 L 29,118 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      {/* 선반 1 제거됨 */}
+      <path d="M 29,110 L 152,120 L 150,128 L 29,118 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" opacity="0" />
+      <path d="M 29,115 L 150,125 L 149,129 L 29,120 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 29,118 L 150,128 L 150,146 L 29,136 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 29,118 L 150,128" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 29,124 L 150,133" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 29,124 L 150,133" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 29,127 L 150,136" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 29,136 L 150,146" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <path d="M 29,138 L 150,148" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="4" />
 
+      {/* 선반 2 */}
       <path d="M 29,193 L 152,200 L 150,212 L 29,205 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 29,199 L 150,207 L 149,211 L 29,203 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 29,205 L 150,212 L 150,237 L 29,230 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 29,205 L 150,212" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 29,213 L 150,220" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 29,213 L 150,220" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 29,218 L 150,225" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 29,230 L 150,237" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <path d="M 29,232 L 150,239" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="4" />
 
+      {/* 선반 3 */}
       <path d="M 30,339 L 152,341 L 150,353 L 30,351 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 30,346 L 150,348 L 149,352 L 30,350 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 30,351 L 150,353 L 150,376 L 30,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 30,351 L 150,353" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 30,358 L 150,361" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 30,358 L 150,361" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 30,365 L 150,367" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 30,376 L 150,376" fill="none" stroke="#2A1408" strokeWidth="2" />
+
+      <path d="M 170,24 L 14,2 L 16,392 L 170,390 Z" fill="none" stroke="rgba(40,40,40,0.5)" strokeWidth="6" strokeLinejoin="round" />
       </g>
 
+      {/* ====== 좌측 냉동 문 — 숨김 ====== */}
       <g transform="matrix(0.69,0,0,1,52.70000000000001,0)">
-      <path d="M 170,402 L 26,406 L 16,632 L 170,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 26,406 L 6,410 L -4,636 L 16,632 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 170,402 L 26,406 L 28,624 L 170,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 26,406 L 16,410 L 18,620 L 28,624 Z" fill="url(#bodyDark)" />
       <path d="M 26,406 L 16,410 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
-      <path d="M 44,420 L 152,416 L 152,608 L 32,616 Z" fill="url(#freezerG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 44,420 L 58,419 L 46,616 L 32,616 Z" fill="rgba(20,40,60,0.13)" />
-      <path d="M 124,416 L 152,416 L 152,608 L 126,608 Z" fill="rgba(20,40,60,0.4)" />
-      <path d="M 44,420 L 152,416 L 140,430 L 50,434 Z" fill="rgba(255,255,255,0.22)" />
+      <path d="M 44,420 L 152,416 L 152,608 L 46,608 Z" fill="url(#freezerG)" />
 
+      {/* 세로바 */}
       <path d="M 30,421 L 31,418 L 45,417 L 44,420 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 44,420 L 45,417 L 47,605 L 46,608 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 30,421 L 44,420 L 46,608 L 32,609 Z" fill="url(#railFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -137,94 +156,91 @@ export default function FridgeSVG() {
       <path d="M 37,425 L 39,603" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.7" />
       <path d="M 32,609 L 46,608" fill="none" stroke="#2A1408" strokeWidth="1.5" />
 
-      <path d="M 45,571 L 152,569 L 150,581 L 45,583 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 45,583 L 150,581 L 150,608 L 45,608 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 45,583 L 150,581" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
-      <path d="M 45,590 L 150,588" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
-      <path d="M 45,596 L 150,594" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
-      <path d="M 46,608 L 150,608" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      {/* 냉동 선반 1 */}
+      <path d="M 45,475 L 152,473 L 150,483 L 45,485 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 45,479 L 150,478 L 149,482 L 45,484 Z" fill="rgba(50,30,10,0.3)" />
+      <g>
+      </g>
+      <path d="M 45,485 L 150,483 L 150,505 L 45,505 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 45,485 L 150,483" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 45,492 L 150,490" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />
+      <path d="M 45,497 L 150,495" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 45,505 L 150,505" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+
+      {/* 냉동 선반 2 */}
+      <path d="M 45,548 L 152,546 L 150,556 L 45,558 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 45,552 L 150,550 L 149,554 L 45,556 Z" fill="rgba(50,30,10,0.3)" />
+      <g>
+      </g>
+      <path d="M 45,558 L 150,556 L 150,578 L 46,578 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 45,558 L 150,556" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 45,565 L 150,563" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />
+      <path d="M 45,570 L 150,568" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 46,578 L 150,578" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+
+      <path d="M 170,402 L 26,406 L 28,624 L 170,622 Z" fill="none" stroke="rgba(40,40,40,0.5)" strokeWidth="6" strokeLinejoin="round" />
       </g>
 
+      {/* ====== 본체 ====== */}
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
       <path d="M 166,14 L 180,6 L 448,6 L 434,14 Z" fill="url(#bodyLight)" />
       <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" />
-      <rect x="166" y="14" width="268" height="3" fill="#000" />
       <rect x="166" y="14" width="3" height="615" fill="#000" />
       <rect x="431" y="14" width="3" height="615" fill="#000" />
+      <rect x="166" y="14" width="268" height="3" fill="#000" />
       <rect x="166" y="626" width="268" height="3" fill="#000" />
       <rect x="170" y="16" width="260" height="3" rx="1" fill="url(#chromeG)" />
+      <rect x="170" y="383" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
+      <rect x="170" y="398" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
+      <text x="300" y="622" textAnchor="middle" fill="#ffd700" fontSize="11" fontWeight="bold" letterSpacing="4" fontFamily="sans-serif" opacity="0.8">NAELUM</text>
 
-      <rect x="166" y="38" width="248" height="335" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
-      <rect x="188" y="40" width="224" height="331" rx="4" fill="url(#interiorG)" />
-      <rect x="188" y="40" width="224" height="331" rx="4" fill="url(#innerGlow)" />
-      <rect x="188" y="40" width="50" height="331" fill="url(#vignetteL)" />
-      <rect x="362" y="40" width="50" height="331" fill="url(#vignetteR)" />
-      <rect x="188" y="40" width="224" height="331" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
+      <rect x="176" y="26" width="248" height="359" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
+      <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
+      <rect x="178" y="28" width="244" height="80" rx="4" fill="url(#lightG)" />
+      {/* 추가 상단 아이템들 */}
 
-      <path d="M 188,100 L 202,86 L 398,86 L 412,100 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,100 L 412,100 L 412,117 L 188,117 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,100 L 193,100 L 193,117 L 188,117 Z" fill="url(#creamTopG)" opacity="0.75" />
-      <path d="M 406,100 L 412,100 L 412,117 L 406,117 Z" fill="url(#creamDarkG)" />
-      <path d="M 188,100 L 412,100" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 188,105 L 412,105" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,111 L 412,111" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,117 L 412,117" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="121" rx="108" ry="2.5" fill="rgba(0,0,0,0.38)" />
+      <path d="M 178,114 L 188,106 L 412,106 L 422,114 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 178,114 L 422,114 L 422,132 L 178,132 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 178,114 L 422,114" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 178,120 L 422,120" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1" />
+      <path d="M 178,126 L 422,126" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 178,132 L 422,132" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 178,134 L 422,134" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
 
-      <path d="M 188,190 L 202,176 L 398,176 L 412,190 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,190 L 412,190 L 412,207 L 188,207 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 188,190 L 192,190 L 192,207 L 188,207 Z" fill="url(#creamTopG)" opacity="0.7" />
-      <path d="M 405,190 L 412,190 L 412,207 L 405,207 Z" fill="url(#creamDarkG)" />
-      <path d="M 188,190 L 412,190" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 188,195 L 412,195" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,201 L 412,201" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 188,207 L 412,207" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="211" rx="108" ry="2.5" fill="rgba(0,0,0,0.38)" />
+      <path d="M 178,209 L 188,201 L 412,201 L 422,209 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 178,209 L 422,209 L 422,227 L 178,227 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 178,209 L 422,209" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 178,215 L 422,215" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1" />
+      <path d="M 178,221 L 422,221" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 178,227 L 422,227" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 178,229 L 422,229" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
 
-      <path d="M 192,316 L 298,316 L 298,326 L 192,326 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      <path d="M 192,326 L 298,326 L 298,368 L 192,368 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      <path d="M 192,326 L 298,326" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <rect x="228" y="342" width="34" height="7" rx="2" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+      <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#000" strokeWidth="1" />
 
-      <path d="M 302,316 L 408,316 L 408,326 L 302,326 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      <path d="M 302,326 L 408,326 L 408,368 L 302,368 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-      <path d="M 302,326 L 408,326" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <rect x="338" y="342" width="34" height="7" rx="2" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+      <rect x="176" y="397" width="248" height="220" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
+      <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
 
-      <rect x="168" y="372" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#000" strokeWidth="1" />
+      {/* === 본체 상단: 음식 (밀도 높게) === */}
+      {/* 1번 선반 위 */}
 
-      <rect x="188" y="409" width="224" height="196" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
-      <rect x="190" y="411" width="220" height="192" rx="4" fill="url(#freezerG)" />
-      <rect x="190" y="411" width="220" height="192" rx="4" fill="url(#innerGlow)" />
-      <rect x="190" y="411" width="48" height="192" fill="url(#vignetteL)" />
-      <rect x="362" y="411" width="48" height="192" fill="url(#vignetteR)" />
-      <rect x="190" y="411" width="220" height="192" rx="4" fill="none" stroke="#FFF4D8" strokeWidth="1.5" opacity="0.7" />
+      {/* 2번 선반 위 */}
 
-      <path d="M 190,480 L 204,466 L 396,466 L 410,480 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,480 L 410,480 L 410,497 L 190,497 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 190,480 L 195,480 L 195,497 L 190,497 Z" fill="url(#creamTopG)" opacity="0.72" />
-      <path d="M 403,480 L 410,480 L 410,497 L 403,497 Z" fill="url(#creamDarkG)" />
-      <path d="M 190,480 L 410,480" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <path d="M 190,485 L 410,485" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 190,491 L 410,491" fill="none" stroke="#1a0a04" strokeWidth="1.8" />
-      <path d="M 190,497 L 410,497" fill="none" stroke="#2A1408" strokeWidth="2" />
-      <ellipse cx="300" cy="501" rx="105" ry="2.2" fill="rgba(0,0,0,0.38)" />
+      {/* 3번 선반 위 */}
 
-      <path d="M 192,548 L 408,548 L 408,558 L 192,558 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 192,558 L 408,558 L 408,598 L 192,598 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M 192,558 L 408,558" fill="none" stroke="#FFF4D8" strokeWidth="2" />
-      <rect x="285" y="572" width="30" height="7" rx="2" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
-      <path d="M 192,598 L 408,598" fill="none" stroke="#2A1408" strokeWidth="2" />
+      {/* === 본체 하단(냉동): 음식 — 중앙 배치 === */}
 
+      {/* 본체 하단 가로 선반 2개 (드로어 스타일) */}
+      <rect x="180" y="468" width="240" height="8" fill="url(#creamFrontG)" stroke="#000" strokeWidth="1.6" rx="1" />
+      <rect x="180" y="552" width="240" height="8" fill="url(#creamFrontG)" stroke="#000" strokeWidth="1.6" rx="1" />
+
+      {/* ====== 우측 냉장 문 (살짝만 열림 — 가로 0.55배 축소) ====== */}
       <g transform="matrix(0.69,0,0,1,133.3,0)">
-      <path d="M 430,24 L 586,2 L 600,400 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 586,2 L 610,10 L 622,404 L 600,400 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 586,2 L 598,10 L 594,396 L 584,392 Z" fill="url(#bodyDark)" />
       <path d="M 430,24 L 442,28 L 586,2 L 598,10 Z" fill="url(#bodyLight)" />
-      <path d="M 448,37 L 572,22 L 584,384 L 448,376 Z" fill="url(#interiorG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 448,37 L 478,34 L 476,376 L 448,376 Z" fill="rgba(20,40,60,0.4)" />
-      <path d="M 560,23 L 572,22 L 584,384 L 568,384 Z" fill="rgba(20,40,60,0.14)" />
-      <path d="M 448,37 L 572,22 L 564,30 L 452,45 Z" fill="rgba(255,255,255,0.12)" />
+      <path d="M 448,37 L 572,22 L 570,376 L 448,376 Z" fill="url(#interiorG)" />
 
+      {/* 세로바 */}
       <path d="M 572,22 L 571,19 L 585,19 L 586,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 572,22 L 571,19 L 569,373 L 570,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 572,22 L 586,22 L 584,376 L 570,376 Z" fill="url(#railFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -233,36 +249,50 @@ export default function FridgeSVG() {
       <path d="M 579.2,27 L 577.2,371" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.7" />
       <path d="M 570,376 L 584,376" fill="none" stroke="#2A1408" strokeWidth="1.8" />
 
+      {/* 우 냉장 선반 1 */}
       <path d="M 448,121 L 571,110 L 571,118 L 450,129 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 449,125 L 571,115 L 571,119 L 449,129 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 450,129 L 571,118 L 571,136 L 450,147 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 450,129 L 571,118" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 450,135 L 571,124" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 450,135 L 571,124" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 450,139 L 571,128" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 450,147 L 571,136" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <path d="M 450,149 L 571,138" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="4" />
 
+      {/* 우 냉장 선반 2 */}
       <path d="M 448,201 L 571,193 L 571,205 L 450,213 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 449,206 L 571,199 L 571,203 L 449,210 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 450,213 L 571,205 L 571,230 L 450,238 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 450,213 L 571,205" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 450,221 L 571,213" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 450,221 L 571,213" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 450,226 L 571,218" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 450,238 L 571,230" fill="none" stroke="#2A1408" strokeWidth="2" />
+      <path d="M 450,240 L 571,232" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="4" />
 
+      {/* 우 냉장 선반 3 */}
       <path d="M 448,341 L 570,339 L 570,351 L 450,353 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 449,346 L 570,345 L 570,349 L 449,350 Z" fill="rgba(50,30,10,0.35)" />
+      <g>
+      </g>
       <path d="M 450,353 L 570,351 L 570,376 L 448,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 450,353 L 570,351" fill="none" stroke="#FFF4D8" strokeWidth="4" />
-      <path d="M 450,361 L 570,358" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
+      <path d="M 450,361 L 570,358" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 450,367 L 570,364" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
       <path d="M 448,376 L 570,376" fill="none" stroke="#2A1408" strokeWidth="2" />
+
+      <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="none" stroke="rgba(40,40,40,0.5)" strokeWidth="6" strokeLinejoin="round" />
       </g>
 
+      {/* ====== 우측 냉동 문 ====== */}
       <g transform="matrix(0.69,0,0,1,133.3,0)">
-      <path d="M 430,402 L 574,406 L 586,632 L 430,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 574,406 L 594,410 L 606,636 L 586,632 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 430,402 L 574,406 L 572,624 L 430,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 574,406 L 584,410 L 582,620 L 572,624 Z" fill="url(#bodyDark)" />
       <path d="M 430,402 L 442,406 L 574,406 L 584,410 Z" fill="url(#bodyLight)" />
-      <path d="M 448,416 L 556,422 L 568,616 L 448,604 Z" fill="url(#freezerG)" stroke="#FFF4D8" strokeWidth="1.5" />
-      <path d="M 448,416 L 476,418 L 476,604 L 448,604 Z" fill="rgba(20,40,60,0.42)" />
-      <path d="M 544,421 L 556,422 L 568,616 L 554,616 Z" fill="rgba(20,40,60,0.13)" />
-      <path d="M 448,416 L 556,422 L 548,430 L 452,425 Z" fill="rgba(255,255,255,0.12)" />
+      <path d="M 448,416 L 556,422 L 554,608 L 448,604 Z" fill="url(#freezerG)" />
 
       <path d="M 556,422 L 555,419 L 569,420 L 570,423 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 556,422 L 555,419 L 553,605 L 554,608 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -272,14 +302,42 @@ export default function FridgeSVG() {
       <path d="M 563.2,426 L 561.2,603" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.7" />
       <path d="M 554,608 L 568,609" fill="none" stroke="#2A1408" strokeWidth="1.5" />
 
-      <path d="M 448,571 L 556,569 L 556,581 L 450,583 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 450,583 L 556,581 L 555,608 L 450,608 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
-      <path d="M 450,583 L 556,581" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
-      <path d="M 450,590 L 556,588" fill="none" stroke="#1a0a04" strokeWidth="3.5" />
-      <path d="M 450,596 L 556,594" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
-      <path d="M 450,608 L 555,608" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+      <path d="M 448,474 L 555,475 L 555,485 L 450,484 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 449,479 L 555,479 L 555,482 L 449,483 Z" fill="rgba(50,30,10,0.3)" />
+      <g>
+      </g>
+      <path d="M 450,484 L 555,485 L 554,505 L 450,505 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 450,484 L 555,485" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 450,491 L 555,492" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />
+      <path d="M 450,497 L 555,498" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 450,505 L 554,505" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+
+      <path d="M 448,547 L 555,548 L 555,558 L 450,557 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 449,552 L 555,552 L 555,555 L 449,556 Z" fill="rgba(50,30,10,0.3)" />
+      <g>
+      </g>
+      <path d="M 450,557 L 555,558 L 554,578 L 450,578 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 450,557 L 555,558" fill="none" stroke="#FFF4D8" strokeWidth="2.2" />
+      <path d="M 450,564 L 555,565" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />
+      <path d="M 450,570 L 555,571" fill="none" stroke="rgba(255,240,200,0.3)" strokeWidth="0.8" />
+      <path d="M 450,578 L 554,578" fill="none" stroke="#2A1408" strokeWidth="1.8" />
+
+      <path d="M 430,402 L 574,406 L 572,624 L 430,622 Z" fill="none" stroke="rgba(40,40,40,0.5)" strokeWidth="6" strokeLinejoin="round" />
       </g>
 
+      <rect x="168" y="624" width="264" height="10" rx="2" fill="url(#bodyDark)" stroke="#000" strokeWidth="0.5" />
+      <path d="M 185,629 L 185,641 L 203,641 L 203,629 Z" fill="#7a2818" />
+      <path d="M 185,629 L 190,626 L 208,626 L 203,629 Z" fill="#a04030" />
+      <path d="M 203,629 L 208,626 L 208,638 L 203,641 Z" fill="#602018" />
+      <path d="M 397,629 L 397,641 L 415,641 L 415,629 Z" fill="#7a2818" />
+      <path d="M 397,629 L 402,626 L 420,626 L 415,629 Z" fill="#a04030" />
+      <path d="M 415,629 L 420,626 L 420,638 L 415,641 Z" fill="#602018" />
+    
+      {/* 3D basic: cast shadow on body interior near hinges */}
+      <ellipse cx="180" cy="200" rx="40" ry="180" fill="url(#castShadow)" opacity="0.5" />
+      <ellipse cx="420" cy="200" rx="40" ry="180" fill="url(#castShadow)" opacity="0.5" />
+      <ellipse cx="180" cy="500" rx="35" ry="100" fill="url(#castShadow)" opacity="0.5" />
+      <ellipse cx="420" cy="500" rx="35" ry="100" fill="url(#castShadow)" opacity="0.5" />
     </svg>
   );
 }
