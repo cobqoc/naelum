@@ -408,11 +408,11 @@ export default function HomeClient({
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
-        {/* KitchenSVG — 모바일은 공간 절약을 위해 숨김, sm+에서만 장식용 노출 */}
-        <div className="hidden sm:block w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        {/* KitchenSVG — 모든 사이즈에서 노출. 모바일은 max-w-[220px]로 컴팩트 (약 73px 높이) */}
+        <div className="w-full max-w-[220px] sm:max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="flex-1 w-full hidden sm:block" />
+        <div className="flex-1 w-full" />
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
@@ -422,7 +422,7 @@ export default function HomeClient({
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
         <div className="relative w-full max-w-[420px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 220px)' }}>
+          style={{ maxHeight: 'calc(100dvh - 300px)' }}>
           <FridgeSVG />
 
           {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
