@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 interface SearchBarProps {
   className?: string;
   isSmall?: boolean;
+  autoFocus?: boolean;
 }
 
 interface Suggestion {
@@ -36,7 +37,7 @@ function clearSearchHistory() {
   localStorage.removeItem(HISTORY_KEY);
 }
 
-export default function SearchBar({ className = '', isSmall = false }: SearchBarProps) {
+export default function SearchBar({ className = '', isSmall = false, autoFocus = false }: SearchBarProps) {
   const router = useRouter();
   const { t } = useI18n();
   const [isFocused, setIsFocused] = useState(false);
@@ -199,6 +200,7 @@ export default function SearchBar({ className = '', isSmall = false }: SearchBar
           placeholder={isSmall ? t.search.searchPlaceholderSmall : t.search.searchPlaceholderFull}
           aria-label={t.search.searchPlaceholderFull}
           autoComplete="off"
+          autoFocus={autoFocus}
           suppressHydrationWarning
           onFocus={() => {
             setIsFocused(true);

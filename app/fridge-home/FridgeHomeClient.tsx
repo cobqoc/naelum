@@ -225,7 +225,7 @@ export default function FridgeHomeClient() {
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      <div className="px-4 pt-8 md:pt-10 pb-3 flex justify-center">
+      <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
         <SearchBar className="w-full max-w-md" />
       </div>
 

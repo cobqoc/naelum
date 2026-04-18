@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import { useAuth } from '@/lib/auth/context';
 import UserDropdown from './Header/UserDropdown';
+import SearchBar from './SearchBar';
 
 // lucide-react(85KB)를 번들에서 제거하기 위해 실제로 사용하는 Home 아이콘만 인라인 SVG로 대체.
 // Props는 lucide의 서명과 동일하게 유지해 교체가 투명함.
@@ -25,6 +26,25 @@ function Home({ size = 22, strokeWidth = 2, className = '' }: { size?: number; s
     >
       <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
+function SearchIcon({ size = 22, strokeWidth = 2, className = '' }: { size?: number; strokeWidth?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
     </svg>
   );
 }
@@ -69,6 +89,7 @@ export default function BottomNav() {
   const [showCartHint, setShowCartHint] = useState(false);
   const [showFridgeHint, setShowFridgeHint] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { count: cartCount } = useCartCount();
 
   const handleLogout = async () => {
@@ -106,9 +127,10 @@ export default function BottomNav() {
   }, []);
 
   const navItems: NavItem[] = [
-    // 참고: profile/cart 탭의 Icon은 실제 렌더되지 않음 (UserDropdown 또는 emoji 사용)
+    // 참고: profile/cart/search 탭의 Icon은 실제 렌더되지 않음 (UserDropdown / emoji / custom 사용)
     // 타입 만족을 위해 Home으로 통일.
     { href: '/', Icon: Home, label: t.bottomNav.home },
+    { href: '#search', Icon: SearchIcon, label: t.bottomNav.search },
     { href: '/fridge', Icon: FridgeIcon, label: t.bottomNav.fridge },
     { href: '/cart', Icon: Home, label: t.bottomNav.cart },
     { href: '/profile', Icon: Home, label: t.bottomNav.profile },
@@ -130,6 +152,7 @@ export default function BottomNav() {
   };
 
   return (
+    <>
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" aria-label={t.bottomNav.home}>
       <div className="absolute inset-0 bg-background-secondary/90 backdrop-blur-xl border-t border-white/10" />
 
@@ -140,7 +163,26 @@ export default function BottomNav() {
           const isProfileTab = item.href === '/profile';
           const isCartTab = item.href === '/cart';
           const isFridgeTab = item.href === '/fridge';
+          const isSearchTab = item.href === '#search';
           const label = isProfileTab && !authLoading && !user ? '로그인' : item.label;
+
+          if (isSearchTab) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => setShowSearch(true)}
+                aria-label={item.label}
+                className={`relative flex flex-col items-center justify-center min-w-[3.5rem] py-2 px-2 rounded-xl transition-all ${
+                  showSearch ? 'text-accent-warm' : 'text-text-muted hover:text-text-secondary'
+                }`}
+              >
+                <SearchIcon size={22} strokeWidth={showSearch ? 2.5 : 1.8} className={`transition-transform ${showSearch ? 'scale-110' : ''}`} />
+                {showSearch && (
+                  <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-accent-warm" />
+                )}
+              </button>
+            );
+          }
 
           if (isCartTab) {
             return (
@@ -331,5 +373,28 @@ export default function BottomNav() {
         })}
       </div>
     </nav>
+
+    {showSearch && (
+      <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-label="검색">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSearch(false)} />
+        <div className="absolute top-0 left-0 right-0 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 bg-background-secondary/95 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+          <div className="flex gap-2 items-center">
+            <div className="flex-1">
+              <SearchBar autoFocus />
+            </div>
+            <button
+              onClick={() => setShowSearch(false)}
+              aria-label="닫기"
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-tertiary hover:bg-white/10 text-text-primary transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
