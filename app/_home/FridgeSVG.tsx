@@ -273,26 +273,7 @@ export default function FridgeSVG() {
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
       <path d="M 166,14 L 180,6 L 448,6 L 434,14 Z" fill="url(#bodyLight)" />
       
-      {/* 상단 벤트 그릴 */}
-      <rect x="178" y="4" width="244" height="6" rx="2" fill="url(#ventShadow)" stroke="#000" strokeWidth="1.2"/>
-      <rect x="190" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="203" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="216" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="229" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="242" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="255" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="268" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="281" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="294" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="307" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="320" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="333" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="346" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="359" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="372" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="385" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="398" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
-      <rect x="411" y="5.5" width="9" height="3" rx="0.8" fill="#1a0604" opacity="0.7"/>
+      {/* 상단 벤트 그릴 제거 (심플한 실루엣 우선) */}
 
 <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" />
 
@@ -309,10 +290,7 @@ export default function FridgeSVG() {
       <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#interiorG)" />
       <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#shRadBot)" pointerEvents="none" />
 
-      {/* 냉장실 LED 조명바 */}
-      <rect x="192" y="37" width="216" height="3.5" rx="1.2" fill="url(#chromeG)" stroke="#2A1408" strokeWidth="0.8"/>
-      <rect x="198" y="38.3" width="204" height="1.3" fill="#fff4b8" opacity="0.95"/>
-      <ellipse cx="300" cy="44" rx="135" ry="10" fill="url(#ledGlow)"/>
+      {/* 냉장실 LED 조명바 제거 */}
 
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#000" strokeWidth="1" />
 
@@ -320,10 +298,7 @@ export default function FridgeSVG() {
       <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#freezerG)" />
       <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#shL)" pointerEvents="none" />
 
-      {/* 냉동실 LED 조명바 */}
-      <rect x="192" y="409" width="216" height="3.5" rx="1.2" fill="url(#chromeG)" stroke="#2A1408" strokeWidth="0.8"/>
-      <rect x="198" y="410.3" width="204" height="1.3" fill="#c0e8ff" opacity="0.95"/>
-      <ellipse cx="300" cy="416" rx="135" ry="8" fill="url(#ledGlow)" opacity="0.7"/>
+      {/* 냉동실 LED 조명바 제거 */}
 
 
             {/* ====== 본체 선반 (냉장실) — 입체감 강화 ====== */}

@@ -406,13 +406,12 @@ export default function HomeClient({
         <SearchBar className="w-full max-w-md" />
       </div>
 
-      <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
-        <div className="flex-1 w-full" />
+      {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
+      <div className="flex-1 flex flex-col items-center justify-end gap-3 md:gap-6 md:px-12 pb-2 md:pb-8">
         {/* KitchenSVG — 모든 사이즈에서 노출. 모바일은 max-w-[220px]로 컴팩트 (약 73px 높이) */}
         <div className="w-full max-w-[220px] sm:max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="flex-1 w-full" />
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
@@ -431,7 +430,7 @@ export default function HomeClient({
           {showRecipeBubble && (
             <Link
               href="/recommendations"
-              className="absolute top-1 right-1 md:top-2 md:right-2 z-20 flex items-center gap-1 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+              className="absolute -top-2 left-1/2 -translate-x-1/2 md:-top-3 z-20 flex items-center gap-1 px-3 py-1 md:px-4 md:py-1.5 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
               style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
               aria-label="재료로 만들 수 있는 레시피 보기"
             >
