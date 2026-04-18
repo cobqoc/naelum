@@ -408,16 +408,21 @@ export default function HomeClient({
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
-        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        {/* KitchenSVG — 모바일은 공간 절약을 위해 숨김, sm+에서만 장식용 노출 */}
+        <div className="hidden sm:block w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="flex-1 w-full" />
+        <div className="flex-1 w-full hidden sm:block" />
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
             냉동 선반 1개: storage_location === '냉동'
-            chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달 */}
-        <div className="relative w-full max-w-[300px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]">
+            chip 탭 → 상세 수정 모달, 빈 선반 탭 → 재료 추가 모달
+
+            모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
+            데스크톱: max-w 고정, aspect가 height 결정 */}
+        <div className="relative w-full max-w-[420px] md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
+          style={{ maxHeight: 'calc(100dvh - 220px)' }}>
           <FridgeSVG />
 
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
