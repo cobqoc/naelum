@@ -167,10 +167,18 @@ export default function BottomNav() {
           const label = isProfileTab && !authLoading && !user ? '로그인' : item.label;
 
           if (isSearchTab) {
+            const isFridgeHome = pathname === '/fridge-home';
+            const onSearchClick = () => {
+              if (isFridgeHome) {
+                window.dispatchEvent(new CustomEvent('toggle-fridge-search'));
+              } else {
+                setShowSearch(true);
+              }
+            };
             return (
               <button
                 key={item.href}
-                onClick={() => setShowSearch(true)}
+                onClick={onSearchClick}
                 aria-label={item.label}
                 className={`relative flex flex-col items-center justify-center min-w-[3.5rem] py-2 px-2 rounded-xl transition-all ${
                   showSearch ? 'text-accent-warm' : 'text-text-muted hover:text-text-secondary'

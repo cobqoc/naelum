@@ -103,6 +103,14 @@ export default function FridgeHomeClient() {
   const [multiInput, setMultiInput] = useState('');
   const [showAllChips, setShowAllChips] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
+  useEffect(() => {
+    const handler = () => setShowMobileSearch((prev) => !prev);
+    window.addEventListener('toggle-fridge-search', handler);
+    return () => window.removeEventListener('toggle-fridge-search', handler);
+  }, []);
   const [showAddSheet, setShowAddSheet] = useState(false);
   // doorOpen 제거 — SVG가 항상 열린 상태
   const [inlineAddSection, setInlineAddSection] = useState<'fridge' | 'freezer' | null>(null);
@@ -244,8 +252,33 @@ export default function FridgeHomeClient() {
         <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
         </div>
-        <div className="flex-1 w-full" />
-        <div className="relative w-full max-w-sm md:max-w-3xl lg:max-w-4xl mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
+        <div className="relative flex-1 w-full flex items-center justify-center px-4">
+          {/* 인라인 모바일 검색바 (하단 네비 검색 아이콘이 토글) */}
+          <div
+            aria-hidden={!showMobileSearch}
+            className={`absolute left-0 right-0 px-4 md:hidden origin-bottom transition-all duration-300 ease-out ${
+              showMobileSearch
+                ? 'opacity-100 translate-y-0 scale-100'
+                : 'opacity-0 translate-y-6 scale-95 pointer-events-none'
+            }`}
+          >
+            <div className="flex items-center gap-2 max-w-md mx-auto">
+              <div className="flex-1">
+                <SearchBar autoFocus={showMobileSearch} />
+              </div>
+              <button
+                onClick={() => setShowMobileSearch(false)}
+                aria-label="검색 닫기"
+                className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-tertiary hover:bg-white/10 text-text-primary transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="relative w-full md:max-w-3xl lg:max-w-4xl -mx-4 md:mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
           <FridgeSVG />
         </div>
       </div>

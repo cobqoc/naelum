@@ -19,12 +19,12 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#d84a30" />
         </linearGradient>
         <linearGradient id="interiorG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f5fbff" />
-          <stop offset="100%" stopColor="#dceaf4" />
+          <stop offset="0%" stopColor="#edeef8" />
+          <stop offset="100%" stopColor="#dcddee" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f5fbff" />
-          <stop offset="100%" stopColor="#dceaf4" />
+          <stop offset="0%" stopColor="#edeef8" />
+          <stop offset="100%" stopColor="#dcddee" />
         </linearGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#d0d0d0" />
@@ -110,6 +110,39 @@ export default function FridgeSVG() {
           <stop offset="0%" stopColor="rgba(0,0,0,0.35)"/>
           <stop offset="100%" stopColor="rgba(0,0,0,0)"/>
         </radialGradient>
+        {/* ── 은은한 그림자 바리에이션 (각자 다른 효과) ── */}
+        <linearGradient id="shT" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.22)"/>
+          <stop offset="55%" stopColor="rgba(20,15,35,0)"/>
+        </linearGradient>
+        <linearGradient id="shB" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.2)"/>
+          <stop offset="55%" stopColor="rgba(20,15,35,0)"/>
+        </linearGradient>
+        <linearGradient id="shL" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.2)"/>
+          <stop offset="55%" stopColor="rgba(20,15,35,0)"/>
+        </linearGradient>
+        <linearGradient id="shR" x1="1" y1="0" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.2)"/>
+          <stop offset="55%" stopColor="rgba(20,15,35,0)"/>
+        </linearGradient>
+        <radialGradient id="shRadBot" cx="50%" cy="100%" r="70%">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.25)"/>
+          <stop offset="100%" stopColor="rgba(20,15,35,0)"/>
+        </radialGradient>
+        <radialGradient id="shRadTop" cx="50%" cy="0%" r="70%">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.22)"/>
+          <stop offset="100%" stopColor="rgba(20,15,35,0)"/>
+        </radialGradient>
+        <radialGradient id="shRadCornerBR" cx="100%" cy="100%" r="90%">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.2)"/>
+          <stop offset="100%" stopColor="rgba(20,15,35,0)"/>
+        </radialGradient>
+        <radialGradient id="shRadCornerTL" cx="0%" cy="0%" r="90%">
+          <stop offset="0%" stopColor="rgba(20,15,35,0.18)"/>
+          <stop offset="100%" stopColor="rgba(20,15,35,0)"/>
+        </radialGradient>
       </defs>
 
       <rect x="80" y="630" width="440" height="25" rx="6" fill="url(#reflectG)" />
@@ -140,6 +173,7 @@ export default function FridgeSVG() {
 
       <path d="M 29,110 L 152,120 L 150,128 L 29,118 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 29,118 L 150,128 L 150,146 L 29,136 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 29,118 L 150,128 L 150,146 L 29,136 Z" fill="url(#shT)" pointerEvents="none" />
       <path d="M 29,118 L 150,128" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 29,136 L 150,146" fill="none" stroke="#2A1408" strokeWidth="2" />
       {/* Row1 내부 opening shadow */}
@@ -160,6 +194,7 @@ export default function FridgeSVG() {
       
       <path d="M 29,193 L 152,200 L 150,212 L 29,205 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />      <g></g>
       <path d="M 29,205 L 150,212 L 150,237 L 29,230 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 29,205 L 150,212 L 150,237 L 29,230 Z" fill="url(#shR)" pointerEvents="none" />
       <path d="M 29,205 L 150,212" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 29,213 L 150,220" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 29,218 L 150,225" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
@@ -177,6 +212,7 @@ export default function FridgeSVG() {
       <line x1="130" y1="215" x2="131" y2="237" stroke="rgba(30,12,4,0.25)" strokeWidth="0.6"/>      
       <path d="M 30,339 L 152,341 L 150,353 L 30,351 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />      <g></g>
       <path d="M 30,351 L 150,353 L 150,376 L 30,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 30,351 L 150,353 L 150,376 L 30,376 Z" fill="url(#shB)" pointerEvents="none" />
       <path d="M 30,351 L 150,353" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 30,358 L 150,361" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 30,365 L 150,367" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
@@ -211,6 +247,7 @@ export default function FridgeSVG() {
       
       <path d="M 50,560 L 147,557 L 150,578 L 45,581 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
       <path d="M 45,581 L 150,578 L 150,608 L 46,608 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M 45,581 L 150,578 L 150,608 L 46,608 Z" fill="url(#shRadBot)" pointerEvents="none" />
       <path d="M 45,581 L 150,578" fill="none" stroke="#FFF4D8" strokeWidth="3.5" />
       <path d="M 46,608 L 150,608" fill="none" stroke="#2A1408" strokeWidth="2.2" />
       <path d="M 45,565 L 150,563" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />
@@ -268,6 +305,7 @@ export default function FridgeSVG() {
 
       <rect x="182" y="33" width="236" height="345" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#interiorG)" />
+      <rect x="184" y="35" width="232" height="341" rx="4" fill="url(#shRadBot)" pointerEvents="none" />
 
       {/* 냉장실 LED 조명바 */}
       <rect x="192" y="37" width="216" height="3.5" rx="1.2" fill="url(#chromeG)" stroke="#2A1408" strokeWidth="0.8"/>
@@ -278,6 +316,7 @@ export default function FridgeSVG() {
 
       <rect x="182" y="404" width="236" height="206" rx="6" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="4" strokeLinejoin="round" />
       <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#freezerG)" />
+      <rect x="184" y="406" width="232" height="202" rx="4" fill="url(#shL)" pointerEvents="none" />
 
       {/* 냉동실 LED 조명바 */}
       <rect x="192" y="409" width="216" height="3.5" rx="1.2" fill="url(#chromeG)" stroke="#2A1408" strokeWidth="0.8"/>
@@ -301,6 +340,7 @@ export default function FridgeSVG() {
       <rect x="188" y="228" width="224" height="5" fill="rgba(40,20,5,0.18)"/>
       {/* ====== 본체 냉장실 서랍장 2개 (좌우 나란히) ====== */}
       <rect x="188" y="320" width="110" height="54" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="188" y="320" width="110" height="54" rx="3" fill="url(#shR)" pointerEvents="none" />
       <rect x="188" y="320" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="192" y1="324" x2="296" y2="324" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="216" y="342" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -309,6 +349,7 @@ export default function FridgeSVG() {
       <line x1="188" y1="374" x2="298" y2="374" stroke="#2A1408" strokeWidth="1" />
 
       <rect x="302" y="320" width="110" height="54" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="302" y="320" width="110" height="54" rx="3" fill="url(#shL)" pointerEvents="none" />
       <rect x="302" y="320" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="306" y1="324" x2="410" y2="324" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="330" y="342" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -318,6 +359,7 @@ export default function FridgeSVG() {
 
       {/* ====== 본체 냉동실 서랍장 2개 (좌우 나란히) ====== */}
       <rect x="188" y="526" width="110" height="78" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="188" y="526" width="110" height="78" rx="3" fill="url(#shRadCornerTL)" pointerEvents="none" />
       <rect x="188" y="526" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="192" y1="530" x2="296" y2="530" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="216" y="560" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -326,6 +368,7 @@ export default function FridgeSVG() {
       <line x1="188" y1="604" x2="298" y2="604" stroke="#2A1408" strokeWidth="1" />
 
       <rect x="302" y="526" width="110" height="78" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="302" y="526" width="110" height="78" rx="3" fill="url(#shRadCornerBR)" pointerEvents="none" />
       <rect x="302" y="526" width="110" height="4" rx="2" fill="url(#creamTopG)" />
       <line x1="306" y1="530" x2="410" y2="530" stroke="#FFF4D8" strokeWidth="1" />
       <rect x="330" y="560" width="54" height="9" rx="4.5" fill="url(#creamTopG)" stroke="#000" strokeWidth="1.3" strokeLinejoin="round"/>
@@ -367,6 +410,7 @@ export default function FridgeSVG() {
 
       <path d="M 448,121 L 571,110 L 571,118 L 450,129 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 450,129 L 571,118 L 571,136 L 450,147 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 450,129 L 571,118 L 571,136 L 450,147 Z" fill="url(#shB)" pointerEvents="none" />
       <path d="M 450,129 L 571,118" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 450,147 L 571,136" fill="none" stroke="#2A1408" strokeWidth="2" />
       {/* Row1 내부 opening shadow */}
@@ -387,6 +431,7 @@ export default function FridgeSVG() {
       
       <path d="M 448,201 L 571,193 L 571,205 L 450,213 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />      <g></g>
       <path d="M 450,213 L 571,205 L 571,230 L 450,238 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 450,213 L 571,205 L 571,230 L 450,238 Z" fill="url(#shL)" pointerEvents="none" />
       <path d="M 450,213 L 571,205" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 450,221 L 571,213" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 450,226 L 571,218" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
@@ -402,6 +447,7 @@ export default function FridgeSVG() {
       <line x1="551" y1="237" x2="552" y2="207" stroke="rgba(30,12,4,0.25)" strokeWidth="0.6"/>      
       <path d="M 448,341 L 570,339 L 570,351 L 450,353 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />      <g></g>
       <path d="M 450,353 L 570,351 L 570,376 L 448,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
+      <path d="M 450,353 L 570,351 L 570,376 L 448,376 Z" fill="url(#shT)" pointerEvents="none" />
       <path d="M 450,353 L 570,351" fill="none" stroke="#FFF4D8" strokeWidth="4" />
       <path d="M 450,361 L 570,358" fill="none" stroke="rgba(80,50,15,0.45)" strokeWidth="1.2" />
       <path d="M 450,367 L 570,364" fill="none" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
@@ -434,6 +480,7 @@ export default function FridgeSVG() {
 
       <path d="M 453,557 L 550,560 L 555,581 L 450,578 Z" fill="url(#creamTopG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
       <path d="M 450,578 L 555,581 L 554,608 L 450,608 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M 450,578 L 555,581 L 554,608 L 450,608 Z" fill="url(#shRadTop)" pointerEvents="none" />
       <path d="M 450,578 L 555,581" fill="none" stroke="#FFF4D8" strokeWidth="3.5" />
       <path d="M 450,608 L 554,608" fill="none" stroke="#2A1408" strokeWidth="2.2" />
       <path d="M 450,564 L 555,565" fill="none" stroke="rgba(80,50,15,0.4)" strokeWidth="1.2" />

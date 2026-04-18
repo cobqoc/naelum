@@ -65,6 +65,14 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // autoFocus가 true로 바뀔 때 input에 포커스 (마운트 이후에도 동작)
+  useEffect(() => {
+    if (autoFocus && containerRef.current) {
+      const input = containerRef.current.querySelector('input') as HTMLInputElement | null;
+      input?.focus();
+    }
+  }, [autoFocus]);
+
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 2) {
       setSuggestions([]);
