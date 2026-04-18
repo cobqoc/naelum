@@ -249,12 +249,35 @@ export default function FridgeHomeClient() {
 
       <div className="flex-1 flex flex-col items-center md:px-12 pb-4 md:pb-8">
         <div className="flex-1 w-full" />
-        <div className="w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="relative w-full max-w-xs md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
+          <button
+            onClick={() => setShowAddSheet(true)}
+            aria-label="선반장에 재료 추가"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95 z-10"
+          >
+            +
+          </button>
         </div>
         <div className="flex-1 w-full" />
-        <div className="relative w-full md:max-w-3xl lg:max-w-4xl md:mx-auto aspect-[660/670] max-h-[55vh] md:max-h-[78vh]">
+        <div className="relative w-full md:max-w-3xl lg:max-w-4xl md:mx-auto aspect-[540/670] md:aspect-[660/670] max-h-[75vh] md:max-h-[78vh]">
           <FridgeSVG />
+          {/* 냉장실 추가 버튼 */}
+          <button
+            onClick={() => setShowAddSheet(true)}
+            aria-label="냉장실에 재료 추가"
+            className="absolute top-[26%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
+          >
+            +
+          </button>
+          {/* 냉동실 추가 버튼 */}
+          <button
+            onClick={() => setShowAddSheet(true)}
+            aria-label="냉동실에 재료 추가"
+            className="absolute top-[72%] left-1/2 -translate-x-1/2 w-11 h-11 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-2xl font-bold transition-all active:scale-95 z-10"
+          >
+            +
+          </button>
         </div>
       </div>
 
@@ -342,7 +365,7 @@ export default function FridgeHomeClient() {
       />
       <div
         aria-hidden={!showMobileSearch}
-        className={`fixed left-0 right-0 top-[38vh] px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
+        className={`fixed left-0 right-0 top-[50vh] px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
           showMobileSearch
             ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
             : 'opacity-0 translate-y-[45vh] scale-[0.25] pointer-events-none'

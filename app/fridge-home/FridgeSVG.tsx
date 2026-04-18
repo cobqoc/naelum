@@ -4,7 +4,7 @@
 // (variant-warm-baskets.html 기반)
 export default function FridgeSVG() {
   return (
-    <svg viewBox="-30 -5 660 670" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="30 -5 540 670" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#e85a3a" />
