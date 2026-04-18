@@ -82,7 +82,7 @@ export default function FridgeSVG() {
 
       {/* ====== 좌측 냉장 문 (살짝만 열림 — 가로 0.55배 축소) ====== */}
       <g transform="matrix(0.69,0,0,1,52.70000000000001,0)">
-      <path d="M 170,24 L 14,2 L 16,392 L 170,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 170,24 L 14,2 L 16,392 L 170,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 14,2 L 2,10 L 6,396 L 16,392 Z" fill="url(#bodyDark)" />
       <path d="M 14,2 L 2,10 L 158,28 L 170,24 Z" fill="url(#bodyLight)" />
       <path d="M 28,22 L 152,36 L 152,376 L 30,376 Z" fill="url(#interiorG)" />
@@ -142,7 +142,7 @@ export default function FridgeSVG() {
 
       {/* ====== 좌측 냉동 문 — 숨김 ====== */}
       <g transform="matrix(0.69,0,0,1,52.70000000000001,0)">
-      <path d="M 170,402 L 26,406 L 28,624 L 170,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 170,402 L 26,406 L 28,624 L 170,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 26,406 L 16,410 L 18,620 L 28,624 Z" fill="url(#bodyDark)" />
       <path d="M 26,406 L 16,410 L 158,406 L 170,402 Z" fill="url(#bodyLight)" />
       <path d="M 44,420 L 152,416 L 152,608 L 46,608 Z" fill="url(#freezerG)" />
@@ -185,10 +185,10 @@ export default function FridgeSVG() {
       <path d="M 434,14 L 448,6 L 448,623 L 434,629 Z" fill="url(#bodyDark)" />
       <path d="M 166,14 L 180,6 L 448,6 L 434,14 Z" fill="url(#bodyLight)" />
       <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" />
-      <rect x="166" y="14" width="2" height="615" fill="#000" />
-      <rect x="432" y="14" width="2" height="615" fill="#000" />
-      <rect x="166" y="14" width="268" height="2" fill="#000" />
-      <rect x="166" y="627" width="268" height="2" fill="#000" />
+      <rect x="166" y="14" width="2.5" height="615" fill="#000" />
+      <rect x="431.5" y="14" width="2.5" height="615" fill="#000" />
+      <rect x="166" y="14" width="268" height="2.5" fill="#000" />
+      <rect x="166" y="626.5" width="268" height="2.5" fill="#000" />
       <rect x="170" y="16" width="260" height="3" rx="1" fill="url(#chromeG)" />
       <rect x="170" y="383" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
       <rect x="170" y="398" width="260" height="2" rx="0.5" fill="url(#chromeG)" />
@@ -234,7 +234,7 @@ export default function FridgeSVG() {
 
       {/* ====== 우측 냉장 문 (살짝만 열림 — 가로 0.55배 축소) ====== */}
       <g transform="matrix(0.69,0,0,1,133.3,0)">
-      <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 586,2 L 598,10 L 594,396 L 584,392 Z" fill="url(#bodyDark)" />
       <path d="M 430,24 L 442,28 L 586,2 L 598,10 Z" fill="url(#bodyLight)" />
       <path d="M 448,37 L 572,22 L 570,376 L 448,376 Z" fill="url(#interiorG)" />
@@ -288,7 +288,7 @@ export default function FridgeSVG() {
 
       {/* ====== 우측 냉동 문 ====== */}
       <g transform="matrix(0.69,0,0,1,133.3,0)">
-      <path d="M 430,402 L 574,406 L 572,624 L 430,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="8" strokeLinejoin="round" />
+      <path d="M 430,402 L 574,406 L 572,624 L 430,622 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
       <path d="M 574,406 L 584,410 L 582,620 L 572,624 Z" fill="url(#bodyDark)" />
       <path d="M 430,402 L 442,406 L 574,406 L 584,410 Z" fill="url(#bodyLight)" />
       <path d="M 448,416 L 556,422 L 554,608 L 448,604 Z" fill="url(#freezerG)" />
