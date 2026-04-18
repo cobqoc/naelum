@@ -29,6 +29,7 @@ export default function FloatingFeedbackButton() {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/admin') ||
+    pathname === '/fridge-home' ||
     /\/recipes\/[^/]+\/cook/.test(pathname)
 
   if (shouldHide) return null
