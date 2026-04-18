@@ -410,7 +410,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[320px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="relative w-full max-w-[220px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
@@ -479,7 +479,7 @@ export default function HomeClient({
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 245px)' }}>
+          style={{ maxHeight: 'calc(100dvh - 215px)' }}>
           <FridgeSVG />
 
           {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
