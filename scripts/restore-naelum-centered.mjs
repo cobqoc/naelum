@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-// dce1602 복원 코드 → naelum-centered 모습으로 영구 변환
-// 1. 음식 g 그룹 모두 제거 (도어 안 bottle/fish 등)
-// 2. 손잡이 4개 제거
-// 3. 본체 상단 3번째 선반 제거
-// 4. 색상 그라디언트 stops 교체 (final-v2 ref-exact)
-// 5. 도어 외측 stroke 4→8
-
+// dce1602 코드 → naelum-centered 모습 + 시원한 색상 + 본체 슬림 외곽선 영구 변환
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,22 +10,22 @@ const SOURCE = path.join(ROOT, 'app/fridge-home/FridgeSVG.tsx');
 
 let src = await readFile(SOURCE, 'utf8');
 
-// 1) 음식 g 그룹 모두 제거 (translate transform — matrix는 보존)
+// 1) 음식 g translate 그룹 모두 제거 (matrix 그룹은 보존)
 src = src.replace(/\s*<g transform="translate\([^)]+\)">[\s\S]*?<\/g>/g, '');
 
-// 2) 손잡이 제거 (주석 "손잡이 4개" 다음 ~ NAELUM 텍스트 직전까지)
+// 2) 손잡이 4개 제거 (주석 + rect 4개)
 src = src.replace(
-  /\s*\{\/\* 손잡이 4개[\s\S]*?(?=\s*<rect x="168" y="624")/,
+  /\s*\{\/\* 큰 손잡이 4개[\s\S]*?(?=\s*<rect x="168" y="624")/,
   '\n      '
 );
 
-// 3) 본체 상단 3번째 선반 제거 (M 178,304 ~ M 178,324 라인 7개 path)
+// 3) 본체 상단 3번째 선반 제거 (M 178,304 ~ M 178,324 라인)
 src = src.replace(
   /\s*<path d="M 178,304[\s\S]*?M 178,324 L 422,324"[^/]*\/>/,
   ''
 );
 
-// 4) 색상 그라디언트 stops 교체 (final-v2 ref-exact)
+// 4) 색상 그라디언트 stops 교체
 const replaceGradient = (src, id, c1, c2) => {
   const re = new RegExp(
     `(<linearGradient id="${id}"[^>]*>)([\\s\\S]*?)(</linearGradient>)`
@@ -50,26 +44,46 @@ src = replaceGradient(src, 'creamTopG', '#fadc60', '#e8b840');
 src = replaceGradient(src, 'railFrontG', '#f4c030', '#c08820');
 src = replaceGradient(src, 'railSideG', '#c08820', '#c08820');
 src = replaceGradient(src, 'railTopG', '#fadc60', '#e8b840');
-src = replaceGradient(src, 'interiorG', '#f4f8fc', '#e8eff5');
-src = replaceGradient(src, 'freezerG', '#f4f8fc', '#e8eff5');
 
-// 5) 도어 외측 stroke 4→8 (bodyG/bodyDark/bodyLight)
+// 시원한 인테리어 색상 (사용자 지시)
+src = replaceGradient(src, 'interiorG', '#f5fbff', '#dceaf4');
+src = replaceGradient(src, 'freezerG', '#eef6ff', '#cee0ee');
+
+// 5) 본체 외곽선 두께 70% (3 → 2.5)
 src = src.replace(
-  /fill="url\(#bodyG\)" stroke="#000" strokeWidth="4"/g,
-  'fill="url(#bodyG)" stroke="#000" strokeWidth="8"'
+  /<rect x="166" y="14" width="3" height="615" fill="#000" \/>/,
+  '<rect x="166" y="14" width="2.5" height="615" fill="#000" />'
 );
-// 어두운 외곽선도 굵게
 src = src.replace(
-  /fill="none" stroke="rgba\(40,40,40,0\.3\)" strokeWidth="3"/g,
-  'fill="none" stroke="rgba(40,40,40,0.5)" strokeWidth="6"'
+  /<rect x="431" y="14" width="3" height="615" fill="#000" \/>/,
+  '<rect x="431.5" y="14" width="2.5" height="615" fill="#000" />'
+);
+src = src.replace(
+  /<rect x="166" y="14" width="268" height="3" fill="#000" \/>/,
+  '<rect x="166" y="14" width="268" height="2.5" fill="#000" />'
+);
+src = src.replace(
+  /<rect x="166" y="626" width="268" height="3" fill="#000" \/>/,
+  '<rect x="166" y="626.5" width="268" height="2.5" fill="#000" />'
 );
 
-// 사용 안 하는 bottle gradient 정리 (선택적 — 안 해도 무방)
-// 그대로 두면 dead defs. 깔끔히 제거:
+// 6) 그림자 효과 제거 — lightG rect, castShadow ellipse 4개
+src = src.replace(
+  /\s*<rect x="178" y="28" width="244" height="80" rx="4" fill="url\(#lightG\)" \/>/,
+  ''
+);
+src = src.replace(
+  /\s*\{\/\* 3D basic: cast shadow on body interior near hinges \*\/\}\s*<ellipse[^/]*castShadow[^/]*\/>\s*<ellipse[^/]*castShadow[^/]*\/>\s*<ellipse[^/]*castShadow[^/]*\/>\s*<ellipse[^/]*castShadow[^/]*\/>/,
+  ''
+);
+
+// 7) 사용 안 하는 bottle gradient defs 정리
 src = src.replace(
   /\s*<linearGradient id="bottle[A-Z][a-zA-Z]*"[^>]*>[\s\S]*?<\/linearGradient>/g,
   ''
 );
+
+// 8) 도어 stroke는 4 유지 (변환 X) — final-v2의 8 변환 적용하지 않음
 
 await writeFile(SOURCE, src);
 console.log('  → FridgeSVG.tsx 변환 완료');
