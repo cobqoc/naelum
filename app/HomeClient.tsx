@@ -355,7 +355,7 @@ export default function HomeClient({
   };
 
   return (
-    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-20 md:pb-0">
+    <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
@@ -479,7 +479,7 @@ export default function HomeClient({
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 215px)' }}>
+          style={{ maxHeight: 'calc(100dvh - 193px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
           {/* 말풍선 CTA — 냉장고가 "오늘 만들 수 있어!" 알려주는 캐릭터성 포인트.
