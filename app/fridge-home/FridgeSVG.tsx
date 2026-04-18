@@ -62,10 +62,8 @@ export default function FridgeSVG() {
         <path d="M 28,22 L 29,19 L 31,373 L 30,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
         <path d="M 14,22 L 28,22 L 30,376 L 16,376 Z" fill="url(#railFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
 
-        <path d="M 29,118 L 150,128 L 150,146 L 29,136 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <path d="M 29,118 L 150,128" fill="none" stroke="#FFF4D8" strokeWidth="3" />
-        <path d="M 29,205 L 150,212 L 150,237 L 29,230 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <path d="M 29,205 L 150,212" fill="none" stroke="#FFF4D8" strokeWidth="3" />
+        <path d="M 29,150 L 150,158 L 150,176 L 29,168 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M 29,150 L 150,158" fill="none" stroke="#FFF4D8" strokeWidth="3" />
         <path d="M 30,351 L 150,353 L 150,376 L 30,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
         <path d="M 30,351 L 150,353" fill="none" stroke="#FFF4D8" strokeWidth="3" />
       </g>
@@ -91,8 +89,15 @@ export default function FridgeSVG() {
       <rect x="166" y="626.5" width="268" height="2.5" fill="#000" />
 
       <rect x="178" y="28" width="244" height="355" rx="4" fill="url(#interiorG)" />
+
+      <rect x="200" y="320" width="90" height="40" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="232" y="335" width="26" height="6" rx="1.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+      <rect x="310" y="320" width="90" height="40" rx="3" fill="url(#creamFrontG)" stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="342" y="335" width="26" height="6" rx="1.5" fill="#8a5020" stroke="#000" strokeWidth="1.2" />
+
       <rect x="168" y="384" width="264" height="12" rx="1" fill="url(#bodyG)" stroke="#000" strokeWidth="1" />
       <rect x="178" y="399" width="244" height="216" rx="4" fill="url(#freezerG)" />
+      <text x="300" y="608" textAnchor="middle" fill="#ffd700" fontSize="11" fontWeight="bold" letterSpacing="4" fontFamily="sans-serif" opacity="0.8">NAELUM</text>
 
       <g transform="matrix(0.69,0,0,1,133.3,0)">
         <path d="M 430,24 L 586,2 L 584,392 L 430,390 Z" fill="url(#bodyG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -104,10 +109,8 @@ export default function FridgeSVG() {
         <path d="M 572,22 L 571,19 L 569,373 L 570,376 Z" fill="url(#railSideG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
         <path d="M 572,22 L 586,22 L 584,376 L 570,376 Z" fill="url(#railFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
 
-        <path d="M 450,129 L 571,118 L 571,136 L 450,147 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <path d="M 450,129 L 571,118" fill="none" stroke="#FFF4D8" strokeWidth="3" />
-        <path d="M 450,213 L 571,205 L 571,230 L 450,238 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
-        <path d="M 450,213 L 571,205" fill="none" stroke="#FFF4D8" strokeWidth="3" />
+        <path d="M 450,160 L 571,150 L 571,168 L 450,178 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
+        <path d="M 450,160 L 571,150" fill="none" stroke="#FFF4D8" strokeWidth="3" />
         <path d="M 450,353 L 570,351 L 570,376 L 450,376 Z" fill="url(#creamFrontG)" stroke="#000" strokeWidth="3" strokeLinejoin="round" />
         <path d="M 450,353 L 570,351" fill="none" stroke="#FFF4D8" strokeWidth="3" />
       </g>
