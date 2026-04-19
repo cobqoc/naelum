@@ -57,7 +57,9 @@ export default function AddIngredientModal({
 
   if (!isOpen || !location) return null;
 
-  const icon = STORAGE_ICONS[location] || '📦';
+  // 'auto' 센티넬 = FAB에서 열린 경우. 특정 섹션 타겟 없이 generic 타이틀/아이콘 사용.
+  const isAuto = location === 'auto';
+  const icon = isAuto ? '✨' : (STORAGE_ICONS[location] || '📦');
 
   const handlePhotoAdd = (labels: PhotoLabel[]) => {
     onAddFromPhoto(labels);
@@ -96,7 +98,7 @@ export default function AddIngredientModal({
               <span className="text-xl">{icon}</span>
             )}
             <h2 className="font-bold text-text-primary truncate">
-              {isSecondary ? secondaryTitle : `${location}에 재료 추가`}
+              {isSecondary ? secondaryTitle : (isAuto ? '재료 추가' : `${location}에 재료 추가`)}
             </h2>
           </div>
           <button
@@ -120,7 +122,7 @@ export default function AddIngredientModal({
               <IngredientForm
                 onSubmit={onAddIngredient}
                 onCancel={onClose}
-                defaultStorageLocation={location}
+                defaultStorageLocation={isAuto ? undefined : location}
               />
 
               {/* 보조 액션 — 사진/영수증으로 일괄 추가 */}

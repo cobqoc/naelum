@@ -343,7 +343,7 @@ export default function IngredientForm({
           })}
         </div>
         <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
-          ⚠️ 자동 분류는 정확하지 않을 수 있어요. 잘못되면 태그 탭해서 수정하거나 위 버튼으로 모든 재료 한 번에 지정하세요.
+          ⚠️ 자동 분류는 정확하지 않을 수 있어요. 위 버튼으로 일괄 지정하거나, 태그를 눌러 개별 수정할 수 있어요.
         </p>
       </div>
 

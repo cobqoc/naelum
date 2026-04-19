@@ -566,7 +566,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[420px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
+        <div className="relative w-full max-w-[420px] sm:max-w-[480px] md:max-w-[560px] lg:max-w-[640px] mx-auto">
           <KitchenSVG />
           {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
               추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
@@ -655,9 +655,10 @@ export default function HomeClient({
           style={{ maxHeight: 'calc(100dvh - 250px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
-          {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역 */}
+          {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
+              'auto' 센티넬 = 모달이 "재료 추가"로 generic 타이틀 표시 (폼 기본 동작=자동 분류와 일치). */}
           <button
-            onClick={() => setAddModalLocation('냉장')}
+            onClick={() => setAddModalLocation('auto')}
             aria-label="재료 추가"
             className="absolute top-[63%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
           >
