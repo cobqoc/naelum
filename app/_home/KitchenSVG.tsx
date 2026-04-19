@@ -1,174 +1,211 @@
 'use client';
 
 /**
- * 선반장 — 상온 재료 저장소.
- * 카툰 스타일 우드 캐비닛 프레임(크라운 몰딩 + 측면 패널 + 베이스보드)
- * + 3단 오픈 선반 + 황동 브라켓 + 우드 그레인/옹이/리벳 디테일.
- * 재료 자체는 외부 chip overlay가 얹힘 → 구조물만 디테일하게.
+ * 선반장 v10 — 상온 재료 저장소.
+ * 3D 일러스트 느낌 우드 쿠킹 스테이션:
+ *  - 좌/우 버팀 기둥 (wood post) + 상하 캡
+ *  - 2단 플로팅 오크 선반 (상단 하이라이트 + 전면 두께 + 드리운 그림자)
+ *  - 두툼한 버처블록 스타일 하단 카운터 (chip overlay가 얹힘)
+ *  - 따뜻한 테라코타 벽 + subway tile 패턴 + 상단 조명 글로우
+ *  - 황동 L자 브라켓 + 리벳, 옹이·우드그레인 디테일
+ * chip overlay는 HomeClient에서 bottom-[6%]로 얹혀지므로 카운터 상판이 chip의 "받침" 역할.
  */
 export default function KitchenSVG() {
   return (
     <svg viewBox="0 0 660 220" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        {/* 내부 뒷벽 — 따뜻한 테라코타 */}
-        <linearGradient id="kitWallG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f4d9b4" />
-          <stop offset="100%" stopColor="#d69c6e" />
+        {/* 벽 — 웜 테라코타 그라데이션 */}
+        <linearGradient id="kitWall2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f6dcb6" />
+          <stop offset="60%" stopColor="#e8b88a" />
+          <stop offset="100%" stopColor="#cc956a" />
         </linearGradient>
+        {/* 상단 조명 글로우 */}
+        <radialGradient id="kitWallGlow" cx="50%" cy="0%" r="65%">
+          <stop offset="0%" stopColor="rgba(255,240,200,0.45)" />
+          <stop offset="100%" stopColor="rgba(255,240,200,0)" />
+        </radialGradient>
         {/* 선반 상단 — 밝은 오크 */}
-        <linearGradient id="kitShelfTop" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fbecd0" />
-          <stop offset="100%" stopColor="#dcb988" />
+        <linearGradient id="kitShelfTop2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fbeed1" />
+          <stop offset="100%" stopColor="#dfbb8c" />
         </linearGradient>
-        {/* 선반 전면 — 중간 오크 (두께) */}
-        <linearGradient id="kitShelfFront" x1="0" y1="0" x2="0" y2="1">
+        {/* 선반 전면 — 중간 오크 */}
+        <linearGradient id="kitShelfFront2" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#c9a072" />
-          <stop offset="100%" stopColor="#8a6238" />
+          <stop offset="60%" stopColor="#a67a46" />
+          <stop offset="100%" stopColor="#6e4a22" />
         </linearGradient>
-        {/* 프레임 — 진한 월넛 */}
-        <linearGradient id="kitFrameG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a87848" />
-          <stop offset="100%" stopColor="#5a3818" />
-        </linearGradient>
-        {/* 측면 패널 — 안쪽으로 들어간 그림자면 */}
-        <linearGradient id="kitSideL" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#6a4624" />
+        {/* 기둥 사이드 — 짙은 월넛 (음영면) */}
+        <linearGradient id="kitPost2" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#3a2410" />
+          <stop offset="50%" stopColor="#6a4a24" />
           <stop offset="100%" stopColor="#3a2410" />
         </linearGradient>
-        <linearGradient id="kitSideR" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0%" stopColor="#6a4624" />
-          <stop offset="100%" stopColor="#3a2410" />
+        {/* 기둥 top cap */}
+        <linearGradient id="kitPostTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fbeed1" />
+          <stop offset="100%" stopColor="#c9a072" />
         </linearGradient>
-        {/* 크라운 몰딩 (상단 장식) */}
-        <linearGradient id="kitCrown" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#d4a878" />
-          <stop offset="100%" stopColor="#7a4e24" />
+        {/* 카운터 상판 — 버처블록 */}
+        <linearGradient id="kitCounterTop" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fbeed1" />
+          <stop offset="60%" stopColor="#e5c58e" />
+          <stop offset="100%" stopColor="#b68a54" />
+        </linearGradient>
+        {/* 카운터 앞면 */}
+        <linearGradient id="kitCounterFront" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a67a46" />
+          <stop offset="100%" stopColor="#5a3c18" />
         </linearGradient>
         {/* 선반 아래 드리운 그림자 */}
-        <linearGradient id="kitShelfShadow" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(20,10,2,0.4)" />
+        <linearGradient id="kitShelfShadow2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(20,10,2,0.55)" />
           <stop offset="100%" stopColor="rgba(20,10,2,0)" />
         </linearGradient>
         {/* 황동 브라켓 */}
-        <linearGradient id="kitBrass" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f5d67a" />
-          <stop offset="50%" stopColor="#c49838" />
-          <stop offset="100%" stopColor="#7a5018" />
+        <linearGradient id="kitBrass2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffe08a" />
+          <stop offset="50%" stopColor="#c8962c" />
+          <stop offset="100%" stopColor="#6e4810" />
         </linearGradient>
         {/* 바닥 그림자 */}
-        <radialGradient id="kitGroundShadow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(0,0,0,0.35)" />
+        <radialGradient id="kitFloorShadow2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="rgba(0,0,0,0.38)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0)" />
         </radialGradient>
-        {/* 벽지 패턴 — 아주 옅은 점무늬 */}
-        <pattern id="kitWallDot" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-          <circle cx="10" cy="10" r="0.7" fill="rgba(110,60,20,0.18)" />
+        {/* 벽 타일 패턴 (subway tile 느낌) */}
+        <pattern id="kitTile" x="0" y="0" width="44" height="22" patternUnits="userSpaceOnUse">
+          <rect width="44" height="22" fill="none" />
+          <rect x="0.5" y="0.5" width="43" height="21" fill="rgba(255,230,195,0.08)" rx="1.2" />
+          <line x1="0" y1="22" x2="44" y2="22" stroke="rgba(90,50,20,0.12)" strokeWidth="0.5" />
+          <line x1="44" y1="0" x2="44" y2="22" stroke="rgba(90,50,20,0.12)" strokeWidth="0.5" />
         </pattern>
       </defs>
 
-      {/* 바닥 그림자 */}
-      <ellipse cx="330" cy="216" rx="310" ry="5" fill="url(#kitGroundShadow)" />
+      {/* 1. 바닥 그림자 */}
+      <ellipse cx="330" cy="216" rx="315" ry="5" fill="url(#kitFloorShadow2)" />
 
-      {/* === 크라운 몰딩 (최상단, 좌우로 살짝 튀어나옴) === */}
-      <path d="M 0,2 L 660,2 L 650,12 L 10,12 Z" fill="url(#kitCrown)" stroke="#2a1808" strokeWidth="3.5" strokeLinejoin="round" />
-      <line x1="4" y1="4" x2="656" y2="4" stroke="rgba(255,248,220,0.6)" strokeWidth="1.2" />
-      <line x1="14" y1="7" x2="646" y2="7" stroke="rgba(80,40,10,0.4)" strokeWidth="0.7" />
+      {/* 2. 뒷벽 — 테라코타 그라데이션 + subway tile + 상단 조명 */}
+      <rect x="0" y="0" width="660" height="220" fill="url(#kitWall2)" />
+      <rect x="0" y="0" width="660" height="164" fill="url(#kitTile)" opacity="0.85" />
+      <rect x="0" y="0" width="660" height="180" fill="url(#kitWallGlow)" />
 
-      {/* === 외곽 캐비닛 프레임 === */}
-      <rect x="4" y="12" width="652" height="196" rx="6" fill="url(#kitFrameG)" stroke="#2a1808" strokeWidth="3.5" strokeLinejoin="round" />
+      {/* 3. 좌측 우드 기둥 (두꺼운 버팀목, 3D 두께감) */}
+      {/* 측면 음영면 (원기둥처럼 중앙이 밝은 그라디언트) */}
+      <rect x="18" y="18" width="28" height="186" fill="url(#kitPost2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      {/* 상단 캡 (밝은 오크 평평한 윗면) */}
+      <rect x="15" y="12" width="34" height="10" rx="1.5" fill="url(#kitPostTop)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      {/* 세로 그레인 */}
+      <line x1="26" y1="23" x2="26" y2="202" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
+      <line x1="32" y1="23" x2="32" y2="202" stroke="rgba(40,20,5,0.35)" strokeWidth="0.7" />
+      <line x1="38" y1="23" x2="38" y2="202" stroke="rgba(255,240,200,0.25)" strokeWidth="0.7" />
+      {/* 옹이 */}
+      <ellipse cx="32" cy="85" rx="2.5" ry="1.3" fill="rgba(30,15,3,0.7)" />
+      <ellipse cx="32" cy="85" rx="1.2" ry="0.6" fill="rgba(15,8,2,0.8)" />
+      {/* 상하 황동 나사 */}
+      <circle cx="32" cy="26" r="1.8" fill="url(#kitBrass2)" stroke="#3a2410" strokeWidth="0.7" />
+      <circle cx="32" cy="196" r="1.8" fill="url(#kitBrass2)" stroke="#3a2410" strokeWidth="0.7" />
 
-      {/* === 내부 뒷벽 === */}
-      <rect x="28" y="18" width="604" height="184" rx="3" fill="url(#kitWallG)" stroke="#2a1808" strokeWidth="2" strokeLinejoin="round" />
-      <rect x="28" y="18" width="604" height="184" rx="3" fill="url(#kitWallDot)" />
+      {/* 4. 우측 우드 기둥 (대칭) */}
+      <rect x="614" y="18" width="28" height="186" fill="url(#kitPost2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      <rect x="611" y="12" width="34" height="10" rx="1.5" fill="url(#kitPostTop)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      <line x1="622" y1="23" x2="622" y2="202" stroke="rgba(255,240,200,0.35)" strokeWidth="0.8" />
+      <line x1="628" y1="23" x2="628" y2="202" stroke="rgba(40,20,5,0.35)" strokeWidth="0.7" />
+      <line x1="634" y1="23" x2="634" y2="202" stroke="rgba(255,240,200,0.25)" strokeWidth="0.7" />
+      <ellipse cx="628" cy="132" rx="2.5" ry="1.3" fill="rgba(30,15,3,0.7)" />
+      <ellipse cx="628" cy="132" rx="1.2" ry="0.6" fill="rgba(15,8,2,0.8)" />
+      <circle cx="628" cy="26" r="1.8" fill="url(#kitBrass2)" stroke="#3a2410" strokeWidth="0.7" />
+      <circle cx="628" cy="196" r="1.8" fill="url(#kitBrass2)" stroke="#3a2410" strokeWidth="0.7" />
 
-      {/* === 좌측 사이드 패널 (두께감) === */}
-      <path d="M 4,12 L 28,18 L 28,202 L 4,208 Z" fill="url(#kitSideL)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      {/* 좌측 세로 그레인 */}
-      <line x1="14" y1="20" x2="14" y2="200" stroke="rgba(255,240,200,0.25)" strokeWidth="0.7" />
-      <line x1="20" y1="20" x2="20" y2="200" stroke="rgba(40,20,5,0.3)" strokeWidth="0.6" />
-      {/* 좌측 나사 (상하) */}
-      <circle cx="16" cy="22" r="1.5" fill="url(#kitBrass)" stroke="#3a2410" strokeWidth="0.6" />
-      <circle cx="16" cy="198" r="1.5" fill="url(#kitBrass)" stroke="#3a2410" strokeWidth="0.6" />
+      {/* 5. 상단 선반 (y≈30~55, 두께감 강화) */}
+      {/* 선반 아래 드리운 그림자 */}
+      <rect x="46" y="55" width="568" height="16" fill="url(#kitShelfShadow2)" opacity="0.9" />
+      {/* 전면 */}
+      <rect x="40" y="44" width="580" height="13" rx="1.5" fill="url(#kitShelfFront2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      {/* 상단 (윗면, 더 밝음) */}
+      <rect x="40" y="32" width="580" height="14" rx="1.5" fill="url(#kitShelfTop2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      {/* 상단 하이라이트 (반짝) */}
+      <line x1="48" y1="35" x2="612" y2="35" stroke="rgba(255,252,235,0.95)" strokeWidth="1.6" />
+      <line x1="48" y1="39" x2="612" y2="39" stroke="rgba(255,250,220,0.4)" strokeWidth="0.7" />
+      {/* 전면 우드 그레인 세로 점 */}
+      <line x1="130" y1="46" x2="130" y2="55" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="260" y1="45" x2="260" y2="55" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="390" y1="46" x2="390" y2="55" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="520" y1="45" x2="520" y2="55" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      {/* 옹이 (상단면 + 전면) */}
+      <ellipse cx="330" cy="39" rx="3.5" ry="1.4" fill="rgba(60,30,10,0.35)" />
+      <ellipse cx="330" cy="39" rx="1.5" ry="0.7" fill="rgba(25,12,3,0.55)" />
+      <ellipse cx="200" cy="50" rx="2.8" ry="1.2" fill="rgba(30,15,4,0.6)" />
+      <ellipse cx="200" cy="50" rx="1.2" ry="0.6" fill="rgba(15,8,2,0.8)" />
+      {/* 황동 L자 브라켓 좌 */}
+      <path d="M 60,43 L 60,68 L 80,68" fill="none" stroke="url(#kitBrass2)" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="60" cy="48" r="1.8" fill="#3a2410" />
+      <circle cx="76" cy="68" r="1.8" fill="#3a2410" />
+      {/* 브라켓 광택 하이라이트 */}
+      <path d="M 58.5,45 L 58.5,66" stroke="rgba(255,240,180,0.6)" strokeWidth="1" strokeLinecap="round" />
+      {/* 우측 브라켓 */}
+      <path d="M 600,43 L 600,68 L 580,68" fill="none" stroke="url(#kitBrass2)" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="600" cy="48" r="1.8" fill="#3a2410" />
+      <circle cx="584" cy="68" r="1.8" fill="#3a2410" />
+      <path d="M 601.5,45 L 601.5,66" stroke="rgba(255,240,180,0.6)" strokeWidth="1" strokeLinecap="round" />
 
-      {/* === 우측 사이드 패널 === */}
-      <path d="M 656,12 L 632,18 L 632,202 L 656,208 Z" fill="url(#kitSideR)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <line x1="646" y1="20" x2="646" y2="200" stroke="rgba(255,240,200,0.25)" strokeWidth="0.7" />
-      <line x1="640" y1="20" x2="640" y2="200" stroke="rgba(40,20,5,0.3)" strokeWidth="0.6" />
-      <circle cx="644" cy="22" r="1.5" fill="url(#kitBrass)" stroke="#3a2410" strokeWidth="0.6" />
-      <circle cx="644" cy="198" r="1.5" fill="url(#kitBrass)" stroke="#3a2410" strokeWidth="0.6" />
+      {/* 6. 중단 선반 (y≈95~120) */}
+      <rect x="46" y="120" width="568" height="14" fill="url(#kitShelfShadow2)" opacity="0.9" />
+      <rect x="40" y="109" width="580" height="13" rx="1.5" fill="url(#kitShelfFront2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      <rect x="40" y="97" width="580" height="14" rx="1.5" fill="url(#kitShelfTop2)" stroke="#1a0d04" strokeWidth="2.8" strokeLinejoin="round" />
+      <line x1="48" y1="100" x2="612" y2="100" stroke="rgba(255,252,235,0.95)" strokeWidth="1.6" />
+      <line x1="48" y1="104" x2="612" y2="104" stroke="rgba(255,250,220,0.4)" strokeWidth="0.7" />
+      <line x1="130" y1="111" x2="130" y2="120" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="260" y1="110" x2="260" y2="120" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="390" y1="111" x2="390" y2="120" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <line x1="520" y1="110" x2="520" y2="120" stroke="rgba(50,25,8,0.55)" strokeWidth="0.9" />
+      <ellipse cx="450" cy="104" rx="3.5" ry="1.4" fill="rgba(60,30,10,0.35)" />
+      <ellipse cx="450" cy="104" rx="1.5" ry="0.7" fill="rgba(25,12,3,0.55)" />
+      <ellipse cx="290" cy="115" rx="2.8" ry="1.2" fill="rgba(30,15,4,0.6)" />
+      <ellipse cx="290" cy="115" rx="1.2" ry="0.6" fill="rgba(15,8,2,0.8)" />
+      {/* 브라켓 */}
+      <path d="M 60,108 L 60,133 L 80,133" fill="none" stroke="url(#kitBrass2)" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="60" cy="113" r="1.8" fill="#3a2410" />
+      <circle cx="76" cy="133" r="1.8" fill="#3a2410" />
+      <path d="M 58.5,110 L 58.5,131" stroke="rgba(255,240,180,0.6)" strokeWidth="1" strokeLinecap="round" />
+      <path d="M 600,108 L 600,133 L 580,133" fill="none" stroke="url(#kitBrass2)" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx="600" cy="113" r="1.8" fill="#3a2410" />
+      <circle cx="584" cy="133" r="1.8" fill="#3a2410" />
+      <path d="M 601.5,110 L 601.5,131" stroke="rgba(255,240,180,0.6)" strokeWidth="1" strokeLinecap="round" />
 
-      {/* === 내부 뒷벽 세로 우드판 그레인 (판자 구분선) === */}
-      <line x1="180" y1="20" x2="180" y2="200" stroke="rgba(100,50,20,0.3)" strokeWidth="1.2" />
-      <line x1="181.2" y1="20" x2="181.2" y2="200" stroke="rgba(255,240,200,0.35)" strokeWidth="0.6" />
-      <line x1="330" y1="20" x2="330" y2="200" stroke="rgba(100,50,20,0.3)" strokeWidth="1.2" />
-      <line x1="331.2" y1="20" x2="331.2" y2="200" stroke="rgba(255,240,200,0.35)" strokeWidth="0.6" />
-      <line x1="480" y1="20" x2="480" y2="200" stroke="rgba(100,50,20,0.3)" strokeWidth="1.2" />
-      <line x1="481.2" y1="20" x2="481.2" y2="200" stroke="rgba(255,240,200,0.35)" strokeWidth="0.6" />
-
-      {/* =========== 상단 선반 (y=34-50) =========== */}
-      <rect x="32" y="50" width="596" height="14" fill="url(#kitShelfShadow)" opacity="0.85" />
-      {/* 전면(두꺼운 카툰 엣지) */}
-      <rect x="28" y="42" width="604" height="11" rx="1.5" fill="url(#kitShelfFront)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      {/* 상단(윗면) */}
-      <rect x="28" y="34" width="604" height="10" rx="1.5" fill="url(#kitShelfTop)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <line x1="32" y1="37" x2="628" y2="37" stroke="rgba(255,252,235,0.85)" strokeWidth="1.2" />
-      {/* 전면 우드 그레인 점 */}
-      <line x1="120" y1="44" x2="120" y2="51" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="270" y1="43" x2="270" y2="51" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="420" y1="44" x2="420" y2="51" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="540" y1="43" x2="540" y2="51" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      {/* 옹이(knot) */}
-      <ellipse cx="340" cy="47" rx="2.5" ry="1.2" fill="rgba(50,25,8,0.55)" />
-      <ellipse cx="340" cy="47" rx="1.3" ry="0.6" fill="rgba(30,15,5,0.7)" />
-      {/* 좌측 황동 브라켓 */}
-      <path d="M 36,43 L 36,60 L 56,60" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="36" cy="46" r="1.4" fill="#5a3810" />
-      <circle cx="53" cy="60" r="1.4" fill="#5a3810" />
-      {/* 우측 황동 브라켓 */}
-      <path d="M 624,43 L 624,60 L 604,60" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="624" cy="46" r="1.4" fill="#5a3810" />
-      <circle cx="607" cy="60" r="1.4" fill="#5a3810" />
-
-      {/* =========== 중간 선반 (y=106-122) =========== */}
-      <rect x="32" y="122" width="596" height="14" fill="url(#kitShelfShadow)" opacity="0.85" />
-      <rect x="28" y="114" width="604" height="11" rx="1.5" fill="url(#kitShelfFront)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <rect x="28" y="106" width="604" height="10" rx="1.5" fill="url(#kitShelfTop)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <line x1="32" y1="109" x2="628" y2="109" stroke="rgba(255,252,235,0.85)" strokeWidth="1.2" />
-      <line x1="120" y1="116" x2="120" y2="123" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="270" y1="115" x2="270" y2="123" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="420" y1="116" x2="420" y2="123" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="540" y1="115" x2="540" y2="123" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <ellipse cx="210" cy="119" rx="2.2" ry="1.1" fill="rgba(50,25,8,0.5)" />
-      <ellipse cx="210" cy="119" rx="1.1" ry="0.5" fill="rgba(30,15,5,0.65)" />
-      <path d="M 36,115 L 36,132 L 56,132" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="36" cy="118" r="1.4" fill="#5a3810" />
-      <circle cx="53" cy="132" r="1.4" fill="#5a3810" />
-      <path d="M 624,115 L 624,132 L 604,132" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="624" cy="118" r="1.4" fill="#5a3810" />
-      <circle cx="607" cy="132" r="1.4" fill="#5a3810" />
-
-      {/* =========== 하단 선반 (y=176-192) =========== */}
-      <rect x="32" y="192" width="596" height="10" fill="url(#kitShelfShadow)" opacity="0.7" />
-      <rect x="28" y="184" width="604" height="11" rx="1.5" fill="url(#kitShelfFront)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <rect x="28" y="176" width="604" height="10" rx="1.5" fill="url(#kitShelfTop)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <line x1="32" y1="179" x2="628" y2="179" stroke="rgba(255,252,235,0.85)" strokeWidth="1.2" />
-      <line x1="120" y1="186" x2="120" y2="193" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="270" y1="185" x2="270" y2="193" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="420" y1="186" x2="420" y2="193" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <line x1="540" y1="185" x2="540" y2="193" stroke="rgba(60,30,10,0.4)" strokeWidth="0.8" />
-      <ellipse cx="460" cy="189" rx="2.3" ry="1.1" fill="rgba(50,25,8,0.5)" />
-      <ellipse cx="460" cy="189" rx="1.1" ry="0.5" fill="rgba(30,15,5,0.65)" />
-      <path d="M 36,185 L 36,200 L 56,200" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="36" cy="188" r="1.4" fill="#5a3810" />
-      <circle cx="53" cy="200" r="1.4" fill="#5a3810" />
-      <path d="M 624,185 L 624,200 L 604,200" fill="none" stroke="url(#kitBrass)" strokeWidth="4" strokeLinejoin="round" />
-      <circle cx="624" cy="188" r="1.4" fill="#5a3810" />
-      <circle cx="607" cy="200" r="1.4" fill="#5a3810" />
-
-      {/* === 하단 베이스보드 === */}
-      <rect x="4" y="204" width="652" height="12" rx="2" fill="url(#kitCrown)" stroke="#2a1808" strokeWidth="3" strokeLinejoin="round" />
-      <line x1="10" y1="207" x2="650" y2="207" stroke="rgba(255,248,220,0.6)" strokeWidth="1.2" />
-      <line x1="10" y1="213" x2="650" y2="213" stroke="rgba(40,20,5,0.45)" strokeWidth="0.8" />
+      {/* 7. 하단 카운터 — 두꺼운 버처블록 (chip이 여기 얹힘) */}
+      {/* 카운터 아래 그림자 */}
+      <rect x="20" y="202" width="620" height="8" fill="url(#kitShelfShadow2)" opacity="0.8" />
+      {/* 전면 (두꺼움) */}
+      <rect x="10" y="178" width="640" height="24" rx="2.5" fill="url(#kitCounterFront)" stroke="#1a0d04" strokeWidth="3" strokeLinejoin="round" />
+      {/* 상판 (두꺼움, 버처블록 스타일) */}
+      <rect x="10" y="160" width="640" height="20" rx="2.5" fill="url(#kitCounterTop)" stroke="#1a0d04" strokeWidth="3" strokeLinejoin="round" />
+      {/* 상판 하이라이트 */}
+      <line x1="20" y1="163" x2="640" y2="163" stroke="rgba(255,252,235,1)" strokeWidth="1.8" />
+      <line x1="20" y1="168" x2="640" y2="168" stroke="rgba(255,248,225,0.5)" strokeWidth="0.9" />
+      {/* 상판 우드 그레인 — 가로 결 (버처블록 특유) */}
+      <line x1="20" y1="172" x2="640" y2="173" stroke="rgba(110,80,40,0.35)" strokeWidth="0.8" />
+      <line x1="20" y1="176" x2="640" y2="177" stroke="rgba(110,80,40,0.3)" strokeWidth="0.7" />
+      {/* 세로 블록 분할선 (버처블록 특유의 stave) */}
+      <line x1="140" y1="160" x2="140" y2="180" stroke="rgba(60,35,10,0.45)" strokeWidth="0.8" />
+      <line x1="280" y1="160" x2="280" y2="180" stroke="rgba(60,35,10,0.45)" strokeWidth="0.8" />
+      <line x1="420" y1="160" x2="420" y2="180" stroke="rgba(60,35,10,0.45)" strokeWidth="0.8" />
+      <line x1="540" y1="160" x2="540" y2="180" stroke="rgba(60,35,10,0.45)" strokeWidth="0.8" />
+      {/* 전면 그레인 */}
+      <line x1="100" y1="180" x2="100" y2="200" stroke="rgba(60,30,10,0.5)" strokeWidth="0.9" />
+      <line x1="230" y1="179" x2="230" y2="200" stroke="rgba(60,30,10,0.5)" strokeWidth="0.9" />
+      <line x1="360" y1="180" x2="360" y2="200" stroke="rgba(60,30,10,0.5)" strokeWidth="0.9" />
+      <line x1="490" y1="179" x2="490" y2="200" stroke="rgba(60,30,10,0.5)" strokeWidth="0.9" />
+      <line x1="580" y1="180" x2="580" y2="200" stroke="rgba(60,30,10,0.5)" strokeWidth="0.9" />
+      {/* 전면 옹이 */}
+      <ellipse cx="180" cy="188" rx="3" ry="1.3" fill="rgba(30,15,4,0.65)" />
+      <ellipse cx="180" cy="188" rx="1.3" ry="0.6" fill="rgba(15,8,2,0.85)" />
+      <ellipse cx="470" cy="192" rx="3.5" ry="1.4" fill="rgba(30,15,4,0.65)" />
+      <ellipse cx="470" cy="192" rx="1.5" ry="0.7" fill="rgba(15,8,2,0.85)" />
+      {/* 상판 옹이 */}
+      <ellipse cx="330" cy="170" rx="4" ry="1.5" fill="rgba(60,30,10,0.4)" />
+      <ellipse cx="330" cy="170" rx="1.8" ry="0.8" fill="rgba(30,15,3,0.6)" />
     </svg>
   );
 }
