@@ -243,7 +243,12 @@ export default function RecipeDetailClient({
           }).catch(() => {});
         }
       } else if (res.status === 401) {
-        toast.warning('로그인이 필요합니다');
+        toast.warning('로그인하면 레시피를 낼름(저장)할 수 있어요', {
+          action: {
+            label: '로그인',
+            onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
+          }
+        });
       }
     } catch (error) {
       console.error('Save error:', error);
@@ -276,7 +281,12 @@ export default function RecipeDetailClient({
         // 롤백 + 로그인 유도
         setIsLiked(prevLiked);
         setLikesCount(prevCount);
-        toast.warning('로그인이 필요합니다');
+        toast.warning('로그인하면 레시피에 좋아요를 누를 수 있어요', {
+          action: {
+            label: '로그인',
+            onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
+          }
+        });
       } else {
         setIsLiked(prevLiked);
         setLikesCount(prevCount);

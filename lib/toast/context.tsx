@@ -14,6 +14,7 @@ interface Toast {
   message: string;
   type: ToastType;
   action?: ToastAction;
+  duration: number;
 }
 
 interface ToastOptions {
@@ -24,10 +25,10 @@ interface ToastOptions {
 interface ToastContextValue {
   toasts: Toast[];
   toast: (message: string, type?: ToastType, options?: ToastOptions) => void;
-  success: (message: string) => void;
-  error: (message: string) => void;
-  warning: (message: string) => void;
-  info: (message: string) => void;
+  success: (message: string, options?: ToastOptions) => void;
+  error: (message: string, options?: ToastOptions) => void;
+  warning: (message: string, options?: ToastOptions) => void;
+  info: (message: string, options?: ToastOptions) => void;
   dismiss: (id: string) => void;
 }
 
@@ -58,19 +59,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback((message: string, type: ToastType = 'success', options?: ToastOptions) => {
     const id = `toast-${++toastCounter}`;
-    setToasts(prev => [...prev, { id, message, type, action: options?.action }]);
+    const duration = options?.duration ?? (options?.action ? 6000 : 3500);
+    setToasts(prev => [...prev, { id, message, type, action: options?.action, duration }]);
 
     const timer = setTimeout(() => {
       timersRef.current.delete(id);
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, options?.duration ?? 3000);
+    }, duration);
     timersRef.current.set(id, timer);
   }, []);
 
-  const success = useCallback((msg: string) => addToast(msg, 'success'), [addToast]);
-  const error = useCallback((msg: string) => addToast(msg, 'error'), [addToast]);
-  const warning = useCallback((msg: string) => addToast(msg, 'warning'), [addToast]);
-  const info = useCallback((msg: string) => addToast(msg, 'info'), [addToast]);
+  const success = useCallback((msg: string, opts?: ToastOptions) => addToast(msg, 'success', opts), [addToast]);
+  const error = useCallback((msg: string, opts?: ToastOptions) => addToast(msg, 'error', opts), [addToast]);
+  const warning = useCallback((msg: string, opts?: ToastOptions) => addToast(msg, 'warning', opts), [addToast]);
+  const info = useCallback((msg: string, opts?: ToastOptions) => addToast(msg, 'info', opts), [addToast]);
 
   const value = useMemo<ToastContextValue>(() => ({
     toasts, toast: addToast, success, error, warning, info, dismiss,

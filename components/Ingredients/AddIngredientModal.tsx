@@ -70,8 +70,8 @@ export default function AddIngredientModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-background-primary rounded-t-3xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col"
-        style={{ maxHeight: '90dvh' }}
+        className="w-full max-w-lg bg-background-primary rounded-t-3xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col mb-[env(safe-area-inset-bottom)] sm:mb-0"
+        style={{ maxHeight: '88dvh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
@@ -109,8 +109,8 @@ export default function AddIngredientModal({
           ))}
         </div>
 
-        {/* 콘텐츠 */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-2">
+        {/* 콘텐츠 — 하단 패딩 여유롭게 (모바일 브라우저 URL 바 안 가리게) */}
+        <div className="flex-1 overflow-y-auto px-6 pt-2 pb-10 sm:pb-6">
           {tab === 'form' && (
             <IngredientForm
               onSubmit={onAddIngredient}
