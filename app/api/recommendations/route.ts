@@ -164,10 +164,14 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') || 'ingredients'
   const rawLimit = parseInt(searchParams.get('limit') || '12')
   const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 12 : rawLimit), 50)
+  // 재료 기반 mode: ready(100%) | almost(missing 1~2) | all(>0%). ingredients type 에서만 사용.
+  // 'auto'면 서버가 bestMode 자동 판단 (바로 가능 ≥1 → ready, 아니면 almost → all 순서).
+  const modeParam = (searchParams.get('mode') || 'auto') as 'auto' | 'ready' | 'almost' | 'all'
 
   const { data: { user } } = await supabase.auth.getUser()
 
   let recommendations: unknown[] = []
+  let resolvedMode: typeof modeParam = modeParam
 
   try {
     switch (type) {
@@ -214,7 +218,7 @@ export async function GET(request: NextRequest) {
           .or(ilikeClauses)
 
         if (!candidateRows?.length) {
-          return NextResponse.json({ recommendations: [] })
+          return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
         const candidateIds = [...new Set(candidateRows.map(r => r.recipe_id))]
@@ -233,7 +237,7 @@ export async function GET(request: NextRequest) {
           .in('id', candidateIds.slice(0, 300))
 
         if (!recipes) {
-          return NextResponse.json({ recommendations: [] })
+          return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
         // 알레르기 필터링 적용 (로그인 사용자만)
@@ -281,8 +285,27 @@ export async function GET(request: NextRequest) {
           }
         })
 
+        // mode별 필터 함수
+        const isReady = (r: { matchedCount: number; totalIngredients: number }) =>
+          r.totalIngredients > 0 && r.matchedCount === r.totalIngredients
+        const isAlmost = (r: { missingCount: number }) =>
+          r.missingCount >= 1 && r.missingCount <= 2
+        const isAny = (r: { matchRate: number }) => r.matchRate > 0
+
+        // 'auto' 모드: 서버가 가장 유용한 결과 선택
+        if (modeParam === 'auto') {
+          if (recipesWithMatch.some(isReady)) resolvedMode = 'ready'
+          else if (recipesWithMatch.some(isAlmost)) resolvedMode = 'almost'
+          else resolvedMode = 'all'
+        }
+
+        const predicate =
+          resolvedMode === 'ready' ? isReady :
+          resolvedMode === 'almost' ? isAlmost :
+          isAny
+
         recommendations = recipesWithMatch
-          .filter(r => r.matchRate > 0)
+          .filter(predicate)
           .sort((a, b) => {
             if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate
             if (a.missingCount !== b.missingCount) return a.missingCount - b.missingCount
@@ -461,5 +484,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '추천을 불러오는데 실패했습니다' }, { status: 500 })
   }
 
-  return NextResponse.json({ recommendations, type })
+  return NextResponse.json({ recommendations, type, mode: resolvedMode })
 }

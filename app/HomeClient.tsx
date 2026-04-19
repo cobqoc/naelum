@@ -21,6 +21,8 @@ import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
+import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
+import { useRouter } from 'next/navigation';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -206,14 +208,12 @@ export default function HomeClient({
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
 
-  // 현재 재료로 만들 수 있는 레시피 개수 — 말풍선 CTA 노출 + "N개 가능!" 숫자 표시에 사용.
-  // 비로그인: API 호출 불가(로그인 필요). count는 null로 두고 "레시피 추천 →" 일반 문구 표시.
-  // 로그인 + 빈 냉장고: fetch 스킵, count 0 (bubble 숨김).
-  // 로그인 + 재료 있음: fetch로 count 채움.
+  // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
+  // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
+  // - matchingCount: 해당 mode의 레시피 개수
   const [matchingCount, setMatchingCount] = useState<number | null>(null);
-  const showRecipeBubble = items.length > 0 && (
-    !isAuthenticated || (matchingCount !== null && matchingCount > 0)
-  );
+  const [resolvedMode, setResolvedMode] = useState<'ready' | 'almost' | 'all' | null>(null);
+  const showRecipeBubble = items.length > 0;
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
@@ -247,8 +247,38 @@ export default function HomeClient({
     return () => window.removeEventListener('keydown', handler);
   }, [showMobileSearch]);
 
-  // 재료 상세 수정 모달 (chip 탭 시 열림)
+  // 재료 액션 시트 (chip 탭 시 1차로 열림: 만들기/수정/삭제)
+  const [actionItem, setActionItem] = useState<FridgeItem | null>(null);
+  // 재료 상세 수정 모달 (액션 시트의 '수정' 선택 시 열림)
   const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
+
+  const router = useRouter();
+
+  // 액션 시트: "이 재료로 만들기" → 해당 재료 들어간 레시피 페이지로 이동.
+  const handleCook = (item: FridgeItem) => {
+    setActionItem(null);
+    router.push(`/recommendations?mode=all&ingredients=${encodeURIComponent(item.ingredient_name)}`);
+  };
+
+  // 액션 시트: "수정" → 상세 수정 모달 열기.
+  const handleEditFromSheet = (item: FridgeItem) => {
+    setActionItem(null);
+    setDetailItem(item);
+  };
+
+  // 액션 시트: "삭제" → DEMO면 state만, 실제 유저면 Supabase delete.
+  const handleDeleteFromSheet = async (item: FridgeItem) => {
+    if (!user || item.id.startsWith('d')) {
+      setItems(prev => prev.filter(i => i.id !== item.id));
+    } else {
+      const client = createClient();
+      await client.from('user_ingredients').delete().eq('id', item.id);
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      window.dispatchEvent(new Event('fridge-updated'));
+    }
+    setActionItem(null);
+    showToast(`🗑 ${item.ingredient_name} 삭제됨`);
+  };
 
   const fetchItems = useCallback(async () => {
     if (!user) {
@@ -289,21 +319,24 @@ export default function HomeClient({
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 매칭 레시피 개수 fetch — 재료 있으면 로그인 여부 무관하게 시도. limit=30은 "30+개"로 cap.
+  // 매칭 레시피 fetch — mode=auto로 서버가 best mode 자동 선택.
+  // 응답의 mode 필드로 버블 라벨 결정 (🔥 바로 가능 / 🛒 거의 가능 / 📋 추천).
   useEffect(() => {
     if (items.length === 0) return;
     let cancelled = false;
+    const base = '/api/recommendations?type=ingredients&limit=30&mode=auto';
     const url = isAuthenticated
-      ? '/api/recommendations?type=ingredients&limit=30'
-      : `/api/recommendations?type=ingredients&limit=30&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
+      ? base
+      : `${base}&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
     fetch(url)
-      .then(r => r.ok ? r.json() : { recommendations: [] })
+      .then(r => r.ok ? r.json() : { recommendations: [], mode: null })
       .then(data => {
         if (cancelled) return;
         setMatchingCount(Array.isArray(data.recommendations) ? data.recommendations.length : 0);
+        setResolvedMode(data.mode ?? null);
       })
       .catch(() => {
-        if (!cancelled) setMatchingCount(0);
+        if (!cancelled) { setMatchingCount(0); setResolvedMode(null); }
       });
     return () => { cancelled = true; };
   }, [isAuthenticated, items]);
@@ -454,7 +487,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[280px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
+        <div className="relative w-full max-w-[420px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
@@ -493,17 +526,17 @@ export default function HomeClient({
                         return (
                           <button
                             key={item.id}
-                            onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
-                            className={`pointer-events-auto flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
+                            className={`pointer-events-auto flex items-center gap-1 px-1.5 py-1 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
                             style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
                             title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
                           >
-                            <span className="text-sm md:text-base leading-none">{emoji}</span>
-                            <span className="text-[9px] md:text-[10px] font-bold text-gray-800 leading-none max-w-[60px] truncate">
+                            <span className="text-base md:text-lg leading-none">{emoji}</span>
+                            <span className="text-[11px] md:text-xs font-bold text-gray-800 leading-none max-w-[72px] truncate">
                               {item.ingredient_name}
                             </span>
                             {label && (
-                              <span className="text-[8px] md:text-[9px] font-bold leading-none" style={{ color: border }}>{label}</span>
+                              <span className="text-[9px] md:text-[10px] font-bold leading-none" style={{ color: border }}>{label}</span>
                             )}
                           </button>
                         );
@@ -511,7 +544,7 @@ export default function HomeClient({
                       {overflow > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setAddModalLocation('상온'); }}
-                          className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-bold shrink-0"
+                          className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0"
                           title={`${overflow}개 더 보기`}
                         >
                           +{overflow}
@@ -537,8 +570,10 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
+        {/* maxHeight: header(56) + 찬장(~130~140) + gap(8) + BottomNav(56) ≈ 250.
+            주요 기종(iPhone 12+)에서 스크롤 없이 fit. SE는 약간의 스크롤 허용. */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 213px - env(safe-area-inset-bottom))' }}>
+          style={{ maxHeight: 'calc(100dvh - 250px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역 */}
@@ -550,25 +585,35 @@ export default function HomeClient({
             +
           </button>
 
-          {/* 레시피 추천 말풍선 — 오른쪽 냉동고 도어 내부 상단 (도어 선반 바로 위) */}
-          {showRecipeBubble && (
-            <Link
-              href={isAuthenticated
-                ? "/recommendations"
-                : `/recommendations?ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}
-              className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
-              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-              aria-label="재료로 만들 수 있는 레시피 보기"
-            >
-              <span className="text-sm md:text-base leading-none">💡</span>
-              <span>
-                {matchingCount !== null && matchingCount > 0
-                  ? `${matchingCount >= 30 ? '30+' : matchingCount}개 가능!`
-                  : '레시피 추천'}
-              </span>
-              <span className="leading-none">→</span>
-            </Link>
-          )}
+          {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
+              클릭 시 /recommendations?mode=auto로 진입 → 페이지에서도 같은 판단 로직으로 pill 자동 선택. */}
+          {showRecipeBubble && (() => {
+            const ingQuery = isAuthenticated
+              ? ''
+              : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
+            const href = `/recommendations?mode=auto${ingQuery}`;
+            // 라벨 결정
+            let icon = '💡';
+            let label = '레시피 찾기';
+            if (matchingCount !== null && matchingCount > 0 && resolvedMode) {
+              const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
+              if (resolvedMode === 'ready') { icon = '🔥'; label = `바로 가능 ${countStr}개`; }
+              else if (resolvedMode === 'almost') { icon = '🛒'; label = `거의 가능 ${countStr}개`; }
+              else { icon = '📋'; label = `레시피 ${countStr}개`; }
+            }
+            return (
+              <Link
+                href={href}
+                className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+                style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+                aria-label={`${label} — 레시피 보기`}
+              >
+                <span className="text-sm md:text-base leading-none">{icon}</span>
+                <span>{label}</span>
+                <span className="leading-none">→</span>
+              </Link>
+            );
+          })()}
 
           {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
           <div className="absolute inset-0 pointer-events-none">
@@ -613,7 +658,7 @@ export default function HomeClient({
                       return (
                         <button
                           key={item.id}
-                          onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
+                          onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
                           className={`flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/90 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
                           style={{
                             borderColor: border,
@@ -660,6 +705,15 @@ export default function HomeClient({
           <span>{toast}</span>
         </div>
       )}
+
+      {/* 재료 액션 시트 — chip 탭 시 1차로 열림 (만들기/수정/삭제) */}
+      <IngredientActionSheet
+        item={actionItem ? { id: actionItem.id, ingredient_name: actionItem.ingredient_name, emoji: getEmoji(actionItem.ingredient_name, actionItem.category) } : null}
+        onClose={() => setActionItem(null)}
+        onCook={() => actionItem && handleCook(actionItem)}
+        onEdit={() => actionItem && handleEditFromSheet(actionItem)}
+        onDelete={() => actionItem && handleDeleteFromSheet(actionItem)}
+      />
 
       {/* 재료 상세 수정 모달 */}
       {detailItem && (

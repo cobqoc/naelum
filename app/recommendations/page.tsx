@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
@@ -10,16 +10,25 @@ import FridgeRecipeCard from '@/components/FridgeRecipeCard';
 import BottomNav from '@/components/BottomNav';
 
 type TabType = 'ingredients' | 'personalized' | 'trending' | 'meal_time';
+type IngMode = 'auto' | 'ready' | 'almost' | 'all';
+
+const MODE_OPTIONS: { key: Exclude<IngMode, 'auto'>; icon: string; label: string; desc: string }[] = [
+  { key: 'ready',  icon: '🔥', label: '바로 가능',   desc: '냉장고 재료로 100% 완성' },
+  { key: 'almost', icon: '🛒', label: '거의 가능',   desc: '1~2개만 더 사면 OK' },
+  { key: 'all',    icon: '📋', label: '전체',         desc: '매칭률 순 전체 리스트' },
+];
 
 export default function RecommendationsPage() {
   const { t } = useI18n();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('ingredients');
+  const [mode, setMode] = useState<IngMode>((searchParams.get('mode') as IngMode) || 'auto');
   const [recommendations, setRecommendations] = useState<RecipeWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  const fetchRecommendations = useCallback(async (type: TabType) => {
+  const fetchRecommendations = useCallback(async (type: TabType, modeVal: IngMode) => {
     setLoading(true);
     setMessage('');
 
@@ -27,9 +36,10 @@ export default function RecommendationsPage() {
       // 비로그인 체험: URL ingredients= 파라미터 or localStorage에서 데모 재료 읽어 API에 전달
       let extraParams = '';
       if (type === 'ingredients') {
+        extraParams = `&mode=${modeVal}`;
         const urlIngredients = searchParams.get('ingredients');
         if (urlIngredients) {
-          extraParams = `&ingredients=${encodeURIComponent(urlIngredients)}`;
+          extraParams += `&ingredients=${encodeURIComponent(urlIngredients)}`;
         } else {
           try {
             const saved = localStorage.getItem('naelum_demo_items');
@@ -37,7 +47,7 @@ export default function RecommendationsPage() {
               const parsed = JSON.parse(saved);
               if (Array.isArray(parsed) && parsed.length > 0) {
                 const names = parsed.map((i: { ingredient_name: string }) => i.ingredient_name).filter(Boolean);
-                if (names.length > 0) extraParams = `&ingredients=${encodeURIComponent(names.join(','))}`;
+                if (names.length > 0) extraParams += `&ingredients=${encodeURIComponent(names.join(','))}`;
               }
             }
           } catch { /* localStorage 접근 실패 무시 */ }
@@ -45,6 +55,11 @@ export default function RecommendationsPage() {
       }
       const res = await fetch(`/api/recommendations?type=${type}&limit=20${extraParams}`);
       const data = await res.json();
+
+      // auto 모드였으면 서버가 선택한 resolvedMode를 상태에 반영 (pill UI 하이라이트)
+      if (type === 'ingredients' && modeVal === 'auto' && data.mode && data.mode !== 'auto') {
+        setMode(data.mode);
+      }
 
       if (data.error) {
         setMessage(data.error);
@@ -88,8 +103,16 @@ export default function RecommendationsPage() {
   }, [t.recommendations.loadFailed, searchParams]);
 
   useEffect(() => {
-    fetchRecommendations(activeTab);
-  }, [activeTab, fetchRecommendations]);
+    fetchRecommendations(activeTab, activeTab === 'ingredients' ? mode : 'auto');
+  }, [activeTab, mode, fetchRecommendations]);
+
+  // mode 변경 시 URL 쿼리 갱신 (공유/북마크 가능)
+  const changeMode = (next: Exclude<IngMode, 'auto'>) => {
+    setMode(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('mode', next);
+    router.replace(`/recommendations?${params.toString()}`, { scroll: false });
+  };
 
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: 'ingredients', label: t.recommendations.byIngredients, icon: '🥬' },
@@ -131,13 +154,26 @@ export default function RecommendationsPage() {
 
       {/* Content */}
       <div className="container mx-auto max-w-4xl px-6 py-6">
-        {/* Info Banner */}
+        {/* Ingredients mode pill 필터 */}
         {activeTab === 'ingredients' && (
-          <div className="mb-6 p-4 rounded-xl bg-accent-warm/10 border border-accent-warm/20">
-            <p className="text-sm text-text-secondary">
-              <span className="font-bold text-accent-warm">{t.recommendations.byIngredients}</span> {t.recommendations.ingredientBasedDesc}
-              <Link href="/" className="ml-2 text-accent-warm underline">{t.recommendations.manageIngredients}</Link>
-            </p>
+          <div className="mb-5 flex gap-2 overflow-x-auto scrollbar-hide -mx-6 px-6">
+            {MODE_OPTIONS.map(opt => {
+              const active = mode === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => changeMode(opt.key)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                    active
+                      ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
+                      : 'bg-background-secondary text-text-secondary hover:bg-white/10 border border-white/10'
+                  }`}
+                >
+                  <span>{opt.icon}</span>
+                  {opt.label}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -166,6 +202,44 @@ export default function RecommendationsPage() {
               </Link>
             )}
           </div>
+        ) : recommendations.length === 0 && activeTab === 'ingredients' ? (
+          // 빈 결과 + mode 전환 CTA
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📭</div>
+            {mode === 'ready' ? (
+              <>
+                <p className="text-text-primary font-medium mb-2">바로 만들 수 있는 레시피가 없어요</p>
+                <p className="text-text-muted text-sm mb-6">조금 부족한 레시피도 볼까요?</p>
+                <button
+                  onClick={() => changeMode('almost')}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
+                >
+                  🛒 재료 1~2개만 더 볼게요
+                </button>
+              </>
+            ) : mode === 'almost' ? (
+              <>
+                <p className="text-text-primary font-medium mb-2">거의 가능한 레시피가 없어요</p>
+                <p className="text-text-muted text-sm mb-6">매칭률 기준 전체 리스트를 볼게요</p>
+                <button
+                  onClick={() => changeMode('all')}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
+                >
+                  📋 전체 추천 보기
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-text-primary font-medium mb-2">매칭되는 레시피가 없어요</p>
+                <Link
+                  href="/"
+                  className="mt-4 inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold"
+                >
+                  재료 등록하러 가기
+                </Link>
+              </>
+            )}
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {recommendations.map((recipe) => (
@@ -174,7 +248,7 @@ export default function RecommendationsPage() {
           </div>
         )}
 
-        {recommendations.length === 0 && !loading && !message && (
+        {recommendations.length === 0 && !loading && !message && activeTab !== 'ingredients' && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🍽️</div>
             <p className="text-text-muted">{t.recommendations.noRecommendations}</p>

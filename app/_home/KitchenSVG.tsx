@@ -14,7 +14,7 @@
  */
 export default function KitchenSVG() {
   return (
-    <svg viewBox="0 0 660 220" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 660 220" className="w-full h-full" xmlns="http://www.w3.org/2000/svg" style={{ overflow: 'visible' }}>
       <defs>
         {/* 조리대 상판 (빨강 프레임 톤 — 기존 브라운 우드 대체) */}
         <linearGradient id="kitCounterTop3" x1="0" y1="0" x2="0" y2="1">
@@ -80,8 +80,9 @@ export default function KitchenSVG() {
 
       {/* 1. 뒷벽 제거됨 — 페이지 배경이 자연스럽게 비치도록 투명 */}
 
-      {/* 2. 조리대 위 — 좌측: 큰 흰 솥 + 빨간 뚜껑 + 위에 스택된 폴카도트 작은 솥 */}
-      <g>
+      {/* 2. 조리대 위 — 좌측: 큰 흰 솥 + 빨간 뚜껑 + 스택 폴카도트 솥
+          1.25x 확대, 바닥(y=34)을 기준으로 위로 확장 */}
+      <g transform="translate(200, 34) scale(1.25) translate(-200, -34)">
         {/* 큰 흰 솥 몸체 */}
         <rect x="150" y="16" width="104" height="18" rx="3" fill="#f5f1e8" stroke="#1a0d04" strokeWidth="2" strokeLinejoin="round" />
         {/* 옆 루프 손잡이 */}
@@ -103,8 +104,8 @@ export default function KitchenSVG() {
         <circle cx="222" cy="4" r="1.1" fill="#f5f1e8" />
       </g>
 
-      {/* 3. 조리대 위 — 중앙: 테라코타 화분 + 녹색 잎 */}
-      <g>
+      {/* 3. 조리대 위 — 중앙: 테라코타 화분 + 녹색 잎 (1.3x, 바닥 y=34 기준) */}
+      <g transform="translate(340, 34) scale(1.3) translate(-340, -34)">
         {/* 잎 (3장 뒤→앞 레이어) */}
         <ellipse cx="318" cy="10" rx="6" ry="10" fill="#4f8f3d" stroke="#1a0d04" strokeWidth="1.4" transform="rotate(-18 318 10)" />
         <ellipse cx="345" cy="4" rx="7" ry="11" fill="#3d7a2e" stroke="#1a0d04" strokeWidth="1.4" />
@@ -119,8 +120,8 @@ export default function KitchenSVG() {
         <rect x="307" y="20" width="68" height="4" rx="1" fill="#c06528" stroke="#1a0d04" strokeWidth="1.8" strokeLinejoin="round" />
       </g>
 
-      {/* 4. 조리대 위 — 우측: 작은 폴카도트 솥 (뚜껑+측면 손잡이) */}
-      <g>
+      {/* 4. 조리대 위 — 우측: 작은 폴카도트 솥 (1.2x, 바닥 y=34 기준) */}
+      <g transform="translate(439, 34) scale(1.2) translate(-439, -34)">
         {/* 몸체 */}
         <rect x="410" y="20" width="58" height="14" rx="2.5" fill="#4a4a4a" stroke="#1a0d04" strokeWidth="2" strokeLinejoin="round" />
         {/* 폴카도트 */}
@@ -137,8 +138,8 @@ export default function KitchenSVG() {
         <circle cx="439" cy="12" r="1.5" fill="#1a0d04" />
       </g>
 
-      {/* 5. 조리대 위 — 우측 끝: 작은 빨간 컵 */}
-      <g>
+      {/* 5. 조리대 위 — 우측 끝: 작은 빨간 컵 (1.4x, 바닥 y=34 기준) */}
+      <g transform="translate(497, 34) scale(1.4) translate(-497, -34)">
         {/* 컵 본체 (사다리꼴) */}
         <path d="M 488,24 L 506,24 L 503,34 L 491,34 Z" fill="#d43020" stroke="#1a0d04" strokeWidth="1.8" strokeLinejoin="round" />
         {/* 손잡이 */}
