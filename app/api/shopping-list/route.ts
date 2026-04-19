@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ items: data, added: data.length });
 }
 
-// PATCH: 항목 체크/해제
+// PATCH: 항목 체크/해제 또는 수량 업데이트
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -133,17 +133,25 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  let body: { id: string; is_checked: boolean };
+  let body: { id: string; is_checked?: boolean; quantity?: number | null };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
   }
-  const { id, is_checked } = body;
+  const { id, is_checked, quantity } = body;
+
+  const updates: { is_checked?: boolean; quantity?: number | null } = {};
+  if (typeof is_checked === 'boolean') updates.is_checked = is_checked;
+  if (quantity !== undefined) updates.quantity = quantity;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: '업데이트할 필드가 없습니다.' }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from('shopping_list_items')
-    .update({ is_checked })
+    .update(updates)
     .eq('id', id)
     .eq('user_id', user.id);
 

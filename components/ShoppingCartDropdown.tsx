@@ -20,25 +20,64 @@ interface Suggestion {
 }
 
 interface GroupedItems {
-  recipeTitle: string;
-  recipeId: string | null;
+  groupTitle: string;
+  groupKey: string;
+  groupIcon: string;
   items: ShoppingItem[];
 }
 
-function groupByRecipe(items: ShoppingItem[]): GroupedItems[] {
+type GroupMode = 'recipe' | 'category';
+
+const CATEGORY_LABELS: Record<string, { label: string; icon: string; order: number }> = {
+  vegetable: { label: '채소', icon: '🥬', order: 1 },
+  fruit: { label: '과일', icon: '🍎', order: 2 },
+  meat: { label: '육류', icon: '🥩', order: 3 },
+  seafood: { label: '해산물', icon: '🐟', order: 4 },
+  dairy: { label: '유제품·계란', icon: '🥛', order: 5 },
+  grain: { label: '곡물·면', icon: '🌾', order: 6 },
+  sauce: { label: '소스·양념', icon: '🍯', order: 7 },
+  beverage: { label: '음료', icon: '🥤', order: 8 },
+  snack: { label: '간식', icon: '🍪', order: 9 },
+  other: { label: '기타', icon: '📦', order: 99 },
+};
+
+function getCategoryMeta(category: string) {
+  return CATEGORY_LABELS[category] ?? CATEGORY_LABELS.other;
+}
+
+function groupItems(items: ShoppingItem[], mode: GroupMode): GroupedItems[] {
   const map = new Map<string, GroupedItems>();
   for (const item of items) {
-    const key = item.recipe_id ?? '__manual__';
-    if (!map.has(key)) {
-      map.set(key, {
-        recipeTitle: item.recipe_title ?? '직접 추가',
-        recipeId: item.recipe_id,
-        items: [],
-      });
+    if (mode === 'recipe') {
+      const key = item.recipe_id ?? '__manual__';
+      if (!map.has(key)) {
+        map.set(key, {
+          groupTitle: item.recipe_title ?? '직접 추가',
+          groupKey: key,
+          groupIcon: item.recipe_id ? '🍲' : '📦',
+          items: [],
+        });
+      }
+      map.get(key)!.items.push(item);
+    } else {
+      const key = item.category || 'other';
+      if (!map.has(key)) {
+        const meta = getCategoryMeta(key);
+        map.set(key, {
+          groupTitle: meta.label,
+          groupKey: key,
+          groupIcon: meta.icon,
+          items: [],
+        });
+      }
+      map.get(key)!.items.push(item);
     }
-    map.get(key)!.items.push(item);
   }
-  return Array.from(map.values());
+  const result = Array.from(map.values());
+  if (mode === 'category') {
+    result.sort((a, b) => getCategoryMeta(a.groupKey).order - getCategoryMeta(b.groupKey).order);
+  }
+  return result;
 }
 
 interface Props {
@@ -55,6 +94,15 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const [items, setItems] = useState<ShoppingItem[]>(() => getCachedShoppingList() ?? []);
   const [loading, setLoading] = useState(() => getCachedShoppingList() == null);
   const [addingToFridge, setAddingToFridge] = useState(false);
+  const [groupMode, setGroupMode] = useState<GroupMode>(() => {
+    if (typeof window === 'undefined') return 'recipe';
+    return (localStorage.getItem('cart_group_mode') as GroupMode) ?? 'recipe';
+  });
+
+  const switchGroupMode = (mode: GroupMode) => {
+    setGroupMode(mode);
+    if (typeof window !== 'undefined') localStorage.setItem('cart_group_mode', mode);
+  };
 
   // 재료 추가 / 필터 입력
   const [inputText, setInputText] = useState('');
@@ -175,6 +223,20 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     await fetch(`/api/shopping-list?id=${id}`, { method: 'DELETE' });
   };
 
+  const updateQuantity = async (item: ShoppingItem, delta: number) => {
+    const current = item.quantity ?? 1;
+    const next = Math.max(1, current + delta);
+    if (next === current) return;
+    const updated = items.map(i => (i.id === item.id ? { ...i, quantity: next } : i));
+    setItems(updated);
+    setCachedShoppingList(updated);
+    await fetch('/api/shopping-list', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, quantity: next }),
+    });
+  };
+
   const addCheckedToFridge = async () => {
     const checked = items.filter(i => i.is_checked);
     if (checked.length === 0) return;
@@ -224,7 +286,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   const uncheckedCount = items.filter(i => !i.is_checked).length;
   const checkedCount = items.filter(i => i.is_checked).length;
-  const groups = groupByRecipe(filteredItems);
+  const totalCount = items.length;
+  const progressPct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+  const groups = groupItems(filteredItems, groupMode);
 
   if (!isOpen) return null;
 
@@ -303,17 +367,61 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
-          <span className="font-bold text-sm">
-            🛒 장보기 {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
-          </span>
-          <button
-            onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors text-base"
-            aria-label="닫기"
-          >
-            ✕
-          </button>
+        <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm">
+              🛒 장보기 {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
+            </span>
+            <button
+              onClick={onClose}
+              className="text-text-muted hover:text-text-primary transition-colors text-base"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 진행률 바 — 항목이 있을 때만 */}
+          {totalCount > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-[11px] text-text-muted mb-1">
+                <span>{checkedCount}/{totalCount} 체크됨</span>
+                <span>{progressPct}%</span>
+              </div>
+              <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full bg-accent-warm transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 그룹 모드 토글 — 항목 2개 이상일 때만 */}
+          {totalCount >= 2 && (
+            <div className="mt-2 inline-flex rounded-lg bg-background-tertiary p-0.5 text-[11px]">
+              <button
+                onClick={() => switchGroupMode('recipe')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  groupMode === 'recipe'
+                    ? 'bg-accent-warm/20 text-accent-warm font-medium'
+                    : 'text-text-muted hover:text-text-secondary'
+                }`}
+              >
+                레시피별
+              </button>
+              <button
+                onClick={() => switchGroupMode('category')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  groupMode === 'category'
+                    ? 'bg-accent-warm/20 text-accent-warm font-medium'
+                    : 'text-text-muted hover:text-text-secondary'
+                }`}
+              >
+                카테고리별
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 재료 추가 입력창 */}
@@ -406,18 +514,21 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           ) : (
             <div>
               {groups.map((group) => (
-                <div key={group.recipeId ?? '__manual__'}>
+                <div key={group.groupKey}>
                   <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
-                    <span className="text-sm">{group.recipeId ? '🍲' : '📦'}</span>
+                    <span className="text-sm">{group.groupIcon}</span>
                     <span className="text-xs font-medium text-text-secondary truncate">
-                      {group.recipeTitle}
+                      {group.groupTitle}
+                    </span>
+                    <span className="text-[10px] text-text-muted ml-auto">
+                      {group.items.filter(i => i.is_checked).length}/{group.items.length}
                     </span>
                   </div>
                   {group.items.map(item => (
                     <div
                       key={item.id}
                       onClick={() => toggleCheck(item)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/10 transition-colors group cursor-pointer select-none"
+                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors group cursor-pointer select-none"
                     >
                       {/* 체크 인디케이터 */}
                       <div
@@ -436,14 +547,43 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                       <span className={`flex-1 text-sm truncate ${item.is_checked ? 'line-through text-text-muted' : 'text-text-primary'}`}>
                         {item.ingredient_name}
                       </span>
-                      {(item.quantity || item.unit) && (
-                        <span className="text-xs text-text-muted flex-shrink-0">
-                          {item.quantity}{item.unit}
-                        </span>
+
+                      {/* 수량 스테퍼 — 체크되지 않은 항목만 */}
+                      {!item.is_checked ? (
+                        <div className="flex items-center gap-0.5 flex-shrink-0 bg-background-tertiary rounded-md">
+                          <button
+                            onClick={e => { e.stopPropagation(); updateQuantity(item, -1); }}
+                            disabled={(item.quantity ?? 1) <= 1}
+                            className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            aria-label="수량 감소"
+                          >
+                            −
+                          </button>
+                          <span className="text-xs text-text-primary tabular-nums min-w-[1.25rem] text-center">
+                            {item.quantity ?? 1}
+                          </span>
+                          <button
+                            onClick={e => { e.stopPropagation(); updateQuantity(item, 1); }}
+                            className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm transition-colors"
+                            aria-label="수량 증가"
+                          >
+                            +
+                          </button>
+                          {item.unit && (
+                            <span className="text-[10px] text-text-muted pr-1.5">{item.unit}</span>
+                          )}
+                        </div>
+                      ) : (
+                        (item.quantity || item.unit) && (
+                          <span className="text-xs text-text-muted flex-shrink-0">
+                            {item.quantity}{item.unit}
+                          </span>
+                        )
                       )}
+
                       <button
                         onClick={e => { e.stopPropagation(); deleteItem(item.id); }}
-                        className="flex-shrink-0 text-text-muted hover:text-error transition-colors opacity-0 group-hover:opacity-100 text-sm ml-1 p-0.5"
+                        className="flex-shrink-0 text-text-muted hover:text-error transition-colors opacity-0 group-hover:opacity-100 text-sm p-0.5"
                         aria-label="삭제"
                       >
                         🗑

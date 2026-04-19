@@ -75,9 +75,6 @@ export default function UserDropdown({
               <div className="w-full h-full flex items-center justify-center text-sm">👤</div>
             )}
           </div>
-          <span className={`text-[11px] mt-0.5 font-medium ${isOpen || isActive ? 'text-accent-warm' : ''}`}>
-            {t.bottomNav?.profile ?? '프로필'}
-          </span>
         </button>
 
         {isOpen && (
