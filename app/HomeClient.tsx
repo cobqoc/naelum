@@ -232,7 +232,23 @@ export default function HomeClient({
   const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
 
   const fetchItems = useCallback(async () => {
-    if (!user) { setItems(DEMO); setLoading(false); return; }
+    if (!user) {
+      // 비로그인 체험 모드: localStorage에 저장된 데모 재료가 있으면 복원, 없으면 DEMO 기본값
+      try {
+        const saved = localStorage.getItem('naelum_demo_items');
+        if (saved) {
+          const parsed = JSON.parse(saved) as FridgeItem[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch { /* localStorage 실패 시 DEMO fallback */ }
+      setItems(DEMO);
+      setLoading(false);
+      return;
+    }
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
@@ -243,16 +259,25 @@ export default function HomeClient({
     setLoading(false);
   }, [user]);
 
+  // 비로그인 체험 모드 — items 변경 시 localStorage에 저장
+  useEffect(() => {
+    if (user || loading) return;
+    try { localStorage.setItem('naelum_demo_items', JSON.stringify(items)); } catch { /* 용량 초과 등 무시 */ }
+  }, [user, loading, items]);
+
   useEffect(() => {
     if (authLoading) return;
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
-  // 매칭 레시피 개수 fetch — 로그인 + 재료 있음일 때만. limit=30은 "30+개"로 cap.
+  // 매칭 레시피 개수 fetch — 재료 있으면 로그인 여부 무관하게 시도. limit=30은 "30+개"로 cap.
   useEffect(() => {
-    if (!isAuthenticated || items.length === 0) return;
+    if (items.length === 0) return;
     let cancelled = false;
-    fetch('/api/recommendations?type=ingredients&limit=30')
+    const url = isAuthenticated
+      ? '/api/recommendations?type=ingredients&limit=30'
+      : `/api/recommendations?type=ingredients&limit=30&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
+    fetch(url)
       .then(r => r.ok ? r.json() : { recommendations: [] })
       .then(data => {
         if (cancelled) return;
@@ -262,7 +287,7 @@ export default function HomeClient({
         if (!cancelled) setMatchingCount(0);
       });
     return () => { cancelled = true; };
-  }, [isAuthenticated, items.length]);
+  }, [isAuthenticated, items]);
 
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
@@ -494,7 +519,9 @@ export default function HomeClient({
           {/* 레시피 추천 말풍선 — 오른쪽 냉동고 도어 내부 상단 (도어 선반 바로 위) */}
           {showRecipeBubble && (
             <Link
-              href="/recommendations"
+              href={isAuthenticated
+                ? "/recommendations"
+                : `/recommendations?ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}
               className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
               style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
               aria-label="재료로 만들 수 있는 레시피 보기"

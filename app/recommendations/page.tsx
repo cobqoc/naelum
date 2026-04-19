@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
@@ -12,6 +13,7 @@ type TabType = 'ingredients' | 'personalized' | 'trending' | 'meal_time';
 
 export default function RecommendationsPage() {
   const { t } = useI18n();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('ingredients');
   const [recommendations, setRecommendations] = useState<RecipeWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,26 @@ export default function RecommendationsPage() {
     setMessage('');
 
     try {
-      const res = await fetch(`/api/recommendations?type=${type}&limit=20`);
+      // 비로그인 체험: URL ingredients= 파라미터 or localStorage에서 데모 재료 읽어 API에 전달
+      let extraParams = '';
+      if (type === 'ingredients') {
+        const urlIngredients = searchParams.get('ingredients');
+        if (urlIngredients) {
+          extraParams = `&ingredients=${encodeURIComponent(urlIngredients)}`;
+        } else {
+          try {
+            const saved = localStorage.getItem('naelum_demo_items');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const names = parsed.map((i: { ingredient_name: string }) => i.ingredient_name).filter(Boolean);
+                if (names.length > 0) extraParams = `&ingredients=${encodeURIComponent(names.join(','))}`;
+              }
+            }
+          } catch { /* localStorage 접근 실패 무시 */ }
+        }
+      }
+      const res = await fetch(`/api/recommendations?type=${type}&limit=20${extraParams}`);
       const data = await res.json();
 
       if (data.error) {
@@ -64,7 +85,7 @@ export default function RecommendationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [t.recommendations.loadFailed]);
+  }, [t.recommendations.loadFailed, searchParams]);
 
   useEffect(() => {
     fetchRecommendations(activeTab);

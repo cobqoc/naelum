@@ -24,7 +24,8 @@ export default function FridgeSVG() {
           <stop offset="100%" stopColor="#9ed3ee" />
         </linearGradient>
         <linearGradient id="freezerG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8f7ff" />
+          {/* 냉장실 하단(2번째 선반~서랍 영역, interiorG의 55~100% 구간) 톤과 매칭 */}
+          <stop offset="0%" stopColor="#bce1f5" />
           <stop offset="100%" stopColor="#9ed3ee" />
         </linearGradient>
         <linearGradient id="chromeG" x1="0" y1="0" x2="0" y2="1">

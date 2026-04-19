@@ -44,16 +44,16 @@ function isBlockedBot(request: NextRequest): boolean {
 }
 
 // 로그인 필요 경로 (정적)
+// — 체험 모드 철학: 재료 추가/추천/조리 가이드는 비로그인도 가능.
+//   쓰기(낼름/만들어봤어요/댓글/조리 완료 기록)만 로그인 요구.
 const PROTECTED_ROUTES = [
   '/tip/new',
   '/recipes/new',
   '/fridge',
-  '/recommendations',
 ]
 
 // 로그인 필요 경로 (동적 세그먼트 포함)
 const PROTECTED_PATTERNS = [
-  /^\/recipes\/[^/]+\/cook(\/|$)/,
   /^\/recipes\/[^/]+\/edit(\/|$)/,
 ]
 
