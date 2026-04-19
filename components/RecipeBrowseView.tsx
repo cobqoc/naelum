@@ -107,13 +107,13 @@ export default function RecipeBrowseView({
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`${data.added || 0}개 재료가 장보기 리스트에 추가되었습니다!`);
+        toast.success(`${data.added || 0}개 재료를 장보기에 담았어요!`);
         window.dispatchEvent(new Event('shopping-list-updated'));
       } else {
         toast.error(data.error || '추가에 실패했습니다.');
       }
     } catch {
-      toast.error('장보기 리스트 추가에 실패했습니다.');
+      toast.error('장보기에 담지 못했어요.');
     }
     setAddingToShoppingList(false);
   };

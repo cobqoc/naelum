@@ -390,6 +390,14 @@ export default function HomeClient({
     queueMicrotask(() => { fetchItems(); });
   }, [authLoading, fetchItems]);
 
+  // 외부에서 냉장고 변경 이벤트 발생 시 재fetch
+  // (예: ShoppingCartDropdown에서 "냉장고에 추가" 후, 레시피 → 재료 추가 등).
+  useEffect(() => {
+    const handler = () => { fetchItems(); };
+    window.addEventListener('fridge-updated', handler);
+    return () => window.removeEventListener('fridge-updated', handler);
+  }, [fetchItems]);
+
   // 매칭 레시피 fetch — mode=auto로 서버가 best mode 자동 선택.
   // 응답의 mode 필드로 버블 라벨 결정 (🔥 바로 가능 / 🛒 거의 가능 / 📋 추천).
   useEffect(() => {
@@ -746,24 +754,22 @@ export default function HomeClient({
                 );
               };
 
-              const renderOverflow = (count: number) => count > 0 ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
-                  className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0 hover:bg-black/80 transition-colors"
-                  title={`${count}개 더 보기`}
-                >
-                  +{count}
-                </button>
-              ) : null;
+              // 전체 오버플로우 합계 — 서랍 영역에 통합 표시
+              let totalOverflow = 0;
+              bodyShelfItems.forEach(list => {
+                if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
+              });
+              if (freezerItems.length > shelfMax.body) totalOverflow += freezerItems.length - shelfMax.body;
+              doorShelfItems.forEach(list => {
+                if (list.length > shelfMax.door) totalOverflow += list.length - shelfMax.door;
+              });
 
               return (
                 <>
-                  {/* 본체 선반 4개 (냉장 3 + 냉동 1) */}
+                  {/* 본체 선반 4개 (냉장 3 + 냉동 1) — per-shelf +N 제거, 서랍에 통합 */}
                   {SHELVES.map((shelf, idx) => {
                     const list = idx < 3 ? bodyShelfItems[idx] : freezerItems;
-                    const maxForShelf = shelf.kind === 'freezer' ? shelfMax.body : shelfMax.body;
-                    const visible = list.slice(0, maxForShelf);
-                    const overflow = list.length - visible.length;
+                    const visible = list.slice(0, shelfMax.body);
                     return (
                       <div
                         key={`body-${idx}`}
@@ -771,7 +777,6 @@ export default function HomeClient({
                         style={{ left: SHELF_LEFT, width: SHELF_WIDTH, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
                       >
                         {visible.map(item => renderChip(item, false))}
-                        {renderOverflow(overflow)}
                       </div>
                     );
                   })}
@@ -780,7 +785,6 @@ export default function HomeClient({
                   {DOOR_SHELVES.map((shelf, idx) => {
                     const list = doorShelfItems[idx];
                     const visible = list.slice(0, shelfMax.door);
-                    const overflow = list.length - visible.length;
                     return (
                       <div
                         key={`door-${idx}`}
@@ -788,10 +792,25 @@ export default function HomeClient({
                         style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
                       >
                         {visible.map(item => renderChip(item, true))}
-                        {renderOverflow(overflow)}
                       </div>
                     );
                   })}
+
+                  {/* 통합 오버플로우 — 냉장 서랍 영역 위에 단일 배지로 표시.
+                      각 선반마다 +N 산발 대신, 서랍 = "추가 수납 공간" 메타포 활용.
+                      클릭 시 FridgeAllSheet 오픈 → 그룹별 전체 리스트. */}
+                  {totalOverflow > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                      className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                      style={{ top: '54%' }}
+                      title="냉장고 안 모든 재료 보기"
+                    >
+                      <span>📂</span>
+                      <span>+{totalOverflow}개 더 보기</span>
+                    </button>
+                  )}
                 </>
               );
             })()}

@@ -209,7 +209,7 @@ export default function Header() {
                       }
                     }}
                     className="relative min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
-                    aria-label="장보기 리스트"
+                    aria-label="장보기"
                   >
                     {showCartHint && (
                       <span className="absolute inset-0 rounded-full animate-ping bg-accent-warm/30 pointer-events-none" />
@@ -234,7 +234,7 @@ export default function Header() {
                           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-warm/50 to-transparent" />
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
-                              <span className="text-sm font-bold text-text-primary flex items-center gap-1.5">🛒 장보기 리스트</span>
+                              <span className="text-sm font-bold text-text-primary flex items-center gap-1.5">🛒 장보기</span>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();

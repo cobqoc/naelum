@@ -198,6 +198,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         const remaining = items.filter(i => !i.is_checked);
         setItems(remaining);
         setCachedShoppingList(remaining);
+        // 홈 화면 냉장고가 즉시 refetch하도록 이벤트 발송
+        window.dispatchEvent(new Event('fridge-updated'));
         router.refresh();
       } else {
         toastError('냉장고 추가에 실패했어요.');
@@ -240,7 +242,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <span className="font-bold text-sm">🛒 장보기 리스트</span>
+            <span className="font-bold text-sm">🛒 장보기</span>
             <button
               onClick={onClose}
               className="text-text-muted hover:text-text-primary transition-colors text-base"
@@ -254,7 +256,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           <div className="px-5 pt-6 pb-5 text-center">
             <div className="text-5xl mb-3">🛍</div>
             <h3 className="text-sm font-bold text-text-primary mb-1.5">
-              로그인하고 장보기 리스트 시작
+              로그인하고 장보기 시작
             </h3>
             <p className="text-xs text-text-secondary leading-relaxed mb-4">
               레시피 재료를 모아두고<br />장볼 때 바로 꺼내 쓰세요
