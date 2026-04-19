@@ -38,11 +38,15 @@ interface PendingIngredient {
   expiry_alert: boolean;
 }
 
+type LocMode = null | '냉장' | '냉동' | '상온';
+
 interface IngredientFormProps {
   onSubmit: (formData: IngredientFormData) => void | Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<IngredientFormData>;
-  defaultStorageLocation?: string;
+  /** 외부 controlled 모드 — 값/핸들러 모두 주면 모달 헤더의 pill이 제어. 없으면 내부 state. */
+  selectedLocation?: LocMode;
+  onLocationChange?: (loc: LocMode) => void;
 }
 
 const UNITS = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
@@ -68,7 +72,8 @@ export default function IngredientForm({
   onSubmit,
   onCancel,
   initialData,
-  defaultStorageLocation,
+  selectedLocation: externalLocation,
+  onLocationChange,
 }: IngredientFormProps) {
   const { t } = useI18n();
 
@@ -78,22 +83,24 @@ export default function IngredientForm({
   // 저장 위치 모드:
   //   null = 자동 분류 (디폴트, 재료명 큐레이션 맵 기반)
   //   '냉장'|'냉동'|'상온' = 수동 override (모든 새+기존 재료 일괄 지정)
-  type LocMode = null | '냉장' | '냉동' | '상온';
-  const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
+  // Controlled(외부 주입) / Uncontrolled(내부 state) 겸용.
+  const isControlled = externalLocation !== undefined;
+  const [internalLocation, setInternalLocation] = useState<LocMode>(null);
+  const selectedLocation: LocMode = isControlled ? externalLocation : internalLocation;
   const defaultLocationRef = useRef<LocMode>(null);
   useEffect(() => {
     defaultLocationRef.current = selectedLocation;
   }, [selectedLocation]);
 
-  // Pill 클릭 핸들러 — 선택 위치를 기존 pendingItems 전체에 일괄 적용.
-  // null(자동)로 돌아가면 다시 큐레이션 맵으로 재분류.
-  const applyLocationToAll = (newLoc: LocMode) => {
-    setSelectedLocation(newLoc);
+  // selectedLocation 변화 시 기존 pendingItems 위치 일괄 재계산.
+  // null(자동) → 큐레이션 맵 기반 재분류, 수동 → 모든 아이템 해당 위치로 고정.
+  useEffect(() => {
     setPendingItems(prev => prev.map(item => ({
       ...item,
-      storage_location: newLoc ?? (lookupStorageByName(item.name) ?? '상온'),
+      storage_location: selectedLocation ?? (lookupStorageByName(item.name) ?? '상온'),
     })));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation]);
 
   // 빠른 추가 모드 상태
   const [inputValue, setInputValue] = useState('');
@@ -297,55 +304,7 @@ export default function IngredientForm({
 
   return (
     <div className="space-y-4">
-      {/* 0. 저장 위치 — 디폴트는 자동 분류. pill 탭 시 수동 override. */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-medium">
-            <span className="text-accent-warm font-bold">✨ 기본: 자동 분류</span>
-            {selectedLocation && (
-              <span className="ml-1.5 text-text-muted">
-                → 현재 <span className="text-accent-warm">{selectedLocation}</span>으로 고정됨
-              </span>
-            )}
-          </label>
-          {selectedLocation && (
-            <button
-              type="button"
-              onClick={() => applyLocationToAll(null)}
-              className="text-[10px] text-accent-warm hover:underline"
-            >
-              자동으로 돌리기
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {([
-            { key: '냉장', icon: '❄️' },
-            { key: '냉동', icon: '🧊' },
-            { key: '상온', icon: '🌡' },
-          ] as const).map((opt) => {
-            const active = selectedLocation === opt.key;
-            return (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => applyLocationToAll(active ? null : opt.key)}
-                className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-all ${
-                  active
-                    ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
-                    : 'bg-background-secondary text-text-secondary hover:bg-white/5 border border-white/10'
-                }`}
-              >
-                <span>{opt.icon}</span>
-                <span>{opt.key}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
-          ⚠️ 자동 분류는 정확하지 않을 수 있어요. 위 버튼으로 일괄 지정하거나, 태그를 눌러 개별 수정할 수 있어요.
-        </p>
-      </div>
+      {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
 
       {/* 1. 빠른 입력 바 */}
       <div>

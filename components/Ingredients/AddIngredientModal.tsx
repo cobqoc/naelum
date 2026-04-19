@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import IngredientForm from './IngredientForm';
+
+type LocMode = null | '냉장' | '냉동' | '상온';
 
 const IngredientImageUpload = dynamic(() => import('./IngredientImageUpload'), { ssr: false });
 const ReceiptScanner = dynamic(() => import('./ReceiptScanner'), { ssr: false });
@@ -54,6 +56,23 @@ export default function AddIngredientModal({
   onAddFromPhoto,
 }: AddIngredientModalProps) {
   const [tab, setTab] = useState<TabType>('form');
+  // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
+  // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
+  const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
+
+  // 모달이 특정 섹션으로 열리면 (예: '냉장') 그 위치로 pre-select.
+  // FAB('auto')로 열리면 null(자동) 유지. 모달이 열릴 때마다 탭도 form으로 리셋.
+  useEffect(() => {
+    if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedLocation(
+      location && location !== 'auto' && ['냉장', '냉동', '상온'].includes(location)
+        ? (location as LocMode)
+        : null
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTab('form');
+  }, [isOpen, location]);
 
   if (!isOpen || !location) return null;
 
@@ -78,38 +97,93 @@ export default function AddIngredientModal({
         className="w-full sm:max-w-lg bg-background-primary sm:rounded-2xl sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[88dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* 헤더 — safe-area 상단 패딩 포함 (노치) */}
+        {/* 헤더 — safe-area 상단 패딩 포함 (노치).
+            form 탭일 때: 타이틀 제거하고 저장 위치 pill 표시. 보조 탭(사진/영수증): 기존 타이틀 유지. */}
         <div
-          className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0"
-          style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+          className="border-b border-white/5 flex-shrink-0"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            {isSecondary ? (
+          {/* 상단 라인: 뒤로/아이콘 + 타이틀/자동분류 라벨 + 닫기 */}
+          <div className="flex items-center justify-between px-5 pt-1 pb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {isSecondary ? (
+                <button
+                  onClick={() => setTab('form')}
+                  aria-label="뒤로"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-secondary transition-all flex-shrink-0"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              ) : null}
+              {isSecondary ? (
+                <h2 className="font-bold text-text-primary truncate">{secondaryTitle}</h2>
+              ) : (
+                <label className="text-xs font-medium flex items-center gap-1.5 min-w-0" aria-label="재료 추가 — 저장 위치 선택">
+                  <span className="text-accent-warm font-bold whitespace-nowrap">✨ 기본: 자동 분류</span>
+                  {selectedLocation && (
+                    <span className="text-text-muted truncate">
+                      → 현재 <span className="text-accent-warm">{selectedLocation}</span>으로 고정됨
+                    </span>
+                  )}
+                </label>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {!isSecondary && selectedLocation && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedLocation(null)}
+                  className="text-[10px] text-accent-warm hover:underline"
+                >
+                  자동으로 돌리기
+                </button>
+              )}
               <button
-                onClick={() => setTab('form')}
-                aria-label="뒤로"
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-secondary transition-all flex-shrink-0"
+                onClick={onClose}
+                aria-label="닫기"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-            ) : (
-              <span className="text-xl">{icon}</span>
-            )}
-            <h2 className="font-bold text-text-primary truncate">
-              {isSecondary ? secondaryTitle : (isAuto ? '재료 추가' : `${location}에 재료 추가`)}
-            </h2>
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="닫기"
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all flex-shrink-0"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          {/* form 탭 전용: 저장 위치 pill (이전에 IngredientForm 내부에 있던 UI) */}
+          {!isSecondary && (
+            <div className="px-5 pb-3">
+              <div className="grid grid-cols-3 gap-1.5">
+                {([
+                  { key: '냉장', icon: '❄️' },
+                  { key: '냉동', icon: '🧊' },
+                  { key: '상온', icon: '🌡' },
+                ] as const).map((opt) => {
+                  const active = selectedLocation === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSelectedLocation(active ? null : opt.key)}
+                      className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-all ${
+                        active
+                          ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
+                          : 'bg-background-secondary text-text-secondary hover:bg-white/5 border border-white/10'
+                      }`}
+                    >
+                      <span>{opt.icon}</span>
+                      <span>{opt.key}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
+                ⚠️ 자동 분류는 정확하지 않을 수 있어요. 위 버튼으로 일괄 지정하거나, 태그를 눌러 개별 수정할 수 있어요.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 콘텐츠 — 하단 safe-area 포함 */}
@@ -122,7 +196,8 @@ export default function AddIngredientModal({
               <IngredientForm
                 onSubmit={onAddIngredient}
                 onCancel={onClose}
-                defaultStorageLocation={isAuto ? undefined : location}
+                selectedLocation={selectedLocation}
+                onLocationChange={setSelectedLocation}
               />
 
               {/* 보조 액션 — 사진/영수증으로 일괄 추가 */}
