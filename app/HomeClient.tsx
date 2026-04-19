@@ -147,18 +147,16 @@ const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
 // 이름 전체 노출 시 한 chip이 ~90px → 냉장 본체(43% · ~215px)에 3개가 적당.
 const MAX_CHIPS_PER_SHELF = 3;
 
-// KitchenSVG v13 (프레임 2배 두께 + 열린 문) 내부 chip 좌표 (viewBox="0 0 660 220")
-// 본체 interior: x=166~494 (width 328), y=78~194
-// 내부 선반 2단:
-//   Shelf 1 top: y=120  → chip 바닥 y=119, 선반 위 공간 y=86~119
-//   Shelf 2 top: y=165  → chip 바닥 y=164, 선반 위 공간 y=130~164
+// KitchenSVG v14 (3x2 그리드 셀, 다크 플럼 인테리어) chip 좌표 (viewBox="0 0 660 220")
+// 본체 interior: x=166~494 (width 328), y=78~194, 중간 선반 y=133~138
+// 상단 row cell: y=88~130 (높이 42) / 하단 row cell: y=140~190 (높이 50)
 const PANTRY_SHELVES: { top: string; height: string }[] = [
-  { top: '39.1%', height: '15%' },   // row 1 (y=86~119)
-  { top: '59.1%', height: '15.5%' }, // row 2 (y=130~164)
+  { top: '40%',   height: '19%' },   // row 1 (y=88~130)
+  { top: '63.6%', height: '22.7%' }, // row 2 (y=140~190)
 ];
-const PANTRY_LEFT = '25.8%';  // (166+4)/660 ≈ 25.8%
-const PANTRY_WIDTH = '48.5%'; // 320/660 ≈ 48.5%
-const MAX_PANTRY_PER_SHELF = 4;
+const PANTRY_LEFT = '25.8%';
+const PANTRY_WIDTH = '48.5%';
+const MAX_PANTRY_PER_SHELF = 3; // 3x2 셀 구조: row당 3 cell = 3 chip
 
 // DEMO 재료 — 비로그인 체험용. 3가지 상태 섞어서 실제 UX 보여줌:
 //   (a) expiry 설정됨 + 만료 임박 (유저가 명시 입력한 경우)
@@ -456,7 +454,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[560px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
+        <div className="relative w-full max-w-[280px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
