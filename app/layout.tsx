@@ -7,6 +7,7 @@ import { ToastProvider } from "@/lib/toast/context";
 import ToastContainer from "@/components/Common/ToastContainer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import CookieConsent from "@/components/CookieConsent";
+import FloatingFeedbackButton from "@/components/FloatingFeedbackButton";
 import AccessibilityProvider from "@/components/Common/AccessibilityProvider";
 import { AuthProvider } from "@/lib/auth/context";
 
@@ -40,16 +41,35 @@ export const metadata: Metadata = {
     title: "낼름 - 레시피 공유 플랫폼",
     description: "재료 기반 스마트 레시피 추천 및 공유 플랫폼",
     url: BASE_URL,
+    // 카톡/슬랙 등 공유 시 미리보기 이미지 (1200×630 권장이지만 512 PWA 아이콘으로 일단 대체)
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "낼름",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "낼름 - 레시피 공유 플랫폼",
     description: "재료 기반 스마트 레시피 추천 및 공유 플랫폼",
+    images: ["/icons/icon-512.png"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "낼름",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
   },
   manifest: "/manifest.json",
   formatDetection: {
@@ -96,6 +116,7 @@ export default function RootLayout({
                 <AccessibilityProvider>
                   {children}
                   <CookieConsent />
+                  <FloatingFeedbackButton />
                   <ToastContainer />
                 </AccessibilityProvider>
               </ToastProvider>

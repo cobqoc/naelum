@@ -46,7 +46,7 @@ function FridgeInterior({ grouped }: { grouped: GroupedIngredients }) {
 
   return (
     <FridgeShell>
-      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/fridge" />
+      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/" />
       <ShelfSection sectionKey="냉장" label={t.fridge?.refrigerator || '냉장'} icon="❄️" items={grouped.refrigerator} />
       <ShelfSection sectionKey="냉동" label={t.fridge?.freezer || '냉동'} icon="🧊" items={grouped.freezer} />
       <ShelfSection sectionKey="상온" label={t.fridge?.roomTemp || '상온'} icon="🌡️" items={grouped.roomTemp} isLast />
@@ -62,7 +62,7 @@ function EmptyFridgeState() {
 
   return (
     <FridgeShell>
-      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/fridge" />
+      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/" />
       <ShelfSection sectionKey="냉장" label="냉장" icon="❄️" items={empty} />
       <ShelfSection sectionKey="냉동" label="냉동" icon="🧊" items={empty} />
       <ShelfSection sectionKey="상온" label="상온" icon="🌡️" items={empty} isLast />
@@ -71,7 +71,7 @@ function EmptyFridgeState() {
           {t.fridge?.emptyMessage || '재료를 추가하고 맞춤 레시피를 추천받아보세요'}
         </p>
         <Link
-          href="/fridge"
+          href="/"
           className="inline-block px-5 py-2.5 rounded-xl bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover transition-colors"
         >
           + {t.fridge?.addIngredients || '재료 추가하기'}

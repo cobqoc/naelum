@@ -172,20 +172,28 @@ export async function GET(request: NextRequest) {
   try {
     switch (type) {
       case 'ingredients': {
-        if (!user) {
-          return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 })
+        // 체험 모드: 비로그인 시 쿼리 파라미터로 재료 전달 (ingredients=토마토,양파,...)
+        let ingredientNames: string[] = []
+        if (user) {
+          const { data: userIngredients } = await supabase
+            .from('user_ingredients')
+            .select('ingredient_name')
+            .eq('user_id', user.id)
+          if (!userIngredients || userIngredients.length === 0) {
+            return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
+          }
+          ingredientNames = userIngredients.map(i => i.ingredient_name.toLowerCase())
+        } else {
+          const rawIngredients = searchParams.get('ingredients') || ''
+          ingredientNames = rawIngredients
+            .split(',')
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 30)
+          if (ingredientNames.length === 0) {
+            return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
+          }
         }
-
-        const { data: userIngredients } = await supabase
-          .from('user_ingredients')
-          .select('ingredient_name')
-          .eq('user_id', user.id)
-
-        if (!userIngredients || userIngredients.length === 0) {
-          return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
-        }
-
-        const ingredientNames = userIngredients.map(i => i.ingredient_name.toLowerCase())
 
         // 사용자 재료 + 동의어 확장 (DB 사전 필터링용)
         const expandedSet = new Set<string>(ingredientNames)
@@ -228,8 +236,10 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ recommendations: [] })
         }
 
-        // 알레르기 필터링 적용
-        const filteredRecipes = await filterByDietaryPreferences(supabase, user.id, recipes)
+        // 알레르기 필터링 적용 (로그인 사용자만)
+        const filteredRecipes = user
+          ? await filterByDietaryPreferences(supabase, user.id, recipes)
+          : recipes
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {

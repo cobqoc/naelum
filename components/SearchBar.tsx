@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 interface SearchBarProps {
   className?: string;
   isSmall?: boolean;
+  autoFocus?: boolean;
 }
 
 interface Suggestion {
@@ -36,7 +37,7 @@ function clearSearchHistory() {
   localStorage.removeItem(HISTORY_KEY);
 }
 
-export default function SearchBar({ className = '', isSmall = false }: SearchBarProps) {
+export default function SearchBar({ className = '', isSmall = false, autoFocus = false }: SearchBarProps) {
   const router = useRouter();
   const { t } = useI18n();
   const [isFocused, setIsFocused] = useState(false);
@@ -63,6 +64,14 @@ export default function SearchBar({ className = '', isSmall = false }: SearchBar
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // autoFocus가 true로 바뀔 때 input에 포커스 (마운트 이후에도 동작)
+  useEffect(() => {
+    if (autoFocus && containerRef.current) {
+      const input = containerRef.current.querySelector('input') as HTMLInputElement | null;
+      input?.focus();
+    }
+  }, [autoFocus]);
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -199,6 +208,7 @@ export default function SearchBar({ className = '', isSmall = false }: SearchBar
           placeholder={isSmall ? t.search.searchPlaceholderSmall : t.search.searchPlaceholderFull}
           aria-label={t.search.searchPlaceholderFull}
           autoComplete="off"
+          autoFocus={autoFocus}
           suppressHydrationWarning
           onFocus={() => {
             setIsFocused(true);

@@ -58,6 +58,17 @@ const nextConfig: NextConfig = {
         destination: '/ingredients',
         permanent: true,
       },
+      // 홈이 곧 냉장고 UI가 되면서 /fridge-home을 /로 흡수. 이전 북마크/외부 링크가 깨지지 않도록 308 redirect.
+      {
+        source: '/fridge-home',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/fridge',
+        destination: '/',
+        permanent: true,
+      },
     ];
   },
   async headers() {
@@ -67,23 +78,28 @@ const nextConfig: NextConfig = {
 
     const csp = [
       "default-src 'self'",
-      // Next.js는 hydration용 인라인 스크립트 필요 — nonce 미사용 시 unsafe-inline 불가피
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Next.js는 hydration용 인라인 스크립트 필요 — nonce 미사용 시 unsafe-inline 불가피.
+      // Cloudflare Web Analytics beacon은 static.cloudflareinsights.com에서 로드됨.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline'",
       // 이미지: Supabase Storage, Unsplash, Google 프로필 사진
       "img-src 'self' data: blob: https:",
-      // API 연결: Supabase, Google/Kakao OAuth
+      // API 연결: Supabase, Google/Kakao OAuth, Cloudflare Insights, Sentry
       [
         "connect-src 'self'",
         supabaseHost ? `https://${supabaseHost} wss://${supabaseHost}` : '',
         'https://accounts.google.com',
         'https://kauth.kakao.com https://kapi.kakao.com',
+        'https://cloudflareinsights.com https://static.cloudflareinsights.com',
+        'https://*.sentry.io https://*.ingest.sentry.io',
       ].filter(Boolean).join(' '),
       "font-src 'self' data:",
       "frame-src 'none'",     // iframe 삽입 차단
       "object-src 'none'",    // Flash/Plugin 차단
       "base-uri 'self'",      // <base> 태그 인젝션 차단
       "form-action 'self'",   // 폼 외부 전송 차단
+      // Sentry 세션 리플레이는 worker 사용
+      "worker-src 'self' blob:",
     ].join('; ')
 
     return [

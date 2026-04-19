@@ -150,5 +150,8 @@ export async function POST(request: NextRequest) {
   // 사용자 레시피 카운트 업데이트
   await supabase.rpc('increment_recipes_count', { user_id: user.id })
 
+  // 홈 페이지의 공유 쿼리 캐시는 60초 revalidate로 자동 갱신됨
+  // (Next.js 16 revalidateTag API 변경으로 수동 무효화 제거)
+
   return NextResponse.json({ recipe }, { status: 201 })
 }

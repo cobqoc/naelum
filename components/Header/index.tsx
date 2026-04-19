@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import SearchBar from '../SearchBar';
 import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
 import ShoppingCartDropdown, { useCartCount } from '../ShoppingCartDropdown';
@@ -27,10 +26,8 @@ const LANG_OPTIONS = [
 ];
 
 export default function Header() {
-  const { language, setLanguage } = useI18n();
+  const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [showLangSelector, setShowLangSelector] = useState(false);
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -57,22 +54,6 @@ export default function Header() {
       });
     }
   }, [user]);
-
-  // 스크롤 감지
-  useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 50);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // 장보기 힌트 닫히면 냉장고 힌트 표시
   useEffect(() => {
@@ -103,29 +84,13 @@ export default function Header() {
 
   return (
     <>
-      <header
-        className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-          isScrolled
-            ? 'bg-background-secondary/90 py-2 md:py-3 backdrop-blur-xl shadow-lg'
-            : 'bg-transparent py-3 md:py-6'
-        }`}
-      >
+      <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6">
         <nav className="container mx-auto flex items-center justify-between px-4 md:px-6" aria-label="메인 네비게이션">
           {/* Logo */}
           <div className="flex items-center gap-4 md:gap-6">
             <Link href="/" className="flex items-center gap-2" aria-label="낼름 홈으로 이동">
               <span className="text-xl md:text-2xl font-bold tracking-tighter text-accent-warm">낼름</span>
             </Link>
-          </div>
-
-          {/* Search Bar - shows on scroll */}
-          <div
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            className={`flex-1 justify-center px-4 md:px-8 transition-all duration-500 ${
-              isScrolled || searchFocused ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none'
-            } flex`}>
-            <SearchBar className="max-w-md" isSmall={true} />
           </div>
 
           {/* Right Side */}
@@ -368,11 +333,12 @@ export default function Header() {
                     </>
                   )}
                 </div>
+                {/* 로그인 버튼은 데스크톱에서만 — 모바일은 BottomNav에 전용 "로그인" 탭이 대신 노출됨 */}
                 <Link
                   href="/login"
-                  className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                  className="hidden md:inline-flex px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
-                  로그인
+                  {t.common.login}
                 </Link>
               </>
             )}

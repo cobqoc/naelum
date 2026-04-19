@@ -364,12 +364,12 @@ export default function IngredientForm({
             </div>
           )}
 
-          {/* 5. 제출 버튼 */}
-          <div className="flex gap-3 mt-4">
+          {/* 5. 제출 버튼 — 스크롤해도 항상 보이게 sticky 하단 고정 (부모 스크롤 컨테이너의 하단에 붙음) */}
+          <div className="sticky bottom-0 -mx-5 mt-4 px-5 pt-3 pb-3 bg-gradient-to-t from-background-primary via-background-primary to-background-primary/90 backdrop-blur-sm flex gap-3">
             <button
               type="button"
               onClick={handleBatchSubmit}
-              className="flex-1 rounded-xl bg-accent-warm py-3 font-bold text-background-primary hover:bg-accent-hover transition-colors"
+              className="flex-1 rounded-xl bg-accent-warm py-3.5 font-bold text-background-primary hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/20"
             >
               {pendingItems.length}{t.quickAdd.addButton}
             </button>
@@ -377,7 +377,7 @@ export default function IngredientForm({
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-6 rounded-xl bg-white/5 py-3 font-medium text-text-secondary hover:bg-white/10 transition-colors"
+                className="px-5 rounded-xl bg-white/5 py-3.5 font-medium text-text-secondary hover:bg-white/10 transition-colors"
               >
                 {t.quickAdd.close}
               </button>

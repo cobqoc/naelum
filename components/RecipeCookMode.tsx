@@ -195,7 +195,12 @@ export default function RecipeCookMode({
       if (response.ok) {
         window.location.href = '/';
       } else if (response.status === 401) {
-        toast.error('로그인이 필요합니다.');
+        toast.warning('로그인하면 조리 완료를 기록할 수 있어요', {
+          action: {
+            label: '로그인',
+            onClick: () => { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`; }
+          }
+        });
       } else {
         const data = await response.json();
         toast.error(data.error || '저장에 실패했습니다.');

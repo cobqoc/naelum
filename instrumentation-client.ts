@@ -1,4 +1,8 @@
-import * as Sentry from '@sentry/nextjs';
+// Next.js 16 + Turbopack 환경에서는 sentry.client.config.ts가 더 이상 로드되지 않는다.
+// @sentry/nextjs 10.x의 deprecation warning에 따라 instrumentation-client.ts로 이동.
+// https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
+
+import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -13,10 +17,9 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0.01,
 
-  integrations: [
-    Sentry.replayIntegration(),
-  ],
+  integrations: [Sentry.replayIntegration()],
 
-  // 개발 환경에서 콘솔 출력
   debug: process.env.NODE_ENV === 'development',
-});
+})
+
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

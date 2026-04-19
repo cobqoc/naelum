@@ -98,5 +98,7 @@ export async function POST(request: NextRequest) {
     await supabase.from('tip_tags').insert(tagsToInsert);
   }
 
+  // 홈 공유 쿼리 캐시는 60초 revalidate로 자동 갱신됨
+
   return NextResponse.json({ tip }, { status: 201 });
 }

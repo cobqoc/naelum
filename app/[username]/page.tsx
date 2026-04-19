@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { notFound } from 'next/navigation';
 import SafeImage from '@/components/Common/SafeImage';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
@@ -107,7 +108,16 @@ const interestEmojis: Record<string, string> = {
 
 export default function ProfilePage(props: PageProps) {
   const resolvedParams = use(props.params);
-  const username = resolvedParams.username.replace('@', '').replace('%40', '');
+  const rawSegment = resolvedParams.username;
+
+  // 프로필 URL은 `/@username` 형식만 유효.
+  // `@` 또는 URL-encoded `%40`이 없으면 존재하지 않는 경로이므로 not-found.tsx 렌더.
+  // (이전엔 /random-string도 이 route에 매칭되어 "userNotFound" UI + 200 status가 떴음)
+  if (!rawSegment.startsWith('@') && !rawSegment.startsWith('%40')) {
+    notFound();
+  }
+
+  const username = rawSegment.replace('@', '').replace('%40', '');
 
   const { t } = useI18n();
   const toast = useToast();

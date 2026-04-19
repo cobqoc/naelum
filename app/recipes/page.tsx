@@ -1,17 +1,27 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
 import RecipeCard from '@/components/RecipeCard';
+import SafeImage from '@/components/Common/SafeImage';
 import { RecipeCardGridSkeleton } from '@/components/Common/Skeleton';
 import EmptyState from '@/components/Common/EmptyState';
 import { createClient } from '@/lib/supabase/client';
 import { type Recipe } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import { useScrollCache } from '@/lib/hooks/useScrollCache';
+import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
+import {
+  CUISINE_ICONS,
+  CUISINE_COLORS,
+  CUISINE_IMAGES,
+  DISH_ICONS,
+  DISH_COLORS,
+} from '@/lib/constants/categoryIcons';
 
 const RECIPES_PER_PAGE = 20;
 const CACHE_KEY = 'scroll_cache_recipes';
@@ -35,6 +45,18 @@ export default function AllRecipesPage() {
   // 필터 적용 시 캐시 무시
   const initialCache = hasFilter ? null : load();
 
+  // 카테고리 탭 — URL 필터가 활성이면 강제, 없으면 유저의 수동 선택 유지.
+  // setState-in-effect 패턴을 피하기 위해 render time에 파생.
+  const [manualCategoryTab, setManualCategoryTab] = useState<'cuisine' | 'dish' | null>(null);
+
+  // 이번 주 인기 — 필터 없을 때만 상단에 가로 스크롤 스트립으로 노출.
+  const [trending, setTrending] = useState<Recipe[]>([]);
+  const categoryTab: 'cuisine' | 'dish' = dishFilter
+    ? 'dish'
+    : cuisineFilter
+      ? 'cuisine'
+      : (manualCategoryTab ?? 'cuisine');
+
   const [recipes, setRecipes] = useState<Recipe[]>(initialCache?.data.recipes ?? []);
   const [loading, setLoading] = useState(!initialCache);
   const [hasMore, setHasMore] = useState(initialCache?.data.hasMore ?? true);
@@ -52,6 +74,7 @@ export default function AllRecipesPage() {
     cuisineFilterRef.current = cuisineFilter;
     dishFilterRef.current = dishFilter;
   }, [cuisineFilter, dishFilter]);
+
   const scrollYRef = useRef(0);
   const isLeavingRef = useRef(false);
 
@@ -137,7 +160,29 @@ export default function AllRecipesPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // sortBy 변경 시 (캐시 복원 직후 첫 실행은 스킵)
+  // 트렌딩 레시피 (이번 주 인기 = views_count 상위 4개) — 필터 적용 시 중복·혼란이라 스킵.
+  useEffect(() => {
+    if (hasFilter) return;
+    const supabase = createClient();
+    supabase
+      .from('recipes')
+      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
+      .eq('status', 'published')
+      .order('views_count', { ascending: false })
+      .limit(4)
+      .then(({ data }) => {
+        if (!data) return;
+        const processed: Recipe[] = data.map(r => ({
+          ...r,
+          author: Array.isArray(r.author) ? r.author[0] : r.author,
+        }));
+        setTrending(processed);
+      });
+  }, [hasFilter]);
+
+  // sortBy / 카테고리 필터 변경 시 재조회 (캐시 복원 직후 첫 실행은 스킵).
+  // cuisineFilter/dishFilter는 ref update effect(위)가 먼저 돌아야 fetchRecipes 내부에서 최신값을 읽는다.
+  // Hook 선언 순서 = effect 실행 순서이므로 이 effect는 ref update effect보다 뒤에 있어야 함 (현재 배치 OK).
   useEffect(() => {
     if (isRestoredRef.current) {
       isRestoredRef.current = false;
@@ -145,7 +190,7 @@ export default function AllRecipesPage() {
     }
     clear();
     fetchRecipes(0, sortBy, true); // eslint-disable-line react-hooks/set-state-in-effect -- setState calls are all after await
-  }, [sortBy, fetchRecipes, clear]);
+  }, [sortBy, cuisineFilter, dishFilter, fetchRecipes, clear]);
 
   // unmount 시 현재 state 저장
   useEffect(() => {
@@ -195,10 +240,9 @@ export default function AllRecipesPage() {
                 <p className="text-sm text-text-muted mt-0.5">
                   {cuisineFilter && `국가: ${cuisineFilter}`}
                   {dishFilter && `요리: ${dishFilter}`}
-                  <span className="ml-2 text-accent-warm text-xs cursor-pointer hover:underline"
-                    onClick={() => { window.location.href = '/recipes'; }}>
+                  <Link href="/recipes" className="ml-2 text-accent-warm text-xs hover:underline">
                     필터 해제
-                  </span>
+                  </Link>
                 </p>
               )}
             </div>
@@ -212,6 +256,103 @@ export default function AllRecipesPage() {
               <option value="views">{t.recipe.sortViews}</option>
             </select>
           </div>
+
+          {/* 카테고리 칩 — 국가별/요리별 tab toggle + 가로 스크롤 */}
+          <section aria-label="카테고리" className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-bold text-text-secondary">카테고리</h2>
+              <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
+                <button
+                  onClick={() => setManualCategoryTab('cuisine')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    categoryTab === 'cuisine'
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'text-text-muted hover:text-text-secondary'
+                  }`}
+                >
+                  국가별
+                </button>
+                <button
+                  onClick={() => setManualCategoryTab('dish')}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    categoryTab === 'dish'
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'text-text-muted hover:text-text-secondary'
+                  }`}
+                >
+                  요리별
+                </button>
+              </div>
+            </div>
+
+            <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 px-4 md:px-0 pb-1">
+                {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label }) => {
+                  const color = categoryTab === 'cuisine' ? CUISINE_COLORS[value] : DISH_COLORS[value];
+                  const icon = categoryTab === 'cuisine' ? CUISINE_ICONS[value] : DISH_ICONS[value];
+                  const isActive = categoryTab === 'cuisine'
+                    ? cuisineFilter === value
+                    : dishFilter === value;
+                  // 현재 활성 칩을 다시 누르면 필터 해제(/recipes로).
+                  const href = isActive
+                    ? '/recipes'
+                    : categoryTab === 'cuisine'
+                      ? `/recipes?cuisine_type=${value}`
+                      : `/recipes?dish_type=${value}`;
+                  return (
+                    <Link
+                      key={value}
+                      href={href}
+                      className={`w-20 h-20 md:w-[88px] md:h-[88px] rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0 ${
+                        isActive ? 'border-accent-warm' : 'border-white/10'
+                      }`}
+                      style={{
+                        background: isActive
+                          ? `linear-gradient(135deg, ${color}44 0%, ${color}11 100%)`
+                          : `linear-gradient(135deg, ${color}22 0%, transparent 100%)`,
+                        boxShadow: isActive ? `0 0 14px ${color}44` : undefined,
+                      }}
+                    >
+                      {categoryTab === 'cuisine' && CUISINE_IMAGES[value] ? (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden">
+                          <SafeImage src={CUISINE_IMAGES[value]!} alt={label} width={40} height={40} className="object-cover w-full h-full" />
+                        </div>
+                      ) : (
+                        <span className="text-2xl leading-none">{icon}</span>
+                      )}
+                      <span className="text-[11px] font-medium text-text-secondary leading-tight text-center px-1">
+                        {label}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* 이번 주 인기 — 필터 없을 때만 노출. 아래 전체 그리드와 구분하려 가로 스크롤 스트립 형식. */}
+          {!hasFilter && trending.length > 0 && (
+            <section aria-label="이번 주 인기" className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold">🔥 이번 주 인기</h2>
+                <button
+                  onClick={() => { setLoading(true); setPage(0); setSortBy('views'); }}
+                  className="text-xs text-accent-warm hover:underline"
+                >
+                  전체 보기 →
+                </button>
+              </div>
+              <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-3 px-4 md:px-0 pb-1">
+                  {trending.map(recipe => (
+                    <div key={recipe.id} className="w-40 md:w-48 flex-shrink-0">
+                      <RecipeCard recipe={recipe} showAuthor />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {loading ? (
             <RecipeCardGridSkeleton count={10} />

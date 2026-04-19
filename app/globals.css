@@ -245,6 +245,18 @@ select {
   animation: fridgePulse 1.5s ease-in-out infinite;
 }
 
+/* 홈 냉장고 말풍선 CTA — 살짝 bounce + shadow glow 반복 (주의 끌지만 과하지 않게) */
+@keyframes naelum-bubble-pulse {
+  0%, 70%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 4px 14px 0 rgba(255, 153, 102, 0.5);
+  }
+  85% {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 8px 20px 0 rgba(255, 153, 102, 0.7);
+  }
+}
+
 /* Skeleton loading animation */
 @keyframes shimmer {
   0% {
@@ -504,13 +516,18 @@ select {
 
 @keyframes slideIn {
   from {
-    transform: translateX(100%);
+    transform: translateY(-8px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
     opacity: 1;
   }
+}
+
+@keyframes toastProgress {
+  from { width: 100%; }
+  to   { width: 0%; }
 }
 
 @keyframes slideUp {

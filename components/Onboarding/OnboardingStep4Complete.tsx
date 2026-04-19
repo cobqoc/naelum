@@ -12,7 +12,7 @@ export default function OnboardingStep4Complete({
 
   const handleGoToIngredients = () => {
     onNext(); // 온보딩 완료 처리
-    router.push('/fridge');
+    router.push('/');
   };
 
   const handleGoToHome = () => {
