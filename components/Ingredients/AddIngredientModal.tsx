@@ -69,16 +69,18 @@ export default function AddIngredientModal({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/65 backdrop-blur-sm"
+      className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center bg-black/65 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-background-primary rounded-t-3xl sm:rounded-2xl border border-white/10 shadow-2xl flex flex-col mb-[env(safe-area-inset-bottom)] sm:mb-0"
-        style={{ maxHeight: '88dvh' }}
+        className="w-full sm:max-w-lg bg-background-primary sm:rounded-2xl sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[88dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
+        {/* 헤더 — safe-area 상단 패딩 포함 (노치) */}
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0"
+          style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        >
           <div className="flex items-center gap-2 min-w-0">
             {isSecondary ? (
               <button
@@ -108,8 +110,11 @@ export default function AddIngredientModal({
           </button>
         </div>
 
-        {/* 콘텐츠 */}
-        <div className="flex-1 overflow-y-auto px-5 pt-4 pb-10 sm:pb-6">
+        {/* 콘텐츠 — 하단 safe-area 포함 */}
+        <div
+          className="flex-1 overflow-y-auto px-5 pt-4"
+          style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+        >
           {tab === 'form' && (
             <>
               <IngredientForm
