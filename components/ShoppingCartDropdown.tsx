@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
@@ -48,6 +49,7 @@ interface Props {
 
 export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = false }: Props) {
   const router = useRouter();
+  const { user } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
   // 초기 state를 공유 캐시에서 바로 읽어옴 — 이미 로드된 경우 dropdown 열림 즉시 표시
   const [items, setItems] = useState<ShoppingItem[]>(() => getCachedShoppingList() ?? []);
@@ -64,6 +66,11 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchItems = useCallback(async () => {
+    // 비로그인: API 호출 skip (401 silent fail 방지). 로그인 유도 뷰로 분기됨.
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     // 캐시가 있으면 UI 즉시 업데이트, 백그라운드에서 리프레시
     const cached = getCachedShoppingList();
     if (cached) {
@@ -73,7 +80,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     const fresh = await loadShoppingList(true);
     setItems(fresh);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   // 공유 캐시 구독 — 다른 곳에서 업데이트되면 이 dropdown도 자동으로 따라감
   useEffect(() => {
@@ -218,6 +225,76 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const groups = groupByRecipe(filteredItems);
 
   if (!isOpen) return null;
+
+  // 비로그인: 로그인 유도 뷰 (API 호출 없음, 체험 모드 없음)
+  if (!user) {
+    return (
+      <>
+        <div className="fixed inset-0 z-40" onClick={onClose} />
+        <div
+          className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${
+            fromBottom
+              ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm'
+              : 'absolute w-80 max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
+          }`}
+        >
+          {/* 헤더 */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <span className="font-bold text-sm">🛒 장보기 리스트</span>
+            <button
+              onClick={onClose}
+              className="text-text-muted hover:text-text-primary transition-colors text-base"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* 로그인 유도 */}
+          <div className="px-5 pt-6 pb-5 text-center">
+            <div className="text-5xl mb-3">🛍</div>
+            <h3 className="text-sm font-bold text-text-primary mb-1.5">
+              로그인하고 장보기 리스트 시작
+            </h3>
+            <p className="text-xs text-text-secondary leading-relaxed mb-4">
+              레시피 재료를 모아두고<br />장볼 때 바로 꺼내 쓰세요
+            </p>
+
+            {/* 혜택 리스트 */}
+            <ul className="text-left text-xs text-text-secondary space-y-1.5 mb-5 px-2">
+              <li className="flex items-start gap-2">
+                <span className="text-accent-warm shrink-0">✓</span>
+                <span>레시피에서 재료 원탭 담기</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent-warm shrink-0">✓</span>
+                <span>체크한 재료 냉장고에 자동 이동</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-accent-warm shrink-0">✓</span>
+                <span>모든 기기에서 실시간 동기화</span>
+              </li>
+            </ul>
+
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="inline-flex w-full items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all"
+            >
+              로그인하고 시작하기 <span className="leading-none">→</span>
+            </Link>
+
+            <p className="text-[11px] text-text-muted mt-3">
+              아직 계정 없으세요?{' '}
+              <Link href="/signup" onClick={onClose} className="text-accent-warm underline">
+                회원가입
+              </Link>
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

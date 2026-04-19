@@ -10,8 +10,9 @@
 
 import Link from 'next/link';
 import dynamicImport from 'next/dynamic';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
+import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD } from './_home/quickAddList';
 import FridgeSVG from './_home/FridgeSVG';
@@ -22,6 +23,8 @@ import BottomNav from '@/components/BottomNav';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
+import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
+import { isFridgeDoorItem } from '@/lib/ingredients/storageMap';
 import { useRouter } from 'next/navigation';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
@@ -146,8 +149,18 @@ const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
   { top: '36.6%', height: '11.8%', kind: 'fridge' },   // 냉장 bottom (y=240~319)
   { top: '63.4%', height: '15.7%', kind: 'freezer' },  // 냉동 top    (y=420~525)
 ];
-// 이름 전체 노출 시 한 chip이 ~90px → 냉장 본체(43% · ~215px)에 3개가 적당.
-const MAX_CHIPS_PER_SHELF = 3;
+// 이름 전체 노출 시 한 chip이 ~90px → 반응형으로 viewport 기반 4~8.
+// getShelfMax(viewportWidth) 참고.
+
+// 냉장고 도어 선반 chip 좌표 (FridgeSVG 도어 내부).
+// 좌측/우측 도어 각 2개 (상단·중단). 하단은 drawer 근처라 생략.
+const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: string; height: string }[] = [
+  { side: 'left',  left: '7%',  width: '16%', top: '11%', height: '6%' },
+  { side: 'left',  left: '7%',  width: '16%', top: '23%', height: '6%' },
+  { side: 'right', left: '77%', width: '16%', top: '11%', height: '6%' },
+  { side: 'right', left: '77%', width: '16%', top: '23%', height: '6%' },
+];
+const MAX_DOOR_CHIPS_PER_SHELF = 2;
 
 // KitchenSVG v14 (3x2 그리드 셀, 다크 플럼 인테리어) chip 좌표 (viewBox="0 0 660 220")
 // 본체 interior: x=166~494 (width 328), y=78~194, 중간 선반 y=133~138
@@ -158,29 +171,40 @@ const PANTRY_SHELVES: { top: string; height: string }[] = [
 ];
 const PANTRY_LEFT = '25.8%';
 const PANTRY_WIDTH = '48.5%';
-const MAX_PANTRY_PER_SHELF = 3; // 3x2 셀 구조: row당 3 cell = 3 chip
+// MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
-// DEMO 재료 — 비로그인 체험용. 3가지 상태 섞어서 실제 UX 보여줌:
-//   (a) expiry 설정됨 + 만료 임박 (유저가 명시 입력한 경우)
-//   (b) expiry null + purchase_date 최근 (안전/신선)
-//   (c) expiry null + purchase_date 오래됨 (fallback으로 노랑/빨강)
+// DEMO 재료 — 비로그인 체험용. 목표:
+//   1. 3가지 상태 섞어서 UX 보여줌: (a) expiry 임박, (b) 방금 구매, (c) 오래 묵힘
+//   2. 실제 DB 레시피 여러 개와 100% 매칭 + 거의 가능 매칭 확보 (유저가 "바로 가능" 결과 확인 가능)
+//      - 바로 가능: 고추장아찌, 새우죽, 당근잎 감자전 등
+//      - 거의 가능: 김치찌개, 수박즙돼지목심구이 등
 const DEMO: FridgeItem[] = [
-  // (a) 유저가 expiry 입력한 case — 긴급도 표시
-  { id:'d1', ingredient_name:'두부', category:'other', expiry_date: addDaysISO(1), storage_location:'냉장', purchase_date: addDaysISO(-3) },
-  { id:'d2', ingredient_name:'우유', category:'dairy', expiry_date: addDaysISO(3), storage_location:'냉장', purchase_date: addDaysISO(-4) },
-  { id:'d3', ingredient_name:'돼지고기', category:'meat', expiry_date: addDaysISO(2), storage_location:'냉장', purchase_date: addDaysISO(-3) },
-  { id:'d4', ingredient_name:'시금치', category:'veggie', expiry_date: addDaysISO(2), storage_location:'냉장', purchase_date: addDaysISO(-5) },
-  // (b) expiry 없음 + 방금 산 것 — 표시 없음
-  { id:'d5', ingredient_name:'양파', category:'veggie', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(0) },
-  { id:'d6', ingredient_name:'마늘', category:'veggie', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  { id:'d7', ingredient_name:'김치', category:'other', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-2) },
-  { id:'d8', ingredient_name:'간장', category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d9', ingredient_name:'참기름', category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d10', ingredient_name:'고추장', category:'seasoning', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-2) },
-  // (c) expiry 없음 + 묵힌 것 — purchase_date fallback으로 색 표시
-  { id:'d11', ingredient_name:'당근', category:'veggie', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-5) },
-  { id:'d12', ingredient_name:'계란', category:'dairy', expiry_date: null, storage_location:'냉장', purchase_date: addDaysISO(-8) },
-  { id:'d13', ingredient_name:'만두', category:'grain', expiry_date: null, storage_location:'냉동', purchase_date: addDaysISO(-3) },
+  // === 냉장 (8) ===
+  // (a) expiry 임박 — 위험/경고 chip 표시
+  { id:'d1', ingredient_name:'돼지고기', category:'meat',    expiry_date: addDaysISO(1),  storage_location:'냉장', purchase_date: addDaysISO(-3) },
+  { id:'d2', ingredient_name:'두부',     category:'other',   expiry_date: addDaysISO(2),  storage_location:'냉장', purchase_date: addDaysISO(-3) },
+  { id:'d3', ingredient_name:'시금치',   category:'veggie',  expiry_date: addDaysISO(2),  storage_location:'냉장', purchase_date: addDaysISO(-5) },
+  // (b) expiry null + 최근 구매 — 신선, 경고 없음
+  { id:'d4', ingredient_name:'계란',     category:'dairy',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d5', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
+  { id:'d6', ingredient_name:'김치',     category:'other',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d7', ingredient_name:'고추',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
+  // (c) expiry null + 오래 묵힘 — purchase_date fallback 경고
+  { id:'d8', ingredient_name:'당근',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-5) },
+  // === 냉동 (2) ===
+  { id:'d9',  ingredient_name:'새우',    category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-4) },
+  { id:'d10', ingredient_name:'만두',    category:'grain',   expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-3) },
+  // === 상온 (10) ===
+  { id:'d11', ingredient_name:'양파',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d12', ingredient_name:'감자',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-3) },
+  { id:'d13', ingredient_name:'쌀',      category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-10) },
+  { id:'d14', ingredient_name:'간장',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-10) },
+  { id:'d15', ingredient_name:'참기름',  category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-15) },
+  { id:'d16', ingredient_name:'식초',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-20) },
+  { id:'d17', ingredient_name:'설탕',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-30) },
+  { id:'d18', ingredient_name:'소금',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-30) },
+  { id:'d19', ingredient_name:'물',      category:'other',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(0) },
+  { id:'d20', ingredient_name:'부침가루', category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-15) },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -200,10 +224,33 @@ export default function HomeClient({
   initialOnboardingStep: _initialOnboardingStep,
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
+  const { success: toastSuccess } = useToast();
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  // 반응형 MAX — viewport width 기반. 모바일 4, 태블릿 6, 데스크톱 8.
+  // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
+  const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w >= 1024) setShelfMax({ body: 8, pantry: 6, door: 3 });
+      else if (w >= 768) setShelfMax({ body: 6, pantry: 5, door: 3 });
+      else if (w >= 640) setShelfMax({ body: 5, pantry: 4, door: 2 });
+      else setShelfMax({ body: 4, pantry: 3, door: 2 });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // +N 탭 시 열리는 전체 재료 보기 시트
+  const [showAllSheet, setShowAllSheet] = useState(false);
+
+  // DEMO 아이템 고유 id 생성용 카운터 (Date.now() 대신 — React 순수성 규칙 준수)
+  const demoIdRef = useRef(0);
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
@@ -266,18 +313,42 @@ export default function HomeClient({
     setDetailItem(item);
   };
 
-  // 액션 시트: "삭제" → DEMO면 state만, 실제 유저면 Supabase delete.
-  const handleDeleteFromSheet = async (item: FridgeItem) => {
-    if (!user || item.id.startsWith('d')) {
-      setItems(prev => prev.filter(i => i.id !== item.id));
-    } else {
-      const client = createClient();
-      await client.from('user_ingredients').delete().eq('id', item.id);
-      setItems(prev => prev.filter(i => i.id !== item.id));
-      window.dispatchEvent(new Event('fridge-updated'));
-    }
+  // 액션 시트: "삭제" → 즉시 state 제거 + undo 토스트 (5초 안에 [실행 취소] 클릭 시 복원).
+  // DB 삭제는 토스트 만료 직전 (5.5초)에 비동기 실행 → undo 시 cancel.
+  const handleDeleteFromSheet = (item: FridgeItem) => {
+    const indexBefore = items.findIndex(i => i.id === item.id);
+    setItems(prev => prev.filter(i => i.id !== item.id));
     setActionItem(null);
-    showToast(`🗑 ${item.ingredient_name} 삭제됨`);
+
+    let cancelled = false;
+    const isDemo = !user || item.id.startsWith('d');
+    const dbTimer = setTimeout(async () => {
+      if (cancelled) return;
+      if (!isDemo) {
+        const client = createClient();
+        await client.from('user_ingredients').delete().eq('id', item.id);
+        window.dispatchEvent(new Event('fridge-updated'));
+      }
+      // DEMO는 state만 변경했으므로 별도 작업 없음
+    }, 5500);
+
+    toastSuccess(`🗑 ${item.ingredient_name} 삭제됨`, {
+      action: {
+        label: '실행 취소',
+        onClick: () => {
+          cancelled = true;
+          clearTimeout(dbTimer);
+          // 원래 위치에 복원
+          setItems(prev => {
+            const next = [...prev];
+            const safeIdx = Math.min(Math.max(0, indexBefore), next.length);
+            next.splice(safeIdx, 0, item);
+            return next;
+          });
+        },
+      },
+      duration: 5500,
+    });
   };
 
   const fetchItems = useCallback(async () => {
@@ -370,7 +441,7 @@ export default function HomeClient({
   const addIngredientFromModal = async (formData: IngredientFormData) => {
     if (!user) {
       const newItem: FridgeItem = {
-        id: `d${Date.now()}`,
+        id: `d${++demoIdRef.current}`,
         ingredient_name: formData.ingredient_name,
         category: formData.category,
         expiry_date: formData.expiry_date ?? null,
@@ -383,7 +454,7 @@ export default function HomeClient({
       };
       setItems(prev => [...prev, newItem]);
       setAddModalLocation(null);
-      showToast('👅 추가! (체험 — 새로고침 시 리셋)');
+      showToast('👅 추가! 💡 로그인하면 계정에 영구 저장');
       return;
     }
     const client = createClient();
@@ -402,7 +473,7 @@ export default function HomeClient({
   const addIngredientsFromPhoto = async (labels: PhotoLabel[]) => {
     if (!user) {
       const newItems: FridgeItem[] = labels.map((lbl, i) => ({
-        id: `d${Date.now()}-${i}`,
+        id: `d${++demoIdRef.current}-${i}`,
         ingredient_name: lbl.name,
         category: lbl.category,
         expiry_date: null,
@@ -412,7 +483,7 @@ export default function HomeClient({
       }));
       setItems(prev => [...prev, ...newItems]);
       setAddModalLocation(null);
-      showToast(`📸 ${labels.length}개 추가! (체험 — 새로고침 시 리셋)`);
+      showToast(`📸 ${labels.length}개 추가! 💡 로그인하면 계정에 영구 저장`);
       return;
     }
     const client = createClient();
@@ -489,31 +560,26 @@ export default function HomeClient({
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
         <div className="relative w-full max-w-[420px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
           <KitchenSVG />
-          {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
-          <button
-            type="button"
-            onClick={() => setAddModalLocation('상온')}
-            aria-label="상온 재료 추가"
-            className="absolute inset-0 z-10 w-full h-full cursor-pointer"
-          />
+          {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
+              추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
           {/* 상온 chip overlay — 2단 선반에 분배해 선반 위에 놓인 것처럼.
               정확한 y좌표는 PANTRY_SHELVES 참고. 선반 x 영역은 SVG x=40~620 기준 (6%~94%). */}
           {(() => {
+            // '상온' + 기존 DB에 남아있을 수 있는 '기타' 도 같이 표시 (기타는 이제 사용 안 함)
             const pantry = [...items]
-              .filter(i => i.storage_location === '상온')
+              .filter(i => i.storage_location === '상온' || i.storage_location === '기타')
               .sort((a, b) => urgencyScore(a) - urgencyScore(b));
             const shelfItems: FridgeItem[][] = [[], []];
             pantry.forEach((it, i) => {
-              const idx = Math.min(Math.floor(i / MAX_PANTRY_PER_SHELF), 1);
+              const idx = Math.min(Math.floor(i / shelfMax.pantry), 1);
               shelfItems[idx].push(it);
             });
             return (
               <div className="absolute inset-0 pointer-events-none z-20">
                 {PANTRY_SHELVES.map((shelf, idx) => {
                   const list = shelfItems[idx];
-                  const visible = list.slice(0, MAX_PANTRY_PER_SHELF);
+                  const visible = list.slice(0, shelfMax.pantry);
                   const overflow = list.length - visible.length;
-                  const isEmptyFirst = pantry.length === 0 && idx === 0;
                   return (
                     <div
                       key={idx}
@@ -524,37 +590,42 @@ export default function HomeClient({
                         const { border, label, isDanger } = freshState(item);
                         const emoji = getEmoji(item.ingredient_name, item.category);
                         return (
-                          <button
-                            key={item.id}
-                            onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
-                            className={`pointer-events-auto flex items-center gap-1 px-1.5 py-1 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
-                            style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
-                            title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
-                          >
-                            <span className="text-base md:text-lg leading-none">{emoji}</span>
-                            <span className="text-[11px] md:text-xs font-bold text-gray-800 leading-none max-w-[72px] truncate">
-                              {item.ingredient_name}
-                            </span>
-                            {label && (
-                              <span className="text-[9px] md:text-[10px] font-bold leading-none" style={{ color: border }}>{label}</span>
-                            )}
-                          </button>
+                          <div key={item.id} className="relative pointer-events-auto group shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
+                              className={`flex items-center gap-1 px-1.5 py-1 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse' : ''}`}
+                              style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
+                              title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                            >
+                              <span className="text-base md:text-lg leading-none">{emoji}</span>
+                              <span className="text-[11px] md:text-xs font-bold text-gray-800 leading-none max-w-[72px] truncate">
+                                {item.ingredient_name}
+                              </span>
+                              {label && (
+                                <span className="text-[9px] md:text-[10px] font-bold leading-none" style={{ color: border }}>{label}</span>
+                              )}
+                            </button>
+                            {/* 데스크톱 hover X 삭제 */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(item); }}
+                              className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-md ring-2 ring-white"
+                              aria-label={`${item.ingredient_name} 삭제`}
+                            >
+                              ✕
+                            </button>
+                          </div>
                         );
                       })}
                       {overflow > 0 && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setAddModalLocation('상온'); }}
-                          className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0"
+                          onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                          className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0 hover:bg-black/80 transition-colors"
                           title={`${overflow}개 더 보기`}
                         >
                           +{overflow}
                         </button>
                       )}
-                      {isEmptyFirst && (
-                        <span className="text-[10px] md:text-xs italic text-white/90 select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                          + 상온 재료 추가
-                        </span>
-                      )}
+                      {/* 빈 상온 선반 — 탭해서 추가 안내 제거됨. FAB(+)로 추가. */}
                     </div>
                   );
                 })}
@@ -615,84 +686,114 @@ export default function HomeClient({
             );
           })()}
 
-          {/* 선반 overlay — pointerEvents-none 컨테이너 + 각 선반만 pointer-events 활성 */}
+          {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
-              // 선반별 아이템 분배: 냉장은 '냉장' 또는 미지정만 (상온은 KitchenSVG 선반장으로 분리), 냉동은 '냉동'.
-              const fridgeItems = [...items].filter(i => i.storage_location === '냉장' || !i.storage_location).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+              // 냉장 재료를 본체 vs 도어로 분류 (도어: 계란·소스·음료 등 isFridgeDoorItem)
+              const allFridge = items.filter(i => i.storage_location === '냉장' || !i.storage_location);
+              const bodyFridge = allFridge.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+              const doorFridge = allFridge.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
               const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
-              const shelfItems: FridgeItem[][] = [[], [], [], []];
-              fridgeItems.forEach((it, i) => {
-                const shelfIdx = Math.min(Math.floor(i / MAX_CHIPS_PER_SHELF), 2);
-                shelfItems[shelfIdx].push(it);
-              });
-              shelfItems[3] = freezerItems;
 
-              return SHELVES.map((shelf, idx) => {
-                const list = shelfItems[idx];
-                const visible = list.slice(0, MAX_CHIPS_PER_SHELF);
-                const overflow = list.length - visible.length;
-                const isEmpty = list.length === 0;
-                const addLocation = shelf.kind === 'freezer' ? '냉동' : '냉장';
+              // 본체 선반 3단 분배
+              const bodyShelfItems: FridgeItem[][] = [[], [], []];
+              bodyFridge.forEach((it, i) => {
+                const shelfIdx = Math.min(Math.floor(i / shelfMax.body), 2);
+                bodyShelfItems[shelfIdx].push(it);
+              });
+
+              // 도어 선반 4개에 도어 아이템 분배
+              const doorShelfItems: FridgeItem[][] = [[], [], [], []];
+              doorFridge.forEach((it, i) => {
+                const idx = Math.min(Math.floor(i / shelfMax.door), 3);
+                doorShelfItems[idx].push(it);
+              });
+
+              // 렌더 helper — chip 버튼 하나
+              const renderChip = (item: FridgeItem, compact = false) => {
+                const { border, label, isDanger } = freshState(item);
+                const emoji = getEmoji(item.ingredient_name, item.category);
                 return (
-                  <div
-                    key={idx}
-                    className="absolute flex flex-wrap items-end justify-center gap-0.5 pointer-events-auto cursor-pointer"
-                    style={{
-                      left: SHELF_LEFT,
-                      width: SHELF_WIDTH,
-                      top: shelf.top,
-                      height: shelf.height,
-                    }}
-                    onClick={(e) => {
-                      // 빈 선반 영역 탭 시에만 add modal. chip 자체 탭은 handler에서 stopPropagation.
-                      if (isEmpty) {
-                        e.stopPropagation();
-                        setAddModalLocation(addLocation);
-                      }
-                    }}
-                  >
-                    {visible.map(item => {
-                      const { border, label, isDanger } = freshState(item);
-                      const emoji = getEmoji(item.ingredient_name, item.category);
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
-                          className={`flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/90 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
-                          style={{
-                            borderColor: border,
-                            boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
-                          }}
-                          title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
-                        >
-                          <span className="text-sm md:text-base leading-none">{emoji}</span>
-                          <span className="text-[9px] md:text-[10px] font-bold text-gray-800 leading-none max-w-[60px] truncate">
-                            {item.ingredient_name}
-                          </span>
-                          {label && (
-                            <span className="text-[8px] md:text-[9px] font-bold leading-none" style={{ color: border }}>
-                              {label}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                    {overflow > 0 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setAddModalLocation(addLocation); }}
-                        className="flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0"
-                        title={`${overflow}개 더 보기`}
-                      >
-                        +{overflow}
-                      </button>
-                    )}
-                    {isEmpty && (
-                      <span className="text-[9px] italic text-black/40 select-none">+ 탭해서 추가</span>
-                    )}
+                  <div key={item.id} className="relative pointer-events-auto group shrink-0 md:pt-2 md:pr-2 md:-mt-2 md:-mr-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActionItem(item); }}
+                      className={`flex items-center gap-0.5 rounded-md bg-white/90 border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse' : ''} ${compact ? 'px-0.5 py-0.5' : 'px-1 py-0.5'}`}
+                      style={{
+                        borderColor: border,
+                        boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
+                      }}
+                      title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                    >
+                      <span className={`leading-none ${compact ? 'text-xs' : 'text-sm md:text-base'}`}>{emoji}</span>
+                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[40px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
+                        {item.ingredient_name}
+                      </span>
+                      {label && (
+                        <span className={`font-bold leading-none ${compact ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`} style={{ color: border }}>
+                          {label}
+                        </span>
+                      )}
+                    </button>
+                    {/* 데스크톱 hover 시 우상단 X 버튼 — 빠른 삭제 */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(item); }}
+                      className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-md ring-2 ring-white"
+                      aria-label={`${item.ingredient_name} 삭제`}
+                    >
+                      ✕
+                    </button>
                   </div>
                 );
-              });
+              };
+
+              const renderOverflow = (count: number) => count > 0 ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                  className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0 hover:bg-black/80 transition-colors"
+                  title={`${count}개 더 보기`}
+                >
+                  +{count}
+                </button>
+              ) : null;
+
+              return (
+                <>
+                  {/* 본체 선반 4개 (냉장 3 + 냉동 1) */}
+                  {SHELVES.map((shelf, idx) => {
+                    const list = idx < 3 ? bodyShelfItems[idx] : freezerItems;
+                    const maxForShelf = shelf.kind === 'freezer' ? shelfMax.body : shelfMax.body;
+                    const visible = list.slice(0, maxForShelf);
+                    const overflow = list.length - visible.length;
+                    return (
+                      <div
+                        key={`body-${idx}`}
+                        className="absolute flex flex-wrap items-end justify-center gap-0.5"
+                        style={{ left: SHELF_LEFT, width: SHELF_WIDTH, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
+                      >
+                        {visible.map(item => renderChip(item, false))}
+                        {renderOverflow(overflow)}
+                      </div>
+                    );
+                  })}
+
+                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용) */}
+                  {DOOR_SHELVES.map((shelf, idx) => {
+                    const list = doorShelfItems[idx];
+                    const visible = list.slice(0, shelfMax.door);
+                    const overflow = list.length - visible.length;
+                    return (
+                      <div
+                        key={`door-${idx}`}
+                        className="absolute flex flex-wrap items-end justify-center gap-0.5"
+                        style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
+                      >
+                        {visible.map(item => renderChip(item, true))}
+                        {renderOverflow(overflow)}
+                      </div>
+                    );
+                  })}
+                </>
+              );
             })()}
           </div>
 
@@ -705,6 +806,20 @@ export default function HomeClient({
           <span>{toast}</span>
         </div>
       )}
+
+      {/* 전체 재료 보기 시트 — +N 오버플로우 탭 시 열림.
+          chip 탭 시 액션 시트가 위에 겹쳐 열림 (이 시트는 닫지 않음) → 취소하면 다시 이 시트로 복귀. */}
+      <FridgeAllSheet
+        isOpen={showAllSheet}
+        items={items}
+        onClose={() => setShowAllSheet(false)}
+        onItemClick={(item) => {
+          setActionItem(item as FridgeItem);
+        }}
+        onDelete={(item) => handleDeleteFromSheet(item as FridgeItem)}
+        freshState={freshState}
+        getEmoji={getEmoji}
+      />
 
       {/* 재료 액션 시트 — chip 탭 시 1차로 열림 (만들기/수정/삭제) */}
       <IngredientActionSheet

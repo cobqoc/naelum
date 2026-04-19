@@ -6,6 +6,7 @@ import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
+import { lookupStorageByName } from '@/lib/ingredients/storageMap';
 import { useI18n } from '@/lib/i18n/context';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
@@ -46,7 +47,7 @@ interface IngredientFormProps {
 
 const UNITS = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
 
-const STORAGE_LOCATIONS = ['냉장', '냉동', '상온', '기타'];
+const STORAGE_LOCATIONS = ['냉장', '냉동', '상온'];
 
 const CATEGORIES = [
   { id: 'veggie', name: '채소', icon: '🥬' },
@@ -74,11 +75,25 @@ export default function IngredientForm({
   // 기존 단일 입력 모드 (수정 모드에서 사용)
   const isEditMode = !!initialData?.ingredient_name;
 
-  // 섹션 추가 버튼에서 넘어온 기본 위치를 ref로 추적 (useCallback 의존성 문제 방지)
-  const defaultLocationRef = useRef(defaultStorageLocation || '기타');
+  // 저장 위치 모드:
+  //   null = 자동 분류 (디폴트, 재료명 큐레이션 맵 기반)
+  //   '냉장'|'냉동'|'상온' = 수동 override (모든 새+기존 재료 일괄 지정)
+  type LocMode = null | '냉장' | '냉동' | '상온';
+  const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
+  const defaultLocationRef = useRef<LocMode>(null);
   useEffect(() => {
-    defaultLocationRef.current = defaultStorageLocation || '기타';
-  }, [defaultStorageLocation]);
+    defaultLocationRef.current = selectedLocation;
+  }, [selectedLocation]);
+
+  // Pill 클릭 핸들러 — 선택 위치를 기존 pendingItems 전체에 일괄 적용.
+  // null(자동)로 돌아가면 다시 큐레이션 맵으로 재분류.
+  const applyLocationToAll = (newLoc: LocMode) => {
+    setSelectedLocation(newLoc);
+    setPendingItems(prev => prev.map(item => ({
+      ...item,
+      storage_location: newLoc ?? (lookupStorageByName(item.name) ?? '상온'),
+    })));
+  };
 
   // 빠른 추가 모드 상태
   const [inputValue, setInputValue] = useState('');
@@ -108,21 +123,27 @@ export default function IngredientForm({
     }
   }, [isEditMode]);
 
-  const createPendingItem = (name: string, category: string, id?: string, commonUnits?: string[]): PendingIngredient => ({
-    id: `pending-${++pendingIdCounter}`,
-    name,
-    category: category || 'other',
-    categoryIcon: getIngredientEmoji(name, category || 'other'),
-    ingredientId: id,
-    common_units: commonUnits || [],
-    quantity: null,
-    unit: commonUnits?.[0] || '선택',
-    purchase_date: '',
-    expiry_date: '',
-    storage_location: defaultLocationRef.current,
-    notes: '',
-    expiry_alert: true,
-  });
+  const createPendingItem = (name: string, category: string, id?: string, commonUnits?: string[]): PendingIngredient => {
+    // 수동 override 있으면 그 위치 사용, 없으면 (= null, 자동 모드) 큐레이션 맵 매칭.
+    // 맵에도 없으면 상온 fallback.
+    const override = defaultLocationRef.current;
+    const storage = override ?? (lookupStorageByName(name) ?? '상온');
+    return {
+      id: `pending-${++pendingIdCounter}`,
+      name,
+      category: category || 'other',
+      categoryIcon: getIngredientEmoji(name, category || 'other'),
+      ingredientId: id,
+      common_units: commonUnits || [],
+      quantity: null,
+      unit: commonUnits?.[0] || '선택',
+      purchase_date: '',
+      expiry_date: '',
+      storage_location: storage,
+      notes: '',
+      expiry_alert: true,
+    };
+  };
 
   const handleQuickSelect = useCallback((ingredient: IngredientItem) => {
     setPendingItems(prev => {
@@ -276,6 +297,56 @@ export default function IngredientForm({
 
   return (
     <div className="space-y-4">
+      {/* 0. 저장 위치 — 디폴트는 자동 분류. pill 탭 시 수동 override. */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-xs font-medium">
+            <span className="text-accent-warm font-bold">✨ 기본: 자동 분류</span>
+            {selectedLocation && (
+              <span className="ml-1.5 text-text-muted">
+                → 현재 <span className="text-accent-warm">{selectedLocation}</span>으로 고정됨
+              </span>
+            )}
+          </label>
+          {selectedLocation && (
+            <button
+              type="button"
+              onClick={() => applyLocationToAll(null)}
+              className="text-[10px] text-accent-warm hover:underline"
+            >
+              자동으로 돌리기
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {([
+            { key: '냉장', icon: '❄️' },
+            { key: '냉동', icon: '🧊' },
+            { key: '상온', icon: '🌡' },
+          ] as const).map((opt) => {
+            const active = selectedLocation === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => applyLocationToAll(active ? null : opt.key)}
+                className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
+                    : 'bg-background-secondary text-text-secondary hover:bg-white/5 border border-white/10'
+                }`}
+              >
+                <span>{opt.icon}</span>
+                <span>{opt.key}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
+          ⚠️ 자동 분류는 정확하지 않을 수 있어요. 잘못되면 태그 탭해서 수정하거나 위 버튼으로 모든 재료 한 번에 지정하세요.
+        </p>
+      </div>
+
       {/* 1. 빠른 입력 바 */}
       <div>
         <IngredientAutocompleteV2
@@ -326,6 +397,15 @@ export default function IngredientForm({
               >
                 <span>{item.categoryIcon}</span>
                 <span className="font-medium">{item.name}</span>
+                {/* 저장 위치 배지 — 자동분류 결과 가시화 */}
+                <span
+                  className={`ml-0.5 text-[11px] ${
+                    editingIndex === index ? 'opacity-80' : 'opacity-70'
+                  }`}
+                  title={`저장 위치: ${item.storage_location}`}
+                >
+                  {item.storage_location === '냉장' ? '❄️' : item.storage_location === '냉동' ? '🧊' : '🌡'}
+                </span>
                 <span
                   onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
                   className={`ml-0.5 rounded-full p-0.5 transition-colors ${

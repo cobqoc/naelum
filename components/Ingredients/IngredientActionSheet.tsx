@@ -36,14 +36,14 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
 
   if (!item) return null;
 
+  // confirm() 제거 — 즉시 삭제 후 undo 토스트로 복원 가능 (HomeClient에서 처리)
   const handleDelete = () => {
-    if (!confirm(`"${item.ingredient_name}"을(를) 냉장고에서 꺼낼까요?`)) return;
     onDelete(item);
   };
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end md:items-center justify-center"
+      className="fixed inset-0 z-[80] flex items-end md:items-center justify-center"
       role="dialog"
       aria-modal="true"
     >

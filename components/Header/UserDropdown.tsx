@@ -148,6 +148,35 @@ export default function UserDropdown({
                   )}
                 </div>
 
+                {/* Theme Selector — 모바일에도 추가 (desktop 블록과 동일) */}
+                <div className="px-4 py-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span>🌓</span>
+                    <span className="text-sm">{t.common.theme}</span>
+                  </div>
+                  <div className="flex bg-background-tertiary rounded-lg p-0.5 gap-0.5">
+                    {([
+                      { value: 'light' as const, icon: '☀️', label: t.theme.light },
+                      { value: 'dark' as const, icon: '🌙', label: t.theme.dark },
+                      { value: 'system' as const, icon: '⚙️', label: t.theme.system },
+                    ]).map(({ value, icon, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => setTheme(value)}
+                        title={label}
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          theme === value
+                            ? 'bg-background-secondary text-text-primary shadow-sm'
+                            : 'text-text-muted hover:text-text-secondary'
+                        }`}
+                      >
+                        <span>{icon}</span>
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={() => { onShowContact(); handleClose(); }}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors w-full text-left"
