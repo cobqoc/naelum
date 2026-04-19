@@ -129,15 +129,36 @@ function urgencyScore(item: FridgeItem): number {
  * - 냉동 1선반: y=420~525 (서랍 위)
  * - x는 모두 184~416 (width 232)
  */
-const SHELF_LEFT = '28.5%';
-const SHELF_WIDTH = '43%';
+// FridgeSVG 본체 선반 좌표 (viewBox="30 -5 540 670", 본체 interior x=184~416)
+// 실측:
+//   냉장 선반1 rail top: y=119   → chip 바닥 y=118, 선반 위 공간 y≈60~118
+//   냉장 선반2 rail top: y=214   → chip 바닥 y=213, 선반 위 공간 y≈140~213
+//   냉장 서랍 top:        y=320   → chip 바닥 y=319, 선반 위 공간 y≈240~319
+//   냉동 서랍 top:        y=526   → chip 바닥 y=525, 선반 위 공간 y≈420~525
+// viewBox height=670(y=-5~665), width=540(x=30~570). (y - (-5)) / 670 = percent.
+const SHELF_LEFT = '28.5%';   // (184-30)/540 = 28.5%
+const SHELF_WIDTH = '43%';    // 232/540 = 43%
 const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
-  { top: '6%',  height: '12%', kind: 'fridge' },   // 냉장 top
-  { top: '21%', height: '12%', kind: 'fridge' },   // 냉장 middle
-  { top: '35%', height: '13%', kind: 'fridge' },   // 냉장 bottom (drawer 위)
-  { top: '63%', height: '16%', kind: 'freezer' },  // 냉동 top
+  { top: '9.7%',  height: '8.7%',  kind: 'fridge' },   // 냉장 top    (y=60~118)
+  { top: '21.6%', height: '10.9%', kind: 'fridge' },   // 냉장 middle (y=140~213)
+  { top: '36.6%', height: '11.8%', kind: 'fridge' },   // 냉장 bottom (y=240~319)
+  { top: '63.4%', height: '15.7%', kind: 'freezer' },  // 냉동 top    (y=420~525)
 ];
-const MAX_CHIPS_PER_SHELF = 5;
+// 이름 전체 노출 시 한 chip이 ~90px → 냉장 본체(43% · ~215px)에 3개가 적당.
+const MAX_CHIPS_PER_SHELF = 3;
+
+// KitchenSVG v13 (프레임 2배 두께 + 열린 문) 내부 chip 좌표 (viewBox="0 0 660 220")
+// 본체 interior: x=166~494 (width 328), y=78~194
+// 내부 선반 2단:
+//   Shelf 1 top: y=120  → chip 바닥 y=119, 선반 위 공간 y=86~119
+//   Shelf 2 top: y=165  → chip 바닥 y=164, 선반 위 공간 y=130~164
+const PANTRY_SHELVES: { top: string; height: string }[] = [
+  { top: '39.1%', height: '15%' },   // row 1 (y=86~119)
+  { top: '59.1%', height: '15.5%' }, // row 2 (y=130~164)
+];
+const PANTRY_LEFT = '25.8%';  // (166+4)/660 ≈ 25.8%
+const PANTRY_WIDTH = '48.5%'; // 320/660 ≈ 48.5%
+const MAX_PANTRY_PER_SHELF = 4;
 
 // DEMO 재료 — 비로그인 체험용. 3가지 상태 섞어서 실제 UX 보여줌:
 //   (a) expiry 설정됨 + 만료 임박 (유저가 명시 입력한 경우)
@@ -435,7 +456,7 @@ export default function HomeClient({
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[280px] sm:max-w-sm md:max-w-xl lg:max-w-2xl mx-auto">
+        <div className="relative w-full max-w-[560px] sm:max-w-[768px] md:max-w-[1152px] lg:max-w-[1344px] mx-auto">
           <KitchenSVG />
           {/* 탭 가능 투명 오버레이 — 빈 영역/선반장 전체 탭 시 상온 재료 추가 모달 */}
           <button
@@ -444,53 +465,68 @@ export default function HomeClient({
             aria-label="상온 재료 추가"
             className="absolute inset-0 z-10 w-full h-full cursor-pointer"
           />
-          {/* 상온 chip overlay — 하단 중앙에 가로로 배치 (상온 재료가 "선반 위에 놓인" 느낌) */}
+          {/* 상온 chip overlay — 2단 선반에 분배해 선반 위에 놓인 것처럼.
+              정확한 y좌표는 PANTRY_SHELVES 참고. 선반 x 영역은 SVG x=40~620 기준 (6%~94%). */}
           {(() => {
             const pantry = [...items]
               .filter(i => i.storage_location === '상온')
               .sort((a, b) => urgencyScore(a) - urgencyScore(b));
-            const MAX = 6;
-            const visible = pantry.slice(0, MAX);
-            const overflow = pantry.length - visible.length;
+            const shelfItems: FridgeItem[][] = [[], []];
+            pantry.forEach((it, i) => {
+              const idx = Math.min(Math.floor(i / MAX_PANTRY_PER_SHELF), 1);
+              shelfItems[idx].push(it);
+            });
             return (
-              <div className="absolute inset-x-1 bottom-[6%] z-20 flex items-end justify-center gap-0.5 flex-wrap pointer-events-none">
-                {visible.map(item => {
-                  const { border, label, isDanger } = freshState(item);
-                  const emoji = getEmoji(item.ingredient_name, item.category);
+              <div className="absolute inset-0 pointer-events-none z-20">
+                {PANTRY_SHELVES.map((shelf, idx) => {
+                  const list = shelfItems[idx];
+                  const visible = list.slice(0, MAX_PANTRY_PER_SHELF);
+                  const overflow = list.length - visible.length;
+                  const isEmptyFirst = pantry.length === 0 && idx === 0;
                   return (
-                    <button
-                      key={item.id}
-                      onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
-                      className={`pointer-events-auto flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
-                      style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
-                      title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                    <div
+                      key={idx}
+                      className="absolute flex items-end justify-center gap-0.5 flex-wrap"
+                      style={{ left: PANTRY_LEFT, width: PANTRY_WIDTH, top: shelf.top, height: shelf.height }}
                     >
-                      <span className="text-sm md:text-base leading-none">{emoji}</span>
-                      {isDanger && (
-                        <span className="text-[8px] md:text-[9px] font-bold text-gray-800 leading-none max-w-[40px] truncate">
-                          {item.ingredient_name}
+                      {visible.map(item => {
+                        const { border, label, isDanger } = freshState(item);
+                        const emoji = getEmoji(item.ingredient_name, item.category);
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={(e) => { e.stopPropagation(); setDetailItem(item); }}
+                            className={`pointer-events-auto flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all shrink-0 ${isDanger ? 'animate-pulse' : ''}`}
+                            style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
+                            title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
+                          >
+                            <span className="text-sm md:text-base leading-none">{emoji}</span>
+                            <span className="text-[9px] md:text-[10px] font-bold text-gray-800 leading-none max-w-[60px] truncate">
+                              {item.ingredient_name}
+                            </span>
+                            {label && (
+                              <span className="text-[8px] md:text-[9px] font-bold leading-none" style={{ color: border }}>{label}</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {overflow > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setAddModalLocation('상온'); }}
+                          className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-bold shrink-0"
+                          title={`${overflow}개 더 보기`}
+                        >
+                          +{overflow}
+                        </button>
+                      )}
+                      {isEmptyFirst && (
+                        <span className="text-[10px] md:text-xs italic text-white/90 select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                          + 상온 재료 추가
                         </span>
                       )}
-                      {label && (
-                        <span className="text-[7px] md:text-[8px] font-bold leading-none" style={{ color: border }}>{label}</span>
-                      )}
-                    </button>
+                    </div>
                   );
                 })}
-                {overflow > 0 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setAddModalLocation('상온'); }}
-                    className="pointer-events-auto flex items-center px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[9px] font-bold shrink-0"
-                    title={`${overflow}개 더 보기`}
-                  >
-                    +{overflow}
-                  </button>
-                )}
-                {pantry.length === 0 && (
-                  <span className="text-[10px] italic text-white/80 select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                    + 상온 재료 추가
-                  </span>
-                )}
               </div>
             );
           })()}
@@ -588,13 +624,11 @@ export default function HomeClient({
                           title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
                         >
                           <span className="text-sm md:text-base leading-none">{emoji}</span>
-                          {isDanger && (
-                            <span className="text-[8px] md:text-[9px] font-bold text-gray-800 leading-none max-w-[40px] truncate">
-                              {item.ingredient_name}
-                            </span>
-                          )}
+                          <span className="text-[9px] md:text-[10px] font-bold text-gray-800 leading-none max-w-[60px] truncate">
+                            {item.ingredient_name}
+                          </span>
                           {label && (
-                            <span className="text-[7px] md:text-[8px] font-bold leading-none" style={{ color: border }}>
+                            <span className="text-[8px] md:text-[9px] font-bold leading-none" style={{ color: border }}>
                               {label}
                             </span>
                           )}

@@ -77,7 +77,7 @@ export default function CookieConsent() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[9999] px-4 pb-4"
+      className="fixed left-0 right-0 z-40 px-4 pb-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0"
       style={{
         animation: dismissing
           ? 'cookie-slide-down 0.35s ease-in forwards'
