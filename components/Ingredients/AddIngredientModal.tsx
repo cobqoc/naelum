@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import IngredientForm from './IngredientForm';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
@@ -33,8 +33,30 @@ export default function AddIngredientModal({
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
   // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
   const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
-  // ⓘ 아이콘으로 자동 분류 안내 표시 토글 (기본 숨김, 매번 보이는 경고문 피로도 감소)
+  // ⓘ 툴팁/팝오버 — 방법 안내(how-to)만 숨김. 경고 자체는 헤더에 항상 노출.
   const [showHint, setShowHint] = useState(false);
+  const hintButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // 팝오버 외부 클릭 / ESC 키 → 닫기
+  useEffect(() => {
+    if (!showHint) return;
+    const onDocClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      if (hintButtonRef.current?.contains(target)) return;
+      setShowHint(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowHint(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('touchstart', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('touchstart', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [showHint]);
 
   // 모달이 특정 섹션으로 열리면 (예: '냉장') 그 위치로 pre-select.
   // FAB('auto')로 열리면 null(자동) 유지.
@@ -67,15 +89,16 @@ export default function AddIngredientModal({
           className="border-b border-white/5 flex-shrink-0"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
-          {/* 상단 라인: 자동 분류 라벨 (+ⓘ 토글) + 닫기.
-              "자동으로 돌리기" 링크 제거 — 활성 pill 재탭으로 토글 가능 (중복 UI였음). */}
+          {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0 relative">
               <span className="text-xs font-bold text-accent-warm whitespace-nowrap">✨ 기본: 자동 분류</span>
+              <span className="text-[11px] text-text-muted whitespace-nowrap">· 100% 정확 아님</span>
               <button
+                ref={hintButtonRef}
                 type="button"
                 onClick={() => setShowHint(prev => !prev)}
-                aria-label="자동 분류 안내 보기"
+                aria-label="수정 방법 안내"
                 aria-expanded={showHint}
                 className={`w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 transition-colors ${
                   showHint
@@ -85,24 +108,45 @@ export default function AddIngredientModal({
               >
                 ⓘ
               </button>
-              {selectedLocation && (
-                <span className="text-[11px] text-text-muted truncate">
-                  → <span className="text-accent-warm">{selectedLocation}</span>으로 고정
-                </span>
+
+              {/* 팝오버 (how-to 안내) — ⓘ 탭 시 표시. 외부 클릭/ESC로 닫힘. */}
+              {showHint && (
+                <div
+                  ref={popoverRef}
+                  role="tooltip"
+                  className="absolute top-full left-0 mt-2 z-10 w-[260px] max-w-[calc(100vw-2.5rem)] p-3 rounded-lg bg-background-tertiary border border-white/10 shadow-xl text-[11px] leading-relaxed"
+                >
+                  {/* 화살표 */}
+                  <div className="absolute -top-1 left-4 w-2 h-2 rotate-45 bg-background-tertiary border-l border-t border-white/10" />
+                  <p className="text-text-primary font-semibold mb-1.5">💡 재료 분류 방법</p>
+                  <ul className="space-y-1 text-text-secondary">
+                    <li>• <strong className="text-text-primary">위 냉장/냉동/상온 버튼</strong> → 모든 재료 일괄 지정</li>
+                    <li>• <strong className="text-text-primary">추가된 태그 탭</strong> → 재료별 개별 수정</li>
+                    <li className="text-text-muted pt-1">활성 버튼 재탭 → 자동 모드로 복귀</li>
+                  </ul>
+                </div>
               )}
             </div>
-            <button
-              onClick={onClose}
-              aria-label="닫기"
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all flex-shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {selectedLocation && (
+                <span className="text-[11px] text-text-muted whitespace-nowrap">
+                  → <span className="text-accent-warm">{selectedLocation}</span>
+                </span>
+              )}
+              <button
+                onClick={onClose}
+                aria-label="닫기"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* 저장 위치 pill (냉장/냉동/상온) */}
+          {/* 저장 위치 pill (냉장/냉동/상온) — 경고문 제거, how-to는 ⓘ 팝오버로 이관 */}
           <div className="px-5 pb-3">
             <div className="grid grid-cols-3 gap-1.5">
               {([
@@ -128,14 +172,6 @@ export default function AddIngredientModal({
                 );
               })}
             </div>
-            {/* 안내 문구 — ⓘ 클릭 시에만 노출 (매번 반복 노출 제거) */}
-            {showHint && (
-              <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed bg-white/5 rounded-md px-2.5 py-2">
-                자동 분류는 정확하지 않을 수 있어요.<br/>
-                <span className="text-text-secondary">• 위 버튼 탭 → 모든 재료 해당 위치로 일괄 지정 (같은 버튼 다시 탭 → 자동으로 복귀)</span><br/>
-                <span className="text-text-secondary">• 아래 추가된 태그 탭 → 해당 재료 개별 수정</span>
-              </p>
-            )}
           </div>
         </div>
 
