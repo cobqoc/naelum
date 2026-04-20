@@ -7,6 +7,7 @@ import { IngredientItem } from './IngredientAutocompleteTypes';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
 import { lookupStorageByName } from '@/lib/ingredients/storageMap';
+import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
 import { useI18n } from '@/lib/i18n/context';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
@@ -122,11 +123,11 @@ export default function IngredientForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 자주 쓰는 재료 로드
+  // 자주 쓰는 재료 로드 — 사용 기록 많으면 상위 20개, 부족하면 인기 재료 프리셋으로 보충
   useEffect(() => {
     if (!isEditMode) {
       const recent = getRecentIngredients();
-      setFrequentIngredients(recent.slice(0, 8));
+      setFrequentIngredients(recent.slice(0, 20));
     }
   }, [isEditMode]);
 
@@ -297,10 +298,17 @@ export default function IngredientForm({
   }
 
   // === 빠른 추가 모드 (새 디자인) ===
-  // 자주 쓰는 재료 중 아직 pending에 없는 것만 표시
+  // 자주 쓰는 재료 중 아직 pending에 없는 것만 표시.
+  // 기록 부족하면 POPULAR_ITEMS(한국 가정 필수 재료 20개)로 보충 — 신규 사용자도 바로 원탭 추가 가능.
   const availableFrequent = frequentIngredients.filter(
     f => !pendingItems.some(p => p.name === f.name)
   );
+  const presetFallback = availableFrequent.length < 6
+    ? POPULAR_ITEMS.filter(
+        p => !availableFrequent.some(f => f.name === p.name) &&
+             !pendingItems.some(pi => pi.name === p.name)
+      )
+    : [];
 
   return (
     <div className="space-y-4">
@@ -318,7 +326,58 @@ export default function IngredientForm({
         />
       </div>
 
-      {/* 2. 재료 브라우저 */}
+      {/* 2. 빠른 선택 — 자주 쓰는 재료 + 인기 재료 프리셋.
+          타이핑 없이 원탭으로 바로 pending에 추가. 가장 자주 쓰는 재료 20개 상단 노출.
+          신규 사용자(기록 부족)는 POPULAR_ITEMS로 보충해서 항상 최소 6개 이상 표시됨. */}
+      {(availableFrequent.length > 0 || presetFallback.length > 0) && (
+        <div>
+          <p className="text-xs text-text-muted mb-2 flex items-center gap-1.5">
+            <span className="text-accent-warm">⚡</span>
+            <span>{availableFrequent.length > 0 ? '자주 쓰는 재료' : '인기 재료'}</span>
+            <span className="text-text-muted/60">— 탭으로 바로 추가</span>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {availableFrequent.map((item) => (
+              <button
+                key={`freq-${item.name}`}
+                type="button"
+                onClick={() => handleQuickSelect({
+                  id: item.id,
+                  name: item.name,
+                  name_en: null,
+                  category: item.category || 'other',
+                  common_units: [],
+                  label: item.name,
+                })}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
+              >
+                <span>{getIngredientEmoji(item.name, item.category || 'other')}</span>
+                <span>{item.name}</span>
+              </button>
+            ))}
+            {presetFallback.map((item) => (
+              <button
+                key={`preset-${item.name}`}
+                type="button"
+                onClick={() => handleQuickSelect({
+                  id: `preset-${item.name}`,
+                  name: item.name,
+                  name_en: null,
+                  category: item.category,
+                  common_units: [],
+                  label: item.name,
+                })}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
+              >
+                <span>{item.icon}</span>
+                <span>{item.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. 재료 브라우저 (카테고리별 전체 탐색) */}
       <IngredientBrowser
         onSelect={handleQuickSelect}
         selectedNames={pendingItems.map(p => p.name)}

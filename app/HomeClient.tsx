@@ -58,14 +58,6 @@ type IngredientFormData = {
   expiry_alert?: boolean;
 };
 
-type PhotoLabel = {
-  name: string;
-  category: string;
-  quantity?: number | null;
-  unit?: string | null;
-  storage_location?: string | null;
-};
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function daysUntilExpiry(d: string | null): number {
@@ -477,38 +469,6 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
-  // AddIngredientModal onAddFromPhoto
-  const addIngredientsFromPhoto = async (labels: PhotoLabel[]) => {
-    if (!user) {
-      const newItems: FridgeItem[] = labels.map((lbl, i) => ({
-        id: `d${++demoIdRef.current}-${i}`,
-        ingredient_name: lbl.name,
-        category: lbl.category,
-        expiry_date: null,
-        storage_location: lbl.storage_location ?? addModalLocation ?? null,
-        quantity: lbl.quantity ?? null,
-        unit: lbl.unit ?? null,
-      }));
-      setItems(prev => [...prev, ...newItems]);
-      setAddModalLocation(null);
-      showToast(`📸 ${labels.length}개 추가! 💡 로그인하면 계정에 영구 저장`);
-      return;
-    }
-    const client = createClient();
-    const rows = labels.map(lbl => ({
-      user_id: user.id,
-      ingredient_name: lbl.name,
-      category: lbl.category,
-      quantity: lbl.quantity ?? null,
-      unit: lbl.unit ?? null,
-      storage_location: lbl.storage_location ?? addModalLocation ?? null,
-    }));
-    const { data } = await client.from('user_ingredients').insert(rows).select();
-    if (data) setItems(prev => [...prev, ...(data as FridgeItem[])]);
-    setAddModalLocation(null);
-    showToast(`📸 ${labels.length}개 추가!`);
-    window.dispatchEvent(new Event('fridge-updated'));
-  };
 
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0 overflow-hidden md:overflow-visible overscroll-y-none">
@@ -871,13 +831,12 @@ export default function HomeClient({
         />
       )}
 
-      {/* 재료 추가 모달 (사진 업로드 포함) */}
+      {/* 재료 추가 모달 */}
       <AddIngredientModal
         isOpen={addModalLocation !== null}
         location={addModalLocation}
         onClose={() => setAddModalLocation(null)}
         onAddIngredient={addIngredientFromModal}
-        onAddFromPhoto={addIngredientsFromPhoto}
       />
 
       <BottomNav />
