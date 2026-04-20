@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   // Get top users (선택한 기간 내 가입한 사용자 기준)
   const { data: topUsers } = await auth.supabase
     .from('profiles')
-    .select('username, recipes_count, followers_count')
+    .select('username, recipes_count')
     .gte('created_at', startDate.toISOString())
     .order('recipes_count', { ascending: false })
     .limit(10)

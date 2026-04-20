@@ -99,9 +99,9 @@ export async function GET(request: NextRequest) {
     searchPromises.push((async () => {
       const { data: users, count: usersCount } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, bio, followers_count, recipes_count', { count: 'exact' })
+        .select('id, username, avatar_url, bio, recipes_count', { count: 'exact' })
         .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
-        .order('followers_count', { ascending: false })
+        .order('recipes_count', { ascending: false })
         .range(offset, offset + limit - 1)
 
       results.users = { data: users || [], total: usersCount || 0 }

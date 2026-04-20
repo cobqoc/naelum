@@ -5,10 +5,6 @@ import IngredientForm from './IngredientForm';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
 
-const STORAGE_ICONS: Record<string, string> = {
-  '냉장': '❄️', '냉동': '🧊', '상온': '🌡️', '기타': '📦',
-};
-
 interface IngredientFormData {
   ingredient_name: string;
   category: string;
@@ -51,11 +47,6 @@ export default function AddIngredientModal({
   }, [isOpen, location]);
 
   if (!isOpen || !location) return null;
-
-  // 'auto' 센티넬 = FAB에서 열린 경우. 특정 섹션 타겟 없이 generic 아이콘 사용.
-  const isAuto = location === 'auto';
-  const _icon = isAuto ? '✨' : (STORAGE_ICONS[location] || '📦');
-  void _icon;
 
   return (
     <div

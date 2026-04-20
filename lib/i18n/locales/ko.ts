@@ -612,4 +612,11 @@ export const ko = {
     dark: '다크 모드',
     system: '시스템 설정',
   },
+  comments: {
+    title: '댓글',
+    loading: '로딩 중...',
+    loadMore: '댓글 더보기',
+    remaining: '개 남음',
+    placeholder: '이 레시피에 대한 의견을 남겨주세요...',
+  },
 }

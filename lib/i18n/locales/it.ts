@@ -612,4 +612,11 @@ export const it = {
     dark: 'Modalità scura',
     system: 'Impostazioni di sistema',
   },
+  comments: {
+    title: 'Commenti',
+    loading: 'Caricamento...',
+    loadMore: 'Carica altro',
+    remaining: 'rimanenti',
+    placeholder: 'Condividi la tua opinione su questa ricetta...',
+  },
 }

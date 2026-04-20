@@ -612,4 +612,11 @@ export const de = {
     dark: 'Dunkles Design',
     system: 'Systemeinstellung',
   },
+  comments: {
+    title: 'Kommentare',
+    loading: 'Laden...',
+    loadMore: 'Mehr laden',
+    remaining: 'verbleibend',
+    placeholder: 'Teile deine Meinung zu diesem Rezept...',
+  },
 }

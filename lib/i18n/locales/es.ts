@@ -612,4 +612,11 @@ export const es = {
     dark: 'Modo oscuro',
     system: 'Configuración del sistema',
   },
+  comments: {
+    title: 'Comentarios',
+    loading: 'Cargando...',
+    loadMore: 'Cargar más',
+    remaining: 'restantes',
+    placeholder: 'Comparte tu opinión sobre esta receta...',
+  },
 }

@@ -15,8 +15,7 @@ export async function GET(
   const { data: profile, error } = await supabase
     .from('profiles')
     .select(`
-      id, username, full_name, avatar_url, bio,
-      followers_count, following_count, recipes_count,
+      id, username, full_name, avatar_url, bio, recipes_count,
       created_at, show_saved_to_public, show_cooked_to_public
     `)
     .eq('username', username)
@@ -26,25 +25,9 @@ export async function GET(
     return NextResponse.json({ error: '사용자를 찾을 수 없습니다' }, { status: 404 })
   }
 
-  // 현재 사용자가 팔로우하고 있는지 확인
+  // 본인 프로필 여부 (권한 제어용)
   const { data: { user } } = await supabase.auth.getUser()
-  let isFollowing = false
-  let isOwnProfile = false
-
-  if (user) {
-    isOwnProfile = user.id === profile.id
-
-    if (!isOwnProfile) {
-      const { data: follow } = await supabase
-        .from('user_follows')
-        .select('id')
-        .eq('follower_id', user.id)
-        .eq('following_id', profile.id)
-        .maybeSingle()
-
-      isFollowing = !!follow
-    }
-  }
+  const isOwnProfile = !!user && user.id === profile.id
 
   // 최근 레시피 조회
   const recipesQuery = supabase
@@ -84,7 +67,6 @@ export async function GET(
     // 알레르기·식단 선호도는 민감한 개인정보 — 본인만 조회 가능
     dietaryPreferences: isOwnProfile ? dietaryPrefs?.map(d => d.preference_type) || [] : [],
     allergies: isOwnProfile ? allergies?.map(a => a.ingredient_name) || [] : [],
-    isFollowing,
     isOwnProfile
   })
   } catch (error) {

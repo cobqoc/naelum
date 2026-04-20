@@ -19,8 +19,6 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   bio: string | null;
-  followers_count: number;
-  following_count: number;
   recipes_count: number;
   created_at: string;
   show_saved_to_public?: boolean;
@@ -127,19 +125,14 @@ export default function ProfilePage(props: PageProps) {
   const [interests, setInterests] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<string[]>([]);
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('created');
   const [tips, setTips] = useState<Tip[]>([]);
   const [tipsLoading, setTipsLoading] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
   const [menuOpenRecipeId, setMenuOpenRecipeId] = useState<string | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null);
-  const [followModalList, setFollowModalList] = useState<{ id: string; username: string; avatar_url: string | null; bio: string | null }[]>([]);
-  const [followModalLoading, setFollowModalLoading] = useState(false);
   const [recipePage, setRecipePage] = useState(1);
   const [recipeTotalPages, setRecipeTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -176,7 +169,6 @@ export default function ProfilePage(props: PageProps) {
         setInterests(data.interests || []);
         setDietaryPreferences(data.dietaryPreferences || []);
         setAllergies(data.allergies || []);
-        setIsFollowing(data.isFollowing);
         setIsOwnProfile(data.isOwnProfile);
       }
     } catch (error) {
@@ -313,51 +305,6 @@ export default function ProfilePage(props: PageProps) {
     setSelectedRecipe(null);
     // 레시피 목록 다시 불러오기
     fetchRecipes(activeTab);
-  };
-
-  const openFollowModal = async (type: 'followers' | 'following') => {
-    setFollowModal(type);
-    setFollowModalLoading(true);
-    setFollowModalList([]);
-    try {
-      const res = await fetch(`/api/users/${username}/${type}`);
-      if (res.ok) {
-        const data = await res.json();
-        setFollowModalList(type === 'followers' ? (data.followers || []) : (data.following || []));
-      }
-    } catch {
-      // ignore
-    } finally {
-      setFollowModalLoading(false);
-    }
-  };
-
-  const handleFollow = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.warning(t.errors.loginRequired);
-      return;
-    }
-
-    setFollowLoading(true);
-    try {
-      const res = await fetch(`/api/users/${username}/follow`, {
-        method: 'POST'
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        setIsFollowing(data.following);
-        setProfile(prev => prev ? {
-          ...prev,
-          followers_count: prev.followers_count + (data.following ? 1 : -1)
-        } : null);
-      }
-    } catch (error) {
-      console.error('Error following:', error);
-    } finally {
-      setFollowLoading(false);
-    }
   };
 
   const handleDeleteRecipe = async (recipeId: string) => {
@@ -511,41 +458,7 @@ export default function ProfilePage(props: PageProps) {
                   <div className="font-bold text-2xl text-accent-warm">{profile.recipes_count}</div>
                   <div className="text-text-muted text-sm">{t.profile.recipes}</div>
                 </div>
-                <button
-                  onClick={() => openFollowModal('followers')}
-                  className="text-center md:text-left hover:opacity-75 transition-opacity"
-                >
-                  <div className="font-bold text-2xl text-accent-warm">{profile.followers_count}</div>
-                  <div className="text-text-muted text-sm">{t.profile.followers}</div>
-                </button>
-                <button
-                  onClick={() => openFollowModal('following')}
-                  className="text-center md:text-left hover:opacity-75 transition-opacity"
-                >
-                  <div className="font-bold text-2xl text-accent-warm">{profile.following_count}</div>
-                  <div className="text-text-muted text-sm">{t.profile.following}</div>
-                </button>
               </div>
-
-              {/* Action Buttons */}
-              {!isOwnProfile && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleFollow}
-                    disabled={followLoading}
-                    className={`flex-1 md:flex-initial md:px-8 py-3 rounded-xl font-bold transition-all active:scale-95 ${
-                      isFollowing
-                        ? 'bg-background-primary border border-white/10 hover:bg-background-secondary'
-                        : 'bg-accent-warm text-background-primary hover:bg-accent-hover shadow-lg shadow-accent-warm/20'
-                    }`}
-                  >
-                    {followLoading ? '...' : isFollowing ? t.profile.following : t.profile.follow}
-                  </button>
-                  <button className="px-5 py-3 rounded-xl bg-background-primary border border-white/10 hover:bg-background-secondary transition-all active:scale-95">
-                    💬
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1012,60 +925,6 @@ export default function ProfilePage(props: PageProps) {
         />
       )}
       <BottomNav />
-
-      {/* Followers / Following Modal */}
-      {followModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-background-secondary overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-              <h2 className="font-bold">
-                {followModal === 'followers'
-                  ? (t.settingsPage?.followersTitle || '팔로워')
-                  : (t.settingsPage?.followingTitle || '팔로잉')}
-              </h2>
-              <button
-                onClick={() => { setFollowModal(null); setFollowModalList([]); }}
-                className="text-text-muted hover:text-text-primary transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {followModalLoading ? (
-                <div className="flex justify-center py-8">
-                  <span className="w-6 h-6 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : followModalList.length === 0 ? (
-                <p className="text-center text-text-muted py-8 text-sm">—</p>
-              ) : (
-                <ul className="divide-y divide-white/5">
-                  {followModalList.map(user => (
-                    <li key={user.id}>
-                      <Link
-                        href={`/@${user.username}`}
-                        onClick={() => { setFollowModal(null); setFollowModalList([]); }}
-                        className="flex items-center gap-3 px-5 py-3 hover:bg-background-tertiary transition-colors"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-background-tertiary overflow-hidden shrink-0">
-                          {user.avatar_url ? (
-                            <Image src={user.avatar_url} alt={user.username} width={40} height={40} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">@{user.username}</p>
-                          {user.bio && <p className="text-xs text-text-muted truncate">{user.bio}</p>}
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

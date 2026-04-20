@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-type NotificationType = 'like' | 'comment' | 'follow' | 'rating' | 'save' | 'meal_time' | 'expiry';
+type NotificationType = 'like' | 'comment' | 'rating' | 'save' | 'meal_time' | 'expiry';
 
 interface CreateNotificationParams {
   supabase: SupabaseClient;
@@ -64,23 +64,6 @@ export async function notifyComment(
     relatedUserId: commenterId,
     relatedRecipeId: recipeId,
     relatedCommentId: commentId,
-  });
-}
-
-export async function notifyFollow(
-  supabase: SupabaseClient,
-  followedUserId: string,
-  followerUsername: string,
-  followerId: string,
-) {
-  await createNotification({
-    supabase,
-    userId: followedUserId,
-    type: 'follow',
-    title: '새로운 팔로워',
-    message: `${followerUsername}님이 팔로우하기 시작했습니다`,
-    actionUrl: `/@${followerUsername}`,
-    relatedUserId: followerId,
   });
 }
 

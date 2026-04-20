@@ -612,4 +612,11 @@ export const zh = {
     dark: '深色模式',
     system: '系统设置',
   },
+  comments: {
+    title: '评论',
+    loading: '加载中...',
+    loadMore: '加载更多',
+    remaining: '条剩余',
+    placeholder: '分享您对这份食谱的看法...',
+  },
 }
