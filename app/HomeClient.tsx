@@ -891,19 +891,39 @@ export default function HomeClient({
             : 'opacity-0 translate-y-[20vh] scale-[0.5] pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2 max-w-md mx-auto">
-          <div className="flex-1">
-            <SearchBar autoFocus={showMobileSearch} />
+        <div className="max-w-md mx-auto space-y-2">
+          {/* 페이지 빠른 이동 — 홈에서 레시피·팁 페이지로 바로 이동 */}
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/recipes"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>📋</span><span>레시피</span>
+            </Link>
+            <Link
+              href="/tip"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>💡</span><span>팁</span>
+            </Link>
           </div>
-          <button
-            onClick={() => setShowMobileSearch(false)}
-            aria-label="검색 닫기"
-            className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* 검색창 */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchBar autoFocus={showMobileSearch} />
+            </div>
+            <button
+              onClick={() => setShowMobileSearch(false)}
+              aria-label="검색 닫기"
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
