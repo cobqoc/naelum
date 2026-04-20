@@ -205,12 +205,16 @@ export default function OnboardingWizard({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    // z-[60] — BottomNav(z-50) 위에 노출되도록. 모바일에서 전체화면, 데스크탑에서 센터.
+    <div className="fixed inset-0 z-[60] flex items-stretch sm:items-center justify-center bg-black/70 backdrop-blur-sm sm:p-4">
       {/* 배경 오버레이 (클릭 방지) */}
       <div className="absolute inset-0" onClick={() => {}} />
 
-      {/* 모달 콘텐츠 */}
-      <div className="relative bg-background-secondary rounded-2xl p-6 max-w-2xl w-full border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+      {/* 모달 콘텐츠 — 모바일: 전체화면 + safe-area 하단 여백, 데스크탑: 기존 카드 */}
+      <div
+        className="relative bg-background-secondary sm:rounded-2xl p-5 sm:p-6 max-w-2xl w-full border-x-0 sm:border border-white/10 shadow-2xl overflow-y-auto h-[100dvh] sm:h-auto sm:max-h-[90vh]"
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      >
         {/* 진행률 표시 */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-text-primary">

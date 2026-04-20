@@ -475,30 +475,35 @@ export default function HomeClient({
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      {/* 온보딩 미완료 / 임시 유저명 배너 */}
+      {/* 온보딩 미완료 / 임시 유저명 배너 — 그라디언트 + 아이콘 + pill CTA */}
       {showOnboardingBanner && (
-        <div className="sticky top-16 md:top-[68px] z-30 w-full bg-accent-warm/10 border-b border-accent-warm/20 backdrop-blur-sm">
+        <div className="sticky top-16 md:top-[68px] z-30 w-full border-b border-accent-warm/15 bg-gradient-to-r from-accent-warm/15 via-accent-warm/8 to-accent-warm/15 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
-            <p className="text-sm text-text-secondary truncate">
-              아직 기본 이름 <span className="font-mono text-accent-warm">@{currentUsername}</span>을 쓰고 있어요. <span className="text-accent-warm font-medium">진짜 이름</span>으로 바꿔볼까요?
-            </p>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <span className="flex-shrink-0 text-base leading-none" aria-hidden="true">✨</span>
+              <p className="text-[13px] md:text-sm text-text-secondary truncate">
+                <span className="font-mono text-accent-warm">@{currentUsername}</span>
+                <span className="hidden sm:inline"> — 진짜 이름으로 바꿔볼까요?</span>
+                <span className="sm:hidden"> 프로필 완성하기</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setShowOnboardingModal(true)}
-                className="text-xs font-medium text-accent-warm hover:underline whitespace-nowrap"
+                className="px-3 py-1.5 rounded-full bg-accent-warm hover:bg-accent-hover text-background-primary text-xs font-bold active:scale-95 transition-all whitespace-nowrap shadow-sm shadow-accent-warm/30"
               >
-                완성하기 →
+                완성하기
               </button>
               <button
                 onClick={() => {
                   if (user) localStorage.setItem(`naelum_onboarding_banner_${user.id}`, '1');
                   setShowOnboardingBanner(false);
                 }}
-                className="text-text-muted hover:text-text-primary transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
                 aria-label="닫기"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
