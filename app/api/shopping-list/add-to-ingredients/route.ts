@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { inferStorageLocation } from '@/lib/ingredients/storageMap';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -17,25 +18,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '항목이 필요합니다.' }, { status: 400 });
   }
 
-  const CATEGORY_STORAGE: Record<string, string> = {
-    veggie:    '냉장',
-    meat:      '냉장',
-    seafood:   '냉장',
-    dairy:     '냉장',
-    fruit:     '냉장',
-    grain:     '상온',
-    seasoning: '상온',
-    condiment: '상온',
-    other:     '상온',
-  };
-
+  // 큐레이션 맵 기반 자동 분류 (lookupStorageByName 매칭, 없으면 카테고리 fallback).
+  // 재료 수동 추가 플로우와 동일한 로직 적용 — 일관성 유지.
   const ingredientsToAdd = items.map(item => ({
     user_id: user.id,
     ingredient_name: item.ingredient_name,
     category: item.category || 'other',
     quantity: item.quantity,
     unit: item.unit,
-    storage_location: CATEGORY_STORAGE[item.category] || '냉장',
+    storage_location: inferStorageLocation(item.ingredient_name, item.category),
     expiry_alert: true,
   }));
 

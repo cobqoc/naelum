@@ -6,6 +6,8 @@ import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
+import { lookupStorageByName } from '@/lib/ingredients/storageMap';
+import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
 import { useI18n } from '@/lib/i18n/context';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
@@ -37,16 +39,20 @@ interface PendingIngredient {
   expiry_alert: boolean;
 }
 
+type LocMode = null | '냉장' | '냉동' | '상온';
+
 interface IngredientFormProps {
   onSubmit: (formData: IngredientFormData) => void | Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<IngredientFormData>;
-  defaultStorageLocation?: string;
+  /** 외부 controlled 모드 — 값/핸들러 모두 주면 모달 헤더의 pill이 제어. 없으면 내부 state. */
+  selectedLocation?: LocMode;
+  onLocationChange?: (loc: LocMode) => void;
 }
 
 const UNITS = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
 
-const STORAGE_LOCATIONS = ['냉장', '냉동', '상온', '기타'];
+const STORAGE_LOCATIONS = ['냉장', '냉동', '상온'];
 
 const CATEGORIES = [
   { id: 'veggie', name: '채소', icon: '🥬' },
@@ -67,18 +73,35 @@ export default function IngredientForm({
   onSubmit,
   onCancel,
   initialData,
-  defaultStorageLocation,
+  selectedLocation: externalLocation,
+  onLocationChange,
 }: IngredientFormProps) {
   const { t } = useI18n();
 
   // 기존 단일 입력 모드 (수정 모드에서 사용)
   const isEditMode = !!initialData?.ingredient_name;
 
-  // 섹션 추가 버튼에서 넘어온 기본 위치를 ref로 추적 (useCallback 의존성 문제 방지)
-  const defaultLocationRef = useRef(defaultStorageLocation || '기타');
+  // 저장 위치 모드:
+  //   null = 자동 분류 (디폴트, 재료명 큐레이션 맵 기반)
+  //   '냉장'|'냉동'|'상온' = 수동 override (모든 새+기존 재료 일괄 지정)
+  // Controlled(외부 주입) / Uncontrolled(내부 state) 겸용.
+  const isControlled = externalLocation !== undefined;
+  const [internalLocation, setInternalLocation] = useState<LocMode>(null);
+  const selectedLocation: LocMode = isControlled ? externalLocation : internalLocation;
+  const defaultLocationRef = useRef<LocMode>(null);
   useEffect(() => {
-    defaultLocationRef.current = defaultStorageLocation || '기타';
-  }, [defaultStorageLocation]);
+    defaultLocationRef.current = selectedLocation;
+  }, [selectedLocation]);
+
+  // selectedLocation 변화 시 기존 pendingItems 위치 일괄 재계산.
+  // null(자동) → 큐레이션 맵 기반 재분류, 수동 → 모든 아이템 해당 위치로 고정.
+  useEffect(() => {
+    setPendingItems(prev => prev.map(item => ({
+      ...item,
+      storage_location: selectedLocation ?? (lookupStorageByName(item.name) ?? '상온'),
+    })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation]);
 
   // 빠른 추가 모드 상태
   const [inputValue, setInputValue] = useState('');
@@ -100,29 +123,35 @@ export default function IngredientForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 자주 쓰는 재료 로드
+  // 자주 쓰는 재료 로드 — 사용 기록 많으면 상위 20개, 부족하면 인기 재료 프리셋으로 보충
   useEffect(() => {
     if (!isEditMode) {
       const recent = getRecentIngredients();
-      setFrequentIngredients(recent.slice(0, 8));
+      setFrequentIngredients(recent.slice(0, 20));
     }
   }, [isEditMode]);
 
-  const createPendingItem = (name: string, category: string, id?: string, commonUnits?: string[]): PendingIngredient => ({
-    id: `pending-${++pendingIdCounter}`,
-    name,
-    category: category || 'other',
-    categoryIcon: getIngredientEmoji(name, category || 'other'),
-    ingredientId: id,
-    common_units: commonUnits || [],
-    quantity: null,
-    unit: commonUnits?.[0] || '선택',
-    purchase_date: '',
-    expiry_date: '',
-    storage_location: defaultLocationRef.current,
-    notes: '',
-    expiry_alert: true,
-  });
+  const createPendingItem = (name: string, category: string, id?: string, commonUnits?: string[]): PendingIngredient => {
+    // 수동 override 있으면 그 위치 사용, 없으면 (= null, 자동 모드) 큐레이션 맵 매칭.
+    // 맵에도 없으면 상온 fallback.
+    const override = defaultLocationRef.current;
+    const storage = override ?? (lookupStorageByName(name) ?? '상온');
+    return {
+      id: `pending-${++pendingIdCounter}`,
+      name,
+      category: category || 'other',
+      categoryIcon: getIngredientEmoji(name, category || 'other'),
+      ingredientId: id,
+      common_units: commonUnits || [],
+      quantity: null,
+      unit: commonUnits?.[0] || '선택',
+      purchase_date: '',
+      expiry_date: '',
+      storage_location: storage,
+      notes: '',
+      expiry_alert: true,
+    };
+  };
 
   const handleQuickSelect = useCallback((ingredient: IngredientItem) => {
     setPendingItems(prev => {
@@ -269,13 +298,22 @@ export default function IngredientForm({
   }
 
   // === 빠른 추가 모드 (새 디자인) ===
-  // 자주 쓰는 재료 중 아직 pending에 없는 것만 표시
+  // 자주 쓰는 재료 중 아직 pending에 없는 것만 표시.
+  // 기록 부족하면 POPULAR_ITEMS(한국 가정 필수 재료 20개)로 보충 — 신규 사용자도 바로 원탭 추가 가능.
   const availableFrequent = frequentIngredients.filter(
     f => !pendingItems.some(p => p.name === f.name)
   );
+  const presetFallback = availableFrequent.length < 6
+    ? POPULAR_ITEMS.filter(
+        p => !availableFrequent.some(f => f.name === p.name) &&
+             !pendingItems.some(pi => pi.name === p.name)
+      )
+    : [];
 
   return (
     <div className="space-y-4">
+      {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
+
       {/* 1. 빠른 입력 바 */}
       <div>
         <IngredientAutocompleteV2
@@ -288,7 +326,58 @@ export default function IngredientForm({
         />
       </div>
 
-      {/* 2. 재료 브라우저 */}
+      {/* 2. 빠른 선택 — 자주 쓰는 재료 + 인기 재료 프리셋.
+          타이핑 없이 원탭으로 바로 pending에 추가. 가장 자주 쓰는 재료 20개 상단 노출.
+          신규 사용자(기록 부족)는 POPULAR_ITEMS로 보충해서 항상 최소 6개 이상 표시됨. */}
+      {(availableFrequent.length > 0 || presetFallback.length > 0) && (
+        <div>
+          <p className="text-xs text-text-muted mb-2 flex items-center gap-1.5">
+            <span className="text-accent-warm">⚡</span>
+            <span>{availableFrequent.length > 0 ? '자주 쓰는 재료' : '인기 재료'}</span>
+            <span className="text-text-muted/60">— 탭으로 바로 추가</span>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {availableFrequent.map((item) => (
+              <button
+                key={`freq-${item.name}`}
+                type="button"
+                onClick={() => handleQuickSelect({
+                  id: item.id,
+                  name: item.name,
+                  name_en: null,
+                  category: item.category || 'other',
+                  common_units: [],
+                  label: item.name,
+                })}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
+              >
+                <span>{getIngredientEmoji(item.name, item.category || 'other')}</span>
+                <span>{item.name}</span>
+              </button>
+            ))}
+            {presetFallback.map((item) => (
+              <button
+                key={`preset-${item.name}`}
+                type="button"
+                onClick={() => handleQuickSelect({
+                  id: `preset-${item.name}`,
+                  name: item.name,
+                  name_en: null,
+                  category: item.category,
+                  common_units: [],
+                  label: item.name,
+                })}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
+              >
+                <span>{item.icon}</span>
+                <span>{item.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. 재료 브라우저 (카테고리별 전체 탐색) */}
       <IngredientBrowser
         onSelect={handleQuickSelect}
         selectedNames={pendingItems.map(p => p.name)}
@@ -326,6 +415,15 @@ export default function IngredientForm({
               >
                 <span>{item.categoryIcon}</span>
                 <span className="font-medium">{item.name}</span>
+                {/* 저장 위치 배지 — 자동분류 결과 가시화 */}
+                <span
+                  className={`ml-0.5 text-[11px] ${
+                    editingIndex === index ? 'opacity-80' : 'opacity-70'
+                  }`}
+                  title={`저장 위치: ${item.storage_location}`}
+                >
+                  {item.storage_location === '냉장' ? '❄️' : item.storage_location === '냉동' ? '🧊' : '🌡'}
+                </span>
                 <span
                   onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
                   className={`ml-0.5 rounded-full p-0.5 transition-colors ${

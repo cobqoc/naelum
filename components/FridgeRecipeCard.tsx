@@ -92,12 +92,15 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
                 </span>
               </div>
               {missing.length > 0 ? (
-                <p className="text-[10px] text-text-muted truncate">
-                  부족: {missing.slice(0, 2).join(', ')}
-                  {missing.length > 2 && ` +${missing.length - 2}`}
+                <p className="text-[11px] truncate">
+                  <span className="text-accent-warm font-bold">🛒 부족한 재료:</span>
+                  <span className="ml-1 text-text-secondary">
+                    {missing.slice(0, 2).join(', ')}
+                    {missing.length > 2 && ` +${missing.length - 2}`}
+                  </span>
                 </p>
               ) : (
-                <p className="text-[10px] text-match-high-text font-medium">✓ 모든 재료 보유</p>
+                <p className="text-[11px] text-match-high-text font-bold">✓ 모든 재료 보유</p>
               )}
             </div>
           )}

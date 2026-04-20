@@ -175,16 +175,41 @@ export default function OnboardingStep1Profile({
         <p className="text-xs text-text-muted text-right">{formData.bio.length}/200</p>
       </div>
 
-      {/* 생년월일 */}
+      {/* 생년월일 — 모바일 native picker의 "빈공간 탭 시 오늘 자동 입력" 이슈 방지용 clear 버튼 포함 */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">생년월일 (선택)</label>
-        <input
-          type="date"
-          value={formData.birth_date || ''}
-          onChange={(e) => setFormData({ ...formData, birth_date: e.target.value || null })}
-          max={new Date().toISOString().split('T')[0]}
-          className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-        />
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-text-secondary">생년월일 (선택)</label>
+          {formData.birth_date && (
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, birth_date: null })}
+              className="text-[11px] text-accent-warm hover:underline"
+            >
+              지우기
+            </button>
+          )}
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={formData.birth_date || ''}
+            onChange={(e) => setFormData({ ...formData, birth_date: e.target.value || null })}
+            max={new Date().toISOString().split('T')[0]}
+            className="w-full px-4 py-3 pr-10 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
+          />
+          {formData.birth_date && (
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, birth_date: null })}
+              aria-label="생년월일 지우기"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 성별 */}
