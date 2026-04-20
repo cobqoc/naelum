@@ -481,10 +481,8 @@ export default function HomeClient({
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <span className="flex-shrink-0 text-base leading-none" aria-hidden="true">✨</span>
-              <p className="text-[13px] md:text-sm text-text-secondary truncate">
-                <span className="font-mono text-accent-warm">@{currentUsername}</span>
-                <span className="hidden sm:inline"> — 진짜 이름으로 바꿔볼까요?</span>
-                <span className="sm:hidden"> 프로필 완성하기</span>
+              <p className="text-[13px] md:text-sm text-text-primary font-medium truncate">
+                나의 프로필 완성하기
               </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
