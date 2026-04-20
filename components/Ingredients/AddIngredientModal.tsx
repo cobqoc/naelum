@@ -91,33 +91,38 @@ export default function AddIngredientModal({
         >
           {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">
-            <div className="flex items-center gap-1.5 min-w-0 relative">
-              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">✨ 기본: 자동 분류</span>
-              <span className="text-[11px] text-text-muted whitespace-nowrap">· 100% 정확 아님</span>
-              <button
-                ref={hintButtonRef}
-                type="button"
-                onClick={() => setShowHint(prev => !prev)}
-                aria-label="수정 방법 안내"
-                aria-expanded={showHint}
-                className={`w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 transition-colors ${
-                  showHint
-                    ? 'bg-accent-warm text-background-primary'
-                    : 'bg-white/10 text-text-muted hover:bg-white/15 hover:text-text-secondary'
-                }`}
-              >
-                ⓘ
-              </button>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">✨ 보관 장소: 자동 분류</span>
+              <span className="text-[11px] text-text-muted whitespace-nowrap">· 100% 정확하지 않음</span>
+              {/* ⓘ 버튼 + 팝오버 — group-hover로 데스크탑 hover 지원, onClick으로 모바일 탭 지원 */}
+              <div className="relative group">
+                <button
+                  ref={hintButtonRef}
+                  type="button"
+                  onClick={() => setShowHint(prev => !prev)}
+                  aria-label="수정 방법 안내"
+                  aria-expanded={showHint}
+                  className={`w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 transition-colors ${
+                    showHint
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'bg-white/10 text-text-muted hover:bg-white/15 hover:text-text-secondary'
+                  }`}
+                >
+                  ⓘ
+                </button>
 
-              {/* 팝오버 (how-to 안내) — ⓘ 탭 시 표시. 외부 클릭/ESC로 닫힘. */}
-              {showHint && (
+                {/* 팝오버 — 데스크탑: group-hover로 자동 노출. 모바일: 탭으로 showHint 토글. */}
                 <div
                   ref={popoverRef}
                   role="tooltip"
-                  className="absolute top-full left-0 mt-2 z-10 w-[260px] max-w-[calc(100vw-2.5rem)] p-3 rounded-lg bg-background-tertiary border border-white/10 shadow-xl text-[11px] leading-relaxed"
+                  className={`absolute top-full left-0 mt-2 z-10 w-[260px] max-w-[calc(100vw-2.5rem)] p-3 rounded-lg bg-background-tertiary border border-white/10 shadow-xl text-[11px] leading-relaxed transition-opacity ${
+                    showHint
+                      ? 'opacity-100 visible pointer-events-auto'
+                      : 'opacity-0 invisible pointer-events-none md:group-hover:opacity-100 md:group-hover:visible md:group-hover:pointer-events-auto'
+                  }`}
                 >
                   {/* 화살표 */}
-                  <div className="absolute -top-1 left-4 w-2 h-2 rotate-45 bg-background-tertiary border-l border-t border-white/10" />
+                  <div className="absolute -top-1 left-2 w-2 h-2 rotate-45 bg-background-tertiary border-l border-t border-white/10" />
                   <p className="text-text-primary font-semibold mb-1.5">💡 재료 분류 방법</p>
                   <ul className="space-y-1 text-text-secondary">
                     <li>• <strong className="text-text-primary">위 냉장/냉동/상온 버튼</strong> → 모든 재료 일괄 지정</li>
@@ -125,7 +130,7 @@ export default function AddIngredientModal({
                     <li className="text-text-muted pt-1">활성 버튼 재탭 → 자동 모드로 복귀</li>
                   </ul>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">

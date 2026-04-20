@@ -424,7 +424,7 @@ export const ko = {
     dailyFat: '일일 지방',
   },
   quickAdd: {
-    placeholder: '재료를 빠르게 추가하세요',
+    placeholder: '예: 루꼴라, 부르기뇽...',
     inputPlaceholder: '재료명 입력...',
     addButton: '추가',
     addedItems: '추가된 재료',

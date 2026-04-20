@@ -434,14 +434,14 @@ export default function HomeClient({
     if (id.startsWith('d') || id.startsWith('demo')) {
       setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
       setDetailItem(null);
-      showToast('✅ 수정 완료');
+      showToast(`✅ ${formData.ingredient_name} 수정됐어요`);
       return;
     }
     const client = createClient();
     await client.from('user_ingredients').update({ ...formData }).eq('id', id);
     setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
     setDetailItem(null);
-    showToast('✅ 수정 완료');
+    showToast(`✅ ${formData.ingredient_name} 수정됐어요`);
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
@@ -725,12 +725,13 @@ export default function HomeClient({
                       }}
                       title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
                     >
-                      <span className={`leading-none ${compact ? 'text-xs' : 'text-sm md:text-base'}`}>{emoji}</span>
-                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[40px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
+                      <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
+                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
                         {item.ingredient_name}
                       </span>
-                      {label && (
-                        <span className={`font-bold leading-none ${compact ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`} style={{ color: border }}>
+                      {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
+                      {label && !compact && (
+                        <span className="font-bold leading-none text-[8px] md:text-[9px]" style={{ color: border }}>
                           {label}
                         </span>
                       )}
@@ -774,14 +775,15 @@ export default function HomeClient({
                     );
                   })}
 
-                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용) */}
+                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용).
+                      overflow-hidden — chip이 도어 본체 밖으로 삐져나가는 현상 방지 */}
                   {DOOR_SHELVES.map((shelf, idx) => {
                     const list = doorShelfItems[idx];
                     const visible = list.slice(0, shelfMax.door);
                     return (
                       <div
                         key={`door-${idx}`}
-                        className="absolute flex flex-wrap items-end justify-center gap-0.5"
+                        className="absolute flex flex-wrap items-end justify-center gap-0.5 overflow-hidden"
                         style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
                       >
                         {visible.map(item => renderChip(item, true))}
@@ -860,6 +862,7 @@ export default function HomeClient({
           isOpen={!!detailItem}
           onClose={() => setDetailItem(null)}
           onUpdate={updateIngredient}
+          onDelete={(ing) => handleDeleteFromSheet(ing as FridgeItem)}
         />
       )}
 

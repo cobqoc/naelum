@@ -424,7 +424,7 @@ export const en = {
     dailyFat: 'Daily Fat',
   },
   quickAdd: {
-    placeholder: 'Quickly add ingredients',
+    placeholder: 'e.g. arugula, truffle...',
     inputPlaceholder: 'Enter ingredient name...',
     addButton: 'Add',
     addedItems: 'Added Items',

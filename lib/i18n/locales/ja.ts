@@ -424,7 +424,7 @@ export const ja = {
     dailyFat: '1日の脂質',
   },
   quickAdd: {
-    placeholder: '食材をすばやく追加',
+    placeholder: '例: ルッコラ、トリュフ...',
     inputPlaceholder: '食材名を入力...',
     addButton: '追加',
     addedItems: '追加済みアイテム',

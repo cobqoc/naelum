@@ -424,7 +424,7 @@ export const fr = {
     dailyFat: 'Lipides quotidiens',
   },
   quickAdd: {
-    placeholder: 'Ajout rapide d\'ingrédients',
+    placeholder: 'ex. roquette, truffe...',
     inputPlaceholder: 'Nom de l\'ingrédient...',
     addButton: 'Ajouter',
     addedItems: 'Éléments ajoutés',

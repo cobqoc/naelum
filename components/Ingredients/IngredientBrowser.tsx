@@ -212,8 +212,8 @@ export default function IngredientBrowser({
         )}
       </div>
 
-      {/* 재료 그리드 */}
-      <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+      {/* 재료 그리드 — 내부 스크롤 제거 (모달 자체 스크롤로 통합, 이중 스크롤 방지) */}
+      <div className="flex flex-wrap gap-2">
         {loading
           ? Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="h-8 w-16 rounded-xl bg-white/5 animate-pulse" />
