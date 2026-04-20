@@ -265,8 +265,8 @@ export default function HomeClient({
     if (!user) return;
     if (!hasTempUsername) return;
     const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
     if (!dismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
       setShowOnboardingBanner(true);
       // 최초 1회만 노출 — 10초 후 자동 dismiss (사용자가 못 봤어도 이후 방문에서 반복 노출 안 함).
       // 프로필 완성은 UserDropdown 메뉴에서 접근 가능.

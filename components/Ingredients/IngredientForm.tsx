@@ -314,7 +314,7 @@ export default function IngredientForm({
     <div className="space-y-4">
       {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
 
-      {/* 1. 빠른 입력 바 */}
+      {/* 1. 빠른 입력 바 — 이름 검색·자동완성 */}
       <div>
         <IngredientAutocompleteV2
           value={inputValue}
@@ -326,61 +326,13 @@ export default function IngredientForm({
         />
       </div>
 
-      {/* 2. 빠른 선택 — 자주 쓰는 재료 + 인기 재료 프리셋.
-          타이핑 없이 원탭으로 바로 pending에 추가. 가장 자주 쓰는 재료 20개 상단 노출.
-          신규 사용자(기록 부족)는 POPULAR_ITEMS로 보충해서 항상 최소 6개 이상 표시됨. */}
-      {(availableFrequent.length > 0 || presetFallback.length > 0) && (
-        <div>
-          <p className="text-xs text-text-muted mb-2 flex items-center gap-1.5">
-            <span className="text-accent-warm">⚡</span>
-            <span>{availableFrequent.length > 0 ? '자주 쓰는 재료' : '인기 재료'}</span>
-            <span className="text-text-muted/60">— 탭으로 바로 추가</span>
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {availableFrequent.map((item) => (
-              <button
-                key={`freq-${item.name}`}
-                type="button"
-                onClick={() => handleQuickSelect({
-                  id: item.id,
-                  name: item.name,
-                  name_en: null,
-                  category: item.category || 'other',
-                  common_units: [],
-                  label: item.name,
-                })}
-                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
-              >
-                <span>{getIngredientEmoji(item.name, item.category || 'other')}</span>
-                <span>{item.name}</span>
-              </button>
-            ))}
-            {presetFallback.map((item) => (
-              <button
-                key={`preset-${item.name}`}
-                type="button"
-                onClick={() => handleQuickSelect({
-                  id: `preset-${item.name}`,
-                  name: item.name,
-                  name_en: null,
-                  category: item.category,
-                  common_units: [],
-                  label: item.name,
-                })}
-                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs bg-background-secondary hover:bg-accent-warm/15 border border-white/10 hover:border-accent-warm/40 text-text-primary transition-all active:scale-95"
-              >
-                <span>{item.icon}</span>
-                <span>{item.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 3. 재료 브라우저 (카테고리별 전체 탐색) */}
+      {/* 2. 재료 브라우저 — "⭐ 자주" 탭으로 자주 쓰는 재료 + 인기 프리셋 통합.
+          카테고리 탭 전환으로 전체 탐색 가능. 이전 별도 "빠른 선택" 섹션 여기로 통합됨. */}
       <IngredientBrowser
         onSelect={handleQuickSelect}
         selectedNames={pendingItems.map(p => p.name)}
+        frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null }))}
+        popularItems={presetFallback}
       />
 
       {/* 3. 추가된 재료 태그 */}
