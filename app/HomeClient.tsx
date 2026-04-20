@@ -544,9 +544,9 @@ export default function HomeClient({
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
           >
             <span className="text-xs" aria-hidden="true">🎭</span>
-            <span>체험 모드</span>
+            <span>체험 중</span>
             <span className="text-text-muted">·</span>
-            <span className="font-semibold">로그인하면 내 냉장고 →</span>
+            <span className="font-semibold">가입하고 저장하기 →</span>
           </Link>
         </div>
       )}
