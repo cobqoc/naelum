@@ -422,7 +422,6 @@ export default function IngredientForm({
                 onChange={(field, value) => handleDetailChange(editingIndex, field, value)}
                 errors={{}}
                 t={t}
-                showStorageLocation={false}
               />
             </div>
           )}
