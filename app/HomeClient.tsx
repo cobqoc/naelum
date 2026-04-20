@@ -530,8 +530,8 @@ export default function HomeClient({
         />
       )}
 
-      {/* 검색바 — 모바일/데스크탑 공통. 모바일은 compact 패딩으로 높이 최소화. */}
-      <div className="px-4 pt-2 md:pt-10 pb-2 md:pb-3 flex justify-center">
+      {/* 검색바 — 데스크탑 전용. 모바일은 BottomNav 검색 아이콘으로 접근 (뷰포트 절약). */}
+      <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
         <SearchBar className="w-full max-w-md" />
       </div>
 
@@ -640,10 +640,11 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
-        {/* maxHeight 계산: header(56) + 검색바(~48) + 찬장(~100) + gap(8) + BottomNav(60) ≈ 272.
-            찬장 축소(140→100) + 검색바 추가(48)로 넷 ±0. 주요 기종(iPhone 12+)에서 스크롤 없이 fit. */}
+        {/* maxHeight 계산 (모바일 기준): header(56) + 찬장(~100) + gap(8) + BottomNav(60) ≈ 224.
+            모바일 검색바 제거로 48px 회수 → 냉장고 더 크게.
+            비로그인 DEMO 라벨(~24px)은 있어도 iPhone 12+에서 여유. */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 272px - env(safe-area-inset-bottom))' }}>
+          style={{ maxHeight: 'calc(100dvh - 224px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
