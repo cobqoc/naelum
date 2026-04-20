@@ -546,7 +546,7 @@ export default function HomeClient({
             <span className="text-xs" aria-hidden="true">🎭</span>
             <span>체험 중</span>
             <span className="text-text-muted">·</span>
-            <span className="font-semibold">가입하고 저장하기 →</span>
+            <span className="font-semibold">로그인 →</span>
           </Link>
         </div>
       )}
