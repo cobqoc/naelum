@@ -26,54 +26,12 @@ export default function IngredientImageUpload({
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
-  const [recognizing, setRecognizing] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const [userLabels, setUserLabels] = useState<UserLabel[]>([]);
   const [suggestions, setSuggestions] = useState<{ id: string; name: string; name_en?: string; category?: string }[]>([]);
   const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Gemini Vision — 사진에서 재료 자동 인식. 결과를 userLabels에 채워넣어 사용자가 편집.
-  const handleAutoRecognize = async () => {
-    if (!image || recognizing) return;
-    setRecognizing(true);
-    setError('');
-    try {
-      const formData = new FormData();
-      formData.append('image', image);
-      const res = await fetch('/api/ingredients/recognize', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || '사진 인식에 실패했습니다.');
-        return;
-      }
-      type RecognizedItem = {
-        name: string;
-        category: string;
-        quantity: number | null;
-        unit: string | null;
-        ingredient: { id: string; name: string; category: string } | null;
-      };
-      const newLabels: UserLabel[] = (data.items as RecognizedItem[]).map((it) => ({
-        name: it.ingredient?.name || it.name,
-        ingredientId: it.ingredient?.id,
-        category: it.ingredient?.category || it.category || 'other',
-        quantity: it.quantity,
-        unit: it.unit || '',
-      }));
-      // 기존 수동 추가분과 중복 제거 (이름 기준)
-      setUserLabels((prev) => {
-        const existing = new Set(prev.map((l) => l.name));
-        const additions = newLabels.filter((l) => !existing.has(l.name));
-        return [...prev, ...additions];
-      });
-    } catch {
-      setError('사진 인식 중 오류가 발생했습니다.');
-    } finally {
-      setRecognizing(false);
-    }
-  };
 
   // 파일 검증
   const validateFile = (file: File): string | null => {
@@ -369,28 +327,6 @@ export default function IngredientImageUpload({
               className="w-full h-auto max-h-96 object-contain bg-background-tertiary"
             />
           </div>
-
-          {/* 🤖 자동 인식 — Gemini Vision으로 사진에서 재료 추출 */}
-          <button
-            onClick={handleAutoRecognize}
-            disabled={recognizing}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-accent-warm/15 border border-accent-warm/40 text-accent-warm font-semibold hover:bg-accent-warm/25 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {recognizing ? (
-              <>
-                <span className="inline-block h-4 w-4 rounded-full border-2 border-accent-warm border-t-transparent animate-spin" />
-                AI가 재료 찾는 중...
-              </>
-            ) : (
-              <>
-                <span>🤖</span>
-                AI로 재료 자동 인식
-              </>
-            )}
-          </button>
-          <p className="text-[11px] text-text-muted text-center -mt-2">
-            인식 결과는 아래 목록에 추가돼요. 잘못되면 직접 수정 가능해요.
-          </p>
 
           {/* 재료 입력 */}
           <div>

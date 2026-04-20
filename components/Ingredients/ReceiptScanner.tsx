@@ -4,6 +4,15 @@ import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { getCategoryIcon } from './IngredientAutocompleteTypes';
 
+// Tesseract.js — 브라우저 WebAssembly OCR. 서버 API 의존 없음, 완전 무료.
+// import는 dynamic — 초기 번들 부담 줄이고 실제 스캔 누를 때만 로드.
+type RecognizeResult = { data: { text: string } };
+type TesseractRecognize = (image: File | Blob | string, lang?: string, opts?: { logger?: (m: { status: string; progress: number }) => void }) => Promise<RecognizeResult>;
+async function loadTesseract(): Promise<TesseractRecognize> {
+  const mod = await import('tesseract.js');
+  return mod.recognize as unknown as TesseractRecognize;
+}
+
 interface ScannedItem {
   rawText: string;
   itemName: string;
@@ -50,6 +59,7 @@ export default function ReceiptScanner({ onAddIngredients }: ReceiptScannerProps
   const [receiptDate, setReceiptDate] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
@@ -100,14 +110,36 @@ export default function ReceiptScanner({ onAddIngredients }: ReceiptScannerProps
 
     setStep('scanning');
     setError('');
+    setScanProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('receipt', image);
+      // 1) 브라우저에서 Tesseract.js로 OCR (WebAssembly, 무료 무제한)
+      const recognize = await loadTesseract();
+      const result = await recognize(image, 'kor', {
+        logger: (m) => {
+          if (m.status === 'recognizing text') {
+            setScanProgress(Math.round(m.progress * 100));
+          }
+        },
+      });
 
+      const ocrText = result.data.text || '';
+      const lines = ocrText
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+
+      if (lines.length === 0) {
+        setError('OCR에서 텍스트를 인식하지 못했어요. 더 선명한 사진으로 다시 시도해주세요.');
+        setStep('upload');
+        return;
+      }
+
+      // 2) 서버에 라인 배열 전송 → 파싱 + ingredients_master 매칭
       const response = await fetch('/api/receipts/scan', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines }),
       });
 
       const data = await response.json();
@@ -137,8 +169,9 @@ export default function ReceiptScanner({ onAddIngredients }: ReceiptScannerProps
       setStore(data.store);
       setReceiptDate(data.date);
       setStep('results');
-    } catch {
-      setError(t.receipt.scanFailed);
+    } catch (err) {
+      console.error('OCR 처리 오류:', err);
+      setError(err instanceof Error ? err.message : t.receipt.scanFailed);
       setStep('upload');
     }
   };
@@ -287,12 +320,22 @@ export default function ReceiptScanner({ onAddIngredients }: ReceiptScannerProps
         </>
       )}
 
-      {/* 스캔 중 */}
+      {/* 스캔 중 — Tesseract.js 브라우저 OCR 진행률 표시 */}
       {step === 'scanning' && (
-        <div className="py-12 text-center">
+        <div className="py-10 text-center px-6">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-accent-warm border-t-transparent mb-4" />
-          <p className="text-text-secondary">{t.receipt.scanning}</p>
-          <p className="text-text-muted text-xs mt-1">{t.receipt.scanningHint}</p>
+          <p className="text-text-secondary mb-3">
+            {scanProgress === 0 ? 'OCR 엔진 로드 중...' : `텍스트 인식 중... ${scanProgress}%`}
+          </p>
+          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden max-w-xs mx-auto">
+            <div
+              className="h-full bg-accent-warm transition-all duration-200"
+              style={{ width: `${scanProgress}%` }}
+            />
+          </div>
+          <p className="text-text-muted text-xs mt-3">
+            첫 사용 시 한국어 데이터 다운로드(~12MB)로 1~2분 걸릴 수 있어요. 이후엔 빨라집니다.
+          </p>
         </div>
       )}
 
