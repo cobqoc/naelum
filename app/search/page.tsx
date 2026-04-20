@@ -16,7 +16,6 @@ interface User {
   username: string;
   avatar_url: string | null;
   bio: string | null;
-  followers_count: number;
   recipes_count: number;
 }
 
@@ -580,7 +579,6 @@ function SearchContent() {
                           <h3 className="font-bold">@{user.username}</h3>
                           {user.bio && <p className="text-sm text-text-muted line-clamp-1">{user.bio}</p>}
                           <div className="flex gap-4 text-xs text-text-muted mt-1">
-                            <span>{t.profile.followers} {user.followers_count}</span>
                             <span>{t.profile.recipes} {user.recipes_count}</span>
                           </div>
                         </div>

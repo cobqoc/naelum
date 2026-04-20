@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Comment, CommentsResponse } from './RecipeComments/types';
 import CommentForm from './RecipeComments/CommentForm';
 import CommentList from './RecipeComments/CommentList';
+import { useI18n } from '@/lib/i18n/context';
 
 interface RecipeCommentsProps {
   recipeId: string;
@@ -11,6 +12,7 @@ interface RecipeCommentsProps {
 }
 
 export default function RecipeComments({ recipeId, currentUserId }: RecipeCommentsProps) {
+  const { t } = useI18n();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -89,7 +91,7 @@ export default function RecipeComments({ recipeId, currentUserId }: RecipeCommen
       <div className="container mx-auto max-w-2xl">
         {/* 헤더 */}
         <h2 className="text-xl font-bold text-text-primary mb-6">
-          댓글 <span className="text-accent-warm">{totalCount}</span>
+          {t.comments.title} <span className="text-accent-warm">{totalCount}</span>
         </h2>
 
         {/* 댓글 작성 폼 */}
@@ -97,7 +99,7 @@ export default function RecipeComments({ recipeId, currentUserId }: RecipeCommen
           <CommentForm
             recipeId={recipeId}
             onCommentCreated={handleCommentCreated}
-            placeholder="이 레시피에 대한 의견을 남겨주세요..."
+            placeholder={t.comments.placeholder}
           />
         </div>
 
@@ -142,8 +144,8 @@ export default function RecipeComments({ recipeId, currentUserId }: RecipeCommen
                            disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingMore
-                  ? '로딩 중...'
-                  : `댓글 더보기 (${remainingCount}개 남음)`}
+                  ? t.comments.loading
+                  : `${t.comments.loadMore} (${remainingCount} ${t.comments.remaining})`}
               </button>
             )}
           </>

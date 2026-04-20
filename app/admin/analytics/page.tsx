@@ -14,7 +14,6 @@ interface TopRecipe {
 interface TopUser {
   username: string;
   recipes_count: number;
-  followers_count: number;
 }
 
 interface AnalyticsData {
@@ -148,7 +147,7 @@ export default function AdminAnalyticsPage() {
                           @{user.username}
                         </Link>
                         <p className="text-xs text-text-muted">
-                          팔로워 {(user.followers_count || 0).toLocaleString()}명
+                          레시피 {(user.recipes_count || 0).toLocaleString()}개
                         </p>
                       </div>
                       <div className="text-right shrink-0">

@@ -61,3 +61,11 @@ nul
 
 # Supabase CLI temp files
 supabase/.temp/
+
+# Local dev/debug artifacts
+.deploy-*.png
+.fridge-icon-sizes.png
+.vercel-backup-*/
+kor.traineddata
+*.traineddata
+영수증.*

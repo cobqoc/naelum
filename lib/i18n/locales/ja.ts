@@ -612,4 +612,11 @@ export const ja = {
     dark: 'ダークモード',
     system: 'システム設定',
   },
+  comments: {
+    title: 'コメント',
+    loading: '読み込み中...',
+    loadMore: 'もっと見る',
+    remaining: '件残り',
+    placeholder: 'このレシピへのコメントを書いてください...',
+  },
 }

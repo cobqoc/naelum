@@ -15,7 +15,7 @@ export async function GET(
       .from('recipes')
       .select(`
         *,
-        author:profiles!recipes_author_id_fkey(id, username, avatar_url, bio, followers_count),
+        author:profiles!recipes_author_id_fkey(id, username, avatar_url, bio),
         ingredients:recipe_ingredients(id, ingredient_name, quantity, unit, notes, is_optional, display_order),
         steps:recipe_steps(id, step_number, title, instruction, timer_minutes, tip, image_url),
         tags:recipe_tags(id, tag_name)

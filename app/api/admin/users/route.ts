@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   let query = auth.supabase
     .from('profiles')
-    .select('id, username, email, role, avatar_url, created_at, followers_count, following_count, recipe_count', { count: 'exact' })
+    .select('id, username, email, role, avatar_url, created_at, recipe_count', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (search) {

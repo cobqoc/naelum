@@ -612,4 +612,11 @@ export const en = {
     dark: 'Dark Mode',
     system: 'System Default',
   },
+  comments: {
+    title: 'Comments',
+    loading: 'Loading...',
+    loadMore: 'Load more comments',
+    remaining: 'remaining',
+    placeholder: 'Share your thoughts on this recipe...',
+  },
 }

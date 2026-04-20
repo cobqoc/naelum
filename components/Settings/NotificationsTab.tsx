@@ -9,21 +9,24 @@ interface NotificationsTabProps {
 
 interface NotificationPrefs {
   comments: boolean;
-  follows: boolean;
   recipes: boolean;
 }
 
 const STORAGE_KEY = 'naelum_notification_prefs';
 
 function loadPrefs(): NotificationPrefs {
-  if (typeof window === 'undefined') return { comments: true, follows: true, recipes: true };
+  if (typeof window === 'undefined') return { comments: true, recipes: true };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // 'follows' 필드 있으면 무시 (기능 제거됨)
+      return { comments: parsed.comments ?? true, recipes: parsed.recipes ?? true };
+    }
   } catch {
     // ignore
   }
-  return { comments: true, follows: true, recipes: true };
+  return { comments: true, recipes: true };
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -60,7 +63,6 @@ export default function NotificationsTab({ t }: NotificationsTabProps) {
 
   const items: { key: keyof NotificationPrefs; label: string; icon: string }[] = [
     { key: 'comments', label: sp.notificationComments, icon: '💬' },
-    { key: 'follows', label: sp.notificationFollows, icon: '👥' },
     { key: 'recipes', label: sp.notificationRecipes, icon: '🍳' },
   ];
 

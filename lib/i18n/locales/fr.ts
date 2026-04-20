@@ -612,4 +612,11 @@ export const fr = {
     dark: 'Mode sombre',
     system: 'Système',
   },
+  comments: {
+    title: 'Commentaires',
+    loading: 'Chargement...',
+    loadMore: 'Charger plus',
+    remaining: 'restants',
+    placeholder: 'Partagez votre avis sur cette recette...',
+  },
 }
