@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
     if (message.includes('GEMINI_API_KEY')) {
       return NextResponse.json({ error: '사진 인식 서비스가 설정되지 않았습니다.' }, { status: 503 });
     }
-    return NextResponse.json({ error: '사진 인식 중 오류가 발생했습니다.' }, { status: 500 });
+    // 디버깅용: 실제 에러 메시지를 클라이언트에 노출.
+    return NextResponse.json(
+      { error: `사진 인식 중 오류: ${message}` },
+      { status: 500 }
+    );
   }
 }

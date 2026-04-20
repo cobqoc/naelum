@@ -5,7 +5,9 @@
  * Gemini는 이미지 → 구조화 JSON을 한 번에 반환 (OCR + 파싱).
  */
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// gemini-2.0-flash 사용: thinking 토큰 없음 → 4096 토큰 budget 전부 actual 출력에 사용 가능 + 더 빠름.
+// 2.5-flash는 thinking에 토큰 소모해서 긴 영수증·사진 응답이 잘려나감 (JSON 파싱 실패 → 500).
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/jpg', 'image/png']);
@@ -32,7 +34,7 @@ async function callGemini(imageBuffer: Buffer, mimeType: string, prompt: string)
       }],
       generationConfig: {
         temperature: 0.1,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192, // 영수증·재료 응답이 길어도 안전하게
         responseMimeType: 'application/json',
       },
     }),
@@ -44,15 +46,33 @@ async function callGemini(imageBuffer: Buffer, mimeType: string, prompt: string)
   }
 
   const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = data?.candidates?.[0];
+  const text: string | undefined = candidate?.content?.parts?.[0]?.text;
+  const finishReason: string | undefined = candidate?.finishReason;
+
+  // Vercel 로그에서 진단 가능하도록 명시적 로깅
+  console.log('[geminiVision]', {
+    finishReason,
+    responseLength: text?.length ?? 0,
+    promptTokens: data?.usageMetadata?.promptTokenCount,
+    outputTokens: data?.usageMetadata?.candidatesTokenCount,
+  });
+
   if (!text) {
-    throw new Error('Gemini 응답이 비어있습니다.');
+    throw new Error(`Gemini 응답이 비어있습니다. finishReason=${finishReason ?? 'unknown'}`);
+  }
+
+  if (finishReason === 'MAX_TOKENS') {
+    throw new Error('Gemini 응답이 토큰 한도로 잘렸습니다. 이미지를 더 작게 자르거나 영수증을 짧게 잘라주세요.');
+  }
+  if (finishReason && finishReason !== 'STOP') {
+    throw new Error(`Gemini 응답 비정상 종료: ${finishReason}`);
   }
 
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error('Gemini 응답 JSON 파싱 실패');
+    throw new Error(`Gemini 응답 JSON 파싱 실패. preview="${text.slice(0, 200)}"`);
   }
 }
 
