@@ -7,11 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-// 재료 사진은 영수증보다 짧지만 더 자주 쓸 수 있음 — 유저당 시간당 20회.
-const PHOTO_RECOGNIZE_RATE_LIMIT = {
-  windowMs: 60 * 60 * 1000,
-  maxRequests: 20,
-};
+// 이중 캡 (시간당 + 일일) — Gemini 무료 쿼터(일일 1500회 공유) 안전 + 봇 차단.
+// 정상 사용자: 장 본 직후 1~5장 사진. 일일 10회면 차고 넘침.
+const PHOTO_RECOGNIZE_HOUR = { windowMs: 60 * 60 * 1000, maxRequests: 3 };
+const PHOTO_RECOGNIZE_DAY = { windowMs: 24 * 60 * 60 * 1000, maxRequests: 10 };
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -21,10 +20,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  const rl = await checkRateLimit(`ingredient_recognize:${user.id}`, PHOTO_RECOGNIZE_RATE_LIMIT);
-  if (!rl.allowed) {
+  // 일일 캡 먼저 체크 (더 큰 윈도우 우선 → 시간당 캡은 일일 캡 안 먹은 경우만 의미)
+  const rlDay = await checkRateLimit(`ingredient_recognize_day:${user.id}`, PHOTO_RECOGNIZE_DAY);
+  if (!rlDay.allowed) {
     return NextResponse.json(
-      { error: '사진 인식 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+      { error: '오늘 사진 인식 한도를 모두 사용했어요. 내일 다시 시도해주세요.' },
+      { status: 429 }
+    );
+  }
+  const rlHour = await checkRateLimit(`ingredient_recognize_hour:${user.id}`, PHOTO_RECOGNIZE_HOUR);
+  if (!rlHour.allowed) {
+    return NextResponse.json(
+      { error: '사진 인식 요청이 너무 많아요. 잠시 후 다시 시도해주세요.' },
       { status: 429 }
     );
   }

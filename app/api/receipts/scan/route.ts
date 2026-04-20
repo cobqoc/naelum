@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-const RECEIPT_SCAN_RATE_LIMIT = {
-  windowMs: 60 * 60 * 1000, // 1시간
-  maxRequests: 10,
-};
+// 이중 캡 — Gemini 무료 쿼터 안전 + 봇 차단. 영수증은 사진보다 더 드물게 사용 (주 1~3회).
+// 사용량 늘어 유료 플랜 전환 시 한도 풀어줄 것.
+const RECEIPT_SCAN_HOUR = { windowMs: 60 * 60 * 1000, maxRequests: 3 };
+const RECEIPT_SCAN_DAY = { windowMs: 24 * 60 * 60 * 1000, maxRequests: 8 };
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -21,11 +21,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  // 2. Rate limit
-  const rateLimitResult = await checkRateLimit(`receipt_scan:${user.id}`, RECEIPT_SCAN_RATE_LIMIT);
-  if (!rateLimitResult.allowed) {
+  // 2. Rate limit — 일일 캡 → 시간당 캡 순서로 체크
+  const rlDay = await checkRateLimit(`receipt_scan_day:${user.id}`, RECEIPT_SCAN_DAY);
+  if (!rlDay.allowed) {
     return NextResponse.json(
-      { error: '영수증 스캔 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+      { error: '오늘 영수증 스캔 한도를 모두 사용했어요. 내일 다시 시도해주세요.' },
+      { status: 429 }
+    );
+  }
+  const rlHour = await checkRateLimit(`receipt_scan_hour:${user.id}`, RECEIPT_SCAN_HOUR);
+  if (!rlHour.allowed) {
+    return NextResponse.json(
+      { error: '영수증 스캔 요청이 너무 많아요. 잠시 후 다시 시도해주세요.' },
       { status: 429 }
     );
   }
