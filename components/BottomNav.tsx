@@ -326,36 +326,21 @@ export default function BottomNav() {
       <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-label="검색">
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSearch(false)} />
         <div className="absolute top-0 left-0 right-0 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 bg-background-secondary/95 backdrop-blur-xl border-b border-white/10 shadow-2xl space-y-3">
-          {/* 페이지 빠른 이동 — 홈 레이아웃을 해치지 않도록 검색 오버레이에 통합.
-              검색 의도 없는 사용자도 여기서 다른 페이지로 바로 이동 가능. */}
-          <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-0.5 scrollbar-hide">
+          {/* 페이지 빠른 이동 — 홈 레이아웃 해치지 않고 다른 페이지 접근 경로 제공. */}
+          <div className="flex items-center gap-1.5">
             <Link
               href="/recipes"
               onClick={() => setShowSearch(false)}
-              className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
               <span>📋</span><span>레시피</span>
             </Link>
             <Link
-              href="/recommendations"
-              onClick={() => setShowSearch(false)}
-              className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
-            >
-              <span>🔥</span><span>추천</span>
-            </Link>
-            <Link
               href="/tip"
               onClick={() => setShowSearch(false)}
-              className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
-              <span>💡</span><span>요리 팁</span>
-            </Link>
-            <Link
-              href="/ingredients/browse"
-              onClick={() => setShowSearch(false)}
-              className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
-            >
-              <span>📚</span><span>재료 백과</span>
+              <span>💡</span><span>팁</span>
             </Link>
           </div>
 
