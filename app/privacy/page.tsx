@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         <h1 className="text-4xl font-bold text-text-primary mb-2">개인정보처리방침</h1>
-        <p className="text-text-secondary mb-8">최종 수정일: 2026년 2월 14일</p>
+        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 21일</p>
 
         <div className="space-y-8 text-text-primary">
           {/* 머리말 */}
@@ -48,8 +48,9 @@ export default function PrivacyPolicyPage() {
                     <p className="font-medium text-text-primary">가. 필수 항목</p>
                     <ul className="list-disc list-inside ml-4 space-y-1">
                       <li>이메일 주소</li>
-                      <li>비밀번호 (암호화 저장)</li>
+                      <li>비밀번호 (암호화 저장, 소셜 로그인 제외)</li>
                       <li>닉네임</li>
+                      <li>생년월일 (GDPR Art. 8·COPPA·개인정보보호법에 따른 만 16세 이상 연령 검증용)</li>
                     </ul>
                   </div>
 
@@ -57,11 +58,11 @@ export default function PrivacyPolicyPage() {
                     <p className="font-medium text-text-primary">나. 선택 항목</p>
                     <ul className="list-disc list-inside ml-4 space-y-1">
                       <li>프로필 사진</li>
-                      <li>생년월일</li>
                       <li>성별</li>
                       <li>관심 요리 카테고리</li>
                       <li>식단 선호도 (채식주의, 비건 등)</li>
-                      <li>알레르기 정보</li>
+                      <li>알레르기 정보 (민감정보 — 별도 고지 참조)</li>
+                      <li>마케팅 수신 동의 여부</li>
                     </ul>
                   </div>
 
@@ -123,7 +124,7 @@ export default function PrivacyPolicyPage() {
                     <li>개인 맞춤형 레시피 추천</li>
                     <li>보유 재료 기반 레시피 제안</li>
                     <li>식단 선호도 기반 콘텐츠 필터링</li>
-                    <li>사용자 간 소셜 기능 제공 (팔로우, 댓글 등)</li>
+                    <li>사용자 간 소셜 기능 제공 (좋아요, 댓글 등)</li>
                   </ul>
                 </div>
 
@@ -194,24 +195,51 @@ export default function PrivacyPolicyPage() {
             <div className="text-text-secondary leading-relaxed space-y-3">
               <p>① 회사는 서비스 향상을 위해서 아래와 같이 개인정보를 위탁하고 있으며, 관계 법령에 따라 위탁계약 시 개인정보가 안전하게 관리될 수 있도록 필요한 사항을 규정하고 있습니다:</p>
 
-              <div className="ml-4">
+              <div className="ml-4 overflow-x-auto">
                 <table className="w-full border border-white/10 text-sm">
                   <thead className="bg-background-secondary">
                     <tr>
-                      <th className="border border-white/10 px-4 py-2">수탁업체</th>
-                      <th className="border border-white/10 px-4 py-2">위탁업무 내용</th>
-                      <th className="border border-white/10 px-4 py-2">보유 및 이용기간</th>
+                      <th className="border border-white/10 px-4 py-2 text-left">수탁업체</th>
+                      <th className="border border-white/10 px-4 py-2 text-left">위탁업무 내용</th>
+                      <th className="border border-white/10 px-4 py-2 text-left">위치·이전</th>
+                      <th className="border border-white/10 px-4 py-2 text-left">보유 기간</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-white/10 px-4 py-2">Supabase (미국)</td>
-                      <td className="border border-white/10 px-4 py-2">클라우드 서버 호스팅, 데이터베이스 관리</td>
+                      <td className="border border-white/10 px-4 py-2">Supabase, Inc.</td>
+                      <td className="border border-white/10 px-4 py-2">DB·인증·파일 저장 호스팅</td>
+                      <td className="border border-white/10 px-4 py-2">미국 (SCC 적용)</td>
                       <td className="border border-white/10 px-4 py-2">회원 탈퇴 시 또는 위탁계약 종료 시까지</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-white/10 px-4 py-2">Vercel, Inc.</td>
+                      <td className="border border-white/10 px-4 py-2">웹 애플리케이션 호스팅·CDN·서버리스 함수</td>
+                      <td className="border border-white/10 px-4 py-2">미국 (SCC·EU-US DPF)</td>
+                      <td className="border border-white/10 px-4 py-2">위탁계약 종료 시까지 (접속 로그: 30일)</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-white/10 px-4 py-2">Cloudflare, Inc.</td>
+                      <td className="border border-white/10 px-4 py-2">CDN, DDoS·봇 차단, SSL/TLS 처리</td>
+                      <td className="border border-white/10 px-4 py-2">전세계 엣지 (SCC 적용)</td>
+                      <td className="border border-white/10 px-4 py-2">위탁계약 종료 시까지 (로그: 24시간 이내)</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-white/10 px-4 py-2">Functional Software, Inc. (Sentry)</td>
+                      <td className="border border-white/10 px-4 py-2">에러·성능 추적 (사용자 동의 시에만)</td>
+                      <td className="border border-white/10 px-4 py-2">미국 (SCC·EU-US DPF)</td>
+                      <td className="border border-white/10 px-4 py-2">90일</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-white/10 px-4 py-2">Resend, Inc.</td>
+                      <td className="border border-white/10 px-4 py-2">트랜잭션 이메일 발송 (이메일 인증, 알림)</td>
+                      <td className="border border-white/10 px-4 py-2">미국 (SCC 적용)</td>
+                      <td className="border border-white/10 px-4 py-2">발송 후 30일</td>
                     </tr>
                     <tr>
                       <td className="border border-white/10 px-4 py-2">Google LLC</td>
                       <td className="border border-white/10 px-4 py-2">소셜 로그인 (OAuth 2.0) 인증</td>
+                      <td className="border border-white/10 px-4 py-2">미국 (SCC·EU-US DPF)</td>
                       <td className="border border-white/10 px-4 py-2">회원 탈퇴 시 또는 위탁계약 종료 시까지</td>
                     </tr>
                   </tbody>
@@ -317,11 +345,11 @@ export default function PrivacyPolicyPage() {
               <div className="ml-4 p-4 bg-background-secondary rounded-xl">
                 <p className="font-semibold text-text-primary">개인정보 보호책임자</p>
                 <ul className="mt-2 space-y-1 text-sm">
-                  <li>성명: [담당자 이름]</li>
-                  <li>직책: [직책]</li>
-                  <li>이메일: privacy@naelum.app</li>
-                  <li>전화번호: [전화번호]</li>
+                  <li>성명: 낼름 운영팀</li>
+                  <li>직책: 개인정보 보호책임자</li>
+                  <li>이메일: <a href="mailto:privacy@naelum.app" className="text-accent-warm underline">privacy@naelum.app</a></li>
                 </ul>
+                <p className="text-xs text-text-muted mt-3">※ 이메일로 문의 시 영업일 기준 7일 이내에 답변 드립니다 (긴급 보안 사고는 24시간 이내).</p>
               </div>
 
               <p>② 정보주체께서는 회사의 서비스를 이용하시면서 발생한 모든 개인정보 보호 관련 문의, 불만처리, 피해구제 등에 관한 사항을 개인정보 보호책임자에게 문의하실 수 있습니다. 회사는 정보주체의 문의에 대해 지체 없이 답변 및 처리해드릴 것입니다.</p>
@@ -366,10 +394,11 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-2xl font-bold mb-4">제12조 (개인정보 처리방침 변경)</h2>
             <div className="text-text-secondary leading-relaxed space-y-3">
-              <p>① 이 개인정보처리방침은 2026년 2월 14일부터 적용됩니다.</p>
-              <p>② 이전의 개인정보 처리방침은 아래에서 확인하실 수 있습니다:</p>
-              <ul className="list-disc list-inside ml-4">
-                <li>이전 버전 없음 (최초 작성)</li>
+              <p>① 이 개인정보처리방침은 2026년 2월 14일부터 적용되며, 아래와 같이 개정되었습니다.</p>
+              <p>② 개정 이력:</p>
+              <ul className="list-disc list-inside ml-4 text-sm">
+                <li>2026-02-14: 최초 작성</li>
+                <li>2026-04-21: 연령 기준 16세로 상향, 수탁업체 전면 공개 (Vercel·Cloudflare·Sentry·Resend 추가), 민감정보(알레르기) 처리 별도 고지, 생년월일 필수 항목 이동, 개인정보 보호책임자 연락처 업데이트</li>
               </ul>
             </div>
           </section>
@@ -377,16 +406,132 @@ export default function PrivacyPolicyPage() {
           {/* 추가 고지 */}
           <section className="pt-8 border-t border-white/10">
             <h2 className="text-2xl font-bold mb-4">추가 고지사항</h2>
-            <div className="text-text-secondary leading-relaxed space-y-3">
+            <div className="text-text-secondary leading-relaxed space-y-4">
+              <div>
+                <p className="font-semibold text-text-primary mb-2">민감정보(알레르기 정보) 처리에 관한 고지</p>
+                <p>
+                  이용자가 입력하는 알레르기 정보는 <strong>건강에 관한 민감정보</strong>(개인정보보호법 제23조, GDPR Art. 9 &ldquo;특별 범주 개인정보&rdquo;)에 해당합니다.
+                  회사는 해당 정보를 다음 원칙에 따라 처리합니다:
+                </p>
+                <ul className="list-disc list-inside ml-4 space-y-1 mt-2 text-sm">
+                  <li><strong>수집 근거</strong>: 이용자의 <strong>명시적 동의</strong> (GDPR Art. 9(2)(a))</li>
+                  <li><strong>수집 목적</strong>: 알레르기 유발 재료가 포함된 레시피 경고 표시 (이용자 안전)</li>
+                  <li><strong>수집 방법</strong>: 이용자가 설정 페이지에서 직접 입력 (선택 사항, 기본값 없음)</li>
+                  <li><strong>공유 범위</strong>: 외부 제3자에게 제공되지 않으며, AI 학습·마케팅 등 다른 목적에 사용되지 않습니다</li>
+                  <li><strong>철회 방법</strong>: 설정 페이지에서 언제든지 삭제·수정 가능하며, 계정 삭제 시 즉시 제거됩니다</li>
+                </ul>
+              </div>
+
               <div>
                 <p className="font-semibold text-text-primary mb-2">AI 학습 데이터 사용에 관한 안내</p>
-                <p>회사는 서비스 개선 및 AI 추천 시스템 고도화를 위해 이용자의 레시피 열람 패턴, 검색 기록, 재료 선호도 등을 익명화하여 분석할 수 있습니다. 다만, 개인을 식별할 수 있는 정보는 학습 데이터에 포함되지 않으며, 이용자는 언제든지 설정 페이지에서 데이터 수집을 거부할 수 있습니다.</p>
+                <p>회사는 서비스 개선 및 AI 추천 시스템 고도화를 위해 이용자의 레시피 열람 패턴, 검색 기록, 재료 선호도 등을 익명화하여 분석할 수 있습니다. 다만, 개인을 식별할 수 있는 정보 및 민감정보(알레르기 등)는 학습 데이터에 포함되지 않으며, 이용자는 언제든지 설정 페이지에서 데이터 수집을 거부할 수 있습니다.</p>
               </div>
 
               <div>
                 <p className="font-semibold text-text-primary mb-2">사용자 제작 콘텐츠(레시피)에 관한 안내</p>
                 <p>이용자가 작성한 레시피, 사진, 동영상 등의 저작권은 작성자에게 있으며, 회사는 서비스 제공 목적으로만 해당 콘텐츠를 사용합니다. 타인의 레시피를 무단 복제하거나 저작권을 침해하는 행위는 금지되며, 이로 인한 법적 책임은 작성자 본인에게 있습니다.</p>
               </div>
+
+              <div>
+                <p className="font-semibold text-text-primary mb-2">개인정보 유출 통보 절차 (GDPR Art. 33·34, 정보통신망법 제27조의3)</p>
+                <p>회사는 개인정보 유출 사실을 인지한 경우 다음 절차에 따라 조치합니다:</p>
+                <ul className="list-disc list-inside ml-4 space-y-1 mt-2 text-sm">
+                  <li>인지 후 <strong>72시간 이내</strong> 감독기관(EU의 경우 관할 DPA, 한국의 경우 개인정보보호위원회)에 통보</li>
+                  <li>고위험 유출의 경우 영향 받은 이용자에게 <strong>즉시</strong> 이메일·서비스 내 공지를 통해 통보</li>
+                  <li>유출 항목, 시점, 피해 최소화 조치, 문의 연락처를 함께 안내</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* GDPR 섹션 — EU·국제 사용자 전용 */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">제13조 (EU 거주자의 GDPR 권리)</h2>
+            <div className="text-text-secondary leading-relaxed space-y-4">
+              <p>
+                EU(유럽연합) 거주자 및 EEA(유럽경제지역) 사용자는 일반 데이터 보호 규정(General Data Protection Regulation, GDPR)에 따라 다음 권리를 보유합니다:
+              </p>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">1. 정보 접근권 (Right of Access)</p>
+                <p>보유 중인 귀하의 개인정보 사본을 요청할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">2. 정정권 (Right to Rectification)</p>
+                <p>부정확하거나 불완전한 개인정보의 정정을 요청할 수 있습니다. 대부분의 정보는 설정 페이지에서 직접 수정 가능합니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">3. 삭제권 (Right to Erasure / &ldquo;Right to be Forgotten&rdquo;)</p>
+                <p>특정 조건 하에 개인정보 삭제를 요청할 수 있습니다. 계정 삭제 시 모든 개인 데이터가 영구적으로 제거됩니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">4. 처리 제한권 (Right to Restriction of Processing)</p>
+                <p>개인정보 처리의 일시 중단을 요청할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">5. 데이터 이동권 (Right to Data Portability)</p>
+                <p>귀하의 개인정보를 구조화된 기계 판독 가능한 형식으로 받아 다른 서비스로 이전할 수 있습니다. 요청 시 JSON·CSV 형식으로 제공합니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">6. 반대권 (Right to Object)</p>
+                <p>특정 유형의 개인정보 처리(예: 직접 마케팅)에 반대할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">7. 동의 철회권 (Right to Withdraw Consent)</p>
+                <p>
+                  쿠키·분석 도구 사용에 대한 동의를 언제든 철회할 수 있습니다.
+                  <Link href="/settings" className="text-accent-warm underline ml-1">설정 페이지</Link>의
+                  &ldquo;쿠키 및 추적 설정&rdquo;에서 변경 가능합니다.
+                  자세한 내용은 <Link href="/cookies" className="text-accent-warm underline">쿠키 정책</Link>을 참고하세요.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">8. 감독 기관에 대한 민원권 (Right to Lodge a Complaint)</p>
+                <p>
+                  개인정보 처리가 GDPR에 위반된다고 판단될 경우, 귀하가 거주하는 EU 회원국의
+                  데이터 보호 감독 기관에 민원을 제기할 권리가 있습니다.
+                  예: 독일 BfDI, 프랑스 CNIL, 이탈리아 Garante 등.
+                </p>
+              </div>
+
+              <p className="mt-4 p-3 rounded-lg bg-background-secondary">
+                <strong>권리 행사 방법:</strong> 위 권리를 행사하려면
+                <Link href="/settings" className="text-accent-warm underline mx-1">설정 페이지 → 개발자에게 문의</Link>
+                를 통해 요청해주세요. 요청 접수 후 30일 이내에 응답해 드립니다.
+              </p>
+
+              <p>
+                <strong>처리의 법적 근거:</strong>
+              </p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li><strong>계약 이행 (GDPR Art. 6(1)(b))</strong> — 회원가입·로그인·서비스 제공</li>
+                <li><strong>동의 (GDPR Art. 6(1)(a))</strong> — 분석·마케팅 쿠키, 선택 항목 수집</li>
+                <li><strong>정당한 이익 (GDPR Art. 6(1)(f))</strong> — 보안·사기 방지, 서비스 개선</li>
+                <li><strong>법적 의무 (GDPR Art. 6(1)(c))</strong> — 법령상 보존 의무가 있는 경우</li>
+              </ul>
+
+              <p>
+                <strong>국제 데이터 이전:</strong>
+                낼름은 Supabase(미국·싱가포르 등), Vercel(미국), Cloudflare(전세계), Sentry(미국) 등 EEA 외부 서비스를 사용합니다.
+                이러한 이전은 EU 표준계약조항(SCC, Standard Contractual Clauses) 또는 각 업체의 개인정보보호 프레임워크(예: Vercel·Sentry의 EU-US Data Privacy Framework 준수)에 따라 적절한 보호 장치와 함께 이루어집니다.
+              </p>
+
+              <p>
+                <strong>보관 기간:</strong>
+              </p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>계정 데이터: 계정 삭제 시까지 (삭제 시 90일 이내 완전 제거)</li>
+                <li>에러 로그 (Sentry): 90일</li>
+                <li>서비스 로그: 6개월 (법적 요구사항 따라)</li>
+                <li>쿠키 동의 기록: 동의 변경 시점까지 (감사 기록으로 5년 보관)</li>
+              </ul>
             </div>
           </section>
         </div>
@@ -399,12 +544,20 @@ export default function PrivacyPolicyPage() {
           >
             ← 이용약관
           </Link>
-          <Link
-            href="/copyright"
-            className="text-accent-warm hover:text-accent-hover transition-colors"
-          >
-            저작권 정책 →
-          </Link>
+          <div className="flex gap-4">
+            <Link
+              href="/cookies"
+              className="text-accent-warm hover:text-accent-hover transition-colors"
+            >
+              쿠키 정책
+            </Link>
+            <Link
+              href="/copyright"
+              className="text-accent-warm hover:text-accent-hover transition-colors"
+            >
+              저작권 정책 →
+            </Link>
+          </div>
           <Link
             href="/"
             className="text-text-secondary hover:text-text-primary transition-colors"

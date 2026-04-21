@@ -47,7 +47,7 @@ export default function TermsOfServicePage() {
         </div>
 
         <h1 className="text-4xl font-bold text-text-primary mb-2">이용약관</h1>
-        <p className="text-text-secondary mb-8">최종 수정일: 2026년 2월 14일</p>
+        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 21일</p>
 
         <div className="space-y-8 text-text-primary">
           {/* 제1조 */}
@@ -95,7 +95,7 @@ export default function TermsOfServicePage() {
                 <li>레시피 작성, 수정, 삭제 및 공유 서비스</li>
                 <li>레시피 검색 및 추천 서비스</li>
                 <li>보유 재료 기반 레시피 추천 서비스</li>
-                <li>사용자 간 소셜 기능 (좋아요, 댓글, 팔로우 등)</li>
+                <li>사용자 간 소셜 기능 (좋아요, 댓글 등)</li>
                 <li>레시피 북마크 및 개인 컬렉션 관리</li>
                 <li>기타 회사가 정하는 서비스</li>
               </ol>
@@ -111,7 +111,7 @@ export default function TermsOfServicePage() {
               <ol className="list-decimal list-inside space-y-2 ml-4">
                 <li>등록 내용에 허위, 기재누락, 오기가 있는 경우</li>
                 <li>기타 회원으로 등록하는 것이 회사의 기술상 현저히 지장이 있다고 판단되는 경우</li>
-                <li>만 14세 미만인 경우</li>
+                <li>만 16세 미만인 경우 (GDPR Art. 8, COPPA, 개인정보보호법 등 글로벌 기준)</li>
                 <li>이전에 회원 자격을 상실한 적이 있는 경우 (단, 회사의 재가입 승낙을 얻은 경우 제외)</li>
               </ol>
               <p>③ 회원가입계약의 성립 시기는 회사의 승낙이 회원에게 도달한 시점으로 합니다.</p>
@@ -172,10 +172,18 @@ export default function TermsOfServicePage() {
 
           {/* 제9조 */}
           <section>
-            <h2 className="text-2xl font-bold mb-4">제9조 (게시물의 관리)</h2>
+            <h2 className="text-2xl font-bold mb-4">제9조 (게시물의 관리 및 신고 처리)</h2>
             <div className="text-text-secondary leading-relaxed space-y-3">
               <p>① 회원의 게시물이 정보통신망법 및 저작권법 등 관련법에 위반되는 내용을 포함하는 경우, 권리자는 관련법이 정한 절차에 따라 해당 게시물의 게시중단 및 삭제 등을 요청할 수 있으며, 회사는 관련법에 따라 조치를 취합니다.</p>
               <p>② 회사는 전항에 따른 권리자의 요청이 없는 경우라도 권리침해가 인정될 만한 사유가 있거나 기타 회사 정책 및 관련법에 위반되는 경우에는 관련법에 따라 해당 게시물에 대해 임시조치 등을 취할 수 있습니다.</p>
+              <p>③ 이용자 신고 처리 기준 (EU Digital Services Act·정보통신망법 준수):</p>
+              <ul className="list-disc list-inside ml-4 space-y-1 text-sm">
+                <li>아동 성착취·폭력·긴급 위해 콘텐츠: <span className="font-medium text-text-primary">즉시 조치</span> (24시간 이내)</li>
+                <li>스팸·욕설·혐오 표현: <span className="font-medium text-text-primary">영업일 기준 3일 이내</span></li>
+                <li>저작권 침해 신고 (DMCA): <span className="font-medium text-text-primary">영업일 기준 3일 이내</span> (별도 <Link href="/copyright" className="text-accent-warm underline">저작권 정책</Link> 참고)</li>
+                <li>기타 이용약관 위반: <span className="font-medium text-text-primary">영업일 기준 7일 이내</span></li>
+              </ul>
+              <p>④ 회사는 신고 접수 및 처리 결과를 신고자에게 이메일로 안내하며, 조치 대상 게시물의 작성자에게도 사유를 통지합니다.</p>
             </div>
           </section>
 
@@ -219,7 +227,8 @@ export default function TermsOfServicePage() {
           {/* 부칙 */}
           <section className="pt-8 border-t border-white/10">
             <h2 className="text-2xl font-bold mb-4">부칙</h2>
-            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행됩니다.</p>
+            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행되며, 2026년 4월 21일 개정되었습니다.</p>
+            <p className="text-text-muted text-sm mt-2">개정 내용: 연령 기준 16세로 상향 (글로벌 준수), 콘텐츠 신고 처리 기한 명시 (DSA·정보통신망법), 서비스 기능 업데이트 반영.</p>
           </section>
         </div>
 
