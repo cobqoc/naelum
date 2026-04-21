@@ -125,13 +125,16 @@ export default function KitchenSVG() {
       </g>
 
       {/* ══ 빨간 상판 — 찬장 오른쪽 (x=382~538) ══ */}
-      {/* 상면 */}
-      <rect x="382" y="60" width="156" height="14"
-            fill="url(#kitShelfG)" stroke="#1a0d04" strokeWidth="1.5" strokeLinejoin="round" />
+      {/* 외곽 테두리 (stroke는 여기만) */}
+      <rect x="382" y="60" width="156" height="24"
+            fill="none" stroke="#1a0d04" strokeWidth="1.5" strokeLinejoin="round" />
+      {/* 상면 fill */}
+      <rect x="382" y="60" width="156" height="14" fill="url(#kitShelfG)" />
       <rect x="386" y="61" width="148" height="5" rx="1" fill="rgba(255,255,255,0.25)" />
-      {/* 전면 */}
-      <rect x="382" y="74" width="156" height="10"
-            fill="url(#kitShelfFrontG)" stroke="#1a0d04" strokeWidth="1" strokeLinejoin="round" />
+      {/* 전면 fill */}
+      <rect x="382" y="74" width="156" height="10" fill="url(#kitShelfFrontG)" />
+      {/* 상면/전면 구분선 1개 */}
+      <line x1="382" y1="74" x2="538" y2="74" stroke="#1a0d04" strokeWidth="1" />
     </svg>
   );
 }
