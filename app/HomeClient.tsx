@@ -156,14 +156,18 @@ const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: 
 ];
 const MAX_DOOR_CHIPS_PER_SHELF = 2;
 
-// KitchenSVG landscape viewBox="0 0 540 165"
-// 노란 도어 translate(162) → 내부 패널 x=182~360, y=18~152
-// 빨간 상판 x=382~538, y=60~84
-// Row1: 노란 도어 내부  left=34% width=33% top=10% height=68%
-// Row2: 빨간 상판 위    left=71% width=28% top=20% height=30%
+// KitchenSVG landscape viewBox="0 -35 640 200" (y: -35~165, x: 0~640)
+// 찬장 translate(230) → cabinet x=232~408
+// items-end → 칩 바닥이 선반 상면에 닿도록 (top% = (shelfY+35)/200*100, zone는 그 위)
+//   좌상단(olive)   visible x=2~232   shelf top y=45  → left=0%  w=36% top=22% h=18%
+//   좌하단(terra)   visible x=90~232  shelf top y=130 → left=14% w=22% top=67% h=16% (화분 우측)
+//   우상단(mauve)   visible x=408~565 shelf top y=30  → left=64% w=25% top=15% h=18%
+//   우하단(slate)   visible x=408~638 shelf top y=120 → left=64% w=36% top=63% h=15%
 const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
-  { left: '34%', width: '33%', top: '10%', height: '68%' }, // 노란 도어 내부
-  { left: '71%', width: '28%', top: '20%', height: '30%' }, // 빨간 상판 위
+  { left: '0%',  width: '36%', top: '22%', height: '18%' }, // 좌상단 olive
+  { left: '14%', width: '22%', top: '67%', height: '16%' }, // 좌하단 terracotta (화분 우측)
+  { left: '64%', width: '25%', top: '15%', height: '18%' }, // 우상단 mauve
+  { left: '64%', width: '36%', top: '63%', height: '15%' }, // 우하단 slate
 ];
 // MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
@@ -592,9 +596,9 @@ export default function HomeClient({
             const pantry = [...items]
               .filter(i => i.storage_location === '상온' || i.storage_location === '기타')
               .sort((a, b) => urgencyScore(a) - urgencyScore(b));
-            const shelfItems: FridgeItem[][] = [[], []];
+            const shelfItems: FridgeItem[][] = [[], [], [], []];
             pantry.forEach((it, i) => {
-              const idx = Math.min(Math.floor(i / shelfMax.pantry), 1);
+              const idx = Math.min(Math.floor(i / shelfMax.pantry), 3);
               shelfItems[idx].push(it);
             });
             return (
