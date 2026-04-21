@@ -265,8 +265,16 @@ export default function HomeClient({
     if (!user) return;
     if (!hasTempUsername) return;
     const dismissed = localStorage.getItem(`naelum_onboarding_banner_${user.id}`);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
-    if (!dismissed) setShowOnboardingBanner(true);
+    if (!dismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
+      setShowOnboardingBanner(true);
+      // 최초 1회만 노출 — 10초 후 자동 dismiss (사용자가 못 봤어도 이후 방문에서 반복 노출 안 함).
+      // 프로필 완성은 UserDropdown 메뉴에서 접근 가능.
+      const timer = setTimeout(() => {
+        localStorage.setItem(`naelum_onboarding_banner_${user.id}`, '1');
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
   }, [user, hasTempUsername]);
 
   // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
@@ -426,14 +434,14 @@ export default function HomeClient({
     if (id.startsWith('d') || id.startsWith('demo')) {
       setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
       setDetailItem(null);
-      showToast('✅ 수정 완료');
+      showToast(`✅ ${formData.ingredient_name} 수정됐어요`);
       return;
     }
     const client = createClient();
     await client.from('user_ingredients').update({ ...formData }).eq('id', id);
     setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
     setDetailItem(null);
-    showToast('✅ 수정 완료');
+    showToast(`✅ ${formData.ingredient_name} 수정됐어요`);
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
@@ -475,20 +483,21 @@ export default function HomeClient({
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      {/* 온보딩 미완료 / 임시 유저명 배너 — 그라디언트 + 아이콘 + pill CTA */}
+      {/* 온보딩 미완료 배너 — 비 sticky (자연 flow) + 최초 1회만 노출 (useEffect에서 10초 후 자동 영구 dismiss).
+          냉장고 영역 가리지 않도록 compact 버전. */}
       {showOnboardingBanner && (
-        <div className="sticky top-16 md:top-[68px] z-30 w-full border-b border-accent-warm/15 bg-gradient-to-r from-accent-warm/15 via-accent-warm/8 to-accent-warm/15 backdrop-blur-sm">
-          <div className="max-w-5xl mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="flex-shrink-0 text-base leading-none" aria-hidden="true">✨</span>
-              <p className="text-[13px] md:text-sm text-text-primary font-medium truncate">
+        <div className="w-full border-b border-accent-warm/15 bg-gradient-to-r from-accent-warm/15 via-accent-warm/8 to-accent-warm/15 flex-shrink-0">
+          <div className="max-w-5xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="flex-shrink-0 text-sm leading-none" aria-hidden="true">✨</span>
+              <p className="text-[12px] md:text-sm text-text-primary font-medium truncate">
                 나의 프로필 완성하기
               </p>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setShowOnboardingModal(true)}
-                className="px-3 py-1.5 rounded-full bg-accent-warm hover:bg-accent-hover text-background-primary text-xs font-bold active:scale-95 transition-all whitespace-nowrap shadow-sm shadow-accent-warm/30"
+                className="px-2.5 py-0.5 rounded-full bg-accent-warm hover:bg-accent-hover text-background-primary text-[11px] font-bold active:scale-95 transition-all whitespace-nowrap"
               >
                 완성하기
               </button>
@@ -497,10 +506,10 @@ export default function HomeClient({
                   if (user) localStorage.setItem(`naelum_onboarding_banner_${user.id}`, '1');
                   setShowOnboardingBanner(false);
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
                 aria-label="닫기"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -521,15 +530,34 @@ export default function HomeClient({
         />
       )}
 
+      {/* 검색바 — 데스크탑 전용. 모바일은 BottomNav 검색 아이콘으로 접근 (뷰포트 절약). */}
       <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
         <SearchBar className="w-full max-w-md" />
       </div>
+
+      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 로그인 CTA 포함.
+          mobile viewport 절약 위해 compact pill 형태. */}
+      {!isAuthenticated && (
+        <div className="px-4 pb-1 md:pb-2 flex justify-center flex-shrink-0">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
+          >
+            <span className="text-xs" aria-hidden="true">🎭</span>
+            <span>체험 중</span>
+            <span className="text-text-muted">·</span>
+            <span className="font-semibold">로그인 →</span>
+          </Link>
+        </div>
+      )}
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
             빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        <div className="relative w-full max-w-[420px] sm:max-w-[480px] md:max-w-[560px] lg:max-w-[640px] mx-auto">
+        {/* 찬장(상온) — 모바일에서 전체 화면 stay-in-viewport 위해 폭 축소 → 높이도 비례 축소 (~100px).
+            냉장고가 주인공이라 찬장은 secondary 레이어로 처리. */}
+        <div className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[480px] lg:max-w-[560px] mx-auto">
           <KitchenSVG />
           {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
               추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
@@ -612,10 +640,11 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
-        {/* maxHeight: header(56) + 찬장(~130~140) + gap(8) + BottomNav(56) ≈ 250.
-            주요 기종(iPhone 12+)에서 스크롤 없이 fit. SE는 약간의 스크롤 허용. */}
+        {/* maxHeight 계산 (모바일 기준): header(56) + 찬장(~100) + gap(8) + BottomNav(60) ≈ 224.
+            모바일 검색바 제거로 48px 회수 → 냉장고 더 크게.
+            비로그인 DEMO 라벨(~24px)은 있어도 iPhone 12+에서 여유. */}
         <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 250px - env(safe-area-inset-bottom))' }}>
+          style={{ maxHeight: 'calc(100dvh - 224px - env(safe-area-inset-bottom))' }}>
           <FridgeSVG />
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
@@ -696,12 +725,13 @@ export default function HomeClient({
                       }}
                       title={`${item.ingredient_name}${label ? ` · ${label}` : ''}`}
                     >
-                      <span className={`leading-none ${compact ? 'text-xs' : 'text-sm md:text-base'}`}>{emoji}</span>
-                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[40px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
+                      <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
+                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
                         {item.ingredient_name}
                       </span>
-                      {label && (
-                        <span className={`font-bold leading-none ${compact ? 'text-[7px]' : 'text-[8px] md:text-[9px]'}`} style={{ color: border }}>
+                      {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
+                      {label && !compact && (
+                        <span className="font-bold leading-none text-[8px] md:text-[9px]" style={{ color: border }}>
                           {label}
                         </span>
                       )}
@@ -745,14 +775,15 @@ export default function HomeClient({
                     );
                   })}
 
-                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용) */}
+                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용).
+                      overflow-hidden — chip이 도어 본체 밖으로 삐져나가는 현상 방지 */}
                   {DOOR_SHELVES.map((shelf, idx) => {
                     const list = doorShelfItems[idx];
                     const visible = list.slice(0, shelfMax.door);
                     return (
                       <div
                         key={`door-${idx}`}
-                        className="absolute flex flex-wrap items-end justify-center gap-0.5"
+                        className="absolute flex flex-wrap items-end justify-center gap-0.5 overflow-hidden"
                         style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
                       >
                         {visible.map(item => renderChip(item, true))}
@@ -831,6 +862,7 @@ export default function HomeClient({
           isOpen={!!detailItem}
           onClose={() => setDetailItem(null)}
           onUpdate={updateIngredient}
+          onDelete={(ing) => handleDeleteFromSheet(ing as FridgeItem)}
         />
       )}
 
@@ -862,19 +894,39 @@ export default function HomeClient({
             : 'opacity-0 translate-y-[20vh] scale-[0.5] pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2 max-w-md mx-auto">
-          <div className="flex-1">
-            <SearchBar autoFocus={showMobileSearch} />
+        <div className="max-w-md mx-auto space-y-2">
+          {/* 페이지 빠른 이동 — 홈에서 레시피·팁 페이지로 바로 이동 */}
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/recipes"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>📋</span><span>레시피</span>
+            </Link>
+            <Link
+              href="/tip"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>💡</span><span>팁</span>
+            </Link>
           </div>
-          <button
-            onClick={() => setShowMobileSearch(false)}
-            aria-label="검색 닫기"
-            className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* 검색창 */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchBar autoFocus={showMobileSearch} />
+            </div>
+            <button
+              onClick={() => setShowMobileSearch(false)}
+              aria-label="검색 닫기"
+              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>

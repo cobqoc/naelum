@@ -424,7 +424,7 @@ export const zh = {
     dailyFat: '每日脂肪',
   },
   quickAdd: {
-    placeholder: '快速添加食材',
+    placeholder: '例如：芝麻菜、松露...',
     inputPlaceholder: '输入食材名...',
     addButton: '添加',
     addedItems: '已添加',

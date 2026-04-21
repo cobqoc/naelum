@@ -424,7 +424,7 @@ export const de = {
     dailyFat: 'Tägliches Fett',
   },
   quickAdd: {
-    placeholder: 'Zutaten schnell hinzufügen',
+    placeholder: 'z. B. Rucola, Trüffel...',
     inputPlaceholder: 'Zutatenname...',
     addButton: 'Hinzufügen',
     addedItems: 'Hinzugefügt',

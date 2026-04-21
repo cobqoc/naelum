@@ -4,18 +4,45 @@ import { useState, useEffect, useRef } from 'react';
 import { INGREDIENT_CATEGORIES, IngredientItem } from './IngredientAutocompleteTypes';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 
+interface FrequentItem {
+  id: string;
+  name: string;
+  category: string | null;
+}
+
+interface PopularItemLite {
+  name: string;
+  category: string;
+  icon: string;
+}
+
 interface IngredientBrowserProps {
   onSelect: (ingredient: IngredientItem) => void;
   selectedNames: string[];
+  /** 사용자 최근 사용 재료 — "자주" 탭에 우선 노출 */
+  frequentItems?: FrequentItem[];
+  /** 신규 사용자용 인기 재료 프리셋 — frequentItems가 적으면 보충 */
+  popularItems?: PopularItemLite[];
 }
 
 const ALL_CATEGORY = { id: 'all', name: '전체', icon: '🍽️' };
-const CATEGORIES = [ALL_CATEGORY, ...INGREDIENT_CATEGORIES];
+const FREQUENT_CATEGORY = { id: 'frequent', name: '자주', icon: '⭐' };
 
-export default function IngredientBrowser({ onSelect, selectedNames }: IngredientBrowserProps) {
-  const [activeCategory, setActiveCategory] = useState('all');
+export default function IngredientBrowser({
+  onSelect,
+  selectedNames,
+  frequentItems = [],
+  popularItems = [],
+}: IngredientBrowserProps) {
+  // 자주 쓰는 재료/인기 프리셋이 있으면 첫 탭을 "자주"로, 없으면 "전체".
+  const hasFrequent = frequentItems.length > 0 || popularItems.length > 0;
+  const CATEGORIES = hasFrequent
+    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...INGREDIENT_CATEGORIES]
+    : [ALL_CATEGORY, ...INGREDIENT_CATEGORIES];
+
+  const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : 'all');
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasFrequent);
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -53,6 +80,49 @@ export default function IngredientBrowser({ onSelect, selectedNames }: Ingredien
   };
 
   useEffect(() => {
+    // "자주" 탭: API 호출 없이 prop으로 받은 frequent + popular 조합 표시.
+    if (activeCategory === 'frequent') {
+      const merged: IngredientItem[] = [];
+      const seen = new Set<string>();
+
+      // 1) 사용자 최근 사용 재료 우선 (최대 20개)
+      for (const f of frequentItems.slice(0, 20)) {
+        if (seen.has(f.name)) continue;
+        seen.add(f.name);
+        merged.push({
+          id: f.id,
+          name: f.name,
+          name_en: null,
+          category: f.category,
+          common_units: [],
+          label: f.name,
+          icon: getIngredientEmoji(f.name, f.category || 'other'),
+        });
+      }
+
+      // 2) 부족하면 POPULAR_ITEMS 프리셋으로 보충 (중복 제외)
+      for (const p of popularItems) {
+        if (seen.has(p.name)) continue;
+        seen.add(p.name);
+        merged.push({
+          id: `preset-${p.name}`,
+          name: p.name,
+          name_en: null,
+          category: p.category,
+          common_units: [],
+          label: p.name,
+          icon: p.icon,
+        });
+      }
+
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prop 기반 파생 리스트 갱신 (cascading render 허용 범위)
+      setIngredients(merged);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
+
+    // 일반 카테고리 탭: 서버 API 호출
     const params = new URLSearchParams({ limit: '60', sort: 'search_count' });
     if (activeCategory !== 'all') params.set('categories', activeCategory);
 
@@ -81,7 +151,7 @@ export default function IngredientBrowser({ onSelect, selectedNames }: Ingredien
       })
       .catch(() => setIngredients([]))
       .finally(() => setLoading(false));
-  }, [activeCategory]);
+  }, [activeCategory, frequentItems, popularItems]);
 
   return (
     <div className="space-y-3">
@@ -142,8 +212,8 @@ export default function IngredientBrowser({ onSelect, selectedNames }: Ingredien
         )}
       </div>
 
-      {/* 재료 그리드 */}
-      <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+      {/* 재료 그리드 — 내부 스크롤 제거 (모달 자체 스크롤로 통합, 이중 스크롤 방지) */}
+      <div className="flex flex-wrap gap-2">
         {loading
           ? Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="h-8 w-16 rounded-xl bg-white/5 animate-pulse" />

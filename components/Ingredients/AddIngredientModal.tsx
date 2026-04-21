@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import IngredientForm from './IngredientForm';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
@@ -33,6 +33,30 @@ export default function AddIngredientModal({
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
   // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
   const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
+  // ⓘ 툴팁/팝오버 — 방법 안내(how-to)만 숨김. 경고 자체는 헤더에 항상 노출.
+  const [showHint, setShowHint] = useState(false);
+  const hintButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // 팝오버 외부 클릭 / ESC 키 → 닫기
+  useEffect(() => {
+    if (!showHint) return;
+    const onDocClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (popoverRef.current?.contains(target)) return;
+      if (hintButtonRef.current?.contains(target)) return;
+      setShowHint(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowHint(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('touchstart', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('touchstart', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [showHint]);
 
   // 모달이 특정 섹션으로 열리면 (예: '냉장') 그 위치로 pre-select.
   // FAB('auto')로 열리면 null(자동) 유지.
@@ -44,6 +68,9 @@ export default function AddIngredientModal({
         ? (location as LocMode)
         : null
     );
+    // 모달 닫혔다 다시 열릴 때 힌트 상태 초기화
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowHint(false);
   }, [isOpen, location]);
 
   if (!isOpen || !location) return null;
@@ -62,25 +89,55 @@ export default function AddIngredientModal({
           className="border-b border-white/5 flex-shrink-0"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
-          {/* 상단 라인: 자동 분류 라벨 + 닫기 */}
+          {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">
-            <label className="text-xs font-medium flex items-center gap-1.5 min-w-0" aria-label="재료 추가 — 저장 위치 선택">
-              <span className="text-accent-warm font-bold whitespace-nowrap">✨ 기본: 자동 분류</span>
-              {selectedLocation && (
-                <span className="text-text-muted truncate">
-                  → 현재 <span className="text-accent-warm">{selectedLocation}</span>으로 고정됨
-                </span>
-              )}
-            </label>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">✨ 보관 장소: 자동 분류</span>
+              <span className="text-[11px] text-text-muted whitespace-nowrap">· 100% 정확하지 않음</span>
+              {/* ⓘ 버튼 + 팝오버 — group-hover로 데스크탑 hover 지원, onClick으로 모바일 탭 지원 */}
+              <div className="relative group">
+                <button
+                  ref={hintButtonRef}
+                  type="button"
+                  onClick={() => setShowHint(prev => !prev)}
+                  aria-label="수정 방법 안내"
+                  aria-expanded={showHint}
+                  className={`w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 transition-colors ${
+                    showHint
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'bg-white/10 text-text-muted hover:bg-white/15 hover:text-text-secondary'
+                  }`}
+                >
+                  ⓘ
+                </button>
+
+                {/* 팝오버 — 데스크탑: group-hover로 자동 노출. 모바일: 탭으로 showHint 토글. */}
+                <div
+                  ref={popoverRef}
+                  role="tooltip"
+                  className={`absolute top-full left-0 mt-2 z-10 w-[260px] max-w-[calc(100vw-2.5rem)] p-3 rounded-lg bg-background-tertiary border border-white/10 shadow-xl text-[11px] leading-relaxed transition-opacity ${
+                    showHint
+                      ? 'opacity-100 visible pointer-events-auto'
+                      : 'opacity-0 invisible pointer-events-none md:group-hover:opacity-100 md:group-hover:visible md:group-hover:pointer-events-auto'
+                  }`}
+                >
+                  {/* 화살표 */}
+                  <div className="absolute -top-1 left-2 w-2 h-2 rotate-45 bg-background-tertiary border-l border-t border-white/10" />
+                  <p className="text-text-primary font-semibold mb-1.5">💡 재료 분류 방법</p>
+                  <ul className="space-y-1 text-text-secondary">
+                    <li>• <strong className="text-text-primary">위 냉장/냉동/상온 버튼</strong> → 모든 재료 일괄 지정</li>
+                    <li>• <strong className="text-text-primary">추가된 태그 탭</strong> → 재료별 개별 수정</li>
+                    <li className="text-text-muted pt-1">활성 버튼 재탭 → 자동 모드로 복귀</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {selectedLocation && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedLocation(null)}
-                  className="text-[10px] text-accent-warm hover:underline"
-                >
-                  자동으로 돌리기
-                </button>
+                <span className="text-[11px] text-text-muted whitespace-nowrap">
+                  → <span className="text-accent-warm">{selectedLocation}</span>
+                </span>
               )}
               <button
                 onClick={onClose}
@@ -94,7 +151,7 @@ export default function AddIngredientModal({
             </div>
           </div>
 
-          {/* 저장 위치 pill (냉장/냉동/상온) */}
+          {/* 저장 위치 pill (냉장/냉동/상온) — 경고문 제거, how-to는 ⓘ 팝오버로 이관 */}
           <div className="px-5 pb-3">
             <div className="grid grid-cols-3 gap-1.5">
               {([
@@ -120,9 +177,6 @@ export default function AddIngredientModal({
                 );
               })}
             </div>
-            <p className="mt-1.5 text-[10px] text-text-muted leading-relaxed">
-              ⚠️ 자동 분류는 정확하지 않을 수 있어요. 위 버튼으로 일괄 지정하거나, 태그를 눌러 개별 수정할 수 있어요.
-            </p>
           </div>
         </div>
 

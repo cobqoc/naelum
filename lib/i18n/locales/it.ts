@@ -424,7 +424,7 @@ export const it = {
     dailyFat: 'Grassi giornalieri',
   },
   quickAdd: {
-    placeholder: 'Aggiungi ingredienti velocemente',
+    placeholder: 'es. rucola, tartufo...',
     inputPlaceholder: 'Nome ingrediente...',
     addButton: 'Aggiungi',
     addedItems: 'Elementi aggiunti',
