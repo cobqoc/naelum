@@ -156,18 +156,15 @@ const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: 
 ];
 const MAX_DOOR_CHIPS_PER_SHELF = 2;
 
-// KitchenSVG landscape viewBox="0 0 540 240"
-// 도어: x=165~375, 내부 패널: x=184~356 (y=20~152)
-// 선반1 y=82, 선반2 y=132
-// Row1: y=20~82  → top=8% height=26%
-// Row2: y=95~132 → top=40% height=15%
-// 가로: x=184~356 → left=34% width=32%
-const PANTRY_SHELVES: { top: string; height: string }[] = [
-  { top: '9%',  height: '25%' },  // row 1 (선반1 위)
-  { top: '40%', height: '16%' },  // row 2 (선반1~2 사이)
+// KitchenSVG landscape viewBox="0 0 540 165"
+// 좌: 노란 도어 x=2~218, 내부 패널 x=20~198, y=18~152
+// 우: 빨간 오픈 선반 x=238~538, 상단 선반 y=46~68, 하단 선반 y=104~126
+// Row1: 노란 도어 내부  left=4%  width=33% top=10% height=68%
+// Row2: 빨간 선반 상단  left=44% width=54% top=5%  height=28%
+const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
+  { left: '4%',  width: '33%', top: '10%', height: '68%' }, // 노란 도어 내부
+  { left: '44%', width: '54%', top: '5%',  height: '28%' }, // 빨간 선반 상단
 ];
-const PANTRY_LEFT = '34%';
-const PANTRY_WIDTH = '32%';
 // MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
 // DEMO 재료 — 비로그인 체험용. 목표:
@@ -610,7 +607,7 @@ export default function HomeClient({
                     <div
                       key={idx}
                       className="absolute flex items-end justify-center gap-0.5 flex-wrap"
-                      style={{ left: PANTRY_LEFT, width: PANTRY_WIDTH, top: shelf.top, height: shelf.height }}
+                      style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height }}
                     >
                       {visible.map(item => {
                         const { border, label, isDanger } = freshState(item);
