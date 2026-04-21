@@ -389,6 +389,97 @@ export default function PrivacyPolicyPage() {
               </div>
             </div>
           </section>
+
+          {/* GDPR 섹션 — EU·국제 사용자 전용 */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">제 N조 (EU 거주자의 GDPR 권리)</h2>
+            <div className="text-text-secondary leading-relaxed space-y-4">
+              <p>
+                EU(유럽연합) 거주자 및 EEA(유럽경제지역) 사용자는 일반 데이터 보호 규정(General Data Protection Regulation, GDPR)에 따라 다음 권리를 보유합니다:
+              </p>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">1. 정보 접근권 (Right of Access)</p>
+                <p>보유 중인 귀하의 개인정보 사본을 요청할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">2. 정정권 (Right to Rectification)</p>
+                <p>부정확하거나 불완전한 개인정보의 정정을 요청할 수 있습니다. 대부분의 정보는 설정 페이지에서 직접 수정 가능합니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">3. 삭제권 (Right to Erasure / &ldquo;Right to be Forgotten&rdquo;)</p>
+                <p>특정 조건 하에 개인정보 삭제를 요청할 수 있습니다. 계정 삭제 시 모든 개인 데이터가 영구적으로 제거됩니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">4. 처리 제한권 (Right to Restriction of Processing)</p>
+                <p>개인정보 처리의 일시 중단을 요청할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">5. 데이터 이동권 (Right to Data Portability)</p>
+                <p>귀하의 개인정보를 구조화된 기계 판독 가능한 형식으로 받아 다른 서비스로 이전할 수 있습니다. 요청 시 JSON·CSV 형식으로 제공합니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">6. 반대권 (Right to Object)</p>
+                <p>특정 유형의 개인정보 처리(예: 직접 마케팅)에 반대할 수 있습니다.</p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">7. 동의 철회권 (Right to Withdraw Consent)</p>
+                <p>
+                  쿠키·분석 도구 사용에 대한 동의를 언제든 철회할 수 있습니다.
+                  <Link href="/settings" className="text-accent-warm underline ml-1">설정 페이지</Link>의
+                  &ldquo;쿠키 및 추적 설정&rdquo;에서 변경 가능합니다.
+                  자세한 내용은 <Link href="/cookies" className="text-accent-warm underline">쿠키 정책</Link>을 참고하세요.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-text-primary">8. 감독 기관에 대한 민원권 (Right to Lodge a Complaint)</p>
+                <p>
+                  개인정보 처리가 GDPR에 위반된다고 판단될 경우, 귀하가 거주하는 EU 회원국의
+                  데이터 보호 감독 기관에 민원을 제기할 권리가 있습니다.
+                  예: 독일 BfDI, 프랑스 CNIL, 이탈리아 Garante 등.
+                </p>
+              </div>
+
+              <p className="mt-4 p-3 rounded-lg bg-background-secondary">
+                <strong>권리 행사 방법:</strong> 위 권리를 행사하려면
+                <Link href="/settings" className="text-accent-warm underline mx-1">설정 페이지 → 개발자에게 문의</Link>
+                를 통해 요청해주세요. 요청 접수 후 30일 이내에 응답해 드립니다.
+              </p>
+
+              <p>
+                <strong>처리의 법적 근거:</strong>
+              </p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li><strong>계약 이행 (GDPR Art. 6(1)(b))</strong> — 회원가입·로그인·서비스 제공</li>
+                <li><strong>동의 (GDPR Art. 6(1)(a))</strong> — 분석·마케팅 쿠키, 선택 항목 수집</li>
+                <li><strong>정당한 이익 (GDPR Art. 6(1)(f))</strong> — 보안·사기 방지, 서비스 개선</li>
+                <li><strong>법적 의무 (GDPR Art. 6(1)(c))</strong> — 법령상 보존 의무가 있는 경우</li>
+              </ul>
+
+              <p>
+                <strong>국제 데이터 이전:</strong>
+                낼름은 Supabase(미국·싱가포르 등), Vercel(미국), Cloudflare(전세계), Sentry(미국) 등 EEA 외부 서비스를 사용합니다.
+                이러한 이전은 EU 표준계약조항(SCC, Standard Contractual Clauses) 또는 각 업체의 개인정보보호 프레임워크(예: Vercel·Sentry의 EU-US Data Privacy Framework 준수)에 따라 적절한 보호 장치와 함께 이루어집니다.
+              </p>
+
+              <p>
+                <strong>보관 기간:</strong>
+              </p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>계정 데이터: 계정 삭제 시까지 (삭제 시 90일 이내 완전 제거)</li>
+                <li>에러 로그 (Sentry): 90일</li>
+                <li>서비스 로그: 6개월 (법적 요구사항 따라)</li>
+                <li>쿠키 동의 기록: 동의 변경 시점까지 (감사 기록으로 5년 보관)</li>
+              </ul>
+            </div>
+          </section>
         </div>
 
         {/* Footer Navigation */}
@@ -399,12 +490,20 @@ export default function PrivacyPolicyPage() {
           >
             ← 이용약관
           </Link>
-          <Link
-            href="/copyright"
-            className="text-accent-warm hover:text-accent-hover transition-colors"
-          >
-            저작권 정책 →
-          </Link>
+          <div className="flex gap-4">
+            <Link
+              href="/cookies"
+              className="text-accent-warm hover:text-accent-hover transition-colors"
+            >
+              쿠키 정책
+            </Link>
+            <Link
+              href="/copyright"
+              className="text-accent-warm hover:text-accent-hover transition-colors"
+            >
+              저작권 정책 →
+            </Link>
+          </div>
           <Link
             href="/"
             className="text-text-secondary hover:text-text-primary transition-colors"

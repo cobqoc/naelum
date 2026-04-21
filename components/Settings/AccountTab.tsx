@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { getPasswordStrength } from '@/lib/utils/password';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { useCookieConsent } from '@/lib/cookieConsent/context';
 
 const TwoFactorTab = dynamic(() => import('@/components/Settings/TwoFactorTab'), { ssr: false });
 
@@ -539,6 +540,9 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
           {sp.logout}
         </button>
 
+        {/* Cookie Consent Settings — GDPR 동의 철회·변경 진입점 */}
+        <CookieConsentSettings t={t} />
+
         {/* Delete Account */}
         <div className="p-4 rounded-xl bg-error/10 border border-error/30">
           <h3 className="font-bold text-error mb-2">{sp.deleteAccount}</h3>
@@ -592,5 +596,38 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
         </div>
       )}
     </>
+  );
+}
+
+function CookieConsentSettings({ t }: { t: AccountTabProps['t'] }) {
+  const { consent, reopenBanner } = useCookieConsent();
+  const sp = t.settingsPage;
+
+  const status = !consent
+    ? (sp.cookieConsentStatusUnset || '아직 선택 안 함')
+    : consent.analytics && consent.marketing
+      ? (sp.cookieConsentStatusAll || '모두 수락')
+      : !consent.analytics && !consent.marketing
+        ? (sp.cookieConsentStatusNecessary || '필수만')
+        : (sp.cookieConsentStatusCustom || '사용자 지정');
+
+  return (
+    <div className="p-4 rounded-xl bg-background-secondary space-y-3">
+      <h3 className="font-bold">{sp.cookieConsentTitle || '쿠키 및 추적 설정'}</h3>
+      <p className="text-sm text-text-muted">
+        {sp.cookieConsentDesc || '쿠키 사용에 대한 동의를 변경하거나 철회할 수 있어요. GDPR 등 개인정보 보호법에 따른 권리입니다.'}
+      </p>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-text-secondary">
+          {sp.cookieConsentCurrent || '현재 상태'}: <span className="text-accent-warm font-medium">{status}</span>
+        </span>
+        <button
+          onClick={reopenBanner}
+          className="px-3 py-1.5 rounded-lg bg-accent-warm/15 border border-accent-warm/30 text-accent-warm text-xs font-medium hover:bg-accent-warm/25 transition-colors"
+        >
+          {sp.cookieConsentChange || '변경'}
+        </button>
+      </div>
+    </div>
   );
 }
