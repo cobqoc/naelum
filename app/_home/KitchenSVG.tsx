@@ -1,13 +1,13 @@
 'use client';
 
 /**
- * 찬장 + 벽선반 — 가로형 (viewBox 540×165)
+ * 찬장 + 빨간 상판 — 가로형 (viewBox 540×165)
  * 좌: 노란 도어 찬장 (x=2~218)
- * 우: 오렌지레드 오픈 벽 선반 2단 (x=242~538, 파란 수납장 없음)
+ * 우: 빨간 상판 하나 (x=222~538, y=60~84)
  *
  * chip overlay (HomeClient PANTRY_SHELVES, per-shelf left/width):
  *   Row1: 노란 도어 내부  left=4%  width=33% top=10% height=68%
- *   Row2: 빨간 선반 상단  left=44% width=54% top=5%  height=28%
+ *   Row2: 빨간 상판 위    left=42% width=56% top=20% height=30%
  */
 export default function KitchenSVG() {
   return (
@@ -55,7 +55,7 @@ export default function KitchenSVG() {
           <stop offset="0%"   stopColor="#f07050" />
           <stop offset="100%" stopColor="#c93820" />
         </linearGradient>
-        {/* 빨간 선반 */}
+        {/* 빨간 상판 */}
         <linearGradient id="kitShelfG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#e85a3a" />
           <stop offset="100%" stopColor="#c93820" />
@@ -63,10 +63,6 @@ export default function KitchenSVG() {
         <linearGradient id="kitShelfFrontG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   stopColor="#c93820" />
           <stop offset="100%" stopColor="#9a2810" />
-        </linearGradient>
-        <linearGradient id="kitBracketG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="#d04828" />
-          <stop offset="100%" stopColor="#a83018" />
         </linearGradient>
       </defs>
 
@@ -126,49 +122,14 @@ export default function KitchenSVG() {
       <circle cx="210" cy="83" r="5.8" fill="url(#kitKnobG)" stroke="#1a0d04" strokeWidth="1.5" />
       <circle cx="207" cy="80" r="2.2" fill="rgba(255,255,255,0.60)" />
 
-      {/* ══ 우: 빨간 오픈 벽 선반 2단 (x=242~538) ══ */}
-
-      {/* 벽 브래킷 — 좌 */}
-      <rect x="242" y="0" width="8" height="56" rx="2"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="1" />
-      <path d="M 242,56 L 270,56 L 250,76 Z"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="0.8" strokeLinejoin="round" />
-
-      {/* 벽 브래킷 — 우 */}
-      <rect x="530" y="0" width="8" height="56" rx="2"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="1" />
-      <path d="M 538,56 L 510,56 L 530,76 Z"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="0.8" strokeLinejoin="round" />
-
-      {/* 상단 선반 상면 */}
-      <rect x="238" y="46" width="304" height="12"
+      {/* ══ 우: 빨간 상판 (x=222~538) ══ */}
+      {/* 상면 */}
+      <rect x="222" y="60" width="316" height="14"
             fill="url(#kitShelfG)" stroke="#1a0d04" strokeWidth="1.5" strokeLinejoin="round" />
-      <rect x="242" y="47" width="296" height="4" rx="1" fill="rgba(255,255,255,0.28)" />
-      {/* 상단 선반 전면 */}
-      <rect x="238" y="58" width="304" height="10"
+      <rect x="226" y="61" width="308" height="5" rx="1" fill="rgba(255,255,255,0.25)" />
+      {/* 전면 */}
+      <rect x="222" y="74" width="316" height="10"
             fill="url(#kitShelfFrontG)" stroke="#1a0d04" strokeWidth="1" strokeLinejoin="round" />
-      <rect x="242" y="59" width="296" height="2" rx="1" fill="rgba(255,255,255,0.12)" />
-
-      {/* 하단 브래킷 — 좌 */}
-      <rect x="242" y="68" width="8" height="46" rx="2"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="1" />
-      <path d="M 242,114 L 268,114 L 250,130 Z"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="0.8" strokeLinejoin="round" />
-
-      {/* 하단 브래킷 — 우 */}
-      <rect x="530" y="68" width="8" height="46" rx="2"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="1" />
-      <path d="M 538,114 L 512,114 L 530,130 Z"
-            fill="url(#kitBracketG)" stroke="#1a0d04" strokeWidth="0.8" strokeLinejoin="round" />
-
-      {/* 하단 선반 상면 */}
-      <rect x="238" y="104" width="304" height="12"
-            fill="url(#kitShelfG)" stroke="#1a0d04" strokeWidth="1.5" strokeLinejoin="round" />
-      <rect x="242" y="105" width="296" height="4" rx="1" fill="rgba(255,255,255,0.28)" />
-      {/* 하단 선반 전면 */}
-      <rect x="238" y="116" width="304" height="10"
-            fill="url(#kitShelfFrontG)" stroke="#1a0d04" strokeWidth="1" strokeLinejoin="round" />
-      <rect x="242" y="117" width="296" height="2" rx="1" fill="rgba(255,255,255,0.12)" />
     </svg>
   );
 }

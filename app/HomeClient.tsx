@@ -158,12 +158,12 @@ const MAX_DOOR_CHIPS_PER_SHELF = 2;
 
 // KitchenSVG landscape viewBox="0 0 540 165"
 // 좌: 노란 도어 x=2~218, 내부 패널 x=20~198, y=18~152
-// 우: 빨간 오픈 선반 x=238~538, 상단 선반 y=46~68, 하단 선반 y=104~126
+// 우: 빨간 상판 x=222~538, y=60~84
 // Row1: 노란 도어 내부  left=4%  width=33% top=10% height=68%
-// Row2: 빨간 선반 상단  left=44% width=54% top=5%  height=28%
+// Row2: 빨간 상판 위    left=42% width=56% top=20% height=30%
 const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
   { left: '4%',  width: '33%', top: '10%', height: '68%' }, // 노란 도어 내부
-  { left: '44%', width: '54%', top: '5%',  height: '28%' }, // 빨간 선반 상단
+  { left: '42%', width: '56%', top: '20%', height: '30%' }, // 빨간 상판 위
 ];
 // MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
