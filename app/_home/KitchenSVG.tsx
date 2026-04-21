@@ -2,12 +2,12 @@
 
 /**
  * 찬장 + 빨간 상판 — 가로형 (viewBox 540×165)
- * 좌: 노란 도어 찬장 (x=2~218)
- * 우: 빨간 상판 하나 (x=222~538, y=60~84)
+ * 노란 도어 찬장: SVG 가운데 (translate 162 → x=164~380)
+ * 빨간 상판: 찬장 바로 오른쪽 (x=382~538)
  *
  * chip overlay (HomeClient PANTRY_SHELVES, per-shelf left/width):
- *   Row1: 노란 도어 내부  left=4%  width=33% top=10% height=68%
- *   Row2: 빨간 상판 위    left=42% width=56% top=20% height=30%
+ *   Row1: 노란 도어 내부  left=34% width=33% top=10% height=68%
+ *   Row2: 빨간 상판 위    left=71% width=28% top=20% height=30%
  */
 export default function KitchenSVG() {
   return (
@@ -66,69 +66,71 @@ export default function KitchenSVG() {
         </linearGradient>
       </defs>
 
-      {/* ══ 좌: 노란 도어 찬장 (x=2~218) ══ */}
-      <path d="M 16,2 Q 2,2 2,18 L 2,162 L 218,162 L 218,18 Q 218,2 204,2 Z"
-            fill="url(#kitDoorG)" stroke="#1a0d04" strokeWidth="3" strokeLinejoin="round" />
+      {/* ══ 노란 도어 찬장 — 가운데 배치 (translate 162) ══ */}
+      <g transform="translate(162, 0)">
+        <path d="M 16,2 Q 2,2 2,18 L 2,162 L 218,162 L 218,18 Q 218,2 204,2 Z"
+              fill="url(#kitDoorG)" stroke="#1a0d04" strokeWidth="3" strokeLinejoin="round" />
 
-      {/* 하이라이트 */}
-      <rect x="9"   y="6"  width="202" height="5"  rx="2" fill="rgba(255,255,255,0.30)" />
-      <rect x="4"   y="10" width="4"   height="146" rx="2" fill="rgba(255,255,255,0.20)" />
-      <rect x="213" y="10" width="4"   height="146" rx="2" fill="rgba(0,0,0,0.22)" />
+        {/* 하이라이트 */}
+        <rect x="9"   y="6"  width="202" height="5"  rx="2" fill="rgba(255,255,255,0.30)" />
+        <rect x="4"   y="10" width="4"   height="146" rx="2" fill="rgba(255,255,255,0.20)" />
+        <rect x="213" y="10" width="4"   height="146" rx="2" fill="rgba(0,0,0,0.22)" />
 
-      {/* 나뭇결 */}
-      {[30, 65, 100, 130].map(y => (
-        <line key={y} x1="6" y1={y} x2="215" y2={y}
-              stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
-      ))}
+        {/* 나뭇결 */}
+        {[30, 65, 100, 130].map(y => (
+          <line key={y} x1="6" y1={y} x2="215" y2={y}
+                stroke="rgba(0,0,0,0.04)" strokeWidth="1" />
+        ))}
 
-      {/* 깊이감 */}
-      <rect x="2"   y="2" width="18"  height="160" fill="url(#kitDepthL)" />
-      <rect x="200" y="2" width="18"  height="160" fill="url(#kitDepthR)" />
-      <rect x="2"   y="2" width="216" height="18"  fill="url(#kitDepthT)" />
+        {/* 깊이감 */}
+        <rect x="2"   y="2" width="18"  height="160" fill="url(#kitDepthL)" />
+        <rect x="200" y="2" width="18"  height="160" fill="url(#kitDepthR)" />
+        <rect x="2"   y="2" width="216" height="18"  fill="url(#kitDepthT)" />
 
-      {/* 크라운 몰딩 */}
-      <rect x="9"  y="8" width="202" height="10" rx="2" fill="rgba(255,255,255,0.10)" />
-      <rect x="9"  y="8" width="202" height="2"  rx="1" fill="rgba(255,255,255,0.22)" />
+        {/* 크라운 몰딩 */}
+        <rect x="9"  y="8" width="202" height="10" rx="2" fill="rgba(255,255,255,0.10)" />
+        <rect x="9"  y="8" width="202" height="2"  rx="1" fill="rgba(255,255,255,0.22)" />
 
-      {/* 경첩 1 */}
-      <rect x="2" y="28" width="10" height="22" rx="2"
-            fill="url(#kitHingeG)" stroke="#1a0d04" strokeWidth="1" />
-      <circle cx="7" cy="33" r="1.8" fill="#1a0d04" />
-      <circle cx="7" cy="33" r="0.8" fill="rgba(255,255,255,0.35)" />
-      <circle cx="7" cy="46" r="1.8" fill="#1a0d04" />
-      <circle cx="7" cy="46" r="0.8" fill="rgba(255,255,255,0.35)" />
+        {/* 경첩 1 */}
+        <rect x="2" y="28" width="10" height="22" rx="2"
+              fill="url(#kitHingeG)" stroke="#1a0d04" strokeWidth="1" />
+        <circle cx="7" cy="33" r="1.8" fill="#1a0d04" />
+        <circle cx="7" cy="33" r="0.8" fill="rgba(255,255,255,0.35)" />
+        <circle cx="7" cy="46" r="1.8" fill="#1a0d04" />
+        <circle cx="7" cy="46" r="0.8" fill="rgba(255,255,255,0.35)" />
 
-      {/* 경첩 2 */}
-      <rect x="2" y="108" width="10" height="22" rx="2"
-            fill="url(#kitHingeG)" stroke="#1a0d04" strokeWidth="1" />
-      <circle cx="7" cy="113" r="1.8" fill="#1a0d04" />
-      <circle cx="7" cy="113" r="0.8" fill="rgba(255,255,255,0.35)" />
-      <circle cx="7" cy="126" r="1.8" fill="#1a0d04" />
-      <circle cx="7" cy="126" r="0.8" fill="rgba(255,255,255,0.35)" />
+        {/* 경첩 2 */}
+        <rect x="2" y="108" width="10" height="22" rx="2"
+              fill="url(#kitHingeG)" stroke="#1a0d04" strokeWidth="1" />
+        <circle cx="7" cy="113" r="1.8" fill="#1a0d04" />
+        <circle cx="7" cy="113" r="0.8" fill="rgba(255,255,255,0.35)" />
+        <circle cx="7" cy="126" r="1.8" fill="#1a0d04" />
+        <circle cx="7" cy="126" r="0.8" fill="rgba(255,255,255,0.35)" />
 
-      {/* 내부 패널 */}
-      <rect x="20" y="18" width="178" height="134" rx="4"
-            fill="url(#kitPanelG)" stroke="#1a0d04" strokeWidth="2" strokeLinejoin="round" />
-      <rect x="24" y="22" width="170" height="126" rx="2"
-            fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="1.5" />
-      <rect x="20" y="18" width="178" height="22"  rx="4" fill="url(#kitInsetT)" />
-      <rect x="20" y="18" width="20"  height="134" rx="4" fill="url(#kitInsetL)" />
-      <rect x="26" y="22" width="164" height="2"   rx="1" fill="rgba(255,255,255,0.20)" />
+        {/* 내부 패널 */}
+        <rect x="20" y="18" width="178" height="134" rx="4"
+              fill="url(#kitPanelG)" stroke="#1a0d04" strokeWidth="2" strokeLinejoin="round" />
+        <rect x="24" y="22" width="170" height="126" rx="2"
+              fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="1.5" />
+        <rect x="20" y="18" width="178" height="22"  rx="4" fill="url(#kitInsetT)" />
+        <rect x="20" y="18" width="20"  height="134" rx="4" fill="url(#kitInsetL)" />
+        <rect x="26" y="22" width="164" height="2"   rx="1" fill="rgba(255,255,255,0.20)" />
 
-      {/* 손잡이 */}
-      <ellipse cx="210" cy="78" rx="7" ry="2.2"
-               fill="url(#kitKnobFront)" stroke="#1a0d04" strokeWidth="1.5" />
-      <circle cx="210" cy="83" r="7"   fill="#1a0d04" />
-      <circle cx="210" cy="83" r="5.8" fill="url(#kitKnobG)" stroke="#1a0d04" strokeWidth="1.5" />
-      <circle cx="207" cy="80" r="2.2" fill="rgba(255,255,255,0.60)" />
+        {/* 손잡이 */}
+        <ellipse cx="210" cy="78" rx="7" ry="2.2"
+                 fill="url(#kitKnobFront)" stroke="#1a0d04" strokeWidth="1.5" />
+        <circle cx="210" cy="83" r="7"   fill="#1a0d04" />
+        <circle cx="210" cy="83" r="5.8" fill="url(#kitKnobG)" stroke="#1a0d04" strokeWidth="1.5" />
+        <circle cx="207" cy="80" r="2.2" fill="rgba(255,255,255,0.60)" />
+      </g>
 
-      {/* ══ 우: 빨간 상판 (x=222~538) ══ */}
+      {/* ══ 빨간 상판 — 찬장 오른쪽 (x=382~538) ══ */}
       {/* 상면 */}
-      <rect x="222" y="60" width="316" height="14"
+      <rect x="382" y="60" width="156" height="14"
             fill="url(#kitShelfG)" stroke="#1a0d04" strokeWidth="1.5" strokeLinejoin="round" />
-      <rect x="226" y="61" width="308" height="5" rx="1" fill="rgba(255,255,255,0.25)" />
+      <rect x="386" y="61" width="148" height="5" rx="1" fill="rgba(255,255,255,0.25)" />
       {/* 전면 */}
-      <rect x="222" y="74" width="316" height="10"
+      <rect x="382" y="74" width="156" height="10"
             fill="url(#kitShelfFrontG)" stroke="#1a0d04" strokeWidth="1" strokeLinejoin="round" />
     </svg>
   );
