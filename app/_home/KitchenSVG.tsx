@@ -156,6 +156,46 @@ export default function KitchenSVG() {
       <line x1="325" y1="127" x2="638" y2="127" stroke="#1a0d04" strokeWidth="0.8" />
       <rect x="329" y="121" width="305" height="2" fill="rgba(255,255,255,0.40)" />
 
+      {/* ══ 선반 포인트 장식 ══ */}
+
+      {/* 빨간 주전자 (좌상단 선반 중앙, cx=158, shelf y=45) */}
+      <g>
+        <circle cx="158" cy="12" r="3.5" fill="#AA2A1A" stroke="#1a0d04" strokeWidth="1" />
+        <ellipse cx="158" cy="17" rx="12" ry="4"  fill="#CC3828" stroke="#1a0d04" strokeWidth="1.2" />
+        <ellipse cx="158" cy="31" rx="16" ry="14" fill="#E03A28" stroke="#1a0d04" strokeWidth="1.5" />
+        <path d="M 172,24 C 180,21 186,19 188,23 C 186,27 178,29 174,29 Z"
+              fill="#CC3020" stroke="#1a0d04" strokeWidth="1.2" strokeLinejoin="round" />
+        <path d="M 142,23 C 132,28 132,37 142,40"
+              fill="none" stroke="#1a0d04" strokeWidth="3" strokeLinecap="round" />
+        <ellipse cx="158" cy="45" rx="11" ry="3" fill="#B02E20" stroke="#1a0d04" strokeWidth="1" />
+        <ellipse cx="150" cy="24" rx="5" ry="7" fill="rgba(255,255,255,0.18)" />
+      </g>
+
+      {/* 소주병 (우상단 선반 오른쪽 끝, cx=553, shelf y=30) */}
+      <g>
+        <rect x="549" y="1"  width="8"  height="5"  rx="1.5" fill="#CC2020" stroke="#1a0d04" strokeWidth="1" />
+        <rect x="551" y="5"  width="4"  height="7"  rx="0.5" fill="#4A8840" stroke="#1a0d04" strokeWidth="1" />
+        <path d="M 547,11 L 551,11 L 551,12 L 559,12 L 559,11 L 563,11 L 560,13 L 546,13 Z"
+              fill="#4A8840" stroke="#1a0d04" strokeWidth="0.8" />
+        <rect x="546" y="12" width="14" height="18" rx="1.5" fill="#4A8840" stroke="#1a0d04" strokeWidth="1.2" />
+        <rect x="547" y="16" width="12" height="9"  rx="0.5" fill="rgba(255,255,255,0.60)" />
+        <rect x="548" y="18" width="10" height="1.5" rx="0.3" fill="rgba(0,60,160,0.40)" />
+        <rect x="549" y="21" width="8"  height="1"   rx="0.3" fill="rgba(0,60,160,0.28)" />
+        <rect x="547" y="13" width="3"  height="13" rx="0.5" fill="rgba(255,255,255,0.25)" />
+      </g>
+
+      {/* 초록 캐서롤 (우하단 선반 중간, cx=505, shelf y=120) */}
+      <g>
+        <circle cx="505" cy="101" r="3.5" fill="#1a0d04" />
+        <ellipse cx="505" cy="106" rx="19" ry="5"  fill="#5EAA6A" stroke="#1a0d04" strokeWidth="1.5" />
+        <rect x="486"  y="106" width="38" height="3" fill="#4A9256" />
+        <rect x="487"  y="108" width="36" height="12" rx="2" fill="#6ABE78" stroke="#1a0d04" strokeWidth="1.5" />
+        <rect x="475"  y="111" width="13" height="6"  rx="2" fill="#4A9256" stroke="#1a0d04" strokeWidth="1.2" />
+        <rect x="527"  y="111" width="13" height="6"  rx="2" fill="#4A9256" stroke="#1a0d04" strokeWidth="1.2" />
+        <rect x="490"  y="118" width="30" height="3"  rx="1" fill="#3A7844" />
+        <rect x="488"  y="109" width="8"  height="6"  rx="0.5" fill="rgba(255,255,255,0.20)" />
+      </g>
+
       {/* ══ 노란 도어 찬장 — 가운데 배치 (translate 230, 선반 위에 렌더) ══ */}
       <g transform="translate(230, 0)">
         <path d="M 16,2 Q 2,2 2,18 L 2,162 L 178,162 L 178,18 Q 178,2 164,2 Z"
