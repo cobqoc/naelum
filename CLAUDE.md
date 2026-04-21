@@ -1,5 +1,11 @@
 # 꼬르륵 (Recipe Sharing Web App) - 프로젝트 요구사항 명세서
 
+## 📋 운영 체크리스트
+
+- **GDPR·개인정보 준수** → [`docs/GDPR_COMPLIANCE.md`](docs/GDPR_COMPLIANCE.md) 참조
+  - 현재 85~90% 실무 준수. 사용자 100명+·1000명+·수익화 시점별 trigger·action 정리됨
+  - 월 1회 확인 권장. 새 기능 런칭 시 privacy impact 체크
+
 ## 💻 기술 스택 (현재 프로젝트 기준)
 
 ### Frontend
