@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
 import { useI18n } from '@/lib/i18n/context';
-import { createProfile, updateMarketingConsent } from '@/lib/auth/profile';
+import { createProfile, updateMarketingConsent, beginOnboarding } from '@/lib/auth/profile';
+import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function SetPasswordPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
 
   // 세션 확인
   useEffect(() => {
@@ -64,6 +66,17 @@ export default function SetPasswordPage() {
       return;
     }
 
+    // 연령 gate — 글로벌 safe 기준 16세 (GDPR Art. 8 최강, COPPA·개인정보보호법 모두 충족)
+    if (!birthDate) {
+      setError(t.auth.birthDateRequired || `생년월일을 입력해주세요. 만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      return;
+    }
+    const { meetsMinimum } = checkMinAge(birthDate);
+    if (!meetsMinimum) {
+      setError(t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -88,16 +101,24 @@ export default function SetPasswordPage() {
         .eq('id', user.id)
         .maybeSingle();
 
-      // 프로필이 없으면 생성, 있으면 마케팅 동의 업데이트
+      // 프로필이 없으면 생성, 있으면 기존 프로필에 동의 기록·생년월일 업데이트
       if (!existingProfile) {
         await createProfile(supabase, {
           id: user.id,
           email: user.email || email,
           authProvider: 'email',
           marketingConsent: agreedToMarketing,
+          termsAgreed: true,
+          privacyAgreed: true,
+          birthDate,
         });
       } else {
-        await updateMarketingConsent(supabase, user.id, agreedToMarketing);
+        // 이미 프로필 존재 (OAuth 후 이메일 등록 등) — 모든 동의 기록 갱신
+        await beginOnboarding(supabase, user.id, agreedToMarketing, {
+          termsAgreed: true,
+          privacyAgreed: true,
+          birthDate,
+        });
       }
     }
 
@@ -213,6 +234,24 @@ export default function SetPasswordPage() {
             {confirmPassword && password !== confirmPassword && (
               <p className="text-xs text-error">✗ {t.auth.passwordMismatch}</p>
             )}
+          </div>
+
+          {/* 생년월일 — 연령 gate (글로벌 safe 16세 기준) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-text-secondary">
+              {t.auth.birthDateLabel || '생년월일'} <span className="text-error">*</span>
+            </label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
+              required
+            />
+            <p className="text-[11px] text-text-muted">
+              {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
+            </p>
           </div>
 
           {/* 약관 동의 */}

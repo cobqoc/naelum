@@ -17,6 +17,9 @@
 | Version 관리 (정책 변경 시 재동의) | `CURRENT_CONSENT_VERSION` 상수 |
 | Sentry 동의 기반 게이팅 | `instrumentation-client.ts` |
 | DB 감사 기록 (version + timestamp) | `profiles.cookie_consent_*` 컬럼 |
+| Terms·Privacy 동의 타임스탬프 (GDPR Art. 7) | `profiles.terms_agreed_at`, `privacy_agreed_at` |
+| 연령 gate (GDPR Art. 8, COPPA) | `lib/auth/ageGate.ts` — 최소 16세 |
+| 이메일 알림 opt-in (기본 OFF) | `NotificationsTab.tsx` |
 | GDPR 8대 권리 안내 | `/privacy` 페이지 |
 | 쿠키 정책 별도 페이지 | `/cookies` |
 | 제3자 서비스 공개 | `/cookies` (Supabase·Vercel·Cloudflare·Sentry) |
@@ -117,6 +120,59 @@
   - Incident Response Plan 문서화
   - 연락 채널 (이메일·Status Page) 준비
   - Sentry 알림 → 개발자에게 즉시 전달
+
+### 🟡 Trigger: 사용자 간 신고·분쟁 발생 시
+
+#### 11. 콘텐츠 moderation SLA 명시
+- **현재 상태**: Terms에 처리 기한 없음
+- **의미**: "신고받은 콘텐츠를 몇 시간 내 조치하겠다"는 약속
+- **필요 이유**:
+  - **EU Digital Services Act (DSA)** — 신고 처리 시간 공시 의무 (2024년 2월 발효)
+  - **한국 정보통신망법** — "지체 없이" 조치 의무
+- **해야 할 일**:
+  - Terms에 처리 기한 명시
+  - 예: "스팸·욕설 24시간 내, 저작권 3영업일 내, 아동 관련 즉시"
+- **파일**: `app/terms/page.tsx`
+
+#### 12. 신고·차단 시스템
+- **현재 구현**: `app/api/users/[username]/report`, `/block` 존재
+- **부족**:
+  - 자동 스팸 감지 없음 (수동 검토만)
+  - 차단 후 상호작용 완전 차단 검증 안 됨
+  - 공개 transparency report 없음
+- **해야 할 일** (1,000명+ 시점):
+  - 월간 transparency report 공개 (신고 수·조치 수 통계)
+  - 차단 테스트 케이스 작성
+
+### 🟡 Trigger: 트래픽 1만+ OR 마케팅 발송 시
+
+#### 13. 이메일 마케팅 법적 요건
+- **현재 상태**: 마케팅 메일 미발송 (Resend 트랜잭션만)
+- **발송 시 필요**:
+  - 이메일 하단 **"구독 취소" 링크** (CAN-SPAM 필수)
+  - 발송자 식별 (회사명·주소)
+  - 한국: 수신동의일자·거부 방법 명시 의무
+- **Prep**: 이미 `marketing_consent` 컬럼 있음 → 발송 시 filter만 추가
+
+### 🟡 Trigger: 월간 활성 10k+ OR 수익 발생
+
+#### 14. 웹 접근성 (WCAG 2.1 AA) 공식 감사
+- **현재 상태**: `AccessibilityProvider` 있음 (reduce-motion·high-contrast·keyboard shortcut)
+- **부족**:
+  - 공식 WCAG 2.1 AA 감사 미수행
+  - 이미지 alt 텍스트 일괄 검증 안 됨
+  - 색상 대비율 측정 안 됨
+- **규제**:
+  - 미국 **ADA Title III** — 웹사이트 적용 판례 증가
+  - EU **European Accessibility Act (EAA)** — 2025년 6월 발효
+- **해야 할 일**: axe-core/Pa11y 자동 스캔 → 전문 감사 → VPAT 문서
+
+#### 15. 보안 취약점 제보 절차
+- **현재 상태**: security.txt 없음
+- **해야 할 일**:
+  - `public/.well-known/security.txt` 생성
+  - 제보 이메일 (`security@naelum.app` 등)
+  - 책임 있는 공개 정책 (90일 등)
 
 ---
 

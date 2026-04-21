@@ -14,19 +14,20 @@ interface NotificationPrefs {
 
 const STORAGE_KEY = 'naelum_notification_prefs';
 
+// GDPR: 기본값 OFF — 명시적 opt-in 필요. 기존 저장값 있으면 존중.
 function loadPrefs(): NotificationPrefs {
-  if (typeof window === 'undefined') return { comments: true, recipes: true };
+  if (typeof window === 'undefined') return { comments: false, recipes: false };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       // 'follows' 필드 있으면 무시 (기능 제거됨)
-      return { comments: parsed.comments ?? true, recipes: parsed.recipes ?? true };
+      return { comments: parsed.comments ?? false, recipes: parsed.recipes ?? false };
     }
   } catch {
     // ignore
   }
-  return { comments: true, recipes: true };
+  return { comments: false, recipes: false };
 }
 
 function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {

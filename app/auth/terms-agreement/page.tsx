@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { createProfile, beginOnboarding } from '@/lib/auth/profile';
+import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
 const OnboardingWizard = dynamic(
   () => import('@/components/Onboarding/OnboardingWizard'),
@@ -23,6 +24,7 @@ export default function TermsAgreementPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -92,6 +94,17 @@ export default function TermsAgreementPage() {
       return;
     }
 
+    // 연령 gate — 글로벌 safe 16세
+    if (!birthDate) {
+      setError(t.auth.birthDateRequired || `생년월일을 입력해주세요. 만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      return;
+    }
+    const { meetsMinimum } = checkMinAge(birthDate);
+    if (!meetsMinimum) {
+      setError(t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -112,7 +125,7 @@ export default function TermsAgreementPage() {
         .maybeSingle();
 
       if (!existingProfile) {
-        // 프로필이 없으면 생성 — 마케팅 동의까지 한 번에 INSERT
+        // 프로필이 없으면 생성 — 모든 동의 기록 포함
         const { error: insertError } = await createProfile(supabase, {
           id: user.id,
           email: user.email!,
@@ -120,6 +133,9 @@ export default function TermsAgreementPage() {
           onboardingCompleted: false,
           onboardingStep: 0,
           marketingConsent: agreedToMarketing,
+          termsAgreed: true,
+          privacyAgreed: true,
+          birthDate,
         });
         if (insertError) {
           console.error('Profile insert error:', insertError);
@@ -128,8 +144,12 @@ export default function TermsAgreementPage() {
           return;
         }
       } else {
-        // 기존 프로필 — 마케팅 동의 업데이트 및 온보딩 초기화
-        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing);
+        // 기존 프로필 — 모든 동의 기록 갱신 + 온보딩 초기화
+        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing, {
+          termsAgreed: true,
+          privacyAgreed: true,
+          birthDate,
+        });
         if (updateError) {
           console.error('Profile update error:', updateError);
           setError(t.auth.profileUpdateError);
@@ -188,6 +208,24 @@ export default function TermsAgreementPage() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
             {provider === 'google' ? 'Google' : provider === 'kakao' ? '카카오' : '이메일'} 인증 완료: <span className="font-medium">{email}</span>
+          </p>
+        </div>
+
+        {/* 생년월일 — 연령 gate (글로벌 safe 16세) */}
+        <div className="space-y-1.5 mb-5">
+          <label className="text-sm font-medium text-text-secondary">
+            {t.auth.birthDateLabel || '생년월일'} <span className="text-error">*</span>
+          </label>
+          <input
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className="w-full px-4 py-3 rounded-xl bg-background-primary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
+            required
+          />
+          <p className="text-[11px] text-text-muted">
+            {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
           </p>
         </div>
 
