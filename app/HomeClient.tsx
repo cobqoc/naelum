@@ -46,6 +46,8 @@ type FridgeItem = {
   expiry_alert?: boolean;
 };
 
+type TopRecipe = { id: string; title: string; image_url: string | null };
+
 type IngredientFormData = {
   ingredient_name: string;
   category: string;
@@ -154,15 +156,18 @@ const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: 
 ];
 const MAX_DOOR_CHIPS_PER_SHELF = 2;
 
-// KitchenSVG v14 (3x2 그리드 셀, 다크 플럼 인테리어) chip 좌표 (viewBox="0 0 660 220")
-// 본체 interior: x=166~494 (width 328), y=78~194, 중간 선반 y=133~138
-// 상단 row cell: y=88~130 (높이 42) / 하단 row cell: y=140~190 (높이 50)
+// KitchenSVG landscape viewBox="0 0 540 240"
+// 도어: x=165~375, 내부 패널: x=184~356 (y=20~152)
+// 선반1 y=82, 선반2 y=132
+// Row1: y=20~82  → top=8% height=26%
+// Row2: y=95~132 → top=40% height=15%
+// 가로: x=184~356 → left=34% width=32%
 const PANTRY_SHELVES: { top: string; height: string }[] = [
-  { top: '40%',   height: '19%' },   // row 1 (y=88~130)
-  { top: '63.6%', height: '22.7%' }, // row 2 (y=140~190)
+  { top: '9%',  height: '25%' },  // row 1 (선반1 위)
+  { top: '40%', height: '16%' },  // row 2 (선반1~2 사이)
 ];
-const PANTRY_LEFT = '25.8%';
-const PANTRY_WIDTH = '48.5%';
+const PANTRY_LEFT = '34%';
+const PANTRY_WIDTH = '32%';
 // MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
 // DEMO 재료 — 비로그인 체험용. 목표:
@@ -252,6 +257,8 @@ export default function HomeClient({
   // - matchingCount: 해당 mode의 레시피 개수
   const [matchingCount, setMatchingCount] = useState<number | null>(null);
   const [resolvedMode, setResolvedMode] = useState<'ready' | 'almost' | 'all' | null>(null);
+  const [doorRecipes, setDoorRecipes] = useState<TopRecipe[]>([]);
+  const [doorIdx, setDoorIdx] = useState(0);
   const showRecipeBubble = items.length > 0;
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
@@ -420,6 +427,29 @@ export default function HomeClient({
     return () => { cancelled = true; };
   }, [isAuthenticated, items]);
 
+  // 도어 카드 — 마운트 시 무작위 레시피 로드
+  useEffect(() => {
+    fetch('/api/recommendations?type=trending&limit=20')
+      .then(r => r.ok ? r.json() : { recommendations: [] })
+      .then(data => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const recs: TopRecipe[] = (Array.isArray(data.recommendations) ? data.recommendations : []).map((r: any) => ({
+          id: String(r.id),
+          title: String(r.title),
+          image_url: (r.display_image ?? r.thumbnail_url) ?? null,
+        }));
+        if (recs.length > 0) setDoorRecipes([...recs].sort(() => Math.random() - 0.5));
+      })
+      .catch(() => {});
+  }, []);
+
+  // 도어 카드 자동 슬라이드 (3.5초 간격)
+  useEffect(() => {
+    if (doorRecipes.length <= 1) return;
+    const timer = setInterval(() => setDoorIdx(p => (p + 1) % doorRecipes.length), 3500);
+    return () => clearInterval(timer);
+  }, [doorRecipes.length]);
+
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
   useEffect(() => {
@@ -552,12 +582,9 @@ export default function HomeClient({
       )}
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
-      <div className="flex-1 flex flex-col items-center justify-end gap-2 md:gap-6 md:px-12 pb-0 md:pb-8">
-        {/* KitchenSVG — 상온 재료 선반장 (chip overlay).
-            빈 영역 탭 → 상온 재료 추가 모달, chip 탭 → 해당 재료 상세 수정 */}
-        {/* 찬장(상온) — 모바일에서 전체 화면 stay-in-viewport 위해 폭 축소 → 높이도 비례 축소 (~100px).
-            냉장고가 주인공이라 찬장은 secondary 레이어로 처리. */}
-        <div className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[480px] lg:max-w-[560px] mx-auto">
+      <div className="flex-1 flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
+        {/* KitchenSVG — 상온 재료 선반장 (chip overlay). 냉장고와 동일 너비로 상판이 냉장고 상단에 연결됨 */}
+        <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto">
           <KitchenSVG />
           {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
               추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
@@ -810,6 +837,34 @@ export default function HomeClient({
               );
             })()}
           </div>
+
+          {/* 좌측 도어 내부 — 레시피 슬라이드 카드 (3.5초 자동 전환) */}
+          {doorRecipes.length > 0 && (() => {
+            const rec = doorRecipes[doorIdx];
+            return (
+              <Link
+                key={doorIdx}
+                href={`/recipes/${rec.id}`}
+                className="absolute z-20 overflow-hidden rounded-sm pointer-events-auto active:scale-95"
+                style={{ left: '9%', width: '13%', top: '37.5%', height: '12.5%', boxShadow: '0 2px 8px rgba(0,0,0,0.35)', animation: 'door-recipe-fade 0.45s ease-out forwards' }}
+                aria-label={`추천 레시피: ${rec.title}`}
+              >
+                {rec.image_url ? (
+                  <div className="relative w-full h-full">
+                    <img src={rec.image_url} alt={rec.title} className="w-full h-full object-cover" loading="lazy" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-0.5 pt-2">
+                      <p className="text-white text-[6px] md:text-[8px] font-bold leading-tight line-clamp-2">{rec.title}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative w-full h-full bg-white/90 flex flex-col items-center justify-center gap-0.5 px-0.5">
+                    <span className="text-sm md:text-base leading-none">🍳</span>
+                    <p className="text-gray-700 text-[6px] md:text-[8px] font-semibold leading-tight line-clamp-3 text-center">{rec.title}</p>
+                  </div>
+                )}
+              </Link>
+            );
+          })()}
 
         </div>
 

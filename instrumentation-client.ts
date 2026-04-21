@@ -4,12 +4,35 @@
 //
 // GDPR: Sentry는 에러 추적·IP·세션 리플레이를 수집 → 사용자 동의 필수.
 // localStorage에서 consent 동기 읽기 → analytics 허용 시에만 init.
+//
+// 주의: lib/cookieConsent/types.ts를 import하지 않는다.
+// instrumentation-client.ts는 [app-client] 번들과 분리된 독립 번들로 실행되므로,
+// 같은 모듈을 두 번들이 공유하면 Turbopack dev 모드에서 "module factory not available" 에러 발생.
 
 import * as Sentry from '@sentry/nextjs'
-import { canUseAnalytics } from '@/lib/cookieConsent/types'
+
+// lib/cookieConsent/types.ts와 동기화 유지: CONSENT_KEY, CURRENT_CONSENT_VERSION
+const _CONSENT_KEY = 'naelum_cookie_consent'
+const _CONSENT_VERSION = 1
+
+function _hasAnalyticsConsent(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const raw = localStorage.getItem(_CONSENT_KEY)
+    if (!raw) return false
+    const parsed = JSON.parse(raw)
+    return (
+      typeof parsed?.version === 'number' &&
+      parsed.version >= _CONSENT_VERSION &&
+      parsed.analytics === true
+    )
+  } catch {
+    return false
+  }
+}
 
 const hasDsn = !!process.env.NEXT_PUBLIC_SENTRY_DSN
-const hasAnalyticsConsent = canUseAnalytics() // localStorage 동기 읽기
+const hasAnalyticsConsent = _hasAnalyticsConsent()
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
