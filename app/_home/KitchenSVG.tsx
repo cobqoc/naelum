@@ -125,9 +125,9 @@ export default function KitchenSVG() {
       </g>
 
       {/* ══ 빨간 상판 — 찬장 오른쪽 (x=382~538) ══ */}
-      <rect x="382" y="60" width="156" height="24"
+      <rect x="382" y="60" width="156" height="12"
             fill="url(#kitShelfG)" stroke="#1a0d04" strokeWidth="1.5" rx="1" />
-      <rect x="386" y="61" width="148" height="5" rx="1" fill="rgba(255,255,255,0.25)" />
+      <rect x="386" y="61" width="148" height="3" rx="1" fill="rgba(255,255,255,0.25)" />
     </svg>
   );
 }
