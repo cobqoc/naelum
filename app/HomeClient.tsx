@@ -444,10 +444,10 @@ export default function HomeClient({
       .catch(() => {});
   }, []);
 
-  // 도어 카드 자동 슬라이드 (3.5초 간격)
+  // 도어 카드 자동 슬라이드 (6초 간격 — 읽고 클릭할 시간 확보)
   useEffect(() => {
     if (doorRecipes.length <= 1) return;
-    const timer = setInterval(() => setDoorIdx(p => (p + 1) % doorRecipes.length), 3500);
+    const timer = setInterval(() => setDoorIdx(p => (p + 1) % doorRecipes.length), 6000);
     return () => clearInterval(timer);
   }, [doorRecipes.length]);
 
@@ -493,7 +493,13 @@ export default function HomeClient({
       };
       setItems(prev => [...prev, newItem]);
       setAddModalLocation(null);
-      showToast('👅 추가! 💡 로그인하면 계정에 영구 저장');
+      toastSuccess(`👅 ${formData.ingredient_name} 추가됐어요`, {
+        action: {
+          label: '로그인하면 저장돼요 →',
+          onClick: () => router.push('/login'),
+        },
+        duration: 6000,
+      });
       return;
     }
     const client = createClient();
@@ -566,10 +572,12 @@ export default function HomeClient({
         <SearchBar className="w-full max-w-md" />
       </div>
 
-      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 로그인 CTA 포함.
-          mobile viewport 절약 위해 compact pill 형태. */}
+      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 로그인 CTA. */}
       {!isAuthenticated && (
-        <div className="px-4 pb-1 md:pb-2 flex justify-center flex-shrink-0">
+        <div className="px-4 pb-1 md:pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
+          <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
+            냉장고 재료를 넣으면 <span className="text-accent-warm font-medium">오늘 뭐 먹을지</span> 알려줘요
+          </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
@@ -839,28 +847,28 @@ export default function HomeClient({
             })()}
           </div>
 
-          {/* 좌측 도어 내부 — 레시피 슬라이드 카드 (3.5초 자동 전환) */}
+          {/* 좌측 도어 내부 — 레시피 슬라이드 카드 (6초 자동 전환) */}
           {doorRecipes.length > 0 && (() => {
             const rec = doorRecipes[doorIdx];
             return (
               <Link
                 key={doorIdx}
                 href={`/recipes/${rec.id}`}
-                className="absolute z-20 overflow-hidden rounded-sm pointer-events-auto active:scale-95"
-                style={{ left: '9%', width: '13%', top: '37.5%', height: '12.5%', boxShadow: '0 2px 8px rgba(0,0,0,0.35)', animation: 'door-recipe-fade 0.45s ease-out forwards' }}
+                className="absolute z-20 overflow-hidden rounded pointer-events-auto active:scale-95"
+                style={{ left: '7.5%', width: '15%', top: '31%', height: '22%', boxShadow: '0 2px 10px rgba(0,0,0,0.45)', animation: 'door-recipe-fade 0.45s ease-out forwards' }}
                 aria-label={`추천 레시피: ${rec.title}`}
               >
                 {rec.image_url ? (
                   <div className="relative w-full h-full">
                     <img src={rec.image_url} alt={rec.title} className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-0.5 pt-2">
-                      <p className="text-white text-[6px] md:text-[8px] font-bold leading-tight line-clamp-2">{rec.title}</p>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-1 pt-3">
+                      <p className="text-white text-[10px] md:text-[12px] font-bold leading-tight line-clamp-2">{rec.title}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="relative w-full h-full bg-white/90 flex flex-col items-center justify-center gap-0.5 px-0.5">
-                    <span className="text-sm md:text-base leading-none">🍳</span>
-                    <p className="text-gray-700 text-[6px] md:text-[8px] font-semibold leading-tight line-clamp-3 text-center">{rec.title}</p>
+                  <div className="relative w-full h-full bg-white/90 flex flex-col items-center justify-center gap-1 px-1">
+                    <span className="text-lg md:text-xl leading-none">🍳</span>
+                    <p className="text-gray-700 text-[10px] md:text-[12px] font-semibold leading-tight line-clamp-3 text-center">{rec.title}</p>
                   </div>
                 )}
               </Link>
