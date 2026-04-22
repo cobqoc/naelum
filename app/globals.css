@@ -636,3 +636,9 @@ select {
 [data-theme] {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* 냉장고 도어 레시피 카드 슬라이드 페이드 */
+@keyframes door-recipe-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
