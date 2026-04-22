@@ -585,7 +585,7 @@ export default function HomeClient({
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay). 냉장고와 동일 너비로 상판이 냉장고 상단에 연결됨 */}
-        <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto">
+        <div className="relative w-full mx-auto" style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <KitchenSVG />
           {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
               추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
@@ -668,11 +668,11 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
-        {/* maxHeight 계산 (모바일 기준): header(56) + 찬장(~100) + gap(8) + BottomNav(60) ≈ 224.
-            모바일 검색바 제거로 48px 회수 → 냉장고 더 크게.
-            비로그인 DEMO 라벨(~24px)은 있어도 iPhone 12+에서 여유. */}
-        <div className="relative w-full md:max-w-[560px] lg:max-w-[640px] mx-auto aspect-[540/670]"
-          style={{ maxHeight: 'calc(100dvh - 224px - env(safe-area-inset-bottom))' }}>
+        {/* maxWidth = min(640px, 높이_기반_너비) 방식으로 letterbox 방지.
+            maxHeight 대신 maxWidth로 크기 제약 → SVG가 컨테이너를 꽉 채워 overlay %좌표가 정확히 일치.
+            모바일 기준: header(56) + 찬장(~100) + BottomNav(60) + 여유 ≈ 224px */}
+        <div className="relative w-full mx-auto aspect-[540/670]"
+          style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <FridgeSVG />
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
