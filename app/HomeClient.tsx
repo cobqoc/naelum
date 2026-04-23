@@ -443,7 +443,12 @@ export default function HomeClient({
       return;
     }
     const client = createClient();
-    await client.from('user_ingredients').update({ ...formData }).eq('id', id);
+    const { error } = await client.from('user_ingredients').update({ ...formData }).eq('id', id);
+    if (error) {
+      console.error('[updateIngredient] update 실패:', error);
+      showToast('❌ 수정 실패. 다시 시도해주세요.');
+      return;
+    }
     setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
     setDetailItem(null);
     showToast(`✅ ${formData.ingredient_name} 수정됐어요`);
@@ -452,7 +457,8 @@ export default function HomeClient({
 
   // AddIngredientModal onAddIngredient
   const addIngredientFromModal = async (formData: IngredientFormData) => {
-    if (!user) {
+    // isAuthenticated(SSR 기준)가 false거나 user(클라이언트 세션)가 없으면 demo 모드
+    if (!isAuthenticated || !user) {
       const newItem: FridgeItem = {
         id: `d${++demoIdRef.current}`,
         ingredient_name: formData.ingredient_name,
@@ -477,11 +483,16 @@ export default function HomeClient({
       return;
     }
     const client = createClient();
-    const { data } = await client
+    const { data, error } = await client
       .from('user_ingredients')
       .insert({ ...formData, user_id: user.id })
       .select()
       .single();
+    if (error) {
+      console.error('[addIngredient] insert 실패:', error);
+      showToast('❌ 저장 실패. 다시 시도해주세요.');
+      return;
+    }
     if (data) setItems(prev => [...prev, data as FridgeItem]);
     setAddModalLocation(null);
     showToast('👅 추가!');
