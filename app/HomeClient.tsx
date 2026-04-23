@@ -46,7 +46,6 @@ type FridgeItem = {
   expiry_alert?: boolean;
 };
 
-type TopRecipe = { id: string; title: string; image_url: string | null };
 
 type IngredientFormData = {
   ingredient_name: string;
@@ -234,10 +233,10 @@ export default function HomeClient({
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      if (w >= 1024) setShelfMax({ body: 8, pantry: 6, door: 3 });
-      else if (w >= 768) setShelfMax({ body: 6, pantry: 5, door: 3 });
-      else if (w >= 640) setShelfMax({ body: 5, pantry: 4, door: 2 });
-      else setShelfMax({ body: 4, pantry: 3, door: 2 });
+      if (w >= 1024) setShelfMax({ body: 8, pantry: 4, door: 3 });
+      else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
+      else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
+      else setShelfMax({ body: 4, pantry: 1, door: 2 });
     };
     update();
     window.addEventListener('resize', update);
@@ -258,8 +257,6 @@ export default function HomeClient({
   // - matchingCount: 해당 mode의 레시피 개수
   const [matchingCount, setMatchingCount] = useState<number | null>(null);
   const [resolvedMode, setResolvedMode] = useState<'ready' | 'almost' | 'all' | null>(null);
-  const [doorRecipes, setDoorRecipes] = useState<TopRecipe[]>([]);
-  const [doorIdx, setDoorIdx] = useState(0);
   const showRecipeBubble = items.length > 0;
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
@@ -427,29 +424,6 @@ export default function HomeClient({
       });
     return () => { cancelled = true; };
   }, [isAuthenticated, items]);
-
-  // 도어 카드 — 마운트 시 무작위 레시피 로드
-  useEffect(() => {
-    fetch('/api/recommendations?type=trending&limit=20')
-      .then(r => r.ok ? r.json() : { recommendations: [] })
-      .then(data => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const recs: TopRecipe[] = (Array.isArray(data.recommendations) ? data.recommendations : []).map((r: any) => ({
-          id: String(r.id),
-          title: String(r.title),
-          image_url: (r.display_image ?? r.thumbnail_url) ?? null,
-        }));
-        if (recs.length > 0) setDoorRecipes([...recs].sort(() => Math.random() - 0.5));
-      })
-      .catch(() => {});
-  }, []);
-
-  // 도어 카드 자동 슬라이드 (6초 간격 — 읽고 클릭할 시간 확보)
-  useEffect(() => {
-    if (doorRecipes.length <= 1) return;
-    const timer = setInterval(() => setDoorIdx(p => (p + 1) % doorRecipes.length), 6000);
-    return () => clearInterval(timer);
-  }, [doorRecipes.length]);
 
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
@@ -830,50 +804,20 @@ export default function HomeClient({
                   {/* 통합 오버플로우 — 냉장 서랍 영역 위에 단일 배지로 표시.
                       각 선반마다 +N 산발 대신, 서랍 = "추가 수납 공간" 메타포 활용.
                       클릭 시 FridgeAllSheet 오픈 → 그룹별 전체 리스트. */}
-                  {totalOverflow > 0 && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
-                      className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                      style={{ top: '54%' }}
-                      title="냉장고 안 모든 재료 보기"
-                    >
-                      <span>📂</span>
-                      <span>+{totalOverflow}개 더 보기</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                    className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                    style={{ top: '54%' }}
+                    title="모든 재료 보기"
+                  >
+                    <span>📂</span>
+                    <span>{totalOverflow > 0 ? `+${totalOverflow}개 더 보기` : '재료 전체 보기'}</span>
+                  </button>
                 </>
               );
             })()}
           </div>
-
-          {/* 좌측 도어 내부 — 레시피 슬라이드 카드 (6초 자동 전환) */}
-          {doorRecipes.length > 0 && (() => {
-            const rec = doorRecipes[doorIdx];
-            return (
-              <Link
-                key={doorIdx}
-                href={`/recipes/${rec.id}`}
-                className="absolute z-20 overflow-hidden rounded pointer-events-auto active:scale-95"
-                style={{ left: '7.5%', width: '15%', top: '31%', height: '22%', boxShadow: '0 2px 10px rgba(0,0,0,0.45)', animation: 'door-recipe-fade 0.45s ease-out forwards' }}
-                aria-label={`추천 레시피: ${rec.title}`}
-              >
-                {rec.image_url ? (
-                  <div className="relative w-full h-full">
-                    <img src={rec.image_url} alt={rec.title} className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-1 pt-3">
-                      <p className="text-white text-[10px] md:text-[12px] font-bold leading-tight line-clamp-2">{rec.title}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative w-full h-full bg-white/90 flex flex-col items-center justify-center gap-1 px-1">
-                    <span className="text-lg md:text-xl leading-none">🍳</span>
-                    <p className="text-gray-700 text-[10px] md:text-[12px] font-semibold leading-tight line-clamp-3 text-center">{rec.title}</p>
-                  </div>
-                )}
-              </Link>
-            );
-          })()}
 
         </div>
 
