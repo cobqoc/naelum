@@ -55,8 +55,8 @@ export default function AuthCodeErrorPage() {
 
         <p className="mt-8 text-xs text-text-muted">
           {t.auth.contactSupportText}{' '}
-          <a href="mailto:support@naelum.app" className="text-accent-warm hover:underline">
-            support@naelum.app
+          <a href="mailto:hello@naelum.app" className="text-accent-warm hover:underline">
+            hello@naelum.app
           </a>
         </p>
       </div>

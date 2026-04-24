@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CopyrightReportForm from '@/components/CopyrightReportForm';
 
 export default function CopyrightPolicyPage() {
   return (
@@ -75,14 +76,11 @@ export default function CopyrightPolicyPage() {
 
               {/* 신고 채널 */}
               <div className="p-5 bg-accent-warm/10 border border-accent-warm/30 rounded-xl">
-                <p className="font-bold text-text-primary text-lg mb-1">저작권 신고 이메일</p>
-                <a
-                  href="mailto:copyright@naelum.app"
-                  className="text-accent-warm hover:text-accent-hover text-xl font-mono transition-colors"
-                >
-                  copyright@naelum.app
-                </a>
-                <p className="text-text-muted text-sm mt-2">처리 기한: 영업일 기준 3일 이내</p>
+                <p className="font-bold text-text-primary text-lg mb-1">저작권 신고</p>
+                <p className="text-text-secondary text-sm mb-3">아래 웹 폼을 이용하거나 이메일로 직접 신고할 수 있습니다.</p>
+                <CopyrightReportForm />
+                <p className="text-text-muted text-sm mt-4">이메일로 신고: <a href="mailto:hello@naelum.app" className="text-accent-warm hover:text-accent-hover font-mono">hello@naelum.app</a></p>
+                <p className="text-text-muted text-sm mt-1">처리 기한: 영업일 기준 3일 이내</p>
               </div>
 
               {/* 신고 시 포함할 정보 */}
@@ -173,10 +171,10 @@ export default function CopyrightPolicyPage() {
               <div className="p-4 bg-background-secondary rounded-xl">
                 <p className="font-semibold text-text-primary mb-1">고객 지원</p>
                 <a
-                  href="mailto:support@naelum.app"
+                  href="mailto:hello@naelum.app"
                   className="text-accent-warm hover:text-accent-hover font-mono transition-colors"
                 >
-                  support@naelum.app
+                  hello@naelum.app
                 </a>
               </div>
             </div>
