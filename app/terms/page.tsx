@@ -102,6 +102,21 @@ export default function TermsOfServicePage() {
             </div>
           </section>
 
+          {/* 제4조의2 */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">제4조의2 (외부 영상 기반 레시피 수집)</h2>
+            <div className="text-text-secondary leading-relaxed space-y-3">
+              <p>① 회사는 공개된 요리 영상(YouTube 등 플랫폼)을 참고하여 레시피를 정리·재구성한 콘텐츠를 서비스 내에 제공할 수 있습니다.</p>
+              <p>② 이러한 콘텐츠는 다음 원칙에 따라 제공됩니다:</p>
+              <ol className="list-decimal list-inside space-y-2 ml-4">
+                <li>원본 영상의 조리 과정을 독립적으로 재서술하며, 원본 영상의 표현을 그대로 복제하지 않습니다.</li>
+                <li>원작자(셰프·채널명)와 원본 영상 링크를 레시피 페이지에 명시합니다.</li>
+                <li>레시피 페이지에 &ldquo;영상 기반으로 정리한 레시피&rdquo;임을 안내합니다.</li>
+              </ol>
+              <p>③ 원작자 또는 저작권자가 콘텐츠 삭제를 요청하는 경우, 회사는 <a href="/copyright" className="text-accent-warm underline">저작권 정책</a>에 따라 영업일 기준 3일 이내에 처리합니다.</p>
+            </div>
+          </section>
+
           {/* 제5조 */}
           <section>
             <h2 className="text-2xl font-bold mb-4">제5조 (회원가입)</h2>
@@ -167,6 +182,14 @@ export default function TermsOfServicePage() {
               </ol>
               <p>③ 회사는 회원의 게시물을 소중히 여기며, 서비스 제공 목적 이외의 상업적 용도로 사용하지 않습니다.</p>
               <p>④ 회원은 자신이 서비스에 게시한 게시물에 대한 책임을 지며, 타인의 저작권을 침해하는 게시물로 인해 발생하는 모든 법적 책임은 회원 본인에게 있습니다.</p>
+              <p>⑤ 회원은 타인의 레시피, YouTube 영상, 블로그, 책 등에서 표현·문장을 그대로 복사하여 게시하는 행위를 하여서는 안 됩니다. 레시피의 재료 목록이나 조리 방법 자체는 저작권의 보호를 받지 않으나, 특정 문장 표현과 창작적 서술은 저작권의 보호 대상입니다.</p>
+              <p>⑥ 저작권 침해 반복 시 제재 정책 (3-Strike Rule):</p>
+              <ul className="list-disc list-inside ml-4 space-y-1 text-sm">
+                <li><span className="font-medium text-text-primary">1회 위반:</span> 해당 게시물 삭제 및 경고 이메일 발송</li>
+                <li><span className="font-medium text-text-primary">2회 위반:</span> 게시물 삭제 + 30일 게시 정지</li>
+                <li><span className="font-medium text-text-primary">3회 위반:</span> 계정 영구 해지 및 서비스 이용 금지</li>
+              </ul>
+              <p>⑦ 레시피를 게시할 때에는 해당 게시물이 본인이 직접 창작하였거나, 저작권자의 허락을 받은 콘텐츠임을 확인한 후 게시해야 합니다.</p>
             </div>
           </section>
 

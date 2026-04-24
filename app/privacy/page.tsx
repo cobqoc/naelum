@@ -14,16 +14,8 @@ export default function PrivacyPolicyPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-12">
-        {/* DRAFT Warning */}
-        <div className="mb-8 p-4 bg-warning/10 border border-warning/30 rounded-xl">
-          <p className="text-warning font-bold">⚠️ 개발용 초안</p>
-          <p className="text-text-secondary text-sm mt-1">
-            이 문서는 AI가 생성한 초안입니다. 프로덕션 배포 전 반드시 변호사의 검토가 필요합니다.
-          </p>
-        </div>
-
         <h1 className="text-4xl font-bold text-text-primary mb-2">개인정보처리방침</h1>
-        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 21일</p>
+        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 25일</p>
 
         <div className="space-y-8 text-text-primary">
           {/* 머리말 */}
