@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 interface ActionItem {
   id: string;
@@ -27,12 +27,7 @@ interface Props {
  *  - 🗑 삭제하기: 확인 후 삭제
  */
 export default function IngredientActionSheet({ item, onClose, onCook, onEdit, onDelete }: Props) {
-  useEffect(() => {
-    if (!item) return;
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [item, onClose]);
+  useEscapeKey(onClose, !!item);
 
   if (!item) return null;
 

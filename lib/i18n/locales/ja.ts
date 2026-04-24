@@ -25,6 +25,8 @@ export const ja = {
     theme: 'テーマ',
     anonymous: '匿名',
     required: '必須',
+    addIngredient: '食材を追加',
+    closeSearch: '検索を閉じる',
   },
   nav: {
     recipes: 'レシピ',
@@ -608,6 +610,18 @@ export const ja = {
     errorPermission: '❌ 権限がありません。再ログインしてください。',
     loginToSave: 'ログインして保存 →',
     undo: '元に戻す',
+    howToAddLabel: '追加方法',
+    categoryLabels: {
+      veggie: '野菜',
+      meat: '肉類',
+      seafood: '魚介類',
+      grain: '穀物',
+      dairy: '乳製品',
+      seasoning: '調味料',
+      condiment: '薬味',
+      fruit: '果物',
+      other: 'その他',
+    },
   },
   waitlist: {
     title: '🚀 ローンチ通知を受け取る',

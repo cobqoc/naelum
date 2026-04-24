@@ -25,6 +25,8 @@ export const en = {
     theme: 'Theme',
     anonymous: 'Anonymous',
     required: 'Required',
+    addIngredient: 'Add ingredient',
+    closeSearch: 'Close search',
   },
   nav: {
     recipes: 'Recipes',
@@ -608,6 +610,18 @@ export const en = {
     errorPermission: '❌ Permission denied. Please log in again.',
     loginToSave: 'Log in to save →',
     undo: 'Undo',
+    howToAddLabel: 'How to add',
+    categoryLabels: {
+      veggie: 'Vegetables',
+      meat: 'Meat',
+      seafood: 'Seafood',
+      grain: 'Grains',
+      dairy: 'Dairy',
+      seasoning: 'Sauce',
+      condiment: 'Condiment',
+      fruit: 'Fruit',
+      other: 'Other',
+    },
   },
   waitlist: {
     title: '🚀 Get launch updates',

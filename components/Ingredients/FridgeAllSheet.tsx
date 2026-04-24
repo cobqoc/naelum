@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 interface FridgeItem {
@@ -39,6 +40,19 @@ const GROUP_ORDER: { key: string; icon: string; label: string }[] = [
  */
 export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji }: Props) {
   useEscapeKey(onClose, isOpen);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // 열릴 때 이전 포커스 기억 + 닫기 버튼에 포커스 이동
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
+    return () => {
+      // 닫힐 때 이전 포커스 복원 (연결 해제 시에만 수행)
+      previousFocusRef.current?.focus?.();
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -66,6 +80,7 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
             🧺 재료 전체 보기 <span className="text-text-muted font-normal">({items.length}개)</span>
           </h3>
           <button
+            ref={closeBtnRef}
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
             aria-label="닫기"

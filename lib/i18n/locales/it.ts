@@ -25,6 +25,8 @@ export const it = {
     theme: 'Tema',
     anonymous: 'Anonimo',
     required: 'Obbligatorio',
+    addIngredient: 'Aggiungi ingrediente',
+    closeSearch: 'Chiudi ricerca',
   },
   nav: {
     recipes: 'Ricette',
@@ -608,6 +610,18 @@ export const it = {
     errorPermission: '❌ Nessun permesso. Accedi di nuovo.',
     loginToSave: 'Accedi per salvare →',
     undo: 'Annulla',
+    howToAddLabel: 'Come aggiungere',
+    categoryLabels: {
+      veggie: 'Verdure',
+      meat: 'Carne',
+      seafood: 'Pesce',
+      grain: 'Cereali',
+      dairy: 'Latticini',
+      seasoning: 'Salsa',
+      condiment: 'Condimento',
+      fruit: 'Frutta',
+      other: 'Altro',
+    },
   },
   waitlist: {
     title: '🚀 Ricevi aggiornamenti sul lancio',

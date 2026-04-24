@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import IngredientForm from './IngredientForm';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useI18n } from '@/lib/i18n/context';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
 
@@ -30,6 +32,7 @@ export default function AddIngredientModal({
   onClose,
   onAddIngredient,
 }: AddIngredientModalProps) {
+  const { t } = useI18n();
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
   // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
   const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
@@ -38,7 +41,11 @@ export default function AddIngredientModal({
   const hintButtonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // 팝오버 외부 클릭 / ESC 키 → 닫기
+  // 모달 자체 ESC로 닫기 — 힌트가 열려있지 않을 때만 (힌트가 우선)
+  useEscapeKey(onClose, isOpen && !showHint);
+
+  // 힌트 팝오버 외부 클릭 / ESC 키 → 힌트만 닫기
+  useEscapeKey(() => setShowHint(false), showHint);
   useEffect(() => {
     if (!showHint) return;
     const onDocClick = (e: MouseEvent | TouchEvent) => {
@@ -47,14 +54,11 @@ export default function AddIngredientModal({
       if (hintButtonRef.current?.contains(target)) return;
       setShowHint(false);
     };
-    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowHint(false); };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('touchstart', onDocClick);
-    document.addEventListener('keydown', onEsc);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('touchstart', onDocClick);
-      document.removeEventListener('keydown', onEsc);
     };
   }, [showHint]);
 
@@ -100,7 +104,7 @@ export default function AddIngredientModal({
                   ref={hintButtonRef}
                   type="button"
                   onClick={() => setShowHint(prev => !prev)}
-                  aria-label="수정 방법 안내"
+                  aria-label={t.ingredient.howToAddLabel}
                   aria-expanded={showHint}
                   className={`w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 transition-colors ${
                     showHint
@@ -141,7 +145,7 @@ export default function AddIngredientModal({
               )}
               <button
                 onClick={onClose}
-                aria-label="닫기"
+                aria-label={t.common.close}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

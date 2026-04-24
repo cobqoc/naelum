@@ -25,6 +25,8 @@ export const zh = {
     theme: '主题',
     anonymous: '匿名',
     required: '必填',
+    addIngredient: '添加食材',
+    closeSearch: '关闭搜索',
   },
   nav: {
     recipes: '食谱',
@@ -608,6 +610,18 @@ export const zh = {
     errorPermission: '❌ 无权限，请重新登录。',
     loginToSave: '登录即可保存 →',
     undo: '撤销',
+    howToAddLabel: '添加方法',
+    categoryLabels: {
+      veggie: '蔬菜',
+      meat: '肉类',
+      seafood: '海鲜',
+      grain: '谷物',
+      dairy: '乳制品',
+      seasoning: '调味料',
+      condiment: '香料',
+      fruit: '水果',
+      other: '其他',
+    },
   },
   waitlist: {
     title: '🚀 获取发布通知',

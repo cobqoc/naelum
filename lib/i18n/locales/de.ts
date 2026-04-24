@@ -25,6 +25,8 @@ export const de = {
     theme: 'Design',
     anonymous: 'Anonym',
     required: 'Erforderlich',
+    addIngredient: 'Zutat hinzufügen',
+    closeSearch: 'Suche schließen',
   },
   nav: {
     recipes: 'Rezepte',
@@ -608,6 +610,18 @@ export const de = {
     errorPermission: '❌ Keine Berechtigung. Bitte erneut anmelden.',
     loginToSave: 'Anmelden zum Speichern →',
     undo: 'Rückgängig',
+    howToAddLabel: 'Hinzufügen wie',
+    categoryLabels: {
+      veggie: 'Gemüse',
+      meat: 'Fleisch',
+      seafood: 'Meeresfrüchte',
+      grain: 'Getreide',
+      dairy: 'Milchprodukte',
+      seasoning: 'Sauce',
+      condiment: 'Gewürz',
+      fruit: 'Obst',
+      other: 'Andere',
+    },
   },
   waitlist: {
     title: '🚀 Erhalte Launch-Updates',

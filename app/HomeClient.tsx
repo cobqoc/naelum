@@ -10,7 +10,7 @@
 
 import Link from 'next/link';
 import dynamicImport from 'next/dynamic';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
@@ -108,6 +108,48 @@ export default function HomeClient({
 
   // DEMO 아이템 고유 id 생성용 카운터 (Date.now() 대신 — React 순수성 규칙 준수)
   const demoIdRef = useRef(0);
+
+  // 상온 재료 선반 분배 — items·shelfMax.pantry 바뀔 때만 재계산.
+  const pantryShelfDistribution = useMemo(() => {
+    const pantry = [...items]
+      .filter(i => i.storage_location === '상온' || i.storage_location === '기타')
+      .sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const shelves: FridgeItem[][] = [[], [], [], []];
+    pantry.forEach((it, i) => {
+      const idx = Math.min(Math.floor(i / shelfMax.pantry), 3);
+      shelves[idx].push(it);
+    });
+    return shelves;
+  }, [items, shelfMax.pantry]);
+
+  // 냉장고 본체·도어·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
+  const fridgeShelfDistribution = useMemo(() => {
+    const allFridge = items.filter(i => i.storage_location === '냉장' || !i.storage_location);
+    const bodyFridge = allFridge.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const doorFridge = allFridge.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
+
+    const bodyShelfItems: FridgeItem[][] = [[], [], []];
+    bodyFridge.forEach((it, i) => {
+      bodyShelfItems[Math.min(Math.floor(i / shelfMax.body), 2)].push(it);
+    });
+
+    const doorShelfItems: FridgeItem[][] = [[], [], [], []];
+    doorFridge.forEach((it, i) => {
+      doorShelfItems[Math.min(Math.floor(i / shelfMax.door), 3)].push(it);
+    });
+
+    let totalOverflow = 0;
+    bodyShelfItems.forEach(list => {
+      if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
+    });
+    if (freezerItems.length > shelfMax.body) totalOverflow += freezerItems.length - shelfMax.body;
+    doorShelfItems.forEach(list => {
+      if (list.length > shelfMax.door) totalOverflow += list.length - shelfMax.door;
+    });
+
+    return { bodyShelfItems, doorShelfItems, freezerItems, totalOverflow };
+  }, [items, shelfMax.body, shelfMax.door]);
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
@@ -238,9 +280,10 @@ export default function HomeClient({
     const isDemo = !user || isDemoRecord(item);
     const dbTimer = setTimeout(async () => { /* DELETE_UNDO_WINDOW_MS 뒤 DB delete */
       if (cancelled) return;
-      if (!isDemo) {
+      if (!isDemo && user) {
+        // RLS가 기본 방어지만 user_id 명시 필터로 이중 방어.
         const client = createClient();
-        await client.from('user_ingredients').delete().eq('id', item.id);
+        await client.from('user_ingredients').delete().eq('id', item.id).eq('user_id', user.id);
         window.dispatchEvent(new Event('fridge-updated'));
       }
       // DEMO는 state만 변경했으므로 별도 작업 없음
@@ -374,8 +417,13 @@ export default function HomeClient({
       showToast(t.ingredient.updateSuccess.replace('{name}', formData.ingredient_name));
       return;
     }
+    if (!user) {
+      showToast(getErrorMessage(null, t.ingredient.updateError));
+      return;
+    }
     const client = createClient();
-    const { error } = await client.from('user_ingredients').update({ ...formData }).eq('id', id);
+    // user_id 명시 필터로 RLS 이중 방어 (다른 유저 레코드 오수정 방지).
+    const { error } = await client.from('user_ingredients').update({ ...formData }).eq('id', id).eq('user_id', user.id);
     if (error) {
       console.error('[updateIngredient] update 실패:', error);
       showToast(getErrorMessage(error, t.ingredient.updateError));
@@ -735,15 +783,8 @@ export default function HomeClient({
           {/* 상온 chip overlay — 2단 선반에 분배해 선반 위에 놓인 것처럼.
               정확한 y좌표는 PANTRY_SHELVES 참고. 선반 x 영역은 SVG x=40~620 기준 (6%~94%). */}
           {(() => {
-            // '상온' + 기존 DB에 남아있을 수 있는 '기타' 도 같이 표시 (기타는 이제 사용 안 함)
-            const pantry = [...items]
-              .filter(i => i.storage_location === '상온' || i.storage_location === '기타')
-              .sort((a, b) => urgencyScore(a) - urgencyScore(b));
-            const shelfItems: FridgeItem[][] = [[], [], [], []];
-            pantry.forEach((it, i) => {
-              const idx = Math.min(Math.floor(i / shelfMax.pantry), 3);
-              shelfItems[idx].push(it);
-            });
+            // '상온' + '기타' 분배된 shelfItems를 참조 (상단 pantryShelfDistribution useMemo에서 계산).
+            const shelfItems = pantryShelfDistribution;
             return (
               <div className="absolute inset-0 pointer-events-none z-20">
                 {PANTRY_SHELVES.map((shelf, idx) => {
@@ -795,6 +836,7 @@ export default function HomeClient({
                           onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
                           className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0 hover:bg-black/80 transition-colors"
                           title={t.home.ingredientListMore.replace('{count}', String(overflow))}
+                          aria-label={t.home.ingredientListMore.replace('{count}', String(overflow))}
                         >
                           +{overflow}
                         </button>
@@ -844,7 +886,7 @@ export default function HomeClient({
               'auto' 센티넬 = 모달이 "재료 추가"로 generic 타이틀 표시 (폼 기본 동작=자동 분류와 일치). */}
           <button
             onClick={() => setAddModalLocation('auto')}
-            aria-label="재료 추가"
+            aria-label={t.common.addIngredient}
             className="absolute top-[63%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
           >
             +
@@ -907,25 +949,8 @@ export default function HomeClient({
           {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
-              // 냉장 재료를 본체 vs 도어로 분류 (도어: 계란·소스·음료 등 isFridgeDoorItem)
-              const allFridge = items.filter(i => i.storage_location === '냉장' || !i.storage_location);
-              const bodyFridge = allFridge.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
-              const doorFridge = allFridge.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
-              const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
-
-              // 본체 선반 3단 분배
-              const bodyShelfItems: FridgeItem[][] = [[], [], []];
-              bodyFridge.forEach((it, i) => {
-                const shelfIdx = Math.min(Math.floor(i / shelfMax.body), 2);
-                bodyShelfItems[shelfIdx].push(it);
-              });
-
-              // 도어 선반 4개에 도어 아이템 분배
-              const doorShelfItems: FridgeItem[][] = [[], [], [], []];
-              doorFridge.forEach((it, i) => {
-                const idx = Math.min(Math.floor(i / shelfMax.door), 3);
-                doorShelfItems[idx].push(it);
-              });
+              // 분배된 본체·도어·냉동 shelfItems + 통합 overflow를 상단 useMemo(fridgeShelfDistribution)에서 참조.
+              const { bodyShelfItems, doorShelfItems, freezerItems, totalOverflow } = fridgeShelfDistribution;
 
               // 렌더 helper — chip 버튼 하나
               const renderChip = (item: FridgeItem, compact = false) => {
@@ -969,16 +994,6 @@ export default function HomeClient({
                 );
               };
 
-              // 전체 오버플로우 합계 — 서랍 영역에 통합 표시
-              let totalOverflow = 0;
-              bodyShelfItems.forEach(list => {
-                if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
-              });
-              if (freezerItems.length > shelfMax.body) totalOverflow += freezerItems.length - shelfMax.body;
-              doorShelfItems.forEach(list => {
-                if (list.length > shelfMax.door) totalOverflow += list.length - shelfMax.door;
-              });
-
               return (
                 <>
                   {/* 본체 선반 4개 (냉장 3 + 냉동 1) — per-shelf +N 제거, 서랍에 통합 */}
@@ -1021,6 +1036,7 @@ export default function HomeClient({
                     className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
                     style={{ top: '54%' }}
                     title={t.home.ingredientList}
+                    aria-label={t.home.ingredientList}
                   >
                     <span>📋</span>
                     <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
@@ -1138,7 +1154,7 @@ export default function HomeClient({
             </div>
             <button
               onClick={() => setShowMobileSearch(false)}
-              aria-label="검색 닫기"
+              aria-label={t.common.closeSearch}
               className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

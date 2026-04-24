@@ -25,6 +25,8 @@ export const ko = {
     theme: '테마',
     anonymous: '익명',
     required: '필수',
+    addIngredient: '재료 추가',
+    closeSearch: '검색 닫기',
   },
   nav: {
     recipes: '레시피',
@@ -608,6 +610,18 @@ export const ko = {
     errorPermission: '❌ 권한이 없어요. 다시 로그인해주세요.',
     loginToSave: '로그인하면 저장돼요 →',
     undo: '실행 취소',
+    howToAddLabel: '수정 방법 안내',
+    categoryLabels: {
+      veggie: '채소',
+      meat: '육류',
+      seafood: '해산물',
+      grain: '곡물',
+      dairy: '유제품',
+      seasoning: '양념&소스',
+      condiment: '조미료',
+      fruit: '과일',
+      other: '기타',
+    },
   },
   waitlist: {
     title: '🚀 런칭 알림 받기',
