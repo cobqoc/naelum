@@ -15,7 +15,6 @@ import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
-import { QUICK_ADD } from './_home/quickAddList';
 import FridgeSVG from './_home/FridgeSVG';
 import KitchenSVG from './_home/KitchenSVG';
 import {
@@ -30,8 +29,15 @@ import {
   LS_KEY_SEEN_HOME_TIP,
   LS_KEY_ONBOARDING_BANNER,
   LONG_PRESS_MS,
-  getShelfLifeDays,
+  SHELF_LEFT,
+  SHELF_WIDTH,
+  SHELVES,
+  DOOR_SHELVES,
+  PANTRY_SHELVES,
 } from './_home/constants';
+import type { FridgeItem, IngredientFormData } from './_home/types';
+import { freshState, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
+import { DEMO } from './_home/demoItems';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
@@ -46,180 +52,6 @@ import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
 });
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type FridgeItem = {
-  id: string;
-  ingredient_name: string;
-  category: string;
-  expiry_date: string | null;
-  storage_location: string | null;
-  quantity?: number | null;
-  unit?: string | null;
-  purchase_date?: string | null;
-  notes?: string | null;
-  expiry_alert?: boolean;
-  /** 비로그인 체험 모드 / localStorage에만 존재하는 임시 재료. DB insert/delete 스킵 판정. */
-  isDemoItem?: boolean;
-};
-
-/** DEMO 판정 — `isDemoItem` flag 우선, 기존 localStorage 호환을 위해 id prefix도 fallback. */
-function isDemoRecord(item: { id: string; isDemoItem?: boolean }): boolean {
-  if (item.isDemoItem) return true;
-  return item.id.startsWith('d') || item.id.startsWith('demo');
-}
-
-
-type IngredientFormData = {
-  ingredient_name: string;
-  category: string;
-  quantity?: number | null;
-  unit?: string | null;
-  purchase_date?: string | null;
-  expiry_date?: string | null;
-  storage_location?: string | null;
-  notes?: string | null;
-  expiry_alert?: boolean;
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function daysUntilExpiry(d: string | null): number {
-  if (!d) return 99;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const exp = new Date(d); exp.setHours(0, 0, 0, 0);
-  return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-/** 구매 후 경과일. purchase_date 없으면 음수(미확인) 반환. */
-function daysSincePurchase(d: string | null | undefined): number {
-  if (!d) return -1;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const pur = new Date(d); pur.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - pur.getTime()) / (1000 * 60 * 60 * 24));
-}
-function addDaysISO(d: number): string {
-  const date = new Date(); date.setDate(date.getDate() + d);
-  return date.toISOString().slice(0, 10);
-}
-function getEmoji(name: string, category: string): string {
-  const found = QUICK_ADD.find(q => q.name === name || name.includes(q.name) || q.name.includes(name));
-  if (found) return found.emoji;
-  return ({ veggie:'🥬', meat:'🥩', seafood:'🐟', dairy:'🥛', grain:'🌾', seasoning:'🧂' } as Record<string,string>)[category] ?? '📦';
-}
-
-/**
- * 재료의 신선도 상태를 결정.
- * - expiry_date가 있으면 그걸 기준으로 D-N 계산 (정확한 만료일)
- * - 없으면 purchase_date 기준 "묵힌 기간" fallback (추정). 카테고리별 예상 유통기한을 임계값으로.
- *     해산물(3일)·육류(5일)·유제품(7일)·채소(14일)·곡물(30일)·조미료(90일). fallback 7일.
- * - 둘 다 없으면: 중립(경고 없음)
- */
-function freshState(item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category'>): {
-  border: string;
-  label: string;
-  isDanger: boolean;
-} {
-  const days = daysUntilExpiry(item.expiry_date);
-  if (item.expiry_date) {
-    if (days <= 0) return { border: '#991b1b', label: '만료', isDanger: true };
-    if (days <= 3) return { border: '#dc2626', label: `D-${days}`, isDanger: true };
-    if (days <= 7) return { border: '#d97706', label: `D-${days}`, isDanger: false };
-    return { border: '#4d7c0f', label: '', isDanger: false };
-  }
-  const since = daysSincePurchase(item.purchase_date);
-  if (since < 0) return { border: '#4d7c0f', label: '', isDanger: false };
-  const shelfLife = getShelfLifeDays(item.category);
-  const warn = Math.ceil(shelfLife * 0.5);
-  if (since >= shelfLife) return { border: '#dc2626', label: `${since}일째`, isDanger: true };
-  if (since >= warn) return { border: '#d97706', label: `${since}일째`, isDanger: false };
-  return { border: '#4d7c0f', label: '', isDanger: false };
-}
-
-/** 긴급도 스코어 — 작을수록 우선(만료 임박). 선반 정렬에 사용. */
-function urgencyScore(item: FridgeItem): number {
-  if (item.expiry_date) return daysUntilExpiry(item.expiry_date);
-  const since = daysSincePurchase(item.purchase_date);
-  if (since < 0) return 99; // purchase_date 없음 → 맨 뒤
-  // null expiry: 카테고리 shelfLife 기준 남은 일수. 초과 시 음수.
-  const shelfLife = getShelfLifeDays(item.category);
-  return Math.max(-1, shelfLife - since);
-}
-
-/**
- * FridgeSVG 내부 선반 좌표 매핑 (viewBox: 30 -5 540 670 기준).
- * 실제 선반 rail y좌표를 읽어 percentage로 변환.
- * - 냉장 3선반: y=35~119 / 135~213 / 230~319
- * - 냉동 1선반: y=420~525 (서랍 위)
- * - x는 모두 184~416 (width 232)
- */
-// FridgeSVG 본체 선반 좌표 (viewBox="30 -5 540 670", 본체 interior x=184~416)
-// 실측:
-//   냉장 선반1 rail top: y=119   → chip 바닥 y=118, 선반 위 공간 y≈60~118
-//   냉장 선반2 rail top: y=214   → chip 바닥 y=213, 선반 위 공간 y≈140~213
-//   냉장 서랍 top:        y=320   → chip 바닥 y=319, 선반 위 공간 y≈240~319
-//   냉동 서랍 top:        y=526   → chip 바닥 y=525, 선반 위 공간 y≈420~525
-// viewBox height=670(y=-5~665), width=540(x=30~570). (y - (-5)) / 670 = percent.
-const SHELF_LEFT = '28.5%';   // (184-30)/540 = 28.5%
-const SHELF_WIDTH = '43%';    // 232/540 = 43%
-const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
-  { top: '9.7%',  height: '8.7%',  kind: 'fridge' },   // 냉장 top    (y=60~118)
-  { top: '21.6%', height: '10.9%', kind: 'fridge' },   // 냉장 middle (y=140~213)
-  { top: '36.6%', height: '11.8%', kind: 'fridge' },   // 냉장 bottom (y=240~319)
-  { top: '63.4%', height: '15.7%', kind: 'freezer' },  // 냉동 top    (y=420~525)
-];
-// 이름 전체 노출 시 한 chip이 ~90px → 반응형으로 viewport 기반 4~8.
-// getShelfMax(viewportWidth) 참고.
-
-// 냉장고 도어 선반 chip 좌표 (FridgeSVG 도어 내부).
-// 좌측/우측 도어 각 2개 (상단·중단). 하단은 drawer 근처라 생략.
-const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: string; height: string }[] = [
-  { side: 'left',  left: '7%',  width: '16%', top: '11%', height: '6%' },
-  { side: 'left',  left: '7%',  width: '16%', top: '23%', height: '6%' },
-  { side: 'right', left: '77%', width: '16%', top: '11%', height: '6%' },
-  { side: 'right', left: '77%', width: '16%', top: '23%', height: '6%' },
-];
-const MAX_DOOR_CHIPS_PER_SHELF = 2;
-
-// KitchenSVG landscape viewBox="0 -35 640 200" (y: -35~165, x: 0~640)
-// 찬장 translate(230) → cabinet x=232~408
-// items-end → 칩 바닥이 선반 상면에 닿도록 (top% = (shelfY+35)/200*100, zone는 그 위)
-//   좌상단(olive)   visible x=2~232   shelf top y=45  → left=0%  w=36% top=22% h=18%
-//   좌하단(terra)   visible x=90~232  shelf top y=130 → left=14% w=22% top=67% h=16% (화분 우측)
-//   우상단(mauve)   visible x=408~565 shelf top y=30  → left=64% w=25% top=15% h=18%
-//   우하단(slate)   visible x=408~638 shelf top y=120 → left=64% w=36% top=63% h=15%
-const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
-  { left: '0%',  width: '36%', top: '22%', height: '18%' }, // 좌상단 olive
-  { left: '14%', width: '22%', top: '67%', height: '16%' }, // 좌하단 terracotta (화분 우측)
-  { left: '64%', width: '25%', top: '15%', height: '18%' }, // 우상단 mauve
-  { left: '64%', width: '36%', top: '63%', height: '15%' }, // 우하단 slate
-];
-// MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
-
-// DEMO 재료 — 비로그인 체험용. 14개로 균형:
-//   - 2개 D-day 경고(돼지고기 위험·두부 주의) — 신선도 UX 시연
-//   - 나머지 12개는 깨끗한 신선 상태 (첫인상 부담 최소화)
-//   - 한국 레시피 필수재료 포함 (김치찌개 등 "바로 가능" 매칭 확보)
-const DEMO: FridgeItem[] = [
-  // === 냉장 (7) ===
-  { id:'d1', ingredient_name:'돼지고기', category:'meat',    expiry_date: addDaysISO(1),  storage_location:'냉장', purchase_date: addDaysISO(-3) },
-  { id:'d2', ingredient_name:'두부',     category:'other',   expiry_date: addDaysISO(3),  storage_location:'냉장', purchase_date: addDaysISO(-2) },
-  { id:'d3', ingredient_name:'계란',     category:'dairy',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  { id:'d4', ingredient_name:'김치',     category:'other',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
-  { id:'d5', ingredient_name:'당근',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  { id:'d6', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  { id:'d7', ingredient_name:'고추',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  // === 냉동 (1) ===
-  { id:'d8', ingredient_name:'새우',     category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-2) },
-  // === 상온 (6) ===
-  { id:'d9',  ingredient_name:'감자',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
-  { id:'d10', ingredient_name:'양파',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d11', ingredient_name:'쌀',      category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d12', ingredient_name:'부침가루', category:'grain',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d13', ingredient_name:'간장',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
-  { id:'d14', ingredient_name:'참기름',  category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
-];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 

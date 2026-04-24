@@ -43,3 +43,41 @@ export function getShelfLifeDays(category: string | null | undefined): number {
 
 // Long-press 트리거 시간 (모바일 chip에서 장누름 시 삭제 확인).
 export const LONG_PRESS_MS = 500;
+
+/**
+ * FridgeSVG 내부 선반 좌표 매핑 (viewBox: 30 -5 540 670 기준).
+ * 실측 rail y좌표를 percentage로 변환. (y - (-5)) / 670 = percent.
+ * - 냉장 선반1 rail top: y=119   → 선반 위 공간 y≈60~118
+ * - 냉장 선반2 rail top: y=214   → 선반 위 공간 y≈140~213
+ * - 냉장 서랍 top:        y=320  → 선반 위 공간 y≈240~319
+ * - 냉동 서랍 top:        y=526  → 선반 위 공간 y≈420~525
+ * - x는 모두 184~416 (width 232)
+ */
+export const SHELF_LEFT = '28.5%';   // (184-30)/540 = 28.5%
+export const SHELF_WIDTH = '43%';    // 232/540 = 43%
+export const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' }[] = [
+  { top: '9.7%',  height: '8.7%',  kind: 'fridge' },
+  { top: '21.6%', height: '10.9%', kind: 'fridge' },
+  { top: '36.6%', height: '11.8%', kind: 'fridge' },
+  { top: '63.4%', height: '15.7%', kind: 'freezer' },
+];
+
+// 냉장고 도어 선반 chip 좌표 — 좌·우 도어 각 2단(상단·중단).
+export const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: string; height: string }[] = [
+  { side: 'left',  left: '7%',  width: '16%', top: '11%', height: '6%' },
+  { side: 'left',  left: '7%',  width: '16%', top: '23%', height: '6%' },
+  { side: 'right', left: '77%', width: '16%', top: '11%', height: '6%' },
+  { side: 'right', left: '77%', width: '16%', top: '23%', height: '6%' },
+];
+export const MAX_DOOR_CHIPS_PER_SHELF = 2;
+
+/**
+ * KitchenSVG landscape viewBox="0 -35 640 200" — 찬장(translate 230) 안 4선반.
+ * top% = (shelfY+35)/200*100. items-end 기반 chip 바닥이 선반 상면.
+ */
+export const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
+  { left: '0%',  width: '36%', top: '22%', height: '18%' }, // 좌상단 olive
+  { left: '14%', width: '22%', top: '67%', height: '16%' }, // 좌하단 terracotta (화분 우측)
+  { left: '64%', width: '25%', top: '15%', height: '18%' }, // 우상단 mauve
+  { left: '64%', width: '36%', top: '63%', height: '15%' }, // 우하단 slate
+];
