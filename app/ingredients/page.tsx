@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import { useI18n } from '@/lib/i18n/context';
 
 // ─── 상수 ────────────────────────────────────────────────────
 
@@ -114,13 +115,14 @@ interface IngredientItem {
 // ─── 하위 컴포넌트 ────────────────────────────────────────────
 
 function TasteBars({ tastes }: { tastes: Record<string, number> | null }) {
-  if (!tastes) return <p className="text-xs text-text-muted">맛 데이터 없음</p>;
+  const { t } = useI18n();
+  if (!tastes) return <p className="text-xs text-text-muted">{t.ingredient.tasteDataNone}</p>;
   const entries = Object.entries(TASTE_META)
     .map(([key, meta]) => ({ key, ...meta, value: tastes[key] ?? 0 }))
     .filter(t => t.value > 0)
     .sort((a, b) => b.value - a.value);
 
-  if (entries.length === 0) return <p className="text-xs text-text-muted">맛 데이터 없음</p>;
+  if (entries.length === 0) return <p className="text-xs text-text-muted">{t.ingredient.tasteDataNone}</p>;
 
   return (
     <div className="space-y-2.5">
@@ -161,6 +163,7 @@ function NutritionCard({
   nutrition: NutritionInfo | null;
   detail: NutritionDetail | null;
 }) {
+  const { t } = useI18n();
   // 기본 영양소 (nutrition + detail 병합, detail 우선)
   const fiber = detail?.fiber ?? nutrition?.fiber;
   const basicItems = [
@@ -197,7 +200,7 @@ function NutritionCard({
       {/* 기본 */}
       {basicItems.length > 0 && (
         <div>
-          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">기본</p>
+          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">{t.ingredient.nutritionBasic}</p>
           <div className="grid grid-cols-3 gap-2">
             {basicItems.map(item => <NutritionBadge key={item.label} {...item} />)}
           </div>
@@ -207,7 +210,7 @@ function NutritionCard({
       {/* 미네랄 */}
       {mineralItems.length > 0 && (
         <div>
-          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">미네랄</p>
+          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">{t.ingredient.nutritionMineral}</p>
           <div className="grid grid-cols-3 gap-2">
             {mineralItems.map(item => <NutritionBadge key={item.label} {...item} />)}
           </div>
@@ -217,7 +220,7 @@ function NutritionCard({
       {/* 비타민 */}
       {vitaminItems.length > 0 && (
         <div>
-          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">비타민</p>
+          <p className="text-[11px] text-text-muted font-medium mb-2 uppercase tracking-wide">{t.ingredient.nutritionVitamin}</p>
           <div className="grid grid-cols-3 gap-2">
             {vitaminItems.map(item => <NutritionBadge key={item.label} {...item} />)}
           </div>
@@ -225,7 +228,7 @@ function NutritionCard({
       )}
 
       {detail?.source && (
-        <p className="text-[10px] text-text-muted text-right">출처: {detail.source}</p>
+        <p className="text-[10px] text-text-muted text-right">{t.ingredient.sourcePrefix} {detail.source}</p>
       )}
     </div>
   );
@@ -438,6 +441,8 @@ function IngredientPanel({
 // ─── 메인 페이지 ──────────────────────────────────────────────
 
 export default function IngredientBrowsePage() {
+  const { t } = useI18n();
+  const tb = t.ingredient;
   const [items, setItems] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [category, setCategory] = useState('');
@@ -493,7 +498,7 @@ export default function IngredientBrowsePage() {
 
         {/* ── 페이지 헤더 ── */}
         <div className="py-6">
-          <h1 className="text-2xl font-bold">재료 백과사전</h1>
+          <h1 className="text-2xl font-bold">{tb.browseTitle}</h1>
           <p className="text-sm text-text-muted mt-1">
             카테고리를 선택하거나 재료를 검색해 보세요
           </p>
@@ -585,7 +590,7 @@ export default function IngredientBrowsePage() {
                 </span>
               </>
             )}
-            <span className="text-text-muted text-sm font-normal ml-auto">{items.length}개</span>
+            <span className="text-text-muted text-sm font-normal ml-auto">{items.length}{tb.countSuffixLabel}</span>
           </div>
         )}
 
@@ -603,8 +608,8 @@ export default function IngredientBrowsePage() {
         ) : items.length === 0 ? (
           <div className="text-center py-20 text-text-muted">
             <div className="text-6xl mb-4">{currentCategory.emoji}</div>
-            <p className="text-base font-medium text-text-secondary">해당하는 재료가 없어요</p>
-            <p className="text-sm mt-1">다른 카테고리나 검색어를 시도해 보세요</p>
+            <p className="text-base font-medium text-text-secondary">{tb.noMatchingTitle}</p>
+            <p className="text-sm mt-1">{tb.noMatchingHint}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
