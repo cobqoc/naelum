@@ -39,6 +39,10 @@ interface Recipe {
   thumbnail_url: string | null;
   ingredients_image_url?: string | null;
   video_url?: string | null;
+  show_source?: boolean | null;
+  source_url?: string | null;
+  attributed_chef?: string | null;
+  source_channel?: string | null;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
   // 영양 정보
@@ -320,8 +324,28 @@ export default function RecipeBrowseView({
       {/* 설명 */}
       <p className="text-text-secondary leading-relaxed mt-4">{recipe.description}</p>
 
-      {/* 출처 링크 */}
-      {recipe.video_url && (
+      {/* 출처 블록 */}
+      {recipe.show_source && (recipe.source_url || recipe.video_url) ? (
+        <div className="mt-3 p-3 rounded-xl bg-background-secondary border border-white/10">
+          <p className="text-xs text-text-muted mb-1">📺 출처</p>
+          <p className="text-sm font-medium text-text-primary">
+            {recipe.attributed_chef ?? ''}
+            {recipe.attributed_chef && recipe.source_channel ? ' | ' : ''}
+            {recipe.source_channel ?? ''}
+          </p>
+          <a
+            href={recipe.source_url ?? recipe.video_url ?? ''}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-1 text-xs text-accent-warm hover:text-accent-hover transition-colors"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            원본 영상 보기 →
+          </a>
+        </div>
+      ) : recipe.video_url ? (
         <a
           href={recipe.video_url}
           target="_blank"
@@ -333,7 +357,7 @@ export default function RecipeBrowseView({
           </svg>
           출처 영상
         </a>
-      )}
+      ) : null}
 
       {/* 레시피 정보 (조건부) */}
       {(() => {
@@ -567,6 +591,18 @@ export default function RecipeBrowseView({
           </div>
         </div>
       )}
+
+      {/* 면책 푸터 */}
+      <div className="mt-8 space-y-1">
+        {recipe.show_source && (
+          <p className="text-xs text-text-muted leading-relaxed">
+            * 영상 기반으로 정리한 레시피입니다. 정확한 내용은 출처 영상을 참고해주세요.
+          </p>
+        )}
+        <p className="text-xs text-text-muted leading-relaxed">
+          * 알레르기 정보는 참고용입니다. 알레르기가 있으신 분은 재료를 직접 확인하세요.
+        </p>
+      </div>
 
       {/* 하단 여백 (sticky 버튼 공간 확보) */}
       <div className="h-20" />

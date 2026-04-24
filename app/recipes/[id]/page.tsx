@@ -141,7 +141,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('title, description, thumbnail_url, status')
+    .select('title, description, thumbnail_url, status, show_source, attributed_chef, source_channel')
     .eq('id', id)
     .maybeSingle();
 
@@ -196,7 +196,7 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         title={recipe.title}
         description={recipe.description}
         imageUrl={recipe.thumbnail_url}
-        authorName={recipe.author?.username || 'anonymous'}
+        authorName={recipe.show_source && recipe.attributed_chef ? recipe.attributed_chef : (recipe.author?.username || 'anonymous')}
         prepTime={recipe.prep_time_minutes}
         cookTime={recipe.cook_time_minutes}
         servings={recipe.servings}

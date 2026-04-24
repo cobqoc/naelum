@@ -49,6 +49,10 @@ export interface Recipe {
   thumbnail_url: string | null;
   ingredients_image_url?: string | null;
   video_url?: string | null;
+  show_source?: boolean | null;
+  source_url?: string | null;
+  attributed_chef?: string | null;
+  source_channel?: string | null;
   status: string;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
