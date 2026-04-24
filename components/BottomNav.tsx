@@ -333,14 +333,14 @@ export default function BottomNav() {
               onClick={() => setShowSearch(false)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
-              <span>📋</span><span>레시피</span>
+              <span>📋</span><span>{t.home.navRecipes}</span>
             </Link>
             <Link
               href="/tip"
               onClick={() => setShowSearch(false)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
-              <span>💡</span><span>팁</span>
+              <span>💡</span><span>{t.home.navTips}</span>
             </Link>
           </div>
 

@@ -588,6 +588,8 @@ export const ko = {
     demoTaglinePost: ' 알려줘요',
     demoBadge: '체험 중',
     demoCta: '로그인하고 저장 →',
+    navRecipes: '레시피',
+    navTips: '팁',
   },
   waitlist: {
     title: '🚀 런칭 알림 받기',

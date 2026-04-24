@@ -588,6 +588,8 @@ export const de = {
     demoTaglinePost: '',
     demoBadge: 'Ausprobieren',
     demoCta: 'Anmelden zum Speichern →',
+    navRecipes: 'Rezepte',
+    navTips: 'Tipps',
   },
   waitlist: {
     title: '🚀 Erhalte Launch-Updates',

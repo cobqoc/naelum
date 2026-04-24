@@ -588,6 +588,8 @@ export const zh = {
     demoTaglinePost: '',
     demoBadge: '试用中',
     demoCta: '登录以保存 →',
+    navRecipes: '食谱',
+    navTips: '贴士',
   },
   waitlist: {
     title: '🚀 获取发布通知',

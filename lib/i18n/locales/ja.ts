@@ -588,6 +588,8 @@ export const ja = {
     demoTaglinePost: ' を提案します',
     demoBadge: 'お試し中',
     demoCta: 'ログインして保存 →',
+    navRecipes: 'レシピ',
+    navTips: 'ヒント',
   },
   waitlist: {
     title: '🚀 ローンチ通知を受け取る',

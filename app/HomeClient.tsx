@@ -569,8 +569,27 @@ export default function HomeClient({
       )}
 
       {/* 검색바 — 데스크탑 전용. 모바일은 BottomNav 검색 아이콘으로 접근 (뷰포트 절약). */}
-      <div className="px-4 pt-8 md:pt-10 pb-3 hidden md:flex justify-center">
-        <SearchBar className="w-full max-w-md" />
+      <div className="hidden md:block px-4 pt-8 pb-3">
+        {/* 카테고리 빠른 이동 — 모바일 검색 overlay와 동일 패턴 */}
+        <div className="flex items-center justify-center gap-2 mb-2.5">
+          <Link
+            href="/recipes"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background-secondary hover:bg-white/10 border border-white/5 text-sm font-medium text-text-secondary hover:text-text-primary active:scale-95 transition-all"
+          >
+            <span aria-hidden="true">📋</span>
+            <span>{t.home.navRecipes}</span>
+          </Link>
+          <Link
+            href="/tip"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background-secondary hover:bg-white/10 border border-white/5 text-sm font-medium text-text-secondary hover:text-text-primary active:scale-95 transition-all"
+          >
+            <span aria-hidden="true">💡</span>
+            <span>{t.home.navTips}</span>
+          </Link>
+        </div>
+        <div className="flex justify-center">
+          <SearchBar className="w-full max-w-md" />
+        </div>
       </div>
 
       {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 로그인 CTA. */}

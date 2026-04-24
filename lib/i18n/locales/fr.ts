@@ -588,6 +588,8 @@ export const fr = {
     demoTaglinePost: '',
     demoBadge: 'À l\'essai',
     demoCta: 'Se connecter pour sauvegarder →',
+    navRecipes: 'Recettes',
+    navTips: 'Astuces',
   },
   waitlist: {
     title: '🚀 Recevez les mises à jour du lancement',
