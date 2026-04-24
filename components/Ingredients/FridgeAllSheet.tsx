@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 interface FridgeItem {
   id: string;
@@ -19,8 +19,8 @@ interface Props {
   onItemClick: (item: FridgeItem) => void;
   /** chip hover X 클릭 시 빠른 삭제 (데스크톱) */
   onDelete: (item: FridgeItem) => void;
-  /** freshState 계산 함수 (HomeClient에서 주입) */
-  freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date'>) => {
+  /** freshState 계산 함수 (HomeClient에서 주입). category fallback을 위해 category 필드도 포함. */
+  freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category'>) => {
     border: string; label: string; isDanger: boolean;
   };
   /** getEmoji 함수 주입 */
@@ -38,12 +38,7 @@ const GROUP_ORDER: { key: string; icon: string; label: string }[] = [
  * 냉장/냉동/상온 별로 그룹핑, 각 chip 탭은 액션 시트로 연결.
  */
 export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji }: Props) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [isOpen, onClose]);
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen) return null;
 
