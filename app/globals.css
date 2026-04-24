@@ -30,9 +30,54 @@
   --match-low: #f44336;
   --match-low-text: #fc6d63;
 
+  /* Home scene 반응형 위치 변수 */
+  --scene-pendant-left: auto;
+  --scene-pendant-right: 10%;
+  --scene-warmspot-left: auto;
+  --scene-warmspot-right: 4%;
+  --scene-outlet-left: 8%;
+  --scene-outlet-right: auto;
+
+  /* ── Home scene (wall/floor/baseboard) — 기본 = dark ── */
+  --scene-wall-mid: rgba(32, 22, 16, 0.88);
+  --scene-wall-bot: rgba(26, 18, 13, 0.96);
+  --scene-wall-stripe: rgba(255, 175, 120, 0.025);
+  --scene-cornice-1: rgba(65, 42, 28, 0.5);
+  --scene-cornice-2: rgba(255, 190, 140, 0.12);
+  --scene-bb-outer-top: rgba(50, 34, 24, 0.55);
+  --scene-bb-outer-bot: rgba(40, 26, 18, 0.85);
+  --scene-bb-divider: rgba(95, 65, 42, 0.6);
+  --scene-bb-inner-top: rgba(72, 48, 32, 0.85);
+  --scene-bb-inner-bot: rgba(32, 20, 14, 0.98);
+  --scene-bb-hl: rgba(255, 190, 140, 0.18);
+  --scene-floor-top: rgba(18, 12, 9, 0.98);
+  --scene-floor-bot: rgba(10, 7, 5, 1);
+  --scene-floor-plank: rgba(255, 185, 135, 0.1);
+  --scene-floor-specular: rgba(255, 200, 150, 0.12);
+  --scene-fridge-reflect: rgba(200, 80, 50, 0.22);
+  --scene-warm-spot: rgba(255, 210, 140, 0.18);
+  --scene-outlet-bg: #1a100a;
+  --scene-outlet-border: rgba(255, 220, 170, 0.2);
+
   /* Default Next.js variables */
   --background: var(--background-primary);
   --foreground: var(--text-primary);
+}
+
+/* 데스크탑에서 scene 요소를 냉장고 인접으로 배치 */
+@layer base {
+  @media (min-width: 768px) {
+    :root,
+    [data-theme="light"],
+    [data-theme="dark"] {
+      --scene-pendant-left: calc(50% + 170px);
+      --scene-pendant-right: auto;
+      --scene-warmspot-left: calc(50% + 110px);
+      --scene-warmspot-right: auto;
+      --scene-outlet-left: auto;
+      --scene-outlet-right: calc(50% + 180px);
+    }
+  }
 }
 
 /* Light Mode Theme */
@@ -57,6 +102,27 @@
   --error: #c62828;
   --warning: #f57c00;
   --info: #1565c0;
+
+  /* Home scene (light theme): 따뜻한 베이지 벽 + 우드 플로어 (밝은 톤) */
+  --scene-wall-mid: rgba(232, 208, 182, 1);
+  --scene-wall-bot: rgba(210, 180, 152, 1);
+  --scene-wall-stripe: rgba(180, 130, 85, 0.05);
+  --scene-cornice-1: rgba(150, 115, 85, 0.6);
+  --scene-cornice-2: rgba(255, 240, 210, 0.65);
+  --scene-bb-outer-top: rgba(182, 152, 118, 1);
+  --scene-bb-outer-bot: rgba(158, 128, 95, 1);
+  --scene-bb-divider: rgba(132, 102, 72, 1);
+  --scene-bb-inner-top: rgba(152, 122, 92, 1);
+  --scene-bb-inner-bot: rgba(112, 82, 55, 1);
+  --scene-bb-hl: rgba(255, 240, 215, 0.75);
+  --scene-floor-top: rgba(178, 132, 92, 1);
+  --scene-floor-bot: rgba(142, 102, 68, 1);
+  --scene-floor-plank: rgba(70, 42, 22, 0.32);
+  --scene-floor-specular: rgba(255, 225, 180, 0.45);
+  --scene-fridge-reflect: rgba(200, 80, 50, 0.28);
+  --scene-warm-spot: rgba(255, 215, 145, 0.28);
+  --scene-outlet-bg: #3a2a18;
+  --scene-outlet-border: rgba(255, 230, 200, 0.5);
 
   /* Default Next.js variables */
   --background: var(--background-primary);
@@ -85,6 +151,27 @@
   --error: #f44336;
   --warning: #ff9800;
   --info: #2196f3;
+
+  /* Home scene (dark theme) — 기본값 사용 */
+  --scene-wall-mid: rgba(32, 22, 16, 0.88);
+  --scene-wall-bot: rgba(26, 18, 13, 0.96);
+  --scene-wall-stripe: rgba(255, 175, 120, 0.025);
+  --scene-cornice-1: rgba(65, 42, 28, 0.5);
+  --scene-cornice-2: rgba(255, 190, 140, 0.12);
+  --scene-bb-outer-top: rgba(50, 34, 24, 0.55);
+  --scene-bb-outer-bot: rgba(40, 26, 18, 0.85);
+  --scene-bb-divider: rgba(95, 65, 42, 0.6);
+  --scene-bb-inner-top: rgba(72, 48, 32, 0.85);
+  --scene-bb-inner-bot: rgba(32, 20, 14, 0.98);
+  --scene-bb-hl: rgba(255, 190, 140, 0.18);
+  --scene-floor-top: rgba(18, 12, 9, 0.98);
+  --scene-floor-bot: rgba(10, 7, 5, 1);
+  --scene-floor-plank: rgba(255, 185, 135, 0.1);
+  --scene-floor-specular: rgba(255, 200, 150, 0.12);
+  --scene-fridge-reflect: rgba(200, 80, 50, 0.22);
+  --scene-warm-spot: rgba(255, 210, 140, 0.18);
+  --scene-outlet-bg: #1a100a;
+  --scene-outlet-border: rgba(255, 220, 170, 0.2);
 
   /* Default Next.js variables */
   --background: var(--background-primary);

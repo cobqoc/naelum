@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
           .from('recipes')
           .select(`
             id, title, description, thumbnail_url, display_image,
-            prep_time_minutes, cook_time_minutes, difficulty_level,
+            prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
             ingredients:recipe_ingredients(ingredient_name)
@@ -322,7 +322,7 @@ export async function GET(request: NextRequest) {
             .from('recipes')
             .select(`
               id, title, description, thumbnail_url, display_image,
-              prep_time_minutes, cook_time_minutes, difficulty_level,
+              prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
               average_rating,
               author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)
@@ -345,7 +345,7 @@ export async function GET(request: NextRequest) {
             .from('recipes')
             .select(`
               id, title, description, thumbnail_url, display_image,
-              prep_time_minutes, cook_time_minutes, difficulty_level,
+              prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
               average_rating, cuisine_type,
               author:profiles!recipes_author_id_fkey(username, avatar_url),
               ingredients:recipe_ingredients(ingredient_name)
@@ -399,7 +399,7 @@ export async function GET(request: NextRequest) {
               .from('recipes')
               .select(`
                 id, title, description, thumbnail_url, display_image,
-                prep_time_minutes, cook_time_minutes, difficulty_level,
+                prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
                 average_rating, views_count,
                 author:profiles!recipes_author_id_fkey(username, avatar_url)
               `)
@@ -419,7 +419,7 @@ export async function GET(request: NextRequest) {
             .from('recipes')
             .select(`
               id, title, description, thumbnail_url, display_image,
-              prep_time_minutes, cook_time_minutes, difficulty_level,
+              prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
               average_rating, views_count,
               author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)
@@ -450,7 +450,7 @@ export async function GET(request: NextRequest) {
           .from('recipes')
           .select(`
             id, title, description, thumbnail_url, display_image,
-            prep_time_minutes, cook_time_minutes, difficulty_level,
+            prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, meal_type,
             author:profiles!recipes_author_id_fkey(username, avatar_url)
           `)
@@ -466,7 +466,7 @@ export async function GET(request: NextRequest) {
             .from('recipes')
             .select(`
               id, title, description, thumbnail_url, display_image,
-              prep_time_minutes, cook_time_minutes, difficulty_level,
+              prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
               average_rating,
               author:profiles!recipes_author_id_fkey(username, avatar_url)
             `)

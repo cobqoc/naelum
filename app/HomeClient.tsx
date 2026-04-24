@@ -12,6 +12,7 @@ import Link from 'next/link';
 import dynamicImport from 'next/dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
+import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import { QUICK_ADD } from './_home/quickAddList';
@@ -170,38 +171,28 @@ const PANTRY_SHELVES: { top: string; height: string; left: string; width: string
 ];
 // MAX_PANTRY_PER_SHELF는 컴포넌트 내 shelfMax.pantry(반응형)로 대체됨
 
-// DEMO 재료 — 비로그인 체험용. 목표:
-//   1. 3가지 상태 섞어서 UX 보여줌: (a) expiry 임박, (b) 방금 구매, (c) 오래 묵힘
-//   2. 실제 DB 레시피 여러 개와 100% 매칭 + 거의 가능 매칭 확보 (유저가 "바로 가능" 결과 확인 가능)
-//      - 바로 가능: 고추장아찌, 새우죽, 당근잎 감자전 등
-//      - 거의 가능: 김치찌개, 수박즙돼지목심구이 등
+// DEMO 재료 — 비로그인 체험용. 14개로 균형:
+//   - 2개 D-day 경고(돼지고기 위험·두부 주의) — 신선도 UX 시연
+//   - 나머지 12개는 깨끗한 신선 상태 (첫인상 부담 최소화)
+//   - 한국 레시피 필수재료 포함 (김치찌개 등 "바로 가능" 매칭 확보)
 const DEMO: FridgeItem[] = [
-  // === 냉장 (8) ===
-  // (a) expiry 임박 — 위험/경고 chip 표시
+  // === 냉장 (7) ===
   { id:'d1', ingredient_name:'돼지고기', category:'meat',    expiry_date: addDaysISO(1),  storage_location:'냉장', purchase_date: addDaysISO(-3) },
-  { id:'d2', ingredient_name:'두부',     category:'other',   expiry_date: addDaysISO(2),  storage_location:'냉장', purchase_date: addDaysISO(-3) },
-  { id:'d3', ingredient_name:'시금치',   category:'veggie',  expiry_date: addDaysISO(2),  storage_location:'냉장', purchase_date: addDaysISO(-5) },
-  // (b) expiry null + 최근 구매 — 신선, 경고 없음
-  { id:'d4', ingredient_name:'계란',     category:'dairy',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
-  { id:'d5', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  { id:'d6', ingredient_name:'김치',     category:'other',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d2', ingredient_name:'두부',     category:'other',   expiry_date: addDaysISO(3),  storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d3', ingredient_name:'계란',     category:'dairy',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
+  { id:'d4', ingredient_name:'김치',     category:'other',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-2) },
+  { id:'d5', ingredient_name:'당근',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
+  { id:'d6', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   { id:'d7', ingredient_name:'고추',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  // (c) expiry null + 오래 묵힘 — purchase_date fallback 경고
-  { id:'d8', ingredient_name:'당근',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-5) },
-  // === 냉동 (2) ===
-  { id:'d9',  ingredient_name:'새우',    category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-4) },
-  { id:'d10', ingredient_name:'만두',    category:'grain',   expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-3) },
-  // === 상온 (10) ===
-  { id:'d11', ingredient_name:'양파',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
-  { id:'d12', ingredient_name:'감자',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-3) },
-  { id:'d13', ingredient_name:'쌀',      category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-10) },
-  { id:'d14', ingredient_name:'간장',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-10) },
-  { id:'d15', ingredient_name:'참기름',  category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-15) },
-  { id:'d16', ingredient_name:'식초',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-20) },
-  { id:'d17', ingredient_name:'설탕',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-30) },
-  { id:'d18', ingredient_name:'소금',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-30) },
-  { id:'d19', ingredient_name:'물',      category:'other',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(0) },
-  { id:'d20', ingredient_name:'부침가루', category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-15) },
+  // === 냉동 (1) ===
+  { id:'d8', ingredient_name:'새우',     category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-2) },
+  // === 상온 (6) ===
+  { id:'d9',  ingredient_name:'감자',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
+  { id:'d10', ingredient_name:'양파',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d11', ingredient_name:'쌀',      category:'grain',     expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d12', ingredient_name:'부침가루', category:'grain',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },
+  { id:'d13', ingredient_name:'간장',    category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
+  { id:'d14', ingredient_name:'참기름',  category:'seasoning', expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -221,6 +212,7 @@ export default function HomeClient({
   initialOnboardingStep: _initialOnboardingStep,
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const { success: toastSuccess } = useToast();
   const [items, setItems] = useState<FridgeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,9 +222,12 @@ export default function HomeClient({
   // 반응형 MAX — viewport width 기반. 모바일 4, 태블릿 6, 데스크톱 8.
   // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
   const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
+  // 씬 요소(팬던트/웜스팟/콘센트) 배치용 — 데스크탑에선 냉장고 가까이, 모바일은 가장자리
+  const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
+      setIsDesktop(w >= 768);
       if (w >= 1024) setShelfMax({ body: 8, pantry: 4, door: 3 });
       else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
       else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
@@ -262,6 +257,7 @@ export default function HomeClient({
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showFirstVisitTip, setShowFirstVisitTip] = useState(false);
   // 클라이언트 hydration 후엔 useAuth의 profile을, SSR 초기 HTML에선 initialUsername을 사용.
   const currentUsername = profile?.username ?? initialUsername;
   const hasTempUsername = !!currentUsername && /^user_[a-f0-9]{12}$/.test(currentUsername);
@@ -288,6 +284,26 @@ export default function HomeClient({
     window.addEventListener('toggle-fridge-search', handler);
     return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
+
+  // 비로그인 첫방문 가이드 툴팁 — "바로 가능 X개" pill을 알려주는 1회용 말풍선
+  useEffect(() => {
+    if (isAuthenticated) return;
+    try {
+      const seen = localStorage.getItem('naelum_seen_home_tip');
+      if (seen) return;
+    } catch { return; }
+    const showTimer = setTimeout(() => setShowFirstVisitTip(true), 900);
+    const hideTimer = setTimeout(() => {
+      setShowFirstVisitTip(false);
+      try { localStorage.setItem('naelum_seen_home_tip', '1'); } catch {}
+    }, 8000);
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
+  }, [isAuthenticated]);
+
+  const dismissFirstVisitTip = () => {
+    setShowFirstVisitTip(false);
+    try { localStorage.setItem('naelum_seen_home_tip', '1'); } catch {}
+  };
 
   // ESC 키로 모바일 검색 닫기
   useEffect(() => {
@@ -561,24 +577,222 @@ export default function HomeClient({
       {!isAuthenticated && (
         <div className="px-4 pb-1 md:pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
           <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
-            냉장고 재료를 넣으면 <span className="text-accent-warm font-medium">오늘 뭐 먹을지</span> 알려줘요
+            {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
           </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
           >
-            <span className="text-xs" aria-hidden="true">🎭</span>
-            <span>체험 중</span>
+            <span className="text-xs" aria-hidden="true">✨</span>
+            <span>{t.home.demoBadge}</span>
             <span className="text-text-muted">·</span>
-            <span className="font-semibold">로그인 →</span>
+            <span className="font-semibold">{t.home.demoCta}</span>
           </Link>
         </div>
       )}
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
-      <div className="flex-1 flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
+      <div className="flex-1 relative flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
+        {/* Scene backdrop — 벽·바닥·몰딩. CSS 변수로 라이트·다크 양 테마 대응. */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          {/* 벽지 — 상단 12%까지 완전 투명 유지 후 천천히 fade in (경계선 완화) */}
+          <div
+            className="absolute inset-x-0 top-0 bottom-[26px]"
+            style={{
+              background: `
+                linear-gradient(to bottom,
+                  transparent 0%,
+                  transparent 12%,
+                  var(--scene-wall-mid) 60%,
+                  var(--scene-wall-bot) 100%),
+                repeating-linear-gradient(90deg, transparent 0 44px, var(--scene-wall-stripe) 44px 45px),
+                repeating-linear-gradient(0deg, transparent 0 78px, var(--scene-wall-stripe) 78px 79px)
+              `,
+            }}
+          />
+          {/* 코니스 몰딩 */}
+          <div
+            className="absolute inset-x-0 top-[7%] h-[2px]"
+            style={{ background: 'var(--scene-cornice-1)' }}
+          />
+          <div
+            className="absolute inset-x-0 top-[7.6%] h-px"
+            style={{ background: 'var(--scene-cornice-2)' }}
+          />
+          {/* 팬던트 웜 스팟 — React state로 뷰포트 대응 */}
+          <div
+            className="absolute"
+            style={{
+              top: '7%',
+              ...(isDesktop ? { left: 'calc(50% + 230px)' } : { right: '4%' }),
+              width: 'clamp(140px, 30vw, 200px)',
+              height: 'clamp(160px, 32vw, 220px)',
+              background: 'radial-gradient(ellipse at 50% 30%, var(--scene-warm-spot), transparent 60%)',
+              filter: 'blur(2px)',
+            }}
+          />
+          {/* 벽 콘센트 — 데스크탑은 스크롤 아래로 밀려 숨김 */}
+          <div
+            className="absolute md:hidden"
+            style={{
+              bottom: '32px',
+              left: '8%',
+              width: '18px',
+              height: '22px',
+              background: 'var(--scene-outlet-bg)',
+              border: '1px solid var(--scene-outlet-border)',
+              borderRadius: '2px',
+              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div style={{ position: 'absolute', top: '5px', left: '3px', width: '4px', height: '6px', background: 'rgba(0,0,0,0.85)', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', top: '5px', right: '3px', width: '4px', height: '6px', background: 'rgba(0,0,0,0.85)', borderRadius: '1px' }} />
+            <div style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '2px', background: 'rgba(0,0,0,0.85)', borderRadius: '0.5px' }} />
+          </div>
+          {/* 베이스보드 2단 */}
+          <div
+            className="absolute inset-x-0 bottom-[32px] h-[8px]"
+            style={{ background: 'linear-gradient(to bottom, var(--scene-bb-outer-top), var(--scene-bb-outer-bot))' }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-[40px] h-[1px]"
+            style={{ background: 'var(--scene-bb-divider)' }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-[26px] h-[3px]"
+            style={{ background: 'linear-gradient(to bottom, var(--scene-bb-inner-top), var(--scene-bb-inner-bot))' }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-[39px] h-[0.5px]"
+            style={{ background: 'var(--scene-bb-hl)' }}
+          />
+          {/* 바닥 */}
+          <div
+            className="absolute inset-x-0 bottom-0 h-[26px]"
+            style={{ background: 'linear-gradient(to bottom, var(--scene-floor-top), var(--scene-floor-bot))' }}
+          />
+          {/* 바닥 specular */}
+          <div
+            className="absolute inset-x-0 bottom-[20px] h-[2px]"
+            style={{ background: 'linear-gradient(to right, transparent 0%, var(--scene-floor-specular) 30%, var(--scene-floor-specular) 70%, transparent 100%)' }}
+          />
+          {/* 냉장고 바닥 리플렉션 */}
+          <div
+            className="absolute bottom-[2px] left-1/2 -translate-x-1/2"
+            style={{
+              width: '54%',
+              maxWidth: '360px',
+              height: '14px',
+              background: 'linear-gradient(to bottom, var(--scene-fridge-reflect) 0%, transparent 100%)',
+              filter: 'blur(3px)',
+              opacity: 0.7,
+            }}
+          />
+          {/* 바닥 plank 소실점 라인 + 나뭇결 옹이 */}
+          <svg
+            className="absolute inset-x-0 bottom-0 h-[26px] w-full"
+            viewBox="0 0 400 26"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <line x1="0" y1="26" x2="180" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.45"/>
+            <line x1="60" y1="26" x2="188" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.4" opacity="0.85"/>
+            <line x1="130" y1="26" x2="196" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.35" opacity="0.7"/>
+            <line x1="400" y1="26" x2="220" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.45"/>
+            <line x1="340" y1="26" x2="212" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.4" opacity="0.85"/>
+            <line x1="270" y1="26" x2="204" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.35" opacity="0.7"/>
+            {/* 나뭇결 옹이 — 미세 */}
+            <ellipse cx="35" cy="20" rx="2.5" ry="0.5" fill="var(--scene-floor-plank)" opacity="0.6"/>
+            <ellipse cx="110" cy="16" rx="2" ry="0.4" fill="var(--scene-floor-plank)" opacity="0.55"/>
+            <ellipse cx="295" cy="22" rx="2.2" ry="0.5" fill="var(--scene-floor-plank)" opacity="0.5"/>
+            <ellipse cx="365" cy="14" rx="1.8" ry="0.4" fill="var(--scene-floor-plank)" opacity="0.6"/>
+            {/* 가로 plank seams */}
+            <line x1="0" y1="10" x2="400" y2="10" stroke="var(--scene-floor-plank)" strokeWidth="0.2" opacity="0.6"/>
+            <line x1="0" y1="19" x2="400" y2="19" stroke="var(--scene-floor-plank)" strokeWidth="0.2" opacity="0.45"/>
+          </svg>
+          {/* 냉장고 접지 2-layer 섀도우 */}
+          <div
+            className="absolute bottom-[22px] left-1/2 -translate-x-1/2 w-[48%] h-[6px] rounded-[50%]"
+            style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.55), rgba(0,0,0,0) 75%)', maxWidth: '330px' }}
+          />
+          <div
+            className="absolute bottom-[6px] left-1/2 -translate-x-1/2 w-[62%] h-[16px] rounded-[50%]"
+            style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.4), rgba(0,0,0,0) 80%)', maxWidth: '440px' }}
+          />
+
+          {/* 팬던트 조명 — React state로 뷰포트 대응 */}
+          <div
+            className="absolute top-0"
+            style={{
+              ...(isDesktop ? { left: 'calc(50% + 290px)' } : { right: '10%' }),
+              width: 'clamp(40px, 8vw, 58px)',
+              filter: 'drop-shadow(1px 2px 3px rgba(0,0,0,0.35))',
+            }}
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 60 170" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="lampShadeG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#f2c868" />
+                  <stop offset="100%" stopColor="#a87230" />
+                </linearGradient>
+                <linearGradient id="lampShadeInnerG" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3a2418" />
+                  <stop offset="100%" stopColor="#1a0d04" />
+                </linearGradient>
+                <radialGradient id="lampGlowG" cx="50%" cy="20%" r="80%">
+                  <stop offset="0%" stopColor="rgba(255,215,140,0.45)" />
+                  <stop offset="50%" stopColor="rgba(255,200,120,0.2)" />
+                  <stop offset="100%" stopColor="rgba(255,200,120,0)" />
+                </radialGradient>
+                <radialGradient id="lampBulbG" cx="50%" cy="45%" r="65%">
+                  <stop offset="0%" stopColor="#fffae0" />
+                  <stop offset="60%" stopColor="#ffe49a" />
+                  <stop offset="100%" stopColor="#f5b850" />
+                </radialGradient>
+              </defs>
+              {/* 발광 (뒤쪽) */}
+              <ellipse cx="30" cy="130" rx="40" ry="42" fill="url(#lampGlowG)" />
+              {/* 천장 부속 */}
+              <rect x="23" y="0" width="14" height="3.5" fill="#1a0d04" />
+              <rect x="25" y="3.5" width="10" height="1.8" fill="rgba(255,255,255,0.12)" />
+              {/* 코드 */}
+              <line x1="30" y1="5" x2="30" y2="82" stroke="#1a0d04" strokeWidth="1.6" />
+              {/* 연결 고리 */}
+              <rect x="27" y="80" width="6" height="4" rx="0.5" fill="#3a2418" stroke="#1a0d04" strokeWidth="0.8" />
+              {/* 쉐이드 종 모양 */}
+              <path
+                d="M 13,86 Q 8,106 16,120 L 44,120 Q 52,106 47,86 Z"
+                fill="url(#lampShadeG)"
+                stroke="#1a0d04"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              {/* 쉐이드 상단 하이라이트 */}
+              <ellipse cx="30" cy="89" rx="14" ry="2.2" fill="rgba(255,255,255,0.3)" />
+              <path
+                d="M 15,92 Q 11,106 18,118"
+                fill="none"
+                stroke="rgba(255,245,200,0.35)"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
+              {/* 쉐이드 하단 내부 그늘 */}
+              <path
+                d="M 16,120 L 44,120 L 42,122 L 18,122 Z"
+                fill="url(#lampShadeInnerG)"
+              />
+              {/* 전구 (쉐이드 아래로 살짝 보임) */}
+              <ellipse cx="30" cy="124" rx="8" ry="4.5" fill="url(#lampBulbG)" />
+              <ellipse cx="30" cy="124" rx="8" ry="4.5" fill="none" stroke="rgba(26,13,4,0.5)" strokeWidth="0.6" />
+              {/* 전구 반사 */}
+              <ellipse cx="27" cy="123" rx="2.5" ry="1.2" fill="rgba(255,255,255,0.6)" />
+            </svg>
+          </div>
+        </div>
+
         {/* KitchenSVG — 상온 재료 선반장 (chip overlay). 냉장고와 동일 너비로 상판이 냉장고 상단에 연결됨 */}
-        <div className="relative w-full mx-auto" style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
+        <div className="relative w-full mx-auto z-10" style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <KitchenSVG />
           {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
               추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
@@ -640,7 +854,7 @@ export default function HomeClient({
                         <button
                           onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
                           className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0 hover:bg-black/80 transition-colors"
-                          title={`${overflow}개 더 보기`}
+                          title={t.home.ingredientListMore.replace('{count}', String(overflow))}
                         >
                           +{overflow}
                         </button>
@@ -664,7 +878,7 @@ export default function HomeClient({
         {/* maxWidth = min(640px, 높이_기반_너비) 방식으로 letterbox 방지.
             maxHeight 대신 maxWidth로 크기 제약 → SVG가 컨테이너를 꽉 채워 overlay %좌표가 정확히 일치.
             모바일 기준: header(56) + 찬장(~100) + BottomNav(60) + 여유 ≈ 224px */}
-        <div className="relative w-full mx-auto aspect-[540/670]"
+        <div className="relative w-full mx-auto aspect-[540/670] z-10"
           style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <FridgeSVG />
 
@@ -687,26 +901,50 @@ export default function HomeClient({
             const href = `/recommendations?mode=auto${ingQuery}`;
             // 라벨 결정
             let icon = '💡';
-            let label = '레시피 찾기';
+            let label = t.home.pillDefault;
             if (matchingCount !== null && matchingCount > 0 && resolvedMode) {
               const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
-              if (resolvedMode === 'ready') { icon = '🔥'; label = `바로 가능 ${countStr}개`; }
-              else if (resolvedMode === 'almost') { icon = '🛒'; label = `거의 가능 ${countStr}개`; }
-              else { icon = '📋'; label = `레시피 ${countStr}개`; }
+              if (resolvedMode === 'ready') { icon = '🔥'; label = t.home.pillReady.replace('{count}', countStr); }
+              else if (resolvedMode === 'almost') { icon = '🛒'; label = t.home.pillAlmost.replace('{count}', countStr); }
+              else { icon = '📋'; label = t.home.pillAll.replace('{count}', countStr); }
             }
             return (
               <Link
                 href={href}
-                className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-accent-warm text-background-primary text-[11px] md:text-sm font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
+                className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm text-background-primary text-xs md:text-base font-bold shadow-xl shadow-accent-warm/60 ring-2 ring-accent-warm/30 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
                 style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-                aria-label={`${label} — 레시피 보기`}
+                aria-label={`${label} — ${t.home.pillAriaSuffix}`}
               >
-                <span className="text-sm md:text-base leading-none">{icon}</span>
+                <span className="text-base md:text-lg leading-none">{icon}</span>
                 <span>{label}</span>
-                <span className="leading-none">→</span>
+                <span className="leading-none text-sm md:text-base">→</span>
               </Link>
             );
           })()}
+
+          {/* 첫 방문 가이드 툴팁 — 비로그인 유저 최초 1회. pill 위에 말풍선 + 꼬리. */}
+          {showFirstVisitTip && showRecipeBubble && matchingCount !== null && matchingCount > 0 && (
+            <div
+              className="absolute right-[4%] z-30 pointer-events-auto"
+              style={{ top: 'calc(63% - 62px)' }}
+              role="dialog"
+              aria-live="polite"
+            >
+              <div className="relative bg-background-secondary border-2 border-accent-warm rounded-xl px-3 py-2 shadow-xl shadow-accent-warm/30 animate-[naelum-bubble-pulse_2.4s_ease-in-out_infinite]">
+                <button
+                  onClick={dismissFirstVisitTip}
+                  aria-label={t.home.firstVisitTipClose}
+                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-background-primary border border-accent-warm text-text-primary flex items-center justify-center text-[10px] font-bold hover:bg-accent-warm hover:text-background-primary transition-colors"
+                >
+                  ×
+                </button>
+                <p className="text-[11px] md:text-sm font-medium text-text-primary whitespace-nowrap">
+                  {t.home.firstVisitTip}
+                </p>
+                <div className="absolute -bottom-[7px] right-8 w-3 h-3 bg-background-secondary border-r-2 border-b-2 border-accent-warm rotate-45" />
+              </div>
+            </div>
+          )}
 
           {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
@@ -820,10 +1058,10 @@ export default function HomeClient({
                     onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
                     className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
                     style={{ top: '54%' }}
-                    title="모든 재료 보기"
+                    title={t.home.ingredientList}
                   >
-                    <span>📂</span>
-                    <span>{totalOverflow > 0 ? `+${totalOverflow}개 더 보기` : '재료 전체 보기'}</span>
+                    <span>📋</span>
+                    <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
                   </button>
                 </>
               );

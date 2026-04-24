@@ -12,14 +12,15 @@ import BottomNav from '@/components/BottomNav';
 type TabType = 'ingredients' | 'personalized' | 'trending' | 'meal_time';
 type IngMode = 'auto' | 'ready' | 'almost' | 'all';
 
-const MODE_OPTIONS: { key: Exclude<IngMode, 'auto'>; icon: string; label: string; desc: string }[] = [
-  { key: 'ready',  icon: '🔥', label: '바로 가능',   desc: '냉장고 재료로 100% 완성' },
-  { key: 'almost', icon: '🛒', label: '거의 가능',   desc: '1~2개만 더 사면 OK' },
-  { key: 'all',    icon: '📋', label: '전체',         desc: '매칭률 순 전체 리스트' },
-];
-
 export default function RecommendationsPage() {
   const { t } = useI18n();
+
+  const MODE_OPTIONS: { key: Exclude<IngMode, 'auto'>; icon: string; label: string; desc: string }[] = [
+    { key: 'ready',  icon: '🔥', label: t.recommendations.modeReadyLabel,  desc: t.recommendations.modeReadyDesc },
+    { key: 'almost', icon: '🛒', label: t.recommendations.modeAlmostLabel, desc: t.recommendations.modeAlmostDesc },
+    { key: 'all',    icon: '📋', label: t.recommendations.modeAllLabel,    desc: t.recommendations.modeAllDesc },
+  ];
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('ingredients');
@@ -208,34 +209,34 @@ export default function RecommendationsPage() {
             <div className="text-6xl mb-4">📭</div>
             {mode === 'ready' ? (
               <>
-                <p className="text-text-primary font-medium mb-2">바로 만들 수 있는 레시피가 없어요</p>
-                <p className="text-text-muted text-sm mb-6">조금 부족한 레시피도 볼까요?</p>
+                <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyReadyTitle}</p>
+                <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyReadyHint}</p>
                 <button
                   onClick={() => changeMode('almost')}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
                 >
-                  🛒 재료 1~2개만 더 볼게요
+                  {t.recommendations.emptyReadyCta}
                 </button>
               </>
             ) : mode === 'almost' ? (
               <>
-                <p className="text-text-primary font-medium mb-2">거의 가능한 레시피가 없어요</p>
-                <p className="text-text-muted text-sm mb-6">매칭률 기준 전체 리스트를 볼게요</p>
+                <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyAlmostTitle}</p>
+                <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyAlmostHint}</p>
                 <button
                   onClick={() => changeMode('all')}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
                 >
-                  📋 전체 추천 보기
+                  {t.recommendations.emptyAlmostCta}
                 </button>
               </>
             ) : (
               <>
-                <p className="text-text-primary font-medium mb-2">매칭되는 레시피가 없어요</p>
+                <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyAllTitle}</p>
                 <Link
                   href="/"
                   className="mt-4 inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold"
                 >
-                  재료 등록하러 가기
+                  {t.recommendations.emptyAllCta}
                 </Link>
               </>
             )}
