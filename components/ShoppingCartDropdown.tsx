@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
+import { useI18n } from '@/lib/i18n/context';
 import {
   loadShoppingList,
   subscribeShoppingList,
@@ -90,6 +91,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const router = useRouter();
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useI18n();
   // 초기 state를 공유 캐시에서 바로 읽어옴 — 이미 로드된 경우 dropdown 열림 즉시 표시
   const [items, setItems] = useState<ShoppingItem[]>(() => getCachedShoppingList() ?? []);
   const [loading, setLoading] = useState(() => getCachedShoppingList() == null);
@@ -186,7 +188,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recipeId: null,
-          recipeTitle: '직접 추가',
+          recipeTitle: t.cart.manualAdd,
           ingredients: [{ ingredient_name: name.trim(), category }],
         }),
       });
@@ -198,7 +200,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         await fetchItems();
       }
     } catch {
-      toastError('추가에 실패했어요.');
+      toastError(t.cart.addFailed);
     } finally {
       setAdding(false);
     }
@@ -256,7 +258,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       });
       if (res.ok) {
         await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
-        toastSuccess(`${checked.length}개 재료가 냉장고에 추가됐어요!`);
+        toastSuccess(t.cart.addToFridgeSuccess.replace('{count}', String(checked.length)));
         const remaining = items.filter(i => !i.is_checked);
         setItems(remaining);
         setCachedShoppingList(remaining);
@@ -264,10 +266,10 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         window.dispatchEvent(new Event('fridge-updated'));
         router.refresh();
       } else {
-        toastError('냉장고 추가에 실패했어요.');
+        toastError(t.cart.addToFridgeFailed);
       }
     } catch {
-      toastError('냉장고 추가에 실패했어요.');
+      toastError(t.cart.addToFridgeFailed);
     } finally {
       setAddingToFridge(false);
     }
@@ -306,11 +308,11 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <span className="font-bold text-sm">🛒 장보기</span>
+            <span className="font-bold text-sm">{t.cart.title}</span>
             <button
               onClick={onClose}
               className="text-text-muted hover:text-text-primary transition-colors text-base"
-              aria-label="닫기"
+              aria-label={t.cart.closeAria}
             >
               ✕
             </button>
@@ -320,25 +322,25 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           <div className="px-5 pt-6 pb-5 text-center">
             <div className="text-5xl mb-3">🛍</div>
             <h3 className="text-sm font-bold text-text-primary mb-1.5">
-              로그인하고 장보기 시작
+              {t.cart.loginTitle}
             </h3>
-            <p className="text-xs text-text-secondary leading-relaxed mb-4">
-              레시피 재료를 모아두고<br />장볼 때 바로 꺼내 쓰세요
+            <p className="text-xs text-text-secondary leading-relaxed mb-4 whitespace-pre-line">
+              {t.cart.loginDesc}
             </p>
 
             {/* 혜택 리스트 */}
             <ul className="text-left text-xs text-text-secondary space-y-1.5 mb-5 px-2">
               <li className="flex items-start gap-2">
                 <span className="text-accent-warm shrink-0">✓</span>
-                <span>레시피에서 재료 원탭 담기</span>
+                <span>{t.cart.loginBenefit1}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent-warm shrink-0">✓</span>
-                <span>체크한 재료 냉장고에 자동 이동</span>
+                <span>{t.cart.loginBenefit2}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-accent-warm shrink-0">✓</span>
-                <span>모든 기기에서 실시간 동기화</span>
+                <span>{t.cart.loginBenefit3}</span>
               </li>
             </ul>
 
@@ -347,13 +349,13 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
               onClick={onClose}
               className="inline-flex w-full items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all"
             >
-              로그인하고 시작하기 <span className="leading-none">→</span>
+              {t.cart.loginCta} <span className="leading-none">→</span>
             </Link>
 
             <p className="text-[11px] text-text-muted mt-3">
-              아직 계정 없으세요?{' '}
+              {t.cart.noAccountQuestion}{' '}
               <Link href="/signup" onClick={onClose} className="text-accent-warm underline">
-                회원가입
+                {t.common.signup}
               </Link>
             </p>
           </div>
@@ -370,12 +372,12 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between">
             <span className="font-bold text-sm">
-              🛒 장보기 {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
+              {t.cart.title} {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
             </span>
             <button
               onClick={onClose}
               className="text-text-muted hover:text-text-primary transition-colors text-base"
-              aria-label="닫기"
+              aria-label={t.cart.closeAria}
             >
               ✕
             </button>
@@ -385,7 +387,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           {totalCount > 0 && (
             <div className="mt-2">
               <div className="flex items-center justify-between text-[11px] text-text-muted mb-1">
-                <span>{checkedCount}/{totalCount} 체크됨</span>
+                <span>{t.cart.checkedProgress.replace('{checked}', String(checkedCount)).replace('{total}', String(totalCount))}</span>
                 <span>{progressPct}%</span>
               </div>
               <div className="h-1 rounded-full bg-white/10 overflow-hidden">
@@ -408,7 +410,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                     : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
-                레시피별
+                {t.cart.groupByRecipe}
               </button>
               <button
                 onClick={() => switchGroupMode('category')}
@@ -418,7 +420,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                     : 'text-text-muted hover:text-text-secondary'
                 }`}
               >
-                카테고리별
+                {t.cart.groupByCategory}
               </button>
             </div>
           )}
@@ -452,7 +454,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 }}
                 onFocus={() => { setInputFocused(true); if (suggestions.length > 0) setShowSuggestions(true); }}
                 onBlur={() => setInputFocused(false)}
-                placeholder="재료 검색 또는 직접 입력..."
+                placeholder={t.cart.inputPlaceholder}
                 className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none px-2 py-2 text-sm"
                 style={{ border: 'none', outline: 'none' }}
               />
@@ -465,7 +467,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 className="flex-shrink-0 mr-2 px-3 py-1.5 text-xs rounded-lg bg-accent-warm font-semibold text-background-primary transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed !outline-none !border-0"
                 style={{ border: 'none' }}
               >
-                추가
+                {t.cart.addButton}
               </button>
             )}
           </div>
@@ -489,7 +491,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 className="w-full text-left px-4 py-2.5 text-xs hover:bg-accent-warm/10 transition-colors flex items-center gap-2 border-t border-white/5"
               >
                 <span className="text-accent-warm flex-shrink-0">+</span>
-                <span className="text-accent-warm font-medium truncate">&ldquo;{inputText}&rdquo; 직접 추가</span>
+                <span className="text-accent-warm font-medium truncate">{t.cart.directAddLabel.replace('{name}', inputText)}</span>
               </button>
             </div>
           )}
@@ -504,12 +506,12 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           ) : items.length === 0 ? (
             <div className="text-center py-8 px-4">
               <div className="text-3xl mb-2">🛒</div>
-              <p className="text-xs text-text-muted">위 입력창에서 재료를 추가해보세요</p>
+              <p className="text-xs text-text-muted">{t.cart.emptyHint}</p>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-8 px-4">
               <div className="text-2xl mb-2">🔍</div>
-              <p className="text-xs text-text-muted">&ldquo;{inputText}&rdquo;와 일치하는 재료가 없어요</p>
+              <p className="text-xs text-text-muted">{t.cart.noMatchHint.replace('{q}', inputText)}</p>
             </div>
           ) : (
             <div>
@@ -518,7 +520,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                   <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
                     <span className="text-sm">{group.groupIcon}</span>
                     <span className="text-xs font-medium text-text-secondary truncate">
-                      {group.groupTitle}
+                      {groupMode === 'category'
+                        ? (t.cart.categoryLabels[group.groupKey as keyof typeof t.cart.categoryLabels] ?? group.groupTitle)
+                        : group.groupKey === '__manual__' ? t.cart.manualAdd : group.groupTitle}
                     </span>
                     <span className="text-[10px] text-text-muted ml-auto">
                       {group.items.filter(i => i.is_checked).length}/{group.items.length}
@@ -555,7 +559,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                             onClick={e => { e.stopPropagation(); updateQuantity(item, -1); }}
                             disabled={(item.quantity ?? 1) <= 1}
                             className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            aria-label="수량 감소"
+                            aria-label={t.cart.quantityDecrease}
                           >
                             −
                           </button>
@@ -565,7 +569,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                           <button
                             onClick={e => { e.stopPropagation(); updateQuantity(item, 1); }}
                             className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm transition-colors"
-                            aria-label="수량 증가"
+                            aria-label={t.cart.quantityIncrease}
                           >
                             +
                           </button>
@@ -604,13 +608,13 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
               disabled={addingToFridge}
               className="flex-1 py-1.5 px-3 rounded-lg bg-accent-warm/10 border border-accent-warm/30 text-accent-warm text-xs font-medium hover:bg-accent-warm/20 transition-colors disabled:opacity-50"
             >
-              {addingToFridge ? '추가 중...' : `냉장고에 추가 (${checkedCount})`}
+              {addingToFridge ? t.cart.addingToFridge : t.cart.addToFridge.replace('{count}', String(checkedCount))}
             </button>
             <button
               onClick={clearChecked}
               className="py-1.5 px-3 rounded-lg bg-white/5 border border-white/10 text-text-muted text-xs hover:bg-white/10 transition-colors"
             >
-              완료 삭제
+              {t.cart.clearChecked}
             </button>
           </div>
         )}

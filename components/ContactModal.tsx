@@ -2,21 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useI18n } from '@/lib/i18n/context';
 
 interface ContactModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CATEGORIES = [
-  { key: 'bug', label: '버그 신고', icon: '🐛' },
-  { key: 'feature', label: '기능 제안', icon: '💡' },
-  { key: 'other', label: '기타', icon: '💬' },
+const CATEGORY_KEYS = [
+  { key: 'bug', icon: '🐛' },
+  { key: 'feature', icon: '💡' },
+  { key: 'other', icon: '💬' },
 ] as const;
 
-type Category = typeof CATEGORIES[number]['key'];
+type Category = typeof CATEGORY_KEYS[number]['key'];
 
 export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
+  const { t } = useI18n();
   const [category, setCategory] = useState<Category>('bug');
   const [content, setContent] = useState('');
   const [email, setEmail] = useState('');
@@ -45,7 +47,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     setError('');
 
     if (content.trim().length < 10) {
-      setError('내용을 10자 이상 입력해주세요.');
+      setError(t.contact.errorMinLength);
       return;
     }
 
@@ -73,12 +75,12 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || '문의 접수에 실패했습니다.');
+        setError(data.error || t.contact.errorSubmit);
         return;
       }
       setSubmitted(true);
     } catch {
-      setError('네트워크 오류가 발생했습니다.');
+      setError(t.contact.errorNetwork);
     } finally {
       setSubmitting(false);
     }
@@ -108,7 +110,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">✉️ 개발자에게 문의</h3>
+          <h3 className="text-xl font-bold">{t.contact.title}</h3>
           <button
             onClick={handleClose}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-text-secondary hover:text-text-primary"
@@ -121,22 +123,22 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           /* 성공 화면 */
           <div className="text-center py-8">
             <div className="text-5xl mb-4">✅</div>
-            <h4 className="text-lg font-bold mb-2">문의가 접수되었습니다</h4>
-            <p className="text-sm text-text-muted mb-6">소중한 의견 감사합니다. 확인 후 답변 드리겠습니다.</p>
+            <h4 className="text-lg font-bold mb-2">{t.contact.successTitle}</h4>
+            <p className="text-sm text-text-muted mb-6">{t.contact.successDesc}</p>
             <button
               onClick={handleClose}
               className="px-6 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors"
             >
-              닫기
+              {t.contact.closeButton}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* 카테고리 */}
             <div>
-              <label className="text-sm font-medium text-text-secondary mb-2 block">문의 유형</label>
+              <label className="text-sm font-medium text-text-secondary mb-2 block">{t.contact.typeLabel}</label>
               <div className="flex gap-2">
-                {CATEGORIES.map((c) => (
+                {CATEGORY_KEYS.map((c) => (
                   <button
                     key={c.key}
                     type="button"
@@ -148,7 +150,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     }`}
                   >
                     <span>{c.icon}</span>
-                    <span>{c.label}</span>
+                    <span>{c.key === 'bug' ? t.contact.typeBug : c.key === 'feature' ? t.contact.typeFeature : t.contact.typeOther}</span>
                   </button>
                 ))}
               </div>
@@ -157,7 +159,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             {/* 내용 */}
             <div>
               <label className="text-sm font-medium text-text-secondary mb-2 block">
-                내용 <span className="text-error">*</span>
+                {t.contact.contentLabel} <span className="text-error">*</span>
               </label>
               <textarea
                 value={content}
@@ -165,21 +167,21 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 rows={5}
                 placeholder={
                   category === 'bug'
-                    ? '어떤 문제가 발생했나요? 재현 방법을 알려주시면 더 빠르게 해결할 수 있어요.'
+                    ? t.contact.bugPlaceholder
                     : category === 'feature'
-                    ? '어떤 기능이 있으면 좋을까요? 사용 상황을 함께 알려주세요.'
-                    : '무엇이든 편하게 남겨주세요.'
+                    ? t.contact.featurePlaceholder
+                    : t.contact.otherPlaceholder
                 }
                 className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm/50 transition-all resize-none"
               />
-              <p className="text-xs text-text-muted mt-1 text-right">{content.length}자 (최소 10자)</p>
+              <p className="text-xs text-text-muted mt-1 text-right">{t.contact.charCount.replace('{n}', String(content.length))}</p>
             </div>
 
             {/* 스크린샷 첨부 (로그인 시만) */}
             {isLoggedIn === true && (
               <div>
                 <label className="text-sm font-medium text-text-secondary mb-2 block">
-                  스크린샷 첨부 <span className="text-text-muted text-xs">(선택, 최대 5MB)</span>
+                  {t.contact.screenshotLabel} <span className="text-text-muted text-xs">{t.contact.screenshotHint}</span>
                 </label>
                 {screenshotPreview ? (
                   <div className="relative inline-block">
@@ -203,7 +205,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   </div>
                 ) : (
                   <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-background-tertiary border border-white/10 hover:border-accent-warm/40 cursor-pointer transition-colors w-fit text-sm text-text-muted hover:text-text-secondary">
-                    <span>📎</span> 파일 선택
+                    <span>📎</span> {t.contact.fileSelect}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp,image/gif"
@@ -226,13 +228,13 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             {isLoggedIn === false && (
               <div>
                 <label className="text-sm font-medium text-text-secondary mb-2 block">
-                  이메일 <span className="text-error">*</span>
+                  {t.contact.emailLabel} <span className="text-error">*</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="답변 받으실 이메일 주소"
+                  placeholder={t.contact.emailPlaceholder}
                   className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm/50 transition-all"
                 />
               </div>
@@ -240,7 +242,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
             {isLoggedIn === true && (
               <p className="text-xs text-text-muted bg-background-tertiary px-4 py-2.5 rounded-xl">
-                💌 로그인된 계정 이메일로 답변이 전송됩니다.
+                {t.contact.replyEmailNote}
               </p>
             )}
 
@@ -253,7 +255,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               disabled={submitting || screenshotUploading || content.trim().length < 10}
               className="w-full py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover disabled:opacity-40 transition-all"
             >
-              {screenshotUploading ? '이미지 업로드 중...' : submitting ? '전송 중...' : '문의 보내기'}
+              {screenshotUploading ? t.contact.uploadingImage : submitting ? t.contact.submitting : t.contact.submitButton}
             </button>
           </form>
         )}
