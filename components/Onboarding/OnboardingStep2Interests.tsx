@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingStepProps } from './OnboardingTypes';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function OnboardingStep2Interests({
   formData,
@@ -9,19 +10,22 @@ export default function OnboardingStep2Interests({
   onBack,
   onSkip,
 }: OnboardingStepProps) {
-  const cuisineOptions = [
-    { id: 'korean', name: '한식', icon: '🍚' },
-    { id: 'chinese', name: '중식', icon: '🥟' },
-    { id: 'japanese', name: '일식', icon: '🍣' },
-    { id: 'western', name: '양식', icon: '🍝' },
-    { id: 'italian', name: '이탈리안', icon: '🍕' },
-    { id: 'french', name: '프렌치', icon: '🥐' },
-    { id: 'mexican', name: '멕시칸', icon: '🌮' },
-    { id: 'indian', name: '인도', icon: '🍛' },
-    { id: 'thai', name: '태국', icon: '🍜' },
-    { id: 'vegan', name: '비건', icon: '🥗' },
-    { id: 'dessert', name: '디저트', icon: '🍰' },
-    { id: 'baking', name: '베이킹', icon: '🥖' },
+  const { t } = useI18n();
+  const ti = t.onboarding.interests;
+  // 요리 카테고리 이름은 기존 t.cuisines를 재사용 (홈·검색과 동일 소스).
+  const cuisineOptions: { id: keyof typeof t.cuisines; icon: string }[] = [
+    { id: 'korean', icon: '🍚' },
+    { id: 'chinese', icon: '🥟' },
+    { id: 'japanese', icon: '🍣' },
+    { id: 'western', icon: '🍝' },
+    { id: 'italian', icon: '🍕' },
+    { id: 'french', icon: '🥐' },
+    { id: 'mexican', icon: '🌮' },
+    { id: 'indian', icon: '🍛' },
+    { id: 'thai', icon: '🍜' },
+    { id: 'vegan', icon: '🥗' },
+    { id: 'dessert', icon: '🍰' },
+    { id: 'baking', icon: '🥖' },
   ];
 
   const toggleInterest = (id: string) => {
@@ -39,9 +43,9 @@ export default function OnboardingStep2Interests({
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="text-center">
-        <h3 className="text-lg font-bold text-text-primary mb-2">관심 요리 선택</h3>
+        <h3 className="text-lg font-bold text-text-primary mb-2">{ti.title}</h3>
         <p className="text-sm text-text-secondary">
-          관심 있는 요리를 선택하세요 (최소 3개 권장)
+          {ti.subtitle}
         </p>
       </div>
 
@@ -49,7 +53,7 @@ export default function OnboardingStep2Interests({
       {formData.interests.length > 0 && (
         <div className="text-center">
           <span className="inline-block px-3 py-1 rounded-full bg-accent-warm/20 text-accent-warm text-sm font-medium">
-            {formData.interests.length}개 선택됨
+            {ti.selectedCount.replace('{count}', String(formData.interests.length))}
           </span>
         </div>
       )}
@@ -68,7 +72,7 @@ export default function OnboardingStep2Interests({
             }`}
           >
             <span className="text-3xl mb-2">{cuisine.icon}</span>
-            <span className="text-xs">{cuisine.name}</span>
+            <span className="text-xs">{t.cuisines[cuisine.id]}</span>
           </button>
         ))}
       </div>
@@ -76,7 +80,7 @@ export default function OnboardingStep2Interests({
       {/* 안내 메시지 */}
       {formData.interests.length < 3 && (
         <p className="text-xs text-center text-accent-warm">
-          💡 최소 3개 이상 선택하시면 더 정확한 추천을 받을 수 있어요!
+          {ti.minHint}
         </p>
       )}
 
@@ -87,21 +91,21 @@ export default function OnboardingStep2Interests({
           onClick={onBack}
           className="flex-1 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all"
         >
-          이전
+          {t.onboarding.back}
         </button>
         <button
           type="button"
           onClick={onSkip}
           className="px-4 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all whitespace-nowrap"
         >
-          나중에
+          {t.onboarding.skipShort}
         </button>
         <button
           type="button"
           onClick={onNext}
           className="flex-1 py-3.5 rounded-xl bg-accent-warm text-background-primary hover:bg-accent-hover font-bold transition-all shadow-md"
         >
-          다음
+          {t.onboarding.next}
         </button>
       </div>
     </div>

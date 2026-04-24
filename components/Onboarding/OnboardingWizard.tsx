@@ -8,6 +8,7 @@ import OnboardingStep3Dietary from './OnboardingStep3Dietary';
 import OnboardingStep4Complete from './OnboardingStep4Complete';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function OnboardingWizard({
   isOpen,
@@ -16,6 +17,7 @@ export default function OnboardingWizard({
   initialData,
 }: OnboardingWizardProps) {
   const toast = useToast();
+  const { t } = useI18n();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<OnboardingFormData>({
@@ -83,7 +85,7 @@ export default function OnboardingWizard({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error('사용자 인증 정보를 찾을 수 없습니다');
+        throw new Error(t.onboarding.errorAuthMissing);
       }
 
       // 1. 아바타 업로드 (있으면)
@@ -196,7 +198,7 @@ export default function OnboardingWizard({
       onComplete();
     } catch (error) {
       console.error('Onboarding error:', error);
-      toast.error(`저장 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      toast.error(`${t.onboarding.errorPrefix}: ${error instanceof Error ? error.message : t.onboarding.errorUnknown}`);
     } finally {
       setSaving(false);
     }
@@ -218,7 +220,7 @@ export default function OnboardingWizard({
         {/* 진행률 표시 */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-text-primary">
-            프로필 설정 ({step}/4)
+            {t.onboarding.wizardTitle.replace('{step}', String(step))}
           </h2>
           <div className="flex gap-1">
             {[1, 2, 3, 4].map((i) => (
@@ -273,7 +275,7 @@ export default function OnboardingWizard({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center">
             <div className="bg-background-secondary p-6 rounded-xl border border-white/10 text-center">
               <div className="w-12 h-12 border-4 border-accent-warm border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-text-primary font-medium">저장 중...</p>
+              <p className="text-text-primary font-medium">{t.onboarding.saving}</p>
             </div>
           </div>
         )}
