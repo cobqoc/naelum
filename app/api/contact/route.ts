@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         const categoryLabel = ({ bug: '🐛 버그 신고', feature: '💡 기능 제안', other: '💬 기타' } as Record<string, string>)[category] ?? category;
         const preview = content.trim().slice(0, 50);
         await resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: 'Naelum(낼름) <hello@naelum.app>',
           to: process.env.DEVELOPER_NOTIFY_EMAIL,
           subject: `[낼름 문의] ${categoryLabel} — ${preview}${content.trim().length > 50 ? '...' : ''}`,
           html: `
