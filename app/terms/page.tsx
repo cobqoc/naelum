@@ -38,16 +38,8 @@ export default function TermsOfServicePage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-12">
-        {/* DRAFT Warning */}
-        <div className="mb-8 p-4 bg-warning/10 border border-warning/30 rounded-xl">
-          <p className="text-warning font-bold">⚠️ 개발용 초안</p>
-          <p className="text-text-secondary text-sm mt-1">
-            이 문서는 AI가 생성한 초안입니다. 프로덕션 배포 전 반드시 변호사의 검토가 필요합니다.
-          </p>
-        </div>
-
         <h1 className="text-4xl font-bold text-text-primary mb-2">이용약관</h1>
-        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 21일</p>
+        <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 25일</p>
 
         <div className="space-y-8 text-text-primary">
           {/* 제1조 */}
@@ -250,8 +242,12 @@ export default function TermsOfServicePage() {
           {/* 부칙 */}
           <section className="pt-8 border-t border-white/10">
             <h2 className="text-2xl font-bold mb-4">부칙</h2>
-            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행되며, 2026년 4월 21일 개정되었습니다.</p>
-            <p className="text-text-muted text-sm mt-2">개정 내용: 연령 기준 16세로 상향 (글로벌 준수), 콘텐츠 신고 처리 기한 명시 (DSA·정보통신망법), 서비스 기능 업데이트 반영.</p>
+            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행되며, 2026년 4월 25일 최종 개정되었습니다.</p>
+            <p className="text-text-muted text-sm mt-2">개정 이력:</p>
+            <ul className="list-disc list-inside ml-4 text-text-muted text-sm space-y-1">
+              <li>2026-04-21: 연령 기준 16세로 상향, 콘텐츠 신고 처리 기한 명시 (DSA·정보통신망법), 서비스 기능 업데이트 반영</li>
+              <li>2026-04-25: 제4조의2 신설 (외부 영상 기반 레시피 수집 원칙 명시), 제8조 ⑤⑥⑦ 추가 (UGC 저작권 의무·3-Strike 제재·게시 전 확인 의무)</li>
+            </ul>
           </section>
         </div>
 

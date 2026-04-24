@@ -339,7 +339,7 @@ export default function PrivacyPolicyPage() {
                 <ul className="mt-2 space-y-1 text-sm">
                   <li>성명: 낼름 운영팀</li>
                   <li>직책: 개인정보 보호책임자</li>
-                  <li>이메일: <a href="mailto:privacy@naelum.app" className="text-accent-warm underline">privacy@naelum.app</a></li>
+                  <li>이메일: <a href="mailto:hello@naelum.app" className="text-accent-warm underline">hello@naelum.app</a></li>
                 </ul>
                 <p className="text-xs text-text-muted mt-3">※ 이메일로 문의 시 영업일 기준 7일 이내에 답변 드립니다 (긴급 보안 사고는 24시간 이내).</p>
               </div>
