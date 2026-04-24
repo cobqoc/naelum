@@ -160,7 +160,7 @@ export default function IngredientForm({
     setPendingItems(prev => {
       // 중복 재료 탭 시 사일런트 실패 → 사용자 혼란 방지용 토스트
       if (prev.some(p => p.name === ingredient.name)) {
-        toastInfo(`"${ingredient.name}" 이미 추가됐어요.`);
+        toastInfo(`"${ingredient.name}" ${t.quickAdd.alreadyAdded}`);
         return prev;
       }
       return [...prev, createPendingItem(ingredient.name, ingredient.category || 'other', ingredient.id, ingredient.common_units)];
@@ -218,7 +218,7 @@ export default function IngredientForm({
     }
 
     // 제출 성공 피드백
-    toastSuccess(`🧊 재료 ${count}개가 추가됐어요!`);
+    toastSuccess(t.quickAdd.addedToast.replace('{count}', String(count)));
     onCancel?.();
   };
 
@@ -317,7 +317,7 @@ export default function IngredientForm({
       {pendingItems.length === 0 && (
         <div className="rounded-lg bg-accent-warm/5 border border-accent-warm/20 px-3 py-2">
           <p className="text-[11px] text-text-secondary leading-relaxed">
-            <span className="text-accent-warm">💡</span> 재료 3개 이상 추가하면 레시피 추천을 받을 수 있어요.
+            {t.quickAdd.minRecipeHint}
           </p>
         </div>
       )}
@@ -333,7 +333,7 @@ export default function IngredientForm({
 
       {/* 2. 검색 자동완성 — 특수 재료나 마스터에 없는 커스텀 재료 추가용. 브라우저 하단 보조 수단. */}
       <div>
-        <p className="text-[11px] text-text-muted mb-1.5">찾는 재료가 없다면 검색으로 직접 추가</p>
+        <p className="text-[11px] text-text-muted mb-1.5">{t.quickAdd.searchHint}</p>
         <IngredientAutocompleteV2
           value={inputValue}
           onChange={setInputValue}
@@ -353,7 +353,7 @@ export default function IngredientForm({
                 {t.quickAdd.addedItems} <span className="text-accent-warm font-medium">{pendingItems.length}</span>
               </p>
               <p className="text-[11px] text-text-muted/70 mt-0.5">
-                💡 각 재료를 탭하면 수량·유통기한 등 상세 설정을 할 수 있어요
+                {t.quickAdd.detailTapHint}
               </p>
             </div>
             {pendingItems.length > 1 && (
@@ -385,7 +385,7 @@ export default function IngredientForm({
                 <span className="text-[11px] opacity-40" aria-hidden="true">·</span>
                 <span
                   className="text-[11px] opacity-80"
-                  title={`저장 위치: ${item.storage_location}`}
+                  title={`${t.quickAdd.storageTitle}: ${t.quickAdd.storageLocationLabels[item.storage_location as keyof typeof t.quickAdd.storageLocationLabels] ?? item.storage_location}`}
                 >
                   {item.storage_location === '냉장' ? '❄️' : item.storage_location === '냉동' ? '🧊' : '🌡'}
                 </span>
@@ -434,7 +434,7 @@ export default function IngredientForm({
               onClick={handleBatchSubmit}
               className="flex-1 rounded-xl bg-accent-warm py-3.5 font-bold text-background-primary hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/20"
             >
-              {pendingItems.length}개 {t.quickAdd.addButton}
+              {pendingItems.length}{t.quickAdd.countSuffix} {t.quickAdd.addButton}
             </button>
             {onCancel && (
               <button
@@ -602,7 +602,7 @@ function DetailFields({
             className="w-full rounded-xl bg-background-secondary px-3 py-2.5 text-sm text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm cursor-pointer"
           >
             {UNITS.map((unit) => (
-              <option key={unit} value={unit}>{unit}</option>
+              <option key={unit} value={unit}>{t.quickAdd.unitLabels[unit as keyof typeof t.quickAdd.unitLabels] ?? unit}</option>
             ))}
           </select>
         </div>
@@ -614,7 +614,7 @@ function DetailFields({
         onClick={() => setShowAdvanced(prev => !prev)}
         className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] text-text-muted hover:text-text-secondary hover:bg-white/5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
       >
-        <span>{showAdvanced ? '접기' : '더 자세히'}</span>
+        <span>{showAdvanced ? t.quickAdd.collapseLabel : t.quickAdd.expandLabel}</span>
         <svg className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
@@ -661,7 +661,7 @@ function DetailFields({
                         : 'bg-background-secondary text-text-primary hover:bg-white/5'
                     }`}
                   >
-                    {location}
+                    {t.quickAdd.storageLocationLabels[location as keyof typeof t.quickAdd.storageLocationLabels] ?? location}
                   </button>
                 ))}
               </div>
@@ -712,6 +712,7 @@ function DetailFields({
  * - blur 또는 Enter → 확정 + read-only 복귀 (빈 값은 이전 값 유지)
  */
 function EditableName({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
@@ -750,8 +751,8 @@ function EditableName({ value, onChange }: { value: string; onChange: (v: string
       onClick={() => setEditing(true)}
       className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-background-secondary text-text-primary text-base font-medium text-left hover:bg-white/5 active:scale-[0.99] transition-all ring-1 ring-white/10"
     >
-      <span className="truncate">{value || '이름 없음'}</span>
-      <span className="text-xs text-text-muted flex-shrink-0 ml-2">✏️ 수정</span>
+      <span className="truncate">{value || t.quickAdd.nameEmpty}</span>
+      <span className="text-xs text-text-muted flex-shrink-0 ml-2">{t.quickAdd.editLabel}</span>
     </button>
   );
 }

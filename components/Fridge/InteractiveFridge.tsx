@@ -46,11 +46,11 @@ function FridgeInterior({ grouped }: { grouped: GroupedIngredients }) {
 
   return (
     <FridgeShell>
-      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/" />
-      <ShelfSection sectionKey="냉장" label={t.fridge?.refrigerator || '냉장'} icon="❄️" items={grouped.refrigerator} />
-      <ShelfSection sectionKey="냉동" label={t.fridge?.freezer || '냉동'} icon="🧊" items={grouped.freezer} />
-      <ShelfSection sectionKey="상온" label={t.fridge?.roomTemp || '상온'} icon="🌡️" items={grouped.roomTemp} isLast />
-      <FridgeFooter href="/recommendations" label={`🔍 ${t.fridge?.findRecipes || '이 재료로 레시피 찾기'}`} />
+      <FridgeHeader title={`❄️ ${t.fridge.title}`} manageHref="/" />
+      <ShelfSection sectionKey="냉장" label={t.fridge.refrigerator} icon="❄️" items={grouped.refrigerator} />
+      <ShelfSection sectionKey="냉동" label={t.fridge.freezer} icon="🧊" items={grouped.freezer} />
+      <ShelfSection sectionKey="상온" label={t.fridge.roomTemp} icon="🌡️" items={grouped.roomTemp} isLast />
+      <FridgeFooter href="/recommendations" label={`🔍 ${t.fridge.findRecipes}`} />
     </FridgeShell>
   );
 }
@@ -62,19 +62,19 @@ function EmptyFridgeState() {
 
   return (
     <FridgeShell>
-      <FridgeHeader title={`❄️ ${t.fridge?.title || '나의 냉장고'}`} manageHref="/" />
-      <ShelfSection sectionKey="냉장" label="냉장" icon="❄️" items={empty} />
-      <ShelfSection sectionKey="냉동" label="냉동" icon="🧊" items={empty} />
-      <ShelfSection sectionKey="상온" label="상온" icon="🌡️" items={empty} isLast />
+      <FridgeHeader title={`❄️ ${t.fridge.title}`} manageHref="/" />
+      <ShelfSection sectionKey="냉장" label={t.fridge.refrigerator} icon="❄️" items={empty} />
+      <ShelfSection sectionKey="냉동" label={t.fridge.freezer} icon="🧊" items={empty} />
+      <ShelfSection sectionKey="상온" label={t.fridge.roomTemp} icon="🌡️" items={empty} isLast />
       <div className="px-4 py-5 bg-[#1c2a3a] text-center">
         <p className="text-xs text-text-muted mb-3">
-          {t.fridge?.emptyMessage || '재료를 추가하고 맞춤 레시피를 추천받아보세요'}
+          {t.fridge.emptyMessage}
         </p>
         <Link
           href="/"
           className="inline-block px-5 py-2.5 rounded-xl bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover transition-colors"
         >
-          + {t.fridge?.addIngredients || '재료 추가하기'}
+          + {t.fridge.addIngredients}
         </Link>
       </div>
     </FridgeShell>
@@ -90,13 +90,13 @@ function AnonymousFridge() {
     <FridgeShell>
       {/* 블러 처리된 냉장고 내부 (새 디자인) */}
       <div className="blur-[3px] select-none pointer-events-none">
-        <FridgeHeader title="❄️ 나의 냉장고" />
-        <ShelfSection sectionKey="냉장" label="냉장" icon="❄️" items={sampleGrouped.refrigerator} />
-        <ShelfSection sectionKey="냉동" label="냉동" icon="🧊" items={sampleGrouped.freezer} />
-        <ShelfSection sectionKey="상온" label="상온" icon="🌡️" items={sampleGrouped.roomTemp} isLast />
+        <FridgeHeader title={`❄️ ${t.fridge.title}`} />
+        <ShelfSection sectionKey="냉장" label={t.fridge.refrigerator} icon="❄️" items={sampleGrouped.refrigerator} />
+        <ShelfSection sectionKey="냉동" label={t.fridge.freezer} icon="🧊" items={sampleGrouped.freezer} />
+        <ShelfSection sectionKey="상온" label={t.fridge.roomTemp} icon="🌡️" items={sampleGrouped.roomTemp} isLast />
         <div className="px-3 py-3 bg-[#1c2a3a]">
           <div className="py-2.5 rounded-xl bg-accent-warm/40 text-center text-xs text-background-primary/60 font-bold">
-            🔍 이 재료로 레시피 찾기
+            🔍 {t.fridge.findRecipes}
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@ function AnonymousFridge() {
       {/* 중앙 안내 메시지 */}
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
         <p className="mx-5 px-4 py-3 rounded-xl bg-background-primary/80 backdrop-blur-sm text-sm text-text-secondary text-center leading-relaxed border border-white/10">
-          {t.fridge?.authMessage || '회원가입하면 나만의 냉장고에 재료를 관리하고 맞춤 레시피를 추천받을 수 있어요'}
+          {t.fridge.authMessage}
         </p>
       </div>
 
@@ -115,13 +115,13 @@ function AnonymousFridge() {
             href="/signup"
             className="flex-1 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold text-xs text-center hover:bg-accent-hover transition-colors"
           >
-            {t.fridge?.signup || '회원가입'}
+            {t.fridge.signup}
           </Link>
           <Link
             href="/login"
             className="flex-1 py-2.5 rounded-xl bg-background-tertiary text-text-primary font-bold text-xs text-center hover:bg-white/10 transition-colors border border-white/15"
           >
-            {t.fridge?.login || '로그인'}
+            {t.fridge.login}
           </Link>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function InteractiveFridge() {
       {state !== 'anonymous' && (
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold flex items-center gap-1.5">
-            🧊 {t.fridge?.title || '나의 냉장고'}
+            🧊 {t.fridge.title}
           </h2>
         </div>
       )}
