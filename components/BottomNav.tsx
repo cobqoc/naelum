@@ -209,7 +209,7 @@ export default function BottomNav() {
           const isProfileTab = item.href === '/profile';
           const isCartTab = item.href === '/cart';
           const isSearchTab = item.href === '#search';
-          const label = isProfileTab && !authLoading && !user ? '로그인' : item.label;
+          const label = isProfileTab && !authLoading && !user ? t.common.login : item.label;
 
           if (isSearchTab) {
             // 홈(냉장고 UI)에서는 인라인 검색바로 토글, 그 외 페이지에서는 오버레이 모달을 띄움.
@@ -292,10 +292,10 @@ export default function BottomNav() {
               <Link
                 key={item.href}
                 href="/login"
-                aria-label="로그인"
+                aria-label={t.common.login}
                 className="flex items-center justify-center px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover active:scale-95 transition-all min-w-[4rem]"
               >
-                로그인
+                {t.common.login}
               </Link>
             );
           }
@@ -333,14 +333,14 @@ export default function BottomNav() {
               onClick={() => setShowSearch(false)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
-              <span>📋</span><span>레시피</span>
+              <span>📋</span><span>{t.home.navRecipes}</span>
             </Link>
             <Link
               href="/tip"
               onClick={() => setShowSearch(false)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
-              <span>💡</span><span>팁</span>
+              <span>💡</span><span>{t.home.navTips}</span>
             </Link>
           </div>
 
@@ -351,7 +351,7 @@ export default function BottomNav() {
             </div>
             <button
               onClick={() => setShowSearch(false)}
-              aria-label="닫기"
+              aria-label={t.common.close}
               className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-tertiary hover:bg-white/10 text-text-primary transition-colors"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingStepProps } from './OnboardingTypes';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function OnboardingStep3Dietary({
   formData,
@@ -9,13 +10,15 @@ export default function OnboardingStep3Dietary({
   onBack,
   onSkip,
 }: OnboardingStepProps) {
-  const dietaryOptions = [
-    { id: 'vegetarian', name: '채식주의자', icon: '🥬' },
-    { id: 'vegan', name: '비건', icon: '🌱' },
-    { id: 'lacto_vegetarian', name: '락토 베지테리언', icon: '🥛' },
-    { id: 'gluten_free', name: '글루텐 프리', icon: '🌾' },
-    { id: 'low_carb', name: '저탄수화물', icon: '🥩' },
-    { id: 'low_calorie', name: '저칼로리', icon: '🥗' },
+  const { t } = useI18n();
+  const td = t.onboarding.dietary;
+  const dietaryOptions: { id: keyof typeof td.options; icon: string }[] = [
+    { id: 'vegetarian', icon: '🥬' },
+    { id: 'vegan', icon: '🌱' },
+    { id: 'lacto_vegetarian', icon: '🥛' },
+    { id: 'gluten_free', icon: '🌾' },
+    { id: 'low_carb', icon: '🥩' },
+    { id: 'low_calorie', icon: '🥗' },
   ];
 
   const toggleDietaryPref = (id: string) => {
@@ -33,15 +36,15 @@ export default function OnboardingStep3Dietary({
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="text-center">
-        <h3 className="text-lg font-bold text-text-primary mb-2">식단 선호도</h3>
+        <h3 className="text-lg font-bold text-text-primary mb-2">{td.title}</h3>
         <p className="text-sm text-text-secondary">
-          식단 선호도와 알레르기 정보를 입력하세요 (선택)
+          {td.subtitle}
         </p>
       </div>
 
       {/* 식단 선호도 */}
       <div>
-        <h4 className="text-sm font-medium text-text-secondary mb-3">식단 선호도</h4>
+        <h4 className="text-sm font-medium text-text-secondary mb-3">{td.dietaryLabel}</h4>
         <div className="grid grid-cols-2 gap-3">
           {dietaryOptions.map((option) => (
             <button
@@ -55,30 +58,30 @@ export default function OnboardingStep3Dietary({
               }`}
             >
               <span className="text-2xl">{option.icon}</span>
-              <span className="text-sm">{option.name}</span>
+              <span className="text-sm">{td.options[option.id]}</span>
             </button>
           ))}
         </div>
         {formData.dietary_preferences.length > 0 && (
           <p className="text-xs text-center text-text-muted mt-2">
-            {formData.dietary_preferences.length}개 선택됨
+            {t.onboarding.interests.selectedCount.replace('{count}', String(formData.dietary_preferences.length))}
           </p>
         )}
       </div>
 
       {/* 알레르기 */}
       <div>
-        <h4 className="text-sm font-medium text-text-secondary mb-3">알레르기 재료</h4>
+        <h4 className="text-sm font-medium text-text-secondary mb-3">{td.allergyLabel}</h4>
         <div className="space-y-2">
           <textarea
             value={formData.allergies}
             onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-            placeholder="예: 땅콩, 새우, 우유, 계란&#10;(쉼표로 구분하여 입력해주세요)"
+            placeholder={td.allergyPlaceholder}
             rows={4}
             className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all resize-none"
           />
           <p className="text-xs text-text-muted">
-            💡 알레르기 재료를 등록하면 해당 재료가 포함된 레시피를 제외하고 추천해드려요
+            {td.allergyHint}
           </p>
         </div>
       </div>
@@ -90,21 +93,21 @@ export default function OnboardingStep3Dietary({
           onClick={onBack}
           className="flex-1 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all"
         >
-          이전
+          {t.onboarding.back}
         </button>
         <button
           type="button"
           onClick={onSkip}
           className="px-4 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all whitespace-nowrap"
         >
-          나중에
+          {t.onboarding.skipShort}
         </button>
         <button
           type="button"
           onClick={onNext}
           className="flex-1 py-3.5 rounded-xl bg-accent-warm text-background-primary hover:bg-accent-hover font-bold transition-all shadow-md"
         >
-          다음
+          {t.onboarding.next}
         </button>
       </div>
     </div>

@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import IngredientForm from './IngredientForm';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useI18n } from '@/lib/i18n/context';
 
 interface Ingredient {
   id: string;
@@ -45,6 +47,9 @@ export default function IngredientDetailModal({
   onUpdate,
   onDelete,
 }: IngredientDetailModalProps) {
+  const { t } = useI18n();
+  useEscapeKey(onClose, isOpen);
+
   const initialData = useMemo<Partial<IngredientFormData>>(() => {
     if (!isOpen || !ingredient) return {};
     return {
@@ -106,7 +111,7 @@ export default function IngredientDetailModal({
           </h2>
           <button
             onClick={onClose}
-            aria-label="닫기"
+            aria-label={t.common.close}
             className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">

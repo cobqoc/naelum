@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
 import {
   CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS, UNITS,
@@ -40,6 +41,8 @@ export default function NewRecipePage() {
   const remixId = searchParams.get('remix');
   const supabase = createClient();
   const toast = useToast();
+  const { t } = useI18n();
+  const tf = t.recipeForm;
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const [remixSource, setRemixSource] = useState<{ id: string; title: string; author: string } | null>(null);
@@ -294,12 +297,12 @@ export default function NewRecipePage() {
   // 이미지 업로드 함수
   const handleImageUpload = async (index: number, file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다.');
+      toast.error(tf.errorImageType);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다.');
+      toast.error(tf.errorImageSize);
       return;
     }
 
@@ -308,7 +311,7 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('로그인이 필요합니다.');
+        toast.error(tf.errorLoginRequired);
         return;
       }
 
@@ -338,7 +341,7 @@ export default function NewRecipePage() {
 
     } catch (error) {
       console.error('Image upload error:', error);
-      toast.error('이미지 업로드에 실패했습니다.');
+      toast.error(tf.errorImageUpload);
     } finally {
       setUploadingImage(null);
     }
@@ -352,12 +355,12 @@ export default function NewRecipePage() {
   // 재료 준비 이미지 업로드 함수
   const handleIngredientsImageUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다.');
+      toast.error(tf.errorImageType);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다.');
+      toast.error(tf.errorImageSize);
       return;
     }
 
@@ -366,7 +369,7 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('로그인이 필요합니다.');
+        toast.error(tf.errorLoginRequired);
         return;
       }
 
@@ -395,7 +398,7 @@ export default function NewRecipePage() {
 
     } catch (error) {
       console.error('Image upload error:', error);
-      toast.error('이미지 업로드에 실패했습니다.');
+      toast.error(tf.errorImageUpload);
     } finally {
       setUploadingIngredientsImage(false);
     }
@@ -409,12 +412,12 @@ export default function NewRecipePage() {
   // 썸네일(완성 요리) 이미지 업로드 함수
   const handleThumbnailUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다.');
+      toast.error(tf.errorImageType);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('이미지 크기는 5MB 이하여야 합니다.');
+      toast.error(tf.errorImageSize);
       return;
     }
 
@@ -423,7 +426,7 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('로그인이 필요합니다.');
+        toast.error(tf.errorLoginRequired);
         return;
       }
 
@@ -452,7 +455,7 @@ export default function NewRecipePage() {
 
     } catch (error) {
       console.error('Image upload error:', error);
-      toast.error('이미지 업로드에 실패했습니다.');
+      toast.error(tf.errorImageUpload);
     } finally {
       setUploadingThumbnail(false);
     }
@@ -553,9 +556,9 @@ export default function NewRecipePage() {
   // Get placeholder text based on index
   const getPlaceholder = (index: number, field: 'name' | 'quantity' | 'notes') => {
     const examples = {
-      0: { name: '예: 돼지고기', quantity: '예: 200', notes: '예: 찌개용, 한입 크기로 준비' },
-      2: { name: '예: 양파', quantity: '예: 1', notes: '예: 채썰어서 준비' },
-      4: { name: '재료명', quantity: '양', notes: '메모' }
+      0: { name: tf.getPlaceholderName1, quantity: tf.getPlaceholderQty1, notes: tf.getPlaceholderNotes1 },
+      2: { name: tf.getPlaceholderName2, quantity: tf.getPlaceholderQty2, notes: tf.getPlaceholderNotes2 },
+      4: { name: tf.ingName, quantity: tf.ingQuantity, notes: tf.ingNotes }
     };
 
     const example = examples[index as keyof typeof examples];
@@ -563,23 +566,23 @@ export default function NewRecipePage() {
       return example[field];
     }
 
-    return field === 'name' ? '재료명' : field === 'quantity' ? '양' : '메모';
+    return field === 'name' ? tf.ingName : field === 'quantity' ? tf.ingQuantity : tf.ingNotes;
   };
 
   const handleSubmit = async () => {
     // 유효성 검사
     if (!title.trim()) {
-      toast.warning('레시피 제목을 입력해주세요.');
+      toast.warning(tf.warnTitle);
       return;
     }
 
     if (cuisineType === 'other' && !customCuisineType.trim()) {
-      toast.warning('기타 요리 종류를 입력해주세요.');
+      toast.warning(tf.warnCustomCuisine);
       return;
     }
 
     if (dishType === 'other' && !customDishType.trim()) {
-      toast.warning('기타 요리 유형을 입력해주세요.');
+      toast.warning(tf.warnCustomDish);
       return;
     }
 
@@ -587,13 +590,13 @@ export default function NewRecipePage() {
     const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
 
     if (validIngredients.length === 0) {
-      toast.warning('최소 1개의 재료를 입력해주세요.');
+      toast.warning(tf.warnIngredients);
       return;
     }
 
     const validSteps = steps.filter(s => s.instruction.trim());
     if (validSteps.length === 0) {
-      toast.warning('최소 1개의 조리 단계를 입력해주세요.');
+      toast.warning(tf.warnSteps);
       return;
     }
 
@@ -602,7 +605,7 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('로그인이 필요합니다.');
+        toast.error(tf.errorLoginRequired);
         router.push('/login');
         return;
       }
@@ -655,13 +658,13 @@ export default function NewRecipePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || '레시피 생성에 실패했습니다.');
+        throw new Error(data.error || tf.errorCreate);
       }
 
-      toast.success('레시피가 성공적으로 등록되었습니다!');
+      toast.success(tf.successCreate);
       router.push(`/recipes/${data.recipe.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : tf.errorGeneric);
     } finally {
       setLoading(false);
     }
@@ -669,13 +672,13 @@ export default function NewRecipePage() {
 
   const handleDraft = async () => {
     if (!title.trim()) {
-      toast.warning('제목을 입력해주세요.');
+      toast.warning(tf.warnDraftTitle);
       return;
     }
     setDraftLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error('로그인이 필요합니다.'); router.push('/login'); return; }
+      if (!user) { toast.error(tf.errorLoginRequired); router.push('/login'); return; }
 
       const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
       const validSteps = steps.filter(s => s.instruction.trim());
@@ -724,13 +727,13 @@ export default function NewRecipePage() {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '임시저장에 실패했습니다.');
+      if (!response.ok) throw new Error(data.error || tf.errorDraft);
 
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
-      toast.success('임시저장됐습니다!');
+      toast.success(tf.successDraft);
       router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : tf.errorGeneric);
     } finally {
       setDraftLoading(false);
     }
@@ -742,9 +745,9 @@ export default function NewRecipePage() {
       <header className="sticky top-0 z-50 bg-background-secondary/90 backdrop-blur-xl border-b border-white/10">
         <div className="container mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
           <Link href="/" className="text-text-muted hover:text-text-primary">
-            ← 취소
+            ← {t.common.cancel}
           </Link>
-          <h1 className="text-lg font-bold">{remixSource ? '🔄 리믹스' : '새 레시피'}</h1>
+          <h1 className="text-lg font-bold">{remixSource ? tf.titleRemix : tf.titleNew}</h1>
           <div className="w-12" />
         </div>
       </header>
@@ -755,7 +758,7 @@ export default function NewRecipePage() {
           <div className="rounded-xl bg-accent-warm/10 border border-accent-warm/20 p-4 flex items-center gap-3">
             <span className="text-2xl">🔄</span>
             <div className="flex-1">
-              <p className="text-sm font-medium text-accent-warm">리믹스</p>
+              <p className="text-sm font-medium text-accent-warm">{tf.remixLabel}</p>
               <p className="text-xs text-text-secondary">
                 원본: <Link href={`/recipes/${remixSource.id}`} className="text-accent-warm hover:underline">{remixSource.title}</Link>
                 {remixSource.author && <span> by @{remixSource.author}</span>}
@@ -768,81 +771,81 @@ export default function NewRecipePage() {
         <section className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">1</span>
-            기본 정보
+            {tf.section1Basic}
           </h2>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">레시피 제목 *</label>
+            <label className="text-sm font-medium text-text-secondary">{tf.title} *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              placeholder="예: 만드는건 간단하지만 맛은 간단하지 않은 떡볶이"
+              placeholder={tf.titlePlaceholder}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">설명</label>
+            <label className="text-sm font-medium text-text-secondary">{tf.description}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm min-h-[100px] resize-none"
-              placeholder="레시피에 대한 간단한 설명을 작성해주세요.(선택)"
+              placeholder={tf.descriptionPlaceholder}
             />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">인분 <span className="text-text-muted text-xs">선택</span></label>
+              <label className="text-sm font-medium text-text-secondary">{tf.servings} <span className="text-text-muted text-xs">{tf.optional}</span></label>
               <input
                 type="number"
                 value={servings}
                 onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
                 min="1"
-                placeholder="선택사항"
+                placeholder={tf.optionalPlaceholder}
                 className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">준비(분) <span className="text-text-muted text-xs">선택</span></label>
+              <label className="text-sm font-medium text-text-secondary">{tf.prepTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
               <input
                 type="number"
                 value={prepTime}
                 onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
                 min="0"
-                placeholder="선택사항"
+                placeholder={tf.optionalPlaceholder}
                 className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">조리(분) <span className="text-text-muted text-xs">선택</span></label>
+              <label className="text-sm font-medium text-text-secondary">{tf.cookTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
               <input
                 type="number"
                 value={cookTime}
                 onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : '')}
                 min="0"
-                placeholder="선택사항"
+                placeholder={tf.optionalPlaceholder}
                 className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">난이도 <span className="text-text-muted text-xs">선택</span></label>
+              <label className="text-sm font-medium text-text-secondary">{tf.difficulty} <span className="text-text-muted text-xs">{tf.optional}</span></label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
                 className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
               >
-                <option value="">선택안함</option>
+                <option value="">{tf.selectNone}</option>
                 {DIFFICULTY_LEVELS.map(d => (
-                  <option key={d.value} value={d.value}>{d.label}</option>
+                  <option key={d.value} value={d.value}>{t.difficulty[d.value]}</option>
                 ))}
               </select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">요리 종류</label>
+            <label className="text-sm font-medium text-text-secondary">{tf.cuisine}</label>
             <div className="flex flex-wrap gap-2">
               {CUISINE_TYPES.map(c => (
                 <button
@@ -855,7 +858,7 @@ export default function NewRecipePage() {
                       : 'bg-background-secondary text-text-muted hover:bg-white/10'
                   }`}
                 >
-                  {c.label}
+                  {t.cuisineLabels[c.value as keyof typeof t.cuisineLabels] ?? c.label}
                 </button>
               ))}
             </div>
@@ -865,7 +868,7 @@ export default function NewRecipePage() {
                 type="text"
                 value={customCuisineType}
                 onChange={(e) => setCustomCuisineType(e.target.value)}
-                placeholder="요리 종류를 입력하세요 (예: 퓨전, 분식)"
+                placeholder={tf.cuisinePlaceholder}
                 className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
               />
             )}
@@ -875,7 +878,7 @@ export default function NewRecipePage() {
           {cuisineType && (
             <div className="space-y-2 animate-fadeIn">
               <label className="text-sm font-medium text-text-secondary">
-                요리 유형 <span className="text-text-muted text-xs">(선택)</span>
+                {tf.dishType} <span className="text-text-muted text-xs">{tf.optionalInputHint}</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {DISH_TYPES.map(d => (
@@ -889,7 +892,7 @@ export default function NewRecipePage() {
                         : 'bg-background-secondary text-text-muted hover:bg-white/10'
                     }`}
                   >
-                    {d.label}
+                    {t.dishLabels[d.value as keyof typeof t.dishLabels] ?? d.label}
                   </button>
                 ))}
               </div>
@@ -899,7 +902,7 @@ export default function NewRecipePage() {
                   type="text"
                   value={customDishType}
                   onChange={(e) => setCustomDishType(e.target.value)}
-                  placeholder="요리 유형을 입력하세요 (예: 퓨전요리, 분식)"
+                  placeholder={tf.dishTypePlaceholder}
                   className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
                 />
               )}
@@ -911,20 +914,20 @@ export default function NewRecipePage() {
         <section className="space-y-4">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">2</span>
-            재료 준비
+            {tf.section2Ingredients}
           </h2>
-          <p className="text-sm text-text-muted">식재료 &gt; 조미료&양념 &gt; 소스 순서로 작성해 주세요.</p>
+          <p className="text-sm text-text-muted">{tf.ingredientsHint}</p>
 
           {/* 통합된 재료 준비 영역 */}
           <div className="rounded-xl bg-background-secondary p-4 md:p-6 space-y-6">
             {/* 재료 준비 이미지 */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-text-secondary">재료 준비 사진 (선택)</label>
+              <label className="text-sm font-medium text-text-secondary">{tf.ingredientsPhotoLabel}</label>
               {ingredientsImage ? (
                 <div className="relative w-full h-64">
                   <Image
                     src={ingredientsImage}
-                    alt="재료 준비"
+                    alt={tf.ingredientsPhotoLabel}
                     fill
                     className="object-cover rounded-xl"
                   />
@@ -964,7 +967,7 @@ export default function NewRecipePage() {
                     {uploadingIngredientsImage ? (
                       <>
                         <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm text-text-muted">업로드 중...</span>
+                        <span className="text-sm text-text-muted">{tf.uploading}</span>
                       </>
                     ) : (
                       <>
@@ -972,8 +975,8 @@ export default function NewRecipePage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <div className="text-center">
-                          <p className="text-sm font-medium text-text-primary">준비된 재료 사진 추가</p>
-                          <p className="text-xs text-text-muted mt-1">최대 5MB</p>
+                          <p className="text-sm font-medium text-text-primary">{tf.ingredientsPhotoAdd}</p>
+                          <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
                         </div>
                       </>
                     )}
@@ -989,10 +992,10 @@ export default function NewRecipePage() {
             <div className="space-y-2">
               {/* Header */}
               <div className="hidden sm:grid sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 text-xs text-text-muted pb-2 border-b border-white/10">
-              <span>재료명 *</span>
-              <span>양</span>
-              <span>단위</span>
-              <span>메모</span>
+              <span>{tf.ingName} *</span>
+              <span>{tf.ingQuantity}</span>
+              <span>{tf.ingUnit}</span>
+              <span>{tf.ingNotes}</span>
               <span></span>
             </div>
 
@@ -1032,7 +1035,7 @@ export default function NewRecipePage() {
                           }
                         }}
                         className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                        placeholder="단위"
+                        placeholder={tf.ingUnitPlaceholder}
                       />
                     ) : (
                       <select
@@ -1051,7 +1054,7 @@ export default function NewRecipePage() {
                         className="w-full rounded-lg bg-background-tertiary px-1 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
                       >
                         {UNITS.map(u => (
-                          <option key={u} value={u}>{u}</option>
+                          <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
                         ))}
                       </select>
                     )}
@@ -1083,7 +1086,7 @@ export default function NewRecipePage() {
                       value={ing.notes}
                       onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
                       className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="메모 (예: 잘게 썬, 굵게 다진)"
+                      placeholder={tf.ingNotesPlaceholder}
                     />
                   </div>
                 </div>
@@ -1096,7 +1099,7 @@ export default function NewRecipePage() {
               onClick={addIngredients}
               className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
             >
-              + 재료 5개 추가
+              {tf.addFiveIngredients}
             </button>
           </div>
         </section>
@@ -1105,9 +1108,9 @@ export default function NewRecipePage() {
         <section className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">3</span>
-            조리 순서
+            {tf.section3Steps}
           </h2>
-          <p className="text-sm text-text-muted">조리 순서를 단계별로 입력해주세요.</p>
+          <p className="text-sm text-text-muted">{tf.stepsHint}</p>
 
           {steps.map((step, index) => (
             <div key={index} className="p-4 rounded-xl bg-background-secondary space-y-3">
@@ -1116,14 +1119,14 @@ export default function NewRecipePage() {
                   <div className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center font-bold">
                     {index + 1}
                   </div>
-                  <span className="text-sm font-medium">단계</span>
+                  <span className="text-sm font-medium">{tf.stepNumber}</span>
                 </div>
                 {steps.length > 1 && (
                   <button
                     onClick={() => removeStep(index)}
                     className="text-error text-sm hover:underline"
                   >
-                    삭제
+                    {t.common.delete}
                   </button>
                 )}
               </div>
@@ -1132,7 +1135,7 @@ export default function NewRecipePage() {
                 value={step.instruction}
                 onChange={(e) => updateStep(index, 'instruction', e.target.value)}
                 className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm min-h-[120px] resize-none"
-                placeholder="조리 방법을 단계별로 작성해주세요."
+                placeholder={tf.stepInstructionPlaceholder}
               />
 
               <div className="flex gap-3">
@@ -1142,7 +1145,7 @@ export default function NewRecipePage() {
                     value={step.tip}
                     onChange={(e) => updateStep(index, 'tip', e.target.value)}
                     className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm text-sm"
-                    placeholder="팁 (선택)"
+                    placeholder={tf.stepTipPlaceholder}
                   />
                 </div>
                 <div className="w-28">
@@ -1151,7 +1154,7 @@ export default function NewRecipePage() {
                     value={step.timer_minutes || ''}
                     onChange={(e) => updateStep(index, 'timer_minutes', e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm text-sm"
-                    placeholder="타이머(분)"
+                    placeholder={tf.stepTimerPlaceholder}
                     min="0"
                   />
                 </div>
@@ -1159,12 +1162,12 @@ export default function NewRecipePage() {
 
               {/* 이미지 업로드 */}
               <div className="space-y-2">
-                <label className="text-xs text-text-muted">단계 이미지 (선택)</label>
+                <label className="text-xs text-text-muted">{tf.stepImageLabel}</label>
                 {step.image_url ? (
                   <div className="relative w-full h-48">
                     <Image
                       src={step.image_url}
-                      alt={`단계 ${index + 1} 이미지`}
+                      alt={`${tf.stepNumber} ${index + 1}`}
                       fill
                       className="object-cover rounded-lg"
                     />
@@ -1204,14 +1207,14 @@ export default function NewRecipePage() {
                       {uploadingImage === index ? (
                         <>
                           <div className="w-6 h-6 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm text-text-muted">업로드 중...</span>
+                          <span className="text-sm text-text-muted">{tf.uploading}</span>
                         </>
                       ) : (
                         <>
                           <svg className="w-8 h-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                           </svg>
-                          <span className="text-sm text-text-muted">이미지 추가 (최대 5MB)</span>
+                          <span className="text-sm text-text-muted">{tf.stepImageAdd}</span>
                         </>
                       )}
                     </div>
@@ -1225,18 +1228,18 @@ export default function NewRecipePage() {
             onClick={addStep}
             className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
           >
-            + 단계 추가
+            {tf.addStep}
           </button>
 
           {/* 완성된 요리 이미지 */}
           <div className="space-y-3 pt-4">
-            <label className="text-sm font-medium text-text-secondary">완성된 요리 사진 (선택)</label>
-            <p className="text-xs text-text-muted">레시피 대표 이미지로 사용됩니다. 추가하지 않으면 마지막 조리 단계 이미지가 사용됩니다.</p>
+            <label className="text-sm font-medium text-text-secondary">{tf.finalPhotoLabel}</label>
+            <p className="text-xs text-text-muted">{tf.finalPhotoDesc}</p>
             {thumbnailImage ? (
               <div className="relative w-full h-64">
                 <Image
                   src={thumbnailImage}
-                  alt="완성된 요리"
+                  alt={tf.finalPhotoLabel}
                   fill
                   className="object-cover rounded-xl"
                 />
@@ -1276,7 +1279,7 @@ export default function NewRecipePage() {
                   {uploadingThumbnail ? (
                     <>
                       <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-text-muted">업로드 중...</span>
+                      <span className="text-sm text-text-muted">{tf.uploading}</span>
                     </>
                   ) : (
                     <>
@@ -1284,8 +1287,8 @@ export default function NewRecipePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <div className="text-center">
-                        <p className="text-sm font-medium text-text-primary">완성된 요리 사진 추가</p>
-                        <p className="text-xs text-text-muted mt-1">최대 5MB</p>
+                        <p className="text-sm font-medium text-text-primary">{tf.finalPhotoAdd}</p>
+                        <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
                       </div>
                     </>
                   )}
@@ -1299,16 +1302,16 @@ export default function NewRecipePage() {
         <section className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">4</span>
-            추가 정보
+            {t.nutrition.section4Additional}
           </h2>
 
           <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">식단 옵션</label>
+            <label className="text-sm font-medium text-text-secondary">{tf.dietaryLabel}</label>
             <div className="flex flex-wrap gap-3">
               {[
-                { value: isVegetarian, setter: setIsVegetarian, label: '채식', key: 'vegetarian' },
-                { value: isVegan, setter: setIsVegan, label: '비건', key: 'vegan' },
-                { value: isGlutenFree, setter: setIsGlutenFree, label: '글루텐 프리', key: 'glutenFree' },
+                { value: isVegetarian, setter: setIsVegetarian, label: tf.dietaryVegetarian, key: 'vegetarian' },
+                { value: isVegan, setter: setIsVegan, label: tf.dietaryVegan, key: 'vegan' },
+                { value: isGlutenFree, setter: setIsGlutenFree, label: tf.dietaryGlutenFree, key: 'glutenFree' },
               ].map(opt => (
                 <div
                   key={opt.label}
@@ -1349,14 +1352,14 @@ export default function NewRecipePage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-secondary">
-                영양 정보 <span className="text-text-muted text-xs">(1인분 기준, 선택)</span>
+                {tf.nutritionLabel} <span className="text-text-muted text-xs">{tf.nutritionHint}</span>
               </label>
               <button
                 type="button"
                 onClick={() => setShowNutrition(!showNutrition)}
                 className="text-sm text-accent-warm hover:text-accent-hover transition-colors flex items-center gap-2"
               >
-                {showNutrition ? '숨기기' : '추가하기'}
+                {showNutrition ? tf.nutritionHide : tf.nutritionShow}
                 <svg className={`w-4 h-4 transition-transform ${showNutrition ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -1369,7 +1372,7 @@ export default function NewRecipePage() {
                   {/* 칼로리 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      칼로리 <span className="text-text-muted text-xs">(kcal)</span>
+                      {t.nutrition.calories} <span className="text-text-muted text-xs">(kcal)</span>
                     </label>
                     <input
                       type="number"
@@ -1382,14 +1385,14 @@ export default function NewRecipePage() {
                       min="0"
                       step="1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 350"
+                      placeholder={`${t.common.example} 350`}
                     />
                   </div>
 
                   {/* 단백질 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      단백질 <span className="text-text-muted text-xs">(g)</span>
+                      {t.nutrition.protein} <span className="text-text-muted text-xs">(g)</span>
                     </label>
                     <input
                       type="number"
@@ -1402,14 +1405,14 @@ export default function NewRecipePage() {
                       min="0"
                       step="0.1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 25.5"
+                      placeholder={`${t.common.example} 25.5`}
                     />
                   </div>
 
                   {/* 탄수화물 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      탄수화물 <span className="text-text-muted text-xs">(g)</span>
+                      {t.nutrition.carbs} <span className="text-text-muted text-xs">(g)</span>
                     </label>
                     <input
                       type="number"
@@ -1422,14 +1425,14 @@ export default function NewRecipePage() {
                       min="0"
                       step="0.1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 45.0"
+                      placeholder={`${t.common.example} 45.0`}
                     />
                   </div>
 
                   {/* 지방 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      지방 <span className="text-text-muted text-xs">(g)</span>
+                      {t.nutrition.fat} <span className="text-text-muted text-xs">(g)</span>
                     </label>
                     <input
                       type="number"
@@ -1442,14 +1445,14 @@ export default function NewRecipePage() {
                       min="0"
                       step="0.1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 12.5"
+                      placeholder={`${t.common.example} 12.5`}
                     />
                   </div>
 
                   {/* 식이섬유 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      식이섬유 <span className="text-text-muted text-xs">(g)</span>
+                      {t.nutrition.fiber} <span className="text-text-muted text-xs">(g)</span>
                     </label>
                     <input
                       type="number"
@@ -1462,14 +1465,14 @@ export default function NewRecipePage() {
                       min="0"
                       step="0.1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 3.5"
+                      placeholder={`${t.common.example} 3.5`}
                     />
                   </div>
 
                   {/* 나트륨 */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      나트륨 <span className="text-text-muted text-xs">(mg)</span>
+                      {t.nutrition.sodium} <span className="text-text-muted text-xs">(mg)</span>
                     </label>
                     <input
                       type="number"
@@ -1482,7 +1485,7 @@ export default function NewRecipePage() {
                       min="0"
                       step="1"
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder="예: 800"
+                      placeholder={`${t.common.example} 800`}
                     />
                   </div>
                 </div>
@@ -1491,7 +1494,7 @@ export default function NewRecipePage() {
           </div>
 
           <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">태그 (최대 10개)</label>
+            <label className="text-sm font-medium text-text-secondary">{tf.tagsLabel}</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1499,14 +1502,14 @@ export default function NewRecipePage() {
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 className="flex-1 rounded-xl bg-background-secondary px-5 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                placeholder="태그 입력 후 추가 버튼 클릭"
+                placeholder={tf.tagInputPlaceholder}
               />
               <button
                 onClick={addTag}
                 disabled={!tagInput.trim() || tags.length >= 10}
                 className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold disabled:opacity-50"
               >
-                추가
+                {t.quickAdd.addButton}
               </button>
             </div>
             {tags.length > 0 && (
@@ -1532,14 +1535,14 @@ export default function NewRecipePage() {
             disabled={draftLoading || loading}
             className="flex-1 py-4 rounded-xl bg-background-secondary border border-white/10 text-text-secondary font-bold hover:bg-background-tertiary transition-all disabled:opacity-50"
           >
-            {draftLoading ? '저장 중...' : '임시저장'}
+            {draftLoading ? tf.saving : tf.saveDraft}
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || draftLoading}
             className="flex-[2] py-4 rounded-xl bg-accent-warm text-background-primary text-lg font-bold hover:bg-accent-hover transition-all disabled:opacity-50"
           >
-            {loading ? '등록 중...' : '레시피 등록하기'}
+            {loading ? tf.submitting : tf.submit}
           </button>
         </div>
       </div>
@@ -1555,7 +1558,7 @@ export default function NewRecipePage() {
         onSuccess={() => {
           setShowAddIngredientDialog(false);
           setAddIngredientSearchQuery('');
-          toast.success('재료가 추가되었습니다. 이제 모든 사용자가 사용할 수 있습니다!');
+          toast.success(tf.successIngredientAdded);
         }}
         initialName={addIngredientSearchQuery}
       />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import { OnboardingStepProps } from './OnboardingTypes';
 import { COUNTRIES } from './countries';
 
@@ -13,6 +14,8 @@ export default function OnboardingStep1Profile({
   onSkip,
 }: OnboardingStepProps) {
   const toast = useToast();
+  const { t } = useI18n();
+  const tp = t.onboarding.profile;
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -49,13 +52,13 @@ export default function OnboardingStep1Profile({
 
     // 파일 크기 체크 (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('파일 크기는 5MB 이하여야 합니다.');
+      toast.error(tp.errorFileSize);
       return;
     }
 
     // 파일 타입 체크
     if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다.');
+      toast.error(tp.errorFileType);
       return;
     }
 
@@ -80,9 +83,9 @@ export default function OnboardingStep1Profile({
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="text-center">
-        <h3 className="text-lg font-bold text-text-primary mb-2">프로필 설정</h3>
+        <h3 className="text-lg font-bold text-text-primary mb-2">{tp.title}</h3>
         <p className="text-sm text-text-secondary">
-          기본 정보를 입력해주세요. (*필수 항목)
+          {tp.subtitle}
         </p>
       </div>
 
@@ -93,7 +96,7 @@ export default function OnboardingStep1Profile({
             {avatarPreview || formData.avatar_url ? (
               <Image
                 src={avatarPreview || formData.avatar_url!}
-                alt="프로필 사진"
+                alt={tp.avatarAlt}
                 width={96}
                 height={96}
                 className="object-cover"
@@ -119,20 +122,20 @@ export default function OnboardingStep1Profile({
           onChange={handleAvatarChange}
           className="hidden"
         />
-        <p className="text-xs text-text-muted">프로필 사진 (선택, 최대 5MB)</p>
+        <p className="text-xs text-text-muted">{tp.avatarHint}</p>
       </div>
 
       {/* 닉네임 */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary flex items-center gap-1">
-          닉네임 <span className="text-accent-warm">*</span>
+          {tp.usernameLabel} <span className="text-accent-warm">*</span>
         </label>
         <div className="relative">
           <input
             type="text"
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            placeholder="2-20자 (한글, 영문, 숫자, _)"
+            placeholder={tp.usernamePlaceholder}
             className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all pr-10"
             minLength={2}
             maxLength={20}
@@ -154,20 +157,20 @@ export default function OnboardingStep1Profile({
           )}
         </div>
         {usernameAvailable === false && (
-          <p className="text-xs text-red-400">이미 사용 중인 닉네임입니다</p>
+          <p className="text-xs text-red-400">{tp.usernameTaken}</p>
         )}
         {usernameAvailable === true && (
-          <p className="text-xs text-green-400">사용 가능한 닉네임입니다</p>
+          <p className="text-xs text-green-400">{tp.usernameAvailable}</p>
         )}
       </div>
 
       {/* 소개 */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">소개 (선택)</label>
+        <label className="text-sm font-medium text-text-secondary">{tp.bioLabel}</label>
         <textarea
           value={formData.bio}
           onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-          placeholder="자신을 소개해주세요"
+          placeholder={tp.bioPlaceholder}
           className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all resize-none"
           rows={3}
           maxLength={200}
@@ -178,14 +181,14 @@ export default function OnboardingStep1Profile({
       {/* 생년월일 — 모바일 native picker의 "빈공간 탭 시 오늘 자동 입력" 이슈 방지용 clear 버튼 포함 */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-text-secondary">생년월일 (선택)</label>
+          <label className="text-sm font-medium text-text-secondary">{tp.birthLabel}</label>
           {formData.birth_date && (
             <button
               type="button"
               onClick={() => setFormData({ ...formData, birth_date: null })}
               className="text-[11px] text-accent-warm hover:underline"
             >
-              지우기
+              {tp.birthClear}
             </button>
           )}
         </div>
@@ -201,7 +204,7 @@ export default function OnboardingStep1Profile({
             <button
               type="button"
               onClick={() => setFormData({ ...formData, birth_date: null })}
-              aria-label="생년월일 지우기"
+              aria-label={tp.birthClearAria}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -214,12 +217,12 @@ export default function OnboardingStep1Profile({
 
       {/* 성별 */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">성별 (선택)</label>
+        <label className="text-sm font-medium text-text-secondary">{tp.genderLabel}</label>
         <div className="flex gap-3">
           {[
-            { value: 'male', label: '남성', icon: '👨' },
-            { value: 'female', label: '여성', icon: '👩' },
-            { value: 'other', label: '기타', icon: '🧑' },
+            { value: 'male', label: tp.genderMale, icon: '👨' },
+            { value: 'female', label: tp.genderFemale, icon: '👩' },
+            { value: 'other', label: tp.genderOther, icon: '🧑' },
           ].map((option) => (
             <button
               key={option.value}
@@ -242,7 +245,7 @@ export default function OnboardingStep1Profile({
             onClick={() => setFormData({ ...formData, gender: null })}
             className="text-xs text-text-muted hover:text-accent-warm transition-colors"
           >
-            선택 해제
+            {tp.genderUnselect}
           </button>
         )}
       </div>
@@ -250,7 +253,7 @@ export default function OnboardingStep1Profile({
       {/* 국가 */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">
-          국가 (선택)
+          {tp.countryLabel}
         </label>
         <select
           value={formData.country || ''}
@@ -264,10 +267,11 @@ export default function OnboardingStep1Profile({
             paddingRight: '2.5rem',
           }}
         >
-          <option value="">선택 안 함</option>
+          <option value="">{tp.countryNone}</option>
           {COUNTRIES.map((c) => (
+            // value는 c.name(한국어) 유지 — 기존 DB 레코드 호환. 표시는 locale에서 lookup.
             <option key={c.code} value={c.name}>
-              {c.name} ({c.nameEn})
+              {t.onboarding.countries[c.code]}
             </option>
           ))}
         </select>
@@ -280,7 +284,7 @@ export default function OnboardingStep1Profile({
           onClick={onSkip}
           className="flex-1 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all"
         >
-          나중에 하기
+          {t.onboarding.skip}
         </button>
         <button
           type="button"
@@ -292,7 +296,7 @@ export default function OnboardingStep1Profile({
               : 'bg-background-tertiary text-text-muted cursor-not-allowed opacity-50'
           }`}
         >
-          다음
+          {t.onboarding.next}
         </button>
       </div>
     </div>

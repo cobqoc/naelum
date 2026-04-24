@@ -19,16 +19,29 @@ export default async function HomePage() {
 
   let initialUsername: string | null = null;
   let initialOnboardingStep: number | null = null;
+  let initialOnboardingCompleted: boolean | null = null;
+  let initialItems: unknown[] | null = null;
 
   if (userId) {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('username, onboarding_step')
-      .eq('id', userId)
-      .maybeSingle();
-    initialUsername = data?.username ?? null;
-    initialOnboardingStep = data?.onboarding_step ?? null;
+    // profile + items 병렬 fetch — 초기 렌더에서 빈 냉장고 flicker 제거.
+    // CSR에서도 fetchItems가 한 번 더 돌아 stale 데이터(타 기기 수정) 방어.
+    const [profileRes, itemsRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('username, onboarding_step, onboarding_completed')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('user_ingredients')
+        .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert')
+        .eq('user_id', userId)
+        .order('expiry_date', { ascending: true, nullsFirst: false }),
+    ]);
+    initialUsername = profileRes.data?.username ?? null;
+    initialOnboardingStep = profileRes.data?.onboarding_step ?? null;
+    initialOnboardingCompleted = profileRes.data?.onboarding_completed ?? null;
+    initialItems = itemsRes.data ?? [];
   }
 
   return (
@@ -36,6 +49,8 @@ export default async function HomePage() {
       isAuthenticated={!!userId}
       initialUsername={initialUsername}
       initialOnboardingStep={initialOnboardingStep}
+      initialOnboardingCompleted={initialOnboardingCompleted}
+      initialItems={initialItems}
     />
   );
 }

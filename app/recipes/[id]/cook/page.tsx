@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 
 interface RecipeStep {
   id: string;
@@ -41,6 +42,7 @@ export default function CookingModePage(props: PageProps) {
 
   const supabase = createClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -112,7 +114,7 @@ export default function CookingModePage(props: PageProps) {
             // Play sound or notification
             if (typeof window !== 'undefined' && 'Notification' in window) {
               if (Notification.permission === 'granted') {
-                new Notification('타이머 완료!', { body: '다음 단계로 진행하세요.' });
+                new Notification(t.cookMode.timerDoneTitle, { body: t.cookMode.timerDoneBody });
               }
             }
             return 0;
@@ -175,7 +177,7 @@ export default function CookingModePage(props: PageProps) {
 
   const finishCooking = async () => {
     await completeCookingSession();
-    toast.success('요리를 완료했습니다! 수고하셨어요 🎉');
+    toast.success(t.cookMode.finishToast);
   };
 
   if (loading) {
@@ -190,8 +192,8 @@ export default function CookingModePage(props: PageProps) {
     return (
       <div className="min-h-screen bg-background-primary flex items-center justify-center text-text-primary">
         <div className="text-center">
-          <p className="text-xl font-bold mb-4">레시피를 찾을 수 없습니다</p>
-          <Link href="/" className="text-accent-warm hover:underline">홈으로 이동</Link>
+          <p className="text-xl font-bold mb-4">{t.cookMode.notFound}</p>
+          <Link href="/" className="text-accent-warm hover:underline">{t.cookMode.goHome}</Link>
         </div>
       </div>
     );
@@ -210,13 +212,13 @@ export default function CookingModePage(props: PageProps) {
               href={`/recipes/${id}`}
               className="text-text-muted hover:text-text-primary text-sm"
             >
-              ← 레시피로 돌아가기
+              {t.cookMode.backToRecipe}
             </Link>
             <button
               onClick={() => setShowIngredients(!showIngredients)}
               className="text-sm text-accent-warm"
             >
-              {showIngredients ? '재료 숨기기' : '재료 보기'}
+              {showIngredients ? t.cookMode.hideIngredients : t.cookMode.showIngredients}
             </button>
           </div>
 
@@ -230,7 +232,7 @@ export default function CookingModePage(props: PageProps) {
             />
           </div>
           <p className="text-xs text-text-muted mt-1">
-            {completedSteps.size} / {recipe.steps.length} 단계 완료
+            {t.cookMode.progress.replace('{done}', String(completedSteps.size)).replace('{total}', String(recipe.steps.length))}
           </p>
         </div>
       </header>
@@ -239,7 +241,7 @@ export default function CookingModePage(props: PageProps) {
       {showIngredients && (
         <div className="bg-background-secondary border-b border-white/5">
           <div className="container mx-auto max-w-2xl px-6 py-4">
-            <h3 className="font-bold mb-3">재료 ({recipe.servings}인분)</h3>
+            <h3 className="font-bold mb-3">{t.cookMode.ingredientsTitle.replace('{servings}', String(recipe.servings))}</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {recipe.ingredients.map((ing, index) => (
                 <div key={index} className="text-text-secondary">
@@ -259,7 +261,7 @@ export default function CookingModePage(props: PageProps) {
             onClick={() => setTimerActive(false)}
             className="mt-2 text-sm underline"
           >
-            타이머 중지
+            {t.cookMode.stopTimer}
           </button>
         </div>
       )}
@@ -294,7 +296,7 @@ export default function CookingModePage(props: PageProps) {
                   {currentStep.step_number}
                 </div>
                 <div>
-                  <p className="text-sm text-text-muted">단계 {currentStep.step_number}</p>
+                  <p className="text-sm text-text-muted">{t.cookMode.stepLabel.replace('{n}', String(currentStep.step_number))}</p>
                   {currentStep.title && (
                     <h2 className="text-xl font-bold">{currentStep.title}</h2>
                   )}
@@ -308,7 +310,7 @@ export default function CookingModePage(props: PageProps) {
                     : 'bg-background-secondary text-text-muted hover:bg-white/10'
                 }`}
               >
-                {completedSteps.has(currentStep.step_number) ? '완료됨 ✓' : '완료하기'}
+                {completedSteps.has(currentStep.step_number) ? t.cookMode.doneCheck : t.cookMode.markDone}
               </button>
             </div>
 
@@ -335,7 +337,7 @@ export default function CookingModePage(props: PageProps) {
                 onClick={() => startTimer(currentStep.timer_minutes!)}
                 className="w-full py-4 rounded-xl bg-info/10 border border-info/20 text-info font-bold hover:bg-info/20 transition-all"
               >
-                ⏱️ 타이머 시작 ({currentStep.timer_minutes}분)
+                {t.cookMode.startTimer.replace('{minutes}', String(currentStep.timer_minutes))}
               </button>
             )}
 
@@ -343,7 +345,7 @@ export default function CookingModePage(props: PageProps) {
             {currentStep.tip && (
               <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
                 <p className="text-sm">
-                  <span className="font-bold text-warning">💡 팁:</span>{' '}
+                  <span className="font-bold text-warning">{t.cookMode.tipLabel}</span>{' '}
                   <span className="text-text-secondary">{currentStep.tip}</span>
                 </p>
               </div>
@@ -356,21 +358,21 @@ export default function CookingModePage(props: PageProps) {
                 disabled={currentStepIndex === 0}
                 className="flex-1 py-4 rounded-xl bg-background-secondary font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
               >
-                ← 이전 단계
+                {t.cookMode.prevStep}
               </button>
               {currentStepIndex === recipe.steps.length - 1 ? (
                 <button
                   onClick={finishCooking}
                   className="flex-1 py-4 rounded-xl bg-success text-white font-bold hover:bg-success/80 transition-all"
                 >
-                  요리 완료! 🎉
+                  {t.cookMode.finishCooking}
                 </button>
               ) : (
                 <button
                   onClick={() => goToStep(currentStepIndex + 1)}
                   className="flex-1 py-4 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all"
                 >
-                  다음 단계 →
+                  {t.cookMode.nextStep}
                 </button>
               )}
             </div>

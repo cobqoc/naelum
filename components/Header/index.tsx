@@ -80,7 +80,7 @@ export default function Header() {
                       setShowCart(next);
                     }}
                     className="relative min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
-                    aria-label="장보기"
+                    aria-label={t.bottomNav.cart}
                   >
                     <span className="text-xl relative">🛒</span>
                     {cartCount > 0 && (

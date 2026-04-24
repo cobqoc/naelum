@@ -381,9 +381,9 @@ export default function ProfilePage(props: PageProps) {
 
   const allTabs: { key: TabType; label: string; icon: string; ownerOnly?: boolean; visibleWhen?: boolean }[] = [
     { key: 'created', label: t.profile.createdTab, icon: '📖' },
-    { key: 'tips', label: '팁', icon: '💡' },
-    { key: 'drafts', label: '임시저장', icon: '📝', ownerOnly: true },
-    { key: 'private', label: '비공개', icon: '🔒', ownerOnly: true },
+    { key: 'tips', label: t.profile.tabTips, icon: '💡' },
+    { key: 'drafts', label: t.profile.tabDrafts, icon: '📝', ownerOnly: true },
+    { key: 'private', label: t.profile.tabPrivate, icon: '🔒', ownerOnly: true },
     { key: 'saved', label: t.profile.savedTab, icon: '👅', visibleWhen: isOwnProfile || !!profile.show_saved_to_public },
     { key: 'cooked', label: t.profile.cookedTab, icon: '🎉', visibleWhen: isOwnProfile || !!profile.show_cooked_to_public },
   ];
@@ -561,8 +561,8 @@ export default function ProfilePage(props: PageProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                       </div>
-                      <p className="text-accent-warm font-bold text-center">팁 작성하기</p>
-                      <p className="text-text-muted text-xs text-center mt-2">노하우를 공유해보세요</p>
+                      <p className="text-accent-warm font-bold text-center">{t.profile.writeTip}</p>
+                      <p className="text-text-muted text-xs text-center mt-2">{t.profile.writeTipHint}</p>
                     </div>
                   </Link>
                 )}
@@ -575,14 +575,14 @@ export default function ProfilePage(props: PageProps) {
                         <span className="text-5xl">{TIP_CATEGORY_ICONS[tip.category] || '💡'}</span>
                       )}
                       {!tip.is_public && (
-                        <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">🔒 비공개</div>
+                        <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">🔒 {t.profile.privateBadge}</div>
                       )}
                     </div>
                     <div className="p-3">
                       <p className="text-text-primary font-bold text-sm line-clamp-2 mb-1">{tip.title}</p>
                       <div className="flex items-center gap-2 text-xs text-text-muted">
                         <span className="px-1.5 py-0.5 rounded bg-background-tertiary">{tip.category}</span>
-                        {tip.duration_minutes && <span>⏱ {tip.duration_minutes}분</span>}
+                        {tip.duration_minutes && <span>⏱ {tip.duration_minutes}{t.profile.minuteSuffix}</span>}
                         <span>👁 {tip.views_count}</span>
                       </div>
                     </div>
@@ -591,7 +591,7 @@ export default function ProfilePage(props: PageProps) {
                 {tips.length === 0 && !isOwnProfile && (
                   <div className="col-span-2 md:col-span-3 text-center py-20">
                     <div className="text-6xl mb-4">📭</div>
-                    <p className="text-text-muted text-lg">아직 공유한 팁이 없어요</p>
+                    <p className="text-text-muted text-lg">{t.profile.noTipsYet}</p>
                   </div>
                 )}
               </div>
@@ -625,7 +625,7 @@ export default function ProfilePage(props: PageProps) {
                         </div>
                         <div className="p-3">
                           <p className="text-text-primary font-bold text-sm line-clamp-2">{recipe.title}</p>
-                          <p className="text-xs text-accent-warm mt-1">탭하여 수정하기 →</p>
+                          <p className="text-xs text-accent-warm mt-1">{t.profile.tapToEdit}</p>
                         </div>
                       </Link>
                     ))}
@@ -637,13 +637,13 @@ export default function ProfilePage(props: PageProps) {
                         disabled={loadingMore}
                         className="px-6 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:border-accent-warm/50 hover:text-accent-warm transition-colors disabled:opacity-50"
                       >
-                        {loadingMore ? '불러오는 중...' : '더 보기'}
+                        {loadingMore ? t.profile.loadingMore : t.profile.loadMore}
                       </button>
                     </div>
                   )}
                 </>
               ) : (
-                <p className="text-text-muted text-sm py-4">없음</p>
+                <p className="text-text-muted text-sm py-4">{t.profile.none}</p>
               )}
             </div>
 
@@ -676,7 +676,7 @@ export default function ProfilePage(props: PageProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-text-muted text-sm py-4">없음</p>
+                <p className="text-text-muted text-sm py-4">{t.profile.none}</p>
               )}
             </div>
           </div>
@@ -790,7 +790,7 @@ export default function ProfilePage(props: PageProps) {
                       <span>⭐ {(recipe.average_rating ?? 0).toFixed(1)}</span>
                       <span>👁️ {recipe.views_count ?? 0}</span>
                       {recipe.prep_time_minutes && recipe.cook_time_minutes && (
-                        <span>⏱️ {recipe.prep_time_minutes + recipe.cook_time_minutes}분</span>
+                        <span>⏱️ {recipe.prep_time_minutes + recipe.cook_time_minutes}{t.profile.minuteSuffix}</span>
                       )}
                       {recipe.difficulty_level && (
                         <span>
@@ -813,14 +813,14 @@ export default function ProfilePage(props: PageProps) {
                       >
                         {recipe.user_rating ? (
                           <>
-                            <span>⭐ {recipe.user_rating}점</span>
+                            <span>⭐ {recipe.user_rating}{t.profile.ratingSuffix}</span>
                             <span>·</span>
-                            <span>✏️ 수정</span>
+                            <span>{t.profile.editShort}</span>
                           </>
                         ) : (
                           <>
                             <span>⭐</span>
-                            <span>리뷰 작성하기</span>
+                            <span>{t.profile.writeReview}</span>
                           </>
                         )}
                       </button>

@@ -238,10 +238,10 @@ export default function AllRecipesPage() {
               <h1 className="text-2xl font-bold">{t.recipe.allRecipes}</h1>
               {hasFilter && (
                 <p className="text-sm text-text-muted mt-0.5">
-                  {cuisineFilter && `국가: ${cuisineFilter}`}
-                  {dishFilter && `요리: ${dishFilter}`}
+                  {cuisineFilter && `${t.home.filterCuisineLabel}: ${cuisineFilter}`}
+                  {dishFilter && `${t.home.filterDishLabel}: ${dishFilter}`}
                   <Link href="/recipes" className="ml-2 text-accent-warm text-xs hover:underline">
-                    필터 해제
+                    {t.home.clearFilter}
                   </Link>
                 </p>
               )}
@@ -260,7 +260,7 @@ export default function AllRecipesPage() {
           {/* 카테고리 칩 — 국가별/요리별 tab toggle + 가로 스크롤 */}
           <section aria-label="카테고리" className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-text-secondary">카테고리</h2>
+              <h2 className="text-sm font-bold text-text-secondary">{t.home.categoryTitle}</h2>
               <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
                 <button
                   onClick={() => setManualCategoryTab('cuisine')}
@@ -270,7 +270,7 @@ export default function AllRecipesPage() {
                       : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
-                  국가별
+                  {t.home.categoryByCuisine}
                 </button>
                 <button
                   onClick={() => setManualCategoryTab('dish')}
@@ -280,7 +280,7 @@ export default function AllRecipesPage() {
                       : 'text-text-muted hover:text-text-secondary'
                   }`}
                 >
-                  요리별
+                  {t.home.categoryByDish}
                 </button>
               </div>
             </div>
@@ -334,12 +334,12 @@ export default function AllRecipesPage() {
           {!hasFilter && trending.length > 0 && (
             <section aria-label="이번 주 인기" className="mb-8">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold">🔥 이번 주 인기</h2>
+                <h2 className="text-sm font-bold">{t.home.sectionTrending}</h2>
                 <button
                   onClick={() => { setLoading(true); setPage(0); setSortBy('views'); }}
                   className="text-xs text-accent-warm hover:underline"
                 >
-                  전체 보기 →
+                  {t.common.viewAll} →
                 </button>
               </div>
               <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-hide">
@@ -383,7 +383,7 @@ export default function AllRecipesPage() {
                     onClick={loadMore}
                     className="px-6 py-2.5 rounded-full border border-white/10 text-sm text-text-secondary hover:border-accent-warm/50 hover:text-accent-warm transition-colors"
                   >
-                    더 보기
+                    {t.recipe.loadMore}
                   </button>
                 )}
               </div>

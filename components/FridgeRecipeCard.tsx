@@ -4,6 +4,7 @@ import { memo } from 'react';
 import Link from 'next/link';
 import SafeImage from '@/components/Common/SafeImage';
 import { getDifficultyLabel, getTotalTime } from '@/lib/types/recipe';
+import { useI18n } from '@/lib/i18n/context';
 
 interface FridgeRecipe {
   id: string;
@@ -13,6 +14,7 @@ interface FridgeRecipe {
   prep_time_minutes: number | null;
   cook_time_minutes: number | null;
   difficulty_level: string | null;
+  dish_type?: string | null;
   author?: { username: string; avatar_url?: string | null } | null;
   has_cooked?: boolean;
   matchRate?: number;
@@ -20,6 +22,18 @@ interface FridgeRecipe {
   totalIngredients?: number;
   missingIngredientNames?: string[];
 }
+
+const DISH_TYPE_EMOJI: Record<string, string> = {
+  side: '🥗',
+  main: '🍖',
+  rice: '🍚',
+  soup: '🍲',
+  dessert: '🍰',
+  noodle: '🍜',
+  snack: '🍿',
+  brunch: '🥞',
+  beverage: '🥤',
+};
 
 interface FridgeRecipeCardProps {
   recipe: FridgeRecipe;
@@ -33,9 +47,10 @@ function getMatchStyle(rate: number) {
 }
 
 export default memo(function FridgeRecipeCard({ recipe, priority = false }: FridgeRecipeCardProps) {
+  const { t } = useI18n();
   const imageUrl = recipe.thumbnail_url || recipe.display_image;
   const totalTime = getTotalTime(recipe);
-  const difficultyLabel = getDifficultyLabel(recipe.difficulty_level);
+  const difficultyLabel = getDifficultyLabel(recipe.difficulty_level, t.difficulty);
   const hasMatch = recipe.matchRate !== undefined;
   const matchStyle = hasMatch ? getMatchStyle(recipe.matchRate!) : null;
   const missing = recipe.missingIngredientNames ?? [];
@@ -55,20 +70,22 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
               priority={priority}
             />
           ) : (
-            <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">🍳</div>
+            <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">
+              {(recipe.dish_type && DISH_TYPE_EMOJI[recipe.dish_type]) || '🍳'}
+            </div>
           )}
 
           {/* 매칭률 뱃지 */}
           {hasMatch && (
             <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${matchStyle!.bg} shadow`}>
-              {recipe.matchRate}% 매칭
+              {recipe.matchRate}% {t.recipeCard.matchedLabel}
             </div>
           )}
 
           {/* 만들어봤어요 뱃지 */}
           {recipe.has_cooked && (
             <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-accent-warm text-background-primary text-[10px] font-bold shadow">
-              ✓ 만들어봤어요
+              ✓ {t.recipeCard.cookedLabel}
             </div>
           )}
         </div>
@@ -88,19 +105,19 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
                   />
                 </div>
                 <span className={`text-[10px] font-semibold flex-shrink-0 ${matchStyle!.text}`}>
-                  {recipe.matchedCount}/{recipe.totalIngredients}개 보유
+                  {recipe.matchedCount}/{recipe.totalIngredients}{t.recipeCard.heldSuffix}
                 </span>
               </div>
               {missing.length > 0 ? (
                 <p className="text-[11px] truncate">
-                  <span className="text-accent-warm font-bold">🛒 부족한 재료:</span>
+                  <span className="text-accent-warm font-bold">🛒 {t.recipeCard.missingLabel}:</span>
                   <span className="ml-1 text-text-secondary">
                     {missing.slice(0, 2).join(', ')}
                     {missing.length > 2 && ` +${missing.length - 2}`}
                   </span>
                 </p>
               ) : (
-                <p className="text-[11px] text-match-high-text font-bold">✓ 모든 재료 보유</p>
+                <p className="text-[11px] text-match-high-text font-bold">✓ {t.recipeCard.allHeldLabel}</p>
               )}
             </div>
           )}
@@ -108,7 +125,7 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
           {/* 시간 · 난이도 */}
           {(totalTime || difficultyLabel) && (
             <p className="text-[10px] text-text-muted">
-              {totalTime && `⏱ ${totalTime}분`}
+              {totalTime && `⏱ ${totalTime}${t.recipeCard.minutesSuffix}`}
               {totalTime && difficultyLabel && ' · '}
               {difficultyLabel}
             </p>

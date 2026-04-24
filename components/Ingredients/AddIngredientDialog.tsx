@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { INGREDIENT_CATEGORIES } from './IngredientAutocompleteTypes';
+import { useI18n } from '@/lib/i18n/context';
 
 interface AddIngredientDialogProps {
   /** 다이얼로그 열림 상태 */
@@ -48,6 +49,7 @@ export default function AddIngredientDialog({
   onSuccess,
   initialName = '',
 }: AddIngredientDialogProps) {
+  const { t } = useI18n();
   const [name, setName] = useState(initialName);
   const [nameEn, setNameEn] = useState('');
   const [category, setCategory] = useState('other');
@@ -110,7 +112,7 @@ export default function AddIngredientDialog({
    */
   const isValid = (): boolean => {
     if (!name || name.length < 2 || name.length > 50) {
-      setError('재료명은 2~50자여야 합니다');
+      setError(t.ingredient.errorNameLength);
       return false;
     }
 
@@ -119,7 +121,7 @@ export default function AddIngredientDialog({
     }
 
     if (!category) {
-      setError('카테고리를 선택해주세요');
+      setError(t.ingredient.errorCategoryRequired);
       return false;
     }
 
@@ -164,7 +166,7 @@ export default function AddIngredientDialog({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || '재료 추가에 실패했습니다');
+        throw new Error(data.error || t.ingredient.errorCreateFailed);
       }
 
       // 성공 - 생성된 재료 정보를 콜백으로 전달
@@ -173,7 +175,7 @@ export default function AddIngredientDialog({
       }
     } catch (err) {
       console.error('Error creating ingredient:', err);
-      setError(err instanceof Error ? err.message : '재료 추가 중 오류가 발생했습니다');
+      setError(err instanceof Error ? err.message : t.ingredient.errorCreateGeneric);
     } finally {
       setSubmitting(false);
     }
@@ -193,18 +195,18 @@ export default function AddIngredientDialog({
       <div className="relative w-full max-w-md mx-4 rounded-2xl bg-background-primary border border-white/10 shadow-2xl">
         {/* 헤더 */}
         <div className="p-6 border-b border-white/10">
-          <h2 className="text-xl font-bold text-text-primary">새 재료 추가</h2>
+          <h2 className="text-xl font-bold text-text-primary">{t.ingredient.dialogTitle}</h2>
           <p className="text-sm text-text-muted mt-1">
-            추가하신 재료는 검토 후 모든 사용자가 사용할 수 있습니다
+            {t.ingredient.dialogSubtitle}
           </p>
         </div>
 
         {/* 폼 */}
         <div className="p-6 space-y-4">
-          {/* 재료명 (한글) */}
+          {/* 재료명 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              재료명 (한글) <span className="text-error">*</span>
+              {t.ingredient.nameKorLabel} <span className="text-error">*</span>
             </label>
             <input
               type="text"
@@ -217,15 +219,15 @@ export default function AddIngredientDialog({
             />
             {duplicateError && similarIngredient && (
               <p className="text-error text-sm mt-1">
-                비슷한 재료가 있습니다: &ldquo;{similarIngredient}&rdquo;
+                {t.ingredient.duplicateWarning.replace('{name}', similarIngredient)}
               </p>
             )}
           </div>
 
-          {/* 재료명 (영문) */}
+          {/* 재료명 영문 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              재료명 (영문)
+              {t.ingredient.nameEnLabel}
             </label>
             <input
               type="text"
@@ -239,7 +241,7 @@ export default function AddIngredientDialog({
           {/* 카테고리 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              카테고리 <span className="text-error">*</span>
+              {t.quickAdd.category} <span className="text-error">*</span>
             </label>
             <select
               value={category}
@@ -258,7 +260,7 @@ export default function AddIngredientDialog({
           {/* 일반 단위 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              자주 사용하는 단위 (선택사항)
+              {t.ingredient.unitsLabel}
             </label>
             <div className="flex flex-wrap gap-2">
               {COMMON_UNITS.map((unit) => (
@@ -293,7 +295,7 @@ export default function AddIngredientDialog({
               className="flex-1 px-4 py-2 rounded-xl bg-background-secondary text-text-secondary hover:bg-white/10 transition-colors"
               disabled={submitting}
             >
-              취소
+              {t.common.cancel}
             </button>
             <button
               type="button"
@@ -301,7 +303,7 @@ export default function AddIngredientDialog({
               disabled={!name || submitting || !!duplicateError}
               className="flex-1 px-4 py-2 rounded-xl bg-accent-warm text-background-primary font-medium hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? '추가 중...' : '추가하기'}
+              {submitting ? t.ingredient.addingButton : t.ingredient.addButton}
             </button>
           </div>
         </div>
