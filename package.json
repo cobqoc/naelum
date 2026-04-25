@@ -18,9 +18,9 @@
     "@types/web-push": "^3.6.4",
     "cookie": "^1.1.1",
     "iconv-lite": "^0.7.2",
-    "next": "16.2.3",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "next": "16.2.4",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "resend": "^6.10.0",
     "web-push": "^3.6.7"
   },
