@@ -226,6 +226,7 @@ export default function TermsOfServicePage() {
               <p>④ 회사는 회원이 게시 또는 전송한 자료의 내용에 대해서는 책임을 지지 않습니다.</p>
               <p>⑤ 레시피를 따라 요리한 결과에 대한 책임은 이용자 본인에게 있으며, 회사는 레시피 정보의 정확성이나 요리 결과에 대해 책임을 지지 않습니다.</p>
               <p>⑥ 회사는 회원 간 또는 회원과 제3자 간에 서비스를 매개로 발생한 분쟁에 대해서는 개입할 의무가 없으며 이로 인한 손해를 배상할 책임도 없습니다.</p>
+              <p>⑦ 서비스에서 제공하는 레시피·영양 정보·조리 팁 중 일부는 AI(인공지능)가 자동으로 생성하거나 외부 영상을 기반으로 재구성한 것입니다. AI 생성 콘텐츠는 부정확하거나 불완전할 수 있으며, 회사는 이러한 정보의 완전성·정확성·최신성을 보증하지 않습니다. 알레르기, 식이 제한 등 건강에 영향을 미치는 결정을 내리기 전 반드시 전문가와 상담하시기 바랍니다.</p>
             </div>
           </section>
 
@@ -242,11 +243,12 @@ export default function TermsOfServicePage() {
           {/* 부칙 */}
           <section className="pt-8 border-t border-white/10">
             <h2 className="text-2xl font-bold mb-4">부칙</h2>
-            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행되며, 2026년 4월 25일 최종 개정되었습니다.</p>
+            <p className="text-text-secondary">이 약관은 2026년 2월 14일부터 시행되며, 2026년 4월 26일 최종 개정되었습니다.</p>
             <p className="text-text-muted text-sm mt-2">개정 이력:</p>
             <ul className="list-disc list-inside ml-4 text-text-muted text-sm space-y-1">
               <li>2026-04-21: 연령 기준 16세로 상향, 콘텐츠 신고 처리 기한 명시 (DSA·정보통신망법), 서비스 기능 업데이트 반영</li>
               <li>2026-04-25: 제4조의2 신설 (외부 영상 기반 레시피 수집 원칙 명시), 제8조 ⑤⑥⑦ 추가 (UGC 저작권 의무·3-Strike 제재·게시 전 확인 의무)</li>
+              <li>2026-04-26: 제11조 ⑦ 추가 (AI 생성 콘텐츠 면책 조항)</li>
             </ul>
           </section>
         </div>

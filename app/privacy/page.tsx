@@ -201,7 +201,7 @@ export default function PrivacyPolicyPage() {
                     <tr>
                       <td className="border border-white/10 px-4 py-2">Supabase, Inc.</td>
                       <td className="border border-white/10 px-4 py-2">DB·인증·파일 저장 호스팅</td>
-                      <td className="border border-white/10 px-4 py-2">미국 (SCC 적용)</td>
+                      <td className="border border-white/10 px-4 py-2">한국 (AWS ap-northeast-2 서울 리전; 회사 소재지 미국, SCC 적용)</td>
                       <td className="border border-white/10 px-4 py-2">회원 탈퇴 시 또는 위탁계약 종료 시까지</td>
                     </tr>
                     <tr>
@@ -391,6 +391,7 @@ export default function PrivacyPolicyPage() {
               <ul className="list-disc list-inside ml-4 text-sm">
                 <li>2026-02-14: 최초 작성</li>
                 <li>2026-04-21: 연령 기준 16세로 상향, 수탁업체 전면 공개 (Vercel·Cloudflare·Sentry·Resend 추가), 민감정보(알레르기) 처리 별도 고지, 생년월일 필수 항목 이동, 개인정보 보호책임자 연락처 업데이트</li>
+                <li>2026-04-26: Supabase 리전 정정 (한국 AWS ap-northeast-2 서울), CCPA 조항 추가 (제14조)</li>
               </ul>
             </div>
           </section>
@@ -511,7 +512,7 @@ export default function PrivacyPolicyPage() {
 
               <p>
                 <strong>국제 데이터 이전:</strong>
-                낼름은 Supabase(미국·싱가포르 등), Vercel(미국), Cloudflare(전세계), Sentry(미국) 등 EEA 외부 서비스를 사용합니다.
+                낼름은 Supabase(한국 AWS 서울 리전 저장·회사 소재지 미국), Vercel(미국), Cloudflare(전세계), Sentry(미국) 등 EEA 외부 서비스를 사용합니다.
                 이러한 이전은 EU 표준계약조항(SCC, Standard Contractual Clauses) 또는 각 업체의 개인정보보호 프레임워크(예: Vercel·Sentry의 EU-US Data Privacy Framework 준수)에 따라 적절한 보호 장치와 함께 이루어집니다.
               </p>
 
@@ -524,6 +525,25 @@ export default function PrivacyPolicyPage() {
                 <li>서비스 로그: 6개월 (법적 요구사항 따라)</li>
                 <li>쿠키 동의 기록: 동의 변경 시점까지 (감사 기록으로 5년 보관)</li>
               </ul>
+            </div>
+          </section>
+
+          {/* CCPA 섹션 — 미국 캘리포니아 거주자 전용 */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">제14조 (미국 캘리포니아 거주자의 CCPA 권리)</h2>
+            <div className="text-text-secondary leading-relaxed space-y-3">
+              <p>
+                미국 캘리포니아 주 거주자는 캘리포니아 소비자 프라이버시법(CCPA)에 따라 다음 권리를 보유합니다:
+              </p>
+              <ul className="list-disc ml-5 space-y-2">
+                <li><strong>알 권리:</strong> 수집된 개인정보의 종류, 목적, 제3자 공유 여부를 알 권리</li>
+                <li><strong>삭제권:</strong> 수집된 개인정보의 삭제를 요청할 권리</li>
+                <li><strong>차별 금지:</strong> 권리 행사를 이유로 차별적 서비스를 받지 않을 권리</li>
+              </ul>
+              <p>
+                낼름은 캘리포니아 거주자의 개인정보를 제3자에게 판매하지 않으므로(Do Not Sell), 별도의 &ldquo;판매 거부&rdquo; 링크는 제공되지 않습니다.
+                권리 행사는 <a href="mailto:hello@naelum.app" className="text-accent-warm underline">hello@naelum.app</a>으로 문의해주세요.
+              </p>
             </div>
           </section>
         </div>
