@@ -329,9 +329,16 @@ export default function RecipeBrowseView({
         <div className="mt-3 p-3 rounded-xl bg-background-secondary border border-white/10">
           <p className="text-xs text-text-muted mb-1">📺 출처</p>
           <p className="text-sm font-medium text-text-primary">
-            {recipe.attributed_chef ?? ''}
-            {recipe.attributed_chef && recipe.source_channel ? ' | ' : ''}
-            {recipe.source_channel ?? ''}
+            {recipe.source_channel?.startsWith('@') ? (
+              <a
+                href={`https://www.youtube.com/${recipe.source_channel}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text-muted hover:text-accent-warm transition-colors"
+              >
+                {recipe.source_channel}
+              </a>
+            ) : (recipe.source_channel ?? recipe.attributed_chef ?? '')}
           </p>
           <a
             href={recipe.source_url ?? recipe.video_url ?? ''}
