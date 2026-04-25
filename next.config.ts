@@ -80,14 +80,15 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       // Next.js는 hydration용 인라인 스크립트 필요 — nonce 미사용 시 unsafe-inline 불가피.
       // Cloudflare Web Analytics beacon은 static.cloudflareinsights.com에서 로드됨.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com",
+      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline'",
       // 이미지: Supabase Storage, Unsplash, Google 프로필 사진
       "img-src 'self' data: blob: https:",
       // API 연결: Supabase, Google/Kakao OAuth, Cloudflare Insights, Sentry
       [
         "connect-src 'self'",
-        supabaseHost ? `https://${supabaseHost} wss://${supabaseHost}` : '',
+        // Supabase Realtime은 shim으로 대체되어 wss:// 연결 없음
+        supabaseHost ? `https://${supabaseHost}` : '',
         'https://accounts.google.com',
         'https://kauth.kakao.com https://kapi.kakao.com',
         'https://cloudflareinsights.com https://static.cloudflareinsights.com',
@@ -109,7 +110,8 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // XSS Auditor deprecated — 구형 IE 반사 공격 유발 가능, CSP로 대체
+          { key: 'X-XSS-Protection', value: '0' },
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',

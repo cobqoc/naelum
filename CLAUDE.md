@@ -1037,12 +1037,22 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 ---
 
-## 📌 데이터 현황 (2026-04-12 기준)
+## 📌 데이터 현황 (2026-04-19 기준)
 
 ### 기능 구현 현황
 - **낼름함 (레시피 저장)** — 구현 완료
   - 레시피 카드의 👅 낼름 버튼으로 저장
   - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
+
+### 이메일 설정 현황
+- **도메인 이메일**: `hello@naelum.app` — Cloudflare Email Routing으로 `cobqoc@gmail.com`에 포워딩
+- **문의 메일 발신**: Resend 사용, 발신자 `Naelum(낼름) <hello@naelum.app>`
+- **문의 수신**: `cobqoc@gmail.com` (`DEVELOPER_NOTIFY_EMAIL`)
+- **Gmail 발송 설정**: `cobqoc@gmail.com`에서 `hello@naelum.app`으로 발송 가능
+
+### 관리자 계정
+- **이메일**: `cobqoc@gmail.com`
+- **사용자명**: `Naelum(낼름)` (프로덕션 DB 기준)
 
 ### 보안 / 봇 차단 구현 현황
 - **Cloudflare** — naelum.app 앞단에 연결 완료 (무료 플랜)

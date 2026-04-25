@@ -40,11 +40,11 @@ CREATE POLICY "Users can insert own training data" ON ingredient_training_data
   FOR INSERT TO public WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Admins can view all training data" ON ingredient_training_data
   FOR SELECT TO public USING (
-    EXISTS (SELECT 1 FROM auth.users WHERE users.id = auth.uid() AND (users.raw_user_meta_data ->> 'role') = 'admin')
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin')
   );
 CREATE POLICY "Admins can update training data" ON ingredient_training_data
   FOR UPDATE TO public USING (
-    EXISTS (SELECT 1 FROM auth.users WHERE users.id = auth.uid() AND (users.raw_user_meta_data ->> 'role') = 'admin')
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin')
   );
 
 -- ingredients_master

@@ -62,9 +62,9 @@ CREATE POLICY "Admins can view training data"
   USING (
     can_use_for_training = true
     AND EXISTS (
-      SELECT 1 FROM auth.users
+      SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND raw_user_meta_data->>'role' = 'admin'
+      AND role = 'admin'
     )
   );
 

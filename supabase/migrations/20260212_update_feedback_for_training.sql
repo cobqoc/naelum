@@ -70,9 +70,9 @@ CREATE POLICY "Admins can view all training data"
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM auth.users
+      SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND raw_user_meta_data->>'role' = 'admin'
+      AND role = 'admin'
     )
   );
 
@@ -81,9 +81,9 @@ CREATE POLICY "Admins can update training data"
   FOR UPDATE
   USING (
     EXISTS (
-      SELECT 1 FROM auth.users
+      SELECT 1 FROM profiles
       WHERE id = auth.uid()
-      AND raw_user_meta_data->>'role' = 'admin'
+      AND role = 'admin'
     )
   );
 
