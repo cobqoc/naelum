@@ -1,9 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 // GET /api/search/autocomplete - 검색 자동완성
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
+  const { allowed } = await checkRateLimit(`autocomplete:${ip}`, { windowMs: 60 * 1000, maxRequests: 60 })
+  if (!allowed) {
+    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
+
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
 

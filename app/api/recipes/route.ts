@@ -2,9 +2,18 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { parsePagination } from '@/lib/api/pagination'
+import { checkRateLimit } from '@/lib/ratelimit'
 
 // GET /api/recipes - 레시피 목록 조회
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
+  const { allowed } = await checkRateLimit(`recipes:${ip}`, { windowMs: 60 * 1000, maxRequests: 60 })
+  if (!allowed) {
+    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
+
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
 
