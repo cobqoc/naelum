@@ -93,6 +93,8 @@ const nextConfig: NextConfig = {
         'https://kauth.kakao.com https://kapi.kakao.com',
         'https://cloudflareinsights.com https://static.cloudflareinsights.com',
         'https://*.sentry.io https://*.ingest.sentry.io',
+        // Tesseract.js: WASM 코어(jsdelivr) + 한국어 언어팩(tessdata)
+        'https://cdn.jsdelivr.net https://tessdata.projectnaptha.com',
       ].filter(Boolean).join(' '),
       "font-src 'self' data:",
       "frame-src 'none'",     // iframe 삽입 차단
