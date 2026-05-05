@@ -94,8 +94,9 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
       setProgressLabel('한국어 언어팩 로딩 중... (첫 실행 시 시간이 걸릴 수 있어요)');
 
       const worker = await createWorker(['kor', 'eng'], 1, {
-        // 워커 스크립트는 로컬 복사본 사용 — CSP script-src/worker-src CDN 허용 불필요
+        // 워커·코어 모두 로컬 복사본 사용 — CDN script-src 허용 불필요
         workerPath: '/tesseract-worker.min.js',
+        corePath: '/tesseract-core/',
         logger: (m: { status: string; progress: number }) => {
           if (m.status === 'recognizing text') {
             setProgress(50 + Math.round(m.progress * 40));
