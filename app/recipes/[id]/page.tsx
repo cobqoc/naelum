@@ -162,14 +162,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? recipe.thumbnail_url.replace(/^http:\/\//, 'https://')
     : '/icons/icon-512.png';
 
+  const originalAuthor = recipe.attributed_chef ?? null;
+
   return {
     title,
     description,
+    ...(originalAuthor && { authors: [{ name: originalAuthor }] }),
     openGraph: {
       title: fullTitleForOG,
       description,
       images: [ogImage],
       type: 'article',
+      ...(originalAuthor && { authors: [originalAuthor] }),
     },
     twitter: {
       card: 'summary_large_image',

@@ -58,7 +58,7 @@ export default function CopyrightPolicyPage() {
             <div className="text-text-secondary leading-relaxed space-y-3">
               <p>서비스는 콘텐츠 제작자의 권리를 최우선으로 존중합니다:</p>
               <ul className="list-disc list-inside ml-4 space-y-2">
-                <li>저작권자의 삭제·비공개 요청에 대해 <span className="font-medium text-text-primary">영업일 기준 3일 이내</span>에 처리합니다.</li>
+                <li>저작권자의 삭제·비공개 요청에 대해 <span className="font-medium text-text-primary">24~72시간 이내</span>에 처리합니다.</li>
                 <li>요청이 확인된 즉시 해당 레시피를 비공개 처리하고, 검토 후 삭제 또는 수정합니다.</li>
                 <li>정당한 요청이라고 판단되면 별도의 소명 없이 신속하게 조치합니다.</li>
               </ul>
@@ -80,7 +80,7 @@ export default function CopyrightPolicyPage() {
                 <p className="text-text-secondary text-sm mb-3">아래 웹 폼을 이용하거나 이메일로 직접 신고할 수 있습니다.</p>
                 <CopyrightReportForm />
                 <p className="text-text-muted text-sm mt-4">이메일로 신고: <a href="mailto:hello@naelum.app" className="text-accent-warm hover:text-accent-hover font-mono">hello@naelum.app</a></p>
-                <p className="text-text-muted text-sm mt-1">처리 기한: 영업일 기준 3일 이내</p>
+                <p className="text-text-muted text-sm mt-1">처리 기한: 24~72시간 이내</p>
               </div>
 
               {/* 신고 시 포함할 정보 */}
@@ -133,7 +133,7 @@ export default function CopyrightPolicyPage() {
                   <div className="flex gap-3 items-start">
                     <span className="flex-shrink-0 w-7 h-7 bg-accent-warm/20 text-accent-warm rounded-full flex items-center justify-center text-sm font-bold">3</span>
                     <div>
-                      <p className="font-medium text-text-primary">내용 검토 (영업일 3일 이내)</p>
+                      <p className="font-medium text-text-primary">내용 검토 (24~72시간 이내)</p>
                       <p className="text-sm text-text-muted">신고 내용을 검토하여 삭제 또는 수정 여부를 결정합니다.</p>
                     </div>
                   </div>

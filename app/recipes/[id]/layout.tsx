@@ -19,7 +19,7 @@ export async function generateMetadata({
 
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('title, description, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, servings, author:profiles!recipes_author_id_fkey(username)')
+    .select('title, description, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, servings, attributed_chef, source_channel, author:profiles!recipes_author_id_fkey(username)')
     .eq('id', id)
     .single();
 
@@ -35,9 +35,13 @@ export async function generateMetadata({
   const descParts = [recipe.title, totalTime != null ? `${totalTime}분` : null, difficulty, recipe.servings ? `${recipe.servings}인분` : null].filter(Boolean).join(' - ');
   const description = recipe.description || descParts;
 
+  // 원작자: attributed_chef 우선, 없으면 플랫폼 계정
+  const originalAuthor = (recipe as { attributed_chef?: string | null }).attributed_chef ?? author?.username ?? null;
+
   return {
     title: recipe.title,
     description,
+    authors: originalAuthor ? [{ name: originalAuthor }] : undefined,
     openGraph: {
       title: recipe.title,
       description,
@@ -46,7 +50,7 @@ export async function generateMetadata({
       ...(recipe.thumbnail_url && {
         images: [{ url: recipe.thumbnail_url, width: 1200, height: 630, alt: recipe.title }],
       }),
-      authors: author?.username ? [`@${author.username}`] : undefined,
+      authors: originalAuthor ? [originalAuthor] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
