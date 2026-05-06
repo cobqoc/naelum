@@ -22,12 +22,12 @@ const CATEGORY_LABEL: Record<string, string> = {
   other: '기타',
 };
 
-interface MatchedIngredient {
-  id: string;
-  name: string;
+interface ProductLine {
+  text: string;
+  ingredientId: string | null;
+  ingredientName: string | null;
   category: string;
   common_units: string[];
-  matchedFrom: string;
 }
 
 type Step = 'select' | 'scanning' | 'result' | 'adding' | 'done';
@@ -84,8 +84,8 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('');
-  const [matched, setMatched] = useState<MatchedIngredient[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [productLines, setProductLines] = useState<ProductLine[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState<string>('');
 
@@ -102,7 +102,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
       setImageFile(null);
       setProgress(0);
       setProgressLabel('');
-      setMatched([]);
+      setProductLines([]);
       setSelected(new Set());
       setError(null);
       workerRef.current?.terminate();
@@ -177,11 +177,12 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
       });
 
       if (!res.ok) throw new Error('재료 매칭 실패');
-      const json = await res.json() as { matched: MatchedIngredient[] };
+      const json = await res.json() as { productLines: ProductLine[] };
+      const lines = json.productLines ?? [];
 
       setProgress(100);
-      setMatched(json.matched);
-      setSelected(new Set(json.matched.map(m => m.id)));
+      setProductLines(lines);
+      setSelected(new Set(lines.map((_, i) => i)));
       setStep('result');
     } catch (err) {
       console.error(err);
@@ -191,18 +192,21 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
   }, [imageFile]);
 
   const handleAdd = useCallback(async () => {
-    const toAdd = matched.filter(m => selected.has(m.id));
+    const toAdd = productLines.filter((_, i) => selected.has(i));
     if (toAdd.length === 0) return;
 
     setStep('adding');
 
-    const items = toAdd.map(ing => ({
-      ingredient_name: ing.name,
-      category: ing.category,
-      quantity: null,
-      unit: ing.common_units[0] ?? null,
-      storage_location: inferStorageLocation(ing.name, ing.category),
-    }));
+    const items = toAdd.map(pl => {
+      const name = pl.ingredientName ?? pl.text;
+      return {
+        ingredient_name: name,
+        category: pl.category,
+        quantity: null,
+        unit: pl.common_units[0] ?? null,
+        storage_location: inferStorageLocation(name, pl.category),
+      };
+    });
 
     try {
       const res = await fetch('/api/shopping-list/add-to-ingredients', {
@@ -219,13 +223,13 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
       setError('재료 추가 중 오류가 발생했어요.');
       setStep('result');
     }
-  }, [matched, selected, onAdded]);
+  }, [productLines, selected, onAdded]);
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (idx: number) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
       return next;
     });
   };
@@ -341,11 +345,11 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
             {/* ── STEP: result ── */}
             {step === 'result' && (
               <div className="p-5 space-y-4">
-                {matched.length === 0 ? (
+                {productLines.length === 0 ? (
                   <div className="space-y-4">
                     <div className="text-center py-4 space-y-2">
                       <span className="text-4xl">😅</span>
-                      <p className="text-sm font-semibold">재료를 찾지 못했어요</p>
+                      <p className="text-sm font-semibold">상품 정보를 찾지 못했어요</p>
                       <p className="text-xs text-text-muted">영수증이 바르게 인식되지 않았을 수 있어요</p>
                     </div>
                     {ocrText && (
@@ -358,31 +362,40 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
                 ) : (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">
-                        재료 {matched.length}개 발견
-                        <span className="text-text-muted font-normal ml-1">— 냉장고에 추가할 항목을 선택하세요</span>
-                      </p>
+                      <div>
+                        <p className="text-sm font-semibold">
+                          영수증 상품 {productLines.length}개 인식
+                        </p>
+                        <p className="text-xs text-text-muted mt-0.5">
+                          재료 매칭 {productLines.filter(p => p.ingredientId).length}개
+                          <span className="ml-1 text-text-muted/60">· 추가할 항목을 선택하세요</span>
+                        </p>
+                      </div>
                       <button
                         onClick={() => {
-                          if (selected.size === matched.length) setSelected(new Set());
-                          else setSelected(new Set(matched.map(m => m.id)));
+                          if (selected.size === productLines.length)
+                            setSelected(new Set());
+                          else
+                            setSelected(new Set(productLines.map((_, i) => i)));
                         }}
-                        className="text-xs text-accent-warm hover:text-accent-hover"
+                        className="text-xs text-accent-warm hover:text-accent-hover shrink-0"
                       >
-                        {selected.size === matched.length ? '전체 해제' : '전체 선택'}
+                        {selected.size === productLines.length ? '전체 해제' : '전체 선택'}
                       </button>
                     </div>
 
                     <div className="space-y-2">
-                      {matched.map(ing => {
-                        const isSelected = selected.has(ing.id);
-                        const emoji = CATEGORY_EMOJI[ing.category] ?? '📦';
-                        const catLabel = CATEGORY_LABEL[ing.category] ?? '기타';
+                      {productLines.map((pl, idx) => {
+                        const isSelected = selected.has(idx);
+                        const isMatched = pl.ingredientId !== null;
+                        const displayName = pl.ingredientName ?? pl.text;
+                        const emoji = CATEGORY_EMOJI[pl.category] ?? '📦';
+                        const catLabel = CATEGORY_LABEL[pl.category] ?? '기타';
 
                         return (
                           <button
-                            key={ing.id}
-                            onClick={() => toggleSelect(ing.id)}
+                            key={idx}
+                            onClick={() => toggleSelect(idx)}
                             className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
                               isSelected
                                 ? 'bg-accent-warm/10 border-accent-warm/40'
@@ -391,8 +404,17 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
                           >
                             <span className="text-xl shrink-0">{emoji}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold truncate">{ing.name}</p>
-                              <p className="text-xs text-text-muted">{catLabel}</p>
+                              <p className="text-sm font-semibold truncate">{displayName}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {isMatched ? (
+                                  <span className="text-xs text-text-muted">{catLabel}</span>
+                                ) : (
+                                  <span className="text-[10px] text-text-muted/60 bg-white/5 px-1.5 py-0.5 rounded">미매칭</span>
+                                )}
+                                {isMatched && pl.ingredientName && pl.text !== pl.ingredientName && (
+                                  <span className="text-[10px] text-text-muted/50 truncate">← {pl.text}</span>
+                                )}
+                              </div>
                             </div>
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                               isSelected ? 'bg-accent-warm border-accent-warm' : 'border-white/20'
@@ -454,7 +476,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
               </div>
             )}
 
-            {step === 'result' && matched.length > 0 && (
+            {step === 'result' && productLines.length > 0 && (
               <button
                 onClick={handleAdd}
                 disabled={selected.size === 0}
@@ -464,7 +486,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
               </button>
             )}
 
-            {step === 'result' && matched.length === 0 && (
+            {step === 'result' && productLines.length === 0 && (
               <button
                 onClick={() => { setStep('select'); setImagePreview(null); setImageFile(null); }}
                 className="w-full py-3.5 rounded-xl bg-background-tertiary border border-white/10 text-sm font-semibold transition-colors"
