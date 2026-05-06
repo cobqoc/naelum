@@ -44,7 +44,6 @@ import BottomNav from '@/components/BottomNav';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
-import ReceiptScannerModal from '@/components/ReceiptScanner/ReceiptScannerModal';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
 import { isFridgeDoorItem } from '@/lib/ingredients/storageMap';
 import { useRouter } from 'next/navigation';
@@ -154,7 +153,6 @@ export default function HomeClient({
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
-  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
 
   // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
   // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
@@ -894,17 +892,6 @@ export default function HomeClient({
             +
           </button>
 
-          {/* 영수증 스캔 버튼 — 로그인 유저에게만 표시. FAB 아래에 배치. */}
-          {isAuthenticated && (
-            <button
-              onClick={() => setShowReceiptScanner(true)}
-              aria-label="영수증 스캔"
-              title="영수증 스캔으로 재료 한번에 추가"
-              className="absolute top-[73%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-background-secondary hover:bg-background-tertiary border border-white/15 hover:border-accent-warm/40 shadow-md text-text-secondary hover:text-text-primary flex items-center justify-center text-lg transition-all active:scale-95"
-            >
-              🧾
-            </button>
-          )}
 
           {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
               클릭 시 /recommendations?mode=auto로 진입 → 페이지에서도 같은 판단 로직으로 pill 자동 선택. */}
@@ -1123,16 +1110,6 @@ export default function HomeClient({
         onAddIngredient={addIngredientFromModal}
       />
 
-      {/* 영수증 스캔 모달 */}
-      <ReceiptScannerModal
-        isOpen={showReceiptScanner}
-        onClose={() => setShowReceiptScanner(false)}
-        onAdded={(count) => {
-          setShowReceiptScanner(false);
-          toastSuccess(`영수증에서 재료 ${count}개를 냉장고에 추가했어요!`);
-          fetchItems();
-        }}
-      />
 
       <BottomNav />
 
