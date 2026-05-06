@@ -17,7 +17,7 @@ function extractCandidates(rawText: string): string[] {
     // 가격·수량 제거
     const cleaned = line
       .replace(/[\d,]+\s*원/g, '')
-      .replace(/\d+\s*(g|kg|ml|l|개|팩|봉|ea|box|set|매|장)/gi, '')
+      .replace(/[\d.]+\s*(g|kg|ml|l|개|팩|봉|ea|box|set|매|장)/gi, '')
       .replace(/×\s*\d+/g, '')      // ×3 같은 수량 표기
       .replace(/\b\d{3,}\b/g, '')   // 3자리 이상 숫자 제거
       .replace(/[*#@()\[\]{}|\\\/←→↑↓▶◀■□●○◆◇]/g, ' ')

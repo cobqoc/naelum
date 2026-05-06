@@ -32,6 +32,85 @@ interface MatchedIngredient {
 
 type Step = 'select' | 'scanning' | 'result' | 'adding' | 'done';
 
+// JPEG EXIF 방향 값 추출 (0xFFD8 헤더에서 0x0112 태그 탐색)
+async function getExifOrientation(file: File): Promise<number> {
+  try {
+    const buf = await file.slice(0, 65536).arrayBuffer();
+    const view = new DataView(buf);
+    if (view.getUint16(0, false) !== 0xFFD8) return 1; // JPEG 아님
+    let offset = 2;
+    while (offset + 4 < view.byteLength) {
+      if (view.getUint8(offset) !== 0xFF) break;
+      const marker = view.getUint8(offset + 1);
+      const segLen = view.getUint16(offset + 2, false);
+      if (marker === 0xE1 && offset + 10 < view.byteLength) {
+        // APP1: EXIF 헤더 확인 ('Exif\0\0')
+        if (view.getUint32(offset + 4, false) === 0x45786966) {
+          const base = offset + 10; // TIFF 헤더 시작
+          const le = view.getUint16(base, false) === 0x4949;
+          const ifd = view.getUint32(base + 4, le) + base;
+          if (ifd + 2 > view.byteLength) break;
+          const entries = view.getUint16(ifd, le);
+          for (let i = 0; i < entries; i++) {
+            const e = ifd + 2 + i * 12;
+            if (e + 12 > view.byteLength) break;
+            if (view.getUint16(e, le) === 0x0112) {
+              return view.getUint16(e + 8, le);
+            }
+          }
+        }
+      }
+      offset += 2 + segLen;
+    }
+  } catch { /* EXIF 없거나 파싱 실패 → 기본값 사용 */ }
+  return 1;
+}
+
+// EXIF 방향에 맞게 Canvas로 이미지 회전 보정
+async function normalizeOrientation(file: File): Promise<File> {
+  const orientation = await getExifOrientation(file);
+  if (orientation <= 1) return file; // 보정 불필요
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+
+    // 90°/270° 회전 시 가로·세로 교환
+    const swapped = orientation >= 5;
+    canvas.width = swapped ? h : w;
+    canvas.height = swapped ? w : h;
+
+    // 각 EXIF orientation 값에 대응하는 2D affine 변환
+    switch (orientation) {
+      case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;          // 좌우 반전
+      case 3: ctx.transform(-1, 0, 0, -1, w, h); break;          // 180°
+      case 4: ctx.transform(1, 0, 0, -1, 0, h); break;           // 상하 반전
+      case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;            // 전치
+      case 6: ctx.transform(0, 1, -1, 0, h, 0); break;           // 90° CW
+      case 7: ctx.transform(0, -1, -1, 0, h, w); break;          // 전치 + 좌우 반전
+      case 8: ctx.transform(0, -1, 1, 0, 0, w); break;           // 90° CCW
+    }
+    ctx.drawImage(img, 0, 0);
+
+    const blob = await new Promise<Blob>((res) =>
+      canvas.toBlob((b) => res(b!), 'image/jpeg', 0.92)
+    );
+    return new File([blob], file.name, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -47,6 +126,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
   const [matched, setMatched] = useState<MatchedIngredient[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [ocrText, setOcrText] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const workerRef = useRef<TesseractWorker | null>(null);
@@ -84,9 +164,12 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
     setStep('scanning');
     setError(null);
     setProgress(0);
-    setProgressLabel('OCR 엔진 로딩 중...');
+    setProgressLabel('이미지 보정 중...');
 
     try {
+      // EXIF 방향 보정 (옆으로 찍힌 영수증 자동 회전)
+      const correctedFile = await normalizeOrientation(imageFile);
+
       // Tesseract.js 동적 로드 (브라우저 전용)
       const { createWorker } = await import('tesseract.js');
 
@@ -108,12 +191,17 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
         },
       });
 
+      // PSM 1: 자동 방향 감지 + OSD — 회전 후에도 미세 보정
+      await (worker as unknown as { setParameters: (p: Record<string, string>) => Promise<void> })
+        .setParameters({ tessedit_pageseg_mode: '1' });
+
       workerRef.current = worker as unknown as TesseractWorker;
 
       setProgress(45);
       setProgressLabel('이미지 분석 중...');
 
-      const { data } = await worker.recognize(imageFile);
+      const { data } = await worker.recognize(correctedFile);
+      setOcrText(data.text);
       await worker.terminate();
       workerRef.current = null;
 
@@ -293,10 +381,18 @@ export default function ReceiptScannerModal({ isOpen, onClose, onAdded }: Props)
             {step === 'result' && (
               <div className="p-5 space-y-4">
                 {matched.length === 0 ? (
-                  <div className="text-center py-8 space-y-3">
-                    <span className="text-5xl">😅</span>
-                    <p className="text-sm font-semibold">재료를 찾지 못했어요</p>
-                    <p className="text-xs text-text-muted">영수증 사진을 다시 찍거나<br />밝은 곳에서 흔들림 없이 시도해주세요</p>
+                  <div className="space-y-4">
+                    <div className="text-center py-4 space-y-2">
+                      <span className="text-4xl">😅</span>
+                      <p className="text-sm font-semibold">재료를 찾지 못했어요</p>
+                      <p className="text-xs text-text-muted">영수증이 바르게 인식되지 않았을 수 있어요</p>
+                    </div>
+                    {ocrText && (
+                      <div className="bg-background-primary/60 rounded-xl p-3 border border-white/8">
+                        <p className="text-[10px] font-semibold text-text-muted mb-1.5">OCR 인식 결과 (디버그)</p>
+                        <p className="text-[10px] text-text-muted font-mono whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto">{ocrText}</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <>
