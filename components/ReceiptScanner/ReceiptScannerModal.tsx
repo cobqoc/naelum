@@ -32,82 +32,43 @@ interface MatchedIngredient {
 
 type Step = 'select' | 'scanning' | 'result' | 'adding' | 'done';
 
-// JPEG EXIF 방향 값 추출 (0xFFD8 헤더에서 0x0112 태그 탐색)
-async function getExifOrientation(file: File): Promise<number> {
-  try {
-    const buf = await file.slice(0, 65536).arrayBuffer();
-    const view = new DataView(buf);
-    if (view.getUint16(0, false) !== 0xFFD8) return 1; // JPEG 아님
-    let offset = 2;
-    while (offset + 4 < view.byteLength) {
-      if (view.getUint8(offset) !== 0xFF) break;
-      const marker = view.getUint8(offset + 1);
-      const segLen = view.getUint16(offset + 2, false);
-      if (marker === 0xE1 && offset + 10 < view.byteLength) {
-        // APP1: EXIF 헤더 확인 ('Exif\0\0')
-        if (view.getUint32(offset + 4, false) === 0x45786966) {
-          const base = offset + 10; // TIFF 헤더 시작
-          const le = view.getUint16(base, false) === 0x4949;
-          const ifd = view.getUint32(base + 4, le) + base;
-          if (ifd + 2 > view.byteLength) break;
-          const entries = view.getUint16(ifd, le);
-          for (let i = 0; i < entries; i++) {
-            const e = ifd + 2 + i * 12;
-            if (e + 12 > view.byteLength) break;
-            if (view.getUint16(e, le) === 0x0112) {
-              return view.getUint16(e + 8, le);
-            }
-          }
-        }
-      }
-      offset += 2 + segLen;
-    }
-  } catch { /* EXIF 없거나 파싱 실패 → 기본값 사용 */ }
-  return 1;
-}
-
-// EXIF 방향에 맞게 Canvas로 이미지 회전 보정
+// EXIF 보정 + 그레이스케일 + 대비 강화 → Tesseract OCR 품질 개선
+// createImageBitmap({ imageOrientation: 'from-image' }) 으로 브라우저 간 일관된 EXIF 처리
+// (img.naturalWidth는 Chrome/Safari에서 이미 EXIF 반영 → 직접 transform 시 이중 회전 발생)
 async function normalizeOrientation(file: File): Promise<File> {
-  const orientation = await getExifOrientation(file);
-  if (orientation <= 1) return file; // 보정 불필요
-
-  const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise<HTMLImageElement>((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = rej;
-      i.src = url;
-    });
+    // EXIF 보정된 비트맵 — 모든 모던 브라우저에서 방향이 올바름
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: 'from-image',
+    } as ImageBitmapOptions);
 
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
+    const w = bitmap.width;
+    const h = bitmap.height;
     const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
 
-    // 90°/270° 회전 시 가로·세로 교환
-    const swapped = orientation >= 5;
-    canvas.width = swapped ? h : w;
-    canvas.height = swapped ? w : h;
-
-    // 각 EXIF orientation 값에 대응하는 2D affine 변환
-    switch (orientation) {
-      case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;          // 좌우 반전
-      case 3: ctx.transform(-1, 0, 0, -1, w, h); break;          // 180°
-      case 4: ctx.transform(1, 0, 0, -1, 0, h); break;           // 상하 반전
-      case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;            // 전치
-      case 6: ctx.transform(0, 1, -1, 0, h, 0); break;           // 90° CW
-      case 7: ctx.transform(0, -1, -1, 0, h, w); break;          // 전치 + 좌우 반전
-      case 8: ctx.transform(0, -1, 1, 0, 0, w); break;           // 90° CCW
+    // 그레이스케일 + 대비 강화로 OCR 입력 품질 개선
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const px = imgData.data;
+    for (let i = 0; i < px.length; i += 4) {
+      // 그레이스케일 (ITU-R BT.601)
+      const gray = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+      // 대비 강화: 중간값(128) 중심으로 1.8배 늘리기
+      const c = Math.min(255, Math.max(0, (gray - 128) * 1.8 + 128));
+      px[i] = px[i + 1] = px[i + 2] = c;
     }
-    ctx.drawImage(img, 0, 0);
+    ctx.putImageData(imgData, 0, 0);
 
     const blob = await new Promise<Blob>((res) =>
       canvas.toBlob((b) => res(b!), 'image/jpeg', 0.92)
     );
     return new File([blob], file.name, { type: 'image/jpeg' });
-  } finally {
-    URL.revokeObjectURL(url);
+  } catch {
+    return file; // 브라우저 미지원 시 원본 그대로
   }
 }
 
