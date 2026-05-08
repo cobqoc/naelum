@@ -33,7 +33,7 @@
 
 ### dev DB 현황 (2026-04-13 기준)
 - `recipes`: 100개 (프로덕션 인기순 샘플, `author_id = null`)
-- `ingredients_master`: 605개 (전체 복사)
+- `ingredients_master`: 605개 (전체 복사) — 실제 dev는 스크립트로 더 많을 수 있음
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
 ### 주의사항
@@ -1065,11 +1065,93 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
 - **Rate limits 테이블 정리** — 매시간 cron 실행 (`/api/cron/cleanup-rate-limits`)
 
+### 농사로 Open API 신청 현황 (2026-05-08)
+
+> **⏳ 승인 대기 중** — API 키 발급 후 임포트 스크립트 작성 필요
+
+- **신청일**: 2026-05-08
+- **신청 계정**: 농사로(nongsaro.go.kr) — 개인: 낼름
+- **신청내역 확인**: 농사로 로그인 → 소통/공유 → 공공데이터 개방 → 신청내역
+- **API 기본 URL**: `https://api.nongsaro.go.kr/service/`
+- **라이선스**: 공공누리 3유형 (출처표시 + 변경금지) — 원문 그대로 저장, 가공 최소화
+
+#### 신청한 서비스 17개
+
+| 분류 | 서비스 ID | 내용 |
+|------|-----------|------|
+| **레시피** | `monthFd` | 이달의 음식 정보 (식재료 상세 포함) — **핵심** |
+| **레시피** | `nvpcFdCkry` | 향토 음식 |
+| **레시피** | `headFamilyFood` | 종가음식 |
+| **레시피** | `delicacyKimchi30` | 별미 김치 30선 |
+| **레시피** | `gnsnRecipe` | 인삼레시피 |
+| **레시피** | `trditAchlqrMnfcturLaw` | 전통주 제조법 |
+| **레시피** | `orientalMedicineAlcohol` | 한방약술 |
+| **레시피** | `insectFood` | 식용 곤충요리 |
+| **식단** | `todayDiet` | 추천 식단 |
+| **식단** | `recomendDiet` | 추천식단정보 |
+| **재료 백과** | `prvateTherpy` | 약초정보 |
+| **재료 백과** | `varietyInfo` | 품종 정보 |
+| **재료 백과** | `localSpcprd` | 지역특산물 |
+| **재료 백과** | `foodCommonCode` | 음식 기본 정보 |
+| **재료 백과** | `foodbyprdNtrinfo` | 농식품 부산물 영양정보 |
+| **i18n** | `korEngDictionary` | 향토음식 한영대역사전 |
+| **공통** | `commonCode` | 농사로 공통코드 |
+
+#### API 키 발급 후 할 일
+1. 인증키를 `.env.local`에 `NONGSARO_API_KEY=` 로 추가
+2. `monthFd` 임포트 스크립트 작성 (`scripts/import-nongsaro-recipes.ts`)
+   - 연도(2015~2020, 2023) × 월(1~12) 순회
+   - `monthNewFdLst` → `monthNewFdDtl` 상세 조회
+   - 재료(`matrlInfo`), 조리법(`ckngMthInfo`), 영양정보, 이미지 파싱
+3. 나머지 서비스(`nvpcFdCkry`, `headFamilyFood` 등) 데이터 구조 파악 후 임포트
+
+---
+
 ### 레시피 DB
-- **레시피 1,753개** — 전부 공개(published) 상태
+- **레시피 3,103개** — 전부 공개(published) 상태
+
+#### 출처별 구성 (2026-05-08 기준)
+| 출처 | 건수 | 라이선스 | 임포트 스크립트 | 조건 |
+|------|------|----------|----------------|------|
+| 식품의약품안전처 (COOKRCP01) | ~1,146개 | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
+| 농림수산식품교육문화정보원 | 537개 | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
+| 한식진흥원 아카이브 | ~70개 (draft) | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시, 미공개 상태 |
+| 농림수산성 うちの郷土料理 (MAFF) | 1,350개 | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
+
+> **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
+> 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
+
+#### MAFF 레시피 재임포트 명령어 (Prod)
+```bash
+# 1단계: 번역 JSON 생성
+npx tsx scripts/translate-maff-batch.ts 0 1365
+
+# 2단계: Dev 임포트
+npx tsx scripts/import-maff-recipes.ts
+
+# 3단계: Prod 임포트 (키는 .env.local의 PROD_SUPABASE_SERVICE_ROLE_KEY)
+NEXT_PUBLIC_SUPABASE_URL=https://rgnlgpfazxgwsnkgrhzs.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=$(grep PROD_SUPABASE_SERVICE_ROLE_KEY .env.local | tr -d ' ' | cut -d= -f2) \
+AUTHOR_ID=0132b4d2-5a56-4687-9d34-e1965b565be0 \
+npx tsx scripts/import-maff-recipes.ts
+```
 
 ### 재료 DB
-- 총 605개 재료 (`ingredients_master`)
+- **총 2,133개** 재료 (`ingredients_master`, 2026-05-07 기준)
+- name_en 보유: 287개 / 미보유: 1,846개
+
+#### 출처별 구성 (2026-05-07 기준)
+| 출처 | 건수 | 라이선스 | 임포트 스크립트 |
+|------|------|----------|----------------|
+| 한식진흥원 아카이브 (`hansik_api`) | 416개 | 공공누리 | `scripts/import-hansik-ingredients.ts` |
+| 레시피 재료 자동 추출 (`recipe_extract`) | ~1,461개 | — | `scripts/extract-recipe-ingredients.ts` (dev) / MCP SQL (prod) |
+| Open Food Facts 글로벌 재료 | ~110개 | ODbL | `scripts/import-off-ingredients.ts` |
+| 수동 입력 / 기타 | 나머지 | — | — |
+
+#### 영양정보 채우기 (미완료)
+| 소스 | 내용 | 스크립트 | 상태 |
+|------|------|----------|------|
+| 식약처 I2790 | 칼로리·단백질·지방·탄수화물 등 | `scripts/sync-ingredient-nutrition.ts` | **⛔ API 키 미등록** — openapi.foodsafetykorea.go.kr에서 I2790 서비스 별도 신청 필요 |
 
 ### 요리 팁
 - 1건 (`tip` 테이블) — "양파 손질·보관법 완전 정리"

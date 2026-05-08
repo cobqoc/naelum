@@ -20,8 +20,9 @@ loadEnvLocal();
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const API_KEY = process.env.FOODSAFETY_API_KEY ?? '';
-const BASE_URL = 'http://openapi.foodsafetykorea.go.kr/api';
+const API_KEY = process.env.DATA_GO_KR_API_KEY ?? process.env.FOODSAFETY_API_KEY ?? '';
+// data.go.kr 식품영양성분DB 정보 API (FoodNtrCpntDbInfo02)
+const BASE_URL = 'https://apis.data.go.kr/1471000/FoodNtrCpntDbInfo02/getFoodNtrCpntDbInq02';
 const DELAY_MS = 500; // 요청 간격 (Rate Limit 방지)
 
 // ============================================================
@@ -33,7 +34,6 @@ interface I2790Row {
   FOOD_NM_KR: string;
   FOOD_NM_EN?: string;
   SERVING_SIZE?: string;
-  SERVING_UNIT?: string;
   AMT_NUM1?: string;  // 열량 (kcal)
   AMT_NUM2?: string;  // 수분 (g)
   AMT_NUM3?: string;  // 단백질 (g)
@@ -52,7 +52,7 @@ interface I2790Row {
   AMT_NUM16?: string; // 베타카로틴 (μg)
   AMT_NUM17?: string; // 티아민 B1 (mg)
   AMT_NUM18?: string; // 리보플라빈 B2 (mg)
-  AMT_NUM19?: string; // 니아신 (mg)
+  AMT_NUM19?: string; // 니아신 (mg) — 주의: 새 API에서 다른 필드일 수 있음
   AMT_NUM20?: string; // 비타민C (mg)
   AMT_NUM21?: string; // 비타민D (μg)
   AMT_NUM22?: string; // 포화지방산 (g)
@@ -110,12 +110,12 @@ function similarity(a: string, b: string): number {
 }
 
 // ============================================================
-// 식약처 I2790 API 호출
+// data.go.kr 식품영양성분DB API 호출
 // ============================================================
 
 async function fetchNutritionFromAPI(foodName: string): Promise<I2790Row | null> {
   const encodedName = encodeURIComponent(foodName);
-  const url = `${BASE_URL}/${API_KEY}/I2790/json/1/10?FOOD_NM_KR=${encodedName}`;
+  const url = `${BASE_URL}?serviceKey=${API_KEY}&type=json&FOOD_NM_KR=${encodedName}&numOfRows=10&pageNo=1`;
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -124,25 +124,13 @@ async function fetchNutritionFromAPI(foodName: string): Promise<I2790Row | null>
   }
 
   const json = await res.json();
-  const result = json?.I2790?.RESULT?.CODE;
+  if (json?.header?.resultCode !== '00') return null;
 
-  if (result !== 'INFO-000') {
-    // 데이터 없음 (INFO-200 등)
-    return null;
-  }
-
-  const rows: I2790Row[] = json?.I2790?.row ?? [];
+  const rows: I2790Row[] = json?.body?.items ?? [];
   if (rows.length === 0) return null;
 
-  // 완전일치 우선, 그다음 부분일치, 없으면 첫 번째
-  const exact = rows.find(r => r.FOOD_NM_KR.trim() === foodName.trim());
-  if (exact) return exact;
-
-  const scored = rows
-    .map(r => ({ row: r, score: similarity(foodName, r.FOOD_NM_KR) }))
-    .sort((a, b) => b.score - a.score);
-
-  return scored[0].score > 0 ? scored[0].row : rows[0];
+  // 완전일치만 허용 (부분 매칭은 요리명 DB와 혼동될 수 있어 제외)
+  return rows.find(r => r.FOOD_NM_KR.trim() === foodName.trim()) ?? null;
 }
 
 // ============================================================
