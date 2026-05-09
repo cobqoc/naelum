@@ -1134,7 +1134,7 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ---
 
 ### 레시피 DB
-- **prod: 3,850개** (published 3,558 + draft 257 + private 35) / **dev: 3,460개**
+- **prod: 3,850개** (published 1,508 + draft 2,307 + private 35) / **dev: 3,460개**
 - 최종 수정일: 2026-05-10
 
 #### 출처별 구성 (2026-05-10 기준)
@@ -1143,7 +1143,7 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 | 식품의약품안전처 (COOKRCP01) | ~1,146개 | published | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
 | 농림수산식품교육문화정보원 | 537개 | published | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
 | 한식진흥원 아카이브 | ~70개 | draft | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시 |
-| 농림수산성 うちの郷土料理 (MAFF) | 2,050개 | **published** (번역 완료, 2026-05-10 재공개) | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
+| 농림수산성 うちの郷土料理 (MAFF) | 2,050개 | **draft** (번역 완료, 비공개 대기 중) | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
 | 농사로 종가음식 | 257개 | **draft** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-headfamily.ts` | 출처 표시, 태그: `종가음식` |
 | 농사로 인삼레시피 | 100개 | **published** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-gnsn.ts` | 출처 표시, 태그: `인삼레시피` |
 
