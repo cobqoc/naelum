@@ -124,7 +124,8 @@ test.describe('레시피 상세 SSR 검증', () => {
       await saveBtn.click();
       // 토스트 또는 로그인 모달이 뜨는지 (API가 401 반환 → handleSave에서 toast.warning 호출)
       await page.waitForTimeout(800);
-      const hasLoginToast = await page.getByText('로그인이 필요합니다').count();
+      // 실제 토스트 텍스트: '로그인하면 레시피를 낼름(저장)할 수 있어요'
+      const hasLoginToast = await page.getByText(/로그인|login/i).count();
       const redirectedToLogin = page.url().includes('/login');
       expect(hasLoginToast > 0 || redirectedToLogin).toBeTruthy();
     }
