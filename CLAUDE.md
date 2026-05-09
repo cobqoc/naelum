@@ -549,6 +549,19 @@ feature/* → 기능 단위 브랜치 (선택)
 7. 독일어 (de)
 8. 이탈리아어 (it)
 
+### 구현 현황 (2026-05-10 기준) ✅
+
+- **파일 위치**: `lib/i18n/locales/{ko,en,ja,zh,es,fr,de,it}.ts`
+- **컨텍스트**: `lib/i18n/context.tsx` — `useI18n()` 훅
+- **타입 안전성**: `TranslationKeys = typeof ko` — 8개 locale 모두 같은 key shape 필수
+- **전 페이지·컴포넌트 처리 완료** — 하드코딩 한글 없음
+
+### 🚨 i18n 개발 규칙
+
+- 새 컴포넌트에서 `'한글 텍스트'` 직접 작성 금지 → 반드시 `t.namespace.key` 사용
+- 새 키 추가 시 **8개 locale 모두** 동시에 추가 (TypeScript 타입 오류 방지)
+- DB 저장 값(냉장/냉동/상온 등)은 한글 그대로 유지 — locale key와 혼동 금지
+
 ### 다국어 처리
 - **자동 언어 감지**
   - 브라우저 언어 설정 우선
@@ -556,8 +569,8 @@ feature/* → 기능 단위 브랜치 (선택)
   - 사용자 수동 선택 옵션
 
 - **번역 범위**
-  - UI 텍스트 전체
-  - 에러 메시지
+  - UI 텍스트 전체 ✅
+  - 에러 메시지 ✅
   - 이메일 템플릿
   - 푸시 알림
 
@@ -795,17 +808,17 @@ NLP (검색 개선):
 ## 🚀 개발 로드맵
 
 ### Phase 1: MVP (3-4개월)
-- [ ] 사용자 인증 시스템
-- [ ] 기본 레시피 CRUD
-- [ ] 검색 기능 (기본)
-- [ ] 반응형 UI
-- [ ] 다국어 지원 (한/영)
+- [x] 사용자 인증 시스템
+- [x] 기본 레시피 CRUD
+- [x] 검색 기능 (기본)
+- [x] 반응형 UI
+- [x] 다국어 지원 (8개 언어, 2026-05-10 완료)
 
 ### Phase 2: 핵심 기능 (2-3개월)
-- [ ] 재료 기반 추천
-- [ ] 저장/북마크 기능
+- [x] 재료 기반 추천 (ingredient_id FK 매칭, 2026-05-10)
+- [x] 저장/북마크 기능 (낼름함)
 - [ ] 레시피 따라하기 모드
-- [ ] 소셜 기능 (만들어봤어요, 댓글, 공유)
+- [x] 소셜 기능 (만들어봤어요, 댓글, 공유)
 - [ ] 알림 시스템
 
 ### Phase 3: 고급 기능 (3-4개월)
@@ -1051,6 +1064,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - 재료 추가 시 `ingredient_id` (ingredients_master FK) DB 저장
   - 쇼핑 리스트 → 냉장고 추가 시도 ingredient_id 자동 조회 저장
   - `user_ingredients.ingredient_id` 컬럼 활용으로 추천 정확도 향상
+- **다국어 지원 (i18n)** — 전 페이지·컴포넌트 완료 (2026-05-10)
+  - 8개 언어 (ko/en/ja/zh/es/fr/de/it) — `lib/i18n/locales/` 각 파일
+  - `useI18n()` 훅 패턴으로 전 UI 처리. 하드코딩 문자열 없음
+  - 신규 컴포넌트 작성 시 반드시 `useI18n()` 사용, 한글 하드코딩 금지
+  - 네임스페이스: `common`, `auth`, `recipe`, `ingredient`, `comments`, `writeModal`, `tipForm`, `settings`, `nutrition`, `cart`, `cookMode`, `contact` 등
 
 ### 이메일 설정 현황
 - **도메인 이메일**: `hello@naelum.app` — Cloudflare Email Routing으로 `cobqoc@gmail.com`에 포워딩
