@@ -174,6 +174,9 @@ export const zh = {
     tryAgainLater: '请稍后再试。',
     useAnotherEmail: '使用其他邮箱注册',
     verifying: '验证确认中...',
+    verifyNotFound: '找不到验证信息。',
+    verifyError: '验证处理过程中发生错误。',
+    resetLinkInvalid: '无效的链接。',
   },
   bottomNav: {
     home: '首页',
@@ -739,6 +742,11 @@ export const zh = {
     errorCreateGeneric: '添加食材时出错',
     addButton: '添加',
     addingButton: '添加中...',
+    scrollLoadMore: '滚动查看更多...',
+    noIngredientFound: '找不到食材？',
+    noIngredientFoundSub: '添加后所有用户都可以使用',
+    addNewIngredient: '+ 添加新食材',
+    directInput: '+ 手动输入',
   },
   onboarding: {
     skip: '稍后',
@@ -1050,6 +1058,16 @@ export const zh = {
     timeAgoDay: '{n}天前',
     timeAgoHour: '{n}小时前',
     timeAgoMinute: '{n}分钟前',
+    emptyTitle: '留下第一条评论',
+    emptySub: '分享您对这道菜谱的想法或评价',
+    replyToUser: '回复 @{username}...',
+  },
+  writeModal: {
+    title: '你想写什么？',
+    recipeTitle: '写菜谱',
+    recipeSub: '分享食材和步骤',
+    tipTitle: '写小贴士',
+    tipSub: '分享烹饪技巧和窍门',
   },
   tipForm: {
     pageTitle: '💡 撰写技巧',

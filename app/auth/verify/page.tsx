@@ -86,7 +86,7 @@ export default function VerifyPage() {
           } else {
             // 토큰이 없으면 회원가입 페이지로
             setStatus('error');
-            setErrorMessage('인증 정보를 찾을 수 없습니다.');
+            setErrorMessage(t.auth.verifyNotFound);
             setTimeout(() => {
               router.push('/signup');
             }, 2000);
@@ -95,7 +95,7 @@ export default function VerifyPage() {
       } catch (err) {
         console.error('Verification error:', err);
         setStatus('error');
-        setErrorMessage('인증 처리 중 오류가 발생했습니다.');
+        setErrorMessage(t.auth.verifyError);
       }
     };
 

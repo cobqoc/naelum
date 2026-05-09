@@ -174,6 +174,9 @@ export const en = {
     tryAgainLater: 'Please try again later.',
     useAnotherEmail: 'Sign up with a different email',
     verifying: 'Verifying...',
+    verifyNotFound: 'Verification information not found.',
+    verifyError: 'An error occurred during verification.',
+    resetLinkInvalid: 'Invalid link.',
   },
   bottomNav: {
     home: 'Home',
@@ -738,6 +741,11 @@ export const en = {
     errorCreateGeneric: 'Error adding ingredient',
     addButton: 'Add',
     addingButton: 'Adding...',
+    scrollLoadMore: 'Scroll for more...',
+    noIngredientFound: 'Can\'t find the ingredient?',
+    noIngredientFoundSub: 'Adding it will make it available to all users',
+    addNewIngredient: '+ Add new ingredient',
+    directInput: '+ Type manually',
   },
   onboarding: {
     skip: 'Skip for now',
@@ -1049,6 +1057,16 @@ export const en = {
     timeAgoDay: '{n}d ago',
     timeAgoHour: '{n}h ago',
     timeAgoMinute: '{n}m ago',
+    emptyTitle: 'Be the first to comment',
+    emptySub: 'Share your thoughts or review about this recipe',
+    replyToUser: 'Reply to @{username}...',
+  },
+  writeModal: {
+    title: 'What would you like to write?',
+    recipeTitle: 'Write a Recipe',
+    recipeSub: 'Share ingredients and step-by-step instructions',
+    tipTitle: 'Write a Tip',
+    tipSub: 'Share cooking tips and techniques',
   },
   tipForm: {
     pageTitle: '💡 New Tip',

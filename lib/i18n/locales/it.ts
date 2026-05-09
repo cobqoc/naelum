@@ -174,6 +174,9 @@ export const it = {
     tryAgainLater: 'Riprova più tardi.',
     useAnotherEmail: 'Registrati con un\'altra email',
     verifying: 'Verifica in corso...',
+    verifyNotFound: 'Informazioni di verifica non trovate.',
+    verifyError: 'Si è verificato un errore durante la verifica.',
+    resetLinkInvalid: 'Link non valido.',
   },
   bottomNav: {
     home: 'Home',
@@ -739,6 +742,11 @@ export const it = {
     errorCreateGeneric: "Errore durante l'aggiunta dell'ingrediente",
     addButton: 'Aggiungi',
     addingButton: 'Aggiunta...',
+    scrollLoadMore: 'Scorri per vedere altro...',
+    noIngredientFound: 'Non trovi l\'ingrediente?',
+    noIngredientFoundSub: 'Aggiungendolo sarà disponibile per tutti gli utenti',
+    addNewIngredient: '+ Aggiungi nuovo ingrediente',
+    directInput: '+ Inserisci manualmente',
   },
   onboarding: {
     skip: 'Più tardi',
@@ -1050,6 +1058,16 @@ export const it = {
     timeAgoDay: '{n} giorno/i fa',
     timeAgoHour: '{n} ora/e fa',
     timeAgoMinute: '{n} minuto/i fa',
+    emptyTitle: 'Sii il primo a commentare',
+    emptySub: 'Condividi la tua opinione o recensione su questa ricetta',
+    replyToUser: 'Rispondi a @{username}...',
+  },
+  writeModal: {
+    title: 'Cosa vuoi scrivere?',
+    recipeTitle: 'Scrivi una Ricetta',
+    recipeSub: 'Condividi ingredienti e istruzioni passo dopo passo',
+    tipTitle: 'Scrivi un Consiglio',
+    tipSub: 'Condividi consigli e tecniche di cucina',
   },
   tipForm: {
     pageTitle: '💡 Nuovo consiglio',

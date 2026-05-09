@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useI18n } from '@/lib/i18n/context';
 
 interface WriteModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface WriteModalProps {
 
 export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
   const router = useRouter();
+  const { t } = useI18n();
 
   if (!isOpen) return null;
 
@@ -22,7 +24,7 @@ export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden">
         <div className="px-6 py-5 border-b border-white/10">
-          <h2 className="text-base font-bold text-center">무엇을 작성할까요?</h2>
+          <h2 className="text-base font-bold text-center">{t.writeModal.title}</h2>
         </div>
         <div className="p-3 space-y-2">
           <button
@@ -31,8 +33,8 @@ export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
           >
             <span className="text-3xl">🍳</span>
             <div>
-              <p className="font-bold text-text-primary">레시피 작성</p>
-              <p className="text-xs text-text-muted mt-0.5">재료와 단계별 조리법을 공유해보세요</p>
+              <p className="font-bold text-text-primary">{t.writeModal.recipeTitle}</p>
+              <p className="text-xs text-text-muted mt-0.5">{t.writeModal.recipeSub}</p>
             </div>
           </button>
           <button
@@ -41,8 +43,8 @@ export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
           >
             <span className="text-3xl">💡</span>
             <div>
-              <p className="font-bold text-text-primary">팁 작성</p>
-              <p className="text-xs text-text-muted mt-0.5">요리 팁과 기술을 단계별로 알려주세요</p>
+              <p className="font-bold text-text-primary">{t.writeModal.tipTitle}</p>
+              <p className="text-xs text-text-muted mt-0.5">{t.writeModal.tipSub}</p>
             </div>
           </button>
         </div>

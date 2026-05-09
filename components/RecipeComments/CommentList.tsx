@@ -2,6 +2,7 @@
 
 import { CommentListProps } from './types';
 import CommentItem from './CommentItem';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function CommentList({
   comments,
@@ -10,13 +11,15 @@ export default function CommentList({
   onCommentUpdate,
   onCommentDelete
 }: CommentListProps) {
+  const { t } = useI18n();
+
   if (comments.length === 0) {
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">💬</div>
-        <p className="text-text-muted mb-2">첫 댓글을 남겨보세요</p>
+        <p className="text-text-muted mb-2">{t.comments.emptyTitle}</p>
         <p className="text-sm text-text-secondary">
-          이 레시피에 대한 의견이나 후기를 공유해주세요
+          {t.comments.emptySub}
         </p>
       </div>
     );
