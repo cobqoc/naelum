@@ -68,7 +68,7 @@ export default function Header() {
                   onClick={() => setShowWriteModal(true)}
                   className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
-                  ✏️ <span>글쓰기</span>
+                  ✏️ <span>{t.common.write}</span>
                 </button>
 
                 {/* Shopping Cart */}
@@ -121,7 +121,7 @@ export default function Header() {
                   <button
                     onClick={() => setShowLangSelector(!showLangSelector)}
                     className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-full hover:bg-white/10 transition-colors"
-                    aria-label="언어 선택"
+                    aria-label={t.common.languageSelect}
                   >
                     <span className="text-base">{LANG_OPTIONS.find(l => l.code === language)?.flag ?? '🇰🇷'}</span>
                     <span className="text-xs text-text-secondary">{LANG_OPTIONS.find(l => l.code === language)?.label ?? '한국어'}</span>

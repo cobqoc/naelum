@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
 import { CommentFormProps, Comment } from './types';
 
 export default function CommentForm({
   recipeId,
   parentCommentId = null,
-  placeholder = '댓글을 입력하세요...',
+  placeholder,
   onCommentCreated,
   autoFocus = false,
   onCancel
@@ -19,19 +20,21 @@ export default function CommentForm({
   const [error, setError] = useState('');
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const supabase = createClient();
+  const tc = t.comments;
+  const resolvedPlaceholder = placeholder ?? (parentCommentId ? tc.replyPlaceholder : tc.placeholder);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 유효성 검증
     if (!content.trim()) {
-      setError('댓글 내용을 입력해주세요');
+      setError(tc.errorRequired);
       return;
     }
 
     if (content.length > 1000) {
-      setError('댓글은 1000자를 초과할 수 없습니다');
+      setError(tc.errorTooLong);
       return;
     }
 
@@ -43,12 +46,11 @@ export default function CommentForm({
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        toast.warning('로그인 후 댓글을 작성할 수 있습니다');
+        toast.warning(tc.errorLoginRequired);
         router.push('/login');
         return;
       }
 
-      // 댓글 작성 API 호출
       const res = await fetch(`/api/recipes/${recipeId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,7 +63,7 @@ export default function CommentForm({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || '댓글 작성에 실패했습니다');
+        throw new Error(data.error || tc.errorCreateFailed);
       }
 
       // 성공 시 입력 초기화 및 콜백 실행
@@ -70,8 +72,7 @@ export default function CommentForm({
         onCommentCreated(data.comment as Comment);
       }
     } catch (err) {
-      console.error('댓글 작성 오류:', err);
-      setError(err instanceof Error ? err.message : '댓글 작성에 실패했습니다');
+      setError(err instanceof Error ? err.message : tc.errorCreateFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +83,7 @@ export default function CommentForm({
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         autoFocus={autoFocus}
         className="w-full bg-background-tertiary rounded-lg px-4 py-3 text-base text-text-primary
                    placeholder-text-muted focus:outline-none focus:ring-2
@@ -109,7 +110,7 @@ export default function CommentForm({
               className="px-4 py-2 rounded-lg text-text-muted hover:bg-background-tertiary transition-all"
               disabled={isSubmitting}
             >
-              취소
+              {tc.cancel}
             </button>
           )}
           <button
@@ -119,7 +120,7 @@ export default function CommentForm({
                        disabled:cursor-not-allowed"
             disabled={isSubmitting || !content.trim()}
           >
-            {isSubmitting ? '작성 중...' : parentCommentId ? '답글 작성' : '댓글 작성'}
+            {isSubmitting ? tc.submitting : parentCommentId ? tc.submitReply : tc.submitComment}
           </button>
         </div>
       </div>

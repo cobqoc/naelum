@@ -1,12 +1,14 @@
 /**
  * 식약처 식품영양성분 DB API(I2790) → ingredients_master 영양정보 동기화
  *
- * 사전 준비:
- *   1. https://openapi.foodsafetykorea.go.kr 에서 I2790 서비스 API 키 발급
- *   2. 환경변수 설정: FOODSAFETY_API_KEY=발급받은키
+ * 전략: 재료별 API 검색 + 로컬 퍼지 매칭 (5개 병렬, 50ms 딜레이)
+ * → 식약처 API는 rate limit 없음 확인, 기존 500ms → 50ms + 병렬로 8분 → ~1분
  *
  * 실행:
- *   FOODSAFETY_API_KEY=발급받은키 npx tsx scripts/sync-ingredient-nutrition.ts
+ *   npx tsx scripts/sync-ingredient-nutrition.ts              # dev, 미매칭만
+ *   npx tsx scripts/sync-ingredient-nutrition.ts --overwrite  # dev, 전체 덮어쓰기
+ *   npx tsx scripts/sync-ingredient-nutrition.ts --prod       # prod
+ *   npx tsx scripts/sync-ingredient-nutrition.ts --dry-run    # 매칭 결과만 출력
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -17,28 +19,26 @@ loadEnvLocal();
 // 설정
 // ============================================================
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const API_KEY = process.env.DATA_GO_KR_API_KEY ?? process.env.FOODSAFETY_API_KEY ?? '';
+const BASE_URL = 'https://apis.data.go.kr/1471000/FoodNtrCpntDbInfo02/getFoodNtrCpntDbInq02';
+const CONCURRENCY = 5;  // 동시 처리 수
+const DELAY_MS    = 50; // 배치 간 딜레이 (ms)
 
-const API_KEY = process.env.FOODSAFETY_API_KEY ?? '';
-const BASE_URL = 'http://openapi.foodsafetykorea.go.kr/api';
-const DELAY_MS = 500; // 요청 간격 (Rate Limit 방지)
+const overwrite = process.argv.includes('--overwrite');
+const isProd    = process.argv.includes('--prod');
+const dryRun    = process.argv.includes('--dry-run');
 
 // ============================================================
-// 타입 정의
+// 타입
 // ============================================================
 
 interface I2790Row {
   FOOD_CD: string;
   FOOD_NM_KR: string;
-  FOOD_NM_EN?: string;
-  SERVING_SIZE?: string;
-  SERVING_UNIT?: string;
   AMT_NUM1?: string;  // 열량 (kcal)
   AMT_NUM2?: string;  // 수분 (g)
   AMT_NUM3?: string;  // 단백질 (g)
   AMT_NUM4?: string;  // 지방 (g)
-  AMT_NUM5?: string;  // 회분 (g)
   AMT_NUM6?: string;  // 탄수화물 (g)
   AMT_NUM7?: string;  // 당류 (g)
   AMT_NUM8?: string;  // 식이섬유 (g)
@@ -62,28 +62,19 @@ interface I2790Row {
 }
 
 interface NutritionDetail {
-  fiber?: number;
-  sodium?: number;
-  sugar?: number;
-  moisture?: number;
-  calcium?: number;
-  iron?: number;
-  phosphorus?: number;
-  potassium?: number;
-  zinc?: number;
-  vitamin_a?: number;
-  retinol?: number;
-  beta_carotene?: number;
-  vitamin_b1?: number;
-  vitamin_b2?: number;
-  vitamin_c?: number;
-  vitamin_d?: number;
-  niacin?: number;
-  saturated_fat?: number;
-  trans_fat?: number;
-  cholesterol?: number;
+  fiber?: number; sodium?: number; sugar?: number; moisture?: number;
+  calcium?: number; iron?: number; phosphorus?: number; potassium?: number;
+  zinc?: number; vitamin_a?: number; retinol?: number; beta_carotene?: number;
+  vitamin_b1?: number; vitamin_b2?: number; vitamin_c?: number; vitamin_d?: number;
+  niacin?: number; saturated_fat?: number; trans_fat?: number; cholesterol?: number;
   source: string;
   food_code: string;
+}
+
+interface MatchResult {
+  row: I2790Row;
+  score: number;
+  matchedQuery: string;
 }
 
 // ============================================================
@@ -100,49 +91,105 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/** 두 문자열의 유사도 점수 (0~1) */
-function similarity(a: string, b: string): number {
-  const s1 = a.toLowerCase().trim();
-  const s2 = b.toLowerCase().trim();
-  if (s1 === s2) return 1;
-  if (s2.includes(s1) || s1.includes(s2)) return 0.8;
-  return 0;
+// ============================================================
+// 이름 정규화 & 퍼지 매칭
+// ============================================================
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (__, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+  return dp[m][n];
 }
 
+function normalizeQuery(name: string): string {
+  return name.replace(/\([^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/고기$/, '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeFoodApiName(apiName: string): string {
+  return apiName.split(/[,_]/)[0].replace(/\([^)]*\)/g, '').trim();
+}
+
+function calcSimilarity(query: string, apiName: string): number {
+  const q  = query.toLowerCase();
+  const qn = normalizeQuery(query).toLowerCase();
+  const hasSep = apiName.includes(',') || apiName.includes('_');
+  const a = normalizeFoodApiName(apiName).toLowerCase();
+
+  if (q === a || (qn && qn !== q && qn === a)) return 1.0;
+
+  const lev = (x: string) => {
+    const d = levenshtein(x, a);
+    const ml = Math.max(x.length, a.length);
+    return ml === 0 ? 1.0 : Math.max(0, 1 - d / ml);
+  };
+
+  if (hasSep) {
+    if (q.startsWith(a) || (qn && qn.startsWith(a))) return 0.88;
+    return Math.max(lev(q), qn ? lev(qn) : 0);
+  } else {
+    if ((a.startsWith(q) && a.length > q.length) || (qn && a.startsWith(qn) && a.length > qn.length)) return 0.4;
+    if (q.startsWith(a)  && a.length >= 2) return 0.88;
+    if (qn && qn.startsWith(a) && a.length >= 2) return 0.88;
+    return Math.max(lev(q), qn ? lev(qn) : 0);
+  }
+}
+
+const SYNONYMS: Record<string, string[]> = {
+  '계란': ['달걀'], '달걀': ['계란'],
+  '계란노른자': ['달걀노른자'], '달걀노른자': ['계란노른자'],
+  '계란흰자': ['달걀흰자'], '달걀흰자': ['계란흰자'],
+  '소고기': ['쇠고기'], '쇠고기': ['소고기'],
+  '파': ['대파'],
+};
+
+function getSearchQueries(name: string): string[] {
+  const queries = new Set<string>();
+  queries.add(name);
+  const normalized = normalizeQuery(name);
+  if (normalized && normalized !== name) queries.add(normalized);
+  for (const [key, synonyms] of Object.entries(SYNONYMS))
+    if (name === key) synonyms.forEach(s => queries.add(s));
+  return Array.from(queries);
+}
+
+const MATCH_THRESHOLD = 0.75;
+
 // ============================================================
-// 식약처 I2790 API 호출
+// API 호출
 // ============================================================
 
-async function fetchNutritionFromAPI(foodName: string): Promise<I2790Row | null> {
-  const encodedName = encodeURIComponent(foodName);
-  const url = `${BASE_URL}/${API_KEY}/I2790/json/1/10?FOOD_NM_KR=${encodedName}`;
-
+async function fetchRowsFromAPI(query: string): Promise<I2790Row[]> {
+  const url = `${BASE_URL}?serviceKey=${API_KEY}&type=json&FOOD_NM_KR=${encodeURIComponent(query)}&numOfRows=100&pageNo=1`;
   const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`  API 오류 (${res.status}): ${foodName}`);
-    return null;
-  }
-
+  if (!res.ok) return [];
   const json = await res.json();
-  const result = json?.I2790?.RESULT?.CODE;
+  if (json?.header?.resultCode !== '00') return [];
+  return json?.body?.items ?? [];
+}
 
-  if (result !== 'INFO-000') {
-    // 데이터 없음 (INFO-200 등)
-    return null;
+async function findBestMatch(foodName: string): Promise<MatchResult | null> {
+  const queries = getSearchQueries(foodName);
+  const allRows: { row: I2790Row; query: string }[] = [];
+
+  for (let i = 0; i < queries.length; i++) {
+    const rows = await fetchRowsFromAPI(queries[i]);
+    rows.forEach(row => allRows.push({ row, query: queries[i] }));
+    if (i < queries.length - 1) await sleep(30);
   }
 
-  const rows: I2790Row[] = json?.I2790?.row ?? [];
-  if (rows.length === 0) return null;
-
-  // 완전일치 우선, 그다음 부분일치, 없으면 첫 번째
-  const exact = rows.find(r => r.FOOD_NM_KR.trim() === foodName.trim());
-  if (exact) return exact;
-
-  const scored = rows
-    .map(r => ({ row: r, score: similarity(foodName, r.FOOD_NM_KR) }))
-    .sort((a, b) => b.score - a.score);
-
-  return scored[0].score > 0 ? scored[0].row : rows[0];
+  let best: MatchResult | null = null;
+  for (const { row, query } of allRows) {
+    const score = Math.max(calcSimilarity(foodName, row.FOOD_NM_KR), calcSimilarity(query, row.FOOD_NM_KR));
+    if (score < MATCH_THRESHOLD) continue;
+    const finalScore = score + (row.FOOD_NM_KR.includes('생것') ? 0.05 : 0);
+    if (!best || finalScore > best.score) best = { row, score: finalScore, matchedQuery: query };
+  }
+  return best;
 }
 
 // ============================================================
@@ -150,34 +197,28 @@ async function fetchNutritionFromAPI(foodName: string): Promise<I2790Row | null>
 // ============================================================
 
 function parseNutritionDetail(row: I2790Row): NutritionDetail {
-  const detail: NutritionDetail = {
-    source: '식약처_I2790',
-    food_code: row.FOOD_CD,
-  };
-
+  const detail: NutritionDetail = { source: '식약처_I2790', food_code: row.FOOD_CD };
   const f = (val?: string) => toNum(val);
-
-  if (f(row.AMT_NUM2)  != null) detail.moisture       = f(row.AMT_NUM2)!;
-  if (f(row.AMT_NUM7)  != null) detail.sugar          = f(row.AMT_NUM7)!;
-  if (f(row.AMT_NUM8)  != null) detail.fiber          = f(row.AMT_NUM8)!;
-  if (f(row.AMT_NUM9)  != null) detail.calcium        = f(row.AMT_NUM9)!;
-  if (f(row.AMT_NUM10) != null) detail.iron           = f(row.AMT_NUM10)!;
-  if (f(row.AMT_NUM11) != null) detail.phosphorus     = f(row.AMT_NUM11)!;
-  if (f(row.AMT_NUM12) != null) detail.potassium      = f(row.AMT_NUM12)!;
-  if (f(row.AMT_NUM13) != null) detail.sodium         = f(row.AMT_NUM13)!;
-  if (f(row.AMT_NUM14) != null) detail.vitamin_a      = f(row.AMT_NUM14)!;
-  if (f(row.AMT_NUM15) != null) detail.retinol        = f(row.AMT_NUM15)!;
-  if (f(row.AMT_NUM16) != null) detail.beta_carotene  = f(row.AMT_NUM16)!;
-  if (f(row.AMT_NUM17) != null) detail.vitamin_b1     = f(row.AMT_NUM17)!;
-  if (f(row.AMT_NUM18) != null) detail.vitamin_b2     = f(row.AMT_NUM18)!;
-  if (f(row.AMT_NUM19) != null) detail.niacin         = f(row.AMT_NUM19)!;
-  if (f(row.AMT_NUM20) != null) detail.vitamin_c      = f(row.AMT_NUM20)!;
-  if (f(row.AMT_NUM21) != null) detail.vitamin_d      = f(row.AMT_NUM21)!;
-  if (f(row.AMT_NUM22) != null) detail.saturated_fat  = f(row.AMT_NUM22)!;
-  if (f(row.AMT_NUM23) != null) detail.trans_fat      = f(row.AMT_NUM23)!;
-  if (f(row.AMT_NUM24) != null) detail.cholesterol    = f(row.AMT_NUM24)!;
-  if (f(row.AMT_NUM25) != null) detail.zinc           = f(row.AMT_NUM25)!;
-
+  if (f(row.AMT_NUM2)  != null) detail.moisture      = f(row.AMT_NUM2)!;
+  if (f(row.AMT_NUM7)  != null) detail.sugar         = f(row.AMT_NUM7)!;
+  if (f(row.AMT_NUM8)  != null) detail.fiber         = f(row.AMT_NUM8)!;
+  if (f(row.AMT_NUM9)  != null) detail.calcium       = f(row.AMT_NUM9)!;
+  if (f(row.AMT_NUM10) != null) detail.iron          = f(row.AMT_NUM10)!;
+  if (f(row.AMT_NUM11) != null) detail.phosphorus    = f(row.AMT_NUM11)!;
+  if (f(row.AMT_NUM12) != null) detail.potassium     = f(row.AMT_NUM12)!;
+  if (f(row.AMT_NUM13) != null) detail.sodium        = f(row.AMT_NUM13)!;
+  if (f(row.AMT_NUM14) != null) detail.vitamin_a     = f(row.AMT_NUM14)!;
+  if (f(row.AMT_NUM15) != null) detail.retinol       = f(row.AMT_NUM15)!;
+  if (f(row.AMT_NUM16) != null) detail.beta_carotene = f(row.AMT_NUM16)!;
+  if (f(row.AMT_NUM17) != null) detail.vitamin_b1    = f(row.AMT_NUM17)!;
+  if (f(row.AMT_NUM18) != null) detail.vitamin_b2    = f(row.AMT_NUM18)!;
+  if (f(row.AMT_NUM19) != null) detail.niacin        = f(row.AMT_NUM19)!;
+  if (f(row.AMT_NUM20) != null) detail.vitamin_c     = f(row.AMT_NUM20)!;
+  if (f(row.AMT_NUM21) != null) detail.vitamin_d     = f(row.AMT_NUM21)!;
+  if (f(row.AMT_NUM22) != null) detail.saturated_fat = f(row.AMT_NUM22)!;
+  if (f(row.AMT_NUM23) != null) detail.trans_fat     = f(row.AMT_NUM23)!;
+  if (f(row.AMT_NUM24) != null) detail.cholesterol   = f(row.AMT_NUM24)!;
+  if (f(row.AMT_NUM25) != null) detail.zinc          = f(row.AMT_NUM25)!;
   return detail;
 }
 
@@ -186,90 +227,83 @@ function parseNutritionDetail(row: I2790Row): NutritionDetail {
 // ============================================================
 
 async function main() {
-  if (!API_KEY) {
-    console.error('❌ FOODSAFETY_API_KEY 환경변수가 필요합니다.');
-    console.error('   실행: FOODSAFETY_API_KEY=발급받은키 npx tsx scripts/sync-ingredient-nutrition.ts');
-    process.exit(1);
-  }
+  if (!API_KEY) { console.error('❌ DATA_GO_KR_API_KEY 환경변수가 필요합니다.'); process.exit(1); }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const supabaseUrl = isProd
+    ? (process.env.PROD_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!)
+    : process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = isProd
+    ? (process.env.PROD_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    : process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-  // 전체 재료 목록 조회
+  const supabase = createClient(supabaseUrl, supabaseKey, { auth: { autoRefreshToken: false, persistSession: false } });
+
   const { data: ingredients, error } = await supabase
-    .from('ingredients_master')
-    .select('id, name, name_ko')
-    .order('name');
+    .from('ingredients_master').select('id, name, name_ko, calories_per_100g').order('name');
 
-  if (error || !ingredients) {
-    console.error('❌ 재료 목록 조회 실패:', error?.message);
-    process.exit(1);
-  }
+  if (error || !ingredients) { console.error('❌ 재료 목록 조회 실패:', error?.message); process.exit(1); }
 
-  console.log(`\n🥕 총 ${ingredients.length}개 재료 영양정보 동기화 시작\n`);
+  const targets = overwrite ? ingredients : ingredients.filter(i => i.calories_per_100g == null);
 
-  let success = 0;
-  let notFound = 0;
-  let failed = 0;
+  console.log(`\n🥕 ${isProd ? '[PROD]' : '[DEV]'} 대상: ${targets.length}개 (전체 ${ingredients.length}개)`);
+  if (dryRun) console.log('🔍 dry-run 모드\n'); else console.log('');
 
-  for (let i = 0; i < ingredients.length; i++) {
-    const ing = ingredients[i];
-    const searchName = ing.name_ko ?? ing.name;
-    process.stdout.write(`[${i + 1}/${ingredients.length}] ${searchName} ... `);
+  let success = 0, fuzzySuccess = 0, notFound = 0, failed = 0;
+  let done = 0;
 
-    try {
-      const row = await fetchNutritionFromAPI(searchName);
+  // CONCURRENCY개씩 병렬 처리
+  for (let i = 0; i < targets.length; i += CONCURRENCY) {
+    const batch = targets.slice(i, i + CONCURRENCY);
 
-      if (!row) {
-        console.log('⚠️  데이터 없음');
-        notFound++;
-        await sleep(DELAY_MS);
-        continue;
-      }
+    await Promise.all(batch.map(async (ing) => {
+      const searchName = ing.name_ko ?? ing.name;
+      const idx = ++done;
+      process.stdout.write(`[${idx}/${targets.length}] ${searchName} ... `);
 
-      const nutritionDetail = parseNutritionDetail(row);
+      try {
+        const match = await findBestMatch(searchName);
 
-      // 기존 컬럼 + nutrition_detail 동시 업데이트
-      const updatePayload: Record<string, unknown> = {
-        nutrition_detail: nutritionDetail,
-        updated_at: new Date().toISOString(),
-      };
+        if (!match) {
+          console.log('⚠️  매칭 없음');
+          notFound++;
+          return;
+        }
 
-      const calories = toNum(row.AMT_NUM1);
-      const protein  = toNum(row.AMT_NUM3);
-      const fat      = toNum(row.AMT_NUM4);
-      const carbs    = toNum(row.AMT_NUM6);
+        const { row, score, matchedQuery } = match;
+        const isFuzzy = row.FOOD_NM_KR.trim() !== searchName.trim();
+        const label = isFuzzy
+          ? `🔀 ${row.FOOD_NM_KR} (쿼리: ${matchedQuery}, 유사도: ${(score * 100).toFixed(0)}%)`
+          : `✅ ${row.FOOD_NM_KR}`;
 
-      if (calories != null) updatePayload.calories_per_100g = Math.round(calories);
-      if (protein  != null) updatePayload.protein_per_100g  = protein;
-      if (fat      != null) updatePayload.fat_per_100g      = fat;
-      if (carbs    != null) updatePayload.carbs_per_100g    = carbs;
+        if (dryRun) { console.log(label); if (isFuzzy) fuzzySuccess++; else success++; return; }
 
-      const { error: updateError } = await supabase
-        .from('ingredients_master')
-        .update(updatePayload)
-        .eq('id', ing.id);
+        const nutritionDetail = parseNutritionDetail(row);
+        const payload: Record<string, unknown> = { nutrition_detail: nutritionDetail, updated_at: new Date().toISOString() };
+        const calories = toNum(row.AMT_NUM1), protein = toNum(row.AMT_NUM3);
+        const fat = toNum(row.AMT_NUM4), carbs = toNum(row.AMT_NUM6);
+        if (calories != null) payload.calories_per_100g = Math.round(calories);
+        if (protein  != null) payload.protein_per_100g  = protein;
+        if (fat      != null) payload.fat_per_100g      = fat;
+        if (carbs    != null) payload.carbs_per_100g    = carbs;
 
-      if (updateError) {
-        console.log(`❌ 업데이트 실패: ${updateError.message}`);
+        const { error: updateError } = await supabase.from('ingredients_master').update(payload).eq('id', ing.id);
+        if (updateError) { console.log(`❌ ${updateError.message}`); failed++; }
+        else { console.log(label); if (isFuzzy) fuzzySuccess++; else success++; }
+      } catch (err) {
+        console.log(`❌ 예외: ${err}`);
         failed++;
-      } else {
-        console.log(`✅ ${row.FOOD_NM_KR}`);
-        success++;
       }
-    } catch (err) {
-      console.log(`❌ 예외: ${err}`);
-      failed++;
-    }
+    }));
 
-    await sleep(DELAY_MS);
+    if (i + CONCURRENCY < targets.length) await sleep(DELAY_MS);
   }
 
   console.log('\n─────────────────────────────');
-  console.log(`✅ 성공: ${success}개`);
+  console.log(`✅ 정확 매칭: ${success}개`);
+  console.log(`🔀 퍼지 매칭: ${fuzzySuccess}개`);
   console.log(`⚠️  데이터 없음: ${notFound}개`);
   console.log(`❌ 실패: ${failed}개`);
+  console.log(`📊 총 매칭률: ${(((success + fuzzySuccess) / targets.length) * 100).toFixed(1)}%`);
   console.log('─────────────────────────────\n');
 }
 

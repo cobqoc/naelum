@@ -22,6 +22,7 @@ interface IngredientFormData {
   storage_location: string;
   notes: string;
   expiry_alert: boolean;
+  ingredient_id?: string | null;
 }
 
 interface PendingIngredient {
@@ -214,6 +215,7 @@ export default function IngredientForm({
         storage_location: item.storage_location,
         notes: item.notes,
         expiry_alert: item.expiry_alert,
+        ingredient_id: item.ingredientId ?? null,
       });
     }
 

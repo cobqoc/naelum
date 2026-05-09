@@ -167,30 +167,30 @@ function NutritionCard({
   // 기본 영양소 (nutrition + detail 병합, detail 우선)
   const fiber = detail?.fiber ?? nutrition?.fiber;
   const basicItems = [
-    { label: '칼로리',   value: nutrition?.calories != null ? `${nutrition.calories}kcal` : null },
-    { label: '탄수화물', value: nutrition?.carbs     != null ? `${nutrition.carbs}g`      : null },
-    { label: '당류',     value: detail?.sugar        != null ? `${detail.sugar}g`         : null },
-    { label: '단백질',   value: nutrition?.protein   != null ? `${nutrition.protein}g`    : null },
-    { label: '지방',     value: nutrition?.fat       != null ? `${nutrition.fat}g`        : null },
-    { label: '식이섬유', value: fiber                != null ? `${fiber}g`                : null },
+    { label: t.nutrition.calories,   value: nutrition?.calories != null ? `${nutrition.calories}kcal` : null },
+    { label: t.nutrition.carbs,      value: nutrition?.carbs     != null ? `${nutrition.carbs}g`      : null },
+    { label: t.nutrition.sugar,      value: detail?.sugar        != null ? `${detail.sugar}g`         : null },
+    { label: t.nutrition.protein,    value: nutrition?.protein   != null ? `${nutrition.protein}g`    : null },
+    { label: t.nutrition.fat,        value: nutrition?.fat       != null ? `${nutrition.fat}g`        : null },
+    { label: t.nutrition.fiber,      value: fiber                != null ? `${fiber}g`                : null },
   ].filter(i => i.value !== null) as { label: string; value: string }[];
 
   const mineralItems = [
-    { label: '칼슘',   value: detail?.calcium    != null ? `${detail.calcium}mg`   : null },
-    { label: '철',     value: detail?.iron       != null ? `${detail.iron}mg`      : null },
-    { label: '인',     value: detail?.phosphorus != null ? `${detail.phosphorus}mg`: null },
-    { label: '칼륨',   value: detail?.potassium  != null ? `${detail.potassium}mg` : null },
-    { label: '나트륨', value: detail?.sodium     != null ? `${detail.sodium}mg`    : null },
-    { label: '아연',   value: detail?.zinc       != null ? `${detail.zinc}mg`      : null },
+    { label: t.nutrition.calcium,    value: detail?.calcium    != null ? `${detail.calcium}mg`   : null },
+    { label: t.nutrition.iron,       value: detail?.iron       != null ? `${detail.iron}mg`      : null },
+    { label: t.nutrition.phosphorus, value: detail?.phosphorus != null ? `${detail.phosphorus}mg`: null },
+    { label: t.nutrition.potassium,  value: detail?.potassium  != null ? `${detail.potassium}mg` : null },
+    { label: t.nutrition.sodium,     value: detail?.sodium     != null ? `${detail.sodium}mg`    : null },
+    { label: t.nutrition.zinc,       value: detail?.zinc       != null ? `${detail.zinc}mg`      : null },
   ].filter(i => i.value !== null) as { label: string; value: string }[];
 
   const vitaminItems = [
-    { label: '비타민A', value: detail?.vitamin_a  != null ? `${detail.vitamin_a}μg`  : null },
-    { label: '비타민B1',value: detail?.vitamin_b1 != null ? `${detail.vitamin_b1}mg` : null },
-    { label: '비타민B2',value: detail?.vitamin_b2 != null ? `${detail.vitamin_b2}mg` : null },
-    { label: '비타민C', value: detail?.vitamin_c  != null ? `${detail.vitamin_c}mg`  : null },
-    { label: '비타민D', value: detail?.vitamin_d  != null ? `${detail.vitamin_d}μg`  : null },
-    { label: '니아신',  value: detail?.niacin     != null ? `${detail.niacin}mg`     : null },
+    { label: t.nutrition.vitaminA,  value: detail?.vitamin_a  != null ? `${detail.vitamin_a}μg`  : null },
+    { label: t.nutrition.vitaminB1, value: detail?.vitamin_b1 != null ? `${detail.vitamin_b1}mg` : null },
+    { label: t.nutrition.vitaminB2, value: detail?.vitamin_b2 != null ? `${detail.vitamin_b2}mg` : null },
+    { label: t.nutrition.vitaminC,  value: detail?.vitamin_c  != null ? `${detail.vitamin_c}mg`  : null },
+    { label: t.nutrition.vitaminD,  value: detail?.vitamin_d  != null ? `${detail.vitamin_d}μg`  : null },
+    { label: t.nutrition.niacin,    value: detail?.niacin     != null ? `${detail.niacin}mg`     : null },
   ].filter(i => i.value !== null) as { label: string; value: string }[];
 
   if (basicItems.length === 0 && mineralItems.length === 0 && vitaminItems.length === 0) return null;

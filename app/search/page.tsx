@@ -639,7 +639,7 @@ function SearchContent() {
                   {loadingMore && (
                     <div className="flex items-center gap-2 text-text-muted text-sm py-4">
                       <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                      <span>불러오는 중...</span>
+                      <span>{t.common.loading}</span>
                     </div>
                   )}
                 </div>

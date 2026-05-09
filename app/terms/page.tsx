@@ -105,7 +105,7 @@ export default function TermsOfServicePage() {
                 <li>원작자(셰프·채널명)와 원본 영상 링크를 레시피 페이지에 명시합니다.</li>
                 <li>레시피 페이지에 &ldquo;영상 기반으로 정리한 레시피&rdquo;임을 안내합니다.</li>
               </ol>
-              <p>③ 원작자 또는 저작권자가 콘텐츠 삭제를 요청하는 경우, 회사는 <a href="/copyright" className="text-accent-warm underline">저작권 정책</a>에 따라 영업일 기준 3일 이내에 처리합니다.</p>
+              <p>③ 원작자 또는 저작권자가 콘텐츠 삭제를 요청하는 경우, 회사는 <Link href="/copyright" className="text-accent-warm underline">저작권 정책</Link>에 따라 영업일 기준 3일 이내에 처리합니다.</p>
             </div>
           </section>
 

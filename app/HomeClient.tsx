@@ -551,6 +551,13 @@ export default function HomeClient({
             <span aria-hidden="true">💡</span>
             <span>{t.home.navTips}</span>
           </Link>
+          <Link
+            href="/ingredients"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background-secondary hover:bg-white/10 border border-white/5 text-sm font-medium text-text-secondary hover:text-text-primary active:scale-95 transition-all"
+          >
+            <span aria-hidden="true">📚</span>
+            <span>{t.home.navIngredients}</span>
+          </Link>
         </div>
         <div className="flex justify-center">
           <SearchBar className="w-full max-w-md" />
@@ -892,6 +899,7 @@ export default function HomeClient({
             +
           </button>
 
+
           {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
               클릭 시 /recommendations?mode=auto로 진입 → 페이지에서도 같은 판단 로직으로 pill 자동 선택. */}
           {showRecipeBubble && (() => {
@@ -899,10 +907,19 @@ export default function HomeClient({
               ? ''
               : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
             const href = `/recommendations?mode=auto${ingQuery}`;
+            // 로딩 중이면 shimmer pill
+            if (matchingCount === null) {
+              return (
+                <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap animate-pulse">
+                  <span className="text-base md:text-lg leading-none">💡</span>
+                  <span>{t.home.pillDefault}</span>
+                </div>
+              );
+            }
             // 라벨 결정
             let icon = '💡';
             let label = t.home.pillDefault;
-            if (matchingCount !== null && matchingCount > 0 && resolvedMode) {
+            if (matchingCount > 0 && resolvedMode) {
               const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
               if (resolvedMode === 'ready') { icon = '🔥'; label = t.home.pillReady.replace('{count}', countStr); }
               else if (resolvedMode === 'almost') { icon = '🛒'; label = t.home.pillAlmost.replace('{count}', countStr); }
@@ -1109,6 +1126,7 @@ export default function HomeClient({
         onAddIngredient={addIngredientFromModal}
       />
 
+
       <BottomNav />
 
       {/* 모바일 검색 오버레이 (배경 블러 + 아이콘에서 나오는 애니메이션) */}
@@ -1145,6 +1163,13 @@ export default function HomeClient({
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
             >
               <span>💡</span><span>팁</span>
+            </Link>
+            <Link
+              href="/ingredients"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>📚</span><span>{t.home.navIngredients}</span>
             </Link>
           </div>
           {/* 검색창 */}

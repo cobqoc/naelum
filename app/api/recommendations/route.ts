@@ -178,15 +178,20 @@ export async function GET(request: NextRequest) {
       case 'ingredients': {
         // 체험 모드: 비로그인 시 쿼리 파라미터로 재료 전달 (ingredients=토마토,양파,...)
         let ingredientNames: string[] = []
+        let userIngredientIds: string[] = []
+
         if (user) {
           const { data: userIngredients } = await supabase
             .from('user_ingredients')
-            .select('ingredient_name')
+            .select('ingredient_name, ingredient_id')
             .eq('user_id', user.id)
           if (!userIngredients || userIngredients.length === 0) {
             return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
           }
           ingredientNames = userIngredients.map(i => i.ingredient_name.toLowerCase())
+          userIngredientIds = userIngredients
+            .filter(i => i.ingredient_id)
+            .map(i => i.ingredient_id as string)
         } else {
           const rawIngredients = searchParams.get('ingredients') || ''
           ingredientNames = rawIngredients
@@ -199,31 +204,45 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // 사용자 재료 + 동의어 확장 (DB 사전 필터링용)
+        const userIngredientIdSet = new Set(userIngredientIds)
+
+        // 1) ingredient_id FK 매칭으로 후보 recipe_id 조회 (정확도 높음)
+        let idCandidateIds: string[] = []
+        if (userIngredientIds.length > 0) {
+          const { data: idCandidateRows } = await supabase
+            .from('recipe_ingredients')
+            .select('recipe_id')
+            .in('ingredient_id', userIngredientIds)
+          idCandidateIds = idCandidateRows?.map(r => r.recipe_id) ?? []
+        }
+
+        // 2) 텍스트 ILIKE 매칭으로 추가 후보 조회 (미연결 재료 대응)
         const expandedSet = new Set<string>(ingredientNames)
         for (const ing of ingredientNames) {
           const synonyms = INGREDIENT_SYNONYMS[ing]
           if (synonyms) synonyms.forEach(s => expandedSet.add(s.toLowerCase().trim()))
         }
 
-        // recipe_ingredients에서 매칭 recipe_id 먼저 조회 (1000개 전체 로드 대신)
         const ilikeClauses = [...expandedSet]
           .slice(0, 40)
           .map(ing => `ingredient_name.ilike.%${ing}%`)
           .join(',')
 
-        const { data: candidateRows } = await supabase
+        const { data: nameCandidateRows } = await supabase
           .from('recipe_ingredients')
           .select('recipe_id')
           .or(ilikeClauses)
 
-        if (!candidateRows?.length) {
+        const candidateIds = [...new Set([
+          ...idCandidateIds,
+          ...(nameCandidateRows?.map(r => r.recipe_id) ?? []),
+        ])]
+
+        if (!candidateIds.length) {
           return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
-        const candidateIds = [...new Set(candidateRows.map(r => r.recipe_id))]
-
-        // 후보 레시피만 fetch (기존 .limit(1000) 대신)
+        // 후보 레시피만 fetch — ingredient_id 포함 (FK 매칭에 사용)
         const { data: recipes } = await supabase
           .from('recipes')
           .select(`
@@ -231,7 +250,7 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
-            ingredients:recipe_ingredients(ingredient_name)
+            ingredients:recipe_ingredients(ingredient_name, ingredient_id)
           `)
           .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
@@ -247,13 +266,19 @@ export async function GET(request: NextRequest) {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
-          const recipeIngredientsList: { ingredient_name: string }[] = recipe.ingredients || []
-          const recipeIngredients: string[] = recipeIngredientsList.map(i => i.ingredient_name.toLowerCase())
-          const matchedIngredients = recipeIngredients.filter((ri: string) =>
-            ingredientNames.some((ui: string) => isIngredientMatch(ui, ri))
-          )
+          const recipeIngredientsList: { ingredient_name: string; ingredient_id?: string | null }[] = recipe.ingredients || []
+          const matchedIngredients = recipeIngredientsList.filter(ri => {
+            // ingredient_id FK 매칭 (정확도 최우선)
+            if (ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) return true
+            // 텍스트 매칭 (미연결 재료 fallback)
+            return ingredientNames.some(ui => isIngredientMatch(ui, ri.ingredient_name.toLowerCase()))
+          })
+          const recipeIngredients = recipeIngredientsList.map(i => i.ingredient_name.toLowerCase())
           const missingIngredientNames = recipeIngredientsList
-            .filter(i => !ingredientNames.some(ui => isIngredientMatch(ui, i.ingredient_name.toLowerCase())))
+            .filter(ri => {
+              if (ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) return false
+              return !ingredientNames.some(ui => isIngredientMatch(ui, ri.ingredient_name.toLowerCase()))
+            })
             .map(i => i.ingredient_name)
           const matchRate = recipeIngredients.length > 0
             ? (matchedIngredients.length / recipeIngredients.length) * 100

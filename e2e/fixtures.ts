@@ -11,9 +11,10 @@ export const test = base.extend({
   context: async ({ context }, use) => {
     await context.addInitScript(() => {
       try {
+        // CookieConsent 타입 형식: { version, essential, analytics, marketing, timestamp }
         localStorage.setItem(
           'naelum_cookie_consent',
-          JSON.stringify({ consent: 'all', timestamp: new Date().toISOString() })
+          JSON.stringify({ version: 1, essential: true, analytics: true, marketing: true, timestamp: new Date().toISOString() })
         );
       } catch {
         /* noop */

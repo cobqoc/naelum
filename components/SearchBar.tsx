@@ -282,7 +282,7 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
           {/* Loading */}
           {loading && query.trim().length >= 2 && (
             <div className="px-4 py-3 text-center text-text-muted text-sm">
-              <span className="animate-pulse">검색 중...</span>
+              <span className="animate-pulse">{t.common.searching}</span>
             </div>
           )}
 

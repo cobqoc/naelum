@@ -54,6 +54,12 @@ export interface Recipe {
   attributed_chef?: string | null;
   source_channel?: string | null;
   status: string;
+  calories?: number | null;
+  protein_grams?: number | null;
+  carbs_grams?: number | null;
+  fat_grams?: number | null;
+  fiber_grams?: number | null;
+  sodium_mg?: number | null;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
 }
