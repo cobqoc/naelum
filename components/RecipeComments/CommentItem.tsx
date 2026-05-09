@@ -4,32 +4,41 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import { CommentItemProps } from './types';
 import CommentForm from './CommentForm';
 import RepliesList from './RepliesList';
 
-// 상대 시간 포맷팅 함수
-function formatRelativeTime(dateString: string): string {
+type TimeTranslations = {
+  justNow: string;
+  timeAgoYear: string;
+  timeAgoMonth: string;
+  timeAgoDay: string;
+  timeAgoHour: string;
+  timeAgoMinute: string;
+};
+
+function formatRelativeTime(dateString: string, tc: TimeTranslations): string {
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  const intervals = [
-    { label: '년', seconds: 31536000 },
-    { label: '개월', seconds: 2592000 },
-    { label: '일', seconds: 86400 },
-    { label: '시간', seconds: 3600 },
-    { label: '분', seconds: 60 }
+  const intervals: { template: string; seconds: number }[] = [
+    { template: tc.timeAgoYear,   seconds: 31536000 },
+    { template: tc.timeAgoMonth,  seconds: 2592000 },
+    { template: tc.timeAgoDay,    seconds: 86400 },
+    { template: tc.timeAgoHour,   seconds: 3600 },
+    { template: tc.timeAgoMinute, seconds: 60 },
   ];
 
   for (const interval of intervals) {
     const count = Math.floor(seconds / interval.seconds);
     if (count >= 1) {
-      return `${count}${interval.label} 전`;
+      return interval.template.replace('{n}', String(count));
     }
   }
 
-  return '방금 전';
+  return tc.justNow;
 }
 
 export default function CommentItem({
@@ -43,6 +52,8 @@ export default function CommentItem({
   onCommentDelete
 }: CommentItemProps) {
   const toast = useToast();
+  const { t } = useI18n();
+  const tc = t.comments;
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
@@ -68,7 +79,7 @@ export default function CommentItem({
 
   const handleSaveEdit = async () => {
     if (!editedContent.trim()) {
-      toast.warning('댓글 내용을 입력해주세요');
+      toast.warning(tc.errorRequired);
       return;
     }
 
@@ -82,7 +93,7 @@ export default function CommentItem({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || '댓글 수정에 실패했습니다');
+        throw new Error(data.error || tc.errorEditFailed);
       }
 
       onCommentUpdate(comment.id, {
@@ -91,14 +102,12 @@ export default function CommentItem({
       });
       setIsEditing(false);
     } catch (error) {
-      console.error('댓글 수정 오류:', error);
-      toast.error(error instanceof Error ? error.message : '댓글 수정에 실패했습니다');
+      toast.error(error instanceof Error ? error.message : tc.errorEditFailed);
     }
   };
 
-  // 삭제 핸들러
   const handleDelete = async () => {
-    if (!confirm('정말 이 댓글을 삭제하시겠습니까?')) {
+    if (!confirm(tc.confirmDelete)) {
       return;
     }
 
@@ -111,13 +120,12 @@ export default function CommentItem({
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || '댓글 삭제에 실패했습니다');
+        throw new Error(data.error || tc.errorDeleteFailed);
       }
 
       onCommentDelete(comment.id);
     } catch (error) {
-      console.error('댓글 삭제 오류:', error);
-      toast.error(error instanceof Error ? error.message : '댓글 삭제에 실패했습니다');
+      toast.error(error instanceof Error ? error.message : tc.errorDeleteFailed);
       setIsDeleting(false);
     }
   };
@@ -137,12 +145,12 @@ export default function CommentItem({
   // 좋아요 핸들러 (낙관적 업데이트)
   const handleLike = async () => {
     if (!currentUserId) {
-      toast.warning('로그인 후 좋아요를 누를 수 있습니다');
+      toast.warning(tc.errorLikeLogin);
       return;
     }
 
     if (isOwner) {
-      toast.warning('본인 댓글에는 좋아요를 누를 수 없습니다');
+      toast.warning(tc.errorLikeOwn);
       return;
     }
 
@@ -166,17 +174,14 @@ export default function CommentItem({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || '좋아요 처리에 실패했습니다');
+        throw new Error(data.error || tc.errorLikeFailed);
       }
 
-      // API 응답과 UI 상태 동기화
       setIsLiked(data.liked);
     } catch (error) {
-      console.error('좋아요 오류:', error);
-      // 롤백
       setIsLiked(prevLiked);
       setLikesCount(prevCount);
-      toast.error(error instanceof Error ? error.message : '좋아요 처리에 실패했습니다');
+      toast.error(error instanceof Error ? error.message : tc.errorLikeFailed);
     } finally {
       setTimeout(() => setIsLiking(false), 500); // 0.5초 쿨다운
     }
@@ -186,7 +191,7 @@ export default function CommentItem({
   if (comment.is_deleted) {
     return (
       <div className={`p-4 rounded-xl bg-background-tertiary/50 ${depth > 0 ? 'ml-8 md:ml-12' : ''}`}>
-        <p className="text-text-muted italic text-sm">삭제된 댓글입니다</p>
+        <p className="text-text-muted italic text-sm">{tc.deleted}</p>
       </div>
     );
   }
@@ -222,10 +227,10 @@ export default function CommentItem({
                 {comment.user.username}
               </Link>
               {comment.is_edited && (
-                <span className="text-xs text-text-muted">(수정됨)</span>
+                <span className="text-xs text-text-muted">{tc.edited}</span>
               )}
             </div>
-            <span className="text-xs text-text-muted">{formatRelativeTime(comment.created_at)}</span>
+            <span className="text-xs text-text-muted">{formatRelativeTime(comment.created_at, tc)}</span>
           </div>
         </div>
 
@@ -244,13 +249,13 @@ export default function CommentItem({
                 onClick={handleSaveEdit}
                 className="px-4 py-2 bg-accent-warm text-background-primary rounded-lg font-bold text-sm"
               >
-                저장
+                {tc.save}
               </button>
               <button
                 onClick={handleCancelEdit}
                 className="px-4 py-2 bg-background-tertiary text-text-primary rounded-lg text-sm"
               >
-                취소
+                {tc.cancel}
               </button>
             </div>
           </div>
@@ -284,7 +289,7 @@ export default function CommentItem({
                 onClick={() => setIsReplying(!isReplying)}
                 className="text-text-muted hover:text-accent-warm transition-colors"
               >
-                💬 답글{repliesCount > 0 ? ` (${repliesCount})` : ''}
+                💬 {tc.reply}{repliesCount > 0 ? ` (${repliesCount})` : ''}
               </button>
             )}
             {isOwner && (
@@ -293,14 +298,14 @@ export default function CommentItem({
                   onClick={handleEdit}
                   className="text-text-muted hover:text-accent-warm transition-colors"
                 >
-                  ✏️ 수정
+                  ✏️ {tc.edit}
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={isDeleting}
                   className="text-text-muted hover:text-error transition-colors disabled:opacity-50"
                 >
-                  🗑️ {isDeleting ? '삭제 중...' : '삭제'}
+                  🗑️ {isDeleting ? tc.deleting : tc.delete}
                 </button>
               </>
             )}

@@ -551,6 +551,13 @@ export default function HomeClient({
             <span aria-hidden="true">💡</span>
             <span>{t.home.navTips}</span>
           </Link>
+          <Link
+            href="/ingredients"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-background-secondary hover:bg-white/10 border border-white/5 text-sm font-medium text-text-secondary hover:text-text-primary active:scale-95 transition-all"
+          >
+            <span aria-hidden="true">📚</span>
+            <span>{t.home.navIngredients}</span>
+          </Link>
         </div>
         <div className="flex justify-center">
           <SearchBar className="w-full max-w-md" />
@@ -1147,6 +1154,13 @@ export default function HomeClient({
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
             >
               <span>💡</span><span>팁</span>
+            </Link>
+            <Link
+              href="/ingredients"
+              onClick={() => setShowMobileSearch(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
+            >
+              <span>📚</span><span>{t.home.navIngredients}</span>
             </Link>
           </div>
           {/* 검색창 */}

@@ -1,4 +1,4 @@
-# 꼬르륵 (Recipe Sharing Web App) - 프로젝트 요구사항 명세서
+# 낼름 Naelum (Recipe Sharing Web App) - 프로젝트 요구사항 명세서
 
 ## 📋 운영 체크리스트
 
@@ -121,7 +121,7 @@ feature/* → 기능 단위 브랜치 (선택)
 
 ## 📋 프로젝트 개요
 
-**프로젝트명**: 꼬르륵 (Ggoreureuk)  
+**프로젝트명**: 낼름 (Naelum)  
 **목적**: 글로벌 요리 레시피 공유 및 스마트 재료 기반 추천 플랫폼  
 **타겟 사용자**: 전 세계 요리 애호가, 홈쿡, 초보 요리사
 
@@ -243,19 +243,19 @@ feature/* → 기능 단위 브랜치 (선택)
 #### 스크롤 전 (초기 상태)
 ```
 ┌─────────────────────────────────────────────┐
-│ [꼬르륵 아이콘]              [로그인/프로필] │
+│ [낼름 아이콘]              [로그인/프로필] │
 └─────────────────────────────────────────────┘
 ```
 
 #### 스크롤 후
 ```
 ┌─────────────────────────────────────────────┐
-│ [꼬르륵]  [────검색바────]  [로그인/프로필] │
+│ [낼름]  [────검색바────]  [로그인/프로필] │
 └─────────────────────────────────────────────┘
 ```
 
 **헤더 기능 명세**
-- 좌측: 꼬르륵 로고/아이콘 (클릭 시 홈으로)
+- 좌측: 낼름 로고/아이콘 (클릭 시 홈으로)
 - 중앙: 검색바 (스크롤 시 헤더로 이동, 부드러운 애니메이션)
 - 우측: 로그인 아이콘 / 프로필 이미지 (드롭다운 메뉴)
 - 헤더 고정 (sticky header)
@@ -309,7 +309,7 @@ feature/* → 기능 단위 브랜치 (선택)
 ```
 ┌──────────────────────────────┐
 │                              │
-│      [꼬르륵 로고]            │
+│      [낼름 로고]            │
 │                              │
 │  ┌─ Google로 로그인 ────┐   │
 │  └───────────────────────┘   │
@@ -1032,17 +1032,25 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.1.0  
-**최종 수정일**: 2026-04-12  
-**작성자**: 꼬르륵 개발팀
+**최종 수정일**: 2026-05-10  
+**작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-04-19 기준)
+## 📌 데이터 현황 (2026-05-10 기준)
 
 ### 기능 구현 현황
 - **낼름함 (레시피 저장)** — 구현 완료
   - 레시피 카드의 👅 낼름 버튼으로 저장
   - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
+- **재료 기반 레시피 추천** — 구현 완료 (2026-05-10)
+  - `ingredient_id` FK 매칭(정확도 최우선) + 텍스트 매칭 fallback 하이브리드
+  - `/recommendations?type=ingredients&mode=ready|almost|all` — 3가지 모드
+  - 홈 냉장고 → "🔥 X개 바로 가능" 버블 → `/recommendations` 연결
+- **냉장고 재료 등록 → 추천 플로우** — 구현 완료 (2026-05-10)
+  - 재료 추가 시 `ingredient_id` (ingredients_master FK) DB 저장
+  - 쇼핑 리스트 → 냉장고 추가 시도 ingredient_id 자동 조회 저장
+  - `user_ingredients.ingredient_id` 컬럼 활용으로 추천 정확도 향상
 
 ### 이메일 설정 현황
 - **도메인 이메일**: `hello@naelum.app` — Cloudflare Email Routing으로 `cobqoc@gmail.com`에 포워딩
@@ -1065,13 +1073,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
 - **Rate limits 테이블 정리** — 매시간 cron 실행 (`/api/cron/cleanup-rate-limits`)
 
-### 농사로 Open API 신청 현황 (2026-05-08)
+### 농사로 Open API 현황 (2026-05-08)
 
-> **⏳ 승인 대기 중** — API 키 발급 후 임포트 스크립트 작성 필요
+> **✅ 승인 완료** — API 키 등록됨 (`.env.local` `NONGSARO_API_KEY`)
 
-- **신청일**: 2026-05-08
+- **신청일**: 2026-05-08 / **승인일**: 2026-05-08
 - **신청 계정**: 농사로(nongsaro.go.kr) — 개인: 낼름
-- **신청내역 확인**: 농사로 로그인 → 소통/공유 → 공공데이터 개방 → 신청내역
 - **API 기본 URL**: `https://api.nongsaro.go.kr/service/`
 - **라이선스**: 공공누리 3유형 (출처표시 + 변경금지) — 원문 그대로 저장, 가공 최소화
 
@@ -1097,31 +1104,73 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 | **i18n** | `korEngDictionary` | 향토음식 한영대역사전 |
 | **공통** | `commonCode` | 농사로 공통코드 |
 
-#### API 키 발급 후 할 일
-1. 인증키를 `.env.local`에 `NONGSARO_API_KEY=` 로 추가
-2. `monthFd` 임포트 스크립트 작성 (`scripts/import-nongsaro-recipes.ts`)
-   - 연도(2015~2020, 2023) × 월(1~12) 순회
-   - `monthNewFdLst` → `monthNewFdDtl` 상세 조회
-   - 재료(`matrlInfo`), 조리법(`ckngMthInfo`), 영양정보, 이미지 파싱
-3. 나머지 서비스(`nvpcFdCkry`, `headFamilyFood` 등) 데이터 구조 파악 후 임포트
+#### 서비스별 임포트 현황 (2026-05-10 기준)
+
+| 서비스 ID | 내용 | 건수 | 스크립트 | 상태 |
+|-----------|------|------|----------|------|
+| `headFamilyFood` | 종가음식 | 257개 | `scripts/import-nongsaro-headfamily.ts` | ✅ dev+prod 완료 (draft) |
+| `gnsnRecipe` | 인삼레시피 | 100개 | `scripts/import-nongsaro-gnsn.ts` | ✅ dev+prod 완료 (published) |
+| `localSpcprd` | 지역특산물 | 1,747개 (고유 1,080개) | `scripts/import-nongsaro-locspc.ts` | ✅ dev+prod 완료 — 신규 재료 ingredients_master에 추가 |
+| `korEngDictionary` | 향토음식 한영대역사전 | 5,641개 | `scripts/import-nongsaro-koreng.ts` | ✅ dev+prod 완료 — name_en 업데이트 (식재료명 카테고리만 필터) |
+| `foodbyprdNtrinfo` | 농식품 부산물 영양정보 | 34개 | — | 스크립트 미작성 |
+| `monthFd` | 이달의 음식 | — | — | ⚠️ API 응답 빈 데이터 (원인 불명, 별도 확인 필요) |
+| `nvpcFdCkry`, `todayDiet` 등 | 향토음식·추천식단 등 | — | — | ❌ code 13 (엔드포인트 오류) |
+
+#### prod 적용 명령어
+```bash
+# 종가음식 prod 적용
+npx tsx scripts/import-nongsaro-headfamily.ts --import --prod
+
+# 인삼레시피 prod 적용
+npx tsx scripts/import-nongsaro-gnsn.ts --import --prod
+
+# 지역특산물 (신규 재료 추가)
+npx tsx scripts/import-nongsaro-locspc.ts --import --prod
+
+# 한영사전 (name_en 업데이트)
+npx tsx scripts/import-nongsaro-koreng.ts --import --prod
+```
 
 ---
 
 ### 레시피 DB
-- **레시피 3,103개** — 전부 공개(published) 상태
+- **prod: 3,850개** (published 3,558 + draft 257 + private 35) / **dev: 3,460개**
+- 최종 수정일: 2026-05-10
 
-#### 출처별 구성 (2026-05-08 기준)
-| 출처 | 건수 | 라이선스 | 임포트 스크립트 | 조건 |
-|------|------|----------|----------------|------|
-| 식품의약품안전처 (COOKRCP01) | ~1,146개 | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
-| 농림수산식품교육문화정보원 | 537개 | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
-| 한식진흥원 아카이브 | ~70개 (draft) | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시, 미공개 상태 |
-| 농림수산성 うちの郷土料理 (MAFF) | 1,350개 | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
+#### 출처별 구성 (2026-05-10 기준)
+| 출처 | 건수 | 상태 | 라이선스 | 임포트 스크립트 | 조건 |
+|------|------|------|----------|----------------|------|
+| 식품의약품안전처 (COOKRCP01) | ~1,146개 | published | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
+| 농림수산식품교육문화정보원 | 537개 | published | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
+| 한식진흥원 아카이브 | ~70개 | draft | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시 |
+| 농림수산성 うちの郷土料理 (MAFF) | 2,050개 | **published** (번역 완료, 2026-05-10 재공개) | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
+| 농사로 종가음식 | 257개 | **draft** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-headfamily.ts` | 출처 표시, 태그: `종가음식` |
+| 농사로 인삼레시피 | 100개 | **published** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-gnsn.ts` | 출처 표시, 태그: `인삼레시피` |
 
 > **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
 > 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
 
-#### MAFF 레시피 재임포트 명령어 (Prod)
+#### MAFF 번역 완료 현황 (2026-05-10 기준)
+- **dev DB**: `recipe_ingredients` 일본어 잔존 **0개** ✅ (ING_MAP v3~v6 블록 + Gemini 번역)
+- **prod DB**: 일본어 잔존 **0개** ✅ — 2,050개 레시피 published 전환 완료
+- **ING_MAP 사전 이력**: v3~v6 블록 추가 (dict-only로 2,270→0개 처리)
+
+#### MAFF 레시피 재임포트 명령어 (전체 재임포트 필요 시)
+```bash
+# 1단계: 번역 JSON 생성
+npx tsx scripts/translate-maff-batch.ts 0 1365
+
+# 2단계: Dev 임포트
+npx tsx scripts/import-maff-recipes.ts
+
+# 3단계: Prod 임포트 (키는 .env.local의 PROD_SUPABASE_SERVICE_ROLE_KEY)
+NEXT_PUBLIC_SUPABASE_URL=https://rgnlgpfazxgwsnkgrhzs.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=$(grep PROD_SUPABASE_SERVICE_ROLE_KEY .env.local | tr -d ' ' | cut -d= -f2) \
+AUTHOR_ID=0132b4d2-5a56-4687-9d34-e1965b565be0 \
+npx tsx scripts/import-maff-recipes.ts
+```
+
+#### MAFF 레시피 재임포트 명령어 (전체 재임포트 필요 시)
 ```bash
 # 1단계: 번역 JSON 생성
 npx tsx scripts/translate-maff-batch.ts 0 1365
@@ -1137,21 +1186,24 @@ npx tsx scripts/import-maff-recipes.ts
 ```
 
 ### 재료 DB
-- **총 2,133개** 재료 (`ingredients_master`, 2026-05-07 기준)
-- name_en 보유: 287개 / 미보유: 1,846개
+- **prod: 2,141개** / **dev: ~1,953개** (`ingredients_master`, 2026-05-10 기준)
+- `recipe_ingredients.ingredient_id` 커버리지: **prod 84.4%** / **dev ~74.8%**
+- name_en 보유: ~400개 (농사로 한영사전 업데이트 후 증가)
 
-#### 출처별 구성 (2026-05-07 기준)
+#### 출처별 구성 (2026-05-10 기준)
 | 출처 | 건수 | 라이선스 | 임포트 스크립트 |
 |------|------|----------|----------------|
 | 한식진흥원 아카이브 (`hansik_api`) | 416개 | 공공누리 | `scripts/import-hansik-ingredients.ts` |
 | 레시피 재료 자동 추출 (`recipe_extract`) | ~1,461개 | — | `scripts/extract-recipe-ingredients.ts` (dev) / MCP SQL (prod) |
 | Open Food Facts 글로벌 재료 | ~110개 | ODbL | `scripts/import-off-ingredients.ts` |
+| 농사로 지역특산물 (`nongsaro_localSpcprd`) | 신규 추가분 | 공공누리 1유형 | `scripts/import-nongsaro-locspc.ts` |
 | 수동 입력 / 기타 | 나머지 | — | — |
 
-#### 영양정보 채우기 (미완료)
+#### 영양정보 채우기 (진행 중)
 | 소스 | 내용 | 스크립트 | 상태 |
 |------|------|----------|------|
-| 식약처 I2790 | 칼로리·단백질·지방·탄수화물 등 | `scripts/sync-ingredient-nutrition.ts` | **⛔ API 키 미등록** — openapi.foodsafetykorea.go.kr에서 I2790 서비스 별도 신청 필요 |
+| 식약처 I2790 (`data.go.kr`) | 칼로리·단백질·지방·탄수화물 + 상세 20종 | `scripts/sync-ingredient-nutrition.ts` | **✅ 완료** — 2,133개 중 ~120개 매칭 (12.5%). 완전 일치만 허용, 비표준 추출 재료명 다수로 매칭률 낮음 |
+| 농촌진흥청 RDA (`data.go.kr`) | 국가표준 식품성분표 (A~T 그룹) | `scripts/sync-ingredient-nutrition-rda.ts` | **⏳ 부분 완료** — A~H 그룹(채소·과일·곡류 등) 목록 다운로드 완료, 상세 API 429 (일일 할당량). I~T(육류·어패류·유제품 등) 재개 필요 — `npx tsx scripts/sync-ingredient-nutrition-rda.ts` (자동 이어받기) |
 
 ### 요리 팁
 - 1건 (`tip` 테이블) — "양파 손질·보관법 완전 정리"

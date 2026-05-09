@@ -35,15 +35,18 @@ export async function ensureTestUser(
 ): Promise<TestUser> {
   const admin = adminClient()
 
-  // 기존 유저 확인 — listUsers는 페이징이라 수천 명 환경에선 비효율이지만 테스트용이라 OK
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 })
-  const existing = list?.users.find(u => u.email === email)
+  // 기존 유저 확인 — profiles 테이블로 조회 (listUsers API가 dev 프로젝트에서 불안정)
+  const { data: existingProfile } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle()
 
   let userId: string
-  if (existing) {
-    userId = existing.id
+  if (existingProfile?.id) {
+    userId = existingProfile.id
     // 비밀번호를 매번 재설정해 이전 테스트의 side effect 차단
-    await admin.auth.admin.updateUserById(existing.id, { password })
+    await admin.auth.admin.updateUserById(userId, { password })
   } else {
     const { data, error } = await admin.auth.admin.createUser({
       email,
@@ -77,7 +80,12 @@ export async function ensureTestUser(
 
 export async function deleteTestUser(userId: string): Promise<void> {
   const admin = adminClient()
-  await admin.auth.admin.deleteUser(userId)
+  // auth admin API가 dev 프로젝트에서 불안정 — SQL RPC로 fallback
+  const { error: apiError } = await admin.auth.admin.deleteUser(userId)
+  if (apiError) {
+    const { error: rpcError } = await admin.rpc('delete_auth_user', { user_id: userId })
+    if (rpcError) throw new Error(`deleteUser failed: ${rpcError.message}`)
+  }
 }
 
 export interface CreateTestRecipeOptions {
