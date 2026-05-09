@@ -46,6 +46,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.wikim.re.kr',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.maff.go.jp',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.nongsaro.go.kr',
+      },
     ],
   },
   compiler: {

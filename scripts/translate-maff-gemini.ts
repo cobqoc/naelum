@@ -66,7 +66,7 @@ ${JSON.stringify(names, null, 2)}
     throw new Error(`Gemini API error ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const json = await res.json() as any;
+  const json = await res.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const text: string = json.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 
   // JSON 배열 파싱

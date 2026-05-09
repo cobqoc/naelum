@@ -17,6 +17,7 @@ interface IngredientFormData {
   storage_location: string;
   notes: string;
   expiry_alert: boolean;
+  ingredient_id?: string | null;
 }
 
 interface AddIngredientModalProps {

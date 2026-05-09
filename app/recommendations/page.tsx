@@ -157,24 +157,33 @@ export default function RecommendationsPage() {
       <div className="container mx-auto max-w-4xl px-6 py-6">
         {/* Ingredients mode pill 필터 */}
         {activeTab === 'ingredients' && (
-          <div className="mb-5 flex gap-2 overflow-x-auto scrollbar-hide -mx-6 px-6">
-            {MODE_OPTIONS.map(opt => {
-              const active = mode === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  onClick={() => changeMode(opt.key)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                    active
-                      ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
-                      : 'bg-background-secondary text-text-secondary hover:bg-white/10 border border-white/10'
-                  }`}
-                >
-                  <span>{opt.icon}</span>
-                  {opt.label}
-                </button>
-              );
-            })}
+          <div className="mb-3">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-6 px-6">
+              {MODE_OPTIONS.map(opt => {
+                const active = mode === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => changeMode(opt.key)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      active
+                        ? 'bg-accent-warm text-background-primary shadow-md shadow-accent-warm/30'
+                        : 'bg-background-secondary text-text-secondary hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    <span>{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* 현재 mode 설명 */}
+            {(() => {
+              const activeOpt = MODE_OPTIONS.find(o => o.key === mode);
+              return activeOpt ? (
+                <p className="mt-2 text-xs text-text-muted px-1">{activeOpt.desc}</p>
+              ) : null;
+            })()}
           </div>
         )}
 
@@ -242,10 +251,17 @@ export default function RecommendationsPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {recommendations.map((recipe) => (
-              <FridgeRecipeCard key={recipe.id} recipe={recipe} />
-            ))}
+          <div>
+            {recommendations.length > 0 && (
+              <p className="text-xs text-text-muted mb-3 px-0.5">
+                {t.recommendations.resultCount.replace('{count}', String(recommendations.length))}
+              </p>
+            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {recommendations.map((recipe) => (
+                <FridgeRecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
           </div>
         )}
 

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import ShareButton from './Recipes/ShareButton';
 import { useToast } from '@/lib/toast/context';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
+import { useI18n } from '@/lib/i18n/context';
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -89,6 +90,7 @@ export default function RecipeBrowseView({
 }: RecipeBrowseViewProps) {
   const toast = useToast();
   const unitConv = useUnitConversion();
+  const { t } = useI18n();
   const [ingredientsExpanded, setIngredientsExpanded] = useState(true);
   const [memoOpen, setMemoOpen] = useState(false);
   const [memoText, setMemoText] = useState(saveNotes || '');
@@ -551,46 +553,46 @@ export default function RecipeBrowseView({
       {(recipe.calories || recipe.protein_grams || recipe.carbs_grams ||
         recipe.fat_grams || recipe.fiber_grams || recipe.sodium_mg) && (
         <div className="mt-8 py-6 border-t border-white/10">
-          <h2 className="text-lg font-bold mb-4">영양 정보</h2>
+          <h2 className="text-lg font-bold mb-4">{t.nutrition.title}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {recipe.calories && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">칼로리</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.calories}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.calories}</span>
                 <span className="text-xs text-text-muted ml-1">kcal</span>
               </div>
             )}
             {recipe.protein_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">단백질</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.protein}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.protein_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
             {recipe.carbs_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">탄수화물</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.carbs}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.carbs_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
             {recipe.fat_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">지방</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.fat}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fat_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
             {recipe.fiber_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">식이섬유</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.fiber}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fiber_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
             {recipe.sodium_mg && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
-                <span className="block text-xs text-text-muted mb-1">나트륨</span>
+                <span className="block text-xs text-text-muted mb-1">{t.nutrition.sodium}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.sodium_mg}</span>
                 <span className="text-xs text-text-muted ml-1">mg</span>
               </div>

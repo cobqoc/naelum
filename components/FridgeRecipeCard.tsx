@@ -17,6 +17,7 @@ interface FridgeRecipe {
   dish_type?: string | null;
   author?: { username: string; avatar_url?: string | null } | null;
   has_cooked?: boolean;
+  average_rating?: number;
   matchRate?: number;
   matchedCount?: number;
   totalIngredients?: number;
@@ -122,12 +123,18 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
             </div>
           )}
 
-          {/* 시간 · 난이도 */}
-          {(totalTime || difficultyLabel) && (
-            <p className="text-[10px] text-text-muted">
-              {totalTime && `⏱ ${totalTime}${t.recipeCard.minutesSuffix}`}
-              {totalTime && difficultyLabel && ' · '}
-              {difficultyLabel}
+          {/* 시간 · 난이도 · 평점 */}
+          {(totalTime || difficultyLabel || (recipe.average_rating && recipe.average_rating > 0)) && (
+            <p className="text-[10px] text-text-muted flex items-center gap-1 flex-wrap">
+              {totalTime && <span>⏱ {totalTime}{t.recipeCard.minutesSuffix}</span>}
+              {totalTime && difficultyLabel && <span>·</span>}
+              {difficultyLabel && <span>{difficultyLabel}</span>}
+              {recipe.average_rating != null && recipe.average_rating > 0 && (
+                <>
+                  {(totalTime || difficultyLabel) && <span>·</span>}
+                  <span className="text-accent-warm font-semibold">★ {recipe.average_rating.toFixed(1)}</span>
+                </>
+              )}
             </p>
           )}
 

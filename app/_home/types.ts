@@ -23,4 +23,5 @@ export type IngredientFormData = {
   storage_location?: string | null;
   notes?: string | null;
   expiry_alert?: boolean;
+  ingredient_id?: string | null;
 };

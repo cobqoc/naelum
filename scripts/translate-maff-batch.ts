@@ -561,7 +561,12 @@ async function main() {
   const startIdx = parseInt(args[0] ?? '0', 10);
   const endIdx = parseInt(args[1] ?? '100', 10);
 
-  const raw: any[] = JSON.parse(fs.readFileSync(RAW_FILE, 'utf-8'));
+  interface RawMaffRecipe {
+    slug: string; prefecture: string; dishType: string; season: string;
+    servings?: string; images?: string[]; nameKanji?: string; url?: string;
+    instructions?: string[]; ingredients: { name: string; amount?: string }[];
+  }
+  const raw: RawMaffRecipe[] = JSON.parse(fs.readFileSync(RAW_FILE, 'utf-8'));
   const batch = raw.slice(startIdx, endIdx);
 
   // 기존 번역 파일 로드
@@ -590,7 +595,7 @@ async function main() {
       season: r.season,
       servings: parseInt(r.servings?.match(/\d+/)?.[0] ?? '2', 10),
       images: r.images ?? [],
-      ingredients: r.ingredients.map((ing: any) => ({
+      ingredients: r.ingredients.map((ing) => ({
         name: translateIngredientName(ing.name),
         amount: translateAmount(ing.amount ?? ''),
       })),

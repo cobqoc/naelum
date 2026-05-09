@@ -907,10 +907,19 @@ export default function HomeClient({
               ? ''
               : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
             const href = `/recommendations?mode=auto${ingQuery}`;
+            // 로딩 중이면 shimmer pill
+            if (matchingCount === null) {
+              return (
+                <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap animate-pulse">
+                  <span className="text-base md:text-lg leading-none">💡</span>
+                  <span>{t.home.pillDefault}</span>
+                </div>
+              );
+            }
             // 라벨 결정
             let icon = '💡';
             let label = t.home.pillDefault;
-            if (matchingCount !== null && matchingCount > 0 && resolvedMode) {
+            if (matchingCount > 0 && resolvedMode) {
               const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
               if (resolvedMode === 'ready') { icon = '🔥'; label = t.home.pillReady.replace('{count}', countStr); }
               else if (resolvedMode === 'almost') { icon = '🛒'; label = t.home.pillAlmost.replace('{count}', countStr); }

@@ -5,6 +5,7 @@ import { IngredientItem } from './IngredientAutocompleteTypes';
 import IngredientCategoryFilter from './IngredientCategoryFilter';
 import IngredientPickerGrid from './IngredientPickerGrid';
 import { useIngredientPicker } from '@/lib/hooks/useIngredientPicker';
+import { useI18n } from '@/lib/i18n/context';
 
 interface Ingredient {
   ingredient_name: string;
@@ -48,6 +49,7 @@ export default function IngredientPickerInline({
     showAddNewButton,
   } = useIngredientPicker();
 
+  const { t } = useI18n();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const unitInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -70,7 +72,7 @@ export default function IngredientPickerInline({
     <div className="w-full rounded-2xl bg-background-secondary border border-white/10 shadow-xl">
       {/* Header */}
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
-        <h3 className="text-lg font-bold text-text-primary">재료 선택</h3>
+        <h3 className="text-lg font-bold text-text-primary">{t.ingredient.selectedLabel}</h3>
 
         {/* Selected ingredients dropdown */}
         <div className="relative" ref={dropdownRef}>
@@ -79,7 +81,7 @@ export default function IngredientPickerInline({
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background-tertiary hover:bg-white/10 transition-colors"
           >
             <span className="text-sm text-text-primary">
-              선택된 재료 {selectedIngredients.length > 0 && (
+              {t.ingredient.selectedLabel} {selectedIngredients.length > 0 && (
                 <span className="ml-1 px-2 py-0.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold">
                   {selectedIngredients.length}
                 </span>
@@ -127,7 +129,7 @@ export default function IngredientPickerInline({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="재료 검색..."
+            placeholder={t.ingredient.searchPlaceholder}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-background-tertiary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-2 focus:ring-accent-warm/20 transition-all text-sm"
           />
         </div>
@@ -197,12 +199,13 @@ function SelectedIngredientsDropdown({
   onUpdate?: (index: number, field: keyof Ingredient, value: string | boolean) => void;
   unitInputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
 }) {
+  const { t } = useI18n();
   if (ingredients.length === 0) {
     return (
       <div className="absolute right-0 mt-2 w-96 max-h-[500px] overflow-y-auto rounded-xl bg-background-primary border border-white/10 shadow-2xl z-10">
         <div className="p-8 text-center">
           <div className="text-4xl mb-3">🍳</div>
-          <p className="text-text-muted text-sm">선택된 재료가 없습니다</p>
+          <p className="text-text-muted text-sm">{t.ingredient.selectedLabel}</p>
         </div>
       </div>
     );
@@ -212,7 +215,7 @@ function SelectedIngredientsDropdown({
     <div className="absolute right-0 mt-2 w-96 max-h-[500px] overflow-y-auto rounded-xl bg-background-primary border border-white/10 shadow-2xl z-10">
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-text-primary">선택한 재료 목록</h4>
+          <h4 className="text-sm font-semibold text-text-primary">{t.ingredient.selectedLabel}</h4>
           <button
             onClick={onClose}
             className="text-text-muted hover:text-text-primary transition-colors"
@@ -234,7 +237,7 @@ function SelectedIngredientsDropdown({
                   type="button"
                   onClick={() => onRemove?.(index)}
                   className="text-error hover:text-error/80 transition-colors"
-                  aria-label="재료 삭제"
+                  aria-label={t.ingredient.deleteAriaLabel}
                 >
                   ✕
                 </button>
@@ -246,7 +249,7 @@ function SelectedIngredientsDropdown({
                   value={ing.quantity}
                   onChange={(e) => onUpdate?.(index, 'quantity', e.target.value)}
                   className="w-full rounded-lg bg-background-tertiary px-2 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                  placeholder="양"
+                  placeholder={t.recipeForm.ingQuantity}
                 />
                 {isCustomUnit ? (
                   <input
@@ -255,7 +258,7 @@ function SelectedIngredientsDropdown({
                     onChange={(e) => onUpdate?.(index, 'unit', e.target.value)}
                     ref={(el) => { unitInputRefs.current[index] = el; }}
                     className="w-full rounded-lg bg-background-tertiary px-2 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                    placeholder="단위 입력"
+                    placeholder={t.recipeForm.ingUnitPlaceholder}
                   />
                 ) : (
                   <select
@@ -283,7 +286,7 @@ function SelectedIngredientsDropdown({
                 value={ing.notes}
                 onChange={(e) => onUpdate?.(index, 'notes', e.target.value)}
                 className="w-full rounded-lg bg-background-tertiary px-2 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                placeholder="메모 (예: 깍둑썰기)"
+                placeholder={t.recipeForm.ingNotesPlaceholder}
               />
 
               <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
@@ -293,7 +296,7 @@ function SelectedIngredientsDropdown({
                   onChange={(e) => onUpdate?.(index, 'is_optional', e.target.checked)}
                   className="rounded border-white/20 bg-background-tertiary text-accent-warm focus:ring-2 focus:ring-accent-warm focus:ring-offset-0"
                 />
-                선택사항
+                {t.recipeForm.optionalPlaceholder}
               </label>
             </div>
           );

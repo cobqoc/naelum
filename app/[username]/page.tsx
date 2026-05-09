@@ -605,7 +605,7 @@ export default function ProfilePage(props: PageProps) {
             {/* 레시피 섹션 */}
             <div>
               <h3 className="text-sm font-bold text-text-muted mb-3">
-                {activeTab === 'drafts' ? '📝 임시저장된 레시피' : '🔒 비공개 레시피'}
+                {activeTab === 'drafts' ? t.profile.draftRecipes : t.profile.privateRecipes}
                 {recipes.length > 0 && <span className="ml-2 text-accent-warm">{recipes.length}</span>}
               </h3>
               {recipes.length > 0 ? (
@@ -620,7 +620,7 @@ export default function ProfilePage(props: PageProps) {
                             <span className="text-5xl">🍽️</span>
                           )}
                           <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">
-                            {activeTab === 'drafts' ? '📝 임시저장' : '🔒 비공개'}
+                            {activeTab === 'drafts' ? t.profile.draftBadge : t.profile.privateBadge}
                           </div>
                         </div>
                         <div className="p-3">
@@ -650,7 +650,7 @@ export default function ProfilePage(props: PageProps) {
             {/* 팁 섹션 */}
             <div>
               <h3 className="text-sm font-bold text-text-muted mb-3">
-                {activeTab === 'drafts' ? '📝 임시저장된 팁' : '🔒 비공개 팁'}
+                {activeTab === 'drafts' ? t.profile.draftTips : t.profile.privateTips}
                 {tips.length > 0 && <span className="ml-2 text-accent-warm">{tips.length}</span>}
               </h3>
               {tipsLoading ? (
