@@ -46,7 +46,7 @@ const SUPABASE_SERVICE_ROLE_KEY = isProd
 const API_KEY = process.env.DATA_GO_KR_API_KEY ?? '';
 const BASE = 'https://apis.data.go.kr/1390803/AgriFood/NationStdFood/V2';
 const PAGE_SIZE = 20; // API 최대값 20
-const DELAY_MS = 400;
+const DELAY_MS = 2000; // detail API 할당량 보호 (30req/min 기준)
 
 // 식품군 코드 A~T (총 ~2,900개)
 const FOOD_GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
@@ -93,6 +93,15 @@ const FETCH_HEADERS = {
 
 async function fetchXmlAsJson(url: string): Promise<unknown> {
   const res = await fetch(url, { headers: FETCH_HEADERS });
+  if (res.status === 429) {
+    // 할당량 초과 → 10초 대기 후 1회 재시도
+    process.stdout.write('(429 재시도 대기 10s) ');
+    await sleep(10000);
+    const retry = await fetch(url, { headers: FETCH_HEADERS });
+    if (!retry.ok) throw new Error(`HTTP ${retry.status}`);
+    const xml = await retry.text();
+    return parseStringPromise(xml, { explicitArray: false, ignoreAttrs: true });
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const xml = await res.text();
   return parseStringPromise(xml, { explicitArray: false, ignoreAttrs: true });
