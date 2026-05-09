@@ -31,9 +31,9 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-04-13 기준)
-- `recipes`: 100개 (프로덕션 인기순 샘플, `author_id = null`)
-- `ingredients_master`: 605개 (전체 복사) — 실제 dev는 스크립트로 더 많을 수 있음
+### dev DB 현황 (2026-05-10 기준)
+- `recipes`: 2,507개 (published, 농사로·MAFF·공공데이터 포함)
+- `ingredients_master`: 1,953개
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
 ### 주의사항
@@ -1134,7 +1134,7 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ---
 
 ### 레시피 DB
-- **prod: 3,850개** (published 1,508 + draft 2,307 + private 35) / **dev: 3,460개**
+- **prod: 3,850개** (published 1,508 + draft 2,307 + private 35) / **dev: 2,507개** (published)
 - 최종 수정일: 2026-05-10
 
 #### 출처별 구성 (2026-05-10 기준)
@@ -1152,7 +1152,7 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 
 #### MAFF 번역 완료 현황 (2026-05-10 기준)
 - **dev DB**: `recipe_ingredients` 일본어 잔존 **0개** ✅ (ING_MAP v3~v6 블록 + Gemini 번역)
-- **prod DB**: 일본어 잔존 **0개** ✅ — 2,050개 레시피 published 전환 완료
+- **prod DB**: 일본어 잔존 **0개** ✅ — 번역 완료, **현재 draft 비공개 상태**
 - **ING_MAP 사전 이력**: v3~v6 블록 추가 (dict-only로 2,270→0개 처리)
 
 #### MAFF 레시피 재임포트 명령어 (전체 재임포트 필요 시)
@@ -1170,43 +1170,28 @@ AUTHOR_ID=0132b4d2-5a56-4687-9d34-e1965b565be0 \
 npx tsx scripts/import-maff-recipes.ts
 ```
 
-#### MAFF 레시피 재임포트 명령어 (전체 재임포트 필요 시)
-```bash
-# 1단계: 번역 JSON 생성
-npx tsx scripts/translate-maff-batch.ts 0 1365
-
-# 2단계: Dev 임포트
-npx tsx scripts/import-maff-recipes.ts
-
-# 3단계: Prod 임포트 (키는 .env.local의 PROD_SUPABASE_SERVICE_ROLE_KEY)
-NEXT_PUBLIC_SUPABASE_URL=https://rgnlgpfazxgwsnkgrhzs.supabase.co \
-SUPABASE_SERVICE_ROLE_KEY=$(grep PROD_SUPABASE_SERVICE_ROLE_KEY .env.local | tr -d ' ' | cut -d= -f2) \
-AUTHOR_ID=0132b4d2-5a56-4687-9d34-e1965b565be0 \
-npx tsx scripts/import-maff-recipes.ts
-```
-
 ### 재료 DB
-- **prod: 2,141개** / **dev: ~1,953개** (`ingredients_master`, 2026-05-10 기준)
-- `recipe_ingredients.ingredient_id` 커버리지: **prod 84.4%** / **dev ~74.8%**
-- name_en 보유: ~400개 (농사로 한영사전 업데이트 후 증가)
+- **prod: 2,141개** / **dev: 1,953개** (`ingredients_master`, 2026-05-10 기준)
+- `recipe_ingredients.ingredient_id` 커버리지: **prod 89.7%** (31,957/35,641) / **dev 82.4%** (17,114/20,760)
+- name_en 보유: 342개
 
-#### 출처별 구성 (2026-05-10 기준)
+#### 출처별 구성 (2026-05-10 기준, prod 기준)
 | 출처 | 건수 | 라이선스 | 임포트 스크립트 |
 |------|------|----------|----------------|
-| 한식진흥원 아카이브 (`hansik_api`) | 416개 | 공공누리 | `scripts/import-hansik-ingredients.ts` |
-| 레시피 재료 자동 추출 (`recipe_extract`) | ~1,461개 | — | `scripts/extract-recipe-ingredients.ts` (dev) / MCP SQL (prod) |
-| Open Food Facts 글로벌 재료 | ~110개 | ODbL | `scripts/import-off-ingredients.ts` |
-| 농사로 지역특산물 (`nongsaro_localSpcprd`) | 신규 추가분 | 공공누리 1유형 | `scripts/import-nongsaro-locspc.ts` |
-| 수동 입력 / 기타 | 나머지 | — | — |
+| 레시피 재료 자동 추출 (`recipe_extract`) | 1,423개 | — | `scripts/extract-recipe-ingredients.ts` (dev) / MCP SQL (prod) |
+| 한식진흥원 아카이브 (`hansik_api`) | 366개 | 공공누리 | `scripts/import-hansik-ingredients.ts` |
+| 수동 입력 / 기타 (`null`) | 154개 | — | — |
+| 농촌진흥청 수동 (`rda_manual`) | 143개 | 공공누리 | — |
+| Open Food Facts 글로벌 재료 (`open_food_facts`) | 55개 | ODbL | `scripts/import-off-ingredients.ts` |
 
-#### 영양정보 채우기 (진행 중)
+#### 영양정보 채우기 (2026-05-10 기준)
 | 소스 | 내용 | 스크립트 | 상태 |
 |------|------|----------|------|
-| 식약처 I2790 (`data.go.kr`) | 칼로리·단백질·지방·탄수화물 + 상세 20종 | `scripts/sync-ingredient-nutrition.ts` | **✅ 완료** — 2,133개 중 ~120개 매칭 (12.5%). 완전 일치만 허용, 비표준 추출 재료명 다수로 매칭률 낮음 |
-| 농촌진흥청 RDA (`data.go.kr`) | 국가표준 식품성분표 (A~T 그룹) | `scripts/sync-ingredient-nutrition-rda.ts` | **⏳ 부분 완료** — A~H 그룹(채소·과일·곡류 등) 목록 다운로드 완료, 상세 API 429 (일일 할당량). I~T(육류·어패류·유제품 등) 재개 필요 — `npx tsx scripts/sync-ingredient-nutrition-rda.ts` (자동 이어받기) |
+| 식약처 I2790 (`data.go.kr`) | 칼로리·단백질·지방·탄수화물 + 상세 20종 | `scripts/sync-ingredient-nutrition.ts` | **✅ 완료** — 2,141개 중 387개 매칭 (18.1%). 퍼지 매칭 개선 후 재실행 가능 |
+| 농촌진흥청 RDA (`data.go.kr`) | 국가표준 식품성분표 (A~T 그룹) | `scripts/sync-ingredient-nutrition-rda.ts` | **❌ 미완** — 목록 캐시(`scripts/cache/rda-food-list.json`) 완료, 상세 API 일일 할당량 초과로 0 성공. 재시도 필요: `npx tsx scripts/sync-ingredient-nutrition-rda.ts` |
 
 ### 요리 팁
-- 1건 (`tip` 테이블) — "양파 손질·보관법 완전 정리"
+- 10건 (`tip` 테이블)
 
 ---
 
