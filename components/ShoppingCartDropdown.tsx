@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Link from '@/components/Common/LocalizedLink';
+import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';

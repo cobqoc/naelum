@@ -13,6 +13,8 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 interface I18nProviderProps {
   children: ReactNode;
+  /** URL 경로 [lang]/에서 결정된 초기 locale. 미지정 시 ko fallback. */
+  initialLanguage?: Language;
 }
 
 function detectBrowserLanguage(): Language {
@@ -24,27 +26,43 @@ function detectBrowserLanguage(): Language {
   return 'ko';
 }
 
-export function I18nProvider({ children }: I18nProviderProps) {
-  // SSR 및 초기 client 렌더는 항상 ko (정적 번들에 포함된 유일한 locale)
-  // hydration 후 useEffect에서 실제 사용자 언어를 감지해 dynamic import
-  const [language, setLanguageState] = useState<Language>('ko');
+export function I18nProvider({ children, initialLanguage }: I18nProviderProps) {
+  // initialLanguage가 주어지면 (path-based locale) SSR/CSR 둘 다 그것으로 시작.
+  // 미지정이면 ko default, hydration 후 자동 감지로 폴백.
+  const start: Language = initialLanguage && SUPPORTED_LANGUAGES.includes(initialLanguage) ? initialLanguage : 'ko';
+  const [language, setLanguageState] = useState<Language>(start);
   const [t, setT] = useState<TranslationKeys>(defaultLocale);
 
-  // 브라우저 언어 감지 후 필요 시 dynamic load
+  // ko 외 locale은 dynamic import 후 t 갱신. initialLanguage 기반 1회 로드.
   useEffect(() => {
-    const detected = detectBrowserLanguage();
-    if (detected === 'ko') return; // 이미 기본값
+    const target = initialLanguage && SUPPORTED_LANGUAGES.includes(initialLanguage)
+      ? initialLanguage
+      : detectBrowserLanguage();
+    // SSR이 다음 방문 때 정확한 locale로 metadata 분기하도록 쿠키 기록.
+    if (typeof document !== 'undefined') {
+      document.cookie = `language=${target}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    }
+    if (target === 'ko') {
+      // ko면 initial state가 이미 ko라 noop. setState 호출 안 해 cascade 회피.
+      return;
+    }
 
     let cancelled = false;
-    loadLocale(detected).then((loaded) => {
+    loadLocale(target).then((loaded) => {
       if (cancelled) return;
-      setLanguageState(detected);
+      setLanguageState(target);
       setT(loaded);
     }).catch(() => {
       // 로드 실패 시 ko 유지
     });
     return () => { cancelled = true };
-  }, []);
+  }, [initialLanguage]);
+
+  // <html lang> 동기화 — 스크린리더·검색엔진이 현재 locale을 정확히 인식하도록.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = language;
+  }, [language]);
 
   const setLanguage = async (lang: Language) => {
     // 현재 언어와 동일하면 noop
@@ -54,6 +72,8 @@ export function I18nProvider({ children }: I18nProviderProps) {
       setLanguageState(lang);
       setT(loaded);
       localStorage.setItem('language', lang);
+      // SSR이 metadata·html lang을 정확히 분기하도록 쿠키도 동기화. 1년 유지, lax로 외부 접근 차단.
+      document.cookie = `language=${lang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     } catch (err) {
       console.error('Failed to load locale:', lang, err);
     }

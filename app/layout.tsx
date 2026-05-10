@@ -1,15 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/lib/theme/context";
-import { I18nProvider } from "@/lib/i18n/context";
-import { ToastProvider } from "@/lib/toast/context";
-import ToastContainer from "@/components/Common/ToastContainer";
-import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
-import CookieConsent from "@/components/CookieConsent";
-import { ConsentProvider } from "@/lib/cookieConsent/context";
-import AccessibilityProvider from "@/components/Common/AccessibilityProvider";
-import { AuthProvider } from "@/lib/auth/context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,6 +16,9 @@ const geistMono = Geist_Mono({
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://naelum.app';
 
+// 루트 layout — locale-independent shell만 담당.
+// <html lang>은 ko 기본값(정적). 비한국 locale은 [lang]/layout의 useEffect가 client-side 업데이트.
+// metadata도 ko 기본. 페이지별 generateMetadata가 locale 반영해 override.
 export const metadata: Metadata = {
   title: {
     default: "낼름 - 레시피 공유 플랫폼",
@@ -41,7 +35,6 @@ export const metadata: Metadata = {
     title: "낼름 - 레시피 공유 플랫폼",
     description: "재료 기반 스마트 레시피 추천 및 공유 플랫폼",
     url: BASE_URL,
-    // 카톡/슬랙 등 공유 시 미리보기 이미지 (1200×630 권장이지만 512 PWA 아이콘으로 일단 대체)
     images: [
       {
         url: "/icons/icon-512.png",
@@ -102,28 +95,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-accent-warm focus:text-background-primary focus:font-bold"
-        >
-          Skip to content
-        </a>
-        <ServiceWorkerRegister />
-        <ThemeProvider>
-          <I18nProvider>
-            <AuthProvider>
-              <ToastProvider>
-                <ConsentProvider>
-                  <AccessibilityProvider>
-                    {children}
-                    <CookieConsent />
-                    <ToastContainer />
-                  </AccessibilityProvider>
-                </ConsentProvider>
-              </ToastProvider>
-            </AuthProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useI18n } from '@/lib/i18n/context';
+import { formatFreshLabel, type FreshLabelKind } from '@/app/[lang]/_home/helpers';
 
 interface FridgeItem {
   id: string;
@@ -22,23 +24,26 @@ interface Props {
   onDelete: (item: FridgeItem) => void;
   /** freshState 계산 함수 (HomeClient에서 주입). category fallback을 위해 category 필드도 포함. */
   freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category'>) => {
-    border: string; label: string; isDanger: boolean;
+    border: string; labelKind: FreshLabelKind; labelN: number; isDanger: boolean;
   };
   /** getEmoji 함수 주입 */
   getEmoji: (name: string, category: string) => string;
+  /** 데모 칩 표시명 변환 — HomeClient의 getDisplayName 주입. 기본은 ingredient_name 그대로. */
+  getDisplayName?: (item: { id: string; ingredient_name: string; isDemoItem?: boolean }) => string;
 }
-
-const GROUP_ORDER: { key: string; icon: string; label: string }[] = [
-  { key: '냉장', icon: '❄️', label: '냉장' },
-  { key: '냉동', icon: '🧊', label: '냉동' },
-  { key: '상온', icon: '🌡', label: '상온' },
-];
 
 /**
  * +N 오버플로우 버튼 탭 시 열리는 전체 재료 리스트 시트.
  * 냉장/냉동/상온 별로 그룹핑, 각 chip 탭은 액션 시트로 연결.
  */
-export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji }: Props) {
+export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji, getDisplayName }: Props) {
+  const { t } = useI18n();
+  const display = (item: FridgeItem) => getDisplayName?.(item) ?? item.ingredient_name;
+  const GROUP_ORDER: { key: string; icon: string; label: string }[] = [
+    { key: '냉장', icon: '❄️', label: t.fridge.refrigerator },
+    { key: '냉동', icon: '🧊', label: t.fridge.freezer },
+    { key: '상온', icon: '🌡', label: t.fridge.roomTemp },
+  ];
   useEscapeKey(onClose, isOpen);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -77,13 +82,13 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
         {/* 헤더 */}
         <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
           <h3 className="font-bold text-sm">
-            🧺 재료 전체 보기 <span className="text-text-muted font-normal">({items.length}개)</span>
+            🧺 {t.home.ingredientList} <span className="text-text-muted font-normal">({t.fridge.ingredientCount.replace('{count}', String(items.length))})</span>
           </h3>
           <button
             ref={closeBtnRef}
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
-            aria-label="닫기"
+            aria-label={t.common.close}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -105,19 +110,21 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {list.map(item => {
-                    const { border, label: freshLabel, isDanger } = freshState(item);
+                    const { border, labelKind, labelN, isDanger } = freshState(item);
+                    const freshLabel = formatFreshLabel(labelKind, labelN, t);
                     const emoji = getEmoji(item.ingredient_name, item.category);
+                    const displayName = display(item);
                     return (
                       <div key={item.id} className="relative group md:pt-2 md:pr-2 md:-mt-2 md:-mr-2">
                         <button
                           onClick={() => { onItemClick(item); }}
                           className={`flex items-center gap-1 px-2 py-1.5 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse' : ''}`}
                           style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.15)' }}
-                          title={`${item.ingredient_name}${freshLabel ? ` · ${freshLabel}` : ''}`}
+                          title={`${displayName}${freshLabel ? ` · ${freshLabel}` : ''}`}
                         >
                           <span className="text-base leading-none">{emoji}</span>
                           <span className="text-xs font-bold text-gray-800 leading-none max-w-[90px] truncate">
-                            {item.ingredient_name}
+                            {displayName}
                           </span>
                           {freshLabel && (
                             <span className="text-[10px] font-bold leading-none" style={{ color: border }}>{freshLabel}</span>
@@ -127,7 +134,7 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
                         <button
                           onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(item); }}
                           className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-md ring-2 ring-white"
-                          aria-label={`${item.ingredient_name} 삭제`}
+                          aria-label={`${displayName} ${t.common.delete}`}
                         >
                           ✕
                         </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/Common/LocalizedLink';
 import * as Sentry from '@sentry/nextjs';
 import { useI18n } from '@/lib/i18n/context';
 

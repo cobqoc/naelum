@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
-import Link from 'next/link';
+import Link from '@/components/Common/LocalizedLink';
 import ShareButton from './Recipes/ShareButton';
 import { useToast } from '@/lib/toast/context';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
