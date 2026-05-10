@@ -1106,9 +1106,9 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 |------|-----------|------|
 | **레시피** | `monthFd` | 이달의 음식 정보 (식재료 상세 포함) — **핵심** |
 | **레시피** | `nvpcFdCkry` | 향토 음식 |
-| **레시피** | `headFamilyFood` | 종가음식 |
+| **레시피** | ~~`headFamilyFood`~~ (❌ 사용 금지) | ~~종가음식~~ — 데이터 품질 불량으로 폐기. 재임포트 금지 |
 | **레시피** | `delicacyKimchi30` | 별미 김치 30선 |
-| **레시피** | `gnsnRecipe` | 인삼레시피 |
+| **레시피** | ~~`gnsnRecipe`~~ (❌ 사용 금지) | ~~인삼레시피~~ — 데이터 품질 불량으로 폐기. 재임포트 금지 |
 | **레시피** | `trditAchlqrMnfcturLaw` | 전통주 제조법 |
 | **레시피** | `orientalMedicineAlcohol` | 한방약술 |
 | **레시피** | `insectFood` | 식용 곤충요리 |
@@ -1122,12 +1122,32 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 | **i18n** | `korEngDictionary` | 향토음식 한영대역사전 |
 | **공통** | `commonCode` | 농사로 공통코드 |
 
-#### 서비스별 임포트 현황 (2026-05-10 기준)
+#### 🚫 농사로 폐기된 레시피 API 목록 (재임포트 금지)
+
+`gnsnRecipe`(인삼레시피)와 `headFamilyFood`(종가음식)는 **데이터 품질 불량으로 폐기**. 다시 가져오지 말 것. 같은 문제가 재발한다.
+
+##### `gnsnRecipe` — 인삼레시피 (2026-05-11 폐기, 100개 삭제)
+- **재료 파싱 불가능** — 양념장이 `불고기양념장 (간장 5큰술, 배 1/4개, 인삼뿌리 80g, ...)` 식으로 한 줄에 통합돼 있어 콤마 split이 깨짐. 10개 샘플 중 6개에서 `불고기양념장 (간장`, `후춧가루 약간)` 같은 토막 토큰 발생
+- **메타데이터 결손** — 원문에 `servings`, `cook_time`, `description`이 아예 없음 (CLAUDE.md 데이터 무결성 규칙상 NULL 유지밖에 못함)
+- **이미지 외부 호스팅** — `http://www.nongsaro.go.kr/...` URL이 한국 외 IP(Vercel)에서 502 반환. mixed content 이슈도 있음
+- **단계별 사진 없음** — 썸네일 1장이 전부
+
+##### `headFamilyFood` — 종가음식 (2026-05-11 폐기, 257개 삭제)
+- **단계(steps) 100% 빈 데이터** — 10개 샘플 모두 `recipe_steps`에 row 0개. 조리법은 `description`에 산문 한 단락 형태로만 들어 있음 ("황태를 갈아서 손으로 보슬보슬 비벼서 보푸리를 만든다..." 식)
+- **재료 분량 100% null** — 모든 재료가 `quantity = null, unit = null`. 종가음식 원문 자체가 분량을 명시하지 않는 향토 음식 소개체
+- **재료 자체가 없는 경우도** — 예: 쌀뜨물 미역국 `ingredients = null`
+- **인삼레시피와 동일한 괄호 파싱 깨짐** — `양념장(간장`, `깨소금)` 같은 토막
+- **본질적으로 "레시피"가 아니라 "음식 유래·소개"** — description은 가치 있지만 검색·추천에 쓸 구조화된 데이터가 없음
+
+##### 정상 농사로 API
+`localSpcprd`(지역특산물), `korEngDictionary`(한영사전)는 정상. 농사로 API 전체를 막는 것이 아니라 **위 두 레시피 API만** 사용 금지.
+
+#### 서비스별 임포트 현황 (2026-05-11 기준)
 
 | 서비스 ID | 내용 | 건수 | 스크립트 | 상태 |
 |-----------|------|------|----------|------|
-| `headFamilyFood` | 종가음식 | 257개 | `scripts/import-nongsaro-headfamily.ts` | ✅ dev+prod 완료 (draft) |
-| `gnsnRecipe` | 인삼레시피 | 100개 | `scripts/import-nongsaro-gnsn.ts` | ✅ dev+prod 완료 (published) |
+| ~~`headFamilyFood`~~ | ~~종가음식~~ | ~~257개~~ | — (스크립트 삭제됨) | 🚫 **2026-05-11 dev+prod 전량 삭제. 재임포트 금지** ([사유](#-농사로-폐기된-레시피-api-목록-재임포트-금지)) |
+| ~~`gnsnRecipe`~~ | ~~인삼레시피~~ | ~~100개~~ | — (스크립트 삭제됨) | 🚫 **2026-05-11 dev+prod 전량 삭제. 재임포트 금지** ([사유](#-농사로-폐기된-레시피-api-목록-재임포트-금지)) |
 | `localSpcprd` | 지역특산물 | 1,747개 (고유 1,080개) | `scripts/import-nongsaro-locspc.ts` | ✅ dev+prod 완료 — 신규 재료 ingredients_master에 추가 |
 | `korEngDictionary` | 향토음식 한영대역사전 | 5,641개 | `scripts/import-nongsaro-koreng.ts` | ✅ dev+prod 완료 — name_en 업데이트 (식재료명 카테고리만 필터) |
 | `foodbyprdNtrinfo` | 농식품 부산물 영양정보 | 34개 | — | 스크립트 미작성 |
@@ -1136,12 +1156,6 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 #### prod 적용 명령어
 ```bash
-# 종가음식 prod 적용
-npx tsx scripts/import-nongsaro-headfamily.ts --import --prod
-
-# 인삼레시피 prod 적용
-npx tsx scripts/import-nongsaro-gnsn.ts --import --prod
-
 # 지역특산물 (신규 재료 추가)
 npx tsx scripts/import-nongsaro-locspc.ts --import --prod
 
@@ -1152,8 +1166,8 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ---
 
 ### 레시피 DB
-- **prod: 3,850개** (published 1,508 + draft 2,307 + private 35) / **dev: 2,507개** (published)
-- 최종 수정일: 2026-05-10
+- **prod: 3,493개** (published 1,408 + draft 2,050 + private 35) / **dev: 2,150개** (published)
+- 최종 수정일: 2026-05-11 (인삼레시피 100개 + 종가음식 257개 dev+prod 삭제)
 
 #### 출처별 구성 (2026-05-10 기준)
 | 출처 | 건수 | 상태 | 라이선스 | 임포트 스크립트 | 조건 |
@@ -1162,8 +1176,6 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 | 농림수산식품교육문화정보원 | 537개 | published | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
 | 한식진흥원 아카이브 | ~70개 | draft | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시 |
 | 농림수산성 うちの郷土料理 (MAFF) | 2,050개 | **draft** (번역 완료, 비공개 대기 중) | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
-| 농사로 종가음식 | 257개 | **draft** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-headfamily.ts` | 출처 표시, 태그: `종가음식` |
-| 농사로 인삼레시피 | 100개 | **published** (dev·prod 모두 적용) | 공공누리 1유형 | `scripts/import-nongsaro-gnsn.ts` | 출처 표시, 태그: `인삼레시피` |
 
 > **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
 > 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
