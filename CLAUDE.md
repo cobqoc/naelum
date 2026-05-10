@@ -1201,7 +1201,7 @@ npx tsx scripts/import-maff-recipes.ts
 ```
 
 ### 재료 DB
-- **prod: 2,141개** / **dev: 1,953개** (`ingredients_master`, 2026-05-10 기준)
+- **prod: 2,141개** / **dev: 977개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 노이즈 976개 정리)
 - `recipe_ingredients.ingredient_id` 커버리지: **prod 89.7%** (31,957/35,641) / **dev 82.4%** (17,114/20,760)
 - name_en 보유: 342개
 
@@ -1214,11 +1214,33 @@ npx tsx scripts/import-maff-recipes.ts
 | 농촌진흥청 수동 (`rda_manual`) | 143개 | 공공누리 | — |
 | Open Food Facts 글로벌 재료 (`open_food_facts`) | 55개 | ODbL | `scripts/import-off-ingredients.ts` |
 
-#### 영양정보 채우기 (2026-05-10 기준)
-| 소스 | 내용 | 스크립트 | 상태 |
-|------|------|----------|------|
-| 식약처 I2790 (`data.go.kr`) | 칼로리·단백질·지방·탄수화물 + 상세 20종 | `scripts/sync-ingredient-nutrition.ts` | **✅ 완료** — 2,141개 중 387개 매칭 (18.1%). 퍼지 매칭 개선 후 재실행 가능 |
-| 농촌진흥청 RDA (`data.go.kr`) | 국가표준 식품성분표 (A~T 그룹) | `scripts/sync-ingredient-nutrition-rda.ts` | **❌ 미완** — 목록 캐시(`scripts/cache/rda-food-list.json`) 완료, 상세 API 일일 할당량 초과로 0 성공. 재시도 필요: `npx tsx scripts/sync-ingredient-nutrition-rda.ts` |
+#### 영양정보 채우기 (2026-05-11 기준)
+| 환경 | 영양정보 보유 | 출처 |
+|------|--------------|------|
+| **prod** | 152개 / 2,141 (7.1%) | rda_manual 143 + open_food_facts 9 |
+| **dev** | 173개 / 977 (17.7%) | rda_manual 135 + open_food_facts 38 |
+
+#### 🚫 폐기된 영양정보 자동 sync 스크립트 (2026-05-11)
+
+`sync-ingredient-nutrition.ts`(식약처 I2790)·`sync-ingredient-nutrition-rda.ts`(농촌진흥청) **둘 다 폐기**. 다시 만들거나 같은 패턴으로 시도하지 말 것.
+
+**폐기 사유 — 두 스크립트 공통 결함**
+- 매칭 로직이 너무 느슨 (`food_Nm.includes(name)` 단순 부분 포함)
+- 재료명 정규화 부재 → `간 장`이 `장문볼락(생선)`에 매칭되는 등 광범위 오매칭
+- `(옥수수가루/물 =`, `고추5g`, `감자 찌는 물` 같은 토막 재료명을 그대로 매칭 시도
+- 결과: dev에서 **136개**, prod에서 **240개**의 잘못된 영양정보 오염 → 전량 NULL 처리
+
+**현재 신뢰 영양정보**
+- `rda_manual` (수동 입력) — 100% 신뢰. 표본 검증 완료
+- `open_food_facts` (글로벌 영양 데이터) — 표본 검증 완료
+- 그 외 자동 매칭으로 들어간 영양정보는 모두 폐기됨
+
+**향후 영양정보 확장 방향**
+- 자동 매칭 sync **금지**. 정확도 보장 안 됨 (검증된 SDK도 80% 정확도 이하)
+- 표준 재료(쌀·간장·두부 등) 200개 단위로 **수동 입력** (`rda_manual` 방식)
+- 또는 검증된 외부 데이터(Open Food Facts API 등) 직접 매핑
+
+**RDA API 캐시**: `scripts/cache/rda-food-list.json` (2,765개 A~T 그룹 전체 — 완전). 향후 수동 매핑 시 참고 자료로 보존 가능
 
 ### 요리 팁
 - 10건 (`tip` 테이블)
