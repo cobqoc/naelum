@@ -335,7 +335,7 @@ export default function CommentItem({
           <CommentForm
             recipeId={recipeId}
             parentCommentId={comment.id}
-            placeholder={`@${comment.user.username}님에게 답글...`}
+            placeholder={t.comments.replyToUser.replace('{username}', comment.user.username)}
             onCommentCreated={handleReplyCreated}
             autoFocus
             onCancel={() => setIsReplying(false)}

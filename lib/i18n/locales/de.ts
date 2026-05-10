@@ -174,6 +174,9 @@ export const de = {
     tryAgainLater: 'Bitte versuchen Sie es später erneut.',
     useAnotherEmail: 'Mit einer anderen E-Mail registrieren',
     verifying: 'Wird überprüft...',
+    verifyNotFound: 'Verifizierungsinformationen nicht gefunden.',
+    verifyError: 'Bei der Verifizierung ist ein Fehler aufgetreten.',
+    resetLinkInvalid: 'Ungültiger Link.',
   },
   bottomNav: {
     home: 'Start',
@@ -739,6 +742,11 @@ export const de = {
     errorCreateGeneric: 'Fehler beim Hinzufügen der Zutat',
     addButton: 'Hinzufügen',
     addingButton: 'Hinzufügen...',
+    scrollLoadMore: 'Scrollen für mehr...',
+    noIngredientFound: 'Zutat nicht gefunden?',
+    noIngredientFoundSub: 'Durch Hinzufügen wird sie für alle Benutzer verfügbar',
+    addNewIngredient: '+ Neue Zutat hinzufügen',
+    directInput: '+ Manuell eingeben',
   },
   onboarding: {
     skip: 'Später',
@@ -1050,6 +1058,16 @@ export const de = {
     timeAgoDay: 'vor {n} Tag(en)',
     timeAgoHour: 'vor {n} Stunde(n)',
     timeAgoMinute: 'vor {n} Minute(n)',
+    emptyTitle: 'Sei der Erste, der kommentiert',
+    emptySub: 'Teile deine Meinung oder Bewertung zu diesem Rezept',
+    replyToUser: 'Antwort an @{username}...',
+  },
+  writeModal: {
+    title: 'Was möchtest du schreiben?',
+    recipeTitle: 'Rezept schreiben',
+    recipeSub: 'Teile Zutaten und Schritt-für-Schritt-Anweisungen',
+    tipTitle: 'Tipp schreiben',
+    tipSub: 'Teile Kochtipps und -techniken',
   },
   tipForm: {
     pageTitle: '💡 Neuer Tipp',

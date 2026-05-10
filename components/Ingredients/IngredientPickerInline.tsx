@@ -153,7 +153,7 @@ export default function IngredientPickerInline({
 
         {hasMore && !loading && ingredients.length > 0 && (
           <div ref={loadMoreRef} className="h-16 flex items-center justify-center mt-4">
-            <div className="text-sm text-text-muted">스크롤하여 더 보기...</div>
+            <div className="text-sm text-text-muted">{t.ingredient.scrollLoadMore}</div>
           </div>
         )}
 
@@ -167,16 +167,16 @@ export default function IngredientPickerInline({
           <div className="flex flex-col items-center justify-center py-12">
             <div className="text-5xl mb-3">📝</div>
             <h3 className="text-base font-medium text-text-primary mb-2">
-              찾는 재료가 없나요?
+              {t.ingredient.noIngredientFound}
             </h3>
             <p className="text-sm text-text-muted mb-4">
-              직접 추가하면 모든 사용자가 사용할 수 있어요
+              {t.ingredient.noIngredientFoundSub}
             </p>
             <button
               onClick={onAddNew}
               className="px-5 py-2.5 rounded-lg bg-accent-warm text-background-primary font-medium hover:bg-accent-hover transition-colors shadow-lg shadow-accent-warm/20 text-sm"
             >
-              + 새 재료 추가하기
+              {t.ingredient.addNewIngredient}
             </button>
           </div>
         )}
@@ -276,7 +276,7 @@ function SelectedIngredientsDropdown({
                     {STANDARD_UNITS.map((unit) => (
                       <option key={unit} value={unit}>{unit}</option>
                     ))}
-                    <option value="custom">+ 직접 입력</option>
+                    <option value="custom">{t.ingredient.directInput}</option>
                   </select>
                 )}
               </div>

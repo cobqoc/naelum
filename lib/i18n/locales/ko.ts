@@ -174,6 +174,9 @@ export const ko = {
     tryAgainLater: '잠시 후 다시 시도해주세요.',
     useAnotherEmail: '다른 이메일로 가입하기',
     verifying: '인증 확인 중...',
+    verifyNotFound: '인증 정보를 찾을 수 없습니다.',
+    verifyError: '인증 처리 중 오류가 발생했습니다.',
+    resetLinkInvalid: '유효하지 않은 링크입니다.',
   },
   bottomNav: {
     home: '홈',
@@ -739,6 +742,11 @@ export const ko = {
     errorCreateGeneric: '재료 추가 중 오류가 발생했습니다',
     addButton: '추가하기',
     addingButton: '추가 중...',
+    scrollLoadMore: '스크롤하여 더 보기...',
+    noIngredientFound: '찾는 재료가 없나요?',
+    noIngredientFoundSub: '직접 추가하면 모든 사용자가 사용할 수 있어요',
+    addNewIngredient: '+ 새 재료 추가하기',
+    directInput: '+ 직접 입력',
   },
   onboarding: {
     skip: '나중에 하기',
@@ -1050,6 +1058,16 @@ export const ko = {
     timeAgoDay: '{n}일 전',
     timeAgoHour: '{n}시간 전',
     timeAgoMinute: '{n}분 전',
+    emptyTitle: '첫 댓글을 남겨보세요',
+    emptySub: '이 레시피에 대한 의견이나 후기를 공유해주세요',
+    replyToUser: '@{username}님에게 답글...',
+  },
+  writeModal: {
+    title: '무엇을 작성할까요?',
+    recipeTitle: '레시피 작성',
+    recipeSub: '재료와 단계별 조리법을 공유해보세요',
+    tipTitle: '팁 작성',
+    tipSub: '요리 팁과 기술을 단계별로 알려주세요',
   },
   tipForm: {
     pageTitle: '💡 팁 작성',

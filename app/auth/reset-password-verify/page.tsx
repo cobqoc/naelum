@@ -108,14 +108,14 @@ export default function ResetPasswordVerifyPage() {
 
         // 토큰이 없거나 recovery 타입이 아님
         setStatus('error');
-        setErrorMessage('유효하지 않은 링크입니다.');
+        setErrorMessage(t.auth.resetLinkInvalid);
         setTimeout(() => {
           router.push('/login');
         }, 2000);
       } catch (err) {
         console.error('Verification error:', err);
         setStatus('error');
-        setErrorMessage('인증 처리 중 오류가 발생했습니다.');
+        setErrorMessage(t.auth.verifyError);
       }
     };
 

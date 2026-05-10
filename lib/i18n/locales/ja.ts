@@ -174,6 +174,9 @@ export const ja = {
     tryAgainLater: 'しばらくしてからお試しください。',
     useAnotherEmail: '別のメールで登録',
     verifying: '認証確認中...',
+    verifyNotFound: '認証情報が見つかりません。',
+    verifyError: '認証処理中にエラーが発生しました。',
+    resetLinkInvalid: '無効なリンクです。',
   },
   bottomNav: {
     home: 'ホーム',
@@ -739,6 +742,11 @@ export const ja = {
     errorCreateGeneric: '食材追加中にエラーが発生しました',
     addButton: '追加する',
     addingButton: '追加中...',
+    scrollLoadMore: 'スクロールしてもっと見る...',
+    noIngredientFound: '食材が見つかりませんか？',
+    noIngredientFoundSub: '追加すると全ユーザーが使えるようになります',
+    addNewIngredient: '+ 新しい食材を追加',
+    directInput: '+ 直接入力',
   },
   onboarding: {
     skip: '後で',
@@ -1050,6 +1058,16 @@ export const ja = {
     timeAgoDay: '{n}日前',
     timeAgoHour: '{n}時間前',
     timeAgoMinute: '{n}分前',
+    emptyTitle: '最初のコメントを残してください',
+    emptySub: 'このレシピについての感想やレビューをシェアしてください',
+    replyToUser: '@{username}さんへの返信...',
+  },
+  writeModal: {
+    title: '何を書きますか？',
+    recipeTitle: 'レシピを書く',
+    recipeSub: '食材と手順をシェアしましょう',
+    tipTitle: 'ティップスを書く',
+    tipSub: '料理のコツやテクニックをシェアしましょう',
   },
   tipForm: {
     pageTitle: '💡 ヒント作成',
