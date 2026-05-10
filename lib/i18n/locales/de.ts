@@ -31,6 +31,7 @@ export const de = {
     write: 'Schreiben',
     languageSelect: 'Sprache',
     searching: 'Suche läuft...',
+    moreMenu: 'Mehr',
   },
   nav: {
     recipes: 'Rezepte',

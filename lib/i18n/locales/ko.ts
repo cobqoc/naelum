@@ -31,6 +31,7 @@ export const ko = {
     write: '글쓰기',
     languageSelect: '언어 선택',
     searching: '검색 중...',
+    moreMenu: '더보기',
   },
   nav: {
     recipes: '레시피',

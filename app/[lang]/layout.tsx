@@ -43,12 +43,16 @@ export default async function LangLayout({
     notFound();
   }
 
+  // server에서 locale 미리 로드 → I18nProvider에 전달. SSR 첫 렌더부터 정확한 t.
+  // path별 빌드 타임에 결정되므로 정적 prerender 호환.
+  const initialT = await loadLocale(lang as Language);
+
   return (
     <>
       <HtmlLangSync lang={lang} />
       <ServiceWorkerRegister />
       <ThemeProvider>
-        <I18nProvider initialLanguage={lang as Language}>
+        <I18nProvider initialLanguage={lang as Language} initialT={initialT}>
           <AuthProvider>
             <ToastProvider>
               <ConsentProvider>
