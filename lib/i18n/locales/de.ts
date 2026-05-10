@@ -672,7 +672,7 @@ export const de = {
     demoTaglineAccent: 'was du heute kochen kannst',
     demoTaglinePost: '',
     demoBadge: 'Ausprobieren',
-    demoCta: 'Anmelden zum Speichern →',
+    demoCta: 'Registrieren zum Speichern →',
     navRecipes: 'Rezepte',
     navTips: 'Tipps',
     navIngredients: 'Zutaten',

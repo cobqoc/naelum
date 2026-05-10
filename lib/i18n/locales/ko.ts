@@ -672,7 +672,7 @@ export const ko = {
     demoTaglineAccent: '오늘 뭐 먹을지',
     demoTaglinePost: ' 알려줘요',
     demoBadge: '체험 중',
-    demoCta: '로그인하고 저장 →',
+    demoCta: '회원가입하고 저장 →',
     navRecipes: '레시피',
     navTips: '팁',
     navIngredients: '재료 백과',

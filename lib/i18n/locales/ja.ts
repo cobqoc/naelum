@@ -672,7 +672,7 @@ export const ja = {
     demoTaglineAccent: '今日のごはん',
     demoTaglinePost: ' を提案します',
     demoBadge: 'お試し中',
-    demoCta: 'ログインして保存 →',
+    demoCta: '新規登録して保存 →',
     navRecipes: 'レシピ',
     navTips: 'ヒント',
     navIngredients: '食材辞典',

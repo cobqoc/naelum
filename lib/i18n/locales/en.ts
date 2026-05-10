@@ -671,7 +671,7 @@ export const en = {
     demoTaglineAccent: 'what to cook today',
     demoTaglinePost: '',
     demoBadge: 'Trying it out',
-    demoCta: 'Log in to save →',
+    demoCta: 'Sign up to save →',
     navRecipes: 'Recipes',
     navTips: 'Tips',
     navIngredients: 'Ingredients',

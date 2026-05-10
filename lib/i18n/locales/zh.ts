@@ -672,7 +672,7 @@ export const zh = {
     demoTaglineAccent: '今日菜单',
     demoTaglinePost: '',
     demoBadge: '试用中',
-    demoCta: '登录以保存 →',
+    demoCta: '注册即可保存 →',
     navRecipes: '食谱',
     navTips: '贴士',
     navIngredients: '食材百科',
