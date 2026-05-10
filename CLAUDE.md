@@ -1116,7 +1116,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 | **식단** | `recomendDiet` | 추천식단정보 |
 | **재료 백과** | `prvateTherpy` | 약초정보 |
 | **재료 백과** | `varietyInfo` | 품종 정보 |
-| **재료 백과** | `localSpcprd` | 지역특산물 |
+| **재료 백과** | ~~`localSpcprd`~~ (⚠️ 재료 마스터 부적합) | ~~지역특산물~~ — 브랜드/지역명이라 부적합. dev 임포트 후 삭제. 재임포트 금지 |
 | **재료 백과** | `foodCommonCode` | 음식 기본 정보 |
 | **재료 백과** | `foodbyprdNtrinfo` | 농식품 부산물 영양정보 |
 | **i18n** | `korEngDictionary` | 향토음식 한영대역사전 |
@@ -1140,7 +1140,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **본질적으로 "레시피"가 아니라 "음식 유래·소개"** — description은 가치 있지만 검색·추천에 쓸 구조화된 데이터가 없음
 
 ##### 정상 농사로 API
-`localSpcprd`(지역특산물), `korEngDictionary`(한영사전)는 정상. 농사로 API 전체를 막는 것이 아니라 **위 두 레시피 API만** 사용 금지.
+`korEngDictionary`(한영사전)는 정상. 농사로 API 전체를 막는 것이 아니라 위 두 레시피 API만 사용 금지.
+
+##### ⚠️ `localSpcprd` 주의 — 재료 마스터 임포트 부적합
+지역특산물 API 응답은 `K-FOOD`, `㈜한국바이오케미칼`, `강화섬쌀` 같은 **브랜드명·지역명**이라 표준 재료 마스터에 부적합. 2026-05-08에 dev에 976개 임포트했으나 자동완성·영양정보 매칭에 노이즈로 판단되어 **2026-05-11 dev에서 전량 삭제**. prod에는 처음부터 적용 안 됨. 재임포트 금지.
 
 #### 서비스별 임포트 현황 (2026-05-11 기준)
 
@@ -1148,7 +1151,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 |-----------|------|------|----------|------|
 | ~~`headFamilyFood`~~ | ~~종가음식~~ | ~~257개~~ | — (스크립트 삭제됨) | 🚫 **2026-05-11 dev+prod 전량 삭제. 재임포트 금지** ([사유](#-농사로-폐기된-레시피-api-목록-재임포트-금지)) |
 | ~~`gnsnRecipe`~~ | ~~인삼레시피~~ | ~~100개~~ | — (스크립트 삭제됨) | 🚫 **2026-05-11 dev+prod 전량 삭제. 재임포트 금지** ([사유](#-농사로-폐기된-레시피-api-목록-재임포트-금지)) |
-| `localSpcprd` | 지역특산물 | 1,747개 (고유 1,080개) | `scripts/import-nongsaro-locspc.ts` | ✅ dev+prod 완료 — 신규 재료 ingredients_master에 추가 |
+| ~~`localSpcprd`~~ | ~~지역특산물~~ | ~~1,747개 (고유 1,080개)~~ | `scripts/import-nongsaro-locspc.ts` | ⚠️ **2026-05-11 dev에서 976개 삭제** (재료 마스터에 부적합 — 브랜드/지역명). prod 미적용. 재임포트 금지 |
 | `korEngDictionary` | 향토음식 한영대역사전 | 5,641개 | `scripts/import-nongsaro-koreng.ts` | ✅ dev+prod 완료 — name_en 업데이트 (식재료명 카테고리만 필터) |
 | `foodbyprdNtrinfo` | 농식품 부산물 영양정보 | 34개 | — | 스크립트 미작성 |
 | `monthFd` | 이달의 음식 | — | — | ⚠️ API 응답 빈 데이터 (원인 불명, 별도 확인 필요) |
@@ -1201,7 +1204,7 @@ npx tsx scripts/import-maff-recipes.ts
 ```
 
 ### 재료 DB
-- **prod: 2,141개** / **dev: 977개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 노이즈 976개 정리)
+- **prod: 2,126개** / **dev: 958개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 976개 + 노이즈/토막 19개 정리, prod에서 노이즈 15개 정리)
 - `recipe_ingredients.ingredient_id` 커버리지: **prod 89.7%** (31,957/35,641) / **dev 82.4%** (17,114/20,760)
 - name_en 보유: 342개
 
