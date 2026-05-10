@@ -33,6 +33,7 @@ export default function Header() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { count: cartCount } = useCartCount();
 
   const handleLogout = async () => {
@@ -46,6 +47,7 @@ export default function Header() {
     setShowNotifications(false);
     setShowCart(false);
     setShowDropdown(false);
+    setShowMoreMenu(false);
   };
 
   return (
@@ -162,6 +164,67 @@ export default function Header() {
                 </Link>
               </>
             )}
+
+            {/* 정책 메뉴 — 로그인·비로그인 모두 노출. 약관·개인정보·저작권·문의 진입점. */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  const next = !showMoreMenu;
+                  closeAll();
+                  setShowMoreMenu(next);
+                }}
+                className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+                aria-label={t.common.moreMenu}
+                aria-expanded={showMoreMenu}
+                aria-haspopup="true"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-text-secondary">
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
+              </button>
+              {showMoreMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-1.5">
+                    <Link
+                      href="/terms"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">📜</span>
+                      <span>{t.meta.termsTitle}</span>
+                    </Link>
+                    <Link
+                      href="/privacy"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">🔒</span>
+                      <span>{t.meta.privacyTitle}</span>
+                    </Link>
+                    <Link
+                      href="/copyright"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">©</span>
+                      <span>{t.meta.copyrightTitle}</span>
+                    </Link>
+                    <div className="my-1 border-t border-white/5" />
+                    <button
+                      type="button"
+                      onClick={() => { setShowMoreMenu(false); setShowContactModal(true); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors text-left"
+                    >
+                      <span aria-hidden="true">✉️</span>
+                      <span>{t.contact.title.replace(/^✉️\s*/, '')}</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </nav>
       </header>

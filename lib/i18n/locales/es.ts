@@ -31,6 +31,7 @@ export const es = {
     write: 'Escribir',
     languageSelect: 'Idioma',
     searching: 'Buscando...',
+    moreMenu: 'Más',
   },
   nav: {
     recipes: 'Recetas',

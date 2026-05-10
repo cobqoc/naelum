@@ -31,6 +31,7 @@ export const zh = {
     write: '写作',
     languageSelect: '语言选择',
     searching: '搜索中...',
+    moreMenu: '更多',
   },
   nav: {
     recipes: '食谱',

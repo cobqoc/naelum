@@ -15,6 +15,9 @@ interface I18nProviderProps {
   children: ReactNode;
   /** URL 경로 [lang]/에서 결정된 초기 locale. 미지정 시 ko fallback. */
   initialLanguage?: Language;
+  /** server layout이 미리 loadLocale로 가져온 t. SSR 첫 렌더부터 정확한 locale 표시.
+   *  미지정 시 defaultLocale(ko) 사용 후 client useEffect에서 dynamic import. */
+  initialT?: TranslationKeys;
 }
 
 function detectBrowserLanguage(): Language {
@@ -26,14 +29,16 @@ function detectBrowserLanguage(): Language {
   return 'ko';
 }
 
-export function I18nProvider({ children, initialLanguage }: I18nProviderProps) {
+export function I18nProvider({ children, initialLanguage, initialT }: I18nProviderProps) {
   // initialLanguage가 주어지면 (path-based locale) SSR/CSR 둘 다 그것으로 시작.
   // 미지정이면 ko default, hydration 후 자동 감지로 폴백.
   const start: Language = initialLanguage && SUPPORTED_LANGUAGES.includes(initialLanguage) ? initialLanguage : 'ko';
   const [language, setLanguageState] = useState<Language>(start);
-  const [t, setT] = useState<TranslationKeys>(defaultLocale);
+  // initialT가 server에서 미리 loaded되어 들어오면 SSR 첫 렌더부터 정확한 locale.
+  // 그렇지 않으면 ko 기본 후 client useEffect에서 dynamic import.
+  const [t, setT] = useState<TranslationKeys>(initialT ?? defaultLocale);
 
-  // ko 외 locale은 dynamic import 후 t 갱신. initialLanguage 기반 1회 로드.
+  // ko 외 locale은 dynamic import 후 t 갱신. initialT가 있으면 client에서 재로드 불필요.
   useEffect(() => {
     const target = initialLanguage && SUPPORTED_LANGUAGES.includes(initialLanguage)
       ? initialLanguage
@@ -42,6 +47,8 @@ export function I18nProvider({ children, initialLanguage }: I18nProviderProps) {
     if (typeof document !== 'undefined') {
       document.cookie = `language=${target}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     }
+    // initialT를 받았으면 이미 정확한 t. 추가 로드 불필요.
+    if (initialT) return;
     if (target === 'ko') {
       // ko면 initial state가 이미 ko라 noop. setState 호출 안 해 cascade 회피.
       return;
@@ -56,7 +63,7 @@ export function I18nProvider({ children, initialLanguage }: I18nProviderProps) {
       // 로드 실패 시 ko 유지
     });
     return () => { cancelled = true };
-  }, [initialLanguage]);
+  }, [initialLanguage, initialT]);
 
   // <html lang> 동기화 — 스크린리더·검색엔진이 현재 locale을 정확히 인식하도록.
   useEffect(() => {

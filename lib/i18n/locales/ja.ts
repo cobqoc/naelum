@@ -31,6 +31,7 @@ export const ja = {
     write: '書く',
     languageSelect: '言語選択',
     searching: '検索中...',
+    moreMenu: 'その他',
   },
   nav: {
     recipes: 'レシピ',
