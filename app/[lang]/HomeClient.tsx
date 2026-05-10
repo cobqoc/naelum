@@ -565,14 +565,16 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 로그인 CTA. */}
+      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 회원가입 CTA.
+          PC·모바일 동일 위치 노출 → 회원가입 진입점을 양쪽에 일관되게 제공.
+          기존 사용자는 /signup 페이지 내 "이미 계정이 있으신가요? 로그인" 링크로 1탭 추가 도달. */}
       {!isAuthenticated && (
         <div className="px-4 pb-1 md:pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
           <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
             {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
           </p>
           <Link
-            href="/login"
+            href="/signup"
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
           >
             <span className="text-xs" aria-hidden="true">✨</span>
