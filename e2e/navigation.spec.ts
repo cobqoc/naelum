@@ -5,12 +5,12 @@ test.describe('네비게이션 흐름 테스트', () => {
     await page.goto('/recipes');
     await page.waitForLoadState('networkidle');
 
-    // 낼름 로고/브랜드명 클릭
-    const logo = page.locator('a[href="/"]').or(page.locator('a:has-text("낼름")'));
+    // 낼름 로고/브랜드명 클릭. /[lang]/ path-based i18n으로 홈은 /ko 또는 /en 같이 lang prefix 포함.
+    const logo = page.locator('a[href$="/"]').or(page.locator('a:has-text("낼름")'));
     if (await logo.count() > 0) {
       await logo.first().click();
-      await page.waitForURL('/');
-      await expect(page).toHaveURL(/\/$/);
+      await page.waitForURL(/\/(ko|en|ja|zh|es|fr|de|it)\/?$/);
+      await expect(page).toHaveURL(/\/(ko|en|ja|zh|es|fr|de|it)\/?$/);
     }
   });
 
@@ -19,7 +19,8 @@ test.describe('네비게이션 흐름 테스트', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const homeTab = page.locator('nav a[href="/"]').or(page.locator('nav button:has-text("홈")'));
+    // path-based i18n: 홈 링크 href는 /ko (또는 detected lang)로 시작.
+    const homeTab = page.locator('nav a[href$="/ko"], nav a[href$="/en"], nav a[href$="/ja"], nav a[href$="/zh"], nav a[href$="/es"], nav a[href$="/fr"], nav a[href$="/de"], nav a[href$="/it"]').or(page.locator('nav button:has-text("홈")'));
     if (await homeTab.count() > 0) {
       await expect(homeTab.first()).toBeVisible();
     }

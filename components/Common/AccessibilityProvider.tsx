@@ -9,7 +9,9 @@ import {
   useRef,
   ReactNode,
 } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
+import { useI18n } from '@/lib/i18n/context';
 
 // ── Types ──────────────────────────────────────────────
 
@@ -44,6 +46,7 @@ interface AccessibilityProviderProps {
 export default function AccessibilityProvider({ children }: AccessibilityProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useI18n();
 
   const [reducedMotion, setReducedMotion] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -209,7 +212,7 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
           color: '#1a1a1a',
         }}
       >
-        Skip to content
+        {t.accessibility.skipToContent}
       </a>
 
       {children}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 
 interface NotificationItem {

@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import Link from 'next/link';
+import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import { getDifficultyLabel, getTotalTime } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 
 const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { ssr: false });

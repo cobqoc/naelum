@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useI18n } from '@/lib/i18n/context';
 
 interface SearchBarProps {

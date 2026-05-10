@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
