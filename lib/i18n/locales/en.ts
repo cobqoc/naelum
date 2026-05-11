@@ -308,6 +308,9 @@ export const en = {
     emptyAllTitle: 'No matching recipes',
     emptyAllCta: 'Add ingredients',
     resultCount: '{count} recipes',
+    signupCtaTitle: 'Found a recipe you like?',
+    signupCtaDesc: 'Sign up to save recipes, manage your fridge ingredients, and access them on any device.',
+    signupCtaButton: 'Sign up for free',
   },
   difficulty: {
     easy: 'Easy',

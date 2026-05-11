@@ -308,6 +308,9 @@ export const de = {
     emptyAllTitle: 'Keine passenden Rezepte',
     emptyAllCta: 'Zutaten hinzufügen',
     resultCount: '{count} Rezepte',
+    signupCtaTitle: 'Ein passendes Rezept gefunden?',
+    signupCtaDesc: 'Registriere dich, um Rezepte zu speichern, deine Kühlschrank-Zutaten zu verwalten und auf allen Geräten zuzugreifen.',
+    signupCtaButton: 'Kostenlos registrieren',
   },
   difficulty: {
     easy: 'Einfach',
