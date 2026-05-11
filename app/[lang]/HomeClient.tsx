@@ -782,13 +782,10 @@ export default function HomeClient({
 
             모바일: w-full + max-h(viewport 기준) → 비율 유지하며 최대한 화면 채움
             데스크톱: max-w 고정, aspect가 height 결정 */}
-        {/* maxWidth = min(640px, 높이_기반_너비) 방식으로 letterbox 방지.
-            maxHeight 대신 maxWidth로 크기 제약 → SVG가 컨테이너를 꽉 채워 overlay %좌표가 정확히 일치.
-            reserved 값 모바일 기준: header(56) + 데모배지(~50) + BottomNav(60) + 여유 ≈ 200.
-            데스크탑(md+): header(80) + 검색·빠른링크 영역(~100) + 데모배지(~50) + 여유 ≈ 260.
-            아래 식의 reserved는 데스크탑 기준(가장 큰 값)으로 통일 — 모바일은 약간 더 여유. */}
+        {/* maxWidth = min(--fridge-max, height_기반_식). --fridge-max·--fridge-reserved는 globals.css에서
+            viewport별 media query로 분리 (모바일/태블릿/큰 데스크탑). 각 화면 크기에서 최대 fit. */}
         <div className="relative w-full mx-auto aspect-[540/670] z-10"
-          style={{ maxWidth: 'min(640px, calc((100dvh - 260px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
+          style={{ maxWidth: 'min(var(--fridge-max), calc((100dvh - var(--fridge-reserved) - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <FridgeSVG />
 
           {/* 빈 냉장고 가이드 — 로그인 신규 유저(items=0) 전용 overlay.

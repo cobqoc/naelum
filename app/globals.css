@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 :root {
+  /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
+   * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
+   * reserved 측정:
+   *   - 모바일(<md): header(56) + 데모배지(~30) + BottomNav(60) + 여유(~14) = 160
+   *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크 영역(~140) + 데모배지(~30) = 250
+   * max:
+   *   - 모바일: 480 (대부분 viewport 폭이 더 작아 height식이 작동)
+   *   - 태블릿: 640
+   *   - 큰 데스크탑(xl+): 720 (1080p+ 모니터에서 시원하게)
+   */
+  --fridge-reserved: 160px;
+  --fridge-max: 480px;
+
   /* Primary Colors */
   --background-primary: #1a1a1a;
   --background-secondary: #2d2d2d;
@@ -729,3 +742,19 @@ select {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* 홈 냉장고 viewport별 반응형 fit — 위 :root에서 정의된 변수 override.
+ * 모바일 default + 태블릿 + 큰 데스크탑 단계로 reserved/max 키움. */
+@media (min-width: 768px) {
+  :root {
+    --fridge-reserved: 250px;
+    --fridge-max: 640px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --fridge-reserved: 250px;
+    --fridge-max: 720px;
+  }
+}
+
