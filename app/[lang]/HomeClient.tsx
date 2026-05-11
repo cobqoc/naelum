@@ -16,7 +16,6 @@ import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import FridgeSVG from './_home/FridgeSVG';
-import KitchenSVG from './_home/KitchenSVG';
 import {
   DELETE_UNDO_WINDOW_MS,
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
@@ -33,7 +32,6 @@ import {
   SHELF_WIDTH,
   SHELVES,
   DOOR_SHELVES,
-  PANTRY_SHELVES,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
@@ -117,24 +115,13 @@ export default function HomeClient({
     return map[item.ingredient_name] ?? item.ingredient_name;
   }, [t]);
 
-  // 상온 재료 선반 분배 — items·shelfMax.pantry 바뀔 때만 재계산.
-  const pantryShelfDistribution = useMemo(() => {
-    const pantry = [...items]
-      .filter(i => i.storage_location === '상온' || i.storage_location === '기타')
-      .sort((a, b) => urgencyScore(a) - urgencyScore(b));
-    const shelves: FridgeItem[][] = [[], [], [], []];
-    pantry.forEach((it, i) => {
-      const idx = Math.min(Math.floor(i / shelfMax.pantry), 3);
-      shelves[idx].push(it);
-    });
-    return shelves;
-  }, [items, shelfMax.pantry]);
-
   // 냉장고 본체·도어·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
+  // 찬장(KitchenSVG) 제거 후 상온 재료도 냉장고 본체에 함께 분배.
+  // 도어 자격(isFridgeDoorItem) 통과한 재료(작은 병 양념·계란·물 등)는 위치 상관없이 도어로.
   const fridgeShelfDistribution = useMemo(() => {
-    const allFridge = items.filter(i => i.storage_location === '냉장' || !i.storage_location);
-    const bodyFridge = allFridge.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
-    const doorFridge = allFridge.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const nonFreezer = items.filter(i => i.storage_location !== '냉동');
+    const bodyFridge = nonFreezer.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const doorFridge = nonFreezer.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
     const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
 
     const bodyShelfItems: FridgeItem[][] = [[], [], []];
@@ -785,82 +772,8 @@ export default function HomeClient({
           </div>
         </div>
 
-        {/* KitchenSVG — 상온 재료 선반장 (chip overlay). 냉장고와 동일 너비로 상판이 냉장고 상단에 연결됨 */}
-        <div className="relative w-full mx-auto z-10" style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
-          <KitchenSVG />
-          {/* 상온 영역 전체 탭 → 재료 추가 기능 제거. chip 옆 misclick으로 실수 방지.
-              추가는 FAB(+) 또는 overflow(+N) 버튼으로만 가능. */}
-          {/* 상온 chip overlay — 2단 선반에 분배해 선반 위에 놓인 것처럼.
-              정확한 y좌표는 PANTRY_SHELVES 참고. 선반 x 영역은 SVG x=40~620 기준 (6%~94%). */}
-          {(() => {
-            // '상온' + '기타' 분배된 shelfItems를 참조 (상단 pantryShelfDistribution useMemo에서 계산).
-            const shelfItems = pantryShelfDistribution;
-            return (
-              <div className="absolute inset-0 pointer-events-none z-20">
-                {PANTRY_SHELVES.map((shelf, idx) => {
-                  const list = shelfItems[idx];
-                  const visible = list.slice(0, shelfMax.pantry);
-                  const overflow = list.length - visible.length;
-                  return (
-                    <div
-                      key={idx}
-                      className="absolute flex items-end justify-center gap-0.5 flex-wrap"
-                      style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height }}
-                    >
-                      {visible.map(item => {
-                        const { border, labelKind, labelN, isDanger } = freshState(item);
-                        const label = formatFreshLabel(labelKind, labelN, t);
-                        const emoji = getEmoji(item.ingredient_name, item.category);
-                        const displayName = getDisplayName(item);
-                        return (
-                          <div key={item.id} className="relative pointer-events-auto group shrink-0">
-                            <button
-                              onClick={(e) => handleChipClickWithLongPress(item, e)}
-                              onTouchStart={() => handleChipPressStart(item)}
-                              onTouchEnd={handleChipPressEnd}
-                              onTouchMove={handleChipPressEnd}
-                              onTouchCancel={handleChipPressEnd}
-                              className={`flex items-center gap-1 px-1.5 py-1 rounded-md bg-white/95 border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse' : ''}`}
-                              style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.25)' }}
-                              title={`${displayName}${label ? ` · ${label}` : ''}`}
-                            >
-                              <span className="text-base md:text-lg leading-none">{emoji}</span>
-                              <span className="text-[11px] md:text-xs font-bold text-gray-800 leading-none max-w-[72px] truncate">
-                                {displayName}
-                              </span>
-                              {label && (
-                                <span className="text-[9px] md:text-[10px] font-bold leading-none" style={{ color: border }}>{label}</span>
-                              )}
-                            </button>
-                            {/* 데스크톱 hover X 삭제 */}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(item); }}
-                              className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-md ring-2 ring-white"
-                              aria-label={`${displayName} ${t.common.delete}`}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {overflow > 0 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
-                          className="pointer-events-auto flex items-center px-2 py-1 rounded-md bg-black/60 text-white text-[11px] font-bold shrink-0 hover:bg-black/80 transition-colors"
-                          title={t.home.ingredientListMore.replace('{count}', String(overflow))}
-                          aria-label={t.home.ingredientListMore.replace('{count}', String(overflow))}
-                        >
-                          +{overflow}
-                        </button>
-                      )}
-                      {/* 빈 상온 선반 — 탭해서 추가 안내 제거됨. FAB(+)로 추가. */}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
+        {/* 찬장(KitchenSVG) 제거 — viewport fit 우선. 상온 재료는 냉장고 본체 선반에 통합 분배.
+            전체 재료 분류 확인은 헤더 ⋯ 또는 +N overflow → "재료 목록" 시트(FridgeAllSheet)에서. */}
 
         {/* 홈 냉장고 — 모달 없이 직접 인터랙션. 선반에 재료 chip 오버레이.
             냉장 선반 3개: storage_location이 '냉동'이 아닌 재료 전부 긴급도순 분배
@@ -871,9 +784,11 @@ export default function HomeClient({
             데스크톱: max-w 고정, aspect가 height 결정 */}
         {/* maxWidth = min(640px, 높이_기반_너비) 방식으로 letterbox 방지.
             maxHeight 대신 maxWidth로 크기 제약 → SVG가 컨테이너를 꽉 채워 overlay %좌표가 정확히 일치.
-            모바일 기준: header(56) + 찬장(~100) + BottomNav(60) + 여유 ≈ 224px */}
+            reserved 값 모바일 기준: header(56) + 데모배지(~50) + BottomNav(60) + 여유 ≈ 200.
+            데스크탑(md+): header(80) + 검색·빠른링크 영역(~100) + 데모배지(~50) + 여유 ≈ 260.
+            아래 식의 reserved는 데스크탑 기준(가장 큰 값)으로 통일 — 모바일은 약간 더 여유. */}
         <div className="relative w-full mx-auto aspect-[540/670] z-10"
-          style={{ maxWidth: 'min(640px, calc((100dvh - 224px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
+          style={{ maxWidth: 'min(640px, calc((100dvh - 260px - env(safe-area-inset-bottom)) * 540 / 670))' }}>
           <FridgeSVG />
 
           {/* 빈 냉장고 가이드 — 로그인 신규 유저(items=0) 전용 overlay.
