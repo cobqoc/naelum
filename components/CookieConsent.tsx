@@ -64,7 +64,7 @@ export default function CookieConsent() {
 
   return (
     <div
-      className="fixed left-0 right-0 z-40 px-4 pb-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0"
+      className="fixed left-0 right-0 z-40 px-3 pb-3 md:px-4 md:pb-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0"
       style={{
         animation: dismissing ? 'cookie-slide-down 0.35s ease-in forwards' : 'cookie-slide-up 0.4s ease-out forwards',
       }}
@@ -73,34 +73,34 @@ export default function CookieConsent() {
       aria-modal="false"
     >
       <div
-        className="max-w-xl mx-auto rounded-2xl p-5 shadow-2xl border"
+        className="max-w-xl mx-auto rounded-xl md:rounded-2xl p-3 md:p-5 shadow-xl border"
         style={{
           backgroundColor: 'var(--background-secondary)',
           borderColor: 'var(--background-tertiary)',
         }}
       >
         {!customizing ? (
-          // 기본 배너 (3-way 선택)
+          // 기본 배너 — 모바일 콤팩트 (한 줄 메시지 + 한 줄 버튼). 데스크탑은 약간 더 여유.
           <>
             <p
-              className="text-sm leading-relaxed mb-4"
+              className="text-[11px] md:text-sm leading-snug md:leading-relaxed mb-2 md:mb-4"
               style={{ color: 'var(--text-secondary)' }}
             >
               🍪 {labels.message}
             </p>
 
             {/* 3-way 버튼 — 거절("필수만")이 수락과 동등한 prominence (GDPR 요구) */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-2">
               <button
                 onClick={handleAcceptAll}
-                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90"
+                className="flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl text-xs md:text-sm font-semibold transition-opacity hover:opacity-90"
                 style={{ backgroundColor: 'var(--accent-warm)', color: '#1a1a1a' }}
               >
                 {labels.acceptAll}
               </button>
               <button
                 onClick={handleNecessaryOnly}
-                className="flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 border"
+                className="flex-1 py-2 md:py-2.5 px-3 md:px-4 rounded-lg md:rounded-xl text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 border"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'var(--text-primary)',
@@ -111,7 +111,7 @@ export default function CookieConsent() {
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-xs">
+            <div className="flex items-center justify-center gap-2 md:gap-3 mt-1.5 md:mt-3 text-[10px] md:text-xs">
               <button
                 onClick={() => setCustomizing(true)}
                 className="underline transition-opacity hover:opacity-70"

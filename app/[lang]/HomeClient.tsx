@@ -12,6 +12,7 @@ import Link from '@/components/Common/LocalizedLink';
 import dynamicImport from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
+import { useCookieConsent } from '@/lib/cookieConsent/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
@@ -75,6 +76,7 @@ export default function HomeClient({
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
   const { t } = useI18n();
+  const { bannerVisible: cookieBannerVisible } = useCookieConsent();
   const { success: toastSuccess } = useToast();
   // SSR prefetch된 items가 있으면 초기 렌더부터 반영, 없으면 빈 배열 + loading 상태 유지.
   const [items, setItems] = useState<FridgeItem[]>(() => (initialItems as FridgeItem[] | null) ?? []);
@@ -191,6 +193,9 @@ export default function HomeClient({
   // 비로그인 첫방문 가이드 툴팁 — "바로 가능 X개" pill을 알려주는 1회용 말풍선
   useEffect(() => {
     if (isAuthenticated) return;
+    // 쿠키 배너 노출 중에는 가이드 툴팁을 띄우지 않음 — 정보 과부하 + 시각적 겹침 방지.
+    // 사용자가 쿠키 동의(또는 거부)로 배너를 닫으면 그때부터 SHOW_DELAY 후 가이드 노출.
+    if (cookieBannerVisible) return;
     try {
       const seen = localStorage.getItem(LS_KEY_SEEN_HOME_TIP);
       if (seen) return;
@@ -201,7 +206,7 @@ export default function HomeClient({
       try { localStorage.setItem(LS_KEY_SEEN_HOME_TIP, '1'); } catch {}
     }, FIRST_VISIT_TIP_AUTO_HIDE_MS);
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, cookieBannerVisible]);
 
   const dismissFirstVisitTip = () => {
     setShowFirstVisitTip(false);
@@ -612,24 +617,7 @@ export default function HomeClient({
               filter: 'blur(2px)',
             }}
           />
-          {/* 벽 콘센트 — 데스크탑은 스크롤 아래로 밀려 숨김 */}
-          <div
-            className="absolute md:hidden"
-            style={{
-              bottom: '32px',
-              left: '8%',
-              width: '18px',
-              height: '22px',
-              background: 'var(--scene-outlet-bg)',
-              border: '1px solid var(--scene-outlet-border)',
-              borderRadius: '2px',
-              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)',
-            }}
-          >
-            <div style={{ position: 'absolute', top: '5px', left: '3px', width: '4px', height: '6px', background: 'rgba(0,0,0,0.85)', borderRadius: '1px' }} />
-            <div style={{ position: 'absolute', top: '5px', right: '3px', width: '4px', height: '6px', background: 'rgba(0,0,0,0.85)', borderRadius: '1px' }} />
-            <div style={{ position: 'absolute', bottom: '4px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '2px', background: 'rgba(0,0,0,0.85)', borderRadius: '0.5px' }} />
-          </div>
+          {/* 벽 콘센트 제거됨 — 모바일에서 쿠키 배너·BottomNav에 가려 안 보이고 디자인 가치 약함 */}
           {/* 베이스보드 2단 */}
           <div
             className="absolute inset-x-0 bottom-[32px] h-[8px]"
