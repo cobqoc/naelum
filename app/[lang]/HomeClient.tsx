@@ -32,7 +32,6 @@ import {
   SHELF_LEFT,
   SHELF_WIDTH,
   SHELVES,
-  DOOR_SHELVES,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
@@ -44,7 +43,6 @@ import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModa
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
-import { isFridgeDoorItem } from '@/lib/ingredients/storageMap';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
@@ -117,23 +115,16 @@ export default function HomeClient({
     return map[item.ingredient_name] ?? item.ingredient_name;
   }, [t]);
 
-  // 냉장고 본체·도어·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
-  // 찬장(KitchenSVG) 제거 후 상온 재료도 냉장고 본체에 함께 분배.
-  // 도어 자격(isFridgeDoorItem) 통과한 재료(작은 병 양념·계란·물 등)는 위치 상관없이 도어로.
+  // 냉장고 본체·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
+  // 도어 선반 분배 제거 — 모든 냉장 재료는 본체 선반(3단)에 통합 표시.
   const fridgeShelfDistribution = useMemo(() => {
-    const nonFreezer = items.filter(i => i.storage_location !== '냉동');
-    const bodyFridge = nonFreezer.filter(i => !isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
-    const doorFridge = nonFreezer.filter(i => isFridgeDoorItem(i.ingredient_name)).sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    const nonFreezer = items.filter(i => i.storage_location !== '냉동')
+      .sort((a, b) => urgencyScore(a) - urgencyScore(b));
     const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
 
     const bodyShelfItems: FridgeItem[][] = [[], [], []];
-    bodyFridge.forEach((it, i) => {
+    nonFreezer.forEach((it, i) => {
       bodyShelfItems[Math.min(Math.floor(i / shelfMax.body), 2)].push(it);
-    });
-
-    const doorShelfItems: FridgeItem[][] = [[], [], [], []];
-    doorFridge.forEach((it, i) => {
-      doorShelfItems[Math.min(Math.floor(i / shelfMax.door), 3)].push(it);
     });
 
     let totalOverflow = 0;
@@ -141,12 +132,9 @@ export default function HomeClient({
       if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
     });
     if (freezerItems.length > shelfMax.body) totalOverflow += freezerItems.length - shelfMax.body;
-    doorShelfItems.forEach(list => {
-      if (list.length > shelfMax.door) totalOverflow += list.length - shelfMax.door;
-    });
 
-    return { bodyShelfItems, doorShelfItems, freezerItems, totalOverflow };
-  }, [items, shelfMax.body, shelfMax.door]);
+    return { bodyShelfItems, freezerItems, totalOverflow };
+  }, [items, shelfMax.body]);
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
@@ -318,7 +306,11 @@ export default function HomeClient({
         const saved = localStorage.getItem(LS_KEY_DEMO_ITEMS);
         if (saved) {
           const parsed = JSON.parse(saved) as FridgeItem[];
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) {
+            // 사라진 ingredient 자동 정리 ('물')
+            const filtered = parsed.filter(item => item.ingredient_name !== '물');
+            if (filtered.length > 0) return filtered;
+          }
         }
       } catch { /* localStorage 실패 시 DEMO fallback */ }
       return DEMO;
@@ -579,186 +571,8 @@ export default function HomeClient({
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 relative flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
-        {/* Scene backdrop — 벽·바닥·몰딩. CSS 변수로 라이트·다크 양 테마 대응. */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-          {/* 벽지 — 상단 12%까지 완전 투명 유지 후 천천히 fade in (경계선 완화) */}
-          <div
-            className="absolute inset-x-0 top-0 bottom-[26px]"
-            style={{
-              background: `
-                linear-gradient(to bottom,
-                  transparent 0%,
-                  transparent 12%,
-                  var(--scene-wall-mid) 60%,
-                  var(--scene-wall-bot) 100%),
-                repeating-linear-gradient(90deg, transparent 0 44px, var(--scene-wall-stripe) 44px 45px),
-                repeating-linear-gradient(0deg, transparent 0 78px, var(--scene-wall-stripe) 78px 79px)
-              `,
-            }}
-          />
-          {/* 코니스 몰딩 */}
-          <div
-            className="absolute inset-x-0 top-[7%] h-[2px]"
-            style={{ background: 'var(--scene-cornice-1)' }}
-          />
-          <div
-            className="absolute inset-x-0 top-[7.6%] h-px"
-            style={{ background: 'var(--scene-cornice-2)' }}
-          />
-          {/* 팬던트 웜 스팟 — React state로 뷰포트 대응 */}
-          <div
-            className="absolute"
-            style={{
-              top: '7%',
-              ...(isDesktop ? { left: 'calc(50% + 230px)' } : { right: '4%' }),
-              width: 'clamp(140px, 30vw, 200px)',
-              height: 'clamp(160px, 32vw, 220px)',
-              background: 'radial-gradient(ellipse at 50% 30%, var(--scene-warm-spot), transparent 60%)',
-              filter: 'blur(2px)',
-            }}
-          />
-          {/* 벽 콘센트 제거됨 — 모바일에서 쿠키 배너·BottomNav에 가려 안 보이고 디자인 가치 약함 */}
-          {/* 베이스보드 2단 */}
-          <div
-            className="absolute inset-x-0 bottom-[32px] h-[8px]"
-            style={{ background: 'linear-gradient(to bottom, var(--scene-bb-outer-top), var(--scene-bb-outer-bot))' }}
-          />
-          <div
-            className="absolute inset-x-0 bottom-[40px] h-[1px]"
-            style={{ background: 'var(--scene-bb-divider)' }}
-          />
-          <div
-            className="absolute inset-x-0 bottom-[26px] h-[3px]"
-            style={{ background: 'linear-gradient(to bottom, var(--scene-bb-inner-top), var(--scene-bb-inner-bot))' }}
-          />
-          <div
-            className="absolute inset-x-0 bottom-[39px] h-[0.5px]"
-            style={{ background: 'var(--scene-bb-hl)' }}
-          />
-          {/* 바닥 */}
-          <div
-            className="absolute inset-x-0 bottom-0 h-[26px]"
-            style={{ background: 'linear-gradient(to bottom, var(--scene-floor-top), var(--scene-floor-bot))' }}
-          />
-          {/* 바닥 specular */}
-          <div
-            className="absolute inset-x-0 bottom-[20px] h-[2px]"
-            style={{ background: 'linear-gradient(to right, transparent 0%, var(--scene-floor-specular) 30%, var(--scene-floor-specular) 70%, transparent 100%)' }}
-          />
-          {/* 냉장고 바닥 리플렉션 */}
-          <div
-            className="absolute bottom-[2px] left-1/2 -translate-x-1/2"
-            style={{
-              width: '54%',
-              maxWidth: '360px',
-              height: '14px',
-              background: 'linear-gradient(to bottom, var(--scene-fridge-reflect) 0%, transparent 100%)',
-              filter: 'blur(3px)',
-              opacity: 0.7,
-            }}
-          />
-          {/* 바닥 plank 소실점 라인 + 나뭇결 옹이 */}
-          <svg
-            className="absolute inset-x-0 bottom-0 h-[26px] w-full"
-            viewBox="0 0 400 26"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <line x1="0" y1="26" x2="180" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.45"/>
-            <line x1="60" y1="26" x2="188" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.4" opacity="0.85"/>
-            <line x1="130" y1="26" x2="196" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.35" opacity="0.7"/>
-            <line x1="400" y1="26" x2="220" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.45"/>
-            <line x1="340" y1="26" x2="212" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.4" opacity="0.85"/>
-            <line x1="270" y1="26" x2="204" y2="0" stroke="var(--scene-floor-plank)" strokeWidth="0.35" opacity="0.7"/>
-            {/* 나뭇결 옹이 — 미세 */}
-            <ellipse cx="35" cy="20" rx="2.5" ry="0.5" fill="var(--scene-floor-plank)" opacity="0.6"/>
-            <ellipse cx="110" cy="16" rx="2" ry="0.4" fill="var(--scene-floor-plank)" opacity="0.55"/>
-            <ellipse cx="295" cy="22" rx="2.2" ry="0.5" fill="var(--scene-floor-plank)" opacity="0.5"/>
-            <ellipse cx="365" cy="14" rx="1.8" ry="0.4" fill="var(--scene-floor-plank)" opacity="0.6"/>
-            {/* 가로 plank seams */}
-            <line x1="0" y1="10" x2="400" y2="10" stroke="var(--scene-floor-plank)" strokeWidth="0.2" opacity="0.6"/>
-            <line x1="0" y1="19" x2="400" y2="19" stroke="var(--scene-floor-plank)" strokeWidth="0.2" opacity="0.45"/>
-          </svg>
-          {/* 냉장고 접지 2-layer 섀도우 */}
-          <div
-            className="absolute bottom-[22px] left-1/2 -translate-x-1/2 w-[48%] h-[6px] rounded-[50%]"
-            style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.55), rgba(0,0,0,0) 75%)', maxWidth: '330px' }}
-          />
-          <div
-            className="absolute bottom-[6px] left-1/2 -translate-x-1/2 w-[62%] h-[16px] rounded-[50%]"
-            style={{ background: 'radial-gradient(closest-side, rgba(0,0,0,0.4), rgba(0,0,0,0) 80%)', maxWidth: '440px' }}
-          />
-
-          {/* 팬던트 조명 — React state로 뷰포트 대응 */}
-          <div
-            className="absolute top-0"
-            style={{
-              ...(isDesktop ? { left: 'calc(50% + 290px)' } : { right: '10%' }),
-              width: 'clamp(40px, 8vw, 58px)',
-              filter: 'drop-shadow(1px 2px 3px rgba(0,0,0,0.35))',
-            }}
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 60 170" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="lampShadeG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#f2c868" />
-                  <stop offset="100%" stopColor="#a87230" />
-                </linearGradient>
-                <linearGradient id="lampShadeInnerG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3a2418" />
-                  <stop offset="100%" stopColor="#1a0d04" />
-                </linearGradient>
-                <radialGradient id="lampGlowG" cx="50%" cy="20%" r="80%">
-                  <stop offset="0%" stopColor="rgba(255,215,140,0.45)" />
-                  <stop offset="50%" stopColor="rgba(255,200,120,0.2)" />
-                  <stop offset="100%" stopColor="rgba(255,200,120,0)" />
-                </radialGradient>
-                <radialGradient id="lampBulbG" cx="50%" cy="45%" r="65%">
-                  <stop offset="0%" stopColor="#fffae0" />
-                  <stop offset="60%" stopColor="#ffe49a" />
-                  <stop offset="100%" stopColor="#f5b850" />
-                </radialGradient>
-              </defs>
-              {/* 발광 (뒤쪽) */}
-              <ellipse cx="30" cy="130" rx="40" ry="42" fill="url(#lampGlowG)" />
-              {/* 천장 부속 */}
-              <rect x="23" y="0" width="14" height="3.5" fill="#1a0d04" />
-              <rect x="25" y="3.5" width="10" height="1.8" fill="rgba(255,255,255,0.12)" />
-              {/* 코드 */}
-              <line x1="30" y1="5" x2="30" y2="82" stroke="#1a0d04" strokeWidth="1.6" />
-              {/* 연결 고리 */}
-              <rect x="27" y="80" width="6" height="4" rx="0.5" fill="#3a2418" stroke="#1a0d04" strokeWidth="0.8" />
-              {/* 쉐이드 종 모양 */}
-              <path
-                d="M 13,86 Q 8,106 16,120 L 44,120 Q 52,106 47,86 Z"
-                fill="url(#lampShadeG)"
-                stroke="#1a0d04"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-              {/* 쉐이드 상단 하이라이트 */}
-              <ellipse cx="30" cy="89" rx="14" ry="2.2" fill="rgba(255,255,255,0.3)" />
-              <path
-                d="M 15,92 Q 11,106 18,118"
-                fill="none"
-                stroke="rgba(255,245,200,0.35)"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-              />
-              {/* 쉐이드 하단 내부 그늘 */}
-              <path
-                d="M 16,120 L 44,120 L 42,122 L 18,122 Z"
-                fill="url(#lampShadeInnerG)"
-              />
-              {/* 전구 (쉐이드 아래로 살짝 보임) */}
-              <ellipse cx="30" cy="124" rx="8" ry="4.5" fill="url(#lampBulbG)" />
-              <ellipse cx="30" cy="124" rx="8" ry="4.5" fill="none" stroke="rgba(26,13,4,0.5)" strokeWidth="0.6" />
-              {/* 전구 반사 */}
-              <ellipse cx="27" cy="123" rx="2.5" ry="1.2" fill="rgba(255,255,255,0.6)" />
-            </svg>
-          </div>
-        </div>
+        {/* Scene backdrop 제거됨 — body bg-background-primary(#1a1a1a) 단색으로 노출.
+            냉장고 자체 디테일에만 집중. */}
 
         {/* 찬장(KitchenSVG) 제거 — viewport fit 우선. 상온 재료는 냉장고 본체 선반에 통합 분배.
             전체 재료 분류 확인은 헤더 ⋯ 또는 +N overflow → "재료 목록" 시트(FridgeAllSheet)에서. */}
@@ -872,7 +686,7 @@ export default function HomeClient({
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
               // 분배된 본체·도어·냉동 shelfItems + 통합 overflow를 상단 useMemo(fridgeShelfDistribution)에서 참조.
-              const { bodyShelfItems, doorShelfItems, freezerItems, totalOverflow } = fridgeShelfDistribution;
+              const { bodyShelfItems, freezerItems, totalOverflow } = fridgeShelfDistribution;
 
               // 렌더 helper — chip 버튼 하나
               const renderChip = (item: FridgeItem, compact = false) => {
@@ -935,36 +749,68 @@ export default function HomeClient({
                     );
                   })}
 
-                  {/* 도어 선반 4개 (좌·우 각 2개, 소스·음료 전용).
-                      overflow-hidden — chip이 도어 본체 밖으로 삐져나가는 현상 방지 */}
-                  {DOOR_SHELVES.map((shelf, idx) => {
-                    const list = doorShelfItems[idx];
-                    const visible = list.slice(0, shelfMax.door);
-                    return (
-                      <div
-                        key={`door-${idx}`}
-                        className="absolute flex flex-wrap items-end justify-center gap-0.5 overflow-hidden"
-                        style={{ left: shelf.left, width: shelf.width, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
-                      >
-                        {visible.map(item => renderChip(item, true))}
-                      </div>
-                    );
-                  })}
+                  {/* 도어 선반 데코는 FridgeSVG 내부에 SVG로 직접 렌더됨 (병·카톤 실루엣) */}
 
-                  {/* 통합 오버플로우 — 냉장 서랍 영역 위에 단일 배지로 표시.
-                      각 선반마다 +N 산발 대신, 서랍 = "추가 수납 공간" 메타포 활용.
-                      클릭 시 FridgeAllSheet 오픈 → 그룹별 전체 리스트. */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
-                    className="pointer-events-auto absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex items-center gap-1 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-[10px] md:text-xs font-bold shadow-lg shadow-accent-warm/50 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                    style={{ top: '54%' }}
-                    title={t.home.ingredientList}
-                    aria-label={t.home.ingredientList}
+                  {/* 전체 재료 목록 — 카툰 스타일 대롱대롱 효과.
+                      썸택(thumb-tack) → 노끈(rope) → 태그(tag).
+                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션. */}
+                  <div
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
+                    style={{ bottom: 'calc(100% - 2px)' }}
                   >
-                    <span>📋</span>
-                    <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
-                  </button>
+                    {/* SVG 썸택 + 노끈 — 카툰 outline */}
+                    <svg
+                      width="44"
+                      height="32"
+                      viewBox="0 0 44 32"
+                      style={{ overflow: 'visible', display: 'block' }}
+                      aria-hidden="true"
+                    >
+                      <defs>
+                        <radialGradient id="dangleTackG" cx="32%" cy="28%" r="72%">
+                          <stop offset="0%" stopColor="#fff5c0"/>
+                          <stop offset="45%" stopColor="#e0a830"/>
+                          <stop offset="100%" stopColor="#5a3208"/>
+                        </radialGradient>
+                        <linearGradient id="dangleRopeG" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#6a3a10"/>
+                          <stop offset="40%" stopColor="#a8731c"/>
+                          <stop offset="100%" stopColor="#5a2e08"/>
+                        </linearGradient>
+                      </defs>
+
+                      {/* 노끈 — 검정 outline + 컬러 fill + 꼬임 텍스처 */}
+                      <line x1="22" y1="9" x2="22" y2="32" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
+                      <line x1="22" y1="9" x2="22" y2="32" stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
+                      {/* 꼬임 detail — 짧은 사선들 */}
+                      <line x1="20.5" y1="13" x2="23.5" y2="15" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                      <line x1="20.5" y1="19" x2="23.5" y2="21" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                      <line x1="20.5" y1="25" x2="23.5" y2="27" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                      <line x1="21.5" y1="12" x2="21.5" y2="30" stroke="rgba(255,235,180,0.45)" strokeWidth="0.6" strokeLinecap="round"/>
+
+                      {/* 썸택 (thumb-tack) — 카툰 outline */}
+                      <circle cx="22" cy="7" r="7" fill="#000"/>
+                      <circle cx="22" cy="7" r="6" fill="url(#dangleTackG)"/>
+                      <ellipse cx="19.5" cy="4.5" rx="2.5" ry="1.8" fill="rgba(255,250,220,0.85)"/>
+                      <circle cx="22" cy="7" r="1.4" fill="#3a1f08" opacity="0.5"/>
+                    </svg>
+
+                    {/* 펜던트 태그 — bold black border + 하드 카툰 그림자 */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-accent-warm text-background-primary text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all"
+                      style={{
+                        border: '2px solid #000',
+                        boxShadow: '0 3px 0 #000, 0 6px 10px rgba(0,0,0,0.35)',
+                      }}
+                      title={t.home.ingredientList}
+                      aria-label={t.home.ingredientList}
+                    >
+                      <span className="text-sm md:text-base leading-none">📋</span>
+                      <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
+                    </button>
+                  </div>
                 </>
               );
             })()}

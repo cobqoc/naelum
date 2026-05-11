@@ -48,8 +48,7 @@ export const QUICK_ADD: QuickAddIngredient[] = [
   { name: '소금', emoji: '🧂', category: 'seasoning', storage: '상온' },
   { name: '후추', emoji: '⚫', category: 'seasoning', storage: '상온' },
 
-  // 기타 핵심 (4)
-  { name: '물', emoji: '💧', category: 'other', storage: '냉장' },
+  // 기타 핵심 (3)
   { name: '김치', emoji: '🥬', category: 'other', storage: '냉장' },
   { name: '밥', emoji: '🍚', category: 'grain', storage: '냉장' },
   { name: '김', emoji: '🌿', category: 'other', storage: '상온' },
