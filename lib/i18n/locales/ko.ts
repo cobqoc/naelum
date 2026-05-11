@@ -308,6 +308,9 @@ export const ko = {
     emptyAllTitle: '매칭되는 레시피가 없어요',
     emptyAllCta: '재료 등록하러 가기',
     resultCount: '{count}개 레시피',
+    signupCtaTitle: '맘에 드는 레시피 찾으셨나요?',
+    signupCtaDesc: '회원가입하면 레시피를 저장하고, 냉장고 재료를 관리하고, 다른 기기에서도 이어볼 수 있어요.',
+    signupCtaButton: '무료로 회원가입',
   },
   difficulty: {
     easy: '초급',

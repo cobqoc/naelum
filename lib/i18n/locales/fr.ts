@@ -308,6 +308,9 @@ export const fr = {
     emptyAllTitle: 'Aucune recette correspondante',
     emptyAllCta: 'Ajouter des ingrédients',
     resultCount: '{count} recettes',
+    signupCtaTitle: 'Vous avez trouvé une recette qui vous plaît ?',
+    signupCtaDesc: 'Inscrivez-vous pour sauvegarder vos recettes, gérer les ingrédients de votre frigo et y accéder sur tous vos appareils.',
+    signupCtaButton: 'S\'inscrire gratuitement',
   },
   difficulty: {
     easy: 'Facile',

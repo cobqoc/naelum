@@ -308,6 +308,9 @@ export const zh = {
     emptyAllTitle: '没有匹配的食谱',
     emptyAllCta: '添加食材',
     resultCount: '{count}个食谱',
+    signupCtaTitle: '找到喜欢的食谱了吗?',
+    signupCtaDesc: '注册后可以保存食谱、管理冰箱食材,在其他设备上继续查看。',
+    signupCtaButton: '免费注册',
   },
   difficulty: {
     easy: '初级',

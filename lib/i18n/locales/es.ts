@@ -308,6 +308,9 @@ export const es = {
     emptyAllTitle: 'No hay recetas coincidentes',
     emptyAllCta: 'Añadir ingredientes',
     resultCount: '{count} recetas',
+    signupCtaTitle: '¿Encontraste una receta que te guste?',
+    signupCtaDesc: 'Regístrate para guardar recetas, gestionar los ingredientes de tu nevera y acceder desde cualquier dispositivo.',
+    signupCtaButton: 'Regístrate gratis',
   },
   difficulty: {
     easy: 'Fácil',

@@ -308,6 +308,9 @@ export const ja = {
     emptyAllTitle: 'マッチするレシピがありません',
     emptyAllCta: '食材を登録しに行く',
     resultCount: '{count}件のレシピ',
+    signupCtaTitle: '気に入ったレシピは見つかりましたか?',
+    signupCtaDesc: '新規登録するとレシピを保存し、冷蔵庫の食材を管理し、他のデバイスでも続きを見られます。',
+    signupCtaButton: '無料で新規登録',
   },
   difficulty: {
     easy: '初級',
