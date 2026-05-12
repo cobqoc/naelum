@@ -550,25 +550,39 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* DEMO 모드 안내 — 정체성("예시 재료로 체험 중") + 회원가입 CTA를 한 줄 pill로 통합.
-          PC·모바일 동일 위치(검색바 아래·냉장고 위). 비로그인만 노출.
-          pill과 펜던트 사이 거리는 globals.css의 --fridge-reserved(모바일 200)가 fridge 크기를 축소해서 확보. */}
+      {/* DEMO pill (PC 전용 자연 flow) — 검색바 아래. solid orange + bold + 글로우 + 펄스로 강조. */}
       {!isAuthenticated && (
-        <div className="px-4 pb-1 md:pb-2 flex justify-center flex-shrink-0">
+        <div className="hidden md:flex px-4 pb-1 md:pb-2 justify-center flex-shrink-0">
           <Link
             href="/signup"
-            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-3 py-1 rounded-2xl md:rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[10px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all max-w-[calc(100vw-2rem)] md:max-w-none text-center leading-tight"
+            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-4 py-1.5 rounded-full bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all text-center leading-tight shadow-lg shadow-accent-warm/40 ring-1 ring-accent-warm/30"
+            style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
           >
-            <span className="text-xs" aria-hidden="true">✨</span>
+            <span className="text-base" aria-hidden="true">✨</span>
             <span>{t.home.demoBadge}</span>
-            <span className="text-text-muted hidden md:inline">—</span>
-            <span className="font-semibold">{t.home.demoCta}</span>
+            <span>—</span>
+            <span>{t.home.demoCta}</span>
           </Link>
         </div>
       )}
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 relative flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
+        {/* DEMO pill (모바일 전용 absolute) — fridge container 위쪽에 떠 있어 layout flow 영향 0.
+            solid orange + bold + 글로우 + 펄스로 강조. */}
+        {!isAuthenticated && (
+          <div className="md:hidden absolute top-2 left-4 right-4 z-30 flex justify-center pointer-events-none">
+            <Link
+              href="/signup"
+              className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-3 py-1.5 rounded-2xl bg-accent-warm text-background-primary text-[11px] font-bold hover:bg-accent-hover active:scale-95 transition-all max-w-full text-center leading-tight pointer-events-auto shadow-lg shadow-accent-warm/40 ring-1 ring-accent-warm/30"
+              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+            >
+              <span className="text-sm" aria-hidden="true">✨</span>
+              <span>{t.home.demoBadge}</span>
+              <span>{t.home.demoCta}</span>
+            </Link>
+          </div>
+        )}
         {/* Scene backdrop 제거됨 — body bg-background-primary(#1a1a1a) 단색으로 노출.
             냉장고 자체 디테일에만 집중. */}
 
