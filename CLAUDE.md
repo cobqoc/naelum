@@ -1044,13 +1044,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 **이 문서는 살아있는 문서입니다. 프로젝트 진행에 따라 지속적으로 업데이트됩니다.**
 
 **작성일**: 2026-02-02  
-**버전**: 1.1.0  
-**최종 수정일**: 2026-05-10  
+**버전**: 1.2.0  
+**최종 수정일**: 2026-05-13  
 **작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-05-10 기준)
+## 📌 데이터 현황 (2026-05-13 기준)
 
 ### 기능 구현 현황
 - **낼름함 (레시피 저장)** — 구현 완료
@@ -1059,7 +1059,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **재료 기반 레시피 추천** — 구현 완료 (2026-05-10)
   - `ingredient_id` FK 매칭(정확도 최우선) + 텍스트 매칭 fallback 하이브리드
   - `/recommendations?type=ingredients&mode=ready|almost|all` — 3가지 모드
-  - 홈 냉장고 → "🔥 X개 바로 가능" 버블 → `/recommendations` 연결
+  - 홈 냉장고 → "🔥 바로 만들 수 있는 레시피 N개" pill → `/recommendations` 연결
 - **냉장고 재료 등록 → 추천 플로우** — 구현 완료 (2026-05-10)
   - 재료 추가 시 `ingredient_id` (ingredients_master FK) DB 저장
   - 쇼핑 리스트 → 냉장고 추가 시도 ingredient_id 자동 조회 저장
@@ -1067,6 +1067,20 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **다국어 지원 (i18n)** — 전 페이지·컴포넌트 완료 (2026-05-10)
   - 8개 언어 (ko/en/ja/zh/es/fr/de/it) — `lib/i18n/locales/` 각 파일
   - `useI18n()` 훅 패턴으로 전 UI 처리. 하드코딩 문자열 없음
+- **비로그인 홈 UX 정비** — 완료 (2026-05-13)
+  - 헤더 구조 재정렬: ⋯ 메뉴 좌측(로고 옆), 우측은 [언어][로그인/가입]만 (`t.common.loginOrSignup`)
+  - 데모 영역 한 줄 pill 통합 — outlined orange + 펄스, `t.home.demoBadge`/`demoCta`로 정체성("예시 재료로 체험 중") + 가입 CTA 동시 노출
+  - 모바일 pill을 fridge container 안 absolute로 → fridge 크기 영향 없음 (모든 viewport overflow 0)
+  - 비로그인 시 펜던트(전체 재료 목록) hide → pill과 시각적 겹침 자체 제거
+  - 펜던트 cream/wood 톤 (`#f4d8a0` + dark brown) — 빈티지 명패, 노끈/썸택과 색감 통일
+  - 데모 칩 신선도 시각화 — 위험(빨강 tint+펄스) / 주의(노랑 tint) / 신선(흰)
+  - 데모 시드 v3: `LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v3'` — 냉동 칩에 닭고기 추가(20→21개)
+  - AddIngredientModal 비로그인 안내 배너 (`t.ingredient.signupBanner`) — 재료 추가 시 가입 후 저장 가능함을 모달 상단에 명시
+  - BottomNav 비로그인 프로필 슬롯 hide — 헤더 [로그인/가입]이 대체, 향후 아이콘 2개 슬롯 확보
+  - SearchBar 좌측 돋보기 제거 + placeholder("재료, 요리 검색...") 노출
+  - Footer i18n 적용 (`t.footer.copyright`) — 8개 locale
+  - 첫 방문 풍선 제거 — pill 자체로 인지 가능 (`firstVisitTip` 키·상수·코드 모두 정리)
+  - 키보드 접근성 — chip X 버튼에 `group-focus-within:opacity-100` 추가 (WCAG 2.1)
   - 신규 컴포넌트 작성 시 반드시 `useI18n()` 사용, 한글 하드코딩 금지
   - 네임스페이스: `common`, `auth`, `recipe`, `ingredient`, `comments`, `writeModal`, `tipForm`, `settings`, `nutrition`, `cart`, `cookMode`, `contact` 등
 
