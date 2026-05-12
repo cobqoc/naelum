@@ -345,6 +345,30 @@ select {
   animation: fridgePulse 1.5s ease-in-out infinite;
 }
 
+/* 대롱대롱 매달린 효과 — sine wave 진자 운동을 10개 keyframe으로 수동 plot.
+   왜 이렇게: keyframe 사이를 `linear`로 보간하므로 양 끝에서 인위적 감속이 사라지고
+   전체가 매끄러운 sine 곡선이 됨. cubic-bezier(easeInOutSine)는 keyframe boundary마다
+   감속을 다시 적용해서 "오른쪽으로 땡기고 왼쪽으로 땡기는" 끊김 느낌을 줬는데, 이 방식은 그 문제 해결.
+   angle(t) = -3° * cos(2π * t) — t=0에서 -3°, t=0.5에서 +3°, t=1에서 -3°로 복귀. */
+@keyframes naelum-dangle {
+  0%   { transform: rotate(-3deg);     }
+  10%  { transform: rotate(-2.43deg);  }
+  20%  { transform: rotate(-0.93deg);  }
+  30%  { transform: rotate(0.93deg);   }
+  40%  { transform: rotate(2.43deg);   }
+  50%  { transform: rotate(3deg);      }
+  60%  { transform: rotate(2.43deg);   }
+  70%  { transform: rotate(0.93deg);   }
+  80%  { transform: rotate(-0.93deg);  }
+  90%  { transform: rotate(-2.43deg);  }
+  100% { transform: rotate(-3deg);     }
+}
+.animate-dangle {
+  animation: naelum-dangle 2.4s linear infinite;
+  transform-origin: 50% 0%;
+  will-change: transform;
+}
+
 /* 홈 냉장고 말풍선 CTA — 살짝 bounce + shadow glow 반복 (주의 끌지만 과하지 않게) */
 @keyframes naelum-bubble-pulse {
   0%, 70%, 100% {

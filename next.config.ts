@@ -89,7 +89,8 @@ const nextConfig: NextConfig = {
       // Next.js는 hydration용 인라인 스크립트 필요 — nonce 미사용 시 unsafe-inline 불가피.
       // Cloudflare Web Analytics beacon은 static.cloudflareinsights.com에서 로드됨.
       // 'wasm-unsafe-eval': WebAssembly 컴파일 허용 (unsafe-eval보다 범위 좁음, WASM 전용)
-      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://static.cloudflareinsights.com",
+      // dev 모드: Turbopack HMR이 eval() 필요 → 'unsafe-eval' 추가 (prod에선 빠짐)
+      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://static.cloudflareinsights.com`,
       "style-src 'self' 'unsafe-inline'",
       // 이미지: Supabase Storage, Unsplash, Google 프로필 사진
       "img-src 'self' data: blob: https:",

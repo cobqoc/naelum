@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1600, height: 1600 }, deviceScaleFactor: 3 });
+await page.goto('http://localhost:3000/ko', { waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+const svg = await page.$('svg[viewBox="30 -5 540 670"]');
+if (!svg) process.exit(1);
+const b = await svg.boundingBox();
+await page.screenshot({ path: '/tmp/fridge-row1-zoom.png', clip: { x: b.x, y: b.y + b.height*0.13, width: b.width, height: b.height*0.10 } });
+await page.screenshot({ path: '/tmp/fridge-row2-zoom.png', clip: { x: b.x, y: b.y + b.height*0.28, width: b.width, height: b.height*0.10 } });
+await page.screenshot({ path: '/tmp/fridge-row3-zoom.png', clip: { x: b.x, y: b.y + b.height*0.495, width: b.width, height: b.height*0.10 } });
+console.log('rendered');
+await browser.close();
