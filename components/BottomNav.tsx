@@ -279,7 +279,6 @@ export default function BottomNav() {
                 onOpen={() => setShowUserMenu(true)}
                 onClose={() => setShowUserMenu(false)}
                 onLogout={handleLogout}
-                onShowContact={() => {}}
                 fromBottom
                 isActive={active}
               />
