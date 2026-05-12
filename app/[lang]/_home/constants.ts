@@ -9,10 +9,6 @@ export const RECOMMENDATIONS_FETCH_DEBOUNCE_MS = 500;
 // 추천 API limit — 홈에서 fetch하는 최대 레시피 수.
 export const RECOMMENDATIONS_LIMIT = 30;
 
-// 비로그인 첫 방문 툴팁 — 표시 delay, 자동 숨김까지 시간.
-export const FIRST_VISIT_TIP_SHOW_DELAY_MS = 900;
-export const FIRST_VISIT_TIP_AUTO_HIDE_MS = 8000;
-
 // 일반 토스트 자동 숨김.
 export const TOAST_AUTO_HIDE_MS = 2000;
 
@@ -23,7 +19,6 @@ export const DEMO_ADD_TOAST_MS = 6000;
 // v2: DEMO 시드 확장(14→20개, 한식 ready 3+개 매칭 보장)으로 기존 캐시 무효화.
 // v3: 냉동 칩에 닭고기 추가(20→21개) — 본체/냉동 시각 균형 개선. 이전 캐시 자동 만료.
 export const LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v3';
-export const LS_KEY_SEEN_HOME_TIP = 'naelum_seen_home_tip';
 export const LS_KEY_ONBOARDING_BANNER = (userId: string) => `naelum_onboarding_banner_${userId}`;
 
 // 카테고리별 예상 보관 기한 (일). expiry_date가 없을 때 urgencyScore/freshState가 fallback으로 사용.
