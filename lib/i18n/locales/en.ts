@@ -202,7 +202,7 @@ export const en = {
     baking: 'Baking',
   },
   search: {
-    searchPlaceholderFull: 'Search ingredients, recipes, cuisines...',
+    searchPlaceholderFull: 'Search ingredients, recipes...',
     searchPlaceholderSmall: 'Search...',
     searchButton: 'Search',
     recentSearches: 'Recent Searches',
@@ -670,7 +670,7 @@ export const en = {
     pillAriaSuffix: 'view recipes',
     ingredientList: 'All ingredients',
     ingredientListMore: '+{count} more',
-    demoTaglinePre: 'From your ingredients, see ',
+    demoTaglinePre: 'From your ingredients, find ',
     demoTaglineAccent: 'recipes you can make',
     demoTaglinePost: '',
     demoBadge: 'Trying it out',
@@ -1239,6 +1239,7 @@ export const en = {
     고추: 'Chili',
     콩나물: 'Bean sprouts',
     새우: 'Shrimp',
+    닭고기: 'Chicken',
     감자: 'Potato',
     양파: 'Onion',
     대파: 'Green onion',
@@ -1249,5 +1250,8 @@ export const en = {
     식용유: 'Cooking oil',
     소금: 'Salt',
     후추: 'Pepper',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. All rights reserved.',
   },
 }

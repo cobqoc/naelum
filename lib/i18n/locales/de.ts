@@ -202,7 +202,7 @@ export const de = {
     baking: 'Backen',
   },
   search: {
-    searchPlaceholderFull: 'Zutaten, Rezepte, Küchen suchen...',
+    searchPlaceholderFull: 'Zutaten, Rezepte suchen...',
     searchPlaceholderSmall: 'Suchen...',
     searchButton: 'Suchen',
     recentSearches: 'Letzte Suchen',
@@ -1240,6 +1240,7 @@ export const de = {
     고추: 'Chili',
     콩나물: 'Sojasprossen',
     새우: 'Garnele',
+    닭고기: 'Hähnchen',
     감자: 'Kartoffel',
     양파: 'Zwiebel',
     대파: 'Frühlingszwiebel',
@@ -1250,5 +1251,8 @@ export const de = {
     식용유: 'Speiseöl',
     소금: 'Salz',
     후추: 'Pfeffer',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. Alle Rechte vorbehalten.',
   },
 }

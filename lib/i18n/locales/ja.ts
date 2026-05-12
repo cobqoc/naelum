@@ -202,7 +202,7 @@ export const ja = {
     baking: 'ベーキング',
   },
   search: {
-    searchPlaceholderFull: '食材、レシピ、料理を検索...',
+    searchPlaceholderFull: '食材、レシピを検索...',
     searchPlaceholderSmall: '検索...',
     searchButton: '検索',
     recentSearches: '最近の検索',
@@ -673,7 +673,7 @@ export const ja = {
     ingredientListMore: '+{count}個もっと見る',
     demoTaglinePre: '冷蔵庫の食材で ',
     demoTaglineAccent: '作れる料理',
-    demoTaglinePost: ' を提案します',
+    demoTaglinePost: ' を見つけます',
     demoBadge: 'お試し中',
     demoCta: '新規登録して保存 →',
     navRecipes: 'レシピ',
@@ -1240,6 +1240,7 @@ export const ja = {
     고추: '唐辛子',
     콩나물: 'もやし',
     새우: 'エビ',
+    닭고기: '鶏肉',
     감자: 'じゃがいも',
     양파: '玉ねぎ',
     대파: '長ねぎ',
@@ -1250,5 +1251,8 @@ export const ja = {
     식용유: '食用油',
     소금: '塩',
     후추: 'こしょう',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. All rights reserved.',
   },
 }

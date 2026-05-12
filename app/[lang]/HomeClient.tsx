@@ -91,7 +91,8 @@ export default function HomeClient({
     const update = () => {
       const w = window.innerWidth;
       setIsDesktop(w >= 768);
-      if (w >= 1024) setShelfMax({ body: 8, pantry: 4, door: 3 });
+      // body=6: 데모 17개 기준 6+6+5로 본체 3단 균등 분배. 8로 두면 마지막 단이 비어 본체와 냉동실이 시각적으로 분리됨.
+      if (w >= 1024) setShelfMax({ body: 6, pantry: 4, door: 3 });
       else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
       else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
       else setShelfMax({ body: 4, pantry: 1, door: 2 });
@@ -549,11 +550,10 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 회원가입 CTA.
-          PC·모바일 동일 위치 노출 → 회원가입 진입점을 양쪽에 일관되게 제공.
-          기존 사용자는 /signup 페이지 내 "이미 계정이 있으신가요? 로그인" 링크로 1탭 추가 도달. */}
+      {/* DEMO 모드 라벨 (PC 전용) — 검색바 아래 위치.
+          모바일은 동일 컴포넌트를 fridge 아래(BottomNav 위)에 별도 렌더하여 상단 정보 압박 해소. */}
       {!isAuthenticated && (
-        <div className="px-4 pb-1 md:pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
+        <div className="hidden md:flex px-4 pb-1 md:pb-2 flex-col items-center gap-1.5 flex-shrink-0">
           <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
             {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
           </p>
@@ -880,6 +880,25 @@ export default function HomeClient({
         onAddIngredient={addIngredientFromModal}
       />
 
+
+      {/* DEMO 모드 라벨 (모바일 전용) — fridge 아래·BottomNav 위 위치.
+          PC는 상단 검색바 아래에 별도 렌더. 상단 정보 압박 해소 + 회원가입 CTA를 BottomNav 인접에 두어 발견성 유지. */}
+      {!isAuthenticated && (
+        <div className="md:hidden px-4 pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
+          <p className="text-[11px] text-text-muted text-center leading-tight">
+            {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
+          </p>
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
+          >
+            <span className="text-xs" aria-hidden="true">✨</span>
+            <span>{t.home.demoBadge}</span>
+            <span className="text-text-muted">·</span>
+            <span className="font-semibold">{t.home.demoCta}</span>
+          </Link>
+        </div>
+      )}
 
       <BottomNav />
 

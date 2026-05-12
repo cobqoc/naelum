@@ -202,7 +202,7 @@ export const fr = {
     baking: 'Pâtisserie',
   },
   search: {
-    searchPlaceholderFull: 'Rechercher ingrédients, recettes, cuisines...',
+    searchPlaceholderFull: 'Rechercher ingrédients, recettes...',
     searchPlaceholderSmall: 'Rechercher...',
     searchButton: 'Rechercher',
     recentSearches: 'Recherches récentes',
@@ -1240,6 +1240,7 @@ export const fr = {
     고추: 'Piment',
     콩나물: 'Pousses de soja',
     새우: 'Crevette',
+    닭고기: 'Poulet',
     감자: 'Pomme de terre',
     양파: 'Oignon',
     대파: 'Oignon vert',
@@ -1250,5 +1251,8 @@ export const fr = {
     식용유: 'Huile de cuisine',
     소금: 'Sel',
     후추: 'Poivre',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. Tous droits réservés.',
   },
 }

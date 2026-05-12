@@ -202,7 +202,7 @@ export const zh = {
     baking: '烘焙',
   },
   search: {
-    searchPlaceholderFull: '搜索食材、食谱、菜系...',
+    searchPlaceholderFull: '搜索食材、食谱...',
     searchPlaceholderSmall: '搜索...',
     searchButton: '搜索',
     recentSearches: '最近搜索',
@@ -671,7 +671,7 @@ export const zh = {
     pillAriaSuffix: '查看食谱',
     ingredientList: '全部食材清单',
     ingredientListMore: '+{count} 个更多',
-    demoTaglinePre: '用冰箱食材，推荐 ',
+    demoTaglinePre: '用冰箱食材，找出 ',
     demoTaglineAccent: '可以做的菜',
     demoTaglinePost: '',
     demoBadge: '试用中',
@@ -1240,6 +1240,7 @@ export const zh = {
     고추: '辣椒',
     콩나물: '豆芽',
     새우: '虾',
+    닭고기: '鸡肉',
     감자: '土豆',
     양파: '洋葱',
     대파: '葱',
@@ -1250,5 +1251,8 @@ export const zh = {
     식용유: '食用油',
     소금: '盐',
     후추: '胡椒',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. 保留所有权利。',
   },
 }

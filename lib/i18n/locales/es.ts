@@ -202,7 +202,7 @@ export const es = {
     baking: 'Repostería',
   },
   search: {
-    searchPlaceholderFull: 'Buscar ingredientes, recetas, cocinas...',
+    searchPlaceholderFull: 'Buscar ingredientes, recetas...',
     searchPlaceholderSmall: 'Buscar...',
     searchButton: 'Buscar',
     recentSearches: 'Búsquedas recientes',
@@ -1240,6 +1240,7 @@ export const es = {
     고추: 'Chile',
     콩나물: 'Brotes de soja',
     새우: 'Camarón',
+    닭고기: 'Pollo',
     감자: 'Patata',
     양파: 'Cebolla',
     대파: 'Cebolleta',
@@ -1250,5 +1251,8 @@ export const es = {
     식용유: 'Aceite de cocina',
     소금: 'Sal',
     후추: 'Pimienta',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. Todos los derechos reservados.',
   },
 }

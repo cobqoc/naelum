@@ -202,7 +202,7 @@ export const it = {
     baking: 'Pasticceria',
   },
   search: {
-    searchPlaceholderFull: 'Cerca ingredienti, ricette, cucine...',
+    searchPlaceholderFull: 'Cerca ingredienti, ricette...',
     searchPlaceholderSmall: 'Cerca...',
     searchButton: 'Cerca',
     recentSearches: 'Ricerche recenti',
@@ -1240,6 +1240,7 @@ export const it = {
     고추: 'Peperoncino',
     콩나물: 'Germogli di soia',
     새우: 'Gambero',
+    닭고기: 'Pollo',
     감자: 'Patata',
     양파: 'Cipolla',
     대파: 'Cipollotto',
@@ -1250,5 +1251,8 @@ export const it = {
     식용유: 'Olio da cucina',
     소금: 'Sale',
     후추: 'Pepe',
+  },
+  footer: {
+    copyright: '© 2026 Naelum. Tutti i diritti riservati.',
   },
 }

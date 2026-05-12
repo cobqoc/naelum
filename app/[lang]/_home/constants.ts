@@ -21,7 +21,8 @@ export const DEMO_ADD_TOAST_MS = 6000;
 
 // localStorage 키 — 홈 관련 상태 persist.
 // v2: DEMO 시드 확장(14→20개, 한식 ready 3+개 매칭 보장)으로 기존 캐시 무효화.
-export const LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v2';
+// v3: 냉동 칩에 닭고기 추가(20→21개) — 본체/냉동 시각 균형 개선. 이전 캐시 자동 만료.
+export const LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v3';
 export const LS_KEY_SEEN_HOME_TIP = 'naelum_seen_home_tip';
 export const LS_KEY_ONBOARDING_BANNER = (userId: string) => `naelum_onboarding_banner_${userId}`;
 

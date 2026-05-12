@@ -202,7 +202,7 @@ export const ko = {
     baking: '베이킹',
   },
   search: {
-    searchPlaceholderFull: '재료, 요리, 국가 검색...',
+    searchPlaceholderFull: '재료, 요리 검색...',
     searchPlaceholderSmall: '검색...',
     searchButton: '검색',
     recentSearches: '최근 검색어',
@@ -673,7 +673,7 @@ export const ko = {
     ingredientListMore: '+{count}개 더 보기',
     demoTaglinePre: '냉장고 재료로 ',
     demoTaglineAccent: '만들 수 있는 요리',
-    demoTaglinePost: ' 알려줘요',
+    demoTaglinePost: ' 찾아줘요',
     demoBadge: '체험 중',
     demoCta: '회원가입하고 저장 →',
     navRecipes: '레시피',
@@ -1242,6 +1242,7 @@ export const ko = {
     고추: '고추',
     콩나물: '콩나물',
     새우: '새우',
+    닭고기: '닭고기',
     감자: '감자',
     양파: '양파',
     대파: '대파',
@@ -1252,5 +1253,9 @@ export const ko = {
     식용유: '식용유',
     소금: '소금',
     후추: '후추',
+  },
+  // 푸터 — /about, /tip, /recipes 등 콘텐츠 페이지 하단. 약관·개인정보·저작권 링크는 t.meta.* 재활용.
+  footer: {
+    copyright: '© 2026 낼름 (Naelum). 모든 권리 보유.',
   },
 }

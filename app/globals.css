@@ -5,7 +5,8 @@
    * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
    * reserved 측정:
    *   - 모바일(<md): header(56) + 데모배지(~30) + BottomNav(60) + 여유(~14) = 160
-   *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크 영역(~140) + 데모배지(~30) = 250
+   *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크(~140) + 데모배지(~30) + viewport fit 여유(~70) = 320
+   *     (250 → 320으로 상향: 1280×900·1024×768에서 스크롤 제거 + 위/아래 도어 간격 축소)
    * max:
    *   - 모바일: 480 (대부분 viewport 폭이 더 작아 height식이 작동)
    *   - 태블릿: 640
@@ -771,13 +772,13 @@ select {
  * 모바일 default + 태블릿 + 큰 데스크탑 단계로 reserved/max 키움. */
 @media (min-width: 768px) {
   :root {
-    --fridge-reserved: 250px;
+    --fridge-reserved: 320px;
     --fridge-max: 640px;
   }
 }
 @media (min-width: 1280px) {
   :root {
-    --fridge-reserved: 250px;
+    --fridge-reserved: 320px;
     --fridge-max: 720px;
   }
 }
