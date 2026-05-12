@@ -550,20 +550,17 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* DEMO 모드 라벨 (PC 전용) — 검색바 아래 위치.
-          모바일은 동일 컴포넌트를 fridge 아래(BottomNav 위)에 별도 렌더하여 상단 정보 압박 해소. */}
+      {/* DEMO 모드 안내 — 정체성("예시 재료로 체험 중") + 회원가입 CTA를 한 줄 pill로 통합.
+          PC·모바일 동일 위치(검색바 아래·냉장고 위). 비로그인만 노출. */}
       {!isAuthenticated && (
-        <div className="hidden md:flex px-4 pb-1 md:pb-2 flex-col items-center gap-1.5 flex-shrink-0">
-          <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
-            {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
-          </p>
+        <div className="px-4 pb-1 md:pb-2 flex justify-center flex-shrink-0">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
+            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-3 py-1 rounded-2xl md:rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[10px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all max-w-[calc(100vw-2rem)] md:max-w-none text-center leading-tight"
           >
             <span className="text-xs" aria-hidden="true">✨</span>
             <span>{t.home.demoBadge}</span>
-            <span className="text-text-muted">·</span>
+            <span className="text-text-muted hidden md:inline">—</span>
             <span className="font-semibold">{t.home.demoCta}</span>
           </Link>
         </div>
@@ -880,25 +877,6 @@ export default function HomeClient({
         onAddIngredient={addIngredientFromModal}
       />
 
-
-      {/* DEMO 모드 라벨 (모바일 전용) — fridge 아래·BottomNav 위 위치.
-          PC는 상단 검색바 아래에 별도 렌더. 상단 정보 압박 해소 + 회원가입 CTA를 BottomNav 인접에 두어 발견성 유지. */}
-      {!isAuthenticated && (
-        <div className="md:hidden px-4 pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
-          <p className="text-[11px] text-text-muted text-center leading-tight">
-            {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
-          </p>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
-          >
-            <span className="text-xs" aria-hidden="true">✨</span>
-            <span>{t.home.demoBadge}</span>
-            <span className="text-text-muted">·</span>
-            <span className="font-semibold">{t.home.demoCta}</span>
-          </Link>
-        </div>
-      )}
 
       <BottomNav />
 
