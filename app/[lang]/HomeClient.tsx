@@ -751,7 +751,9 @@ export default function HomeClient({
 
                   {/* 전체 재료 목록 — 카툰 스타일 대롱대롱 효과.
                       썸택(thumb-tack) → 노끈(rope) → 태그(tag).
-                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션. */}
+                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션.
+                      비로그인은 데모 재료라 전체 목록 진입 필요성 낮음 + pill과 시각적 겹침 방지로 hide. */}
+                  {isAuthenticated && (
                   <div
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
                     style={{ bottom: 'calc(100% - 2px)' }}
@@ -809,6 +811,7 @@ export default function HomeClient({
                       <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
                     </button>
                   </div>
+                  )}
                 </>
               );
             })()}
