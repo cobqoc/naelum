@@ -31,8 +31,8 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-05-10 기준)
-- `recipes`: 2,507개 (published, 농사로·MAFF·공공데이터 포함)
+### dev DB 현황 (2026-05-13 기준)
+- `recipes`: 100개 (published; MAFF 2,050개 2026-05-13 삭제됨)
 - `ingredients_master`: 1,953개
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
@@ -1169,39 +1169,34 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ---
 
 ### 레시피 DB
-- **prod: 3,493개** (published 1,408 + draft 2,050 + private 35) / **dev: 2,150개** (published)
-- 최종 수정일: 2026-05-11 (인삼레시피 100개 + 종가음식 257개 dev+prod 삭제)
+- **prod: 1,443개** (published 1,408 + private 35) / **dev: 100개** (published)
+- 최종 수정일: 2026-05-13 (MAFF 일본 향토요리 2,050개 dev+prod 전량 삭제)
 
-#### 출처별 구성 (2026-05-10 기준)
+#### 출처별 구성 (2026-05-13 기준)
 | 출처 | 건수 | 상태 | 라이선스 | 임포트 스크립트 | 조건 |
 |------|------|------|----------|----------------|------|
 | 식품의약품안전처 (COOKRCP01) | ~1,146개 | published | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
 | 농림수산식품교육문화정보원 | 537개 | published | 공공누리 1유형 | `scripts/import-mafra-recipes.ts` | 출처 표시, 태그: `농림수산식품교육문화정보원` |
 | 한식진흥원 아카이브 | ~70개 | draft | 공공누리 | `scripts/import-hansik-recipes.ts` | 출처 표시 |
-| 농림수산성 うちの郷土料理 (MAFF) | 2,050개 | **draft** (번역 완료, 비공개 대기 중) | PDL1.0 | `scripts/import-maff-recipes.ts` | 출처 표시, 태그: `農林水産省うちの郷土料理` |
+| ~~농림수산성 うちの郷土料理 (MAFF)~~ | ~~2,050개~~ | 🚫 **2026-05-13 전량 삭제** | ~~PDL1.0~~ | — | 재임포트 금지 |
 
 > **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
 > 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
 
-#### MAFF 번역 완료 현황 (2026-05-10 기준)
-- **dev DB**: `recipe_ingredients` 일본어 잔존 **0개** ✅ (ING_MAP v3~v6 블록 + Gemini 번역)
-- **prod DB**: 일본어 잔존 **0개** ✅ — 번역 완료, **현재 draft 비공개 상태**
-- **ING_MAP 사전 이력**: v3~v6 블록 추가 (dict-only로 2,270→0개 처리)
+#### 🚫 MAFF 레시피 폐기 (2026-05-13)
 
-#### MAFF 레시피 재임포트 명령어 (전체 재임포트 필요 시)
-```bash
-# 1단계: 번역 JSON 생성
-npx tsx scripts/translate-maff-batch.ts 0 1365
+사용자 요청으로 농림수산성(MAFF) 일본 향토요리 2,050개를 **dev+prod 전량 삭제**. **재임포트 금지** — 일본 레시피는 서비스에서 제외.
 
-# 2단계: Dev 임포트
-npx tsx scripts/import-maff-recipes.ts
-
-# 3단계: Prod 임포트 (키는 .env.local의 PROD_SUPABASE_SERVICE_ROLE_KEY)
-NEXT_PUBLIC_SUPABASE_URL=https://rgnlgpfazxgwsnkgrhzs.supabase.co \
-SUPABASE_SERVICE_ROLE_KEY=$(grep PROD_SUPABASE_SERVICE_ROLE_KEY .env.local | tr -d ' ' | cut -d= -f2) \
-AUTHOR_ID=0132b4d2-5a56-4687-9d34-e1965b565be0 \
-npx tsx scripts/import-maff-recipes.ts
+**삭제 SQL** (참고용):
+```sql
+DELETE FROM recipes WHERE source_url ILIKE '%maff.go.jp%';
 ```
+CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모든 연관 데이터 자동 정리됨 (meal_plan_items·notifications·shopping_list_items은 SET NULL).
+
+**보관 중인 스크립트** (실행 금지):
+- `scripts/import-maff-recipes.ts` — 임포트 스크립트
+- `scripts/translate-maff-batch.ts` — Gemini 일괄 번역
+- `scripts/translate-maff-ingredients-db.ts` — DB 재료 번역 (ING_MAP v3~v6 사전 블록 포함)
 
 ### 재료 DB
 - **prod: 2,126개** / **dev: 958개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 976개 + 노이즈/토막 19개 정리, prod에서 노이즈 15개 정리)
