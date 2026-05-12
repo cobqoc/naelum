@@ -30,7 +30,6 @@ interface UserDropdownProps {
   onOpen: () => void;
   onClose: () => void;
   onLogout: () => void;
-  onShowContact: () => void;
   /** 모바일 하단 네비바에서 사용할 때 true — 버튼을 nav탭 스타일로, 패널을 화면 하단에서 위로 표시 */
   fromBottom?: boolean;
   /** fromBottom 모드에서의 active 상태 */
@@ -38,7 +37,7 @@ interface UserDropdownProps {
 }
 
 export default function UserDropdown({
-  user, profile, isOpen, onOpen, onClose, onLogout, onShowContact, fromBottom = false, isActive = false,
+  user, profile, isOpen, onOpen, onClose, onLogout, fromBottom = false, isActive = false,
 }: UserDropdownProps) {
   const { t, language, setLanguage } = useI18n();
   const { theme, setTheme } = useTheme();
@@ -174,12 +173,6 @@ export default function UserDropdown({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => { onShowContact(); handleClose(); }}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors w-full text-left"
-                >
-                  <span>✉️</span> 개발자에게 문의
-                </button>
                 <button
                   onClick={() => { handleClose(); onLogout(); }}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors w-full text-left text-error"
@@ -330,13 +323,6 @@ export default function UserDropdown({
                   ))}
                 </div>
               </div>
-
-              <button
-                onClick={() => { onShowContact(); handleClose(); }}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/5 transition-colors w-full text-left"
-              >
-                <span>✉️</span> 개발자에게 문의
-              </button>
 
               <button
                 onClick={() => { handleClose(); onLogout(); }}

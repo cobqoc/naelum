@@ -112,7 +112,6 @@ export default function Header() {
                     onOpen={() => { closeAll(); setShowDropdown(true); }}
                     onClose={() => setShowDropdown(false)}
                     onLogout={handleLogout}
-                    onShowContact={() => setShowContactModal(true)}
                   />
                 </div>
               </>
@@ -178,10 +177,10 @@ export default function Header() {
                 aria-expanded={showMoreMenu}
                 aria-haspopup="true"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-text-secondary">
-                  <circle cx="5" cy="12" r="2" />
-                  <circle cx="12" cy="12" r="2" />
-                  <circle cx="19" cy="12" r="2" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
                 </svg>
               </button>
               {showMoreMenu && (
