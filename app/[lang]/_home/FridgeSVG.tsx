@@ -222,10 +222,7 @@ export default function FridgeSVG() {
       <rect x="29" y="30" width="5" height="340" fill="rgba(0,0,0,0.35)" pointerEvents="none"/>
       {/* 개구부 쪽 edge highlight (문 안쪽 모서리) */}
       <rect x="149" y="38" width="2.5" height="335" fill="rgba(255,250,230,0.4)" pointerEvents="none"/>
-      {/* 문 수직 브러시 라인 (페인트 질감) */}
-      <line x1="55" y1="30" x2="56" y2="370" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5"/>
-      <line x1="100" y1="34" x2="101" y2="370" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5"/>
-      <line x1="130" y1="36" x2="131" y2="372" stroke="rgba(255,220,180,0.08)" strokeWidth="0.5"/>
+      {/* 문 수직 브러시 라인 제거됨 */}
 
 
       <path d="M 14,22 L 15,19 L 29,19 L 28,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
@@ -331,9 +328,7 @@ export default function FridgeSVG() {
 
 <rect x="166" y="14" width="268" height="615" rx="6" fill="url(#bodyG)" />
       {/* 본체 프런트 specular/shading 오버레이 제거 */}
-      {/* 미세한 수직 브러시 스트릭 (페인트 질감) */}
-      <line x1="230" y1="20" x2="230" y2="624" stroke="rgba(255,220,180,0.08)" strokeWidth="0.8"/>
-      <line x1="380" y1="20" x2="380" y2="624" stroke="rgba(0,0,0,0.12)" strokeWidth="0.7"/>
+      {/* 수직 브러시 스트릭 제거됨 */}
 
       <rect x="166" y="14" width="2.5" height="615" fill="#000" />
       <rect x="431.5" y="14" width="2.5" height="615" fill="#000" />
@@ -486,10 +481,7 @@ export default function FridgeSVG() {
       <rect x="566" y="30" width="5" height="340" fill="rgba(0,0,0,0.35)" pointerEvents="none"/>
       {/* 개구부 쪽 (좌) edge highlight */}
       <rect x="448" y="38" width="2.5" height="335" fill="rgba(255,250,230,0.4)" pointerEvents="none"/>
-      {/* 문 수직 브러시 라인 */}
-      <line x1="475" y1="30" x2="475" y2="370" stroke="rgba(255,220,180,0.08)" strokeWidth="0.5"/>
-      <line x1="510" y1="32" x2="510" y2="370" stroke="rgba(0,0,0,0.08)" strokeWidth="0.5"/>
-      <line x1="540" y1="32" x2="540" y2="372" stroke="rgba(0,0,0,0.12)" strokeWidth="0.5"/>
+      {/* 문 수직 브러시 라인 제거됨 */}
 
 
       <path d="M 572,22 L 571,19 L 585,19 L 586,22 Z" fill="url(#railTopG)" stroke="#000" strokeWidth="4" strokeLinejoin="round" />
