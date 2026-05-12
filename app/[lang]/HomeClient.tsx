@@ -551,7 +551,8 @@ export default function HomeClient({
       </div>
 
       {/* DEMO 모드 안내 — 정체성("예시 재료로 체험 중") + 회원가입 CTA를 한 줄 pill로 통합.
-          PC·모바일 동일 위치(검색바 아래·냉장고 위). 비로그인만 노출. */}
+          PC·모바일 동일 위치(검색바 아래·냉장고 위). 비로그인만 노출.
+          pill과 펜던트 사이 거리는 globals.css의 --fridge-reserved(모바일 200)가 fridge 크기를 축소해서 확보. */}
       {!isAuthenticated && (
         <div className="px-4 pb-1 md:pb-2 flex justify-center flex-shrink-0">
           <Link

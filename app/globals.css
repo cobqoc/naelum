@@ -4,7 +4,8 @@
   /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
    * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
    * reserved 측정:
-   *   - 모바일(<md): header(56) + 데모배지(~30) + BottomNav(60) + 여유(~14) = 160
+   *   - 모바일(<md): header(56) + pill(30) + 펜던트 간격(36+a) + BottomNav(60) + 여유(~14) = 200
+   *     (160 → 200으로 상향: pill 바로 아래 펜던트 매달림과의 시각적 겹침 방지)
    *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크(~140) + 데모배지(~30) + viewport fit 여유(~70) = 320
    *     (250 → 320으로 상향: 1280×900·1024×768에서 스크롤 제거 + 위/아래 도어 간격 축소)
    * max:
@@ -12,7 +13,7 @@
    *   - 태블릿: 640
    *   - 큰 데스크탑(xl+): 720 (1080p+ 모니터에서 시원하게)
    */
-  --fridge-reserved: 160px;
+  --fridge-reserved: 200px;
   --fridge-max: 480px;
 
   /* Primary Colors */
