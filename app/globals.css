@@ -1,6 +1,19 @@
 @import "tailwindcss";
 
 :root {
+  /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
+   * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
+   * reserved 측정:
+   *   - 모바일(<md): header(56) + 데모배지(~30) + BottomNav(60) + 여유(~14) = 160
+   *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크 영역(~140) + 데모배지(~30) = 250
+   * max:
+   *   - 모바일: 480 (대부분 viewport 폭이 더 작아 height식이 작동)
+   *   - 태블릿: 640
+   *   - 큰 데스크탑(xl+): 720 (1080p+ 모니터에서 시원하게)
+   */
+  --fridge-reserved: 160px;
+  --fridge-max: 480px;
+
   /* Primary Colors */
   --background-primary: #1a1a1a;
   --background-secondary: #2d2d2d;
@@ -330,6 +343,30 @@ select {
 
 .animate-fridge-pulse {
   animation: fridgePulse 1.5s ease-in-out infinite;
+}
+
+/* 대롱대롱 매달린 효과 — sine wave 진자 운동을 10개 keyframe으로 수동 plot.
+   왜 이렇게: keyframe 사이를 `linear`로 보간하므로 양 끝에서 인위적 감속이 사라지고
+   전체가 매끄러운 sine 곡선이 됨. cubic-bezier(easeInOutSine)는 keyframe boundary마다
+   감속을 다시 적용해서 "오른쪽으로 땡기고 왼쪽으로 땡기는" 끊김 느낌을 줬는데, 이 방식은 그 문제 해결.
+   angle(t) = -3° * cos(2π * t) — t=0에서 -3°, t=0.5에서 +3°, t=1에서 -3°로 복귀. */
+@keyframes naelum-dangle {
+  0%   { transform: rotate(-3deg);     }
+  10%  { transform: rotate(-2.43deg);  }
+  20%  { transform: rotate(-0.93deg);  }
+  30%  { transform: rotate(0.93deg);   }
+  40%  { transform: rotate(2.43deg);   }
+  50%  { transform: rotate(3deg);      }
+  60%  { transform: rotate(2.43deg);   }
+  70%  { transform: rotate(0.93deg);   }
+  80%  { transform: rotate(-0.93deg);  }
+  90%  { transform: rotate(-2.43deg);  }
+  100% { transform: rotate(-3deg);     }
+}
+.animate-dangle {
+  animation: naelum-dangle 2.4s linear infinite;
+  transform-origin: 50% 0%;
+  will-change: transform;
 }
 
 /* 홈 냉장고 말풍선 CTA — 살짝 bounce + shadow glow 반복 (주의 끌지만 과하지 않게) */
@@ -729,3 +766,19 @@ select {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* 홈 냉장고 viewport별 반응형 fit — 위 :root에서 정의된 변수 override.
+ * 모바일 default + 태블릿 + 큰 데스크탑 단계로 reserved/max 키움. */
+@media (min-width: 768px) {
+  :root {
+    --fridge-reserved: 250px;
+    --fridge-max: 640px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --fridge-reserved: 250px;
+    --fridge-max: 720px;
+  }
+}
+

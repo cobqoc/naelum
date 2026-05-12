@@ -92,6 +92,15 @@ const INGREDIENT_SYNONYMS: Record<string, string[]> = {
   '깨': ['참깨', '통깨', '깨소금'],
 }
 
+// 보편 재료 — 수돗물처럼 누구나 항상 갖고 있는 것으로 가정.
+// 매칭에서 제외해서 ready/missing 계산을 왜곡하지 않도록 처리.
+const FUNDAMENTAL_INGREDIENTS = new Set(['물', '생수', '식수', 'water'])
+
+function isFundamental(name: string): boolean {
+  const n = name.toLowerCase().trim()
+  return FUNDAMENTAL_INGREDIENTS.has(n)
+}
+
 function isIngredientMatch(userIng: string, recipeIng: string): boolean {
   const a = userIng.toLowerCase().trim()
   const b = recipeIng.toLowerCase().trim()
@@ -266,7 +275,9 @@ export async function GET(request: NextRequest) {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
-          const recipeIngredientsList: { ingredient_name: string; ingredient_id?: string | null }[] = recipe.ingredients || []
+          // 보편 재료(물 등)는 매칭 계산에서 제외 — 항상 가졌다고 가정.
+          const recipeIngredientsList: { ingredient_name: string; ingredient_id?: string | null }[] =
+            (recipe.ingredients || []).filter((ri: { ingredient_name: string }) => !isFundamental(ri.ingredient_name))
           const matchedIngredients = recipeIngredientsList.filter(ri => {
             // ingredient_id FK 매칭 (정확도 최우선)
             if (ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) return true

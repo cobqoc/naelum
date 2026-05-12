@@ -2,9 +2,9 @@ import { addDaysISO } from './helpers';
 import type { FridgeItem } from './types';
 
 /**
- * DEMO 재료 — 비로그인 체험용. 20개 균형:
+ * DEMO 재료 — 비로그인 체험용. 19개 균형:
  *   - 2개 D-day 경고(돼지고기 위험·두부 주의) — 신선도 UX 시연
- *   - 나머지 18개는 깨끗한 신선 상태 (첫인상 부담 최소화)
+ *   - 나머지 17개는 깨끗한 신선 상태 (첫인상 부담 최소화)
  *   - 이 셋으로 prod 한식 ready(100% 매칭) 3개+ 보장: 새우죽 / 당근잎 감자전 / 시원한 콩나물국
  *   - 추가 한식: 뚝배기 계란찜·고추부각 등 almost 다수 매칭
  */
@@ -18,8 +18,6 @@ export const DEMO: FridgeItem[] = [
   { id:'d6', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   { id:'d7', ingredient_name:'고추',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   { id:'d8', ingredient_name:'콩나물',   category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  // === 냉장 (도어, 1) — 음료/소스 칸 ===
-  { id:'d9', ingredient_name:'물',       category:'other',   expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   // === 냉동 (1) ===
   { id:'d10', ingredient_name:'새우',    category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-2) },
   // === 상온 (10) ===
