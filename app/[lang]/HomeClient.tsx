@@ -21,12 +21,9 @@ import {
   DELETE_UNDO_WINDOW_MS,
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
   RECOMMENDATIONS_LIMIT,
-  FIRST_VISIT_TIP_SHOW_DELAY_MS,
-  FIRST_VISIT_TIP_AUTO_HIDE_MS,
   TOAST_AUTO_HIDE_MS,
   DEMO_ADD_TOAST_MS,
   LS_KEY_DEMO_ITEMS,
-  LS_KEY_SEEN_HOME_TIP,
   LS_KEY_ONBOARDING_BANNER,
   LONG_PRESS_MS,
   SHELF_LEFT,
@@ -91,7 +88,8 @@ export default function HomeClient({
     const update = () => {
       const w = window.innerWidth;
       setIsDesktop(w >= 768);
-      if (w >= 1024) setShelfMax({ body: 8, pantry: 4, door: 3 });
+      // body=6: 데모 17개 기준 6+6+5로 본체 3단 균등 분배. 8로 두면 마지막 단이 비어 본체와 냉동실이 시각적으로 분리됨.
+      if (w >= 1024) setShelfMax({ body: 6, pantry: 4, door: 3 });
       else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
       else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
       else setShelfMax({ body: 4, pantry: 1, door: 2 });
@@ -149,7 +147,6 @@ export default function HomeClient({
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [showFirstVisitTip, setShowFirstVisitTip] = useState(false);
   // 클라이언트 hydration 후엔 useAuth의 profile을, SSR 초기 HTML에선 initialUsername을 사용.
   const currentUsername = profile?.username ?? initialUsername;
   const hasTempUsername = !!currentUsername && /^user_[a-f0-9]{12}$/.test(currentUsername);
@@ -177,29 +174,6 @@ export default function HomeClient({
     window.addEventListener('toggle-fridge-search', handler);
     return () => window.removeEventListener('toggle-fridge-search', handler);
   }, []);
-
-  // 비로그인 첫방문 가이드 툴팁 — "바로 가능 X개" pill을 알려주는 1회용 말풍선
-  useEffect(() => {
-    if (isAuthenticated) return;
-    // 쿠키 배너 노출 중에는 가이드 툴팁을 띄우지 않음 — 정보 과부하 + 시각적 겹침 방지.
-    // 사용자가 쿠키 동의(또는 거부)로 배너를 닫으면 그때부터 SHOW_DELAY 후 가이드 노출.
-    if (cookieBannerVisible) return;
-    try {
-      const seen = localStorage.getItem(LS_KEY_SEEN_HOME_TIP);
-      if (seen) return;
-    } catch { return; }
-    const showTimer = setTimeout(() => setShowFirstVisitTip(true), FIRST_VISIT_TIP_SHOW_DELAY_MS);
-    const hideTimer = setTimeout(() => {
-      setShowFirstVisitTip(false);
-      try { localStorage.setItem(LS_KEY_SEEN_HOME_TIP, '1'); } catch {}
-    }, FIRST_VISIT_TIP_AUTO_HIDE_MS);
-    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, [isAuthenticated, cookieBannerVisible]);
-
-  const dismissFirstVisitTip = () => {
-    setShowFirstVisitTip(false);
-    try { localStorage.setItem(LS_KEY_SEEN_HOME_TIP, '1'); } catch {}
-  };
 
   // ESC 키로 모바일 검색 닫기
   useEscapeKey(() => setShowMobileSearch(false), showMobileSearch);
@@ -549,28 +523,40 @@ export default function HomeClient({
         </div>
       </div>
 
-      {/* DEMO 모드 라벨 — 비로그인 사용자에게만 노출. 앱 가치 제안 + 회원가입 CTA.
-          PC·모바일 동일 위치 노출 → 회원가입 진입점을 양쪽에 일관되게 제공.
-          기존 사용자는 /signup 페이지 내 "이미 계정이 있으신가요? 로그인" 링크로 1탭 추가 도달. */}
+      {/* DEMO pill (PC 전용 자연 flow) — 검색바 아래. outlined + bold + 펄스로 시각 hierarchy 톤다운(부가 정보).
+          핵심 액션(+/재료 추천 pill)이 solid orange라서 ✨ pill은 outlined로 차별화. */}
       {!isAuthenticated && (
-        <div className="px-4 pb-1 md:pb-2 flex flex-col items-center gap-1.5 flex-shrink-0">
-          <p className="text-[11px] md:text-xs text-text-muted text-center leading-tight">
-            {t.home.demoTaglinePre}<span className="text-accent-warm font-medium">{t.home.demoTaglineAccent}</span>{t.home.demoTaglinePost}
-          </p>
+        <div className="hidden md:flex px-4 pb-1 md:pb-2 justify-center flex-shrink-0">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-warm/10 border border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/20 active:scale-95 transition-all"
+            className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-4 py-1.5 rounded-full bg-accent-warm/10 border-2 border-accent-warm/60 text-accent-warm text-sm font-bold hover:bg-accent-warm/20 hover:scale-105 active:scale-95 transition-all text-center leading-tight shadow-md shadow-accent-warm/20"
+            style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
           >
-            <span className="text-xs" aria-hidden="true">✨</span>
+            <span className="text-base" aria-hidden="true">✨</span>
             <span>{t.home.demoBadge}</span>
-            <span className="text-text-muted">·</span>
-            <span className="font-semibold">{t.home.demoCta}</span>
+            <span className="opacity-60">—</span>
+            <span>{t.home.demoCta}</span>
           </Link>
         </div>
       )}
 
       {/* 레이아웃: justify-end로 콘텐츠를 하단에 몰아붙여 냉장고가 바텀 네비 살짝 위에 위치하게. */}
       <div className="flex-1 relative flex flex-col items-center justify-end gap-0 md:px-12 pb-0 md:pb-8">
+        {/* DEMO pill (모바일 전용 absolute) — fridge container 위쪽에 떠 있어 layout flow 영향 0.
+            outlined + bold + 펄스로 시각 hierarchy 톤다운(부가 정보). */}
+        {!isAuthenticated && (
+          <div className="md:hidden absolute top-2 left-4 right-4 z-30 flex justify-center pointer-events-none">
+            <Link
+              href="/signup"
+              className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 px-3 py-1.5 rounded-2xl bg-accent-warm/10 border-2 border-accent-warm/60 text-accent-warm text-[11px] font-bold hover:bg-accent-warm/20 active:scale-95 transition-all max-w-full text-center leading-tight pointer-events-auto shadow-md shadow-accent-warm/20"
+              style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
+            >
+              <span className="text-sm" aria-hidden="true">✨</span>
+              <span>{t.home.demoBadge}</span>
+              <span>{t.home.demoCta}</span>
+            </Link>
+          </div>
+        )}
         {/* Scene backdrop 제거됨 — body bg-background-primary(#1a1a1a) 단색으로 노출.
             냉장고 자체 디테일에만 집중. */}
 
@@ -658,30 +644,6 @@ export default function HomeClient({
             );
           })()}
 
-          {/* 첫 방문 가이드 툴팁 — 비로그인 유저 최초 1회. pill 위에 말풍선 + 꼬리. */}
-          {showFirstVisitTip && showRecipeBubble && matchingCount !== null && matchingCount > 0 && resolvedMode !== null && (
-            <div
-              className="absolute right-[4%] z-30 pointer-events-auto"
-              style={{ top: 'calc(63% - 62px)' }}
-              role="dialog"
-              aria-live="polite"
-            >
-              <div className="relative bg-background-secondary border-2 border-accent-warm rounded-xl px-3 py-2 shadow-xl shadow-accent-warm/30 animate-[naelum-bubble-pulse_2.4s_ease-in-out_infinite]">
-                <button
-                  onClick={dismissFirstVisitTip}
-                  aria-label={t.home.firstVisitTipClose}
-                  className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-background-primary border border-accent-warm text-text-primary flex items-center justify-center text-[10px] font-bold hover:bg-accent-warm hover:text-background-primary transition-colors"
-                >
-                  ×
-                </button>
-                <p className="text-[11px] md:text-sm font-medium text-text-primary whitespace-nowrap">
-                  {t.home.firstVisitTip}
-                </p>
-                <div className="absolute -bottom-[7px] right-8 w-3 h-3 bg-background-secondary border-r-2 border-b-2 border-accent-warm rotate-45" />
-              </div>
-            </div>
-          )}
-
           {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
@@ -702,7 +664,7 @@ export default function HomeClient({
                       onTouchEnd={handleChipPressEnd}
                       onTouchMove={handleChipPressEnd}
                       onTouchCancel={handleChipPressEnd}
-                      className={`flex items-center gap-0.5 rounded-md bg-white/90 border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse' : ''} ${compact ? 'px-0.5 py-0.5' : 'px-1 py-0.5'}`}
+                      className={`flex items-center gap-0.5 rounded-md border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse bg-red-100/95' : (label ? 'bg-amber-100/95' : 'bg-white/90')} ${compact ? 'px-0.5 py-0.5' : 'px-1 py-0.5'}`}
                       style={{
                         borderColor: border,
                         boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
@@ -715,7 +677,7 @@ export default function HomeClient({
                       </span>
                       {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
                       {label && !compact && (
-                        <span className="font-bold leading-none text-[8px] md:text-[9px]" style={{ color: border }}>
+                        <span className="font-bold leading-none text-[10px] md:text-[11px]" style={{ color: border }}>
                           {label}
                         </span>
                       )}
@@ -723,7 +685,7 @@ export default function HomeClient({
                     {/* 데스크톱 hover 시 우상단 X 버튼 — 빠른 삭제 */}
                     <button
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(item); }}
-                      className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity shadow-md ring-2 ring-white"
+                      className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity shadow-md ring-2 ring-white"
                       aria-label={`${displayName} ${t.common.delete}`}
                     >
                       ✕
@@ -753,7 +715,9 @@ export default function HomeClient({
 
                   {/* 전체 재료 목록 — 카툰 스타일 대롱대롱 효과.
                       썸택(thumb-tack) → 노끈(rope) → 태그(tag).
-                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션. */}
+                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션.
+                      비로그인은 데모 재료라 전체 목록 진입 필요성 낮음 + pill과 시각적 겹침 방지로 hide. */}
+                  {isAuthenticated && (
                   <div
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
                     style={{ bottom: 'calc(100% - 2px)' }}
@@ -795,12 +759,14 @@ export default function HomeClient({
                       <circle cx="22" cy="7" r="1.4" fill="#3a1f08" opacity="0.5"/>
                     </svg>
 
-                    {/* 펜던트 태그 — bold black border + 하드 카툰 그림자 */}
+                    {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소. */}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
-                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl bg-accent-warm text-background-primary text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:bg-accent-hover hover:scale-105 active:scale-95 transition-all"
+                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all"
                       style={{
+                        background: '#f4d8a0',
+                        color: '#5a3208',
                         border: '2px solid #000',
                         boxShadow: '0 3px 0 #000, 0 6px 10px rgba(0,0,0,0.35)',
                       }}
@@ -811,6 +777,7 @@ export default function HomeClient({
                       <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
                     </button>
                   </div>
+                  )}
                 </>
               );
             })()}

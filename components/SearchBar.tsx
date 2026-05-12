@@ -194,18 +194,11 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
         }`}
         style={{ border: 'none' }}
       >
-        <span
-          className={`text-text-muted !border-0 ${isSmall ? 'pl-3 text-sm' : 'pl-3 md:pl-4 text-base md:text-lg'}`}
-          style={{ border: 'none', borderLeft: 'none', borderRight: 'none' }}
-        >
-          🔍
-        </span>
-
         <input
           type="search"
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
-          placeholder=""
+          placeholder={isSmall ? t.search.searchPlaceholderSmall : t.search.searchPlaceholderFull}
           aria-label={t.search.searchPlaceholderFull}
           autoComplete="off"
           autoFocus={autoFocus}
@@ -218,8 +211,8 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
           onKeyDown={handleKeyDown}
           className={`w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none transition-all ${
             isSmall
-              ? 'px-2 py-2 text-base'
-              : 'px-2 md:px-4 py-3 md:py-4 text-base md:text-lg'
+              ? 'pl-4 pr-2 py-2 text-base'
+              : 'pl-4 md:pl-5 pr-2 md:pr-4 py-3 md:py-4 text-base md:text-lg'
           }`}
           style={{ border: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none' }}
         />

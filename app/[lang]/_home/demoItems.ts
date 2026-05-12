@@ -18,8 +18,9 @@ export const DEMO: FridgeItem[] = [
   { id:'d6', ingredient_name:'마늘',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   { id:'d7', ingredient_name:'고추',     category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
   { id:'d8', ingredient_name:'콩나물',   category:'veggie',  expiry_date: null,           storage_location:'냉장', purchase_date: addDaysISO(-1) },
-  // === 냉동 (1) ===
+  // === 냉동 (2) ===
   { id:'d10', ingredient_name:'새우',    category:'seafood', expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-2) },
+  { id:'d21', ingredient_name:'닭고기',  category:'meat',    expiry_date: null,           storage_location:'냉동', purchase_date: addDaysISO(-2) },
   // === 상온 (10) ===
   { id:'d11', ingredient_name:'감자',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-2) },
   { id:'d12', ingredient_name:'양파',    category:'veggie',    expiry_date: null, storage_location:'상온', purchase_date: addDaysISO(-1) },

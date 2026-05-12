@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from '@/components/Common/LocalizedLink';
 import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useI18n } from '@/lib/i18n/context';
+import { useAuth } from '@/lib/auth/context';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
 
@@ -34,6 +36,7 @@ export default function AddIngredientModal({
   onAddIngredient,
 }: AddIngredientModalProps) {
   const { t } = useI18n();
+  const { user } = useAuth();
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
   // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
   const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
@@ -89,10 +92,25 @@ export default function AddIngredientModal({
         className="w-full sm:max-w-lg bg-background-primary sm:rounded-2xl sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[88dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* 헤더 — safe-area 상단 패딩 포함 (노치). 타이틀 제거하고 저장 위치 pill 상단에 배치. */}
+        {/* 비로그인 안내 배너 — 데모 모드에서 재료 추가 시도 시, 가입하면 실제 저장 가능함을 명확히 안내.
+            safe-area 상단 패딩 포함하여 노치 영역 정상 처리. */}
+        {!user && (
+          <Link
+            href="/signup"
+            className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-accent-warm/15 border-b border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/25 active:bg-accent-warm/30 transition-colors text-center"
+            style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+          >
+            <span aria-hidden="true">✨</span>
+            <span>{t.ingredient.signupBanner}</span>
+            <span className="font-bold underline">{t.ingredient.signupBannerCta} →</span>
+          </Link>
+        )}
+
+        {/* 헤더 — safe-area 상단 패딩 포함 (노치). 타이틀 제거하고 저장 위치 pill 상단에 배치.
+            비로그인 배너가 위에 있으면 safe-area는 배너에서 처리, 헤더는 일반 패딩. */}
         <div
           className="border-b border-white/5 flex-shrink-0"
-          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+          style={!user ? { paddingTop: '0.75rem' } : { paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
           {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">

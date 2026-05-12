@@ -52,17 +52,77 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6">
+      <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6 pointer-events-none">
         <nav className="container mx-auto flex items-center justify-between px-4 md:px-6" aria-label="메인 네비게이션">
-          {/* Logo */}
-          <div className="flex items-center gap-4 md:gap-6">
+          {/* Logo + 정책 메뉴 — 로그인/비로그인 동일 위치. 우측 핵심 CTA(언어·로그인·프로필) 분리. */}
+          <div className="flex items-center gap-1 md:gap-2 pointer-events-auto">
             <Link href="/" className="flex items-center gap-2" aria-label="낼름 홈으로 이동">
               <span className="text-xl md:text-2xl font-bold tracking-tighter text-accent-warm">낼름</span>
             </Link>
+            {/* 정책 메뉴 — 약관·개인정보·저작권·문의 진입점 */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  const next = !showMoreMenu;
+                  closeAll();
+                  setShowMoreMenu(next);
+                }}
+                className="min-w-[40px] min-h-[40px] md:min-w-[44px] md:min-h-[44px] p-2 md:p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+                aria-label={t.common.moreMenu}
+                aria-expanded={showMoreMenu}
+                aria-haspopup="true"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
+                  <circle cx="5" cy="12" r="1.2" fill="currentColor" />
+                  <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+                  <circle cx="19" cy="12" r="1.2" fill="currentColor" />
+                </svg>
+              </button>
+              {showMoreMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
+                  <div className="absolute left-0 top-full mt-2 w-52 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-1.5">
+                    <Link
+                      href="/terms"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">📜</span>
+                      <span>{t.meta.termsTitle}</span>
+                    </Link>
+                    <Link
+                      href="/privacy"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">🔒</span>
+                      <span>{t.meta.privacyTitle}</span>
+                    </Link>
+                    <Link
+                      href="/copyright"
+                      onClick={() => setShowMoreMenu(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
+                    >
+                      <span aria-hidden="true">©</span>
+                      <span>{t.meta.copyrightTitle}</span>
+                    </Link>
+                    <div className="my-1 border-t border-white/5" />
+                    <button
+                      type="button"
+                      onClick={() => { setShowMoreMenu(false); setShowContactModal(true); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors text-left"
+                    >
+                      <span aria-hidden="true">✉️</span>
+                      <span>{t.contact.title.replace(/^✉️\s*/, '')}</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
             {user ? (
               <>
                 {/* 글쓰기 버튼 */}
@@ -121,11 +181,11 @@ export default function Header() {
                 <div className="relative">
                   <button
                     onClick={() => setShowLangSelector(!showLangSelector)}
-                    className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-full hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-2 min-h-[44px] rounded-full hover:bg-white/10 transition-colors"
                     aria-label={t.common.languageSelect}
                   >
                     <span className="text-base">{LANG_OPTIONS.find(l => l.code === language)?.flag ?? '🇰🇷'}</span>
-                    <span className="text-xs text-text-secondary">{LANG_OPTIONS.find(l => l.code === language)?.label ?? '한국어'}</span>
+                    <span className="hidden md:inline text-xs text-text-secondary">{LANG_OPTIONS.find(l => l.code === language)?.label ?? '한국어'}</span>
                     <svg className={`w-3 h-3 text-text-muted transition-transform duration-200 ${showLangSelector ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -154,76 +214,16 @@ export default function Header() {
                     </>
                   )}
                 </div>
-                {/* 로그인 버튼은 데스크톱에서만 — 모바일은 BottomNav에 전용 "로그인" 탭이 대신 노출됨 */}
+                {/* 로그인/가입 버튼 — PC/모바일 모두 헤더에 노출. 회원가입 진입점도 명시. */}
                 <Link
                   href="/login"
-                  className="hidden md:inline-flex px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                  className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-xs md:text-sm font-medium hover:bg-accent-hover transition-colors whitespace-nowrap"
                 >
-                  {t.common.login}
+                  {t.common.loginOrSignup}
                 </Link>
               </>
             )}
 
-            {/* 정책 메뉴 — 로그인·비로그인 모두 노출. 약관·개인정보·저작권·문의 진입점. */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  const next = !showMoreMenu;
-                  closeAll();
-                  setShowMoreMenu(next);
-                }}
-                className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
-                aria-label={t.common.moreMenu}
-                aria-expanded={showMoreMenu}
-                aria-haspopup="true"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="16" x2="12" y2="12" />
-                  <line x1="12" y1="8" x2="12.01" y2="8" />
-                </svg>
-              </button>
-              {showMoreMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-52 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-1.5">
-                    <Link
-                      href="/terms"
-                      onClick={() => setShowMoreMenu(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
-                    >
-                      <span aria-hidden="true">📜</span>
-                      <span>{t.meta.termsTitle}</span>
-                    </Link>
-                    <Link
-                      href="/privacy"
-                      onClick={() => setShowMoreMenu(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
-                    >
-                      <span aria-hidden="true">🔒</span>
-                      <span>{t.meta.privacyTitle}</span>
-                    </Link>
-                    <Link
-                      href="/copyright"
-                      onClick={() => setShowMoreMenu(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors"
-                    >
-                      <span aria-hidden="true">©</span>
-                      <span>{t.meta.copyrightTitle}</span>
-                    </Link>
-                    <div className="my-1 border-t border-white/5" />
-                    <button
-                      type="button"
-                      onClick={() => { setShowMoreMenu(false); setShowContactModal(true); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-white/5 hover:text-text-primary transition-colors text-left"
-                    >
-                      <span aria-hidden="true">✉️</span>
-                      <span>{t.contact.title.replace(/^✉️\s*/, '')}</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </nav>
       </header>

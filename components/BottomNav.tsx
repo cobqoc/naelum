@@ -285,18 +285,10 @@ export default function BottomNav() {
             );
           }
 
-          // 비로그인 상태의 프로필 탭 — 아이콘 대신 "로그인" 필 버튼으로 노출 (Header의 로그인 버튼 모바일 대체).
+          // 비로그인 상태의 프로필 탭 — slot 자체 hide. 로그인 버튼은 Header에 노출됨.
+          // 향후 추가될 BottomNav 아이콘 슬롯 확보.
           if (isProfileTab && !authLoading && !user) {
-            return (
-              <Link
-                key={item.href}
-                href="/login"
-                aria-label={t.common.login}
-                className="flex items-center justify-center px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover active:scale-95 transition-all min-w-[4rem]"
-              >
-                {t.common.login}
-              </Link>
-            );
+            return null;
           }
 
           return (
