@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import SearchBar from './SearchBar';
+import { track } from '@/lib/analytics/track';
 
 // 홈 탭 아이콘 — PC 헤더 원본 실루엣 + 홈 FridgeSVG 팔레트 (teal→terracotta 빨강, 블랙→다크레드, 골드 유지).
 function FridgeIcon({ size = 30, active = false }: { size?: number; active?: boolean }) {
@@ -167,6 +168,7 @@ export default function BottomNav() {
             // 홈(냉장고 UI)에서는 인라인 검색바로 토글, 그 외 페이지에서는 오버레이 모달을 띄움.
             const isFridgeHome = pathname === '/';
             const onSearchClick = () => {
+              track('bottomnav_search_click', { from_home: isFridgeHome });
               if (isFridgeHome) {
                 window.dispatchEvent(new CustomEvent('toggle-fridge-search'));
               } else {
@@ -251,14 +253,14 @@ export default function BottomNav() {
           <div className="flex items-center gap-1.5">
             <Link
               href="/recipes"
-              onClick={() => setShowSearch(false)}
+              onClick={() => { track('search_overlay_pill_click', { pill: 'recipes' }); setShowSearch(false); }}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
               <span>📋</span><span>{t.home.navRecipes}</span>
             </Link>
             <Link
               href="/tip"
-              onClick={() => setShowSearch(false)}
+              onClick={() => { track('search_overlay_pill_click', { pill: 'tips' }); setShowSearch(false); }}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-tertiary hover:bg-white/10 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors active:scale-95"
             >
               <span>💡</span><span>{t.home.navTips}</span>
