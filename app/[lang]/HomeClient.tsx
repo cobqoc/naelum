@@ -783,60 +783,11 @@ export default function HomeClient({
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
                     style={{ bottom: 'calc(100% - 2px)' }}
                   >
-                    {/* 만료 임박 배너 — 빨강 톤. 펜던트와 동일 모티프(썸택+노끈+태그). */}
-                    {expiringCount > 0 && (
-                      <>
-                        <svg
-                          width="44"
-                          height="22"
-                          viewBox="0 0 44 22"
-                          style={{ overflow: 'visible', display: 'block' }}
-                          aria-hidden="true"
-                        >
-                          <defs>
-                            <radialGradient id="warnTackG" cx="32%" cy="28%" r="72%">
-                              <stop offset="0%" stopColor="#fef9c3"/>
-                              <stop offset="45%" stopColor="#dc2626"/>
-                              <stop offset="100%" stopColor="#7c2d12"/>
-                            </radialGradient>
-                            <linearGradient id="warnRopeG" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#7c2d12"/>
-                              <stop offset="40%" stopColor="#dc2626"/>
-                              <stop offset="100%" stopColor="#7c2d12"/>
-                            </linearGradient>
-                          </defs>
-                          {/* 짧은 노끈 — 펜던트 노끈보다 짧음(스택 시 spacer 절약) */}
-                          <line x1="22" y1="9" x2="22" y2="22" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
-                          <line x1="22" y1="9" x2="22" y2="22" stroke="url(#warnRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
-                          {/* 썸택 — 빨강 톤 */}
-                          <circle cx="22" cy="7" r="7" fill="#000"/>
-                          <circle cx="22" cy="7" r="6" fill="url(#warnTackG)"/>
-                          <ellipse cx="19.5" cy="4.5" rx="2.5" ry="1.8" fill="rgba(255,250,220,0.85)"/>
-                        </svg>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setAllSheetMode('expiring'); }}
-                          className="pointer-events-auto -mt-[3px] flex items-center gap-1 px-3 py-1 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all animate-pulse"
-                          style={{
-                            background: '#fecaca',
-                            color: '#7c2d12',
-                            border: '2px solid #000',
-                            boxShadow: '0 3px 0 #000, 0 5px 8px rgba(0,0,0,0.3)',
-                          }}
-                          aria-label={t.home.expiringBannerAria.replace('{count}', String(expiringCount))}
-                        >
-                          <span>{t.home.expiringBannerLabel.replace('{count}', String(expiringCount))}</span>
-                        </button>
-                        {/* 배너와 펜던트 사이 간격 — 펜던트 SVG가 9px부터 시작하므로 추가 spacer는 작게 */}
-                        <div className="h-1" aria-hidden="true" />
-                      </>
-                    )}
-
-                    {/* SVG 썸택 + 노끈 — 카툰 outline */}
+                    {/* 썸택 + 윗 노끈 (배너 위까지) — gradient는 항상 정의돼 있어야 두 SVG가 모두 참조 가능 */}
                     <svg
                       width="44"
-                      height="32"
-                      viewBox="0 0 44 32"
+                      height={expiringCount > 0 ? 18 : 32}
+                      viewBox={`0 0 44 ${expiringCount > 0 ? 18 : 32}`}
                       style={{ overflow: 'visible', display: 'block' }}
                       aria-hidden="true"
                     >
@@ -853,21 +804,57 @@ export default function HomeClient({
                         </linearGradient>
                       </defs>
 
-                      {/* 노끈 — 검정 outline + 컬러 fill + 꼬임 텍스처 */}
-                      <line x1="22" y1="9" x2="22" y2="32" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
-                      <line x1="22" y1="9" x2="22" y2="32" stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
-                      {/* 꼬임 detail — 짧은 사선들 */}
-                      <line x1="20.5" y1="13" x2="23.5" y2="15" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                      <line x1="20.5" y1="19" x2="23.5" y2="21" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                      <line x1="20.5" y1="25" x2="23.5" y2="27" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                      <line x1="21.5" y1="12" x2="21.5" y2="30" stroke="rgba(255,235,180,0.45)" strokeWidth="0.6" strokeLinecap="round"/>
+                      {/* 노끈 (썸택 아래 ~ SVG 끝까지) — 배너 있을 땐 짧게, 없을 땐 풀 길이 */}
+                      <line x1="22" y1="9" x2="22" y2={expiringCount > 0 ? 18 : 32} stroke="#000" strokeWidth="4" strokeLinecap="round"/>
+                      <line x1="22" y1="9" x2="22" y2={expiringCount > 0 ? 18 : 32} stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
+                      {/* 꼬임 detail (긴 노끈일 때만 자연스러움) */}
+                      {expiringCount === 0 && (
+                        <>
+                          <line x1="20.5" y1="13" x2="23.5" y2="15" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                          <line x1="20.5" y1="19" x2="23.5" y2="21" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                          <line x1="20.5" y1="25" x2="23.5" y2="27" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
+                          <line x1="21.5" y1="12" x2="21.5" y2="30" stroke="rgba(255,235,180,0.45)" strokeWidth="0.6" strokeLinecap="round"/>
+                        </>
+                      )}
 
-                      {/* 썸택 (thumb-tack) — 카툰 outline */}
+                      {/* 썸택 — 항상 노끈 시작점에 */}
                       <circle cx="22" cy="7" r="7" fill="#000"/>
                       <circle cx="22" cy="7" r="6" fill="url(#dangleTackG)"/>
                       <ellipse cx="19.5" cy="4.5" rx="2.5" ry="1.8" fill="rgba(255,250,220,0.85)"/>
                       <circle cx="22" cy="7" r="1.4" fill="#3a1f08" opacity="0.5"/>
                     </svg>
+
+                    {/* 만료 임박 배너 — 윗 노끈 끝과 아랫 노끈 시작 사이에 매달림. 한 줄에 두 태그 효과. */}
+                    {expiringCount > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setAllSheetMode('expiring'); }}
+                          className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all animate-pulse"
+                          style={{
+                            background: '#fecaca',
+                            color: '#7c2d12',
+                            border: '2px solid #000',
+                            boxShadow: '0 3px 0 #000, 0 5px 8px rgba(0,0,0,0.3)',
+                          }}
+                          aria-label={t.home.expiringBannerAria.replace('{count}', String(expiringCount))}
+                        >
+                          <span>{t.home.expiringBannerLabel.replace('{count}', String(expiringCount))}</span>
+                        </button>
+
+                        {/* 아랫 노끈 — 배너 ~ 펜던트 태그 사이 연결. 같은 dangleRopeG 참조(첫 SVG 정의) */}
+                        <svg
+                          width="44"
+                          height="12"
+                          viewBox="0 0 44 12"
+                          style={{ overflow: 'visible', display: 'block' }}
+                          aria-hidden="true"
+                        >
+                          <line x1="22" y1="0" x2="22" y2="12" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
+                          <line x1="22" y1="0" x2="22" y2="12" stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
+                        </svg>
+                      </>
+                    )}
 
                     {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소.
                         칩 truncate(60→80px 보강 후에도 정확 이름 확인) 동선의 진입점이므로 발견성 약간 강화 — 폰트 size 한 단계 ↑, padding 살짝 ↑, hover scale 더 강. */}
