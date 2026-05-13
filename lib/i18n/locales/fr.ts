@@ -687,6 +687,12 @@ export const fr = {
     filterCuisineLabel: 'Cuisine',
     filterDishLabel: 'Plat',
     clearFilter: 'Effacer le filtre',
+    expiringBannerLabel: '⚠️ {count} bientôt périmé',
+    expiringBannerAria: 'Voir {count} ingrédients bientôt périmés',
+    expiringSheetTitle: 'Bientôt périmés',
+    expiringRecipeReady: '🔥 Prêt à cuisiner : {count}',
+    expiringRecipeAlmost: '🛒 Presque prêt : {count}',
+    expiringRecipeNone: '📋 Voir d’autres recettes',
   },
   ingredient: {
     updateSuccess: '✅ {name} mis à jour',

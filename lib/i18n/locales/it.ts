@@ -687,6 +687,12 @@ export const it = {
     filterCuisineLabel: 'Cucina',
     filterDishLabel: 'Piatto',
     clearFilter: 'Cancella filtro',
+    expiringBannerLabel: '⚠️ {count} in scadenza',
+    expiringBannerAria: 'Vedi {count} ingredienti in scadenza',
+    expiringSheetTitle: 'In scadenza',
+    expiringRecipeReady: '🔥 Pronto da cucinare: {count}',
+    expiringRecipeAlmost: '🛒 Quasi pronto: {count}',
+    expiringRecipeNone: '📋 Sfoglia altre ricette',
   },
   ingredient: {
     updateSuccess: '✅ {name} aggiornato',

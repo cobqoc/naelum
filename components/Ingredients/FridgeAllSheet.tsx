@@ -30,13 +30,24 @@ interface Props {
   getEmoji: (name: string, category: string) => string;
   /** 데모 칩 표시명 변환 — HomeClient의 getDisplayName 주입. 기본은 ingredient_name 그대로. */
   getDisplayName?: (item: { id: string; ingredient_name: string; isDemoItem?: boolean }) => string;
+  /** 임박 재료만 표시 모드. items는 그대로 받되 시트 내부에서 isDanger 필터링.
+   *  헤더 타이틀과 상단 매칭 pill 표시까지 함께 토글됨. */
+  expiringOnly?: boolean;
+  /** 매칭 pill 표시용 데이터 — null=로딩, 0=매칭없음, >0=숫자.
+   *  expiringOnly=true일 때만 상단 노출. */
+  recipeMatch?: { count: number | null; mode: 'ready' | 'almost' | 'all' | null } | null;
+  /** 매칭 pill 탭 핸들러 — 일반적으로 /recommendations로 이동. */
+  onCookFromExpiring?: () => void;
 }
 
 /**
  * +N 오버플로우 버튼 탭 시 열리는 전체 재료 리스트 시트.
  * 냉장/냉동/상온 별로 그룹핑, 각 chip 탭은 액션 시트로 연결.
  */
-export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji, getDisplayName }: Props) {
+export default function FridgeAllSheet({
+  isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji, getDisplayName,
+  expiringOnly = false, recipeMatch = null, onCookFromExpiring,
+}: Props) {
   const { t } = useI18n();
   const display = (item: FridgeItem) => getDisplayName?.(item) ?? item.ingredient_name;
   const GROUP_ORDER: { key: string; icon: string; label: string }[] = [
@@ -61,9 +72,14 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
 
   if (!isOpen) return null;
 
+  // 임박 모드: isDanger인 재료만 필터. 시트 내 그룹별 분류는 동일.
+  const visibleItems = expiringOnly
+    ? items.filter(i => freshState(i).isDanger)
+    : items;
+
   // 그룹별 분류 (상온 + 기타 포함, null은 냉장으로)
   const groups: Record<string, FridgeItem[]> = { 냉장: [], 냉동: [], 상온: [] };
-  for (const item of items) {
+  for (const item of visibleItems) {
     const loc = item.storage_location;
     if (loc === '냉동') groups['냉동'].push(item);
     else if (loc === '상온' || loc === '기타') groups['상온'].push(item);
@@ -79,10 +95,13 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
 
-        {/* 헤더 */}
+        {/* 헤더 — 임박 모드면 ⚠️ 타이틀, 일반 모드면 🧺 전체 재료 목록 */}
         <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
           <h3 className="font-bold text-sm">
-            🧺 {t.home.ingredientList} <span className="text-text-muted font-normal">({t.fridge.ingredientCount.replace('{count}', String(items.length))})</span>
+            {expiringOnly
+              ? <>⚠️ {t.home.expiringSheetTitle} <span className="text-text-muted font-normal">({t.fridge.ingredientCount.replace('{count}', String(visibleItems.length))})</span></>
+              : <>🧺 {t.home.ingredientList} <span className="text-text-muted font-normal">({t.fridge.ingredientCount.replace('{count}', String(visibleItems.length))})</span></>
+            }
           </h3>
           <button
             ref={closeBtnRef}
@@ -95,6 +114,54 @@ export default function FridgeAllSheet({ isOpen, items, onClose, onItemClick, on
             </svg>
           </button>
         </div>
+
+        {/* 임박 모드 — 상단 매칭 pill (홈 추천 pill과 동일 패턴).
+            로딩 중이면 shimmer, 매칭 0이면 "다른 레시피 보기" fallback. */}
+        {expiringOnly && onCookFromExpiring && (
+          <div className="px-4 pt-3 pb-2 border-b border-white/5">
+            {(() => {
+              const count = recipeMatch?.count ?? null;
+              const mode = recipeMatch?.mode ?? null;
+              if (count === null) {
+                // 로딩
+                return (
+                  <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent-warm/60 text-background-primary text-sm font-bold animate-pulse">
+                    <span aria-hidden="true">💡</span>
+                    <span>{t.home.pillDefault}</span>
+                  </div>
+                );
+              }
+              if (count === 0 || !mode) {
+                return (
+                  <button
+                    type="button"
+                    onClick={onCookFromExpiring}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-background-tertiary hover:bg-white/10 text-text-secondary hover:text-text-primary text-sm font-bold transition-all active:scale-95"
+                  >
+                    <span>{t.home.expiringRecipeNone}</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                );
+              }
+              const countStr = count >= 30 ? '30+' : String(count);
+              const label = mode === 'ready'
+                ? t.home.expiringRecipeReady.replace('{count}', countStr)
+                : mode === 'almost'
+                  ? t.home.expiringRecipeAlmost.replace('{count}', countStr)
+                  : t.home.expiringRecipeNone;
+              return (
+                <button
+                  type="button"
+                  onClick={onCookFromExpiring}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold shadow-lg shadow-accent-warm/40 transition-all active:scale-95"
+                >
+                  <span>{label}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              );
+            })()}
+          </div>
+        )}
 
         {/* 그룹별 리스트 */}
         <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>

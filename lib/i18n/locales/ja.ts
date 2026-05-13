@@ -687,6 +687,12 @@ export const ja = {
     filterCuisineLabel: '国',
     filterDishLabel: '料理',
     clearFilter: 'フィルターをクリア',
+    expiringBannerLabel: '⚠️ 期限間近 {count}',
+    expiringBannerAria: '期限間近の食材{count}個を見る',
+    expiringSheetTitle: '期限間近の食材',
+    expiringRecipeReady: '🔥 今すぐ作れる {count}件',
+    expiringRecipeAlmost: '🛒 ほぼ作れる {count}件',
+    expiringRecipeNone: '📋 他のレシピを見る',
   },
   ingredient: {
     updateSuccess: '✅ {name}を更新しました',

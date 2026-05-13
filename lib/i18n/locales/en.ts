@@ -686,6 +686,12 @@ export const en = {
     filterCuisineLabel: 'Cuisine',
     filterDishLabel: 'Dish',
     clearFilter: 'Clear filter',
+    expiringBannerLabel: '⚠️ {count} expiring',
+    expiringBannerAria: 'View {count} ingredients expiring soon',
+    expiringSheetTitle: 'Expiring soon',
+    expiringRecipeReady: '🔥 Ready to cook now: {count}',
+    expiringRecipeAlmost: '🛒 Almost ready: {count}',
+    expiringRecipeNone: '📋 Browse other recipes',
   },
   ingredient: {
     updateSuccess: '✅ {name} updated',

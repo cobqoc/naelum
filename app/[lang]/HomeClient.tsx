@@ -99,8 +99,9 @@ export default function HomeClient({
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // +N 탭 시 열리는 전체 재료 보기 시트
-  const [showAllSheet, setShowAllSheet] = useState(false);
+  // 전체 재료 시트 모드 — null=닫힘, 'all'=전체 목록(펜던트 탭), 'expiring'=임박 재료만(배너 탭).
+  // 같은 컴포넌트(FridgeAllSheet)를 두 모드로 재사용해 일관성 유지.
+  const [allSheetMode, setAllSheetMode] = useState<null | 'all' | 'expiring'>(null);
 
   // DEMO 아이템 고유 id 생성용 카운터 (Date.now() 대신 — React 순수성 규칙 준수)
   const demoIdRef = useRef(0);
@@ -143,6 +144,15 @@ export default function HomeClient({
   const [matchingCount, setMatchingCount] = useState<number | null>(null);
   const [resolvedMode, setResolvedMode] = useState<'ready' | 'almost' | 'all' | null>(null);
   const showRecipeBubble = items.length > 0;
+
+  // 만료 임박 재료 — freshState.isDanger = D-3 이내 또는 expired.
+  // 펜던트 위에 만료 배너 매달기 + 시트 모드 전환에 사용.
+  const expiringItems = useMemo(() => items.filter(i => freshState(i).isDanger), [items]);
+  const expiringCount = expiringItems.length;
+
+  // 임박 재료 전용 추천 매칭 — 시트의 "🔥 N개" pill에 표시.
+  // 일반 추천(matchingCount)과 별도. 임박 재료만 query에 넣음.
+  const [expiringRecipeMatch, setExpiringRecipeMatch] = useState<{ count: number | null; mode: 'ready' | 'almost' | 'all' | null } | null>(null);
 
   // 온보딩 배너 (임시 username 사용 중인 유저용)
   const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
@@ -327,6 +337,42 @@ export default function HomeClient({
     window.addEventListener('fridge-updated', handler);
     return () => window.removeEventListener('fridge-updated', handler);
   }, [fetchItems]);
+
+  // 임박 재료 전용 매칭 fetch — 시트 열릴 때만 fetch (불필요한 호출 방지).
+  // 임박 재료 변경 시 invalidate. 시트 닫혀있어도 임박 카운트 변하면 다음 오픈 시 새로 fetch.
+  // 로딩/0개 케이스에서 effect body 내 setState 발생 — 비동기 fetch 결과를 React 상태와 연동해야 하는 외부 동기화이므로 합법.
+  useEffect(() => {
+    if (allSheetMode !== 'expiring') return;
+    if (expiringCount === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- expiringCount는 items 파생이지만 mode 전환과 결합된 외부 동기화
+      setExpiringRecipeMatch({ count: 0, mode: null });
+      return;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
+    setExpiringRecipeMatch({ count: null, mode: null });
+    const names = expiringItems.map(i => i.ingredient_name).join(',');
+    const url = `/api/recommendations?type=ingredients&limit=${RECOMMENDATIONS_LIMIT}&mode=auto&ingredients=${encodeURIComponent(names)}`;
+    fetch(url)
+      .then(r => r.ok ? r.json() : { recommendations: [], mode: null })
+      .then(data => {
+        if (cancelled) return;
+        setExpiringRecipeMatch({
+          count: Array.isArray(data.recommendations) ? data.recommendations.length : 0,
+          mode: data.mode ?? null,
+        });
+      })
+      .catch(() => { if (!cancelled) setExpiringRecipeMatch({ count: 0, mode: null }); });
+    return () => { cancelled = true; };
+  }, [allSheetMode, expiringCount, expiringItems]);
+
+  // 임박 재료로 요리하기 — /recommendations 페이지로 이동(임박 재료만 query).
+  const handleCookFromExpiring = useCallback(() => {
+    if (expiringCount === 0) { router.push('/recommendations?mode=auto'); return; }
+    const names = expiringItems.map(i => i.ingredient_name).join(',');
+    router.push(`/recommendations?mode=auto&ingredients=${encodeURIComponent(names)}`);
+    setAllSheetMode(null);
+  }, [expiringCount, expiringItems, router]);
 
   // 매칭 레시피 fetch — mode=auto로 서버가 best mode 자동 선택.
   // 응답의 mode 필드로 버블 라벨 결정 (🔥 바로 가능 / 🛒 거의 가능 / 📋 추천).
@@ -713,15 +759,68 @@ export default function HomeClient({
 
                   {/* 도어 선반 데코는 FridgeSVG 내부에 SVG로 직접 렌더됨 (병·카톤 실루엣) */}
 
-                  {/* 전체 재료 목록 — 카툰 스타일 대롱대롱 효과.
+                  {/* 전체 재료 목록 + 만료 배너 — 카툰 스타일 대롱대롱 효과.
                       썸택(thumb-tack) → 노끈(rope) → 태그(tag).
                       bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션.
-                      비로그인은 데모 재료라 전체 목록 진입 필요성 낮음 + pill과 시각적 겹침 방지로 hide. */}
+                      비로그인은 데모 재료라 전체 목록 진입 필요성 낮음 + pill과 시각적 겹침 방지로 hide.
+
+                      stack 순서 (위 → 아래):
+                      1. 만료 배너 (expiringCount > 0일 때만, 빨강 톤, 펜던트보다 위)
+                      2. 펜던트 (재료 목록, cream/wood 톤) */}
                   {isAuthenticated && (
                   <div
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
                     style={{ bottom: 'calc(100% - 2px)' }}
                   >
+                    {/* 만료 임박 배너 — 빨강 톤. 펜던트와 동일 모티프(썸택+노끈+태그). */}
+                    {expiringCount > 0 && (
+                      <>
+                        <svg
+                          width="44"
+                          height="22"
+                          viewBox="0 0 44 22"
+                          style={{ overflow: 'visible', display: 'block' }}
+                          aria-hidden="true"
+                        >
+                          <defs>
+                            <radialGradient id="warnTackG" cx="32%" cy="28%" r="72%">
+                              <stop offset="0%" stopColor="#fef9c3"/>
+                              <stop offset="45%" stopColor="#dc2626"/>
+                              <stop offset="100%" stopColor="#7c2d12"/>
+                            </radialGradient>
+                            <linearGradient id="warnRopeG" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#7c2d12"/>
+                              <stop offset="40%" stopColor="#dc2626"/>
+                              <stop offset="100%" stopColor="#7c2d12"/>
+                            </linearGradient>
+                          </defs>
+                          {/* 짧은 노끈 — 펜던트 노끈보다 짧음(스택 시 spacer 절약) */}
+                          <line x1="22" y1="9" x2="22" y2="22" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
+                          <line x1="22" y1="9" x2="22" y2="22" stroke="url(#warnRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
+                          {/* 썸택 — 빨강 톤 */}
+                          <circle cx="22" cy="7" r="7" fill="#000"/>
+                          <circle cx="22" cy="7" r="6" fill="url(#warnTackG)"/>
+                          <ellipse cx="19.5" cy="4.5" rx="2.5" ry="1.8" fill="rgba(255,250,220,0.85)"/>
+                        </svg>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setAllSheetMode('expiring'); }}
+                          className="pointer-events-auto -mt-[3px] flex items-center gap-1 px-3 py-1 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all animate-pulse"
+                          style={{
+                            background: '#fecaca',
+                            color: '#7c2d12',
+                            border: '2px solid #000',
+                            boxShadow: '0 3px 0 #000, 0 5px 8px rgba(0,0,0,0.3)',
+                          }}
+                          aria-label={t.home.expiringBannerAria.replace('{count}', String(expiringCount))}
+                        >
+                          <span>{t.home.expiringBannerLabel.replace('{count}', String(expiringCount))}</span>
+                        </button>
+                        {/* 배너와 펜던트 사이 간격 — 펜던트 SVG가 9px부터 시작하므로 추가 spacer는 작게 */}
+                        <div className="h-1" aria-hidden="true" />
+                      </>
+                    )}
+
                     {/* SVG 썸택 + 노끈 — 카툰 outline */}
                     <svg
                       width="44"
@@ -762,7 +861,7 @@ export default function HomeClient({
                     {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소. */}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setShowAllSheet(true); }}
+                      onClick={(e) => { e.stopPropagation(); setAllSheetMode('all'); }}
                       className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all"
                       style={{
                         background: '#f4d8a0',
@@ -793,12 +892,14 @@ export default function HomeClient({
         </div>
       )}
 
-      {/* 전체 재료 보기 시트 — +N 오버플로우 탭 시 열림.
+      {/* 전체 재료 보기 시트 — 두 모드:
+          - 'all': 펜던트 탭 → 전체 재료 그룹별 표시
+          - 'expiring': 만료 배너 탭 → 임박 재료만 + 상단 추천 매칭 pill
           chip 탭 시 액션 시트가 위에 겹쳐 열림 (이 시트는 닫지 않음) → 취소하면 다시 이 시트로 복귀. */}
       <FridgeAllSheet
-        isOpen={showAllSheet}
+        isOpen={allSheetMode !== null}
         items={items}
-        onClose={() => setShowAllSheet(false)}
+        onClose={() => setAllSheetMode(null)}
         onItemClick={(item) => {
           setActionItem(item as FridgeItem);
         }}
@@ -806,6 +907,9 @@ export default function HomeClient({
         freshState={freshState}
         getEmoji={getEmoji}
         getDisplayName={getDisplayName}
+        expiringOnly={allSheetMode === 'expiring'}
+        recipeMatch={allSheetMode === 'expiring' ? expiringRecipeMatch : null}
+        onCookFromExpiring={allSheetMode === 'expiring' ? handleCookFromExpiring : undefined}
       />
 
       {/* 재료 액션 시트 — chip 탭 시 1차로 열림 (만들기/수정/삭제) */}

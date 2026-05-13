@@ -687,6 +687,12 @@ export const es = {
     filterCuisineLabel: 'Cocina',
     filterDishLabel: 'Plato',
     clearFilter: 'Limpiar filtro',
+    expiringBannerLabel: '⚠️ {count} por vencer',
+    expiringBannerAria: 'Ver {count} ingredientes próximos a vencer',
+    expiringSheetTitle: 'Próximos a vencer',
+    expiringRecipeReady: '🔥 Listo para cocinar: {count}',
+    expiringRecipeAlmost: '🛒 Casi listo: {count}',
+    expiringRecipeNone: '📋 Ver otras recetas',
   },
   ingredient: {
     updateSuccess: '✅ {name} actualizado',

@@ -687,6 +687,12 @@ export const ko = {
     filterCuisineLabel: '국가',
     filterDishLabel: '요리',
     clearFilter: '필터 해제',
+    expiringBannerLabel: '⚠️ 임박 {count}',
+    expiringBannerAria: '만료 임박 재료 {count}개 보기',
+    expiringSheetTitle: '임박 재료',
+    expiringRecipeReady: '🔥 이 재료로 바로 가능 {count}개',
+    expiringRecipeAlmost: '🛒 거의 가능 {count}개',
+    expiringRecipeNone: '📋 다른 레시피 보기',
   },
   ingredient: {
     updateSuccess: '✅ {name} 수정됐어요',

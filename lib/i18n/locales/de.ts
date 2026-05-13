@@ -687,6 +687,12 @@ export const de = {
     filterCuisineLabel: 'Küche',
     filterDishLabel: 'Gericht',
     clearFilter: 'Filter löschen',
+    expiringBannerLabel: '⚠️ {count} bald abgelaufen',
+    expiringBannerAria: '{count} bald ablaufende Zutaten ansehen',
+    expiringSheetTitle: 'Bald abgelaufen',
+    expiringRecipeReady: '🔥 Sofort kochbar: {count}',
+    expiringRecipeAlmost: '🛒 Fast bereit: {count}',
+    expiringRecipeNone: '📋 Andere Rezepte ansehen',
   },
   ingredient: {
     updateSuccess: '✅ {name} aktualisiert',

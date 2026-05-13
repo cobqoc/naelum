@@ -687,6 +687,12 @@ export const zh = {
     filterCuisineLabel: '国家',
     filterDishLabel: '料理',
     clearFilter: '清除筛选',
+    expiringBannerLabel: '⚠️ 临期 {count}',
+    expiringBannerAria: '查看 {count} 个即将过期的食材',
+    expiringSheetTitle: '即将过期',
+    expiringRecipeReady: '🔥 立即可做 {count} 道',
+    expiringRecipeAlmost: '🛒 即将可做 {count} 道',
+    expiringRecipeNone: '📋 浏览其他菜谱',
   },
   ingredient: {
     updateSuccess: '✅ {name}已更新',
