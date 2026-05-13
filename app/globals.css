@@ -778,7 +778,9 @@ select {
 }
 @media (min-width: 1280px) {
   :root {
-    --fridge-reserved: 320px;
+    /* 펜던트+임박 배너 stack(~100px)이 검색바와 안 부딪치도록 spacer 확보.
+       320→380 (60px ↑) → fridge 위 spacer ~110px 보장 → 충돌 완전 해소 */
+    --fridge-reserved: 380px;
     --fridge-max: 720px;
   }
 }
