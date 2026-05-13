@@ -317,13 +317,13 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background-primary px-4 md:px-6 py-8 md:py-12">
-      <div className="w-full max-w-md rounded-2xl md:rounded-3xl bg-background-secondary p-6 md:p-10 shadow-2xl border border-white/5">
-        <div className="mb-8 md:mb-10 text-center">
+    <div className="flex min-h-screen items-center justify-center bg-background-primary px-4 md:px-6 py-6 md:py-8">
+      <div className="w-full max-w-md rounded-2xl md:rounded-3xl bg-background-secondary p-6 md:p-8 shadow-2xl border border-white/5">
+        <div className="mb-6 md:mb-8 text-center">
           <Link href="/" className="text-2xl md:text-3xl font-bold tracking-tighter text-accent-warm">
             낼름
           </Link>
-          <p className="mt-2 md:mt-3 text-sm md:text-base text-text-secondary">{t.auth.meetRecipes}</p>
+          <p className="mt-2 text-sm md:text-base text-text-secondary">{t.auth.meetRecipes}</p>
         </div>
 
         {/* Social Login Buttons */}
@@ -363,13 +363,13 @@ function LoginContent() {
           </button>
         </div>
 
-        <div className="my-6 md:my-8 flex items-center gap-4">
+        <div className="my-5 md:my-6 flex items-center gap-4">
           <div className="h-px flex-1 bg-white/10" />
           <span className="text-sm text-text-muted">{t.auth.or}</span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
+        <form onSubmit={handleLogin} className="space-y-4 md:space-y-5">
           {/* Email Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.email}</label>
@@ -462,7 +462,7 @@ function LoginContent() {
           </button>
         </form>
 
-        <div className="mt-6 md:mt-8 flex justify-center gap-4 text-sm text-text-muted">
+        <div className="mt-5 md:mt-6 flex justify-center gap-4 text-sm text-text-muted">
           <button
             onClick={() => setShowFindIdModal(true)}
             className="hover:text-text-secondary transition-colors"
@@ -478,7 +478,7 @@ function LoginContent() {
           </button>
         </div>
 
-        <p className="mt-6 md:mt-8 text-center text-sm text-text-muted">
+        <p className="mt-5 md:mt-6 text-center text-sm text-text-muted">
           {t.auth.noAccount}{' '}
           <Link href="/signup" className="font-medium text-accent-warm hover:underline">
             {t.common.signup}
