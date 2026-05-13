@@ -317,22 +317,22 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background-primary px-4 md:px-6 py-6 md:py-8">
-      <div className="w-full max-w-md rounded-2xl md:rounded-3xl bg-background-secondary p-6 md:p-8 shadow-2xl border border-white/5">
-        <div className="mb-6 md:mb-8 text-center">
+    <div className="flex min-h-dvh items-center justify-center bg-background-primary px-4 md:px-6 py-4 md:py-8">
+      <div className="w-full max-w-md rounded-2xl md:rounded-3xl bg-background-secondary p-5 md:p-8 shadow-2xl border border-white/5">
+        <div className="mb-5 md:mb-8 text-center">
           <Link href="/" className="text-2xl md:text-3xl font-bold tracking-tighter text-accent-warm">
             낼름
           </Link>
-          <p className="mt-2 text-sm md:text-base text-text-secondary">{t.auth.meetRecipes}</p>
+          <p className="mt-1.5 md:mt-2 text-sm md:text-base text-text-secondary">{t.auth.meetRecipes}</p>
         </div>
 
         {/* Social Login Buttons */}
-        <div className="space-y-3">
+        <div className="space-y-2.5 md:space-y-3">
           {/* Kakao Login */}
           <button
             onClick={handleKakaoLogin}
             disabled={oauthLoading}
-            className={`flex w-full items-center justify-center gap-3 rounded-xl py-3 md:py-3.5 text-sm md:text-base font-medium transition-all hover:brightness-95 active:scale-[0.98] ${oauthLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex w-full items-center justify-center gap-3 rounded-xl py-2.5 md:py-3.5 text-sm md:text-base font-medium transition-all hover:brightness-95 active:scale-[0.98] ${oauthLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: '#FEE500', color: '#000000' }}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -345,7 +345,7 @@ function LoginContent() {
           <button
             onClick={handleGoogleLogin}
             disabled={oauthLoading}
-            className={`flex w-full items-center justify-center gap-3 rounded-xl py-3 md:py-3.5 text-sm md:text-base font-medium transition-all active:scale-[0.98] ${oauthLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
+            className={`flex w-full items-center justify-center gap-3 rounded-xl py-2.5 md:py-3.5 text-sm md:text-base font-medium transition-all active:scale-[0.98] ${oauthLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}`}
             style={{
               backgroundColor: '#ffffff',
               color: '#3c4043',
@@ -363,13 +363,13 @@ function LoginContent() {
           </button>
         </div>
 
-        <div className="my-5 md:my-6 flex items-center gap-4">
+        <div className="my-4 md:my-6 flex items-center gap-4">
           <div className="h-px flex-1 bg-white/10" />
           <span className="text-sm text-text-muted">{t.auth.or}</span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4 md:space-y-5">
+        <form onSubmit={handleLogin} className="space-y-3 md:space-y-5">
           {/* Email Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.email}</label>
@@ -380,7 +380,7 @@ function LoginContent() {
                 setEmail(e.target.value);
                 validateEmail(e.target.value);
               }}
-              className={`w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-3 md:py-3.5 text-base text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
+              className={`w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-2.5 md:py-3.5 text-base text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
                 emailError ? 'ring-error/50 focus:ring-error' : 'ring-white/10 focus:ring-accent-warm'
               }`}
               placeholder="example@email.com"
@@ -397,7 +397,7 @@ function LoginContent() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-3 md:py-3.5 text-base text-text-primary outline-none ring-1 ring-white/10 transition-all focus:ring-2 focus:ring-accent-warm"
+                className="w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-2.5 md:py-3.5 text-base text-text-primary outline-none ring-1 ring-white/10 transition-all focus:ring-2 focus:ring-accent-warm"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
@@ -451,7 +451,7 @@ function LoginContent() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-accent-warm py-3.5 md:py-4 font-bold text-background-primary transition-all hover:bg-accent-hover hover:shadow-[0_0_20px_rgba(255,153,102,0.4)] disabled:opacity-50 active:scale-[0.98]"
+            className="w-full rounded-xl bg-accent-warm py-2.5 md:py-4 font-bold text-background-primary transition-all hover:bg-accent-hover hover:shadow-[0_0_20px_rgba(255,153,102,0.4)] disabled:opacity-50 active:scale-[0.98]"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -462,7 +462,7 @@ function LoginContent() {
           </button>
         </form>
 
-        <div className="mt-5 md:mt-6 flex justify-center gap-4 text-sm text-text-muted">
+        <div className="mt-4 md:mt-6 flex justify-center gap-4 text-sm text-text-muted">
           <button
             onClick={() => setShowFindIdModal(true)}
             className="hover:text-text-secondary transition-colors"
@@ -478,7 +478,7 @@ function LoginContent() {
           </button>
         </div>
 
-        <p className="mt-5 md:mt-6 text-center text-sm text-text-muted">
+        <p className="mt-4 md:mt-6 text-center text-sm text-text-muted">
           {t.auth.noAccount}{' '}
           <Link href="/signup" className="font-medium text-accent-warm hover:underline">
             {t.common.signup}
