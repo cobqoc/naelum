@@ -719,7 +719,7 @@ export default function HomeClient({
                       title={`${displayName}${label ? ` · ${label}` : ''}`}
                     >
                       <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
-                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[9px] md:text-[10px] max-w-[60px]'}`}>
+                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[10px] md:text-[11px] max-w-[80px]'}`}>
                         {displayName}
                       </span>
                       {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
@@ -859,11 +859,12 @@ export default function HomeClient({
                       <circle cx="22" cy="7" r="1.4" fill="#3a1f08" opacity="0.5"/>
                     </svg>
 
-                    {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소. */}
+                    {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소.
+                        칩 truncate(60→80px 보강 후에도 정확 이름 확인) 동선의 진입점이므로 발견성 약간 강화 — 폰트 size 한 단계 ↑, padding 살짝 ↑, hover scale 더 강. */}
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setAllSheetMode('all'); }}
-                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all"
+                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[11px] md:text-sm font-extrabold whitespace-nowrap hover:scale-110 active:scale-95 transition-all"
                       style={{
                         background: '#f4d8a0',
                         color: '#5a3208',
@@ -873,7 +874,7 @@ export default function HomeClient({
                       title={t.home.ingredientList}
                       aria-label={t.home.ingredientList}
                     >
-                      <span className="text-sm md:text-base leading-none">📋</span>
+                      <span className="text-base md:text-lg leading-none">📋</span>
                       <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
                     </button>
                   </div>

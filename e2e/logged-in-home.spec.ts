@@ -236,7 +236,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     // → 빈 냉장고에서 펜던트 hide가 더 자연스럽지만 별도 UX 이슈로 분리.
 
     // 빈 가이드 CTA 클릭 → AddIngredientModal 열림(모달 안에서 multi-select)
-    const emptyCta = page.locator('button:has-text("자주 쓰는 재료")');
+    const emptyCta = page.locator('button:has-text("냉장고 채우기")');
     await expect(emptyCta).toBeVisible();
     await emptyCta.click();
 

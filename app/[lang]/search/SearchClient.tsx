@@ -246,7 +246,8 @@ function SearchContent() {
     if (cached && cached.data.query === initialQuery) {
       isRestoredRef.current = true;
       setResults(cached.data.results);
-      setActiveTab(cached.data.activeTab);
+      // ingredients 탭 제거 후엔 cache에 'ingredients'가 남아있어도 'recipes'로 fallback (빈 화면 방지)
+      setActiveTab(cached.data.activeTab === 'ingredients' ? 'recipes' : cached.data.activeTab);
       setPages(cached.data.pages);
       setCuisine(cached.data.cuisine);
       setDifficulty(cached.data.difficulty);
@@ -476,11 +477,17 @@ function SearchContent() {
           <>
             {/* Tabs */}
             <div className="flex gap-4 mb-6 border-b border-white/10">
-              {[
-                { key: 'recipes', label: t.search.tabRecipes, count: results.recipes?.total || 0 },
-                { key: 'users', label: t.search.tabUsers, count: results.users?.total || 0 },
-                { key: 'ingredients', label: t.search.tabIngredients, count: results.ingredients?.total || 0 },
-              ].map(tab => (
+              {(() => {
+                // recipes 탭에 ingredient 매칭 레시피까지 통합 (사용자가 "양파" 검색 → 양파 들어간 레시피 한 곳에서 보게).
+                // ingredients 탭은 제거 — 같은 데이터가 두 곳에 분산되는 UX 혼란 해소.
+                const recipeIds = new Set((results.recipes?.data ?? []).map((r: { id: string }) => r.id));
+                const extra = (results.ingredients?.data ?? []).filter((r: { id: string }) => !recipeIds.has(r.id));
+                const mergedTotal = (results.recipes?.data?.length ?? 0) + extra.length;
+                return [
+                  { key: 'recipes', label: t.search.tabRecipes, count: mergedTotal },
+                  { key: 'users', label: t.search.tabUsers, count: results.users?.total || 0 },
+                ];
+              })().map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as 'recipes' | 'users' | 'ingredients')}
@@ -504,11 +511,15 @@ function SearchContent() {
               </div>
             ) : (
               <>
-                {/* Recipes */}
-                {activeTab === 'recipes' && (
+                {/* Recipes — recipes(title/description 매치) + ingredients(재료 매치) 통합 dedup */}
+                {activeTab === 'recipes' && (() => {
+                  const recipeIds = new Set((results.recipes?.data ?? []).map((r: { id: string }) => r.id));
+                  const extra = (results.ingredients?.data ?? []).filter((r: { id: string }) => !recipeIds.has(r.id));
+                  const mergedRecipes = [...(results.recipes?.data ?? []), ...extra];
+                  return (
                   <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {results.recipes?.data.map((recipe) => (
+                    {mergedRecipes.map((recipe) => (
                       <Link
                         key={recipe.id}
                         href={`/recipes/${recipe.id}`}
@@ -547,12 +558,13 @@ function SearchContent() {
                         </div>
                       </Link>
                     ))}
-                    {results.recipes?.data.length === 0 && (
+                    {mergedRecipes.length === 0 && (
                       <p className="col-span-2 text-center text-text-muted py-10">{t.search.noResults}</p>
                     )}
                   </div>
                   </>
-                )}
+                  );
+                })()}
 
                 {/* Users */}
                 {activeTab === 'users' && (

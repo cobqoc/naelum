@@ -188,7 +188,8 @@ export default function SignupPage() {
         </div>
         <h1 className="mb-2 text-xl md:text-2xl font-bold text-text-primary text-center">{t.common.signup}</h1>
         <p className="mb-6 md:mb-8 text-sm text-text-muted text-center">
-          {t.auth.signupSimple}
+          {/* 로그인 페이지와 동일한 subtitle로 통일 — signupSimple("회원가입")이 h1과 중복되던 문제 해소 */}
+          {t.auth.meetRecipes}
         </p>
 
         {!emailSent ? (
