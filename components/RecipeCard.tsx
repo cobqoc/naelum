@@ -46,8 +46,13 @@ export default memo(function RecipeCard({ recipe, showAuthor = false, priority =
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
           ) : (
-            <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">
-              🍳
+            // 사진 없는 레시피 fallback — prod 약 40%가 사진 없음(audit 결과). 빈약한 회색+작은 emoji 대신
+            // 따뜻한 gradient + 큰 emoji + 제목 일부로 풍부하게.
+            <div className="absolute inset-0 bg-gradient-to-br from-accent-warm/20 via-background-tertiary to-background-secondary flex flex-col items-center justify-center gap-2 p-3">
+              <span className="text-5xl md:text-6xl opacity-60" aria-hidden="true">🍳</span>
+              <span className="text-xs md:text-sm font-bold text-text-secondary text-center line-clamp-2 leading-tight">
+                {recipe.title}
+              </span>
             </div>
           )}
           {recipe.has_cooked && (
