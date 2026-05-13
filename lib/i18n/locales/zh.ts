@@ -693,6 +693,8 @@ export const zh = {
     expiringRecipeReady: '🔥 立即可做 {count} 道',
     expiringRecipeAlmost: '🛒 即将可做 {count} 道',
     expiringRecipeNone: '📋 浏览其他菜谱',
+    quickSeedTitle: '从这些常用食材开始',
+    quickSeedCustomCta: '+ 自定义添加',
   },
   ingredient: {
     updateSuccess: '✅ {name}已更新',

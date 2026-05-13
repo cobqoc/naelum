@@ -693,6 +693,8 @@ export const de = {
     expiringRecipeReady: '🔥 Sofort kochbar: {count}',
     expiringRecipeAlmost: '🛒 Fast bereit: {count}',
     expiringRecipeNone: '📋 Andere Rezepte ansehen',
+    quickSeedTitle: 'Starte mit diesen häufigen Zutaten',
+    quickSeedCustomCta: '+ Eigene Zutat hinzufügen',
   },
   ingredient: {
     updateSuccess: '✅ {name} aktualisiert',

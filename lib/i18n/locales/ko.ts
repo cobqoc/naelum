@@ -693,6 +693,8 @@ export const ko = {
     expiringRecipeReady: '🔥 이 재료로 바로 가능 {count}개',
     expiringRecipeAlmost: '🛒 거의 가능 {count}개',
     expiringRecipeNone: '📋 다른 레시피 보기',
+    quickSeedTitle: '이런 재료부터 시작해보세요',
+    quickSeedCustomCta: '+ 직접 추가하기',
   },
   ingredient: {
     updateSuccess: '✅ {name} 수정됐어요',

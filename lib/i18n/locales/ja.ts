@@ -693,6 +693,8 @@ export const ja = {
     expiringRecipeReady: '🔥 今すぐ作れる {count}件',
     expiringRecipeAlmost: '🛒 ほぼ作れる {count}件',
     expiringRecipeNone: '📋 他のレシピを見る',
+    quickSeedTitle: 'まずはよく使う食材から',
+    quickSeedCustomCta: '+ 自分で追加する',
   },
   ingredient: {
     updateSuccess: '✅ {name}を更新しました',

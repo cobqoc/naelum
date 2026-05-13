@@ -33,6 +33,7 @@ import {
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
 import { DEMO } from './_home/demoItems';
+import { QUICK_ADD, quickAddToPayload, type QuickAddIngredient } from './_home/quickAddList';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
@@ -46,6 +47,13 @@ import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
 });
+
+// 빈 냉장고 QuickSeed — 한식 빈도 최우선 6개. 신규 유저 0탭 시작용.
+// 양파(상온)/마늘/대파/계란/돼지고기/두부 — 김치찌개·된장찌개·제육볶음 등 한식 기본 가능.
+const QUICK_SEED_NAMES = ['양파', '마늘', '대파', '계란', '돼지고기', '두부'] as const;
+const QUICK_SEED_ITEMS: QuickAddIngredient[] = QUICK_SEED_NAMES
+  .map(name => QUICK_ADD.find(q => q.name === name))
+  .filter((x): x is QuickAddIngredient => !!x);
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -492,6 +500,42 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
+  // 빈 냉장고 QuickSeed — 한 탭으로 핵심 재료 추가. 만료일 NULL(데이터 무결성 원칙).
+  // 비로그인은 데모 모드라 별도 처리, 로그인은 즉시 DB insert.
+  const addQuickSeed = async (item: QuickAddIngredient) => {
+    if (!user) {
+      // 비로그인 — 데모 아이템으로 추가
+      const newItem: FridgeItem = {
+        id: `d${++demoIdRef.current}`,
+        isDemoItem: true,
+        ingredient_name: item.name,
+        category: item.category,
+        expiry_date: null,
+        storage_location: item.storage,
+        quantity: 1,
+        unit: '개',
+        purchase_date: new Date().toISOString().slice(0, 10),
+        notes: null,
+        expiry_alert: false,
+      };
+      setItems(prev => [...prev, newItem]);
+      return;
+    }
+    const client = createClient();
+    const { data, error } = await client
+      .from('user_ingredients')
+      .insert(quickAddToPayload(item, user.id))
+      .select()
+      .single();
+    if (error) {
+      console.error('[quickSeed] insert 실패:', error);
+      showToast(getErrorMessage(error, t.ingredient.addError));
+      return;
+    }
+    if (data) setItems(prev => [...prev, data as FridgeItem]);
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
 
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary flex flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0 overflow-hidden md:overflow-visible overscroll-y-none">
@@ -623,18 +667,36 @@ export default function HomeClient({
           <FridgeSVG />
 
           {/* 빈 냉장고 가이드 — 로그인 신규 유저(items=0) 전용 overlay.
+              QuickSeed 6칩(한식 핵심) + "직접 추가" CTA. 1탭으로 시작 → 타이핑 진입장벽 제거.
               기존 선반 overlay 경로는 items.length===0 시 자연히 렌더 결과 없으므로 영향 없음. */}
           {user && !loading && items.length === 0 && (
-            <div className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none px-6">
-              <div className="pointer-events-auto bg-background-secondary/95 backdrop-blur-sm border border-accent-warm/30 rounded-2xl shadow-2xl p-5 max-w-[280px] text-center">
-                <div className="text-5xl mb-2" aria-hidden="true">🥕</div>
-                <h2 className="text-base md:text-lg font-bold mb-1.5">{t.home.emptyFridgeTitle}</h2>
-                <p className="text-xs md:text-sm text-text-secondary mb-4 leading-relaxed">{t.home.emptyFridgeDesc}</p>
+            <div className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none px-4">
+              <div className="pointer-events-auto bg-background-secondary/95 backdrop-blur-sm border border-accent-warm/30 rounded-2xl shadow-2xl p-4 md:p-5 max-w-[320px] text-center">
+                <div className="text-4xl md:text-5xl mb-1.5" aria-hidden="true">🥕</div>
+                <h2 className="text-base md:text-lg font-bold mb-1">{t.home.emptyFridgeTitle}</h2>
+                <p className="text-[11px] md:text-sm text-text-secondary mb-3 leading-relaxed">{t.home.emptyFridgeDesc}</p>
+
+                {/* QuickSeed 그리드 — 3열 2행. 한 탭으로 추가 → DB insert + chip 등장. */}
+                <p className="text-[10px] md:text-xs text-text-muted font-medium mb-1.5 text-left">{t.home.quickSeedTitle}</p>
+                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                  {QUICK_SEED_ITEMS.map(item => (
+                    <button
+                      key={item.name}
+                      onClick={() => addQuickSeed(item)}
+                      className="flex flex-col items-center gap-0.5 px-1 py-1.5 rounded-lg bg-background-tertiary hover:bg-accent-warm/15 border border-white/5 hover:border-accent-warm/40 active:scale-95 transition-all"
+                      aria-label={`${item.name} ${t.common.addIngredient}`}
+                    >
+                      <span className="text-xl leading-none" aria-hidden="true">{item.emoji}</span>
+                      <span className="text-[10px] md:text-[11px] font-bold text-text-primary leading-none">{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+
                 <button
                   onClick={() => setAddModalLocation('auto')}
-                  className="w-full px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold active:scale-95 transition-all"
+                  className="w-full px-4 py-2 rounded-xl bg-accent-warm/15 hover:bg-accent-warm/25 border border-accent-warm/30 text-accent-warm text-xs md:text-sm font-bold active:scale-95 transition-all"
                 >
-                  {t.home.emptyFridgeCta}
+                  {t.home.quickSeedCustomCta}
                 </button>
               </div>
             </div>
