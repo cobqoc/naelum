@@ -33,6 +33,7 @@ import {
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
 import { DEMO } from './_home/demoItems';
+import { track } from '@/lib/analytics/track';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
@@ -243,6 +244,7 @@ export default function HomeClient({
   // 액션 시트: "삭제" → 즉시 state 제거 + undo 토스트 (5초 안에 [실행 취소] 클릭 시 복원).
   // DB 삭제는 토스트 만료 직전 (5.5초)에 비동기 실행 → undo 시 cancel.
   const handleDeleteFromSheet = (item: FridgeItem) => {
+    track('ingredient_delete', { name: item.ingredient_name, items_total: items.length });
     const indexBefore = items.findIndex(i => i.id === item.id);
     pendingDeleteIdsRef.current.add(item.id);
     setItems(prev => prev.filter(i => i.id !== item.id));
@@ -499,6 +501,7 @@ export default function HomeClient({
     if (data) setItems(prev => [...prev, data as FridgeItem]);
     setAddModalLocation(null);
     showToast(t.ingredient.addSuccessShort);
+    track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
@@ -642,7 +645,7 @@ export default function HomeClient({
                 <h2 className="text-base md:text-lg font-bold mb-1.5">{t.home.emptyFridgeTitle}</h2>
                 <p className="text-xs md:text-sm text-text-secondary mb-4 leading-relaxed">{t.home.emptyFridgeDesc}</p>
                 <button
-                  onClick={() => setAddModalLocation('auto')}
+                  onClick={() => { track('empty_cta_click'); setAddModalLocation('auto'); }}
                   className="w-full px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold active:scale-95 transition-all"
                 >
                   {t.home.emptyFridgeCta}
@@ -654,7 +657,7 @@ export default function HomeClient({
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
               'auto' 센티넬 = 모달이 "재료 추가"로 generic 타이틀 표시 (폼 기본 동작=자동 분류와 일치). */}
           <button
-            onClick={() => setAddModalLocation('auto')}
+            onClick={() => { track('fab_add_click', { items_count: items.length }); setAddModalLocation('auto'); }}
             aria-label={t.common.addIngredient}
             className="absolute top-[63%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
           >
@@ -690,6 +693,7 @@ export default function HomeClient({
             return (
               <Link
                 href={href}
+                onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
                 className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm text-background-primary text-xs md:text-base font-bold shadow-xl shadow-accent-warm/60 ring-2 ring-accent-warm/30 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
                 style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
                 aria-label={`${label} — ${t.home.pillAriaSuffix}`}
@@ -829,7 +833,7 @@ export default function HomeClient({
                       <>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setAllSheetMode('expiring'); }}
+                          onClick={(e) => { e.stopPropagation(); track('expiring_banner_click', { expiring_count: expiringCount }); setAllSheetMode('expiring'); }}
                           className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all animate-pulse"
                           style={{
                             background: '#fecaca',
@@ -860,7 +864,7 @@ export default function HomeClient({
                         칩 truncate(60→80px 보강 후에도 정확 이름 확인) 동선의 진입점이므로 발견성 약간 강화 — 폰트 size 한 단계 ↑, padding 살짝 ↑, hover scale 더 강. */}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); setAllSheetMode('all'); }}
+                      onClick={(e) => { e.stopPropagation(); track('pendant_click', { items_count: items.length, overflow: totalOverflow }); setAllSheetMode('all'); }}
                       className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[11px] md:text-sm font-extrabold whitespace-nowrap hover:scale-110 active:scale-95 transition-all"
                       style={{
                         background: '#f4d8a0',
