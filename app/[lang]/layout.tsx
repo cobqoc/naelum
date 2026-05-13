@@ -11,7 +11,6 @@ import AccessibilityProvider from "@/components/Common/AccessibilityProvider";
 import { AuthProvider } from "@/lib/auth/context";
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from "@/lib/i18n/locales";
 import HtmlLangSync from "./_lang/HtmlLangSync";
-import { Suspense } from "react";
 import PageViewTracker from "@/components/Analytics/PageViewTracker";
 
 // 8개 locale 각각 정적 prerender 대상.
@@ -62,10 +61,8 @@ export default async function LangLayout({
                   {children}
                   <CookieConsent />
                   <ToastContainer />
-                  {/* 자체 analytics 페이지뷰 트래킹 — useSearchParams 사용으로 Suspense 필요 */}
-                  <Suspense fallback={null}>
-                    <PageViewTracker />
-                  </Suspense>
+                  {/* 자체 analytics 페이지뷰 트래킹 */}
+                  <PageViewTracker />
                 </AccessibilityProvider>
               </ConsentProvider>
             </ToastProvider>

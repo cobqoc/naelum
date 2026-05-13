@@ -61,7 +61,15 @@ export function track(eventType: string, payload?: TrackPayload): void {
     return; // payload 직렬화 실패
   }
 
-  // fetch keepalive로 페이지 이동 중에도 전송 보장
+  // sendBeacon 우선 — 브라우저 background로 전송, networkidle·page navigate 영향 없음.
+  // fetch keepalive로 fallback (sendBeacon 실패 시).
+  try {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: 'application/json' });
+      if (navigator.sendBeacon('/api/events', blob)) return;
+    }
+  } catch {/* fallthrough */}
+
   void fetch('/api/events', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
