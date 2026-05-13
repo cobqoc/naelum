@@ -449,24 +449,34 @@ export default function HomeClient({
 
   // AddIngredientModal onAddIngredient
   const addIngredientFromModal = async (formData: IngredientFormData) => {
+    // 2차 안전망 sanitize — IngredientForm에서 1차 sanitize되지만 다른 진입점(직접 호출 등)을 위한 방어.
+    // PostgreSQL date 컬럼은 빈 문자열("")을 거부(22007); ingredient_id "preset-XXX"는 UUID FK 아니므로 null.
+    const sanitized: IngredientFormData = {
+      ...formData,
+      purchase_date: formData.purchase_date || null,
+      expiry_date: formData.expiry_date || null,
+      ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
+        ? formData.ingredient_id
+        : null,
+    };
     // isAuthenticated(SSR 기준)가 false거나 user(클라이언트 세션)가 없으면 demo 모드
     if (!isAuthenticated || !user) {
       const newItem: FridgeItem = {
         id: `d${++demoIdRef.current}`,
         isDemoItem: true,
-        ingredient_name: formData.ingredient_name,
-        category: formData.category,
-        expiry_date: formData.expiry_date ?? null,
-        storage_location: formData.storage_location ?? null,
-        quantity: formData.quantity ?? null,
-        unit: formData.unit ?? null,
-        purchase_date: formData.purchase_date ?? null,
-        notes: formData.notes ?? null,
-        expiry_alert: formData.expiry_alert ?? false,
+        ingredient_name: sanitized.ingredient_name,
+        category: sanitized.category,
+        expiry_date: sanitized.expiry_date ?? null,
+        storage_location: sanitized.storage_location ?? null,
+        quantity: sanitized.quantity ?? null,
+        unit: sanitized.unit ?? null,
+        purchase_date: sanitized.purchase_date ?? null,
+        notes: sanitized.notes ?? null,
+        expiry_alert: sanitized.expiry_alert ?? false,
       };
       setItems(prev => [...prev, newItem]);
       setAddModalLocation(null);
-      toastSuccess(t.ingredient.addSuccessDemo.replace('{name}', formData.ingredient_name), {
+      toastSuccess(t.ingredient.addSuccessDemo.replace('{name}', sanitized.ingredient_name), {
         action: {
           label: t.ingredient.loginToSave,
           onClick: () => router.push('/login'),
@@ -478,7 +488,7 @@ export default function HomeClient({
     const client = createClient();
     const { data, error } = await client
       .from('user_ingredients')
-      .insert({ ...formData, user_id: user.id })
+      .insert({ ...sanitized, user_id: user.id })
       .select()
       .single();
     if (error) {
