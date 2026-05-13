@@ -235,9 +235,8 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     // 참고: 펜던트는 isAuthenticated만 가드라 items=0이어도 노출됨 (현재 동작).
     // → 빈 냉장고에서 펜던트 hide가 더 자연스럽지만 별도 UX 이슈로 분리.
 
-    // 빈 가이드 CTA(직접 추가하기) 클릭 → AddIngredientModal 열림
-    // QuickSeed 칩 6개 위에 있는 fallback 버튼
-    const emptyCta = page.locator('button:has-text("직접 추가하기")');
+    // 빈 가이드 CTA 클릭 → AddIngredientModal 열림(모달 안에서 multi-select)
+    const emptyCta = page.locator('button:has-text("자주 쓰는 재료")');
     await expect(emptyCta).toBeVisible();
     await emptyCta.click();
 
@@ -273,31 +272,4 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await expect(page.locator('button[aria-label="전체 재료 목록"]')).toBeVisible();
   });
 
-  // ── 시나리오 D: 빈 냉장고 QuickSeed — 1탭으로 재료 추가 ────────────────
-  test('빈 냉장고 QuickSeed — 칩 1탭으로 즉시 재료 추가 + 빈 가이드 사라짐', async ({ authenticatedPage, testUser }) => {
-    const page = authenticatedPage;
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    // 빈 가이드 + QuickSeed 그리드 노출
-    await expect(page.getByText('냉장고를 채워보세요')).toBeVisible();
-    await expect(page.getByText('이런 재료부터 시작해보세요')).toBeVisible();
-
-    // 양파 칩 1탭 → DB insert + 칩 등장
-    const onionChip = page.getByRole('button', { name: /양파.*재료 추가/i });
-    await expect(onionChip).toBeVisible();
-    await onionChip.click();
-
-    // 빈 가이드 사라짐 (items.length > 0)
-    await expect(page.getByText('냉장고를 채워보세요')).toHaveCount(0, { timeout: 5000 });
-
-    // DB에 실제 저장됐는지 확인
-    const { data } = await admin()
-      .from('user_ingredients')
-      .select('ingredient_name, category, storage_location')
-      .eq('user_id', testUser.userId);
-    expect(data).toHaveLength(1);
-    expect(data?.[0].ingredient_name).toBe('양파');
-    expect(data?.[0].storage_location).toBe('상온');
-  });
 });

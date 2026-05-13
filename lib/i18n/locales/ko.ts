@@ -683,7 +683,7 @@ export const ko = {
     onboardingBannerCta: '완성하기',
     emptyFridgeTitle: '냉장고를 채워보세요',
     emptyFridgeDesc: '재료를 추가하면 지금 바로 만들 수 있는 레시피를 추천해드려요',
-    emptyFridgeCta: '+ 첫 재료 추가하기',
+    emptyFridgeCta: '+ 자주 쓰는 재료 한 번에 추가',
     filterCuisineLabel: '국가',
     filterDishLabel: '요리',
     clearFilter: '필터 해제',
@@ -693,8 +693,6 @@ export const ko = {
     expiringRecipeReady: '🔥 이 재료로 바로 가능 {count}개',
     expiringRecipeAlmost: '🛒 거의 가능 {count}개',
     expiringRecipeNone: '📋 다른 레시피 보기',
-    quickSeedTitle: '이런 재료부터 시작해보세요',
-    quickSeedCustomCta: '+ 직접 추가하기',
   },
   ingredient: {
     updateSuccess: '✅ {name} 수정됐어요',

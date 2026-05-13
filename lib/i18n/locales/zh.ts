@@ -683,7 +683,7 @@ export const zh = {
     onboardingBannerCta: '完成',
     emptyFridgeTitle: '把冰箱填满',
     emptyFridgeDesc: '添加食材后，马上为您推荐可以做的菜',
-    emptyFridgeCta: '+ 添加第一个食材',
+    emptyFridgeCta: '+ 一次添加常用食材',
     filterCuisineLabel: '国家',
     filterDishLabel: '料理',
     clearFilter: '清除筛选',
@@ -693,8 +693,6 @@ export const zh = {
     expiringRecipeReady: '🔥 立即可做 {count} 道',
     expiringRecipeAlmost: '🛒 即将可做 {count} 道',
     expiringRecipeNone: '📋 浏览其他菜谱',
-    quickSeedTitle: '从这些常用食材开始',
-    quickSeedCustomCta: '+ 自定义添加',
   },
   ingredient: {
     updateSuccess: '✅ {name}已更新',

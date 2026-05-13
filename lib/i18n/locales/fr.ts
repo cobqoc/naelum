@@ -683,7 +683,7 @@ export const fr = {
     onboardingBannerCta: 'Compléter',
     emptyFridgeTitle: 'Remplissez votre frigo',
     emptyFridgeDesc: 'Ajoutez des ingrédients pour voir les recettes à faire maintenant',
-    emptyFridgeCta: '+ Ajouter le premier ingrédient',
+    emptyFridgeCta: '+ Ajouter des ingrédients courants',
     filterCuisineLabel: 'Cuisine',
     filterDishLabel: 'Plat',
     clearFilter: 'Effacer le filtre',
@@ -693,8 +693,6 @@ export const fr = {
     expiringRecipeReady: '🔥 Prêt à cuisiner : {count}',
     expiringRecipeAlmost: '🛒 Presque prêt : {count}',
     expiringRecipeNone: '📋 Voir d’autres recettes',
-    quickSeedTitle: 'Commencez par ces ingrédients courants',
-    quickSeedCustomCta: '+ Ajouter manuellement',
   },
   ingredient: {
     updateSuccess: '✅ {name} mis à jour',
