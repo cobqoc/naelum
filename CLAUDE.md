@@ -1050,9 +1050,20 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 ---
 
-## 📌 데이터 현황 (2026-05-13 기준)
+## 📌 데이터 현황 (2026-05-14 기준)
 
 ### 기능 구현 현황
+- **자체 행동 분석(Analytics)** — 구현 완료 (2026-05-14)
+  - `events` 테이블 dev+prod 적용 (id, user_id?, session_id, event_type, payload jsonb, page, viewport_w/h, ua, created_at + 인덱스 4)
+  - RLS: `anon, authenticated` insert / `admin role` select
+  - 클라이언트: `lib/analytics/track.ts` — `navigator.sendBeacon` 우선(networkidle 영향 0), `fetch keepalive` fallback
+  - **GDPR 게이트**: `CookieConsent.analytics` 동의한 사용자만 트래킹 (미동의 시 `track()` no-op)
+  - 자동 페이지뷰: `components/Analytics/PageViewTracker.tsx`가 layout에서 mount, pathname 변경 시 `page_view` 전송
+  - 핵심 클릭 트래킹: 펜던트, 만료 배너, FAB(+), 빈 가이드 CTA, 추천 pill, BottomNav 검색, 검색 오버레이 pill, 재료 추가/삭제
+  - 수집 API: `POST /api/events` — rate limit 60/분 (user.id 또는 IP), payload 2KB 제한, `event_type` snake_case 검증, user_id 사칭 차단
+  - 대시보드 API: `GET /api/admin/analytics/events?days=N` — admin role 확인 후 raw events 반환 (최대 10000행)
+  - 대시보드 UI: `/[lang]/admin/analytics/events` — recharts 기반 페이지뷰 추이·Top events·Top pages·디바이스 분포·홈 인터랙션 카운트
+  - 기존 `search_history`·`recommendation_history`와 별개 유지 (충돌 없음)
 - **낼름함 (레시피 저장)** — 구현 완료
   - 레시피 카드의 👅 낼름 버튼으로 저장
   - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
