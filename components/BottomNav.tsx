@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
-import { useAuth } from '@/lib/auth/context';
-import UserDropdown from './Header/UserDropdown';
 import SearchBar from './SearchBar';
 
 // 홈 탭 아이콘 — PC 헤더 원본 실루엣 + 홈 FridgeSVG 팔레트 (teal→terracotta 빨강, 블랙→다크레드, 골드 유지).
@@ -126,28 +124,6 @@ function CartIcon({ size = 30, active = false }: { size?: number; active?: boole
   );
 }
 
-// 프로필 아이콘 — 웜톤 배경 + 크림 실루엣. 인증 로딩 간 edge-case에만 노출.
-function ProfileIcon({ size = 30, active = false }: { size?: number; active?: boolean }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="transition-opacity"
-      style={{ opacity: active ? 1 : 0.72 }}
-    >
-      {/* 배경 원 */}
-      <circle cx="12" cy="12" r="10" fill="#ff9966" stroke="#c85a1a" strokeWidth="0.8"/>
-      {/* 머리 */}
-      <circle cx="12" cy="9.5" r="3.4" fill="#fff4e6"/>
-      {/* 어깨 */}
-      <path d="M4 20.5 Q4 14.5, 12 14.5 Q20 14.5, 20 20.5 Z" fill="#fff4e6"/>
-    </svg>
-  );
-}
-
 interface NavItem {
   href: string;
   Icon: React.ElementType;
@@ -157,43 +133,20 @@ interface NavItem {
 export default function BottomNav() {
   const pathname = usePathname();
   const { t } = useI18n();
-  const { user, profile, loading: authLoading } = useAuth();
   const [showCart, setShowCart] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const { count: cartCount } = useCartCount();
 
-  const handleLogout = async () => {
-    localStorage.removeItem('naelum_auto_login');
-    await fetch('/api/auth/signout', { method: 'POST', redirect: 'manual' });
-    window.location.href = '/';
-  };
-
-  const username = profile?.username ?? null;
-  // 장보기 힌트 툴팁 제거됨 — 아이콘+배지로 기능 충분히 암시됨.
-
+  // 프로필 슬롯은 모바일 헤더로 이관됨(중복 제거). 향후 다른 슬롯(예: 글쓰기) 추가 가능.
   const navItems: NavItem[] = [
-    // 참고: profile/cart/search 탭의 Icon은 실제 렌더되지 않음 (UserDropdown / emoji / custom 사용)
-    // 타입 만족을 위해 Home으로 통일.
-    // 홈이 냉장고 UI이므로 별도 fridge 탭은 제거됨 — /fridge-home URL은 /로 redirect.
     { href: '/', Icon: FridgeIcon, label: t.bottomNav.fridge },
     { href: '#search', Icon: SearchIcon, label: t.bottomNav.search },
     { href: '/cart', Icon: CartIcon, label: t.bottomNav.cart },
-    { href: '/profile', Icon: ProfileIcon, label: t.bottomNav.profile },
   ];
-
-  const getHref = (item: NavItem) => {
-    if (item.href === '/profile') {
-      if (authLoading) return '#';
-      return user && username ? `/@${username}` : '/login';
-    }
-    return item.href;
-  };
 
   const isActive = (item: NavItem) => {
     if (item.href === '/cart') return false;
     if (item.href === '/') return pathname === '/';
-    if (item.href === '/profile') return pathname.startsWith('/@');
     return pathname.startsWith(item.href);
   };
 
@@ -206,10 +159,9 @@ export default function BottomNav() {
         {navItems.map((item) => {
           const active = isActive(item);
           const { Icon } = item;
-          const isProfileTab = item.href === '/profile';
           const isCartTab = item.href === '/cart';
           const isSearchTab = item.href === '#search';
-          const label = isProfileTab && !authLoading && !user ? t.common.login : item.label;
+          const label = item.label;
 
           if (isSearchTab) {
             // 홈(냉장고 UI)에서는 인라인 검색바로 토글, 그 외 페이지에서는 오버레이 모달을 띄움.
@@ -269,32 +221,10 @@ export default function BottomNav() {
             );
           }
 
-          if (isProfileTab && user) {
-            return (
-              <UserDropdown
-                key={item.href}
-                user={user}
-                profile={profile}
-                isOpen={showUserMenu}
-                onOpen={() => setShowUserMenu(true)}
-                onClose={() => setShowUserMenu(false)}
-                onLogout={handleLogout}
-                fromBottom
-                isActive={active}
-              />
-            );
-          }
-
-          // 비로그인 상태의 프로필 탭 — slot 자체 hide. 로그인 버튼은 Header에 노출됨.
-          // 향후 추가될 BottomNav 아이콘 슬롯 확보.
-          if (isProfileTab && !authLoading && !user) {
-            return null;
-          }
-
           return (
             <Link
               key={item.href}
-              href={getHref(item)}
+              href={item.href}
               aria-label={label}
               aria-current={active ? 'page' : undefined}
               className={`relative flex flex-col items-center justify-center min-w-[4rem] py-2 px-3 rounded-xl transition-all ${

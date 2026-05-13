@@ -125,12 +125,20 @@ export default function Header() {
           <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
             {user ? (
               <>
-                {/* 글쓰기 버튼 */}
+                {/* 글쓰기 버튼 — PC: solid orange + 텍스트. */}
                 <button
                   onClick={() => setShowWriteModal(true)}
                   className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
                 >
                   ✏️ <span>{t.common.write}</span>
+                </button>
+                {/* 글쓰기 버튼 — 모바일: ghost 아이콘 (다른 헤더 아이콘들과 톤 통일). */}
+                <button
+                  onClick={() => setShowWriteModal(true)}
+                  aria-label={t.common.write}
+                  className="md:hidden min-w-[40px] min-h-[40px] p-2 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+                >
+                  <span className="text-lg leading-none" aria-hidden="true">✏️</span>
                 </button>
 
                 {/* Shopping Cart */}
@@ -163,17 +171,16 @@ export default function Header() {
                   onClose={() => setShowNotifications(false)}
                 />
 
-                {/* Profile Dropdown */}
-                <div className="hidden md:block">
-                  <UserDropdown
-                    user={user}
-                    profile={profile}
-                    isOpen={showDropdown}
-                    onOpen={() => { closeAll(); setShowDropdown(true); }}
-                    onClose={() => setShowDropdown(false)}
-                    onLogout={handleLogout}
-                  />
-                </div>
+                {/* Profile Dropdown — PC + 모바일 모두 노출. BottomNav에도 프로필 슬롯이 있지만
+                    모바일 헤더 우측이 비어 보이는 문제 해결을 위해 헤더에도 추가. */}
+                <UserDropdown
+                  user={user}
+                  profile={profile}
+                  isOpen={showDropdown}
+                  onOpen={() => { closeAll(); setShowDropdown(true); }}
+                  onClose={() => setShowDropdown(false)}
+                  onLogout={handleLogout}
+                />
               </>
             ) : (
               <>
