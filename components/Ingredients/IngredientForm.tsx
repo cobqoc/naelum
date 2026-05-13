@@ -72,6 +72,28 @@ const CATEGORIES: { id: 'veggie' | 'meat' | 'seafood' | 'grain' | 'dairy' | 'sea
 
 let pendingIdCounter = 0;
 
+/**
+ * onSubmit 호출 직전 payload 정규화 — 모든 caller 자동 안전.
+ * - 빈 문자열 date("") → null: PostgreSQL date 컬럼이 ""를 거부(22007 invalid syntax)
+ * - "preset-XXX" 형식 ingredient_id → null: ingredients_master FK는 UUID이므로 preset 임시 id 못 들어감
+ *
+ * 회귀: 빈 가이드 → 모달 → 양파 1탭 시 purchase_date=""·expiry_date=""로 400 발생하던 버그.
+ * T 그대로 반환 — caller가 type cast 안 해도 됨. 내부에서만 nullable 변환을 type system 우회.
+ */
+function sanitizeOutgoingPayload<T>(data: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- nullable 변환을 위한 한 곳 우회
+  const d = data as any;
+  const purchase: string = d.purchase_date ?? '';
+  const expiry: string = d.expiry_date ?? '';
+  const ingId: string | null = d.ingredient_id ?? null;
+  return {
+    ...d,
+    purchase_date: purchase || null,
+    expiry_date: expiry || null,
+    ingredient_id: ingId && !ingId.startsWith('preset-') ? ingId : null,
+  };
+}
+
 export default function IngredientForm({
   onSubmit,
   onCancel,
@@ -205,7 +227,7 @@ export default function IngredientForm({
     setEditingIndex(null);
 
     for (const item of items) {
-      await onSubmit({
+      await onSubmit(sanitizeOutgoingPayload({
         ingredient_name: item.name,
         category: item.category,
         quantity: item.quantity,
@@ -216,7 +238,7 @@ export default function IngredientForm({
         notes: item.notes,
         expiry_alert: item.expiry_alert,
         ingredient_id: item.ingredientId ?? null,
-      });
+      }));
     }
 
     // 제출 성공 피드백
@@ -246,7 +268,8 @@ export default function IngredientForm({
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (validate()) {
-        onSubmit(formData);
+        // 수정 모드도 같은 sanitize 적용 — 사용자가 만료일 지우고 저장 시 빈 문자열로 400 방지
+        onSubmit(sanitizeOutgoingPayload(formData));
         setFormData({
           ingredient_name: '', category: 'other', quantity: null, unit: '선택',
           purchase_date: '', expiry_date: '', storage_location: '기타', notes: '', expiry_alert: true

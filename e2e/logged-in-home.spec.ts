@@ -272,4 +272,115 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await expect(page.locator('button[aria-label="전체 재료 목록"]')).toBeVisible();
   });
 
+  // ── 시나리오 E: 빈 냉장고 → 모달 → 양파 1탭 → DB 저장 + 빈 가이드 사라짐 ─────
+  // 회귀: PostgreSQL date "" → 400 invalid syntax 버그 방어. addIngredientFromModal sanitize.
+  test('빈 냉장고 → 모달 → 양파 1탭 → DB 저장 + 빈 가이드 사라짐', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByText('냉장고를 채워보세요')).toBeVisible();
+    await page.locator('button:has-text("냉장고 채우기")').click();
+
+    // IngredientBrowser의 양파 칩 (preset)
+    await page.locator('button:has-text("양파")').first().click();
+    // 저장 버튼 "1개 추가" (pendingItems.length + countSuffix + addButton)
+    await page.locator('button:has-text("1개 추가")').first().click();
+    await page.waitForTimeout(1500);
+
+    // 빈 가이드 사라짐
+    await expect(page.getByText('냉장고를 채워보세요')).toHaveCount(0, { timeout: 5000 });
+
+    // DB 검증 — sanitize 적용 확인 (빈 문자열 대신 null)
+    const { data: rows } = await admin()
+      .from('user_ingredients')
+      .select('ingredient_name, expiry_date, purchase_date, ingredient_id')
+      .eq('user_id', testUser.userId);
+    expect(rows).toHaveLength(1);
+    expect(rows?.[0].ingredient_name).toBe('양파');
+    expect(rows?.[0].expiry_date).toBeNull();
+    expect(rows?.[0].purchase_date).toBeNull();
+    expect(rows?.[0].ingredient_id).toBeNull();
+  });
+
+  // ── 시나리오 G: 수정 모드 — 만료일 지우고 저장 → sanitize로 null 저장 ───────
+  // 회귀: 수정 시 만료일 input을 비우면 빈 문자열로 보내져 PostgreSQL 22007 발생하던 위험.
+  // IngredientForm 1차 sanitize 적용 후 updateIngredient 경로도 자동 안전.
+  test('수정 모드 — 만료일 지우고 저장 → DB expiry_date=null', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+
+    // 양파 시드 (만료일 D+10)
+    await admin().from('user_ingredients').insert({
+      user_id: testUser.userId,
+      ingredient_name: '양파',
+      category: 'veggie',
+      expiry_date: isoDateOffsetDays(10),
+      purchase_date: isoDateOffsetDays(-1),
+      storage_location: '상온',
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1500);
+
+    // 양파 chip 클릭 → 액션시트 열림
+    const onionChip = page.locator('button[title*="양파"]').first();
+    await expect(onionChip).toBeVisible();
+    await onionChip.click({ force: true }); // chip의 group hover pt 영향 회피
+
+    // 액션시트 "수정하기" → DetailModal 열림
+    await page.locator('button:has-text("수정하기")').first().click();
+    await page.waitForTimeout(500);
+
+    // 만료일 input 비우기 (form 안의 type=date input 중 expiry용)
+    // IngredientForm의 advanced section이 isEditMode에서는 defaultExpanded라 input 바로 보임.
+    const expiryInput = page.locator('input[type="date"]').nth(1); // [0]=purchase, [1]=expiry
+    await expiryInput.fill('');
+
+    // 저장 ("수정 완료")
+    await page.locator('button[type="submit"]:has-text("수정 완료")').first().click();
+    await page.waitForTimeout(1500);
+
+    // DB 검증
+    const { data: rows } = await admin()
+      .from('user_ingredients')
+      .select('ingredient_name, expiry_date')
+      .eq('user_id', testUser.userId);
+    expect(rows).toHaveLength(1);
+    expect(rows?.[0].ingredient_name).toBe('양파');
+    expect(rows?.[0].expiry_date).toBeNull();
+  });
+
+  // ── 시나리오 F: 모달 → 여러 재료 한 번에 추가 (handleBatchSubmit for loop) ───
+  // 회귀: 다중 추가 시 첫 호출 후 모달 닫혀도 batch가 끝까지 진행되며 모두 DB 저장.
+  test('모달 → 여러 재료 한 번에 추가 (양파·마늘·계란) → DB 3개 저장', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('button:has-text("냉장고 채우기")').click();
+
+    // 3개 선택
+    await page.locator('button:has-text("양파")').first().click();
+    await page.locator('button:has-text("마늘")').first().click();
+    await page.locator('button:has-text("계란")').first().click();
+    // 저장
+    await page.locator('button:has-text("3개 추가")').first().click();
+    await page.waitForTimeout(2000);
+
+    // DB 검증 — 3개 모두 sanitize 적용
+    const { data: rows } = await admin()
+      .from('user_ingredients')
+      .select('ingredient_name, expiry_date, purchase_date, ingredient_id')
+      .eq('user_id', testUser.userId);
+    expect(rows).toHaveLength(3);
+    const names = rows?.map(r => r.ingredient_name).sort();
+    expect(names).toEqual(['계란', '마늘', '양파']);
+    // 모두 sanitize 적용 — date null, preset ingredient_id null
+    for (const r of rows ?? []) {
+      expect(r.expiry_date).toBeNull();
+      expect(r.purchase_date).toBeNull();
+      expect(r.ingredient_id).toBeNull();
+    }
+  });
 });
