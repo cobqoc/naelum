@@ -1053,6 +1053,18 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-15 기준)
 
 ### 기능 구현 현황
+- **재료 상세 설정(DetailFields) UX 전면 개선** — 완료 (2026-05-15)
+  - 수량 입력 스핀 화살표 제거 (`[appearance:textfield]` Tailwind arbitrary CSS)
+  - 스테퍼 + 단위 드롭다운 통합: `[−][수량 | 단위 ▾][+]` 한 덩어리 레이아웃
+  - 수량/용량 동적 레이블: `VOLUME_UNITS` Set 기반 — 단위 미선택 시 "수량 또는 용량", g/ml 등 → "용량", 개/장 등 → "수량"
+  - 카테고리 양방향 `<` `>` 화살표 + 마우스 휠 수평 스크롤 (non-passive wheel handler)
+  - 구매일 오늘 자동 채우기: `createPendingItem`에서 `new Date().toISOString().slice(0, 10)`
+  - 유통기한 프리셋 버튼: 상대 레이블(오늘/3일 후 등) + 실제 날짜(M/D) 표시
+  - 유통기한 ↔ 직접 입력 인플레이스 전환: 프리셋 모드 ↔ 구매일+유통기한 양옆 2열 입력
+  - "직접 입력" 버튼: 오렌지 아웃라인 pill 스타일 (시인성 개선)
+  - "빠른 선택"(backToPresets) 용어 정립: 직접 입력 모드에서 프리셋으로 복귀 버튼
+  - `directInputDate` / `backToPresets` i18n 키 8개 locale 추가
+  - PR #45 (develop → main) 머지 완료
 - **재료 모달 UX 전면 개선** — 완료 (2026-05-15)
   - 비로그인 + 버튼: 데모 추가 → `AuthPromptSheet` (Google/Kakao/이메일 가입 유도 시트)
   - `IngredientForm`: `isSubmitting` 상태 추가 → ghost state 버그 수정, `Promise.all` 병렬 저장
