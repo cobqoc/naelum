@@ -1,5 +1,5 @@
 import { QUICK_ADD } from './quickAddList';
-import { getShelfLifeDays } from './constants';
+
 import { getIngredientEmoji } from '../../../lib/utils/ingredientEmoji';
 import type { FridgeItem } from './types';
 
@@ -60,12 +60,8 @@ export function freshState(item: Pick<FridgeItem, 'expiry_date' | 'purchase_date
     return { border: '#4d7c0f', labelKind: null, labelN: 0, isDanger: false };
   }
   const since = daysSincePurchase(item.purchase_date);
-  if (since < 0) return { border: '#4d7c0f', labelKind: null, labelN: 0, isDanger: false };
-  const shelfLife = getShelfLifeDays(item.category);
-  const warn = Math.ceil(shelfLife * 0.5);
-  if (since >= shelfLife) return { border: '#dc2626', labelKind: 'daysAged', labelN: since, isDanger: true };
-  if (since >= warn) return { border: '#d97706', labelKind: 'daysAged', labelN: since, isDanger: false };
-  return { border: '#4d7c0f', labelKind: null, labelN: 0, isDanger: false };
+  if (since <= 0) return { border: '#4d7c0f', labelKind: null, labelN: 0, isDanger: false };
+  return { border: '#4d7c0f', labelKind: 'daysAged', labelN: since, isDanger: false };
 }
 
 /** freshState 결과를 locale별 표시 문자열로. 빈 라벨이면 빈 문자열. */
@@ -85,8 +81,7 @@ export function urgencyScore(item: FridgeItem): number {
   if (item.expiry_date) return daysUntilExpiry(item.expiry_date);
   const since = daysSincePurchase(item.purchase_date);
   if (since < 0) return 99;
-  const shelfLife = getShelfLifeDays(item.category);
-  return Math.max(-1, shelfLife - since);
+  return Math.max(0, 99 - since);
 }
 
 /** DEMO 판정 — `isDemoItem` flag 우선, 기존 localStorage 호환을 위해 id prefix도 fallback. */
