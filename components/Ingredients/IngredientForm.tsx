@@ -632,7 +632,11 @@ function DetailFields({
           <button
             type="button"
             onClick={() => setShowDirectInput(v => !v)}
-            className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+            className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full transition-all ${
+              showDirectInput
+                ? 'text-text-muted hover:text-text-secondary'
+                : 'text-accent-warm border border-accent-warm/40 hover:border-accent-warm/70 hover:bg-accent-warm/10'
+            }`}
           >
             {showDirectInput ? (
               <>

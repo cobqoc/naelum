@@ -575,7 +575,7 @@ export const it = {
     expiryPreset1w: 'Tra 1 settimana',
     expiryPreset1m: 'Tra 1 mese',
     directInputDate: 'Data esatta',
-    backToPresets: 'Preimpostazioni',
+    backToPresets: 'Selezione rapida',
     unitLabels: {
       '선택': 'Seleziona',
       'g': 'g',

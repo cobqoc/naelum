@@ -575,7 +575,7 @@ export const de = {
     expiryPreset1w: 'In 1 Woche',
     expiryPreset1m: 'In 1 Monat',
     directInputDate: 'Datum eingeben',
-    backToPresets: 'Voreinstellungen',
+    backToPresets: 'Schnellauswahl',
     unitLabels: {
       '선택': 'Auswählen',
       'g': 'g',

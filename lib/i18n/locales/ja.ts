@@ -575,7 +575,7 @@ export const ja = {
     expiryPreset1w: '1週間後',
     expiryPreset1m: '1ヶ月後',
     directInputDate: '直接入力',
-    backToPresets: 'プリセットへ',
+    backToPresets: 'クイック選択',
     unitLabels: {
       '선택': '選択',
       'g': 'g',
