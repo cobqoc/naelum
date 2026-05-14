@@ -1050,9 +1050,21 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 ---
 
-## 📌 데이터 현황 (2026-05-14 기준)
+## 📌 데이터 현황 (2026-05-15 기준)
 
 ### 기능 구현 현황
+- **재료 모달 UX 전면 개선** — 완료 (2026-05-15)
+  - 비로그인 + 버튼: 데모 추가 → `AuthPromptSheet` (Google/Kakao/이메일 가입 유도 시트)
+  - `IngredientForm`: `isSubmitting` 상태 추가 → ghost state 버그 수정, `Promise.all` 병렬 저장
+  - `IngredientBrowser` 탭 이름 i18n: 전체·자주·카테고리명 8개 locale 적용
+  - `Autocomplete` 검색창: 홈 SearchBar와 동일한 오렌지 글로우 디자인
+  - `isSelected` 칩: 연한 테두리+작은✓ → 오렌지 솔리드 배경+SVG 체크 (가시성 향상)
+  - 데스크톱 자동 포커스: `pointer: fine` 환경에서만 모달 열릴 때 검색창 자동 포커스
+- **데모 재료 글로벌화** — 완료 (2026-05-15)
+  - `demoItems.ts` v4: 김치·콩나물·부침가루·간장·참기름 등 한식 특화 → 토마토·버섯·밀가루·파스타·올리브유 등 글로벌 공통 재료
+  - `quickAddList.ts`: 두부🟦→🫘, 식용유🛢️→🧴, 후추⚫→🌶️
+  - `helpers.ts`: `getEmoji` fallback을 `getIngredientEmoji`로 교체 (정확한 이모지 반환)
+  - `POPULAR_ITEMS`: 한국 특화 20개 → 전 세계 공통 16개 (마늘·양파·계란·토마토 등)
 - **saves_count 음수 버그 수정** — 완료 (2026-05-14)
   - 트리거(`update_recipe_saves_count`)를 `COUNT(*)` 방식으로 교체 → 정확한 집계
   - `increment_saves_count` / `decrement_saves_count` RPC를 no-op으로 변환 (트리거와 이중 적용 방지)
