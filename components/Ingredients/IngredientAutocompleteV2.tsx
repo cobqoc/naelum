@@ -50,6 +50,7 @@ export default function IngredientAutocompleteV2({
   onCustomIngredient,
   className,
   disabled,
+  autoFocus,
 }: IngredientAutocompleteV2Props) {
   // ===== 상태 관리 =====
   const [internalSelectedCategories, setInternalSelectedCategories] = useState<string[]>([]);
@@ -217,6 +218,7 @@ export default function IngredientAutocompleteV2({
         renderItem={renderIngredientItem}
         className={className}
         disabled={disabled}
+        autoFocus={autoFocus}
         ariaLabel="재료 검색"
       />
 

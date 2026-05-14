@@ -365,6 +365,7 @@ export default function IngredientForm({
           placeholder={t.quickAdd.searchPlaceholder}
           enableRecentItems={true}
           allowCustomIngredient={true}
+          autoFocus={true}
         />
       </div>
 

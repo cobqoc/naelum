@@ -50,6 +50,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // 접근성
   ariaLabel,
   disabled = false,
+  autoFocus = false,
 }: AutocompleteProps<T>) {
   // ===== 상태 관리 =====
   const [suggestions, setSuggestions] = useState<T[]>([]);
@@ -62,6 +63,15 @@ export default function Autocomplete<T extends AutocompleteItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
+
+  // ===== 데스크톱 자동 포커스 =====
+  useEffect(() => {
+    if (!autoFocus) return;
+    if (window.matchMedia('(pointer: fine)').matches) {
+      const id = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(id);
+    }
+  }, [autoFocus]);
 
   // ===== 디바운싱 검색 =====
   useEffect(() => {

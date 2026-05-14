@@ -140,6 +140,9 @@ export interface IngredientAutocompleteV2Props {
 
   /** 비활성화 */
   disabled?: boolean;
+
+  /** 데스크톱에서 마운트 시 자동 포커스 */
+  autoFocus?: boolean;
 }
 
 /**
