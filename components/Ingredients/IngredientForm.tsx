@@ -621,50 +621,77 @@ function DetailFields({
         </div>
       </div>
 
-      {/* 날짜 — 빠른 선택 + 구매일·유통기한 2열 */}
-      <div>
-        <div className="flex gap-1.5 mb-2 flex-wrap">
-          {QUICK_EXPIRY.map(({ label, days }) => {
-            const iso = addDaysToISO(days);
-            const isActive = item.expiry_date === iso;
-            return (
-              <button
-                key={days}
-                type="button"
-                onClick={() => onChange('expiry_date', isActive ? '' : iso)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-accent-warm text-background-primary'
-                    : 'bg-background-secondary text-text-secondary hover:bg-white/8 hover:text-text-primary'
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+      {/* 날짜 — 구매일·유통기한 2열 */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* 구매일 */}
+        <div>
+          <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.purchaseDate}</label>
+          <input
+            type="date"
+            value={item.purchase_date}
+            onChange={(e) => onChange('purchase_date', e.target.value)}
+            className={fieldBase}
+          />
+          {item.purchase_date && (
+            <p className="mt-1 text-[11px] text-text-muted text-center">
+              {(() => {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const d = new Date(item.purchase_date + 'T00:00:00'); d.setHours(0,0,0,0);
+                const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
+                if (diff === 0) return t.quickAdd.expiryPresetToday;
+                if (diff === 1) return '어제';
+                if (diff > 1) return `${diff}일 전`;
+                return '';
+              })()}
+            </p>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {/* 구매일 */}
-          <div>
-            <label className="block mb-1 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.purchaseDate}</label>
-            <input
-              type="date"
-              value={item.purchase_date}
-              onChange={(e) => onChange('purchase_date', e.target.value)}
-              className={fieldBase}
-            />
+        {/* 유통기한 */}
+        <div>
+          <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.expiryDate}</label>
+          {/* 빠른 선택 — 실제 날짜 함께 표시 */}
+          <div className="grid grid-cols-2 gap-1 mb-1.5">
+            {QUICK_EXPIRY.map(({ label, days }) => {
+              const iso = addDaysToISO(days);
+              const isActive = item.expiry_date === iso;
+              const d = new Date(iso + 'T00:00:00');
+              const md = `${d.getMonth() + 1}/${d.getDate()}`;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => onChange('expiry_date', isActive ? '' : iso)}
+                  className={`flex flex-col items-center py-1 rounded-lg text-[11px] font-medium leading-tight transition-all ${
+                    isActive
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'bg-background-secondary text-text-secondary hover:bg-white/8 hover:text-text-primary'
+                  }`}
+                >
+                  <span>{label}</span>
+                  <span className={`text-[10px] ${isActive ? 'opacity-80' : 'opacity-50'}`}>{md}</span>
+                </button>
+              );
+            })}
           </div>
-          {/* 유통기한 */}
-          <div>
-            <label className="block mb-1 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.expiryDate}</label>
-            <input
-              type="date"
-              value={item.expiry_date}
-              onChange={(e) => onChange('expiry_date', e.target.value)}
-              className={fieldBase}
-            />
-            {errors.expiry_date && <p className="mt-1 text-xs text-error">{errors.expiry_date}</p>}
-            {item.expiry_date && (
+          <input
+            type="date"
+            value={item.expiry_date}
+            onChange={(e) => onChange('expiry_date', e.target.value)}
+            className={fieldBase}
+          />
+          {errors.expiry_date && <p className="mt-1 text-xs text-error">{errors.expiry_date}</p>}
+          {item.expiry_date && (
+            <>
+              <p className="mt-1 text-[11px] text-text-muted text-center">
+                {(() => {
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const d = new Date(item.expiry_date + 'T00:00:00'); d.setHours(0,0,0,0);
+                  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+                  if (diff < 0) return `⚠️ ${Math.abs(diff)}일 지남`;
+                  if (diff === 0) return '⚠️ 오늘 만료';
+                  return `D-${diff}`;
+                })()}
+              </p>
               <div className="flex items-center justify-between mt-1.5 px-0.5">
                 <span className="text-xs text-text-secondary">{t.quickAdd.expiryAlert}</span>
                 <button
@@ -681,8 +708,8 @@ function DetailFields({
                   }`} />
                 </button>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
