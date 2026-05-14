@@ -22,7 +22,6 @@ import {
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
   RECOMMENDATIONS_LIMIT,
   TOAST_AUTO_HIDE_MS,
-  DEMO_ADD_TOAST_MS,
   LS_KEY_DEMO_ITEMS,
   LS_KEY_ONBOARDING_BANNER,
   LONG_PRESS_MS,
@@ -39,6 +38,7 @@ import SearchBar from '@/components/SearchBar';
 import BottomNav from '@/components/BottomNav';
 import IngredientDetailModal from '@/components/Ingredients/IngredientDetailModal';
 import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
+import AuthPromptSheet from '@/components/Auth/AuthPromptSheet';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
@@ -104,9 +104,6 @@ export default function HomeClient({
   // 같은 컴포넌트(FridgeAllSheet)를 두 모드로 재사용해 일관성 유지.
   const [allSheetMode, setAllSheetMode] = useState<null | 'all' | 'expiring'>(null);
 
-  // DEMO 아이템 고유 id 생성용 카운터 (Date.now() 대신 — React 순수성 규칙 준수)
-  const demoIdRef = useRef(0);
-
   // 데모 칩 표시명 — DB·매칭에는 한글 ingredient_name 그대로 쓰되, 화면 표시만 locale별로.
   // 데모가 아닌 사용자 추가 재료는 사용자가 입력한 한글 이름을 그대로 사용.
   const getDisplayName = useCallback((item: { ingredient_name: string; id: string; isDemoItem?: boolean }) => {
@@ -138,6 +135,7 @@ export default function HomeClient({
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
   // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
@@ -293,8 +291,10 @@ export default function HomeClient({
         if (saved) {
           const parsed = JSON.parse(saved) as FridgeItem[];
           if (Array.isArray(parsed)) {
-            // 사라진 ingredient 자동 정리 ('물')
-            const filtered = parsed.filter(item => item.ingredient_name !== '물');
+            // '물' 자동 정리 + 로그아웃 race로 오염된 DB 재료(UUID id) 제거
+            const filtered = parsed.filter(
+              item => item.ingredient_name !== '물' && isDemoRecord(item)
+            );
             if (filtered.length > 0) return filtered;
           }
         }
@@ -313,6 +313,8 @@ export default function HomeClient({
   // 비로그인 체험 모드 — items 변경 시 localStorage에 저장
   useEffect(() => {
     if (user || loading) return;
+    // 로그아웃 직후 race condition 방어: DB 재료(UUID id)가 섞여 있으면 저장 금지
+    if (items.some(item => !isDemoRecord(item))) return;
     try { localStorage.setItem(LS_KEY_DEMO_ITEMS, JSON.stringify(items)); } catch { /* 용량 초과 등 무시 */ }
   }, [user, loading, items]);
 
@@ -461,32 +463,7 @@ export default function HomeClient({
         ? formData.ingredient_id
         : null,
     };
-    // isAuthenticated(SSR 기준)가 false거나 user(클라이언트 세션)가 없으면 demo 모드
-    if (!isAuthenticated || !user) {
-      const newItem: FridgeItem = {
-        id: `d${++demoIdRef.current}`,
-        isDemoItem: true,
-        ingredient_name: sanitized.ingredient_name,
-        category: sanitized.category,
-        expiry_date: sanitized.expiry_date ?? null,
-        storage_location: sanitized.storage_location ?? null,
-        quantity: sanitized.quantity ?? null,
-        unit: sanitized.unit ?? null,
-        purchase_date: sanitized.purchase_date ?? null,
-        notes: sanitized.notes ?? null,
-        expiry_alert: sanitized.expiry_alert ?? false,
-      };
-      setItems(prev => [...prev, newItem]);
-      setAddModalLocation(null);
-      toastSuccess(t.ingredient.addSuccessDemo.replace('{name}', sanitized.ingredient_name), {
-        action: {
-          label: t.ingredient.loginToSave,
-          onClick: () => router.push('/login'),
-        },
-        duration: DEMO_ADD_TOAST_MS,
-      });
-      return;
-    }
+    if (!user) return;
     const client = createClient();
     const { data, error } = await client
       .from('user_ingredients')
@@ -645,7 +622,7 @@ export default function HomeClient({
                 <h2 className="text-base md:text-lg font-bold mb-1.5">{t.home.emptyFridgeTitle}</h2>
                 <p className="text-xs md:text-sm text-text-secondary mb-4 leading-relaxed">{t.home.emptyFridgeDesc}</p>
                 <button
-                  onClick={() => { track('empty_cta_click'); setAddModalLocation('auto'); }}
+                  onClick={() => { track('empty_cta_click'); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
                   className="w-full px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold active:scale-95 transition-all"
                 >
                   {t.home.emptyFridgeCta}
@@ -656,10 +633,11 @@ export default function HomeClient({
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
               'auto' 센티넬 = 모달이 "재료 추가"로 generic 타이틀 표시 (폼 기본 동작=자동 분류와 일치). */}
+          {/* z-[25] > pill z-20 — pill이 같은 top에서 DOM 순서상 뒤에 렌더되면 z-20끼리 pill이 FAB를 가려 클릭 가로채는 버그 방지. */}
           <button
-            onClick={() => { track('fab_add_click', { items_count: items.length }); setAddModalLocation('auto'); }}
+            onClick={() => { track('fab_add_click', { items_count: items.length }); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
             aria-label={t.common.addIngredient}
-            className="absolute top-[63%] left-[8%] -translate-y-1/2 z-20 w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
+            className="absolute top-[63%] left-[8%] -translate-y-1/2 z-[25] w-11 h-11 md:w-12 md:h-12 rounded-full bg-accent-warm hover:bg-accent-hover shadow-lg shadow-accent-warm/40 text-background-primary flex items-center justify-center text-xl font-bold transition-all active:scale-95"
           >
             +
           </button>
@@ -952,6 +930,12 @@ export default function HomeClient({
         location={addModalLocation}
         onClose={() => setAddModalLocation(null)}
         onAddIngredient={addIngredientFromModal}
+      />
+
+      {/* 비로그인 + 버튼 → 가입 유도 시트 */}
+      <AuthPromptSheet
+        isOpen={showAuthPrompt}
+        onClose={() => setShowAuthPrompt(false)}
       />
 
 
