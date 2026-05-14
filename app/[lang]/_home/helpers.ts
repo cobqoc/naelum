@@ -1,5 +1,6 @@
 import { QUICK_ADD } from './quickAddList';
 import { getShelfLifeDays } from './constants';
+import { getIngredientEmoji } from '../../../lib/utils/ingredientEmoji';
 import type { FridgeItem } from './types';
 
 /** 오늘 기준 만료일까지 남은 일수. expiry_date 없으면 99(만료 아님). */
@@ -31,7 +32,7 @@ export function getEmoji(name: string, category: string): string {
   if (exact) return exact.emoji;
   const partial = QUICK_ADD.find(q => name.includes(q.name) || q.name.includes(name));
   if (partial) return partial.emoji;
-  return ({ veggie:'🥬', meat:'🥩', seafood:'🐟', dairy:'🥛', grain:'🌾', seasoning:'🧂' } as Record<string,string>)[category] ?? '📦';
+  return getIngredientEmoji(name, category);
 }
 
 /**
