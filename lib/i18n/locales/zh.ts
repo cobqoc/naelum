@@ -574,6 +574,8 @@ export const zh = {
     expiryPreset3d: '3天后',
     expiryPreset1w: '1周后',
     expiryPreset1m: '1个月后',
+    directInputDate: '手动输入',
+    backToPresets: '使用预设',
     unitLabels: {
       '선택': '选择',
       'g': '克',

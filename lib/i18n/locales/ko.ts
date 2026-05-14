@@ -574,6 +574,8 @@ export const ko = {
     expiryPreset3d: '3일 후',
     expiryPreset1w: '1주일 후',
     expiryPreset1m: '한 달 후',
+    directInputDate: '직접 입력',
+    backToPresets: '프리셋으로',
     unitLabels: {
       '선택': '선택',
       'g': 'g',

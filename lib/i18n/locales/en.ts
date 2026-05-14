@@ -573,6 +573,8 @@ export const en = {
     expiryPreset3d: 'In 3 days',
     expiryPreset1w: 'In 1 week',
     expiryPreset1m: 'In 1 month',
+    directInputDate: 'Custom date',
+    backToPresets: 'Use presets',
     unitLabels: {
       '선택': 'Select',
       'g': 'g',

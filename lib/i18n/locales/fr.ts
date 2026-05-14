@@ -574,6 +574,8 @@ export const fr = {
     expiryPreset3d: 'Dans 3 jours',
     expiryPreset1w: 'Dans 1 semaine',
     expiryPreset1m: 'Dans 1 mois',
+    directInputDate: 'Date exacte',
+    backToPresets: 'Préréglages',
     unitLabels: {
       '선택': 'Sélectionner',
       'g': 'g',
