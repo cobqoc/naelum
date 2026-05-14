@@ -567,6 +567,7 @@ export const ja = {
     searchHint: '探している食材が見つからない場合は、検索して追加',
     detailTapHint: '💡 各食材をタップして、数量や賞味期限などを設定できます',
     storageTitle: '保管場所',
+    volume: '容量',
     backToBrowser: '食材をさらに追加',
     expiryPresetToday: '今日',
     expiryPreset3d: '3日後',

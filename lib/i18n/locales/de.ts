@@ -567,6 +567,7 @@ export const de = {
     searchHint: 'Nicht in der Liste? Suche zum Hinzufügen',
     detailTapHint: '💡 Tippe auf jedes Element, um Menge, Haltbarkeit etc. einzustellen',
     storageTitle: 'Lagerort',
+    volume: 'Menge',
     backToBrowser: 'Weitere Zutaten hinzufügen',
     expiryPresetToday: 'Heute',
     expiryPreset3d: 'In 3 Tagen',
