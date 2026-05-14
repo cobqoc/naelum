@@ -568,6 +568,7 @@ export const ko = {
     detailTapHint: '💡 각 재료를 탭하면 수량·유통기한 등 상세 설정을 할 수 있어요',
     storageTitle: '저장 위치',
     volume: '용량',
+    quantityOrVolume: '수량 또는 용량',
     backToBrowser: '재료 더 추가',
     expiryPresetToday: '오늘',
     expiryPreset3d: '3일 후',

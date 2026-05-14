@@ -567,6 +567,7 @@ export const en = {
     detailTapHint: '💡 Tap each item to set quantity, expiry, etc.',
     storageTitle: 'Storage',
     volume: 'Amount',
+    quantityOrVolume: 'Qty or Amount',
     backToBrowser: 'Add more ingredients',
     expiryPresetToday: 'Today',
     expiryPreset3d: 'In 3 days',

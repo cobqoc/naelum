@@ -568,6 +568,7 @@ export const fr = {
     detailTapHint: '💡 Touchez chaque élément pour régler quantité, date limite, etc.',
     storageTitle: 'Stockage',
     volume: 'Quantité',
+    quantityOrVolume: 'Qté ou volume',
     backToBrowser: 'Ajouter d\'autres ingrédients',
     expiryPresetToday: 'Aujourd\'hui',
     expiryPreset3d: 'Dans 3 jours',

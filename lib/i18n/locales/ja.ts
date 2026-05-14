@@ -568,6 +568,7 @@ export const ja = {
     detailTapHint: '💡 各食材をタップして、数量や賞味期限などを設定できます',
     storageTitle: '保管場所',
     volume: '容量',
+    quantityOrVolume: '数量または容量',
     backToBrowser: '食材をさらに追加',
     expiryPresetToday: '今日',
     expiryPreset3d: '3日後',

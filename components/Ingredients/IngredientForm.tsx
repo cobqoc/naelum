@@ -172,7 +172,7 @@ export default function IngredientForm({
       common_units: commonUnits || [],
       quantity: null,
       unit: commonUnits?.[0] || '선택',
-      purchase_date: '',
+      purchase_date: new Date().toISOString().slice(0, 10),
       expiry_date: '',
       storage_location: storage,
       notes: '',
@@ -564,7 +564,9 @@ function DetailFields({
   ];
 
   const VOLUME_UNITS = new Set(['g', 'kg', 'ml', 'L', '큰술', '작은술', '컵']);
-  const quantityLabel = VOLUME_UNITS.has(item.unit) ? t.quickAdd.volume : t.quickAdd.quantity;
+  const quantityLabel = item.unit === '선택'
+    ? t.quickAdd.quantityOrVolume
+    : VOLUME_UNITS.has(item.unit) ? t.quickAdd.volume : t.quickAdd.quantity;
 
   const fieldBase = "w-full rounded-xl bg-background-secondary/80 px-3 py-2.5 text-sm text-text-primary outline-none border border-white/8 focus:border-accent-warm/60 focus:ring-1 focus:ring-accent-warm/40 transition-all";
 
@@ -716,45 +718,47 @@ function DetailFields({
       {/* 수량 + 단위 */}
       <div>
         <label className="block mb-2 text-xs font-medium text-text-muted uppercase tracking-wide">{quantityLabel}</label>
-        <div className="flex items-center gap-2">
-          {/* 스테퍼 — 브라우저 기본 spin 버튼 제거 */}
-          <div className="flex items-center rounded-xl border border-white/8 bg-background-secondary/80 overflow-hidden flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => onChange('quantity', Math.max(0, (item.quantity ?? 1) - 1) || null)}
-              className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-white/8 transition-all text-lg font-light"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={item.quantity === null ? '' : item.quantity}
-              onChange={(e) => onChange('quantity', e.target.value === '' ? null : parseFloat(e.target.value))}
-              placeholder="1"
-              className="w-14 text-center bg-transparent text-sm text-text-primary outline-none py-2 border-x border-white/8 [appearance:textfield] [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
-            />
-            <button
-              type="button"
-              onClick={() => onChange('quantity', (item.quantity ?? 0) + 1)}
-              className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-white/8 transition-all text-lg font-light"
-            >
-              +
-            </button>
-          </div>
-          {/* 단위 드롭다운 */}
-          <select
-            value={item.unit}
-            onChange={(e) => onChange('unit', e.target.value)}
-            className="flex-1 rounded-xl bg-background-secondary/80 px-3 py-2.5 text-sm text-text-primary outline-none border border-white/8 focus:border-accent-warm/60 focus:ring-1 focus:ring-accent-warm/40 transition-all appearance-none cursor-pointer"
+        {/* 스테퍼 + 단위 통합 [−][수량 | 단위 ▾][+] */}
+        <div className="inline-flex items-center rounded-xl border border-white/8 bg-background-secondary/80 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => onChange('quantity', Math.max(0, (item.quantity ?? 1) - 1) || null)}
+            className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-white/8 transition-all text-lg font-light flex-shrink-0"
           >
-            {UNITS.map((unit) => (
-              <option key={unit} value={unit} className="bg-background-secondary">
-                {t.quickAdd.unitLabels[unit as keyof typeof t.quickAdd.unitLabels] ?? unit}
-              </option>
-            ))}
-          </select>
+            −
+          </button>
+          {/* 수량 입력 */}
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={item.quantity === null ? '' : item.quantity}
+            onChange={(e) => onChange('quantity', e.target.value === '' ? null : parseFloat(e.target.value))}
+            placeholder="1"
+            className="w-12 text-center bg-transparent text-sm text-text-primary outline-none h-10 border-l border-white/8 [appearance:textfield] [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
+          />
+          {/* 단위 드롭다운 — 수량과 시각적으로 한 덩어리 */}
+          <div className="relative flex items-center border-l border-white/8 h-10 pr-1">
+            <select
+              value={item.unit}
+              onChange={(e) => onChange('unit', e.target.value)}
+              className="bg-transparent text-sm text-text-primary outline-none appearance-none cursor-pointer pl-2 pr-5 h-full"
+            >
+              {UNITS.map((unit) => (
+                <option key={unit} value={unit} className="bg-background-secondary">
+                  {t.quickAdd.unitLabels[unit as keyof typeof t.quickAdd.unitLabels] ?? unit}
+                </option>
+              ))}
+            </select>
+            <span className="pointer-events-none absolute right-1 text-text-muted text-[10px]">▾</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange('quantity', (item.quantity ?? 0) + 1)}
+            className="w-10 h-10 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-white/8 transition-all text-lg font-light border-l border-white/8 flex-shrink-0"
+          >
+            +
+          </button>
         </div>
         {errors.quantity && <p className="mt-1 text-xs text-error">{errors.quantity}</p>}
       </div>

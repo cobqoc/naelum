@@ -568,6 +568,7 @@ export const de = {
     detailTapHint: '💡 Tippe auf jedes Element, um Menge, Haltbarkeit etc. einzustellen',
     storageTitle: 'Lagerort',
     volume: 'Menge',
+    quantityOrVolume: 'Menge oder Volumen',
     backToBrowser: 'Weitere Zutaten hinzufügen',
     expiryPresetToday: 'Heute',
     expiryPreset3d: 'In 3 Tagen',

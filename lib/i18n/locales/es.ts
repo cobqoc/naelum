@@ -568,6 +568,7 @@ export const es = {
     detailTapHint: '💡 Toca cada elemento para configurar cantidad, caducidad, etc.',
     storageTitle: 'Almacenamiento',
     volume: 'Cantidad',
+    quantityOrVolume: 'Cant. o volumen',
     backToBrowser: 'Añadir más ingredientes',
     expiryPresetToday: 'Hoy',
     expiryPreset3d: 'En 3 días',
