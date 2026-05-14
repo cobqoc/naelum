@@ -567,6 +567,11 @@ export const zh = {
     searchHint: '找不到食材？使用搜索直接添加',
     detailTapHint: '💡 点击每个食材可设置数量、保质期等',
     storageTitle: '保存位置',
+    backToBrowser: '继续添加食材',
+    expiryPresetToday: '今天',
+    expiryPreset3d: '3天后',
+    expiryPreset1w: '1周后',
+    expiryPreset1m: '1个月后',
     unitLabels: {
       '선택': '选择',
       'g': '克',

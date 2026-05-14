@@ -567,6 +567,11 @@ export const fr = {
     searchHint: 'Pas dans la liste ? Recherchez pour ajouter',
     detailTapHint: '💡 Touchez chaque élément pour régler quantité, date limite, etc.',
     storageTitle: 'Stockage',
+    backToBrowser: 'Ajouter d\'autres ingrédients',
+    expiryPresetToday: 'Aujourd\'hui',
+    expiryPreset3d: 'Dans 3 jours',
+    expiryPreset1w: 'Dans 1 semaine',
+    expiryPreset1m: 'Dans 1 mois',
     unitLabels: {
       '선택': 'Sélectionner',
       'g': 'g',

@@ -567,6 +567,11 @@ export const es = {
     searchHint: '¿No está en la lista? Busca para añadir',
     detailTapHint: '💡 Toca cada elemento para configurar cantidad, caducidad, etc.',
     storageTitle: 'Almacenamiento',
+    backToBrowser: 'Añadir más ingredientes',
+    expiryPresetToday: 'Hoy',
+    expiryPreset3d: 'En 3 días',
+    expiryPreset1w: 'En 1 semana',
+    expiryPreset1m: 'En 1 mes',
     unitLabels: {
       '선택': 'Seleccionar',
       'g': 'g',

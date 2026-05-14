@@ -566,6 +566,11 @@ export const en = {
     searchHint: 'Not in the list? Search to add',
     detailTapHint: '💡 Tap each item to set quantity, expiry, etc.',
     storageTitle: 'Storage',
+    backToBrowser: 'Add more ingredients',
+    expiryPresetToday: 'Today',
+    expiryPreset3d: 'In 3 days',
+    expiryPreset1w: 'In 1 week',
+    expiryPreset1m: 'In 1 month',
     unitLabels: {
       '선택': 'Select',
       'g': 'g',
