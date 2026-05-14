@@ -532,6 +532,7 @@ export const de = {
   },
   quickAdd: {
     placeholder: 'z. B. Rucola, Trüffel...',
+    searchPlaceholder: 'Zutaten suchen...',
     inputPlaceholder: 'Zutatenname...',
     addButton: 'Hinzufügen',
     addedItems: 'Hinzugefügt',
@@ -754,6 +755,7 @@ export const de = {
     noMatchingHint: 'Versuche eine andere Kategorie oder Suche',
     countSuffixLabel: '',
     categoryAll: 'Alle',
+    categoryFrequent: 'Häufig',
     categoryLabels: {
       veggie: 'Gemüse',
       meat: 'Fleisch',

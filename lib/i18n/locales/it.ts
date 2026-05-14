@@ -532,6 +532,7 @@ export const it = {
   },
   quickAdd: {
     placeholder: 'es. rucola, tartufo...',
+    searchPlaceholder: 'Cerca ingredienti...',
     inputPlaceholder: 'Nome ingrediente...',
     addButton: 'Aggiungi',
     addedItems: 'Elementi aggiunti',
@@ -754,6 +755,7 @@ export const it = {
     noMatchingHint: 'Prova un\'altra categoria o ricerca',
     countSuffixLabel: '',
     categoryAll: 'Tutto',
+    categoryFrequent: 'Frequenti',
     categoryLabels: {
       veggie: 'Verdure',
       meat: 'Carne',

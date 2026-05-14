@@ -532,6 +532,7 @@ export const fr = {
   },
   quickAdd: {
     placeholder: 'ex. roquette, truffe...',
+    searchPlaceholder: 'Rechercher des ingrédients...',
     inputPlaceholder: 'Nom de l\'ingrédient...',
     addButton: 'Ajouter',
     addedItems: 'Éléments ajoutés',
@@ -754,6 +755,7 @@ export const fr = {
     noMatchingHint: 'Essayez une autre catégorie ou un autre terme',
     countSuffixLabel: '',
     categoryAll: 'Tout',
+    categoryFrequent: 'Fréquents',
     categoryLabels: {
       veggie: 'Légumes',
       meat: 'Viande',

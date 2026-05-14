@@ -531,6 +531,7 @@ export const ko = {
   },
   quickAdd: {
     placeholder: '예: 루꼴라, 부르기뇽...',
+    searchPlaceholder: '재료 검색...',
     inputPlaceholder: '재료명 입력...',
     addButton: '추가',
     addedItems: '추가된 재료',
@@ -754,6 +755,7 @@ export const ko = {
     noMatchingHint: '다른 카테고리나 검색어를 시도해 보세요',
     countSuffixLabel: '개',
     categoryAll: '전체',
+    categoryFrequent: '자주',
     categoryLabels: {
       veggie: '채소',
       meat: '육류',

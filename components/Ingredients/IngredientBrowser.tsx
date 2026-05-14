@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { INGREDIENT_CATEGORIES, IngredientItem } from './IngredientAutocompleteTypes';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
+import { useI18n } from '@/lib/i18n/context';
 
 interface FrequentItem {
   id: string;
@@ -25,20 +26,22 @@ interface IngredientBrowserProps {
   popularItems?: PopularItemLite[];
 }
 
-const ALL_CATEGORY = { id: 'all', name: '전체', icon: '🍽️' };
-const FREQUENT_CATEGORY = { id: 'frequent', name: '자주', icon: '⭐' };
-
 export default function IngredientBrowser({
   onSelect,
   selectedNames,
   frequentItems = [],
   popularItems = [],
 }: IngredientBrowserProps) {
+  const { t } = useI18n();
+
+  const ALL_CATEGORY = { id: 'all', name: t.ingredient.categoryAll, icon: '🍽️' };
+  const FREQUENT_CATEGORY = { id: 'frequent', name: t.ingredient.categoryFrequent, icon: '⭐' };
+
   // 자주 쓰는 재료/인기 프리셋이 있으면 첫 탭을 "자주"로, 없으면 "전체".
   const hasFrequent = frequentItems.length > 0 || popularItems.length > 0;
   const CATEGORIES = hasFrequent
-    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...INGREDIENT_CATEGORIES]
-    : [ALL_CATEGORY, ...INGREDIENT_CATEGORIES];
+    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))]
+    : [ALL_CATEGORY, ...INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))];
 
   const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : 'all');
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
@@ -227,13 +230,17 @@ export default function IngredientBrowser({
                   onClick={() => !isSelected && onSelect(ing)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
                     isSelected
-                      ? 'bg-accent-warm/20 text-accent-warm ring-1 ring-accent-warm/40 cursor-default'
+                      ? 'bg-accent-warm text-background-primary cursor-default'
                       : 'bg-background-secondary text-text-primary hover:bg-white/10'
                   }`}
                 >
                   <span className="text-base leading-none">{getIngredientEmoji(ing.name, ing.category || 'other')}</span>
                   <span>{ing.name}</span>
-                  {isSelected && <span className="text-[10px]">✓</span>}
+                  {isSelected && (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
                 </button>
               );
             })

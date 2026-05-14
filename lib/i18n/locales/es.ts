@@ -532,6 +532,7 @@ export const es = {
   },
   quickAdd: {
     placeholder: 'p. ej. rúcula, trufa...',
+    searchPlaceholder: 'Buscar ingredientes...',
     inputPlaceholder: 'Nombre del ingrediente...',
     addButton: 'Añadir',
     addedItems: 'Elementos añadidos',
@@ -754,6 +755,7 @@ export const es = {
     noMatchingHint: 'Prueba otra categoría o término de búsqueda',
     countSuffixLabel: '',
     categoryAll: 'Todo',
+    categoryFrequent: 'Frecuentes',
     categoryLabels: {
       veggie: 'Verduras',
       meat: 'Carne',

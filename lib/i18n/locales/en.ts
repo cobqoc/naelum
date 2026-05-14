@@ -531,6 +531,7 @@ export const en = {
   },
   quickAdd: {
     placeholder: 'e.g. arugula, truffle...',
+    searchPlaceholder: 'Search ingredients...',
     inputPlaceholder: 'Enter ingredient name...',
     addButton: 'Add',
     addedItems: 'Added Items',
@@ -753,6 +754,7 @@ export const en = {
     noMatchingHint: 'Try another category or search term',
     countSuffixLabel: '',
     categoryAll: 'All',
+    categoryFrequent: 'Frequent',
     categoryLabels: {
       veggie: 'Vegetables',
       meat: 'Meat',

@@ -532,6 +532,7 @@ export const ja = {
   },
   quickAdd: {
     placeholder: '例: ルッコラ、トリュフ...',
+    searchPlaceholder: '食材を検索...',
     inputPlaceholder: '食材名を入力...',
     addButton: '追加',
     addedItems: '追加済みアイテム',
@@ -754,6 +755,7 @@ export const ja = {
     noMatchingHint: '別のカテゴリや検索語を試してください',
     countSuffixLabel: '個',
     categoryAll: 'すべて',
+    categoryFrequent: 'よく使う',
     categoryLabels: {
       veggie: '野菜',
       meat: '肉類',

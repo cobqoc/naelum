@@ -358,12 +358,11 @@ export default function IngredientForm({
 
       {/* 2. 검색 자동완성 — 특수 재료나 마스터에 없는 커스텀 재료 추가용. 브라우저 하단 보조 수단. */}
       <div>
-        <p className="text-[11px] text-text-muted mb-1.5">{t.quickAdd.searchHint}</p>
         <IngredientAutocompleteV2
           value={inputValue}
           onChange={setInputValue}
           onSelect={handleQuickSelect}
-          placeholder={t.quickAdd.placeholder}
+          placeholder={t.quickAdd.searchPlaceholder}
           enableRecentItems={true}
           allowCustomIngredient={true}
         />

@@ -532,6 +532,7 @@ export const zh = {
   },
   quickAdd: {
     placeholder: '例如：芝麻菜、松露...',
+    searchPlaceholder: '搜索食材...',
     inputPlaceholder: '输入食材名...',
     addButton: '添加',
     addedItems: '已添加',
@@ -754,6 +755,7 @@ export const zh = {
     noMatchingHint: '请尝试其他类别或搜索词',
     countSuffixLabel: '个',
     categoryAll: '全部',
+    categoryFrequent: '常用',
     categoryLabels: {
       veggie: '蔬菜',
       meat: '肉类',
