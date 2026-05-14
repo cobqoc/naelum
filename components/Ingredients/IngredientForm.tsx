@@ -525,30 +525,47 @@ function DetailFields({
   const [catCanRight, setCatCanRight] = useState(false);
   const [unitCanRight, setUnitCanRight] = useState(false);
 
-  const updateArrows = (ref: React.RefObject<HTMLDivElement | null>, setter: (v: boolean) => void) => {
+  const updateArrow = (ref: React.RefObject<HTMLDivElement | null>, setter: (v: boolean) => void) => {
     const el = ref.current;
     if (!el) return;
     setter(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
   };
 
+  const scrollRight = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollBy({ left: 120, behavior: 'smooth' });
+  };
+
   useEffect(() => {
-    updateArrows(catScrollRef, setCatCanRight);
-    updateArrows(unitScrollRef, setUnitCanRight);
+    updateArrow(catScrollRef, setCatCanRight);
+    updateArrow(unitScrollRef, setUnitCanRight);
     const catEl = catScrollRef.current;
     const unitEl = unitScrollRef.current;
-    const onCatScroll = () => updateArrows(catScrollRef, setCatCanRight);
-    const onUnitScroll = () => updateArrows(unitScrollRef, setUnitCanRight);
+    const onCatScroll  = () => updateArrow(catScrollRef, setCatCanRight);
+    const onUnitScroll = () => updateArrow(unitScrollRef, setUnitCanRight);
     catEl?.addEventListener('scroll', onCatScroll, { passive: true });
     unitEl?.addEventListener('scroll', onUnitScroll, { passive: true });
+    // 마우스 휠 → 가로 스크롤 (passive:false 필요 — preventDefault 호출)
+    const makeWheelHandler = (el: HTMLDivElement, updateFn: () => void) => (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      el.scrollBy({ left: e.deltaY * 2, behavior: 'auto' });
+      updateFn();
+    };
+    const catWheel  = catEl  ? makeWheelHandler(catEl,  onCatScroll)  : null;
+    const unitWheel = unitEl ? makeWheelHandler(unitEl, onUnitScroll) : null;
+    catEl?.addEventListener('wheel',  catWheel!,  { passive: false });
+    unitEl?.addEventListener('wheel', unitWheel!, { passive: false });
     const observer = new ResizeObserver(() => {
-      updateArrows(catScrollRef, setCatCanRight);
-      updateArrows(unitScrollRef, setUnitCanRight);
+      updateArrow(catScrollRef, setCatCanRight);
+      updateArrow(unitScrollRef, setUnitCanRight);
     });
     if (catEl) observer.observe(catEl);
     if (unitEl) observer.observe(unitEl);
     return () => {
       catEl?.removeEventListener('scroll', onCatScroll);
       unitEl?.removeEventListener('scroll', onUnitScroll);
+      catEl?.removeEventListener('wheel',  catWheel!);
+      unitEl?.removeEventListener('wheel', unitWheel!);
       observer.disconnect();
     };
   }, []);
@@ -577,7 +594,7 @@ function DetailFields({
       <div>
         <label className="block mb-2 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.category}</label>
         <div className="relative">
-          <div ref={catScrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+          <div ref={catScrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide pr-6">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
@@ -595,51 +612,97 @@ function DetailFields({
             ))}
           </div>
           {catCanRight && (
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10"
-              style={{ background: 'linear-gradient(to left, rgba(42,42,42,1) 20%, transparent 100%)' }} />
+            <button
+              type="button"
+              onClick={() => scrollRight(catScrollRef)}
+              className="absolute right-0 top-0 bottom-0 flex items-center justify-end pl-6 pr-0.5"
+              style={{ background: 'linear-gradient(to left, rgba(42,42,42,1) 30%, transparent 100%)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
           )}
         </div>
       </div>
 
-      {/* 유통기한 — 핵심 필드, 상단 배치 */}
-      <div>
-        <label className="block mb-2 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.expiryDate}</label>
-        {/* 빠른 선택 */}
-        <div className="flex gap-1.5 mb-2 flex-wrap">
-          {QUICK_EXPIRY.map(({ label, days }) => {
-            const iso = addDaysToISO(days);
-            const isActive = item.expiry_date === iso;
-            return (
+      {/* 유통기한 + 구매일 묶음 */}
+      <div className="space-y-3">
+        {/* 유통기한 */}
+        <div>
+          <label className="block mb-2 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.expiryDate}</label>
+          <div className="flex gap-1.5 mb-2 flex-wrap">
+            {QUICK_EXPIRY.map(({ label, days }) => {
+              const iso = addDaysToISO(days);
+              const isActive = item.expiry_date === iso;
+              return (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => onChange('expiry_date', isActive ? '' : iso)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-accent-warm text-background-primary'
+                      : 'bg-background-secondary text-text-secondary hover:bg-white/8 hover:text-text-primary'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            type="date"
+            value={item.expiry_date}
+            onChange={(e) => onChange('expiry_date', e.target.value)}
+            className={fieldBase}
+          />
+          {errors.expiry_date && <p className="mt-1 text-xs text-error">{errors.expiry_date}</p>}
+          {/* 만료 알림 토글 — 유통기한 입력 시에만 표시 */}
+          {item.expiry_date && (
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-xs text-text-secondary">{t.quickAdd.expiryAlert}</span>
               <button
-                key={days}
                 type="button"
-                onClick={() => onChange('expiry_date', isActive ? '' : iso)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-accent-warm text-background-primary'
-                    : 'bg-background-secondary text-text-secondary hover:bg-white/8 hover:text-text-primary'
+                onClick={() => onChange('expiry_alert', !item.expiry_alert)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+                  item.expiry_alert ? 'bg-accent-warm' : 'bg-background-tertiary'
                 }`}
+                aria-checked={item.expiry_alert}
+                role="switch"
               >
-                {label}
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                  item.expiry_alert ? 'translate-x-4' : 'translate-x-0.5'
+                }`} />
               </button>
-            );
-          })}
+            </div>
+          )}
         </div>
-        <input
-          type="date"
-          value={item.expiry_date}
-          onChange={(e) => onChange('expiry_date', e.target.value)}
-          className={fieldBase}
-        />
-        {errors.expiry_date && <p className="mt-1 text-xs text-error">{errors.expiry_date}</p>}
+        {/* 구매일 */}
+        <div>
+          <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.purchaseDate}</label>
+          <input
+            type="date"
+            value={item.purchase_date}
+            onChange={(e) => onChange('purchase_date', e.target.value)}
+            className={fieldBase}
+          />
+        </div>
       </div>
 
       {/* 수량 + 단위 */}
       <div>
-        <label className="block mb-2 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.quantity}</label>
+        <div className="flex items-baseline gap-1.5 mb-2">
+          <label className="text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.quantity}</label>
+          {item.unit && item.unit !== '선택' && (
+            <span className="text-xs text-accent-warm font-medium">
+              · {t.quickAdd.unitLabels[item.unit as keyof typeof t.quickAdd.unitLabels] ?? item.unit}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
-          {/* 스테퍼 */}
-          <div className="flex items-center gap-0 rounded-xl border border-white/8 bg-background-secondary/80 overflow-hidden flex-shrink-0">
+          {/* 스테퍼 — 브라우저 기본 spin 버튼 제거 */}
+          <div className="flex items-center rounded-xl border border-white/8 bg-background-secondary/80 overflow-hidden flex-shrink-0">
             <button
               type="button"
               onClick={() => onChange('quantity', Math.max(0, (item.quantity ?? 1) - 1) || null)}
@@ -654,7 +717,7 @@ function DetailFields({
               value={item.quantity === null ? '' : item.quantity}
               onChange={(e) => onChange('quantity', e.target.value === '' ? null : parseFloat(e.target.value))}
               placeholder="1"
-              className="w-14 text-center bg-transparent text-sm text-text-primary outline-none py-2 border-x border-white/8"
+              className="w-14 text-center bg-transparent text-sm text-text-primary outline-none py-2 border-x border-white/8 [appearance:textfield] [&::-webkit-outer-spin-button]:hidden [&::-webkit-inner-spin-button]:hidden"
             />
             <button
               type="button"
@@ -666,7 +729,7 @@ function DetailFields({
           </div>
           {/* 단위 pills */}
           <div className="relative flex-1 min-w-0">
-            <div ref={unitScrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            <div ref={unitScrollRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide pr-6">
               {displayUnits.map((unit) => (
                 <button
                   key={unit}
@@ -683,23 +746,20 @@ function DetailFields({
               ))}
             </div>
             {unitCanRight && (
-              <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8"
-                style={{ background: 'linear-gradient(to left, rgba(42,42,42,1) 20%, transparent 100%)' }} />
+              <button
+                type="button"
+                onClick={() => scrollRight(unitScrollRef)}
+                className="absolute right-0 top-0 bottom-0 flex items-center justify-end pl-6 pr-0.5"
+                style={{ background: 'linear-gradient(to left, rgba(42,42,42,1) 30%, transparent 100%)' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
             )}
           </div>
         </div>
         {errors.quantity && <p className="mt-1 text-xs text-error">{errors.quantity}</p>}
-      </div>
-
-      {/* 구매일 */}
-      <div>
-        <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.purchaseDate}</label>
-        <input
-          type="date"
-          value={item.purchase_date}
-          onChange={(e) => onChange('purchase_date', e.target.value)}
-          className={fieldBase}
-        />
       </div>
 
       {/* 보관 위치 */}
@@ -737,25 +797,6 @@ function DetailFields({
         />
       </div>
 
-      {/* 만료 알림 — 유통기한 입력 시에만 표시 */}
-      {item.expiry_date && (
-        <div className="flex items-center justify-between py-1">
-          <span className="text-xs text-text-secondary">{t.quickAdd.expiryAlert}</span>
-          <button
-            type="button"
-            onClick={() => onChange('expiry_alert', !item.expiry_alert)}
-            className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-              item.expiry_alert ? 'bg-accent-warm' : 'bg-background-tertiary'
-            }`}
-            aria-checked={item.expiry_alert}
-            role="switch"
-          >
-            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-              item.expiry_alert ? 'translate-x-4' : 'translate-x-0.5'
-            }`} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }
