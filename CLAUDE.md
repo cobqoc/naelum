@@ -1053,6 +1053,26 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-14 기준)
 
 ### 기능 구현 현황
+- **saves_count 음수 버그 수정** — 완료 (2026-05-14)
+  - 트리거(`update_recipe_saves_count`)를 `COUNT(*)` 방식으로 교체 → 정확한 집계
+  - `increment_saves_count` / `decrement_saves_count` RPC를 no-op으로 변환 (트리거와 이중 적용 방지)
+  - 마이그레이션: `20260514_fix_saves_count_negative.sql` + `20260514_fix_saves_count_rpc.sql` dev+prod 적용 완료
+- **레시피 편집 페이지 수정** — 완료 (2026-05-14)
+  - `app/[lang]/recipes/[id]/edit/page.tsx`: 하드코딩 한글 7곳 → i18n 키 교체
+  - `PUT /api/recipes/[id]`: 태그·재료·단계 전부 삭제 시 빈 배열(`[]`) 미처리 버그 수정 (`Array.isArray()` 패턴)
+- **SEO / 퍼포먼스 최적화** — 완료 (2026-05-14)
+  - `app/[lang]/recipes/page.tsx`: `export const revalidate = 3600` (ISR 정적 셸 캐시)
+  - `AllRecipesClient`: 첫 4장 `priority={index < 4}` (LCP 최적화)
+  - `app/[lang]/[username]/layout.tsx` 신규 생성: 프로필 페이지 Server Component `generateMetadata` (OG/Twitter 메타 서버사이드)
+  - `app/[lang]/recipes/[id]/page.tsx`: `title.absolute`로 `"레시피명 | 낼름"` 명시
+    (`[lang]/layout.tsx`의 `title.absolute`가 root template을 자식에게 전달하지 않는 Next.js 동작 우회)
+- **E2E 테스트 전면 정비** — 완료 (2026-05-14)
+  - 결과: 48 skipped → **2 skipped**, **288 passed** / 0 failed
+  - `auth-fixtures.ts`: `res.status()` → `res.status` 타입 오류 수정
+  - `ingredient-autocomplete.spec.ts` / `ingredient-picker-modal.spec.ts`: `auth-fixtures` 사용, 실제 UI(plain text input)에 맞게 재작성
+  - `recipe-detail-ssr.spec.ts`: `getPublicRecipeId` href 패턴 `a[href^="/recipes/"]` → `a[href*="/recipes/"]` (i18n `/ko/recipes/` 경로 대응)
+  - 전체 E2E spec: i18n lang prefix 경로 호환
+  - 잔여 2 skipped: 요리 팁 스크롤 복원 — dev DB에 팁 데이터 없음 (코드 정상, 데이터 환경 문제)
 - **자체 행동 분석(Analytics)** — 구현 완료 (2026-05-14)
   - `events` 테이블 dev+prod 적용 (id, user_id?, session_id, event_type, payload jsonb, page, viewport_w/h, ua, created_at + 인덱스 4)
   - RLS: `anon, authenticated` insert / `admin role` select
