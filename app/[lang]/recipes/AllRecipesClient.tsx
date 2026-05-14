@@ -117,7 +117,11 @@ export default function AllRecipesPage() {
     query = query.range(from, from + RECIPES_PER_PAGE - 1);
 
     const { data } = await query;
-    if (!data) return;
+    if (!data) {
+      setLoading(false);
+      setLoadingMore(false);
+      return;
+    }
 
     let processedRecipes: Recipe[] = data.map(r => ({
       ...r,
@@ -367,8 +371,8 @@ export default function AllRecipesPage() {
                   if ((e.target as HTMLElement).closest('a')) isLeavingRef.current = true;
                 }}
               >
-                {recipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} showAuthor />
+                {recipes.map((recipe, index) => (
+                  <RecipeCard key={recipe.id} recipe={recipe} showAuthor priority={index < 4} />
                 ))}
               </div>
 

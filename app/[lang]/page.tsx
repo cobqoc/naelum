@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   const title = `낼름 — ${t.home.tagline}`;
   const description = t.home.taglineSub;
   return {
-    title,
+    title: { absolute: title },
     description,
     openGraph: { title, description },
   };

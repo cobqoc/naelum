@@ -14,7 +14,7 @@ test.describe('스크롤 복원 테스트', () => {
     }
 
     // 2. 초기 레시피 카드가 로드됐는지 확인
-    const initialCards = await page.locator('a[href^="/recipes/"]').count();
+    const initialCards = await page.locator('a[href*="/recipes/"]').count();
     expect(initialCards).toBeGreaterThan(0);
     console.log(`초기 로드된 카드 수: ${initialCards}`);
 
@@ -24,7 +24,7 @@ test.describe('스크롤 복원 테스트', () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(1500);
 
-    const afterScrollCards = await page.locator('a[href^="/recipes/"]').count();
+    const afterScrollCards = await page.locator('a[href*="/recipes/"]').count();
     console.log(`스크롤 후 카드 수: ${afterScrollCards}`);
 
     // 4. 스크롤 위치 기록
@@ -39,7 +39,7 @@ test.describe('스크롤 복원 테스트', () => {
     console.log(`클릭 시점 scrollY: ${scrollYAtClick}`);
 
     // 6. 두 번째 레시피 카드 클릭
-    const recipeLinks = page.locator('a[href^="/recipes/"]');
+    const recipeLinks = page.locator('a[href*="/recipes/"]');
     const targetLink = recipeLinks.nth(1);
     const href = await targetLink.getAttribute('href');
     console.log(`클릭할 레시피: ${href}`);
@@ -52,14 +52,14 @@ test.describe('스크롤 복원 테스트', () => {
 
     // 8. 뒤로가기
     await page.goBack();
-    await page.waitForURL('/recipes', { timeout: 15000 });
+    await page.waitForURL(/\/recipes$/, { timeout: 15000 });
 
     // 9. 레시피 카드 복원 대기 (캐시에서 복원되거나 새로 로드)
-    await page.waitForSelector('a[href^="/recipes/"]', { timeout: 10000 });
+    await page.waitForSelector('a[href*="/recipes/"]', { timeout: 10000 });
     // 스크롤 복원 대기 (setTimeout 150ms + 여유)
     await page.waitForTimeout(1000);
 
-    const restoredCards = await page.locator('a[href^="/recipes/"]').count();
+    const restoredCards = await page.locator('a[href*="/recipes/"]').count();
     console.log(`복원된 카드 수: ${restoredCards}`);
 
     // 복원 후 카드 수가 초기 로드(20개)보다 많거나 같아야 함
@@ -96,7 +96,7 @@ test.describe('스크롤 복원 테스트', () => {
     await page.waitForTimeout(300);
 
     // 레시피 클릭 → unmount 시 캐시 저장
-    const firstRecipeLink = page.locator('a[href^="/recipes/"]').first();
+    const firstRecipeLink = page.locator('a[href*="/recipes/"]').first();
     await firstRecipeLink.click();
     await page.waitForURL(/\/recipes\/[^/]+$/, { timeout: 10000 });
 
@@ -146,7 +146,8 @@ test.describe('스크롤 복원 테스트', () => {
       }));
     });
 
-    // 정렬 변경
+    // 정렬 변경 — 클라이언트 컴포넌트 마운트 후 select가 노출될 때까지 대기
+    await page.waitForSelector('select', { timeout: 15000 });
     await page.selectOption('select', 'rating');
     await page.waitForTimeout(500);
 
@@ -168,20 +169,20 @@ test.describe('스크롤 복원 테스트', () => {
     }
 
     // 실제 팁 아이템 로드 대기 (/tip/new 제외)
-    await page.waitForSelector('a[href^="/tip/"]:not([href="/tip/new"])', { timeout: 15000 });
+    await page.waitForSelector('a[href*="/tip/"]:not([href*="/tip/new"])', { timeout: 15000 });
 
-    const initialCount = await page.locator('a[href^="/tip/"]:not([href="/tip/new"])').count();
+    const initialCount = await page.locator('a[href*="/tip/"]:not([href*="/tip/new"])').count();
     console.log(`팁 초기 로드 수: ${initialCount}`);
 
     await page.evaluate(() => window.scrollTo(0, 600));
     await page.waitForTimeout(300);
 
-    const firstTip = page.locator('a[href^="/tip/"]:not([href="/tip/new"])').first();
+    const firstTip = page.locator('a[href*="/tip/"]:not([href*="/tip/new"])').first();
     await firstTip.click();
     await page.waitForURL(/\/tip\/[^/]+$/, { timeout: 10000 });
 
     await page.goBack();
-    await page.waitForURL('/tip', { timeout: 10000 });
+    await page.waitForURL(/\/tip$/, { timeout: 10000 });
     await page.waitForTimeout(500);
 
     const restoredScrollY = await page.evaluate(() => window.scrollY);

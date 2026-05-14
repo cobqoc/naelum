@@ -147,14 +147,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!recipe || recipe.status !== 'published') {
     return {
-      title: '레시피를 찾을 수 없습니다 · 낼름',
+      title: { absolute: '레시피를 찾을 수 없습니다 · 낼름' },
     };
   }
 
-  // layout.tsx의 title template("%s | 낼름")이 자동으로 suffix를 붙여준다
-  const title = recipe.title;
-  const description = recipe.description?.slice(0, 150) || `${recipe.title} 레시피`;
+  // [lang]/layout.tsx가 title.absolute를 사용해 root template이 자식에게 전달되지 않음
+  // absolute로 직접 "레시피명 | 낼름" 형태를 설정한다
   const fullTitleForOG = `${recipe.title} | 낼름`;
+  const title = { absolute: fullTitleForOG };
+  const description = recipe.description?.slice(0, 150) || `${recipe.title} 레시피`;
 
   // 일부 레거시 레시피의 thumbnail_url이 http://로 시작 (foodsafetykorea.go.kr 등).
   // HTTPS-only 환경의 SNS 미리보기에서 차단되므로 https로 강제 변환하거나 폴백 사용.

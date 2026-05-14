@@ -42,6 +42,6 @@ export default async function AdminIngredientsPage() {
  * 메타데이터
  */
 export const metadata = {
-  title: '재료 관리 | 낼름 Admin',
+  title: { absolute: '재료 관리 | 낼름 Admin' },
   description: '사용자가 추가한 재료를 승인하거나 거부합니다',
 };

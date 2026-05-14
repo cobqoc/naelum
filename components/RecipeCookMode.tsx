@@ -9,6 +9,7 @@ import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useMultiTimer, Timer } from '@/lib/hooks/useMultiTimer';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 
 const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { ssr: false });
 
@@ -87,6 +88,7 @@ export default function RecipeCookMode({
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [showTimerPanel, setShowTimerPanel] = useState(false);
   const toast = useToast();
+  const { t } = useI18n();
   const voice = useVoiceGuide();
   const multiTimer = useMultiTimer();
   const unitConv = useUnitConversion();
@@ -139,13 +141,13 @@ export default function RecipeCookMode({
       <div className="fixed inset-0 z-50 bg-background-primary text-text-primary flex items-center justify-center px-6">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🍳</div>
-          <h2 className="text-xl font-bold mb-2">조리 단계가 없어요</h2>
-          <p className="text-text-muted mb-6 text-sm">이 레시피는 아직 조리 단계가 등록되지 않았어요.</p>
+          <h2 className="text-xl font-bold mb-2">{t.cookMode.noStepsTitle}</h2>
+          <p className="text-text-muted mb-6 text-sm">{t.cookMode.noStepsBody}</p>
           <button
             onClick={onClose}
             className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors"
           >
-            닫기
+            {t.common.close}
           </button>
         </div>
       </div>
@@ -195,19 +197,19 @@ export default function RecipeCookMode({
       if (response.ok) {
         window.location.href = '/';
       } else if (response.status === 401) {
-        toast.warning('로그인하면 조리 완료를 기록할 수 있어요', {
+        toast.warning(t.cookMode.toastLoginCooked, {
           action: {
-            label: '로그인',
+            label: t.common.login,
             onClick: () => { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`; }
           }
         });
       } else {
         const data = await response.json();
-        toast.error(data.error || '저장에 실패했습니다.');
+        toast.error(data.error || t.cookMode.saveFailed);
       }
     } catch (error) {
       console.error('Complete recipe error:', error);
-      toast.error('저장 중 오류가 발생했습니다.');
+      toast.error(t.cookMode.saveError);
     } finally {
       setCompleting(false);
     }
@@ -225,13 +227,13 @@ export default function RecipeCookMode({
 
       if (!completeResponse.ok) {
         const data = await completeResponse.json();
-        throw new Error(data.error || '요리 완성 저장 실패');
+        throw new Error(data.error || t.cookMode.saveFailed);
       }
 
       window.location.href = '/';
     } catch (error) {
       console.error('Complete recipe error:', error);
-      toast.error(error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : t.cookMode.saveError);
     }
   };
 
@@ -263,7 +265,7 @@ export default function RecipeCookMode({
                     ? 'bg-accent-warm text-background-primary'
                     : 'text-text-muted hover:text-text-primary'
                 } ${voice.isSpeaking ? 'animate-pulse' : ''}`}
-                title={voice.isEnabled ? '음성 안내 끄기' : '음성 안내 켜기'}
+                title={voice.isEnabled ? t.cookMode.voiceOnTooltip : t.cookMode.voiceOffTooltip}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {voice.isEnabled ? (
@@ -302,11 +304,11 @@ export default function RecipeCookMode({
                   : 'bg-background-tertiary text-text-muted'
               }`}
             >
-              {voice.isEnabled ? '🔊 음성 안내 ON' : '🔇 음성 안내 OFF'}
+              {voice.isEnabled ? t.cookMode.voiceOnLabel : t.cookMode.voiceOffLabel}
             </button>
             {voice.isEnabled && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-text-muted">속도:</span>
+                <span className="text-xs text-text-muted">{t.cookMode.speedLabel}:</span>
                 {(['slow', 'normal', 'fast'] as const).map(s => (
                   <button
                     key={s}
@@ -317,7 +319,7 @@ export default function RecipeCookMode({
                         : 'bg-background-tertiary text-text-muted hover:bg-white/10'
                     }`}
                   >
-                    {s === 'slow' ? '느리게' : s === 'normal' ? '보통' : '빠르게'}
+                    {s === 'slow' ? t.cookMode.speedSlow : s === 'normal' ? t.cookMode.speedNormal : t.cookMode.speedFast}
                   </button>
                 ))}
               </div>
@@ -337,12 +339,12 @@ export default function RecipeCookMode({
                   />
                 ))}
               </div>
-              <span className="text-xs text-accent-warm">읽는 중...</span>
+              <span className="text-xs text-accent-warm">{t.cookMode.reading}</span>
               <button
                 onClick={voice.stop}
                 className="ml-auto text-xs text-text-muted hover:text-error transition-colors"
               >
-                중지
+                {t.cookMode.stopReading}
               </button>
             </div>
           )}
@@ -387,7 +389,7 @@ export default function RecipeCookMode({
                 {completedSteps.has(currentStep.step_number) ? '✓' : currentStep.step_number}
               </button>
               <div>
-                <p className="text-sm text-text-muted">단계 {currentStep.step_number}</p>
+                <p className="text-sm text-text-muted">{t.cookMode.stepLabel.replace('{n}', String(currentStep.step_number))}</p>
                 {currentStep.title && <h2 className="text-xl font-bold">{currentStep.title}</h2>}
               </div>
             </div>
@@ -397,7 +399,7 @@ export default function RecipeCookMode({
               <div className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden">
                 <Image
                   src={currentStep.image_url}
-                  alt={`단계 ${currentStep.step_number}`}
+                  alt={t.cookMode.stepLabel.replace('{n}', String(currentStep.step_number))}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 600px"
@@ -416,16 +418,16 @@ export default function RecipeCookMode({
                 onClick={() => {
                   multiTimer.startTimer(
                     currentStep.timer_minutes!,
-                    `${currentStep.step_number}단계`,
+                    t.cookMode.stepTimerLabel.replace('{n}', String(currentStep.step_number)),
                     currentStep.step_number
                   );
                   setShowTimerPanel(true);
-                  toast.success(`타이머 시작: ${currentStep.timer_minutes}분`);
+                  toast.success(t.cookMode.timerStarted.replace('{minutes}', String(currentStep.timer_minutes)));
                 }}
                 className="w-full py-4 rounded-xl bg-info/10 border-2 border-info/30 text-info font-bold hover:bg-info/20 transition-all flex items-center justify-center gap-2"
               >
                 <span className="text-xl">⏱️</span>
-                타이머 추가 ({currentStep.timer_minutes}분)
+                {t.cookMode.addTimerBtn.replace('{minutes}', String(currentStep.timer_minutes))}
               </button>
             )}
 
@@ -433,7 +435,7 @@ export default function RecipeCookMode({
             {currentStep.tip && (
               <div className="p-4 rounded-xl bg-warning/10 border-2 border-warning/30">
                 <p className="text-sm">
-                  <span className="font-bold text-warning text-base">💡 팁:</span>{' '}
+                  <span className="font-bold text-warning text-base">{t.cookMode.tipLabel}</span>{' '}
                   <span className="text-text-secondary">{currentStep.tip}</span>
                 </p>
               </div>
@@ -447,7 +449,7 @@ export default function RecipeCookMode({
                 className="w-full py-4 px-6 rounded-2xl bg-success text-white font-bold text-lg hover:bg-success/90 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg"
               >
                 <span className="text-2xl">🎉</span>
-                요리 완성!
+                {t.cookMode.recipeDone}
               </button>
             )}
           </div>
@@ -462,7 +464,7 @@ export default function RecipeCookMode({
             disabled={currentStepIndex === 0}
             className="flex-1 py-3 rounded-xl bg-background-secondary font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-background-tertiary transition-all"
           >
-            ← 이전
+            {t.cookMode.prevShort}
           </button>
           <button
             onClick={() => onToggleStepComplete(currentStep.step_number)}
@@ -472,14 +474,14 @@ export default function RecipeCookMode({
                 : 'bg-background-tertiary text-text-muted hover:bg-background-secondary'
             }`}
           >
-            {completedSteps.has(currentStep.step_number) ? '✓ 완료' : '완료'}
+            {completedSteps.has(currentStep.step_number) ? t.cookMode.doneMark : t.cookMode.doneShort}
           </button>
           {!isLastStep && (
             <button
               onClick={nextStep}
               className="flex-1 py-3 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover transition-all"
             >
-              다음 →
+              {t.cookMode.nextShort}
             </button>
           )}
         </div>
@@ -490,7 +492,7 @@ export default function RecipeCookMode({
         onClick={() => setShowIngredients(true)}
         className="fixed bottom-20 left-4 z-50 px-4 py-2.5 rounded-full bg-background-secondary border border-white/10 text-sm font-medium shadow-lg hover:bg-background-tertiary transition-all flex items-center gap-2"
       >
-        📋 재료
+        {t.cookMode.ingredientsBtn}
       </button>
 
       {/* 재료 하단 시트 */}
@@ -507,7 +509,7 @@ export default function RecipeCookMode({
             </div>
             <div className="px-6 pb-6 overflow-y-auto max-h-[calc(70vh-48px)]">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">재료</h3>
+                <h3 className="text-lg font-bold">{t.cookMode.ingredientsShort}</h3>
                 <button
                   onClick={() => setShowIngredients(false)}
                   className="w-8 h-8 rounded-full hover:bg-background-tertiary flex items-center justify-center transition-colors"
@@ -571,7 +573,7 @@ export default function RecipeCookMode({
               <span className="font-mono font-bold text-sm">
                 {multiTimer.activeTimers.length > 0
                   ? formatTime(multiTimer.activeTimers[0].remainingSeconds)
-                  : '완료!'
+                  : t.cookMode.timerCompleted
                 }
               </span>
               {multiTimer.activeTimers.length > 1 && (
@@ -595,7 +597,7 @@ export default function RecipeCookMode({
                       onClick={multiTimer.removeCompleted}
                       className="text-xs text-text-muted hover:text-text-primary"
                     >
-                      완료 삭제
+                      {t.cookMode.removeCompleted}
                     </button>
                   )}
                   <button
@@ -677,17 +679,17 @@ export default function RecipeCookMode({
           <div className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold mb-2">요리 완성!</h3>
-              <p className="text-text-secondary text-sm">이 레시피는 어떠셨나요?</p>
+              <h3 className="text-2xl font-bold mb-2">{t.cookMode.recipeDone}</h3>
+              <p className="text-text-secondary text-sm">{t.cookMode.reviewPrompt}</p>
             </div>
 
             {/* 완성 사진 */}
             <div className="mb-6">
-              <label className="block text-sm font-bold mb-3">📷 완성 사진 (선택사항)</label>
+              <label className="block text-sm font-bold mb-3">{t.cookMode.completionPhotoLabel}</label>
               {photoPreview ? (
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoPreview} alt="완성 사진" className="w-full h-48 object-cover rounded-xl" />
+                  <img src={photoPreview} alt={t.cookMode.completionPhotoLabel} className="w-full h-48 object-cover rounded-xl" />
                   <button
                     onClick={removePhoto}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full bg-error text-white flex items-center justify-center hover:bg-error/90 transition-all"
@@ -706,8 +708,8 @@ export default function RecipeCookMode({
                   />
                   <div className="text-center">
                     <div className="text-4xl mb-2">📸</div>
-                    <p className="font-bold text-sm">사진 찍기</p>
-                    <p className="text-text-muted text-xs mt-1">또는 갤러리에서 선택</p>
+                    <p className="font-bold text-sm">{t.cookMode.takePhoto}</p>
+                    <p className="text-text-muted text-xs mt-1">{t.cookMode.orSelectFromGallery}</p>
                   </div>
                 </label>
               )}
@@ -718,14 +720,14 @@ export default function RecipeCookMode({
                 onClick={() => setShowReviewModal(true)}
                 className="w-full py-3 px-6 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all flex items-center justify-center gap-2"
               >
-                <span>⭐</span> 리뷰 작성하기
+                {t.cookMode.writeReview}
               </button>
               <button
                 onClick={handleSkipReview}
                 disabled={completing}
                 className="w-full py-3 px-6 rounded-xl bg-background-tertiary text-text-primary font-bold hover:bg-background-primary transition-all disabled:opacity-50"
               >
-                {completing ? '저장 중...' : '다음에 하기'}
+                {completing ? t.cookMode.saving : t.cookMode.skipReview}
               </button>
             </div>
           </div>
