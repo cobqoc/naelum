@@ -523,6 +523,15 @@ function DetailFields({
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [catCanLeft,  setCatCanLeft]  = useState(false);
   const [catCanRight, setCatCanRight] = useState(false);
+  const [showPurchasePicker, setShowPurchasePicker] = useState(false);
+  const [showExpiryPicker,   setShowExpiryPicker]   = useState(false);
+
+  // ISO → "YYYY. MM. DD." 표시용
+  const fmtDate = (iso: string) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${y}. ${m}. ${d}.`;
+  };
 
   const updateCatArrows = () => {
     const el = catScrollRef.current;
@@ -625,16 +634,33 @@ function DetailFields({
 
       {/* 날짜 — 구매일·유통기한 2열 */}
       <div className="grid grid-cols-2 gap-3">
-        {/* 구매일 */}
+        {/* 구매일 — 날짜 표시 + ✏️ 클릭 시 직접 입력 */}
         <div>
           <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.purchaseDate}</label>
-          <input
-            type="date"
-            value={item.purchase_date}
-            onChange={(e) => onChange('purchase_date', e.target.value)}
-            className={fieldBase}
-          />
-          {item.purchase_date && (
+          {showPurchasePicker ? (
+            <input
+              type="date"
+              value={item.purchase_date}
+              onChange={(e) => { onChange('purchase_date', e.target.value); setShowPurchasePicker(false); }}
+              onBlur={() => setShowPurchasePicker(false)}
+              autoFocus
+              className={fieldBase}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowPurchasePicker(true)}
+              className={`${fieldBase} flex items-center justify-between text-left`}
+            >
+              <span className={item.purchase_date ? 'text-text-primary' : 'text-text-muted text-xs'}>
+                {item.purchase_date ? fmtDate(item.purchase_date) : '날짜 선택'}
+              </span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted flex-shrink-0">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          )}
+          {item.purchase_date && !showPurchasePicker && (
             <p className="mt-1 text-[11px] text-text-muted text-center">
               {(() => {
                 const today = new Date(); today.setHours(0,0,0,0);
@@ -648,11 +674,11 @@ function DetailFields({
             </p>
           )}
         </div>
-        {/* 유통기한 */}
+
+        {/* 유통기한 — 프리셋 + 필요 시 직접 입력 */}
         <div>
           <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.expiryDate}</label>
-          {/* 빠른 선택 — 실제 날짜 함께 표시 */}
-          <div className="grid grid-cols-2 gap-1 mb-1.5">
+          <div className="grid grid-cols-2 gap-1">
             {QUICK_EXPIRY.map(({ label, days }) => {
               const iso = addDaysToISO(days);
               const isActive = item.expiry_date === iso;
@@ -662,8 +688,8 @@ function DetailFields({
                 <button
                   key={days}
                   type="button"
-                  onClick={() => onChange('expiry_date', isActive ? '' : iso)}
-                  className={`flex flex-col items-center py-1 rounded-lg text-[11px] font-medium leading-tight transition-all ${
+                  onClick={() => { onChange('expiry_date', isActive ? '' : iso); setShowExpiryPicker(false); }}
+                  className={`flex flex-col items-center py-1.5 rounded-lg text-[11px] font-medium leading-tight transition-all ${
                     isActive
                       ? 'bg-accent-warm text-background-primary'
                       : 'bg-background-secondary text-text-secondary hover:bg-white/8 hover:text-text-primary'
@@ -675,12 +701,26 @@ function DetailFields({
               );
             })}
           </div>
-          <input
-            type="date"
-            value={item.expiry_date}
-            onChange={(e) => onChange('expiry_date', e.target.value)}
-            className={fieldBase}
-          />
+          {/* 직접 입력 토글 */}
+          <button
+            type="button"
+            onClick={() => setShowExpiryPicker(v => !v)}
+            className="mt-1.5 flex items-center gap-1 text-[11px] text-text-muted hover:text-text-secondary transition-colors w-full justify-center"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            <span>{showExpiryPicker ? '접기' : '직접 입력'}</span>
+          </button>
+          {showExpiryPicker && (
+            <input
+              type="date"
+              value={item.expiry_date}
+              onChange={(e) => onChange('expiry_date', e.target.value)}
+              autoFocus
+              className={`${fieldBase} mt-1.5`}
+            />
+          )}
           {errors.expiry_date && <p className="mt-1 text-xs text-error">{errors.expiry_date}</p>}
           {item.expiry_date && (
             <>
