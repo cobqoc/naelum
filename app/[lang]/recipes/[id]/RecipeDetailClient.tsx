@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
+import { useI18n } from '@/lib/i18n/context';
 import RecipeBrowseView from '@/components/RecipeBrowseView';
 
 // 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
@@ -91,6 +92,7 @@ export default function RecipeDetailClient({
 }: RecipeDetailClientProps) {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
   const { profile: authProfile } = useAuth();
 
   // recipe는 state로 보관 — refreshRecipeRatings로 교체될 수 있음
@@ -253,9 +255,9 @@ export default function RecipeDetailClient({
           }).catch(() => {});
         }
       } else if (res.status === 401) {
-        toast.warning('로그인하면 레시피를 낼름(저장)할 수 있어요', {
+        toast.warning(t.recipe.toastSaveLogin, {
           action: {
-            label: '로그인',
+            label: t.recipe.toastLoginCta,
             onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
           }
         });
@@ -291,9 +293,9 @@ export default function RecipeDetailClient({
         // 롤백 + 로그인 유도
         setIsLiked(prevLiked);
         setLikesCount(prevCount);
-        toast.warning('로그인하면 레시피에 좋아요를 누를 수 있어요', {
+        toast.warning(t.recipe.toastLikeLogin, {
           action: {
-            label: '로그인',
+            label: t.recipe.toastLoginCta,
             onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
           }
         });
@@ -454,7 +456,7 @@ export default function RecipeDetailClient({
         hasCooked={hasCooked}
         onStartCooking={() => {
           if (!recipe.steps || recipe.steps.length === 0) {
-            toast.warning('이 레시피는 아직 조리 단계가 없어요');
+            toast.warning(t.recipe.noStepsWarning);
             return;
           }
           setIsCookMode(true);

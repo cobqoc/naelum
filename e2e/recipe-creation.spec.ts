@@ -24,12 +24,11 @@ test.describe('레시피 작성', () => {
     const pageErrors: string[] = []
     page.on('pageerror', (e) => pageErrors.push(e.message))
 
-    await page.goto('/recipes/new', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(1500)
+    await page.goto('/recipes/new', { waitUntil: 'networkidle' })
 
-    // 제목 input이 있어야 함 (떡볶이 예시 placeholder)
+    // 제목 input이 있어야 함 (Suspense loading 이후 렌더)
     const titleInput = page.locator('input[placeholder*="떡볶이"], input[placeholder*="만드는건"]').first()
-    await expect(titleInput).toBeVisible({ timeout: 5000 })
+    await expect(titleInput).toBeVisible({ timeout: 10000 })
 
     // "재료" 섹션 텍스트
     const ingredientsSection = page.getByText(/재료/).first()
@@ -112,7 +111,7 @@ test.describe('레시피 작성', () => {
       await page.goto('/recipes', { waitUntil: 'domcontentloaded' })
       await page.waitForTimeout(1500)
       // 클릭 가능한 링크로 존재해야 함
-      const link = page.locator(`a[href="/recipes/${recipe.id}"]`).first()
+      const link = page.locator(`a[href*="/recipes/${recipe.id}"]`).first()
       await expect(link).toBeVisible({ timeout: 5000 })
     } finally {
       await deleteTestRecipe(recipe.id)

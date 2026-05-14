@@ -14,7 +14,7 @@ test.describe('낼름 / 좋아요 흐름', () => {
     testUser,
   }) => {
     const recipeId = await createTestRecipe(testUser.userId, {
-      title: 'Save Flow Test',
+      title: `Save Flow Test ${Date.now()}`,
       withSteps: true,
     })
 
@@ -62,7 +62,7 @@ test.describe('낼름 / 좋아요 흐름', () => {
     testUser,
   }) => {
     const recipeId = await createTestRecipe(testUser.userId, {
-      title: 'Memo Test',
+      title: `Memo Test ${Date.now()}`,
       withSteps: true,
     })
 
@@ -94,7 +94,7 @@ test.describe('낼름 / 좋아요 흐름', () => {
     testUser,
   }) => {
     const recipeId = await createTestRecipe(testUser.userId, {
-      title: 'Like Flow Test',
+      title: `Like Flow Test ${Date.now()}`,
       withSteps: true,
     })
 

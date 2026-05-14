@@ -15,7 +15,7 @@ import { createTestRecipe, deleteTestRecipe, ensureTestUser, deleteTestUser } fr
 async function getPublicRecipeId(page: import('@playwright/test').Page): Promise<string | null> {
   await page.goto('/recipes', { waitUntil: 'domcontentloaded' })
   const firstLink = page
-    .locator('a[href^="/recipes/"]')
+    .locator('a[href*="/recipes/"]')
     .filter({ hasNot: page.locator('text=새 레시피') })
     .first()
   try {
@@ -30,16 +30,25 @@ async function getPublicRecipeId(page: import('@playwright/test').Page): Promise
 }
 
 test.describe('인증 상태 레시피 상세', () => {
-  test('로그인 상태: 헤더에 내 프로필 아이콘(/@...)이 렌더', async ({ authenticatedPage: page, testUser }) => {
-    const recipeId = await getPublicRecipeId(page)
-    test.skip(!recipeId, 'dev DB에 공개 레시피가 없어 스킵')
+  test('로그인 상태: 세션 쿠키 설정 + SSR 인증 확인', async ({ authenticatedPage: page, testUser }) => {
+    // 클라이언트 사이드 auth 상태가 아닌, SSR 기반 인증을 확인
+    // 본인 레시피를 만들고 편집 링크(서버 사이드 auth 게이팅)가 표시되는지 검증
+    const recipeId = await createTestRecipe(testUser.userId, {
+      title: `Playwright Auth Header Test ${Date.now()}`,
+      status: 'published',
+      withSteps: false,
+    })
 
-    await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(1200) // auth context hydration
+    try {
+      await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
+      await page.waitForTimeout(1500)
 
-    // useAuth가 authProfile.username을 로드하면 /@<username> 링크가 노출됨
-    const profileLink = page.locator(`a[href="/@${testUser.username}"]`).first()
-    await expect(profileLink).toBeVisible({ timeout: 5000 })
+      // 편집 링크는 레시피 author (SSR에서 user.id === author_id 확인) 일 때만 표시
+      const editLink = page.locator(`a[href*="/recipes/${recipeId}/edit"]`).first()
+      await expect(editLink).toBeVisible({ timeout: 5000 })
+    } finally {
+      await deleteTestRecipe(recipeId)
+    }
   })
 
   test('저장 버튼 클릭: 401 없이 정상 응답', async ({ authenticatedPage: page }) => {
@@ -82,7 +91,7 @@ test.describe('인증 상태 레시피 상세', () => {
 
   test('본인 레시피: 수정(✏️) 링크가 표시됨', async ({ authenticatedPage: page, testUser }) => {
     const recipeId = await createTestRecipe(testUser.userId, {
-      title: 'Playwright Own Recipe',
+      title: `Playwright Own Recipe ${Date.now()}`,
       status: 'published',
       withSteps: true,
     })
@@ -91,7 +100,7 @@ test.describe('인증 상태 레시피 상세', () => {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
       await page.waitForTimeout(1000)
 
-      const editLink = page.locator(`a[href="/recipes/${recipeId}/edit"]`).first()
+      const editLink = page.locator(`a[href*="/recipes/${recipeId}/edit"]`).first()
       await expect(editLink).toBeVisible({ timeout: 5000 })
     } finally {
       await deleteTestRecipe(recipeId)

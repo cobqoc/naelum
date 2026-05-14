@@ -101,49 +101,55 @@ export async function PUT(
     }
 
     // 기존 재료 삭제 후 재추가
-    if (ingredients && ingredients.length > 0) {
+    if (Array.isArray(ingredients)) {
       await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
 
-      const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
-        recipe_id: recipeId,
-        ingredient_name: ing.ingredient_name,
-        quantity: ing.quantity,
-        unit: ing.unit,
-        notes: ing.notes,
-        is_optional: ing.is_optional || false,
-        display_order: index + 1
-      }));
+      if (ingredients.length > 0) {
+        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
+          recipe_id: recipeId,
+          ingredient_name: ing.ingredient_name,
+          quantity: ing.quantity,
+          unit: ing.unit,
+          notes: ing.notes,
+          is_optional: ing.is_optional || false,
+          display_order: index + 1
+        }));
 
-      await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+        await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+      }
     }
 
     // 기존 조리 단계 삭제 후 재추가
-    if (steps && steps.length > 0) {
+    if (Array.isArray(steps)) {
       await supabase.from('recipe_steps').delete().eq('recipe_id', recipeId);
 
-      const stepsToInsert = steps.map((step: { title: string; instruction: string; timer_minutes?: number; tip?: string; image_url?: string }, index: number) => ({
-        recipe_id: recipeId,
-        step_number: index + 1,
-        title: step.title,
-        instruction: step.instruction,
-        timer_minutes: step.timer_minutes,
-        tip: step.tip,
-        image_url: step.image_url
-      }));
+      if (steps.length > 0) {
+        const stepsToInsert = steps.map((step: { title: string; instruction: string; timer_minutes?: number; tip?: string; image_url?: string }, index: number) => ({
+          recipe_id: recipeId,
+          step_number: index + 1,
+          title: step.title,
+          instruction: step.instruction,
+          timer_minutes: step.timer_minutes,
+          tip: step.tip,
+          image_url: step.image_url
+        }));
 
-      await supabase.from('recipe_steps').insert(stepsToInsert);
+        await supabase.from('recipe_steps').insert(stepsToInsert);
+      }
     }
 
-    // 기존 태그 삭제 후 재추가
-    if (tags && tags.length > 0) {
+    // 기존 태그 삭제 후 재추가 (빈 배열도 처리 — 태그 전체 제거 허용)
+    if (Array.isArray(tags)) {
       await supabase.from('recipe_tags').delete().eq('recipe_id', recipeId);
 
-      const tagsToInsert = tags.map((tag: string) => ({
-        recipe_id: recipeId,
-        tag_name: tag
-      }));
+      if (tags.length > 0) {
+        const tagsToInsert = tags.map((tag: string) => ({
+          recipe_id: recipeId,
+          tag_name: tag
+        }));
 
-      await supabase.from('recipe_tags').insert(tagsToInsert);
+        await supabase.from('recipe_tags').insert(tagsToInsert);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -638,7 +638,7 @@ export default function EditRecipePage(props: PageProps) {
       <header className="sticky top-0 z-50 bg-background-primary/80 backdrop-blur-lg border-b border-white/5">
         <div className="container mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
           <button onClick={() => router.back()} className="text-text-muted hover:text-text-primary">
-            ← 취소
+            ← {t.common.cancel}
           </button>
           <h1 className="text-lg font-bold">{tf.editTitle}</h1>
           <div className="w-12" />
@@ -761,7 +761,7 @@ export default function EditRecipePage(props: PageProps) {
                 <div className="relative w-full h-64">
                   <Image
                     src={ingredientsImage}
-                    alt="재료 준비"
+                    alt={tf.ingredientsPhotoLabel}
                     fill
                     className="object-cover rounded-xl"
                   />
@@ -932,7 +932,7 @@ export default function EditRecipePage(props: PageProps) {
               onClick={addIngredients}
               className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
             >
-              + 재료 5개 추가
+              {tf.addFiveIngredients}
             </button>
           </div>
         </section>
@@ -959,7 +959,7 @@ export default function EditRecipePage(props: PageProps) {
                     onClick={() => removeStep(index)}
                     className="text-error text-sm hover:underline"
                   >
-                    삭제
+                    {t.common.delete}
                   </button>
                 )}
               </div>
@@ -986,7 +986,7 @@ export default function EditRecipePage(props: PageProps) {
                   <div className="relative w-full h-48">
                     <Image
                       src={step.image_url}
-                      alt={`단계 ${index + 1} 이미지`}
+                      alt={`${tf.stepNumber} ${index + 1}`}
                       fill
                       className="object-cover rounded-lg"
                     />
@@ -1068,8 +1068,8 @@ export default function EditRecipePage(props: PageProps) {
             onClick={addStep}
             className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
           >
-            + 단계 추가
-          </button>
+            {tf.addStep}
+</button>
 
           {/* 완성된 요리 이미지 */}
           <div className="space-y-3 pt-4">
@@ -1079,7 +1079,7 @@ export default function EditRecipePage(props: PageProps) {
               <div className="relative w-full h-64">
                 <Image
                   src={thumbnailImage}
-                  alt="완성된 요리"
+                  alt={tf.finalPhotoLabel}
                   fill
                   className="object-cover rounded-xl"
                 />
@@ -1330,8 +1330,8 @@ export default function EditRecipePage(props: PageProps) {
                 disabled={!tagInput.trim() || tags.length >= 10}
                 className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold disabled:opacity-50"
               >
-                추가
-              </button>
+                {t.quickAdd.addButton}
+</button>
             </div>
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2">

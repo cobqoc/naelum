@@ -374,9 +374,9 @@ export default function RecipeBrowseView({
           ? (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)
           : null;
         const items = [
-          totalTime != null ? { label: '조리시간', value: `${totalTime}분` } : null,
-          recipe.difficulty_level ? { label: '난이도', value: recipe.difficulty_level === 'easy' ? '초급' : recipe.difficulty_level === 'medium' ? '중급' : '고급' } : null,
-          recipe.servings ? { label: '인분', value: `${recipe.servings}인분` } : null,
+          totalTime != null ? { label: t.recipe.cookTimeLabel, value: `${totalTime}${t.recipe.minuteSuffix}` } : null,
+          recipe.difficulty_level ? { label: t.recipe.difficultyLabel, value: recipe.difficulty_level === 'easy' ? t.difficulty.easy : recipe.difficulty_level === 'medium' ? t.difficulty.medium : t.difficulty.hard } : null,
+          recipe.servings ? { label: t.recipe.servingsLabel, value: `${recipe.servings} ${t.recipe.servingsSuffix}` } : null,
         ].filter(Boolean) as { label: string; value: string }[];
 
         if (items.length === 0) return null;
@@ -401,8 +401,8 @@ export default function RecipeBrowseView({
             className="flex items-center gap-2 flex-1"
           >
             <h2 className="text-lg font-bold">
-              재료
-              <span className="text-sm font-normal text-text-muted ml-2">{recipe.ingredients.length}개</span>
+              {t.recipe.ingredientsLabel}
+              <span className="text-sm font-normal text-text-muted ml-2">{recipe.ingredients.length}</span>
             </h2>
             <svg
               className={`w-5 h-5 text-text-muted transition-transform duration-200 ${ingredientsExpanded ? 'rotate-180' : ''}`}
@@ -421,12 +421,12 @@ export default function RecipeBrowseView({
                 ? 'bg-info/20 text-info border border-info/30'
                 : 'bg-background-tertiary text-text-muted hover:bg-white/10'
             }`}
-            title="단위 전환 (미터법 ↔ 야드파운드법)"
+            title={`${t.recipe.metricLabel} ↔ ${t.recipe.imperialLabel}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
-            {unitConv.isImperial ? 'Imperial' : '미터법'}
+            {unitConv.isImperial ? t.recipe.imperialLabel : t.recipe.metricLabel}
           </button>
           <button
             onClick={onShowFridge}
@@ -461,7 +461,7 @@ export default function RecipeBrowseView({
                 : ingredientStatus === 'all' ? 'text-success'
                 : 'text-warning'
             }`}>
-              {ownedCount}/{totalIngredients} 보유
+              {ownedCount}/{totalIngredients} {t.recipe.ownedSuffix}
             </span>
           </button>
         </div>
@@ -609,7 +609,7 @@ export default function RecipeBrowseView({
           </p>
         )}
         <p className="text-xs text-text-muted leading-relaxed">
-          * 알레르기 정보는 참고용입니다. 알레르기가 있으신 분은 재료를 직접 확인하세요.
+          {t.recipe.allergyDisclaimer}
         </p>
       </div>
 

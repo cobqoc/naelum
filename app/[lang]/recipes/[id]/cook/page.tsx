@@ -200,7 +200,7 @@ export default function CookingModePage(props: PageProps) {
   }
 
   const currentStep = recipe.steps[currentStepIndex];
-  const progress = (completedSteps.size / recipe.steps.length) * 100;
+  const progress = recipe.steps.length > 0 ? (completedSteps.size / recipe.steps.length) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
@@ -268,6 +268,21 @@ export default function CookingModePage(props: PageProps) {
 
       {/* Main Content */}
       <div className="container mx-auto max-w-2xl px-6 py-8">
+        {/* Empty state when no steps */}
+        {recipe.steps.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="text-6xl mb-6">🍳</div>
+            <h2 className="text-xl font-bold mb-2 text-text-primary">{t.cookMode.noStepsTitle}</h2>
+            <p className="text-text-muted mb-8 text-sm">{t.cookMode.noStepsBody}</p>
+            <Link
+              href={`/recipes/${id}`}
+              className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all"
+            >
+              {t.cookMode.backToRecipe}
+            </Link>
+          </div>
+        )}
+
         {/* Step Navigation */}
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
           {recipe.steps.map((step, index) => (

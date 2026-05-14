@@ -14,8 +14,7 @@ test.describe('프로필 편집', () => {
     const pageErrors: string[] = []
     page.on('pageerror', (e) => pageErrors.push(e.message))
 
-    await page.goto('/settings', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(1500)
+    await page.goto('/settings', { waitUntil: 'networkidle' })
 
     // 설정 페이지의 핵심 탭 또는 섹션 존재
     const hasSettingsContent =

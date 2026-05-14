@@ -22,7 +22,7 @@ test.describe('검색 기능 테스트', () => {
 
     // 검색 결과 또는 "결과 없음" 메시지 확인
     const hasResults =
-      (await page.locator('a[href^="/recipes/"]').count()) > 0;
+      (await page.locator('a[href*="/recipes/"]').count()) > 0;
     const noResults =
       (await page.locator('text=결과').count()) > 0;
 

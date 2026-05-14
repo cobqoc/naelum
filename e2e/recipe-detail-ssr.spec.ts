@@ -20,7 +20,7 @@ import { test, expect } from './fixtures';
 async function getPublicRecipeId(page: import('@playwright/test').Page): Promise<string | null> {
   await page.goto('/recipes', { waitUntil: 'domcontentloaded' });
   // 첫 레시피 카드 링크가 나타날 때까지 대기 (최대 10초)
-  const firstLink = page.locator('a[href^="/recipes/"]').filter({
+  const firstLink = page.locator('a[href*="/recipes/"]').filter({
     hasNot: page.locator('text=새 레시피'),
   }).first();
   try {

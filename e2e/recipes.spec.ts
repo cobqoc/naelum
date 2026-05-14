@@ -7,11 +7,11 @@ test.describe('레시피 페이지 테스트', () => {
 
     await expect(page).toHaveURL(/.*recipes/);
 
-    // 레시피 카드 또는 빈 상태 메시지
-    await page.waitForTimeout(1000);
+    // 레시피 카드 또는 빈 상태 메시지 — 클라이언트 렌더링 완료까지 대기
+    await page.waitForTimeout(2000);
     const hasCards = await page.locator('[data-testid="recipe-card"]').count() > 0;
     const hasGridItems = await page.locator('article').count() > 0;
-    const hasRecipeLinks = await page.locator('a[href^="/recipes/"]').count() > 0;
+    const hasRecipeLinks = await page.locator('a[href*="/recipes/"]').count() > 0;
     const hasEmptyState = await page.locator('text=레시피가 없습니다').count() > 0;
 
     expect(hasCards || hasGridItems || hasRecipeLinks || hasEmptyState).toBeTruthy();
@@ -72,7 +72,7 @@ test.describe('레시피 페이지 테스트', () => {
     // 결과 또는 빈 상태
     const hasResults = await page.locator('[data-testid="recipe-card"]').count() > 0 ||
                        await page.locator('article').count() > 0 ||
-                       await page.locator('a[href^="/recipes/"]').count() > 0;
+                       await page.locator('a[href*="/recipes/"]').count() > 0;
     const hasEmpty = await page.locator('text=결과').count() > 0 ||
                      await page.locator('text=없습니다').count() > 0;
 
