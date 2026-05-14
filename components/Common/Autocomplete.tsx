@@ -50,6 +50,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // 접근성
   ariaLabel,
   disabled = false,
+  autoFocus = false,
 }: AutocompleteProps<T>) {
   // ===== 상태 관리 =====
   const [suggestions, setSuggestions] = useState<T[]>([]);
@@ -62,6 +63,15 @@ export default function Autocomplete<T extends AutocompleteItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
+
+  // ===== 데스크톱 자동 포커스 =====
+  useEffect(() => {
+    if (!autoFocus) return;
+    if (window.matchMedia('(pointer: fine)').matches) {
+      const id = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(id);
+    }
+  }, [autoFocus]);
 
   // ===== 디바운싱 검색 =====
   useEffect(() => {
@@ -294,14 +304,13 @@ export default function Autocomplete<T extends AutocompleteItem>({
   return (
     <div className={`relative w-full ${className}`}>
       {/* 입력창 래퍼 */}
-      <div className={`relative flex items-center overflow-hidden rounded-xl bg-background-secondary transition-all duration-300 [&>*]:!border-0 [&>*]:!border-l-0 [&>*]:!border-r-0 ${
+      <div className={`relative flex items-center overflow-hidden rounded-xl md:rounded-2xl bg-background-secondary transition-all duration-300 [&>*]:!border-0 [&>*]:!border-l-0 [&>*]:!border-r-0 ${
         isFocused
-          ? 'ring-2 ring-accent-warm shadow-[0_0_20px_rgba(255,153,102,0.3)] scale-[1.01]'
-          : 'ring-1 ring-white/10 shadow-[0_0_10px_rgba(255,153,102,0.15)] scale-100'
+          ? 'ring-2 ring-accent-warm shadow-[0_0_20px_rgba(255,153,102,0.3)] md:shadow-[0_0_25px_rgba(255,153,102,0.4)] scale-[1.01] md:scale-[1.02]'
+          : 'ring-1 ring-white/10 shadow-[0_0_10px_rgba(255,153,102,0.15)] md:shadow-[0_0_15px_rgba(255,153,102,0.2)] scale-100'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{ border: 'none' }}
       >
-        <span className="pl-4 text-text-muted flex-shrink-0 !border-0" style={{ border: 'none' }}>🔍</span>
         <input
           ref={inputRef}
           type="text"
@@ -313,7 +322,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
           placeholder={placeholder}
           disabled={disabled}
           inputMode="text"
-          className="w-full bg-transparent px-3 py-3.5 text-text-primary placeholder-text-muted !outline-none !border-0 !border-none touch-manipulation disabled:cursor-not-allowed"
+          className="w-full bg-transparent pl-4 pr-2 py-3 md:py-3.5 text-base text-text-primary placeholder-text-muted !outline-none !border-0 !border-none touch-manipulation disabled:cursor-not-allowed"
           style={{ border: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none' }}
           autoComplete="off"
           role="combobox"
@@ -323,12 +332,18 @@ export default function Autocomplete<T extends AutocompleteItem>({
           aria-activedescendant={selectedIndex >= 0 ? `autocomplete-option-${selectedIndex}` : undefined}
           aria-label={ariaLabel || placeholder}
         />
-        {/* 로딩 스피너 */}
-        {loading && (
-          <div className="pr-4 flex-shrink-0">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
-          </div>
-        )}
+        {/* 오른쪽 아이콘 — 로딩 중엔 스피너, 평소엔 홈 검색바와 동일한 오렌지 돋보기 버튼 */}
+        <div className="mr-2 flex-shrink-0">
+          {loading
+            ? <div className="w-9 h-9 flex items-center justify-center"><div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" /></div>
+            : <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-accent-warm text-background-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+          }
+        </div>
       </div>
 
 

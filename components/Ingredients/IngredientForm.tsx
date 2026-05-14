@@ -133,6 +133,7 @@ export default function IngredientForm({
   const [inputValue, setInputValue] = useState('');
   const [pendingItems, setPendingItems] = useState<PendingIngredient[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [frequentIngredients, setFrequentIngredients] = useState<RecentIngredient[]>([]);
 
   // 기존 모드 상태 (수정 모드)
@@ -219,29 +220,28 @@ export default function IngredientForm({
 
   // 일괄 제출
   const handleBatchSubmit = async () => {
-    if (pendingItems.length === 0) return;
+    if (pendingItems.length === 0 || isSubmitting) return;
 
     const items = [...pendingItems];
     const count = items.length;
+    setIsSubmitting(true);
+
+    await Promise.all(items.map(item => onSubmit(sanitizeOutgoingPayload({
+      ingredient_name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unit: item.unit,
+      purchase_date: item.purchase_date,
+      expiry_date: item.expiry_date,
+      storage_location: item.storage_location,
+      notes: item.notes,
+      expiry_alert: item.expiry_alert,
+      ingredient_id: item.ingredientId ?? null,
+    }))));
+
+    setIsSubmitting(false);
     setPendingItems([]);
     setEditingIndex(null);
-
-    for (const item of items) {
-      await onSubmit(sanitizeOutgoingPayload({
-        ingredient_name: item.name,
-        category: item.category,
-        quantity: item.quantity,
-        unit: item.unit,
-        purchase_date: item.purchase_date,
-        expiry_date: item.expiry_date,
-        storage_location: item.storage_location,
-        notes: item.notes,
-        expiry_alert: item.expiry_alert,
-        ingredient_id: item.ingredientId ?? null,
-      }));
-    }
-
-    // 제출 성공 피드백
     toastSuccess(t.quickAdd.addedToast.replace('{count}', String(count)));
     onCancel?.();
   };
@@ -358,14 +358,14 @@ export default function IngredientForm({
 
       {/* 2. 검색 자동완성 — 특수 재료나 마스터에 없는 커스텀 재료 추가용. 브라우저 하단 보조 수단. */}
       <div>
-        <p className="text-[11px] text-text-muted mb-1.5">{t.quickAdd.searchHint}</p>
         <IngredientAutocompleteV2
           value={inputValue}
           onChange={setInputValue}
           onSelect={handleQuickSelect}
-          placeholder={t.quickAdd.placeholder}
+          placeholder={t.quickAdd.searchPlaceholder}
           enableRecentItems={true}
           allowCustomIngredient={true}
+          autoFocus={true}
         />
       </div>
 
@@ -457,9 +457,10 @@ export default function IngredientForm({
             <button
               type="button"
               onClick={handleBatchSubmit}
-              className="flex-1 rounded-xl bg-accent-warm py-3.5 font-bold text-background-primary hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/20"
+              disabled={isSubmitting}
+              className="flex-1 rounded-xl bg-accent-warm py-3.5 font-bold text-background-primary hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent-warm/20 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {pendingItems.length}{t.quickAdd.countSuffix} {t.quickAdd.addButton}
+              {isSubmitting ? t.quickAdd.addingButton : `${pendingItems.length}${t.quickAdd.countSuffix} ${t.quickAdd.addButton}`}
             </button>
             {onCancel && (
               <button

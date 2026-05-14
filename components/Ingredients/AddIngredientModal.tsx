@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Link from '@/components/Common/LocalizedLink';
 import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useI18n } from '@/lib/i18n/context';
-import { useAuth } from '@/lib/auth/context';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
 
@@ -36,7 +34,6 @@ export default function AddIngredientModal({
   onAddIngredient,
 }: AddIngredientModalProps) {
   const { t } = useI18n();
-  const { user } = useAuth();
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
   // null = 자동 분류 (디폴트) / '냉장'·'냉동'·'상온' = 수동 override
   const [selectedLocation, setSelectedLocation] = useState<LocMode>(null);
@@ -92,31 +89,16 @@ export default function AddIngredientModal({
         className="w-full sm:max-w-lg bg-background-primary sm:rounded-2xl sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[88dvh]"
         onClick={e => e.stopPropagation()}
       >
-        {/* 비로그인 안내 배너 — 데모 모드에서 재료 추가 시도 시, 가입하면 실제 저장 가능함을 명확히 안내.
-            safe-area 상단 패딩 포함하여 노치 영역 정상 처리. */}
-        {!user && (
-          <Link
-            href="/signup"
-            className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-accent-warm/15 border-b border-accent-warm/30 text-[11px] md:text-xs text-accent-warm hover:bg-accent-warm/25 active:bg-accent-warm/30 transition-colors text-center"
-            style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
-          >
-            <span aria-hidden="true">✨</span>
-            <span>{t.ingredient.signupBanner}</span>
-            <span className="font-bold underline">{t.ingredient.signupBannerCta} →</span>
-          </Link>
-        )}
-
-        {/* 헤더 — safe-area 상단 패딩 포함 (노치). 타이틀 제거하고 저장 위치 pill 상단에 배치.
-            비로그인 배너가 위에 있으면 safe-area는 배너에서 처리, 헤더는 일반 패딩. */}
+        {/* 헤더 — safe-area 상단 패딩 포함 (노치). 타이틀 제거하고 저장 위치 pill 상단에 배치. */}
         <div
           className="border-b border-white/5 flex-shrink-0"
-          style={!user ? { paddingTop: '0.75rem' } : { paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
           {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">✨ 보관 장소: 자동 분류</span>
-              <span className="text-[11px] text-text-muted whitespace-nowrap">· 100% 정확하지 않음</span>
+              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">{t.ingredient.modalStorageAuto}</span>
+              <span className="text-[11px] text-text-muted whitespace-nowrap">{t.ingredient.modalStorageNote}</span>
               {/* ⓘ 버튼 + 팝오버 — group-hover로 데스크탑 hover 지원, onClick으로 모바일 탭 지원 */}
               <div className="relative group">
                 <button
@@ -146,11 +128,11 @@ export default function AddIngredientModal({
                 >
                   {/* 화살표 */}
                   <div className="absolute -top-1 left-2 w-2 h-2 rotate-45 bg-background-tertiary border-l border-t border-white/10" />
-                  <p className="text-text-primary font-semibold mb-1.5">💡 재료 분류 방법</p>
+                  <p className="text-text-primary font-semibold mb-1.5">{t.ingredient.modalHowToTitle}</p>
                   <ul className="space-y-1 text-text-secondary">
-                    <li>• <strong className="text-text-primary">위 냉장/냉동/상온 버튼</strong> → 모든 재료 일괄 지정</li>
-                    <li>• <strong className="text-text-primary">추가된 태그 탭</strong> → 재료별 개별 수정</li>
-                    <li className="text-text-muted pt-1">활성 버튼 재탭 → 자동 모드로 복귀</li>
+                    <li>• <strong className="text-text-primary">{t.ingredient.modalHowToBulkBtn}</strong> {t.ingredient.modalHowToBulkAction}</li>
+                    <li>• <strong className="text-text-primary">{t.ingredient.modalHowToTagBtn}</strong> {t.ingredient.modalHowToTagAction}</li>
+                    <li className="text-text-muted pt-1">{t.ingredient.modalHowToReset}</li>
                   </ul>
                 </div>
               </div>
@@ -159,7 +141,7 @@ export default function AddIngredientModal({
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {selectedLocation && (
                 <span className="text-[11px] text-text-muted whitespace-nowrap">
-                  → <span className="text-accent-warm">{selectedLocation}</span>
+                  → <span className="text-accent-warm">{(t.quickAdd.storageLocationLabels as Record<string, string>)[selectedLocation] ?? selectedLocation}</span>
                 </span>
               )}
               <button
@@ -195,7 +177,7 @@ export default function AddIngredientModal({
                     }`}
                   >
                     <span>{opt.icon}</span>
-                    <span>{opt.key}</span>
+                    <span>{(t.quickAdd.storageLocationLabels as Record<string, string>)[opt.key] ?? opt.key}</span>
                   </button>
                 );
               })}

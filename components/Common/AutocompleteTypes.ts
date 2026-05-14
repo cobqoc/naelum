@@ -112,6 +112,9 @@ export interface AutocompleteProps<T extends AutocompleteItem> {
 
   /** 입력창 비활성화 */
   disabled?: boolean;
+
+  /** 데스크톱(pointer: fine)에서만 마운트 시 자동 포커스 */
+  autoFocus?: boolean;
 }
 
 /**
