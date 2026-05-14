@@ -31,7 +31,7 @@ export const QUICK_ADD: QuickAddIngredient[] = [
   { name: '소고기', emoji: '🥩', category: 'meat', storage: '냉장' },
   { name: '닭고기', emoji: '🍗', category: 'meat', storage: '냉장' },
   { name: '계란', emoji: '🥚', category: 'dairy', storage: '냉장' },
-  { name: '두부', emoji: '🟦', category: 'other', storage: '냉장' },
+  { name: '두부', emoji: '🫘', category: 'other', storage: '냉장' },
   { name: '새우', emoji: '🍤', category: 'seafood', storage: '냉동' },
 
   // 유제품 (2)
@@ -43,10 +43,10 @@ export const QUICK_ADD: QuickAddIngredient[] = [
   { name: '된장', emoji: '🍶', category: 'seasoning', storage: '냉장' },
   { name: '고추장', emoji: '🌶️', category: 'seasoning', storage: '냉장' },
   { name: '참기름', emoji: '🍶', category: 'seasoning', storage: '상온' },
-  { name: '식용유', emoji: '🛢️', category: 'seasoning', storage: '상온' },
+  { name: '식용유', emoji: '🧴', category: 'seasoning', storage: '상온' },
   { name: '설탕', emoji: '🍚', category: 'seasoning', storage: '상온' },
   { name: '소금', emoji: '🧂', category: 'seasoning', storage: '상온' },
-  { name: '후추', emoji: '⚫', category: 'seasoning', storage: '상온' },
+  { name: '후추', emoji: '🌶️', category: 'seasoning', storage: '상온' },
 
   // 기타 핵심 (3)
   { name: '김치', emoji: '🥬', category: 'other', storage: '냉장' },
