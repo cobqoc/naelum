@@ -284,9 +284,12 @@ export default function HomeClient({
       pendingDeleteIdsRef.current.delete(item.id);
     }, DELETE_UNDO_WINDOW_MS);
 
-    toastSuccess(t.ingredient.deleteSuccess.replace('{name}', item.ingredient_name), {
-      action: {
+    // 단일 토스트에 [실행 취소][장보기에 추가] 두 액션 동시 노출.
+    // 비로그인/데모는 cart 자체가 로그인 유도 화면이라 cart 액션 skip.
+    const actions: Array<{ label: string; onClick: () => void; variant?: 'primary' | 'secondary' }> = [
+      {
         label: t.ingredient.undo,
+        variant: 'primary',
         onClick: () => {
           cancelled = true;
           clearTimeout(dbTimer);
@@ -300,6 +303,38 @@ export default function HomeClient({
           });
         },
       },
+    ];
+    if (user && !isDemo) {
+      actions.push({
+        label: t.home.usedUpAddAction,
+        variant: 'secondary',
+        onClick: async () => {
+          try {
+            const res = await fetch('/api/shopping-list', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                recipeId: null,
+                recipeTitle: t.cart.manualAdd,
+                ingredients: [{
+                  ingredient_name: item.ingredient_name,
+                  category: item.category || 'other',
+                  unit: item.unit ?? '',
+                }],
+              }),
+            });
+            if (res.ok) {
+              toastSuccess(t.home.usedUpAddedToast.replace('{name}', item.ingredient_name));
+              window.dispatchEvent(new Event('shopping-list-updated'));
+              track('used_up_to_cart', { name: item.ingredient_name });
+            }
+          } catch { /* silent */ }
+        },
+      });
+    }
+
+    toastSuccess(t.ingredient.deleteSuccess.replace('{name}', item.ingredient_name), {
+      actions,
       duration: DELETE_UNDO_WINDOW_MS,
     });
   };

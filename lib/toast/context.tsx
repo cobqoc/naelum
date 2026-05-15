@@ -7,6 +7,8 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info';
 interface ToastAction {
   label: string;
   onClick: () => void;
+  // primary: orange solid (기본), secondary: outline. 다중 액션에서 시각 위계 분리용.
+  variant?: 'primary' | 'secondary';
 }
 
 interface Toast {
@@ -14,11 +16,14 @@ interface Toast {
   message: string;
   type: ToastType;
   action?: ToastAction;
+  actions?: ToastAction[];
   duration: number;
 }
 
 interface ToastOptions {
   action?: ToastAction;
+  // 다중 액션 (예: 삭제 직후 [실행 취소][장보기에 추가]). actions가 있으면 action은 무시.
+  actions?: ToastAction[];
   duration?: number;
 }
 
@@ -59,8 +64,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const addToast = useCallback((message: string, type: ToastType = 'success', options?: ToastOptions) => {
     const id = `toast-${++toastCounter}`;
-    const duration = options?.duration ?? (options?.action ? 6000 : 3500);
-    setToasts(prev => [...prev, { id, message, type, action: options?.action, duration }]);
+    const hasAction = !!(options?.actions?.length || options?.action);
+    const duration = options?.duration ?? (hasAction ? 6000 : 3500);
+    setToasts(prev => [...prev, { id, message, type, action: options?.action, actions: options?.actions, duration }]);
 
     const timer = setTimeout(() => {
       timersRef.current.delete(id);
