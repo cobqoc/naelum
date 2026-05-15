@@ -11,6 +11,15 @@ interface IngredientPickerCardProps {
 
   /** 선택 여부 */
   isSelected?: boolean;
+
+  /** ⭐ 즐겨찾기 상태 (props로 받아서 hook은 호출 측에서) */
+  isStarred?: boolean;
+
+  /** ⭐ 토글 핸들러 — 받으면 별 버튼 노출. 안 받으면 별 안 보임 */
+  onToggleStar?: () => void;
+
+  /** ⭐ 버튼 라벨 (a11y) */
+  starAriaLabel?: string;
 }
 
 /**
@@ -29,6 +38,9 @@ export default function IngredientPickerCard({
   ingredient,
   onClick,
   isSelected = false,
+  isStarred = false,
+  onToggleStar,
+  starAriaLabel,
 }: IngredientPickerCardProps) {
   return (
     <div
@@ -63,6 +75,24 @@ export default function IngredientPickerCard({
         <div className="absolute top-2 right-2 text-xs bg-accent-warm/10 text-accent-warm px-2 py-1 rounded-full font-medium">
           {ingredient.search_count}회
         </div>
+      )}
+
+      {/* ⭐ 즐겨찾기 토글 — 좌상단. 카드 클릭과 분리 (stopPropagation) */}
+      {onToggleStar && (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            onToggleStar();
+          }}
+          aria-label={starAriaLabel ?? 'star'}
+          aria-pressed={isStarred}
+          className={`absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full transition-all z-10
+            ${isStarred ? 'text-yellow-400 bg-yellow-400/10 hover:bg-yellow-400/20' : 'text-text-muted/50 hover:text-yellow-400 hover:bg-yellow-400/10'}
+          `}
+        >
+          <span className="text-base leading-none" aria-hidden="true">{isStarred ? '⭐' : '☆'}</span>
+        </button>
       )}
 
       {/* 호버 체크 표시 */}

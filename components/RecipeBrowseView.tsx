@@ -95,16 +95,36 @@ export default function RecipeBrowseView({
   const [memoOpen, setMemoOpen] = useState(false);
   const [memoText, setMemoText] = useState(saveNotes || '');
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
+  // 보유 재료 cart 제외 토글 — 기본 OFF. 보유 재료 있을 때만 UI 노출.
+  const [excludeOwnedInCart, setExcludeOwnedInCart] = useState(false);
+
+  const isIngredientOwned = (name: string) =>
+    userIngredients.some(ui => name.includes(ui) || ui.includes(name));
+
+  const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
+  const totalIngredients = recipe.ingredients.length;
+
   const handleAddToShoppingList = async () => {
     setAddingToShoppingList(true);
     try {
+      // 토글 ON + 보유 재료 있으면 필터링. OFF면 전체.
+      const ingredientsToSend = excludeOwnedInCart
+        ? recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_name))
+        : recipe.ingredients;
+
+      if (ingredientsToSend.length === 0) {
+        toast.info(t.recipe.cartAllOwned);
+        setAddingToShoppingList(false);
+        return;
+      }
+
       const res = await fetch('/api/shopping-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recipeId: recipe.id,
           recipeTitle: recipe.title,
-          ingredients: recipe.ingredients.map(i => ({
+          ingredients: ingredientsToSend.map(i => ({
             ingredient_name: i.ingredient_name,
             quantity: i.quantity,
             unit: i.unit,
@@ -113,22 +133,22 @@ export default function RecipeBrowseView({
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(`${data.added || 0}개 재료를 장보기에 담았어요!`);
+        const added = data.added || 0;
+        const skippedOwned = excludeOwnedInCart ? ownedCount : 0;
+        toast.success(
+          skippedOwned > 0
+            ? t.recipe.cartAddedWithSkip.replace('{count}', String(added)).replace('{skip}', String(skippedOwned))
+            : t.recipe.cartAddedSimple.replace('{count}', String(added))
+        );
         window.dispatchEvent(new Event('shopping-list-updated'));
       } else {
-        toast.error(data.error || '추가에 실패했습니다.');
+        toast.error(data.error || t.recipe.cartAddFailed);
       }
     } catch {
-      toast.error('장보기에 담지 못했어요.');
+      toast.error(t.recipe.cartAddFailed);
     }
     setAddingToShoppingList(false);
   };
-
-  const isIngredientOwned = (name: string) =>
-    userIngredients.some(ui => name.includes(ui) || ui.includes(name));
-
-  const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
-  const totalIngredients = recipe.ingredients.length;
   const ingredientStatus = totalIngredients === 0 ? 'none'
     : ownedCount === 0 ? 'none'
     : ownedCount === totalIngredients ? 'all'
@@ -618,14 +638,27 @@ export default function RecipeBrowseView({
 
       {/* Sticky 하단 버튼 */}
       <div className="sticky bottom-0 left-0 right-0 z-10 pb-4 pt-2 bg-gradient-to-t from-background-primary via-background-primary to-transparent">
-        <div className="container mx-auto max-w-2xl flex gap-2">
+        <div className="container mx-auto max-w-2xl">
+          {/* 보유 재료 제외 토글 — 보유 재료가 있을 때만 노출 */}
+          {ownedCount > 0 && (
+            <label className="flex items-center gap-2 px-2 pb-2 text-xs text-text-secondary cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={excludeOwnedInCart}
+                onChange={e => setExcludeOwnedInCart(e.target.checked)}
+                className="w-4 h-4 accent-accent-warm cursor-pointer"
+              />
+              <span>{t.recipe.cartExcludeOwnedLabel.replace('{count}', String(ownedCount))}</span>
+            </label>
+          )}
+          <div className="flex gap-2">
           <button
             onClick={handleAddToShoppingList}
             disabled={addingToShoppingList}
             className="flex-shrink-0 py-4 px-5 rounded-2xl bg-background-secondary border border-white/10 text-text-primary font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-1.5"
           >
             <span className="text-lg">🛒</span>
-            <span className="text-sm">장보기</span>
+            <span className="text-sm">{t.recipe.cartButton}</span>
           </button>
           <button
             onClick={onStartCooking}
@@ -634,6 +667,7 @@ export default function RecipeBrowseView({
             <span className="text-xl">🍳</span>
             요리 시작하기
           </button>
+          </div>
         </div>
       </div>
     </div>

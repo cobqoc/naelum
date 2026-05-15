@@ -114,28 +114,50 @@ export default function HomeClient({
 
   // 냉장고 본체·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
   // 도어 선반 분배 제거 — 모든 냉장 재료는 본체 선반(3단)에 통합 표시.
+  // 같은 이름끼리 그룹화해 한 chip으로 표시 (×N 배지). 클릭 시 그룹 2+면 미니 시트.
   const fridgeShelfDistribution = useMemo(() => {
-    const nonFreezer = items.filter(i => i.storage_location !== '냉동')
-      .sort((a, b) => urgencyScore(a) - urgencyScore(b));
-    const freezerItems = [...items].filter(i => i.storage_location === '냉동').sort((a, b) => urgencyScore(a) - urgencyScore(b));
+    // 같은 이름끼리 그룹화 (case-insensitive). 그룹 정렬 = 그룹 내 가장 임박한 항목 기준.
+    const groupByName = (list: FridgeItem[]): FridgeItem[][] => {
+      const buckets = new Map<string, FridgeItem[]>();
+      for (const item of list) {
+        const key = item.ingredient_name.trim().toLowerCase();
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key)!.push(item);
+      }
+      // 그룹 내 항목 정렬 (가장 임박 우선)
+      const groups = Array.from(buckets.values()).map(g => g.sort((a, b) => urgencyScore(a) - urgencyScore(b)));
+      // 그룹 간 정렬 = 그룹 대표(첫 항목) 기준
+      return groups.sort((a, b) => urgencyScore(a[0]) - urgencyScore(b[0]));
+    };
 
-    const bodyShelfItems: FridgeItem[][] = [[], [], []];
-    nonFreezer.forEach((it, i) => {
-      bodyShelfItems[Math.min(Math.floor(i / shelfMax.body), 2)].push(it);
+    const nonFreezer = items.filter(i => i.storage_location !== '냉동');
+    const freezerRaw = items.filter(i => i.storage_location === '냉동');
+
+    const nonFreezerGroups = groupByName(nonFreezer);
+    const freezerGroups = groupByName(freezerRaw);
+
+    // 본체 선반 3단에 그룹 단위로 분배
+    const bodyShelfGroups: FridgeItem[][][] = [[], [], []];
+    nonFreezerGroups.forEach((group, i) => {
+      bodyShelfGroups[Math.min(Math.floor(i / shelfMax.body), 2)].push(group);
     });
 
+    // overflow는 그룹 단위 카운트
     let totalOverflow = 0;
-    bodyShelfItems.forEach(list => {
+    bodyShelfGroups.forEach(list => {
       if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
     });
-    if (freezerItems.length > shelfMax.body) totalOverflow += freezerItems.length - shelfMax.body;
+    if (freezerGroups.length > shelfMax.body) totalOverflow += freezerGroups.length - shelfMax.body;
 
-    return { bodyShelfItems, freezerItems, totalOverflow };
+    return { bodyShelfGroups, freezerGroups, totalOverflow };
   }, [items, shelfMax.body]);
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
+  // 같은 이름 그룹 chip 클릭 시 미니 시트 (그룹 내 항목 선택)
+  const [groupSheet, setGroupSheet] = useState<{ name: string; items: FridgeItem[] } | null>(null);
 
   // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
   // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
@@ -451,18 +473,8 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
-  // AddIngredientModal onAddIngredient
-  const addIngredientFromModal = async (formData: IngredientFormData) => {
-    // 2차 안전망 sanitize — IngredientForm에서 1차 sanitize되지만 다른 진입점(직접 호출 등)을 위한 방어.
-    // PostgreSQL date 컬럼은 빈 문자열("")을 거부(22007); ingredient_id "preset-XXX"는 UUID FK 아니므로 null.
-    const sanitized: IngredientFormData = {
-      ...formData,
-      purchase_date: formData.purchase_date || null,
-      expiry_date: formData.expiry_date || null,
-      ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
-        ? formData.ingredient_id
-        : null,
-    };
+  // 실제 INSERT 수행 — 중복 다이얼로그 우회 시에도 재사용
+  const performIngredientInsert = async (sanitized: IngredientFormData) => {
     if (!user) return;
     const client = createClient();
     const { data, error } = await client
@@ -480,6 +492,86 @@ export default function HomeClient({
     showToast(t.ingredient.addSuccessShort);
     track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
     window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // 기존 항목에 수량 합치기 — DB 기반 (state stale 회피)
+  // currentQty는 호출자가 DB에서 가져온 값 사용 (또는 fallback으로 다시 SELECT)
+  const mergeIngredientQuantity = async (
+    targetItemId: string,
+    pending: IngredientFormData,
+    knownCurrentQty?: number | null,
+  ) => {
+    if (!user) return;
+    const client = createClient();
+
+    // 현재 quantity 확정 — 호출자가 전달 안 했으면 DB에서 SELECT
+    let currentQty = knownCurrentQty ?? null;
+    if (currentQty === null) {
+      const { data } = await client
+        .from('user_ingredients')
+        .select('quantity')
+        .eq('id', targetItemId)
+        .eq('user_id', user.id)
+        .single();
+      currentQty = data?.quantity ?? 0;
+    }
+    const addQty = typeof pending.quantity === 'number' ? pending.quantity : (pending.quantity ? parseFloat(String(pending.quantity)) : 1);
+    const nextQty = (currentQty ?? 0) + (isNaN(addQty) ? 1 : addQty);
+    const { error } = await client
+      .from('user_ingredients')
+      .update({ quantity: nextQty })
+      .eq('id', targetItemId)
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('[mergeIngredient] update 실패:', error);
+      showToast(getErrorMessage(error, t.ingredient.addError));
+      return;
+    }
+    setItems(prev => prev.map(i => (i.id === targetItemId ? { ...i, quantity: nextQty } : i)));
+    setAddModalLocation(null);
+    showToast(t.ingredient.mergedToast.replace('{name}', pending.ingredient_name));
+    track('ingredient_merge', { name: pending.ingredient_name });
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // AddIngredientModal onAddIngredient
+  // 자동 판단: 같은 이름 + 만료일·보관위치 동일 → 수량 합치기. 다르면 따로 추가.
+  // DB 직접 쿼리로 mergeTarget 찾음 — React state items는 비동기 업데이트로 stale 가능
+  // (Promise.all 병렬 추가 또는 연속 추가 시 누적 안 됨)
+  const addIngredientFromModal = async (formData: IngredientFormData) => {
+    const sanitized: IngredientFormData = {
+      ...formData,
+      purchase_date: formData.purchase_date || null,
+      expiry_date: formData.expiry_date || null,
+      ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
+        ? formData.ingredient_id
+        : null,
+    };
+    if (!user) return;
+
+    const client = createClient();
+    const name = sanitized.ingredient_name.trim();
+    const expiry = sanitized.expiry_date ?? null;
+    const storage = sanitized.storage_location ?? null;
+
+    // DB에서 같은 이름 + 만료일·보관위치 동일 항목 검색 (state stale 회피)
+    let q = client
+      .from('user_ingredients')
+      .select('id, quantity')
+      .eq('user_id', user.id)
+      .ilike('ingredient_name', name);
+    q = expiry === null ? q.is('expiry_date', null) : q.eq('expiry_date', expiry);
+    q = storage === null ? q.is('storage_location', null) : q.eq('storage_location', storage);
+    const { data: matches } = await q.limit(1);
+    const mergeTarget = matches?.[0];
+
+    if (mergeTarget) {
+      // 만료일·보관위치 같음 → 수량 합치기 (정보 손실 없음)
+      await mergeIngredientQuantity(mergeTarget.id, sanitized, mergeTarget.quantity);
+    } else {
+      // 같은 이름이지만 만료일·보관위치 다름 → 별도 행으로 따로 저장
+      await performIngredientInsert(sanitized);
+    }
   };
 
 
@@ -686,20 +778,30 @@ export default function HomeClient({
           {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
             {(() => {
-              // 분배된 본체·도어·냉동 shelfItems + 통합 overflow를 상단 useMemo(fridgeShelfDistribution)에서 참조.
-              const { bodyShelfItems, freezerItems, totalOverflow } = fridgeShelfDistribution;
+              // 분배된 본체·냉동 그룹 + 통합 overflow를 상단 useMemo(fridgeShelfDistribution)에서 참조.
+              const { bodyShelfGroups, freezerGroups, totalOverflow } = fridgeShelfDistribution;
 
-              // 렌더 helper — chip 버튼 하나
-              const renderChip = (item: FridgeItem, compact = false) => {
-                const { border, labelKind, labelN, isDanger } = freshState(item);
+              // 렌더 helper — 그룹 chip (대표 항목 + ×N 배지)
+              const renderGroup = (group: FridgeItem[], compact = false) => {
+                const repr = group[0]; // 가장 임박한 항목
+                const groupCount = group.length;
+                const { border, labelKind, labelN, isDanger } = freshState(repr);
                 const label = formatFreshLabel(labelKind, labelN, t);
-                const emoji = getEmoji(item.ingredient_name, item.category);
-                const displayName = getDisplayName(item);
+                const emoji = getEmoji(repr.ingredient_name, repr.category);
+                const displayName = getDisplayName(repr);
+                const handleClick = (e: React.MouseEvent) => {
+                  if (groupCount > 1) {
+                    e.stopPropagation();
+                    setGroupSheet({ name: displayName, items: group });
+                  } else {
+                    handleChipClickWithLongPress(repr, e);
+                  }
+                };
                 return (
-                  <div key={item.id} className="relative pointer-events-auto group shrink-0 md:pt-2 md:pr-2 md:-mt-2 md:-mr-2">
+                  <div key={repr.id} className="relative pointer-events-auto group shrink-0 md:pt-2 md:pr-2 md:-mt-2 md:-mr-2">
                     <button
-                      onClick={(e) => handleChipClickWithLongPress(item, e)}
-                      onTouchStart={() => handleChipPressStart(item)}
+                      onClick={handleClick}
+                      onTouchStart={() => groupCount === 1 && handleChipPressStart(repr)}
                       onTouchEnd={handleChipPressEnd}
                       onTouchMove={handleChipPressEnd}
                       onTouchCancel={handleChipPressEnd}
@@ -708,12 +810,17 @@ export default function HomeClient({
                         borderColor: border,
                         boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
                       }}
-                      title={`${displayName}${label ? ` · ${label}` : ''}`}
+                      title={`${displayName}${groupCount > 1 ? ` × ${groupCount}` : ''}${label ? ` · ${label}` : ''}`}
                     >
                       <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
                       <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[10px] md:text-[11px] max-w-[80px]'}`}>
                         {displayName}
                       </span>
+                      {groupCount > 1 && (
+                        <span className={`font-bold leading-none rounded-full bg-gray-800 text-white ${compact ? 'text-[8px] px-0.5' : 'text-[9px] px-1'}`}>
+                          ×{groupCount}
+                        </span>
+                      )}
                       {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
                       {label && !compact && (
                         <span className="font-bold leading-none text-[10px] md:text-[11px]" style={{ color: border }}>
@@ -721,14 +828,16 @@ export default function HomeClient({
                         </span>
                       )}
                     </button>
-                    {/* 데스크톱 hover 시 우상단 X 버튼 — 빠른 삭제 */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(item); }}
-                      className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity shadow-md ring-2 ring-white"
-                      aria-label={`${displayName} ${t.common.delete}`}
-                    >
-                      ✕
-                    </button>
+                    {/* 데스크톱 hover 시 우상단 X 버튼 — 그룹 1개일 때만 (다중은 미니 시트에서 개별 삭제) */}
+                    {groupCount === 1 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(repr); }}
+                        className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity shadow-md ring-2 ring-white"
+                        aria-label={`${displayName} ${t.common.delete}`}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 );
               };
@@ -737,7 +846,7 @@ export default function HomeClient({
                 <>
                   {/* 본체 선반 4개 (냉장 3 + 냉동 1) — per-shelf +N 제거, 서랍에 통합 */}
                   {SHELVES.map((shelf, idx) => {
-                    const list = idx < 3 ? bodyShelfItems[idx] : freezerItems;
+                    const list = idx < 3 ? bodyShelfGroups[idx] : freezerGroups;
                     const visible = list.slice(0, shelfMax.body);
                     return (
                       <div
@@ -745,7 +854,7 @@ export default function HomeClient({
                         className="absolute flex flex-wrap items-end justify-center gap-0.5"
                         style={{ left: SHELF_LEFT, width: SHELF_WIDTH, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
                       >
-                        {visible.map(item => renderChip(item, false))}
+                        {visible.map(group => renderGroup(group, false))}
                       </div>
                     );
                   })}
@@ -937,6 +1046,59 @@ export default function HomeClient({
         isOpen={showAuthPrompt}
         onClose={() => setShowAuthPrompt(false)}
       />
+
+      {/* 같은 이름 그룹 chip 클릭 시 미니 시트 — 그룹 내 항목 개별 선택 (만료일·구매일·수량 인라인 노출) */}
+      {groupSheet && (
+        <div className="fixed inset-0 z-[75] flex items-end md:items-center justify-center" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setGroupSheet(null)} />
+          <div className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[70dvh]">
+            <div className="md:hidden flex justify-center pt-2.5 pb-1">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
+              <h3 className="font-bold text-sm">
+                {groupSheet.name} <span className="text-text-muted font-normal">×{groupSheet.items.length}</span>
+              </h3>
+              <button
+                onClick={() => setGroupSheet(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
+                aria-label={t.common.close}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-3 space-y-2">
+              {groupSheet.items.map(item => {
+                const { border, labelKind, labelN } = freshState(item);
+                const label = formatFreshLabel(labelKind, labelN, t);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setGroupSheet(null); handleChipClickWithLongPress(item, { stopPropagation() {}, preventDefault() {} } as React.MouseEvent); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-background-tertiary hover:bg-white/10 transition-colors text-left"
+                  >
+                    <span className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: border }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-text-primary truncate">
+                        {item.quantity != null ? `${item.quantity}${item.unit ?? ''}` : t.ingredient.qtyUnknown}
+                      </div>
+                      <div className="text-[11px] text-text-muted truncate">
+                        {item.purchase_date ? `${t.ingredient.purchasedShort} ${item.purchase_date.slice(5)}` : ''}
+                        {item.expiry_date ? ` · ${t.ingredient.expiryShort} ${item.expiry_date.slice(5)}` : ''}
+                        {item.storage_location ? ` · ${item.storage_location}` : ''}
+                        {label ? ` · ${label}` : ''}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
       <BottomNav />

@@ -156,6 +156,43 @@ export function addRecentIngredient(ingredient: {
 }
 
 /**
+ * localStorage의 자주 사용 재료를 서버 user_favorites_ingredients로 일괄 이전.
+ * 한 번 성공하면 SYNC_FLAG로 표시하고 더는 호출하지 않음. localStorage 데이터도 정리.
+ */
+const SYNC_FLAG_KEY = 'naelum:recentIngredients:synced_v1';
+
+export async function syncRecentIngredientsToFavorites(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(SYNC_FLAG_KEY) === '1') return;
+
+  const items = getRecentIngredients();
+  if (items.length === 0) {
+    localStorage.setItem(SYNC_FLAG_KEY, '1');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/favorites/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: items.map(i => ({
+          ingredient_name: i.name,
+          category: i.category,
+          count: i.count,
+        })),
+      }),
+    });
+    if (res.ok) {
+      localStorage.setItem(SYNC_FLAG_KEY, '1');
+      clearRecentIngredients();
+    }
+  } catch {
+    // 실패 시 flag 안 세움 → 다음 로드에 재시도
+  }
+}
+
+/**
  * 최근 선택 재료 전체 삭제
  */
 export function clearRecentIngredients(): void {

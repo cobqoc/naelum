@@ -110,6 +110,47 @@ feature/* → 기능 단위 브랜치 (선택)
   - 인증 체크, 리다이렉트 등 미들웨어(`proxy.ts`)가 담당하는 것을 클라이언트에서 다시 하지 말 것
   - 중복 `getUser()` 호출은 응답 속도 저하 및 무한 로딩의 원인
 
+## 🔍 claude-in-chrome 으로 브라우저 검증하기 (배경 탭 우회)
+
+> **2026-05-15에 잡힌 함정.** claude-in-chrome MCP 자동화 탭은 항상 `document.hidden=true` 상태(사용자가 다른 탭을 보고 있어서 background). 이 때문에:
+> - `requestAnimationFrame`이 throttle/정지
+> - Next.js 16 React streaming SSR의 final swap이 `requestAnimationFrame` 안에서 실행
+> - 결과: `app/loading.tsx`의 "로딩 중" splash에서 영원히 hang
+>
+> 사용자 일반 Chrome으로는 정상 동작. claude-in-chrome 환경 한정 문제.
+
+### 우회 — 페이지 로드/reload마다 적용
+
+```js
+// 1. Page Visibility mock (hidden → false)
+Object.defineProperty(document, 'hidden',         { configurable: true, get: () => false });
+Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+
+// 2. requestAnimationFrame을 setTimeout으로 polyfill (throttle 회피)
+window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
+
+// 3. React streaming의 boundary swap이 raf 대기 중이면 강제 실행
+if (window.$RB?.length === 2) window.$RV(window.$RB);
+```
+
+페이지 reload·navigate 직후마다 위 3개 한 세트로 호출. `$RB`/`$RV`는 React가 streaming SSR 응답 끝에 정의하는 swap helper (B = body, S = suspense fallback, V = visit/swap).
+
+### 인증 검증
+
+`/api/test/signin` route는 `TEST_SIGNIN_ALLOW=1` + 비-Vercel 환경에서만 동작 (`.env.local`에 이미 설정). 테스트 user 생성은 `e2e/helpers/auth.ts`의 `ensureTestUser` 그대로 활용 — `auth_provider: 'email'`, `onboarding_completed: true` 등 필수 필드 다 채워줌. 자체 upsert로 만든 user는 미들웨어 redirect loop 위험.
+
+### 절대 잊지 말 것
+
+- **인증 자체는 정상** — 미들웨어 user 인식, API 호출 200 모두 OK
+- **SSR 응답에 "로그인/가입" 텍스트 보이는 건 정상** — `Header`가 클라이언트 컴포넌트라 SSR 시점엔 항상 user=null. 클라이언트 hydration 후 `useAuth`가 user 채우면 로그인 헤더로 바뀜
+- 페이지가 splash에서 멈춰 있어 보이면 **무조건** 위 3-line 우회 코드부터 시도. "claude-in-chrome 한계"라고 결론짓지 말 것
+
+### 한계
+
+- 연속 인터랙션은 timing 민감. 모달 추가 사이에 충분한 wait (1.5~2.5초) 필요
+- 페이지 reload 시 patch가 사라짐 → reload 직후 즉시 재적용
+- 시각·동작 검증 모두 안정성 떨어지면 Playwright e2e가 가장 정확
+
 ## 📜 개발 규칙
 - **컴포넌트**: 모든 새로운 컴포넌트는 `app/` 디렉토리 내의 App Router 컨벤션을 따릅니다.
 - **TypeScript**: `any` 타입 사용을 지양하고 인터페이스/타입을 명확히 정의합니다.
@@ -1271,9 +1312,11 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 > **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
 > 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
 
-#### 🚫 MAFF 레시피 폐기 (2026-05-13)
+#### 🚫 MAFF 레시피 폐기 (2026-05-13 DB / 2026-05-16 자료 일괄 정리)
 
-사용자 요청으로 농림수산성(MAFF) 일본 향토요리 2,050개를 **dev+prod 전량 삭제**. **재임포트 금지** — 일본 레시피는 서비스에서 제외.
+농림수산성(MAFF) 일본 향토요리 2,050개를 **2026-05-13 dev+prod 전량 삭제**. **재임포트 금지** — 일본 레시피는 서비스에서 제외.
+
+**폐기 사유**: 1,365개 번역본 통계 — 단계 평균 4.9개(중앙 4), description 평균 140자. "레시피"보다 "음식 유래·소개" 성격이라 따라하기 부실 (폐기된 농사로 `headFamilyFood`와 동일 패턴). 도감용 글로벌 식재료 보강 가치도 한·일 공통 일부(유자·표고 등)에 한정되고 분량이 비정량.
 
 **삭제 SQL** (참고용):
 ```sql
@@ -1281,10 +1324,7 @@ DELETE FROM recipes WHERE source_url ILIKE '%maff.go.jp%';
 ```
 CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모든 연관 데이터 자동 정리됨 (meal_plan_items·notifications·shopping_list_items은 SET NULL).
 
-**보관 중인 스크립트** (실행 금지):
-- `scripts/import-maff-recipes.ts` — 임포트 스크립트
-- `scripts/translate-maff-batch.ts` — Gemini 일괄 번역
-- `scripts/translate-maff-ingredients-db.ts` — DB 재료 번역 (ING_MAP v3~v6 사전 블록 포함)
+**2026-05-16 후속 정리**: 로컬 데이터 `data/maff-*.json` (8.1MB) + 스크립트 6종 (`import-maff-recipes`, `scrape-maff-recipes`, `translate-maff-{batch,gemini,ingredients-db}`, `maff-translations-manual`) 전부 삭제. `ING_MAP` 일본어 재료 번역 사전 포함. 일본 콘텐츠 서비스 제외 결정 확정.
 
 ### 재료 DB
 - **prod: 2,126개** / **dev: 958개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 976개 + 노이즈/토막 19개 정리, prod에서 노이즈 15개 정리)
@@ -1490,5 +1530,67 @@ CREATE TABLE ingredient_price_reports (
 4. KAMIS API 키 발급 + 연동
 5. 재료 상세 패널에 가격 정보 표시
 6. 지도 기능 (사용자 1,000명+ 이후)
+```
+
+---
+
+## 🥬 재료 stock 정확 추적 — 로드맵 (2026-05-15 설계)
+
+> **현재 한계 (인정)**: 우리 데이터는 *사용자 의도/기억의 스냅샷*이지 실제 stock 아님.
+> 수량·단위는 사용자가 입력한 시점의 값이고, 실제 소비량은 추적 안 함.
+
+### 왜 정확 추적이 어려운가
+- **추가 자체가 부정확** — "양파 1개"라 적었지만 큰 거/작은 거 다름
+- **소비 추적 거의 불가능** — 사용자가 우리 앱 레시피로만 요리한다는 보장 없음, 즉흥 요리·간식 많음, 일부 사용(반개 등)
+- **단위 변환 지옥** — 큰술↔ml↔g↔개 (재료마다 밀도 다름)
+- **상함·버림·선물** 추적 안 됨
+
+따라서 단기에는 **"보유 여부 표시"** 수준으로만 처리. 정확한 수량 비교는 *기대하지 않음*.
+
+### 단기 (현재 구현 방향)
+cart에 레시피 재료 담을 때 **"보유 재료 마크"만 표시** + **토글로 cart 제외** (수량 비교 안 함):
+```
+🥚 양파 2개  [냉장고에 있음 ⚠️]   ← 사용자가 부족분 직접 판단
+🥩 소고기 300g [없음]
+```
+구현 단순, 사용자 부담 없음, 거짓 정확성 회피.
+
+### 장기 (사용자 100명+ 이후 단계별)
+
+#### Phase 1 — "만들어봤어요" 기록 시 재료 자동 차감 (우선)
+- 사용자가 cookMode 완료 시 레시피 재료를 `user_ingredients`에서 자동 차감
+- 같은 단위면 정확 차감, 다른 단위는 사용자에게 확인 모달
+- **트리거**: cookMode 사용자 50명+ 안정화 후
+- **효과**: 차감 정확도 50% → 80% (앱 안에서 요리하는 경우만 커버)
+- DB: `recipe_consumption_log` 테이블 (recipe_id, user_id, consumed_at, items[])
+
+#### Phase 2 — 영수증 OCR + 자동 추가
+- 이미 설계됨 (`match-receipt` API). 추가는 영수증, 소비는 cookMode 기록 → 양방향 자동
+- **트리거**: 가격 정보 로드맵 Phase 2와 함께
+- **효과**: 추가 정확도 70% → 95%
+
+#### Phase 3 — 재료 사용 추적 옵션 (고급 사용자)
+- 일반 사용자에겐 노출 안 함 (부담 큼)
+- 고급 사용자 토글로 활성: 매 요리 시 사용량 입력 UI
+- **트리거**: 사용자 1,000명+ 이후, 명시적 수요 확인 후
+- **위험**: 대부분 사용자가 1주일 만에 포기하는 패턴 (AnyList, Whisk 사례)
+
+#### Phase 4 — 자체 학습 보정 (장기)
+- 사용자 패턴 분석 → "이 사용자는 양파를 평균 2일에 1개씩 사용" 같은 통계 기반 추정
+- **트리거**: 사용자 5,000명+ + 충분한 데이터 축적 후
+- 별도 ML 모델 필요. 단독 우선순위 낮음.
+
+### 🚫 안 할 것
+- 처음부터 "정확 stock 관리" 강제 — 사용자 부담만 큰 무덤
+- 단위 변환 정확도 100% 추구 — 가능한 범위 내에서만
+- 사용자가 모든 소비 입력하도록 요구 — 대부분 안 함, 데이터만 partial
+
+### 정리: 우선순위
+```
+1. 보유 마크 + cart 토글 (단순) ← 현재 방향
+2. cookMode 자동 차감 (사용자 50명+)
+3. 영수증 OCR 통합 (가격 로드맵과 함께)
+4. 고급 사용자 추적 모드 (1,000명+)
+5. ML 기반 학습 보정 (5,000명+)
 ```
 
