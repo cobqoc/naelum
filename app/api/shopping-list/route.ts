@@ -39,7 +39,7 @@ export async function GET() {
   // 클라이언트가 실제로 쓰는 필드만 선택 — SELECT * 대비 ~40% 응답 크기 감소.
   const { data, error } = await supabase
     .from('shopping_list_items')
-    .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, is_owned')
+    .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, is_owned, note')
     .eq('user_id', user.id)
     .order('is_checked', { ascending: true })
     .order('created_at', { ascending: false })
@@ -165,18 +165,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  let body: { id: string; is_checked?: boolean; quantity?: number | null; unit?: string | null };
+  let body: { id: string; is_checked?: boolean; quantity?: number | null; unit?: string | null; note?: string | null };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
   }
-  const { id, is_checked, quantity, unit } = body;
+  const { id, is_checked, quantity, unit, note } = body;
 
-  const updates: { is_checked?: boolean; quantity?: number | null; unit?: string | null } = {};
+  const updates: { is_checked?: boolean; quantity?: number | null; unit?: string | null; note?: string | null } = {};
   if (typeof is_checked === 'boolean') updates.is_checked = is_checked;
   if (quantity !== undefined) updates.quantity = quantity;
   if (unit !== undefined) updates.unit = unit;
+  if (note !== undefined) {
+    if (typeof note === 'string' && note.length > 200) {
+      return NextResponse.json({ error: '메모는 200자 이하여야 합니다.' }, { status: 400 });
+    }
+    updates.note = note === '' ? null : note;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: '업데이트할 필드가 없습니다.' }, { status: 400 });

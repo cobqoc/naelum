@@ -1234,6 +1234,9 @@ export const fr = {
     unitLabel: 'Unité',
     unitNone: 'Sans unité',
     mergedToast: '{count} doublon(s) fusionné(s)',
+    noteAddPrompt: '+ Note',
+    noteEditAria: 'Modifier la note',
+    notePlaceholder: 'ex. bio, 1+1',
     categoryLabels: {
       vegetable: 'Légumes',
       fruit: 'Fruits',

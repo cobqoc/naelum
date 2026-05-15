@@ -1233,6 +1233,9 @@ export const en = {
     unitLabel: 'Unit',
     unitNone: 'No unit',
     mergedToast: 'Merged {count} duplicate item(s)',
+    noteAddPrompt: '+ Note',
+    noteEditAria: 'Edit note',
+    notePlaceholder: 'e.g. organic, BOGO',
     categoryLabels: {
       vegetable: 'Vegetables',
       fruit: 'Fruits',

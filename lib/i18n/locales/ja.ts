@@ -1234,6 +1234,9 @@ export const ja = {
     unitLabel: '単位',
     unitNone: '単位なし',
     mergedToast: '同じ食材{count}個を合算しました',
+    noteAddPrompt: '+ メモ',
+    noteEditAria: 'メモを編集',
+    notePlaceholder: '例：有機、1+1',
     categoryLabels: {
       vegetable: '野菜',
       fruit: '果物',

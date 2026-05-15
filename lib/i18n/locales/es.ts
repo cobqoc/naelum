@@ -1234,6 +1234,9 @@ export const es = {
     unitLabel: 'Unidad',
     unitNone: 'Sin unidad',
     mergedToast: 'Combinados {count} elemento(s) duplicado(s)',
+    noteAddPrompt: '+ Nota',
+    noteEditAria: 'Editar nota',
+    notePlaceholder: 'ej. orgánico, 2x1',
     categoryLabels: {
       vegetable: 'Verduras',
       fruit: 'Frutas',

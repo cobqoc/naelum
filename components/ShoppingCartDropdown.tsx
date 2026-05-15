@@ -129,6 +129,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const [inputFocused, setInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState('');
 
   // 완료 항목 숨김 토글 (#4) — localStorage 저장
   const [hideChecked, setHideChecked] = useState<boolean>(() => {
@@ -284,6 +286,21 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, unit: finalUnit }),
+    });
+  };
+
+  // 항목 메모 변경 — 빈 문자열이면 NULL 처리
+  const updateNote = async (item: ShoppingItem, rawNote: string) => {
+    const trimmed = rawNote.trim().slice(0, 200);
+    const finalNote: string | null = trimmed === '' ? null : trimmed;
+    if (finalNote === (item.note ?? null)) return;
+    const updated = items.map(i => (i.id === item.id ? { ...i, note: finalNote } : i));
+    setItems(updated);
+    setCachedShoppingList(updated);
+    await fetch('/api/shopping-list', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, note: finalNote }),
     });
   };
 
@@ -661,8 +678,11 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                   {group.items.map(item => (
                     <div
                       key={item.id}
+                      className="px-4 py-2 hover:bg-white/5 active:bg-white/10 transition-colors group select-none"
+                    >
+                    <div
                       onClick={() => toggleCheck(item)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors group cursor-pointer select-none"
+                      className="flex items-center gap-2.5 cursor-pointer"
                     >
                       {/* 체크 인디케이터 */}
                       <div
@@ -745,6 +765,65 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                       >
                         🗑
                       </button>
+                    </div>
+
+                    {/* 메모 라인 — 체크박스 위치만큼 들여쓰기 (5+2.5=7.5 → ml-7.5 대신 pl-[1.875rem]) */}
+                    <div className="pl-[1.875rem] mt-0.5">
+                      {editingNoteId === item.id ? (
+                        <input
+                          type="text"
+                          value={editingNoteValue}
+                          onChange={e => setEditingNoteValue(e.target.value.slice(0, 200))}
+                          onBlur={async () => {
+                            const target = items.find(i => i.id === item.id);
+                            if (target) await updateNote(target, editingNoteValue);
+                            setEditingNoteId(null);
+                            setEditingNoteValue('');
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              (e.target as HTMLInputElement).blur();
+                            } else if (e.key === 'Escape') {
+                              setEditingNoteId(null);
+                              setEditingNoteValue('');
+                            }
+                          }}
+                          autoFocus
+                          maxLength={200}
+                          placeholder={t.cart.notePlaceholder}
+                          aria-label={t.cart.noteEditAria}
+                          className="w-full bg-background-tertiary border border-white/15 rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-warm/60"
+                        />
+                      ) : item.note ? (
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setEditingNoteId(item.id);
+                            setEditingNoteValue(item.note ?? '');
+                          }}
+                          aria-label={t.cart.noteEditAria}
+                          className={`inline-flex items-center gap-1 text-xs ${item.is_checked ? 'text-text-muted line-through' : 'text-text-secondary'} hover:text-accent-warm transition-colors`}
+                        >
+                          <span aria-hidden="true">📝</span>
+                          <span className="text-left">{item.note}</span>
+                        </button>
+                      ) : !item.is_checked ? (
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setEditingNoteId(item.id);
+                            setEditingNoteValue('');
+                          }}
+                          className="inline-flex items-center text-[10px] text-text-muted hover:text-accent-warm transition-colors opacity-60 hover:opacity-100"
+                        >
+                          {t.cart.noteAddPrompt}
+                        </button>
+                      ) : null}
+                    </div>
+
                     </div>
                   ))}
                 </div>

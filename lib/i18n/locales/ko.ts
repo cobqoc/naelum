@@ -1234,6 +1234,9 @@ export const ko = {
     unitLabel: '단위',
     unitNone: '단위 없음',
     mergedToast: '같은 재료 {count}개 합쳐졌어요',
+    noteAddPrompt: '+ 메모',
+    noteEditAria: '메모 편집',
+    notePlaceholder: '예: 유기농, 1+1',
     categoryLabels: {
       vegetable: '채소',
       fruit: '과일',

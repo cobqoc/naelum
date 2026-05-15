@@ -1234,6 +1234,9 @@ export const it = {
     unitLabel: 'Unità',
     unitNone: 'Nessuna unità',
     mergedToast: 'Uniti {count} duplicati',
+    noteAddPrompt: '+ Nota',
+    noteEditAria: 'Modifica nota',
+    notePlaceholder: 'es. bio, 1+1',
     categoryLabels: {
       vegetable: 'Verdure',
       fruit: 'Frutta',

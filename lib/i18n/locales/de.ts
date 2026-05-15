@@ -1234,6 +1234,9 @@ export const de = {
     unitLabel: 'Einheit',
     unitNone: 'Keine Einheit',
     mergedToast: '{count} Duplikat(e) zusammengeführt',
+    noteAddPrompt: '+ Notiz',
+    noteEditAria: 'Notiz bearbeiten',
+    notePlaceholder: 'z. B. Bio, 1+1',
     categoryLabels: {
       vegetable: 'Gemüse',
       fruit: 'Früchte',

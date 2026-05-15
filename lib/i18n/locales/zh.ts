@@ -1234,6 +1234,9 @@ export const zh = {
     unitLabel: '单位',
     unitNone: '无单位',
     mergedToast: '已合并相同食材{count}个',
+    noteAddPrompt: '+ 备注',
+    noteEditAria: '编辑备注',
+    notePlaceholder: '例：有机、买一送一',
     categoryLabels: {
       vegetable: '蔬菜',
       fruit: '水果',
