@@ -27,11 +27,24 @@ export async function GET(request: NextRequest) {
   const todayStr = today.toISOString().split('T')[0];
   const threeDaysStr = threeDaysLater.toISOString().split('T')[0];
 
-  // 유통기한 임박 재료 조회 (expiry_alert=true)
+  // push_notifications = true 인 유저 ID 목록
+  const { data: optedInProfiles } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('push_notifications', true);
+
+  const optedInIds = new Set((optedInProfiles ?? []).map(p => p.id));
+
+  if (optedInIds.size === 0) {
+    return NextResponse.json({ sent: 0 });
+  }
+
+  // 유통기한 임박 재료 조회 (expiry_alert=true, push_notifications=true 유저만)
   const { data: ingredients } = await supabase
     .from('user_ingredients')
     .select('id, user_id, ingredient_name, expiry_date')
     .eq('expiry_alert', true)
+    .in('user_id', [...optedInIds])
     .not('expiry_date', 'is', null)
     .gte('expiry_date', todayStr)
     .lte('expiry_date', threeDaysStr)

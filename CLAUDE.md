@@ -1045,7 +1045,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-13  
+**최종 수정일**: 2026-05-15  
 **작성자**: 낼름 개발팀
 
 ---
@@ -1053,6 +1053,25 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-15 기준)
 
 ### 기능 구현 현황
+- **인증 페이지 UX 개선 및 버그 수정** — 완료 (2026-05-15)
+  - `login/page.tsx`: 아이디 찾기·비밀번호 찾기 모달 열릴 때 input 자동 포커스, ESC 키 닫기
+  - `login/page.tsx`: 아이디 찾기 성공 화면에 "비밀번호 찾기" 바로가기 버튼 추가
+  - `login/page.tsx`: 비밀번호 재설정 Step 3에 비밀번호 강도 텍스트 표시
+  - `signup/SignupClient.tsx`: Google 버튼 공식 브랜드 컬러 적용 (로그인 페이지와 통일)
+  - `signup/set-password/page.tsx`: "전체 동의" 마스터 체크박스 추가, 비밀번호 강도 텍스트, confirm placeholder
+  - `auth/terms-agreement/page.tsx`: "전체 동의" 마스터 체크박스 추가, provider 아이콘 범용화
+  - `auth/duplicate-email/content.tsx`: 하드코딩 한글 3곳 → i18n 키 교체
+  - `auth/reset-password/page.tsx`: 중복 CSS 클래스 제거, 비밀번호 강도 텍스트 표시
+  - i18n: 8개 locale에 `dupEmailRegistered`, `dupEmailCheckMethod`, `dupEmailMethodDesc`, `authVerifiedColon`, `agreeAll`, `passwordStrengthWeak/Fair/Strong/VeryStrong` 키 추가
+- **유통기한 알림 토글 서버 연동** — 완료 (2026-05-15)
+  - `NotificationPanel`: localStorage 제거 → 설정 패널 열릴 때 `profiles.push_notifications` DB에서 로드
+  - 토글 변경 시 `supabase.from('profiles').update({ push_notifications })` 즉시 저장
+  - `send-expiry` 크론: 발송 전 `push_notifications = true` 유저만 필터링 → 토글 off 시 실제 미발송
+  - 미구현 "식사 추천 알림" 토글 제거 (알림 설정 UI에서)
+- **E2E 테스트 6개 수정** — 완료 (2026-05-15)
+  - `logged-in-home.spec.ts` 시나리오 E·F: `purchase_date` 기대값 `null` → 오늘 날짜 (구매일 자동입력 기능 반영)
+  - `logged-in-home.spec.ts` 시나리오 G: 만료일 수정 전 "직접 입력" 버튼 클릭 추가 (유통기한 프리셋 UI 전환 반영)
+  - 결과: **288 passed, 2 skipped, 0 failed** 유지
 - **재료 상세 설정(DetailFields) UX 전면 개선** — 완료 (2026-05-15)
   - 수량 입력 스핀 화살표 제거 (`[appearance:textfield]` Tailwind arbitrary CSS)
   - 스테퍼 + 단위 드롭다운 통합: `[−][수량 | 단위 ▾][+]` 한 덩어리 레이아웃

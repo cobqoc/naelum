@@ -194,7 +194,17 @@ export default function SetPasswordPage() {
                 />
               ))}
             </div>
-            <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
+              {strength > 0 && (
+                <p className={`text-[10px] font-medium ${strength <= 2 ? 'text-warning' : 'text-success'}`}>
+                  {strength === 1 ? t.auth.passwordStrengthWeak
+                    : strength === 2 ? t.auth.passwordStrengthFair
+                    : strength === 3 ? t.auth.passwordStrengthStrong
+                    : t.auth.passwordStrengthVeryStrong}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Confirm Password */}
@@ -208,6 +218,7 @@ export default function SetPasswordPage() {
                 className={`w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
                   confirmPassword && password !== confirmPassword ? 'ring-error' : 'ring-white/10 focus:ring-accent-warm'
                 }`}
+                placeholder={t.auth.confirmPassword}
                 autoComplete="new-password"
                 required
               />
@@ -256,6 +267,31 @@ export default function SetPasswordPage() {
 
           {/* 약관 동의 */}
           <div className="pt-2 space-y-3">
+            {/* 전체 동의 */}
+            <label className="flex items-center gap-3 cursor-pointer pb-2 border-b border-white/10">
+              <div className="relative flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms && agreedToPrivacy && agreedToMarketing}
+                  onChange={(e) => {
+                    setAgreedToTerms(e.target.checked);
+                    setAgreedToPrivacy(e.target.checked);
+                    setAgreedToMarketing(e.target.checked);
+                  }}
+                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
+                />
+                <svg
+                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="text-sm font-semibold text-text-primary">{t.auth.agreeAll}</span>
+            </label>
+
             {/* 이용약관 동의 (필수) */}
             <label className="flex items-start gap-3 cursor-pointer group">
               <div className="relative flex items-center justify-center mt-0.5">
@@ -389,9 +425,9 @@ export default function SetPasswordPage() {
         </form>
 
         <p className="mt-6 md:mt-8 text-center text-sm text-text-muted">
-          이미 계정이 있으신가요?{' '}
+          {t.auth.hasAccount}{' '}
           <Link href="/login" className="font-medium text-accent-warm hover:underline">
-            로그인
+            {t.common.login}
           </Link>
         </p>
       </div>

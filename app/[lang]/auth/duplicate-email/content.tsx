@@ -34,15 +34,15 @@ export function DuplicateEmailContent({ email }: Props) {
         <p className="mb-6 text-sm md:text-base text-text-secondary text-center">
           <span className="font-medium text-accent-warm">{email}</span>
           <br />
-          이미 다른 방법으로 가입된 이메일입니다.
+          {t.auth.dupEmailRegistered}
         </p>
 
         <div className="mb-8 rounded-xl bg-warning/10 border border-warning/30 p-4">
           <div className="flex gap-3">
             <span className="text-2xl">⚠️</span>
             <div className="text-sm text-text-primary">
-              <p className="font-bold text-warning mb-2">로그인 방법을 확인해주세요</p>
-              <p className="text-text-secondary">이 이메일은 이미 다른 방법으로 가입되어 있습니다. 로그인 페이지에서 다른 방법으로 시도해보세요.</p>
+              <p className="font-bold text-warning mb-2">{t.auth.dupEmailCheckMethod}</p>
+              <p className="text-text-secondary">{t.auth.dupEmailMethodDesc}</p>
             </div>
           </div>
         </div>

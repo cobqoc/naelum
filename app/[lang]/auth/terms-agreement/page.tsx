@@ -201,13 +201,10 @@ export default function TermsAgreementPage() {
         {/* 인증 완료 표시 */}
         <div className="mb-6 rounded-xl bg-success/10 p-4 text-center">
           <p className="text-sm text-success flex items-center justify-center gap-2">
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            {provider === 'google' ? 'Google' : provider === 'kakao' ? '카카오' : '이메일'} 인증 완료: <span className="font-medium">{email}</span>
+            {provider === 'google' ? 'Google' : provider === 'kakao' ? 'Kakao' : t.auth.email} {t.auth.authVerifiedColon} <span className="font-medium">{email}</span>
           </p>
         </div>
 
@@ -231,6 +228,31 @@ export default function TermsAgreementPage() {
 
         {/* 약관 동의 */}
         <div className="space-y-4 mb-6">
+          {/* 전체 동의 */}
+          <label className="flex items-center gap-3 cursor-pointer pb-3 border-b border-white/10">
+            <div className="relative flex items-center justify-center">
+              <input
+                type="checkbox"
+                checked={agreedToTerms && agreedToPrivacy && agreedToMarketing}
+                onChange={(e) => {
+                  setAgreedToTerms(e.target.checked);
+                  setAgreedToPrivacy(e.target.checked);
+                  setAgreedToMarketing(e.target.checked);
+                }}
+                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
+              />
+              <svg
+                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold text-text-primary">{t.auth.agreeAll}</span>
+          </label>
+
           {/* 이용약관 동의 (필수) */}
           <label className="flex items-start gap-3 cursor-pointer group">
             <div className="relative flex items-center justify-center mt-0.5">

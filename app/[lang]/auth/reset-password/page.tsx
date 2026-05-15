@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
+                className="w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
                 placeholder={t.auth.passwordPlaceholder}
                 autoComplete="new-password"
                 required
@@ -203,7 +203,17 @@ export default function ResetPasswordPage() {
                 />
               ))}
             </div>
-            <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
+              {strength > 0 && (
+                <p className={`text-[10px] font-medium ${strength <= 2 ? 'text-warning' : 'text-success'}`}>
+                  {strength === 1 ? t.auth.passwordStrengthWeak
+                    : strength === 2 ? t.auth.passwordStrengthFair
+                    : strength === 3 ? t.auth.passwordStrengthStrong
+                    : t.auth.passwordStrengthVeryStrong}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Confirm Password */}
