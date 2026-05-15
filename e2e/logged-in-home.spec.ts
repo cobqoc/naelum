@@ -18,8 +18,9 @@ function isoDateOffsetDays(n: number): string {
 
 test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () => {
   test.beforeEach(async ({ testUser }) => {
-    // 매 테스트마다 user_ingredients 비움 → 시나리오별 격리
+    // 매 테스트마다 user_ingredients/favorites 비움 → 시나리오별 격리
     await admin().from('user_ingredients').delete().eq('user_id', testUser.userId);
+    await admin().from('user_favorites_ingredients').delete().eq('user_id', testUser.userId);
   });
 
   test('모바일 헤더 — 로그인 시 글쓰기·프로필 노출, 장바구니는 BottomNav에만', async ({ authenticatedPage }) => {

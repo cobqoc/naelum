@@ -23,6 +23,7 @@ async function seedShoppingList(userId: string) {
 test.describe('장보기 — 카테고리 그룹(마트 동선) + 레시피 chip', () => {
   test.beforeEach(async ({ testUser }) => {
     await admin().from('shopping_list_items').delete().eq('user_id', testUser.userId);
+    await admin().from('user_favorites_ingredients').delete().eq('user_id', testUser.userId);
   });
 
   test('첫 사용자(localStorage 없음) — 기본 그룹 모드가 카테고리', async ({ authenticatedPage, testUser }) => {

@@ -30,6 +30,7 @@ async function seedItem(userId: string, opts: { name: string; checked?: boolean;
 test.describe('장보기 항목 메모', () => {
   test.beforeEach(async ({ testUser }) => {
     await admin().from('shopping_list_items').delete().eq('user_id', testUser.userId);
+    await admin().from('user_favorites_ingredients').delete().eq('user_id', testUser.userId);
   });
 
   test('메모 없는 항목 — + 메모 클릭 → 입력 → Enter 저장 → DB note 반영', async ({ authenticatedPage, testUser }) => {

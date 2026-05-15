@@ -12,6 +12,7 @@ import { AuthProvider } from "@/lib/auth/context";
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from "@/lib/i18n/locales";
 import HtmlLangSync from "./_lang/HtmlLangSync";
 import PageViewTracker from "@/components/Analytics/PageViewTracker";
+import FavoritesSyncBoot from "@/components/FavoritesSyncBoot";
 
 // 8개 locale 각각 정적 prerender 대상.
 // generateStaticParams가 있어야 [lang] 라우트의 정적 변형들이 빌드 시 생성됨.
@@ -63,6 +64,8 @@ export default async function LangLayout({
                   <ToastContainer />
                   {/* 자체 analytics 페이지뷰 트래킹 */}
                   <PageViewTracker />
+                  {/* 로그인 사용자 첫 진입 시 자주 사용 재료 localStorage → DB 1회 이전 */}
+                  <FavoritesSyncBoot />
                 </AccessibilityProvider>
               </ConsentProvider>
             </ToastProvider>

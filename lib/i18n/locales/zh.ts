@@ -1237,6 +1237,8 @@ export const zh = {
     noteAddPrompt: '+ 备注',
     noteEditAria: '编辑备注',
     notePlaceholder: '例：有机、买一送一',
+    starAria: '添加到收藏',
+    unstarAria: '从收藏中移除',
     categoryLabels: {
       vegetable: '蔬菜',
       fruit: '水果',

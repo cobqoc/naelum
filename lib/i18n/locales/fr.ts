@@ -1237,6 +1237,8 @@ export const fr = {
     noteAddPrompt: '+ Note',
     noteEditAria: 'Modifier la note',
     notePlaceholder: 'ex. bio, 1+1',
+    starAria: 'Ajouter aux favoris',
+    unstarAria: 'Retirer des favoris',
     categoryLabels: {
       vegetable: 'Légumes',
       fruit: 'Fruits',

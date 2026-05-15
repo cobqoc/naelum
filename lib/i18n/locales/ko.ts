@@ -1237,6 +1237,8 @@ export const ko = {
     noteAddPrompt: '+ 메모',
     noteEditAria: '메모 편집',
     notePlaceholder: '예: 유기농, 1+1',
+    starAria: '즐겨찾기 추가',
+    unstarAria: '즐겨찾기 해제',
     categoryLabels: {
       vegetable: '채소',
       fruit: '과일',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import IngredientAutocompleteV2 from './IngredientAutocompleteV2';
 import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
@@ -10,6 +10,7 @@ import { lookupStorageByName } from '@/lib/ingredients/storageMap';
 import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import { useFavorites } from '@/lib/favorites/useFavorites';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
 interface IngredientFormData {
@@ -150,13 +151,32 @@ export default function IngredientForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 자주 쓰는 재료 로드 — 사용 기록 많으면 상위 20개, 부족하면 인기 재료 프리셋으로 보충
+  // 사용자별 즐겨찾기·자주 사용 재료 (DB)
+  const { items: favorites, toggleStar } = useFavorites(50);
+  const starredNames = useMemo(
+    () => new Set(favorites.filter(f => f.is_starred).map(f => f.ingredient_name)),
+    [favorites]
+  );
+
+  // 자주 쓰는 재료 로드 — DB favorites 우선, 비어있으면 localStorage(legacy/비로그인) fallback
   useEffect(() => {
-    if (!isEditMode) {
+    if (isEditMode) return;
+    if (favorites.length > 0) {
+      setFrequentIngredients(
+        favorites.slice(0, 20).map(f => ({
+          id: `fav:${f.ingredient_name}`,
+          name: f.ingredient_name,
+          name_en: null,
+          category: f.category,
+          timestamp: new Date(f.last_added_at).getTime(),
+          count: f.add_count,
+        }))
+      );
+    } else {
       const recent = getRecentIngredients();
       setFrequentIngredients(recent.slice(0, 20));
     }
-  }, [isEditMode]);
+  }, [isEditMode, favorites]);
 
   const createPendingItem = (name: string, category: string, id?: string, commonUnits?: string[]): PendingIngredient => {
     // 수동 override 있으면 그 위치 사용, 없으면 (= null, 자동 모드) 큐레이션 맵 매칭.
@@ -353,6 +373,8 @@ export default function IngredientForm({
           selectedNames={pendingItems.map(p => p.name)}
           frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null }))}
           popularItems={presetFallback}
+          starredNames={starredNames}
+          onToggleStar={(ing, starred) => toggleStar(ing.name, ing.category, starred)}
         />
         <div className="mt-4">
           <IngredientAutocompleteV2

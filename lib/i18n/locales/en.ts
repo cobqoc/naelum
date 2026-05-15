@@ -1236,6 +1236,8 @@ export const en = {
     noteAddPrompt: '+ Note',
     noteEditAria: 'Edit note',
     notePlaceholder: 'e.g. organic, BOGO',
+    starAria: 'Add to favorites',
+    unstarAria: 'Remove from favorites',
     categoryLabels: {
       vegetable: 'Vegetables',
       fruit: 'Fruits',

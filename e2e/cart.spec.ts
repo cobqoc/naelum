@@ -12,9 +12,10 @@ function admin() {
 
 test.describe('장보기 카트 — 스모크 테스트', () => {
   test.beforeEach(async ({ testUser }) => {
-    // 매 테스트마다 cart/fridge 비우기
+    // 매 테스트마다 cart/fridge/favorites 비우기 — 트리거로 자동 생성되는 favorites도 정리해야 다음 spec 영향 없음
     await admin().from('shopping_list_items').delete().eq('user_id', testUser.userId);
     await admin().from('user_ingredients').delete().eq('user_id', testUser.userId);
+    await admin().from('user_favorites_ingredients').delete().eq('user_id', testUser.userId);
   });
 
   test('PC 헤더에서 cart 버튼 클릭 → dropdown 열림 + 비어있는 상태 표시', async ({ authenticatedPage }) => {
@@ -356,22 +357,41 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
   test('#6 빈 상태 quick-add — 자주 추가하는 재료 버튼 원탭 추가', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
     await page.setViewportSize({ width: 1280, height: 800 });
+
+    // 진입 전 cart 명시적 비우기 (DB + 트리거로 생긴 favorites도 함께)
+    await admin().from('shopping_list_items').delete().eq('user_id', testUser.userId);
+    await admin().from('user_favorites_ingredients').delete().eq('user_id', testUser.userId);
+
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // shopping-list module-level cache 새로 init 위해 hard reload
+    await page.reload({ waitUntil: 'load' });
+
     await page.locator('header button[aria-label="장보기"]').click();
 
-    // 빈 상태 → quick-add 타이틀 노출
-    await expect(page.getByText('자주 추가하는 재료')).toBeVisible();
+    // 빈 상태 quick-add 영역으로 scope 한정 (cart 항목과 quick-add 영역에 동시에 "양파"가 있을 가능성 차단)
+    const quickAddTitle = page.getByText('자주 추가하는 재료');
+    await expect(quickAddTitle).toBeVisible({ timeout: 10000 });
+    const quickAddArea = quickAddTitle.locator('..');
 
-    // "양파" 버튼 클릭 — emoji는 aria-hidden이라 accessible name은 "양파"만
-    await page.getByRole('button', { name: '양파', exact: true }).click();
-    await page.waitForTimeout(800);
+    // quick-add 영역의 양파 버튼만 클릭 — 새 UI에선 ⭐ 토글과 별도 main button
+    await quickAddArea.getByRole('button', { name: '양파', exact: true }).click();
+
+    // DB에 양파 1개 들어갈 때까지 poll
+    await expect.poll(
+      async () => {
+        const { data } = await admin()
+          .from('shopping_list_items')
+          .select('ingredient_name')
+          .eq('user_id', testUser.userId);
+        return data?.length ?? 0;
+      },
+      { timeout: 5000 }
+    ).toBe(1);
 
     const { data } = await admin()
       .from('shopping_list_items')
       .select('ingredient_name, category')
       .eq('user_id', testUser.userId);
-    expect(data?.length).toBe(1);
     expect(data?.[0].ingredient_name).toBe('양파');
     expect(data?.[0].category).toBe('vegetable'); // veggie → vegetable 매핑 검증
   });

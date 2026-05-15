@@ -1237,6 +1237,8 @@ export const ja = {
     noteAddPrompt: '+ メモ',
     noteEditAria: 'メモを編集',
     notePlaceholder: '例：有機、1+1',
+    starAria: 'お気に入りに追加',
+    unstarAria: 'お気に入りから削除',
     categoryLabels: {
       vegetable: '野菜',
       fruit: '果物',

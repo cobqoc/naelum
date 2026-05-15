@@ -24,6 +24,10 @@ interface IngredientBrowserProps {
   frequentItems?: FrequentItem[];
   /** 신규 사용자용 인기 재료 프리셋 — frequentItems가 적으면 보충 */
   popularItems?: PopularItemLite[];
+  /** ⭐ 별표한 ingredient_name Set — "자주" 탭 칩의 별 상태 결정 */
+  starredNames?: Set<string>;
+  /** ⭐ 토글 핸들러 — 받으면 "자주" 탭 칩에 별 노출 */
+  onToggleStar?: (ingredient: IngredientItem, currentStarred: boolean) => void;
 }
 
 export default function IngredientBrowser({
@@ -31,6 +35,8 @@ export default function IngredientBrowser({
   selectedNames,
   frequentItems = [],
   popularItems = [],
+  starredNames,
+  onToggleStar,
 }: IngredientBrowserProps) {
   const { t } = useI18n();
 
@@ -223,25 +229,46 @@ export default function IngredientBrowser({
             ))
           : ingredients.map(ing => {
               const isSelected = selectedNames.includes(ing.name);
+              const showStar = activeCategory === 'frequent' && onToggleStar !== undefined;
+              const starred = starredNames?.has(ing.name) ?? false;
               return (
-                <button
+                <div
                   key={ing.id}
-                  type="button"
-                  onClick={() => !isSelected && onSelect(ing)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                  className={`inline-flex items-center rounded-xl text-sm font-medium transition-all ${
                     isSelected
-                      ? 'bg-accent-warm text-background-primary cursor-default'
+                      ? 'bg-accent-warm text-background-primary'
                       : 'bg-background-secondary text-text-primary hover:bg-white/10'
                   }`}
                 >
-                  <span className="text-base leading-none">{getIngredientEmoji(ing.name, ing.category || 'other')}</span>
-                  <span>{ing.name}</span>
-                  {isSelected && (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                  {/* ⭐ 토글 — 자주 탭에서만 */}
+                  {showStar && (
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        onToggleStar(ing, starred);
+                      }}
+                      aria-pressed={starred}
+                      aria-label={starred ? t.cart.unstarAria : t.cart.starAria}
+                      className={`pl-2 pr-1 py-1.5 text-base leading-none ${starred ? 'text-yellow-400' : isSelected ? 'text-background-primary/50 hover:text-yellow-300' : 'text-text-muted hover:text-yellow-400'}`}
+                    >
+                      <span aria-hidden="true">{starred ? '⭐' : '☆'}</span>
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => !isSelected && onSelect(ing)}
+                    className={`flex items-center gap-1.5 ${showStar ? 'pl-1' : 'pl-3'} pr-3 py-1.5 ${isSelected ? 'cursor-default' : ''}`}
+                  >
+                    <span className="text-base leading-none">{getIngredientEmoji(ing.name, ing.category || 'other')}</span>
+                    <span>{ing.name}</span>
+                    {isSelected && (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               );
             })
         }

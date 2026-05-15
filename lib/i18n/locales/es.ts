@@ -1237,6 +1237,8 @@ export const es = {
     noteAddPrompt: '+ Nota',
     noteEditAria: 'Editar nota',
     notePlaceholder: 'ej. orgánico, 2x1',
+    starAria: 'Añadir a favoritos',
+    unstarAria: 'Quitar de favoritos',
     categoryLabels: {
       vegetable: 'Verduras',
       fruit: 'Frutas',

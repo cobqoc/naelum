@@ -15,6 +15,15 @@ interface IngredientPickerGridProps {
 
   /** 선택된 재료 ID */
   selectedId?: string;
+
+  /** ⭐ 별표한 ingredient_name Set — 카드 별 상태 결정용 */
+  starredNames?: Set<string>;
+
+  /** ⭐ 토글 핸들러 — 받으면 각 카드 좌상단에 별 버튼 노출 */
+  onToggleStar?: (ingredient: IngredientItem, currentStarred: boolean) => void;
+
+  /** ⭐ 버튼 a11y 라벨 */
+  starAriaLabel?: string;
 }
 
 /**
@@ -35,6 +44,9 @@ export default function IngredientPickerGrid({
   onSelect,
   loading = false,
   selectedId,
+  starredNames,
+  onToggleStar,
+  starAriaLabel,
 }: IngredientPickerGridProps) {
   // 재료가 없고 로딩 중이 아닐 때
   if (ingredients.length === 0 && !loading) {
@@ -54,14 +66,20 @@ export default function IngredientPickerGrid({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {/* 재료 카드들 */}
-      {ingredients.map((ingredient) => (
-        <IngredientPickerCard
-          key={ingredient.id}
-          ingredient={ingredient}
-          onClick={() => onSelect(ingredient)}
-          isSelected={ingredient.id === selectedId}
-        />
-      ))}
+      {ingredients.map((ingredient) => {
+        const starred = starredNames?.has(ingredient.name) ?? false;
+        return (
+          <IngredientPickerCard
+            key={ingredient.id}
+            ingredient={ingredient}
+            onClick={() => onSelect(ingredient)}
+            isSelected={ingredient.id === selectedId}
+            isStarred={starred}
+            onToggleStar={onToggleStar ? () => onToggleStar(ingredient, starred) : undefined}
+            starAriaLabel={starAriaLabel}
+          />
+        );
+      })}
 
       {/* 로딩 스켈레톤 */}
       {loading && <IngredientPickerCardSkeleton count={8} />}
