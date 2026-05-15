@@ -331,6 +331,8 @@ export default function HomeClient({
           } catch { /* silent */ }
         },
       });
+      // 토스트에 [장보기에 추가] 노출됨 = 전환율 분모. used_up_to_cart가 분자.
+      track('used_up_toast_shown', { name: item.ingredient_name });
     }
 
     toastSuccess(t.ingredient.deleteSuccess.replace('{name}', item.ingredient_name), {
