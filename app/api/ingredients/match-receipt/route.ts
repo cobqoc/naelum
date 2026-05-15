@@ -5,10 +5,19 @@ function hasKorean(s: string): boolean {
   return /[가-힣]/.test(s);
 }
 
-// OCR 텍스트에서 상품 줄만 추출 (가격·바코드 줄 제외)
-function extractProductLines(rawText: string): string[] {
+interface RawProduct {
+  name: string;
+  // 영수증에서 추출. 확인 불가 시 null (CLAUDE.md 데이터 무결성 — 추정 금지).
+  price: number | null;
+  quantity: number | null;
+  unit: string | null;
+}
+
+// OCR 텍스트에서 상품명 + 가격·수량·단위 추출 (가격을 버리지 않음)
+function extractProductLines(rawText: string): RawProduct[] {
   const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-  const products: string[] = [];
+  const products: RawProduct[] = [];
+  const seen = new Set<string>();
 
   for (const line of lines) {
     // 한국어 없는 줄 제외
@@ -27,7 +36,34 @@ function extractProductLines(rawText: string): string[] {
     // 바코드 줄 제외 (숫자로 시작하는 긴 숫자 줄)
     if (/^\d{6,}/.test(line)) continue;
 
-    // 가격·수량·특수문자 제거해서 상품명만 추출
+    // --- 가격 추출: "1,234원" 우선, 없으면 줄 끝 금액 패턴 ---
+    let price: number | null = null;
+    const wonMatch = line.match(/([\d,]{2,})\s*원/);
+    if (wonMatch) {
+      const n = parseInt(wonMatch[1].replace(/,/g, ''), 10);
+      if (Number.isFinite(n) && n >= 100) price = n;
+    }
+    if (price === null) {
+      const tailMatch = line.match(/([\d,]{3,})\s*[Ss]?$/);
+      if (tailMatch) {
+        const n = parseInt(tailMatch[1].replace(/,/g, ''), 10);
+        if (Number.isFinite(n) && n >= 100) price = n;
+      }
+    }
+
+    // --- 수량·용량·단위 추출 ---
+    let quantity: number | null = null;
+    let unit: string | null = null;
+    const qtyMatch = line.match(/([\d.]+)\s*(kg|g|ml|l|개|팩|봉|병|통|장|매)\b/i);
+    if (qtyMatch) {
+      const q = parseFloat(qtyMatch[1]);
+      if (Number.isFinite(q) && q > 0) {
+        quantity = q;
+        unit = qtyMatch[2].toLowerCase();
+      }
+    }
+
+    // --- 상품명 추출 (가격·수량·특수문자 제거) ---
     const cleaned = line
       .replace(/\d{8,}/g, '')                                    // 바코드 번호
       .replace(/[\d,]+\s*원/g, '')                               // 금액
@@ -39,11 +75,13 @@ function extractProductLines(rawText: string): string[] {
       .trim();
 
     if (cleaned.length >= 2 && hasKorean(cleaned)) {
-      products.push(cleaned);
+      if (seen.has(cleaned)) continue;
+      seen.add(cleaned);
+      products.push({ name: cleaned, price, quantity, unit });
     }
   }
 
-  return [...new Set(products)];
+  return products;
 }
 
 interface IngredientRow {
@@ -59,6 +97,9 @@ export interface ProductLine {
   ingredientName: string | null;
   category: string;
   common_units: string[];
+  parsedPrice: number | null;     // 영수증에서 추출한 가격(원) — 가격 리포트 저장용
+  parsedQuantity: number | null;  // 추출한 수량/용량
+  parsedUnit: string | null;      // 추출한 단위
 }
 
 function decomposeKorean(char: string): { initial: number; medial: number; final: number } | null {
@@ -134,14 +175,17 @@ export async function POST(request: NextRequest) {
   }
 
   // 각 상품 줄에 대해 재료 매칭 시도
-  const productLines: ProductLine[] = rawProducts.map(productText => {
-    const ing = findIngredient(productText, ingredients);
+  const productLines: ProductLine[] = rawProducts.map(p => {
+    const ing = findIngredient(p.name, ingredients);
     return {
-      text: productText,
+      text: p.name,
       ingredientId: ing?.id ?? null,
       ingredientName: ing?.name ?? null,
       category: ing?.category ?? 'other',
       common_units: ing?.common_units ?? [],
+      parsedPrice: p.price,
+      parsedQuantity: p.quantity,
+      parsedUnit: p.unit,
     };
   });
 
