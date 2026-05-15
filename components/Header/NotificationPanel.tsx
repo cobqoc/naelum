@@ -37,12 +37,18 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     }
   }, []);
 
+  // 알림 설정 패널 열릴 때 DB에서 최신값 로드
   useEffect(() => {
-    const saved = localStorage.getItem('naelum_notif_settings');
-    if (saved) {
-      try { setNotifSettings(JSON.parse(saved)); } catch { /* ignore */ }
-    }
-  }, []);
+    if (!notifSettingsOpen || !userId) return;
+    supabase
+      .from('profiles')
+      .select('push_notifications')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => {
+        if (data) setNotifSettings({ expiry: data.push_notifications ?? true });
+      });
+  }, [notifSettingsOpen, userId, supabase]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -99,12 +105,15 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     }
   };
 
-  const toggleNotifSetting = (key: 'expiry') => {
-    setNotifSettings(prev => {
-      const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem('naelum_notif_settings', JSON.stringify(next));
-      return next;
-    });
+  const toggleNotifSetting = async (key: 'expiry') => {
+    const next = { ...notifSettings, [key]: !notifSettings[key] };
+    setNotifSettings(next);
+    if (userId) {
+      await supabase
+        .from('profiles')
+        .update({ push_notifications: next.expiry })
+        .eq('id', userId);
+    }
   };
 
   const formatNotifTime = (dateString: string) => {
