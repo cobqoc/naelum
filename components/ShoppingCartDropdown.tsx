@@ -111,7 +111,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const router = useRouter();
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   // 초기 state를 공유 캐시에서 바로 읽어옴 — 이미 로드된 경우 dropdown 열림 즉시 표시
   const [items, setItems] = useState<ShoppingItem[]>(() => getCachedShoppingList() ?? []);
   const [loading, setLoading] = useState(() => getCachedShoppingList() == null);
@@ -316,6 +316,35 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, note: finalNote }),
     });
+  };
+
+  // 공유 링크 생성 + 클립보드 복사. 활성 토큰 있으면 재사용 (서버에서 처리).
+  const [sharing, setSharing] = useState(false);
+  const handleShare = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      const res = await fetch('/api/cart/share', { method: 'POST' });
+      if (!res.ok) {
+        toastError(t.cart.shareCopyFailed);
+        return;
+      }
+      const { token } = await res.json();
+      // 보내는 사람 언어로 prefix — 받는 사람 404 방지 (lang dynamic route)
+      const url = `${window.location.origin}/${language}/cart/share/${token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toastSuccess(t.cart.shareCopied);
+      } catch {
+        // clipboard 차단 환경 — URL 자체를 토스트로 노출
+        toastSuccess(url);
+      }
+      track('cart_share_created');
+    } catch {
+      toastError(t.cart.shareCopyFailed);
+    } finally {
+      setSharing(false);
+    }
   };
 
   // 전체 비우기 (#5) — 즉시 삭제 (cart는 휘발성, 잘못 눌러도 다시 추가하면 됨)
@@ -574,6 +603,15 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                     {hideChecked ? t.cart.showAll : t.cart.hideChecked}
                   </button>
                 )}
+                {/* 공유 — 가족·룸메이트 read-only 링크 */}
+                <button
+                  onClick={handleShare}
+                  disabled={sharing}
+                  aria-label={t.cart.shareButton}
+                  className="px-2 py-1 rounded-md text-text-muted hover:text-accent-warm transition-colors disabled:opacity-50"
+                >
+                  {sharing ? t.cart.shareGenerating : `🔗 ${t.cart.shareButton}`}
+                </button>
                 {/* #5 전체 비우기 */}
                 <button
                   onClick={clearAll}

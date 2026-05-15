@@ -74,17 +74,36 @@ export default function ToastContainer() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] leading-5 font-medium text-text-primary break-words">{t.message}</p>
-                {t.action && (
-                  <button
-                    onClick={() => { t.action!.onClick(); dismiss(t.id); }}
-                    className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover active:scale-95 transition-all"
-                  >
-                    {t.action.label}
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                )}
+                {(() => {
+                  // actions 배열 우선, 없으면 action 단일을 [action]으로 fallback (백워드 컴팩트)
+                  const buttons = t.actions ?? (t.action ? [t.action] : []);
+                  if (buttons.length === 0) return null;
+                  return (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {buttons.map((a, i) => {
+                        const isPrimary = (a.variant ?? 'primary') === 'primary';
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { a.onClick(); dismiss(t.id); }}
+                            className={
+                              isPrimary
+                                ? 'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-warm text-background-primary text-xs font-bold hover:bg-accent-hover active:scale-95 transition-all'
+                                : 'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-accent-warm/40 text-accent-warm text-xs font-medium hover:bg-accent-warm/10 active:scale-95 transition-all'
+                            }
+                          >
+                            {a.label}
+                            {isPrimary && (
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               <button
                 onClick={() => dismiss(t.id)}
