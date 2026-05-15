@@ -41,6 +41,7 @@ import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import AuthPromptSheet from '@/components/Auth/AuthPromptSheet';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
+import DuplicateIngredientDialog from '@/components/Ingredients/DuplicateIngredientDialog';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
@@ -136,6 +137,12 @@ export default function HomeClient({
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
+  // 같은 이름 재료 중복 추가 시 사용자 의도 확인 다이얼로그
+  const [dupDialog, setDupDialog] = useState<{
+    pending: IngredientFormData;
+    existingItems: FridgeItem[];
+  } | null>(null);
 
   // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
   // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
@@ -451,18 +458,8 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
-  // AddIngredientModal onAddIngredient
-  const addIngredientFromModal = async (formData: IngredientFormData) => {
-    // 2차 안전망 sanitize — IngredientForm에서 1차 sanitize되지만 다른 진입점(직접 호출 등)을 위한 방어.
-    // PostgreSQL date 컬럼은 빈 문자열("")을 거부(22007); ingredient_id "preset-XXX"는 UUID FK 아니므로 null.
-    const sanitized: IngredientFormData = {
-      ...formData,
-      purchase_date: formData.purchase_date || null,
-      expiry_date: formData.expiry_date || null,
-      ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
-        ? formData.ingredient_id
-        : null,
-    };
+  // 실제 INSERT 수행 — 중복 다이얼로그 우회 시에도 재사용
+  const performIngredientInsert = async (sanitized: IngredientFormData) => {
     if (!user) return;
     const client = createClient();
     const { data, error } = await client
@@ -480,6 +477,59 @@ export default function HomeClient({
     showToast(t.ingredient.addSuccessShort);
     track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
     window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // 기존 항목에 수량 합치기 — UPDATE
+  const mergeIngredientQuantity = async (targetItemId: string, pending: IngredientFormData) => {
+    if (!user) return;
+    const target = items.find(i => i.id === targetItemId);
+    if (!target) return;
+    const currentQty = target.quantity ?? 0;
+    const addQty = typeof pending.quantity === 'number' ? pending.quantity : (pending.quantity ? parseFloat(String(pending.quantity)) : 1);
+    const nextQty = currentQty + (isNaN(addQty) ? 1 : addQty);
+    const client = createClient();
+    const { error } = await client
+      .from('user_ingredients')
+      .update({ quantity: nextQty })
+      .eq('id', target.id)
+      .eq('user_id', user.id);
+    if (error) {
+      console.error('[mergeIngredient] update 실패:', error);
+      showToast(getErrorMessage(error, t.ingredient.addError));
+      return;
+    }
+    setItems(prev => prev.map(i => (i.id === target.id ? { ...i, quantity: nextQty } : i)));
+    setAddModalLocation(null);
+    showToast(t.ingredient.mergedToast.replace('{name}', pending.ingredient_name));
+    track('ingredient_merge', { name: pending.ingredient_name });
+    window.dispatchEvent(new Event('fridge-updated'));
+  };
+
+  // AddIngredientModal onAddIngredient — 같은 이름 있으면 다이얼로그 띄움
+  const addIngredientFromModal = async (formData: IngredientFormData) => {
+    const sanitized: IngredientFormData = {
+      ...formData,
+      purchase_date: formData.purchase_date || null,
+      expiry_date: formData.expiry_date || null,
+      ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
+        ? formData.ingredient_id
+        : null,
+    };
+    if (!user) return;
+
+    // 같은 이름이 이미 냉장고에 있는지 확인 (case-insensitive)
+    const nameKey = sanitized.ingredient_name.trim().toLowerCase();
+    const duplicates = items.filter(
+      i => i.ingredient_name.trim().toLowerCase() === nameKey
+    );
+
+    if (duplicates.length > 0) {
+      // 사용자 의도 확인 — 따로 추가 vs 수량 합치기
+      setDupDialog({ pending: sanitized, existingItems: duplicates });
+      return;
+    }
+
+    await performIngredientInsert(sanitized);
   };
 
 
@@ -936,6 +986,33 @@ export default function HomeClient({
       <AuthPromptSheet
         isOpen={showAuthPrompt}
         onClose={() => setShowAuthPrompt(false)}
+      />
+
+      {/* 같은 이름 재료 중복 확인 다이얼로그 — 따로 추가 vs 수량 합치기 */}
+      <DuplicateIngredientDialog
+        isOpen={dupDialog !== null}
+        newName={dupDialog?.pending.ingredient_name ?? ''}
+        existingItems={(dupDialog?.existingItems ?? []).map(i => ({
+          id: i.id,
+          ingredient_name: i.ingredient_name,
+          quantity: i.quantity ?? null,
+          unit: i.unit ?? null,
+          expiry_date: i.expiry_date ?? null,
+          storage_location: i.storage_location ?? null,
+        }))}
+        onClose={() => setDupDialog(null)}
+        onAddSeparate={async () => {
+          if (!dupDialog) return;
+          const pending = dupDialog.pending;
+          setDupDialog(null);
+          await performIngredientInsert(pending);
+        }}
+        onMerge={async (targetItemId) => {
+          if (!dupDialog) return;
+          const pending = dupDialog.pending;
+          setDupDialog(null);
+          await mergeIngredientQuantity(targetItemId, pending);
+        }}
       />
 
 

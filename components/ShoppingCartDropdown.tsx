@@ -534,7 +534,6 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
             }`}
             style={{ border: 'none' }}
           >
-            <span className="pl-3 text-text-muted text-sm flex-shrink-0 !border-0" style={{ border: 'none' }}>🔍</span>
             <input
                 ref={inputRef}
                 type="search"
@@ -553,7 +552,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 onFocus={() => { setInputFocused(true); if (suggestions.length > 0) setShowSuggestions(true); }}
                 onBlur={() => setInputFocused(false)}
                 placeholder={t.cart.inputPlaceholder}
-                className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none px-2 py-2 text-sm"
+                className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none pl-3 pr-2 py-2 text-sm"
                 style={{ border: 'none', outline: 'none' }}
               />
             {/* #2 단위 select — 직접 추가 시에만 활성 (입력값 있을 때) */}
