@@ -1312,9 +1312,11 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 > **주의**: 이 레시피들은 한국 공공데이터(data.go.kr) 기반이며, 상업적 이용 시 "출처: 식품의약품안전처" 등 출처 표시 의무 있음.  
 > 재임포트 시 스크립트 주석 참고 — 기존 데이터 삭제 후 재삽입 방식.
 
-#### 🚫 MAFF 레시피 폐기 (2026-05-13)
+#### 🚫 MAFF 레시피 폐기 (2026-05-13 DB / 2026-05-16 자료 일괄 정리)
 
-사용자 요청으로 농림수산성(MAFF) 일본 향토요리 2,050개를 **dev+prod 전량 삭제**. **재임포트 금지** — 일본 레시피는 서비스에서 제외.
+농림수산성(MAFF) 일본 향토요리 2,050개를 **2026-05-13 dev+prod 전량 삭제**. **재임포트 금지** — 일본 레시피는 서비스에서 제외.
+
+**폐기 사유**: 1,365개 번역본 통계 — 단계 평균 4.9개(중앙 4), description 평균 140자. "레시피"보다 "음식 유래·소개" 성격이라 따라하기 부실 (폐기된 농사로 `headFamilyFood`와 동일 패턴). 도감용 글로벌 식재료 보강 가치도 한·일 공통 일부(유자·표고 등)에 한정되고 분량이 비정량.
 
 **삭제 SQL** (참고용):
 ```sql
@@ -1322,10 +1324,7 @@ DELETE FROM recipes WHERE source_url ILIKE '%maff.go.jp%';
 ```
 CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모든 연관 데이터 자동 정리됨 (meal_plan_items·notifications·shopping_list_items은 SET NULL).
 
-**보관 중인 스크립트** (실행 금지):
-- `scripts/import-maff-recipes.ts` — 임포트 스크립트
-- `scripts/translate-maff-batch.ts` — Gemini 일괄 번역
-- `scripts/translate-maff-ingredients-db.ts` — DB 재료 번역 (ING_MAP v3~v6 사전 블록 포함)
+**2026-05-16 후속 정리**: 로컬 데이터 `data/maff-*.json` (8.1MB) + 스크립트 6종 (`import-maff-recipes`, `scrape-maff-recipes`, `translate-maff-{batch,gemini,ingredients-db}`, `maff-translations-manual`) 전부 삭제. `ING_MAP` 일본어 재료 번역 사전 포함. 일본 콘텐츠 서비스 제외 결정 확정.
 
 ### 재료 DB
 - **prod: 2,126개** / **dev: 958개** (`ingredients_master`, 2026-05-11 기준 — dev에서 nongsaro_localSpcprd 976개 + 노이즈/토막 19개 정리, prod에서 노이즈 15개 정리)
