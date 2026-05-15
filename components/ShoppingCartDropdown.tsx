@@ -318,11 +318,43 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     window.dispatchEvent(new Event('shopping-list-updated'));
   };
 
-  // Quick-add (#6) — 빈 상태에서 favorites/POPULAR_ITEMS 클릭
-  // 호출 측에서 이미 cart category로 매핑 완료한 값 전달 (IIFE에서 처리)
+  // Quick-add — favorites + POPULAR_ITEMS fallback 통합 (중복 제거, 최대 8개).
+  // 입력창 바로 아래에 항상 노출 (빈 상태/항목 있는 상태 공통).
+  // 호출 측에서 이미 cart category로 매핑 완료한 값 전달.
   const quickAdd = (name: string, cartCategory: string) => {
     addItem(name, cartCategory);
   };
+
+  type QuickItem = { name: string; category: string; icon: string; isStarred: boolean; fromFavorites: boolean };
+  const quickAddItems: QuickItem[] = (() => {
+    const seen = new Set<string>();
+    const merged: QuickItem[] = [];
+    for (const f of favorites) {
+      if (seen.has(f.ingredient_name)) continue;
+      seen.add(f.ingredient_name);
+      merged.push({
+        name: f.ingredient_name,
+        category: f.category ?? 'other',
+        icon: getIngredientEmoji(f.ingredient_name, f.category ?? 'other'),
+        isStarred: f.is_starred,
+        fromFavorites: true,
+      });
+      if (merged.length >= 8) break;
+    }
+    for (const p of POPULAR_ITEMS) {
+      if (merged.length >= 8) break;
+      if (seen.has(p.name)) continue;
+      seen.add(p.name);
+      merged.push({
+        name: p.name,
+        category: POPULAR_CATEGORY_TO_CART[p.category] ?? 'other',
+        icon: p.icon,
+        isStarred: false,
+        fromFavorites: false,
+      });
+    }
+    return merged;
+  })();
 
   const addCheckedToFridge = async () => {
     const checked = items.filter(i => i.is_checked);
@@ -395,7 +427,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${
             fromBottom
               ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm'
-              : 'absolute w-80 max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
+              : 'absolute w-80 md:w-[26rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
           }`}
         >
           {/* 헤더 */}
@@ -459,7 +491,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
+      <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 md:w-[26rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
         {/* 헤더 */}
         <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -630,6 +662,46 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           )}
         </div>
 
+        {/* Quick-add 행 — 입력창 바로 아래 항상 노출. 빈 상태/항목 있는 상태 공통.
+            flex-shrink-0 영역이라 cart 길어져도 스크롤로 밀려나지 않음. */}
+        {quickAddItems.length > 0 && (
+          <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
+            <div className="flex flex-wrap gap-1.5">
+              {quickAddItems.map(item => (
+                <div
+                  key={item.name}
+                  className="inline-flex items-center rounded-full bg-background-tertiary hover:bg-accent-warm/15 text-text-secondary hover:text-accent-warm text-xs transition-colors"
+                >
+                  {/* ⭐ 토글 — 로그인 사용자에게만 */}
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleFavoriteStar(item.name, item.category, item.isStarred);
+                      }}
+                      aria-pressed={item.isStarred}
+                      aria-label={item.isStarred ? t.cart.unstarAria : t.cart.starAria}
+                      className={`pl-2 pr-1 py-1.5 text-sm leading-none ${item.isStarred ? 'text-yellow-400' : 'text-text-muted/60 hover:text-yellow-400'}`}
+                    >
+                      <span aria-hidden="true">{item.isStarred ? '⭐' : '☆'}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => quickAdd(item.name, item.category)}
+                    disabled={adding}
+                    className={`flex items-center gap-1 ${user ? 'pl-1' : 'pl-2.5'} pr-2.5 py-1.5 disabled:opacity-50`}
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                    <span>{item.name}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 내용 */}
         <div className="overflow-y-auto flex-1">
           {loading ? (
@@ -637,78 +709,10 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
             </div>
           ) : items.length === 0 ? (
-            // #6 빈 상태 — quick-add 버튼
-            <div className="py-6 px-4">
-              <div className="text-center mb-4">
-                <div className="text-3xl mb-2">🛒</div>
-                <p className="text-xs text-text-muted">{t.cart.emptyHint}</p>
-              </div>
-              <div className="border-t border-white/5 pt-3">
-                <p className="text-[11px] text-text-muted mb-2 px-1">{t.cart.quickAddTitle}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(() => {
-                    // favorites + POPULAR_ITEMS fallback 통합 (중복 제거, 최대 8개)
-                    type QuickItem = { name: string; category: string; icon: string; isStarred: boolean; fromFavorites: boolean };
-                    const seen = new Set<string>();
-                    const merged: QuickItem[] = [];
-                    for (const f of favorites) {
-                      if (seen.has(f.ingredient_name)) continue;
-                      seen.add(f.ingredient_name);
-                      merged.push({
-                        name: f.ingredient_name,
-                        category: f.category ?? 'other',
-                        icon: getIngredientEmoji(f.ingredient_name, f.category ?? 'other'),
-                        isStarred: f.is_starred,
-                        fromFavorites: true,
-                      });
-                      if (merged.length >= 8) break;
-                    }
-                    for (const p of POPULAR_ITEMS) {
-                      if (merged.length >= 8) break;
-                      if (seen.has(p.name)) continue;
-                      seen.add(p.name);
-                      merged.push({
-                        name: p.name,
-                        category: POPULAR_CATEGORY_TO_CART[p.category] ?? 'other',
-                        icon: p.icon,
-                        isStarred: false,
-                        fromFavorites: false,
-                      });
-                    }
-                    return merged.map(item => (
-                      <div
-                        key={item.name}
-                        className="inline-flex items-center rounded-full bg-background-tertiary hover:bg-accent-warm/15 text-text-secondary hover:text-accent-warm text-xs transition-colors"
-                      >
-                        {/* ⭐ 토글 — 로그인 사용자에게만 */}
-                        {user && (
-                          <button
-                            type="button"
-                            onClick={e => {
-                              e.stopPropagation();
-                              toggleFavoriteStar(item.name, item.category, item.isStarred);
-                            }}
-                            aria-pressed={item.isStarred}
-                            aria-label={item.isStarred ? t.cart.unstarAria : t.cart.starAria}
-                            className={`pl-2 pr-1 py-1.5 text-sm leading-none ${item.isStarred ? 'text-yellow-400' : 'text-text-muted/60 hover:text-yellow-400'}`}
-                          >
-                            <span aria-hidden="true">{item.isStarred ? '⭐' : '☆'}</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => quickAdd(item.name, item.category)}
-                          disabled={adding}
-                          className={`flex items-center gap-1 ${user ? 'pl-1' : 'pl-2.5'} pr-2.5 py-1.5 disabled:opacity-50`}
-                        >
-                          <span aria-hidden="true">{item.icon}</span>
-                          <span>{item.name}</span>
-                        </button>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
+            // 빈 상태 — quick-add는 위에서 항상 노출되므로 placeholder만 표시
+            <div className="text-center py-10 px-4">
+              <div className="text-3xl mb-2">🛒</div>
+              <p className="text-xs text-text-muted">{t.cart.emptyHint}</p>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-8 px-4">
@@ -825,41 +829,77 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                     {/* 메모 라인 — 체크박스 위치만큼 들여쓰기 (5+2.5=7.5 → ml-7.5 대신 pl-[1.875rem]) */}
                     <div className="pl-[1.875rem] mt-0.5">
                       {editingNoteId === item.id ? (
-                        <input
-                          type="text"
-                          value={editingNoteValue}
-                          onChange={e => setEditingNoteValue(e.target.value.slice(0, 200))}
-                          onBlur={async () => {
-                            const target = items.find(i => i.id === item.id);
-                            if (target) await updateNote(target, editingNoteValue);
-                            setEditingNoteId(null);
-                            setEditingNoteValue('');
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              (e.target as HTMLInputElement).blur();
-                            } else if (e.key === 'Escape') {
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            value={editingNoteValue}
+                            onChange={e => setEditingNoteValue(e.target.value.slice(0, 200))}
+                            onBlur={async () => {
+                              const target = items.find(i => i.id === item.id);
+                              if (target) await updateNote(target, editingNoteValue);
                               setEditingNoteId(null);
                               setEditingNoteValue('');
-                            }
-                          }}
-                          autoFocus
-                          maxLength={200}
-                          placeholder={t.cart.notePlaceholder}
-                          aria-label={t.cart.noteEditAria}
-                          className="w-full bg-background-tertiary border border-white/15 rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-warm/60"
-                        />
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                (e.target as HTMLInputElement).blur();
+                              } else if (e.key === 'Escape') {
+                                setEditingNoteId(null);
+                                setEditingNoteValue('');
+                              }
+                            }}
+                            autoFocus
+                            maxLength={200}
+                            placeholder={t.cart.notePlaceholder}
+                            aria-label={t.cart.noteEditAria}
+                            className="flex-1 min-w-0 bg-background-tertiary border border-white/15 rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-warm/60"
+                          />
+                          {/* ✓ 저장 — onMouseDown preventDefault로 input focus 유지, onClick으로 명시 저장 */}
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={async () => {
+                              const target = items.find(i => i.id === item.id);
+                              if (target) await updateNote(target, editingNoteValue);
+                              setEditingNoteId(null);
+                              setEditingNoteValue('');
+                            }}
+                            aria-label={t.cart.noteSaveAria}
+                            className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-text-secondary hover:text-accent-warm hover:bg-white/5 transition-colors text-xs"
+                          >
+                            <span aria-hidden="true">✓</span>
+                          </button>
+                          {/* ✕ 취소 — 저장 없이 닫기 */}
+                          <button
+                            type="button"
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={() => {
+                              setEditingNoteId(null);
+                              setEditingNoteValue('');
+                            }}
+                            aria-label={t.cart.noteCancelAria}
+                            className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-error hover:bg-white/5 transition-colors text-xs"
+                          >
+                            <span aria-hidden="true">✕</span>
+                          </button>
+                        </div>
                       ) : (
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* 카테고리 모드 한정 — 어느 레시피용인지 표시 */}
+                          {/* 카테고리 모드 한정 — 어느 레시피용인지 표시 + 클릭 시 해당 레시피로 이동 */}
                           {groupMode === 'category' && item.recipe_id && item.recipe_title && (
-                            <span
-                              className={`inline-flex items-center gap-0.5 text-xs max-w-[10rem] ${item.is_checked ? 'text-text-muted line-through' : 'text-text-muted'}`}
+                            <Link
+                              href={`/recipes/${item.recipe_id}`}
+                              onClick={e => {
+                                e.stopPropagation();
+                                onClose();
+                              }}
+                              className={`inline-flex items-center gap-0.5 text-xs max-w-[10rem] transition-colors ${item.is_checked ? 'text-text-muted line-through hover:text-text-secondary' : 'text-text-muted hover:text-accent-warm hover:underline'}`}
                             >
                               <span aria-hidden="true">🍲</span>
                               <span className="truncate">{item.recipe_title}</span>
-                            </span>
+                              <span aria-hidden="true" className="opacity-70 ml-0.5">↗</span>
+                            </Link>
                           )}
                           {/* divider — recipe chip + 우측에 메모(또는 + 메모) 둘 다 있을 때만 */}
                           {groupMode === 'category' && item.recipe_id && item.recipe_title && (item.note || !item.is_checked) && (
