@@ -85,44 +85,75 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  // 보유 재료 + 기존 장보기 항목 병렬 조회
+  // 보유 재료 + 기존 장보기 항목 병렬 조회 (id·quantity까지 — 중복 시 합산용)
   const [{ data: ownedIngredients }, { data: existingItems }] = await Promise.all([
     supabase.from('user_ingredients').select('ingredient_name').eq('user_id', user.id),
-    supabase.from('shopping_list_items').select('ingredient_name').eq('user_id', user.id).eq('is_checked', false),
+    supabase.from('shopping_list_items').select('id, ingredient_name, quantity').eq('user_id', user.id).eq('is_checked', false),
   ]);
 
   const ownedNames = new Set((ownedIngredients || []).map(i => i.ingredient_name.toLowerCase()));
-  const existingNames = new Set((existingItems || []).map(i => i.ingredient_name.toLowerCase()));
+  const existingByName = new Map(
+    (existingItems || []).map(i => [i.ingredient_name.toLowerCase(), { id: i.id as string, quantity: i.quantity as number | null }])
+  );
 
-  const itemsToAdd = ingredients
-    .filter(i => !existingNames.has(i.ingredient_name.toLowerCase()))
-    .map(i => ({
-      user_id: user.id,
-      shopping_list_id: shoppingListId,
-      ingredient_name: i.ingredient_name,
-      category: i.category || 'other',
-      quantity: i.quantity ? parseFloat(i.quantity) : null,
-      unit: i.unit && i.unit !== '선택' ? i.unit : null,
-      recipe_id: recipeId,
-      recipe_title: recipeTitle,
-      is_owned: ownedNames.has(i.ingredient_name.toLowerCase()),
-      is_checked: false,
-    }));
+  // 1) 같은 이름이 이미 있으면 quantity 합산 (UPDATE)
+  // 2) 새 이름이면 INSERT
+  const toUpdate: { id: string; quantity: number }[] = [];
+  const toInsert: Array<Record<string, unknown>> = [];
 
-  if (itemsToAdd.length === 0) {
-    return NextResponse.json({ message: '추가할 새 재료가 없습니다.', added: 0 });
+  for (const i of ingredients) {
+    const key = i.ingredient_name.toLowerCase();
+    const newQty = i.quantity ? parseFloat(i.quantity) : 1;
+    const existing = existingByName.get(key);
+    if (existing) {
+      const currentQty = existing.quantity ?? 0;
+      toUpdate.push({ id: existing.id, quantity: currentQty + newQty });
+    } else {
+      toInsert.push({
+        user_id: user.id,
+        shopping_list_id: shoppingListId,
+        ingredient_name: i.ingredient_name,
+        category: i.category || 'other',
+        quantity: i.quantity ? parseFloat(i.quantity) : null,
+        unit: i.unit && i.unit !== '선택' ? i.unit : null,
+        recipe_id: recipeId,
+        recipe_title: recipeTitle,
+        is_owned: ownedNames.has(key),
+        is_checked: false,
+      });
+    }
   }
 
-  const { data, error } = await supabase
-    .from('shopping_list_items')
-    .insert(itemsToAdd)
-    .select();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // UPDATE는 행 단위로 (Supabase는 batch update가 까다로워 Promise.all로 처리)
+  if (toUpdate.length > 0) {
+    await Promise.all(
+      toUpdate.map(u =>
+        supabase
+          .from('shopping_list_items')
+          .update({ quantity: u.quantity })
+          .eq('id', u.id)
+          .eq('user_id', user.id)
+      )
+    );
   }
 
-  return NextResponse.json({ items: data, added: data.length });
+  let insertedData: unknown[] = [];
+  if (toInsert.length > 0) {
+    const { data, error } = await supabase
+      .from('shopping_list_items')
+      .insert(toInsert)
+      .select();
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    insertedData = data ?? [];
+  }
+
+  return NextResponse.json({
+    items: insertedData,
+    added: toInsert.length,
+    merged: toUpdate.length,
+  });
 }
 
 // PATCH: 항목 체크/해제 또는 수량 업데이트
@@ -134,17 +165,18 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  let body: { id: string; is_checked?: boolean; quantity?: number | null };
+  let body: { id: string; is_checked?: boolean; quantity?: number | null; unit?: string | null };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
   }
-  const { id, is_checked, quantity } = body;
+  const { id, is_checked, quantity, unit } = body;
 
-  const updates: { is_checked?: boolean; quantity?: number | null } = {};
+  const updates: { is_checked?: boolean; quantity?: number | null; unit?: string | null } = {};
   if (typeof is_checked === 'boolean') updates.is_checked = is_checked;
   if (quantity !== undefined) updates.quantity = quantity;
+  if (unit !== undefined) updates.unit = unit;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: '업데이트할 필드가 없습니다.' }, { status: 400 });

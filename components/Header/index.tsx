@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
 import ShoppingCartDropdown, { useCartCount } from '../ShoppingCartDropdown';
+import CartIcon from '../icons/CartIcon';
 import NotificationPanel from './NotificationPanel';
 import UserDropdown from './UserDropdown';
 import { useAuth } from '@/lib/auth/context';
@@ -152,7 +153,7 @@ export default function Header() {
                     className="relative min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
                     aria-label={t.bottomNav.cart}
                   >
-                    <span className="text-xl relative">🛒</span>
+                    <CartIcon size={24} active={showCart} />
                     {cartCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-warm text-background-primary text-xs flex items-center justify-center font-bold">
                         {cartCount > 9 ? '9+' : cartCount}

@@ -13,6 +13,20 @@ import {
   setCachedShoppingList,
   type ShoppingItem,
 } from '@/lib/shopping-list/cache';
+import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
+
+// cart의 카테고리 키(vegetable/dairy/...) vs popularItems 카테고리(veggie/...) 매핑
+const POPULAR_CATEGORY_TO_CART: Record<string, string> = {
+  veggie: 'vegetable',
+  meat: 'meat',
+  dairy: 'dairy',
+  grain: 'grain',
+  condiment: 'sauce',
+  seasoning: 'sauce',
+};
+
+// 직접 추가·수량 수정 시 흔히 쓰는 단위 (DB 저장값이라 한글 그대로 — CLAUDE.md 규칙)
+const COMMON_UNITS = ['개', 'g', 'kg', 'ml', 'L', '팩', '봉지', '병', '통', '장', '큰술', '작은술'];
 
 interface Suggestion {
   id: string;
@@ -108,12 +122,27 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   // 재료 추가 / 필터 입력
   const [inputText, setInputText] = useState('');
+  const [inputUnit, setInputUnit] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [adding, setAdding] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 완료 항목 숨김 토글 (#4) — localStorage 저장
+  const [hideChecked, setHideChecked] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('cart_hide_checked') === '1';
+  });
+  const toggleHideChecked = () => {
+    setHideChecked(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') localStorage.setItem('cart_hide_checked', next ? '1' : '0');
+      return next;
+    });
+  };
+
 
   const fetchItems = useCallback(async () => {
     // 비로그인: API 호출 skip (401 silent fail 방지). 로그인 유도 뷰로 분기됨.
@@ -179,7 +208,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     };
   }, [inputText]);
 
-  const addItem = async (name: string, category = '') => {
+  const addItem = async (name: string, category = '', unit?: string) => {
     if (!name.trim() || adding) return;
     setAdding(true);
     try {
@@ -189,15 +218,21 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         body: JSON.stringify({
           recipeId: null,
           recipeTitle: t.cart.manualAdd,
-          ingredients: [{ ingredient_name: name.trim(), category }],
+          ingredients: [{ ingredient_name: name.trim(), category, unit: unit ?? inputUnit ?? '' }],
         }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         setInputText('');
+        setInputUnit('');
         setSuggestions([]);
         setShowSuggestions(false);
         window.dispatchEvent(new Event('shopping-list-updated'));
         await fetchItems();
+        // 같은 재료가 합쳐졌다면 사용자에게 알림 (#3)
+        if ((data as { merged?: number }).merged && (data as { merged: number }).merged > 0) {
+          toastSuccess(t.cart.mergedToast.replace('{count}', String((data as { merged: number }).merged)));
+        }
       }
     } catch {
       toastError(t.cart.addFailed);
@@ -237,6 +272,34 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, quantity: next }),
     });
+  };
+
+  // 항목 단위 변경 (#2)
+  const updateUnit = async (item: ShoppingItem, unit: string) => {
+    const finalUnit = unit || null;
+    const updated = items.map(i => (i.id === item.id ? { ...i, unit: finalUnit } : i));
+    setItems(updated);
+    setCachedShoppingList(updated);
+    await fetch('/api/shopping-list', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, unit: finalUnit }),
+    });
+  };
+
+  // 전체 비우기 (#5) — 즉시 삭제 (cart는 휘발성, 잘못 눌러도 다시 추가하면 됨)
+  const clearAll = async () => {
+    if (items.length === 0) return;
+    setItems([]);
+    setCachedShoppingList([]);
+    await fetch('/api/shopping-list', { method: 'DELETE' });
+    window.dispatchEvent(new Event('shopping-list-updated'));
+  };
+
+  // Quick-add (#6) — 빈 상태에서 popularItems 클릭
+  const quickAdd = (popularName: string, popularCategory: string) => {
+    const cartCategory = POPULAR_CATEGORY_TO_CART[popularCategory] ?? 'other';
+    addItem(popularName, cartCategory);
   };
 
   const addCheckedToFridge = async () => {
@@ -282,9 +345,16 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
   };
 
-  const filteredItems = inputText.trim()
-    ? items.filter(i => i.ingredient_name.toLowerCase().includes(inputText.toLowerCase()))
-    : items;
+  const filteredItems = (() => {
+    let result = items;
+    if (inputText.trim()) {
+      result = result.filter(i => i.ingredient_name.toLowerCase().includes(inputText.toLowerCase()));
+    }
+    if (hideChecked) {
+      result = result.filter(i => !i.is_checked);
+    }
+    return result;
+  })();
 
   const uncheckedCount = items.filter(i => !i.is_checked).length;
   const checkedCount = items.filter(i => i.is_checked).length;
@@ -399,29 +469,57 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
             </div>
           )}
 
-          {/* 그룹 모드 토글 — 항목 2개 이상일 때만 */}
-          {totalCount >= 2 && (
-            <div className="mt-2 inline-flex rounded-lg bg-background-tertiary p-0.5 text-[11px]">
-              <button
-                onClick={() => switchGroupMode('recipe')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
-                  groupMode === 'recipe'
-                    ? 'bg-accent-warm/20 text-accent-warm font-medium'
-                    : 'text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                {t.cart.groupByRecipe}
-              </button>
-              <button
-                onClick={() => switchGroupMode('category')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
-                  groupMode === 'category'
-                    ? 'bg-accent-warm/20 text-accent-warm font-medium'
-                    : 'text-text-muted hover:text-text-secondary'
-                }`}
-              >
-                {t.cart.groupByCategory}
-              </button>
+          {/* 그룹 모드 토글 + 액션 — 항목 있을 때 */}
+          {totalCount > 0 && (
+            <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+              {totalCount >= 2 ? (
+                <div className="inline-flex rounded-lg bg-background-tertiary p-0.5 text-[11px]">
+                  <button
+                    onClick={() => switchGroupMode('recipe')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      groupMode === 'recipe'
+                        ? 'bg-accent-warm/20 text-accent-warm font-medium'
+                        : 'text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    {t.cart.groupByRecipe}
+                  </button>
+                  <button
+                    onClick={() => switchGroupMode('category')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      groupMode === 'category'
+                        ? 'bg-accent-warm/20 text-accent-warm font-medium'
+                        : 'text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    {t.cart.groupByCategory}
+                  </button>
+                </div>
+              ) : <span />}
+
+              <div className="flex items-center gap-1.5 text-[11px]">
+                {/* #4 완료 항목 숨김 토글 — 체크된 게 있을 때만 노출 */}
+                {checkedCount > 0 && (
+                  <button
+                    onClick={toggleHideChecked}
+                    className={`px-2 py-1 rounded-md transition-all ${
+                      hideChecked
+                        ? 'bg-accent-warm/20 text-accent-warm font-medium'
+                        : 'text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    {hideChecked ? t.cart.showAll : t.cart.hideChecked}
+                  </button>
+                )}
+                {/* #5 전체 비우기 */}
+                <button
+                  onClick={clearAll}
+                  aria-label={t.cart.clearAllAria}
+                  className="px-2 py-1 rounded-md text-text-muted hover:text-error transition-colors"
+                >
+                  🗑 {t.cart.clearAll}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -458,6 +556,20 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none px-2 py-2 text-sm"
                 style={{ border: 'none', outline: 'none' }}
               />
+            {/* #2 단위 select — 직접 추가 시에만 활성 (입력값 있을 때) */}
+            <select
+              value={inputUnit}
+              onChange={e => setInputUnit(e.target.value)}
+              aria-label={t.cart.unitLabel}
+              className="flex-shrink-0 bg-background-tertiary text-text-secondary text-[11px] rounded-md px-1.5 py-1 mr-1.5 !outline-none !border-0 cursor-pointer hover:bg-background-tertiary/80"
+              style={{ border: 'none', outline: 'none', maxWidth: '4.5rem' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <option value="">{t.cart.unitNone}</option>
+              {COMMON_UNITS.map(u => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
             {adding ? (
               <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent flex-shrink-0 mr-3" />
             ) : (
@@ -504,9 +616,28 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
             </div>
           ) : items.length === 0 ? (
-            <div className="text-center py-8 px-4">
-              <div className="text-3xl mb-2">🛒</div>
-              <p className="text-xs text-text-muted">{t.cart.emptyHint}</p>
+            // #6 빈 상태 — quick-add 버튼
+            <div className="py-6 px-4">
+              <div className="text-center mb-4">
+                <div className="text-3xl mb-2">🛒</div>
+                <p className="text-xs text-text-muted">{t.cart.emptyHint}</p>
+              </div>
+              <div className="border-t border-white/5 pt-3">
+                <p className="text-[11px] text-text-muted mb-2 px-1">{t.cart.quickAddTitle}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {POPULAR_ITEMS.slice(0, 8).map(item => (
+                    <button
+                      key={item.name}
+                      onClick={() => quickAdd(item.name, item.category)}
+                      disabled={adding}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-background-tertiary hover:bg-accent-warm/15 text-text-secondary hover:text-accent-warm text-xs transition-colors disabled:opacity-50"
+                    >
+                      <span aria-hidden="true">{item.icon}</span>
+                      <span>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="text-center py-8 px-4">
@@ -548,9 +679,21 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                           </svg>
                         )}
                       </div>
-                      <span className={`flex-1 text-sm truncate ${item.is_checked ? 'line-through text-text-muted' : 'text-text-primary'}`}>
-                        {item.ingredient_name}
-                      </span>
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className={`text-sm truncate ${item.is_checked ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+                          {item.ingredient_name}
+                        </span>
+                        {/* #1 보유 재료 배지 — 미체크 항목에만 (체크 후엔 곧 냉장고로 갈 거라 노이즈) */}
+                        {item.is_owned && !item.is_checked && (
+                          <span
+                            className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-info/15 text-info text-[10px] font-medium"
+                            title={t.cart.alreadyOwned}
+                          >
+                            <span aria-hidden="true">❄️</span>
+                            <span>{t.cart.alreadyOwned}</span>
+                          </span>
+                        )}
+                      </div>
 
                       {/* 수량 스테퍼 — 체크되지 않은 항목만 */}
                       {!item.is_checked ? (
@@ -573,9 +716,20 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                           >
                             +
                           </button>
-                          {item.unit && (
-                            <span className="text-[10px] text-text-muted pr-1.5">{item.unit}</span>
-                          )}
+                          {/* #2 단위 select — 항목 내 변경 가능 */}
+                          <select
+                            value={item.unit ?? ''}
+                            onClick={e => e.stopPropagation()}
+                            onChange={e => { e.stopPropagation(); updateUnit(item, e.target.value); }}
+                            aria-label={t.cart.unitLabel}
+                            className="bg-transparent text-[10px] text-text-muted pr-1 cursor-pointer hover:text-text-secondary !outline-none !border-0 max-w-[3rem]"
+                            style={{ border: 'none', outline: 'none' }}
+                          >
+                            <option value="">·</option>
+                            {COMMON_UNITS.map(u => (
+                              <option key={u} value={u}>{u}</option>
+                            ))}
+                          </select>
                         </div>
                       ) : (
                         (item.quantity || item.unit) && (
