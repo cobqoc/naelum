@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
+import DeliveryFloatingNav from './DeliveryFloatingNav';
 
 interface Restaurant {
   id: string;
@@ -21,7 +22,8 @@ interface Restaurant {
 }
 
 // cuisine_types DB 값(한글 카테고리명) → i18n 키 매핑. DB는 한글 유지하되 표시는 locale별.
-const CUISINE_LABEL: Record<string, keyof ReturnType<typeof useI18n>['t']['delivery']> = {
+type CuisineKey = 'cuisineKorean' | 'cuisineChinese' | 'cuisineJapanese' | 'cuisineWestern' | 'cuisineSnack' | 'cuisineVegan';
+const CUISINE_LABEL: Record<string, CuisineKey> = {
   '한식': 'cuisineKorean',
   '중식': 'cuisineChinese',
   '일식': 'cuisineJapanese',
@@ -84,6 +86,7 @@ export default function DeliveryHomeClient() {
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary pb-24">
+      <DeliveryFloatingNav />
       <div className="container mx-auto px-4 py-6 max-w-5xl">
         {/* Header */}
         <header className="mb-6">

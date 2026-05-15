@@ -214,6 +214,27 @@ export default function AdminDashboard() {
             <div className="text-2xl mb-2">🛵</div>
             <div className="text-sm font-medium">배달 (사용자 페이지)</div>
           </Link>
+          <Link
+            href="/merchant"
+            className="p-4 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/5 transition-colors text-center"
+          >
+            <div className="text-2xl mb-2">🏪</div>
+            <div className="text-sm font-medium">식당 사장님</div>
+          </Link>
+          <Link
+            href="/rider"
+            className="p-4 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/5 transition-colors text-center"
+          >
+            <div className="text-2xl mb-2">🛴</div>
+            <div className="text-sm font-medium">라이더</div>
+          </Link>
+          <Link
+            href="/admin/dispatch"
+            className="p-4 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/5 transition-colors text-center"
+          >
+            <div className="text-2xl mb-2">🗺️</div>
+            <div className="text-sm font-medium">배차 모니터링</div>
+          </Link>
         </div>
       </div>
 
