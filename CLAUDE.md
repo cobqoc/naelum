@@ -110,6 +110,47 @@ feature/* → 기능 단위 브랜치 (선택)
   - 인증 체크, 리다이렉트 등 미들웨어(`proxy.ts`)가 담당하는 것을 클라이언트에서 다시 하지 말 것
   - 중복 `getUser()` 호출은 응답 속도 저하 및 무한 로딩의 원인
 
+## 🔍 claude-in-chrome 으로 브라우저 검증하기 (배경 탭 우회)
+
+> **2026-05-15에 잡힌 함정.** claude-in-chrome MCP 자동화 탭은 항상 `document.hidden=true` 상태(사용자가 다른 탭을 보고 있어서 background). 이 때문에:
+> - `requestAnimationFrame`이 throttle/정지
+> - Next.js 16 React streaming SSR의 final swap이 `requestAnimationFrame` 안에서 실행
+> - 결과: `app/loading.tsx`의 "로딩 중" splash에서 영원히 hang
+>
+> 사용자 일반 Chrome으로는 정상 동작. claude-in-chrome 환경 한정 문제.
+
+### 우회 — 페이지 로드/reload마다 적용
+
+```js
+// 1. Page Visibility mock (hidden → false)
+Object.defineProperty(document, 'hidden',         { configurable: true, get: () => false });
+Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+
+// 2. requestAnimationFrame을 setTimeout으로 polyfill (throttle 회피)
+window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
+
+// 3. React streaming의 boundary swap이 raf 대기 중이면 강제 실행
+if (window.$RB?.length === 2) window.$RV(window.$RB);
+```
+
+페이지 reload·navigate 직후마다 위 3개 한 세트로 호출. `$RB`/`$RV`는 React가 streaming SSR 응답 끝에 정의하는 swap helper (B = body, S = suspense fallback, V = visit/swap).
+
+### 인증 검증
+
+`/api/test/signin` route는 `TEST_SIGNIN_ALLOW=1` + 비-Vercel 환경에서만 동작 (`.env.local`에 이미 설정). 테스트 user 생성은 `e2e/helpers/auth.ts`의 `ensureTestUser` 그대로 활용 — `auth_provider: 'email'`, `onboarding_completed: true` 등 필수 필드 다 채워줌. 자체 upsert로 만든 user는 미들웨어 redirect loop 위험.
+
+### 절대 잊지 말 것
+
+- **인증 자체는 정상** — 미들웨어 user 인식, API 호출 200 모두 OK
+- **SSR 응답에 "로그인/가입" 텍스트 보이는 건 정상** — `Header`가 클라이언트 컴포넌트라 SSR 시점엔 항상 user=null. 클라이언트 hydration 후 `useAuth`가 user 채우면 로그인 헤더로 바뀜
+- 페이지가 splash에서 멈춰 있어 보이면 **무조건** 위 3-line 우회 코드부터 시도. "claude-in-chrome 한계"라고 결론짓지 말 것
+
+### 한계
+
+- 연속 인터랙션은 timing 민감. 모달 추가 사이에 충분한 wait (1.5~2.5초) 필요
+- 페이지 reload 시 patch가 사라짐 → reload 직후 즉시 재적용
+- 시각·동작 검증 모두 안정성 떨어지면 Playwright e2e가 가장 정확
+
 ## 📜 개발 규칙
 - **컴포넌트**: 모든 새로운 컴포넌트는 `app/` 디렉토리 내의 App Router 컨벤션을 따릅니다.
 - **TypeScript**: `any` 타입 사용을 지양하고 인터페이스/타입을 명확히 정의합니다.
