@@ -299,7 +299,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     expect(rows).toHaveLength(1);
     expect(rows?.[0].ingredient_name).toBe('양파');
     expect(rows?.[0].expiry_date).toBeNull();
-    expect(rows?.[0].purchase_date).toBeNull();
+    expect(rows?.[0].purchase_date).toBe(new Date().toISOString().slice(0, 10));
     expect(rows?.[0].ingredient_id).toBeNull();
   });
 
@@ -332,8 +332,9 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await page.locator('button:has-text("수정하기")').first().click();
     await page.waitForTimeout(500);
 
-    // 만료일 input 비우기 (form 안의 type=date input 중 expiry용)
-    // IngredientForm의 advanced section이 isEditMode에서는 defaultExpanded라 input 바로 보임.
+    // 만료일 input 비우기 — 유통기한 섹션은 기본 프리셋 모드이므로 "직접 입력" 클릭 후 date input 노출
+    await page.locator('button:has-text("직접 입력")').first().click();
+    await page.waitForTimeout(300);
     const expiryInput = page.locator('input[type="date"]').nth(1); // [0]=purchase, [1]=expiry
     await expiryInput.fill('');
 
@@ -376,10 +377,10 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     expect(rows).toHaveLength(3);
     const names = rows?.map(r => r.ingredient_name).sort();
     expect(names).toEqual(['계란', '마늘', '양파']);
-    // 모두 sanitize 적용 — date null, preset ingredient_id null
+    // 모두 sanitize 적용 — expiry null, purchase_date = 오늘(자동 채우기), preset ingredient_id null
     for (const r of rows ?? []) {
       expect(r.expiry_date).toBeNull();
-      expect(r.purchase_date).toBeNull();
+      expect(r.purchase_date).toBe(new Date().toISOString().slice(0, 10));
       expect(r.ingredient_id).toBeNull();
     }
   });

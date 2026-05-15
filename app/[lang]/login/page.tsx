@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -36,6 +36,8 @@ function LoginContent() {
   // Modal states
   const [showFindIdModal, setShowFindIdModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const findIdInputRef = useRef<HTMLInputElement>(null);
+  const resetEmailInputRef = useRef<HTMLInputElement>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [resetEmailError, setResetEmailError] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -77,6 +79,22 @@ function LoginContent() {
       queueMicrotask(() => setShowResetPasswordModal(true));
     }
   }, [searchParams]);
+
+  // 모달 autofocus
+  useEffect(() => {
+    if (showFindIdModal) {
+      setTimeout(() => findIdInputRef.current?.focus(), 50);
+    }
+  }, [showFindIdModal]);
+
+  useEffect(() => {
+    if (showResetPasswordModal) {
+      setTimeout(() => resetEmailInputRef.current?.focus(), 50);
+    }
+  }, [showResetPasswordModal]);
+
+  // Escape 키로 모달 닫기 (closeResetPasswordModal 선언 후 별도 useEffect에서 처리)
+  const escHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
 
   // 비밀번호 재설정 이메일 발송 후 BroadcastChannel 리스닝
   useEffect(() => {
@@ -292,6 +310,24 @@ function LoginContent() {
     setNewPasswordError('');
     setPasswordUpdateSuccess(false);
   };
+
+  // Escape 키로 모달 닫기
+  useEffect(() => {
+    escHandlerRef.current = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showFindIdModal) {
+        setShowFindIdModal(false);
+        setFindIdUsername('');
+        setFindIdResult('');
+        setFindIdError('');
+      }
+      if (showResetPasswordModal) closeResetPasswordModal();
+    };
+    window.addEventListener('keydown', escHandlerRef.current);
+    return () => {
+      if (escHandlerRef.current) window.removeEventListener('keydown', escHandlerRef.current);
+    };
+  }, [showFindIdModal, showResetPasswordModal]);
 
   // 아이디(이메일) 찾기
   const handleFindId = async () => {
@@ -512,13 +548,14 @@ function LoginContent() {
                 <>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-text-secondary">
-                      {t.auth.findIdUsername || '사용자명 (@ 없이 입력)'}
+                      {t.auth.findIdUsername}
                     </label>
                     <input
+                      ref={findIdInputRef}
                       type="text"
                       value={findIdUsername}
                       onChange={(e) => setFindIdUsername(e.target.value)}
-                      placeholder={t.auth.findIdUsernamePlaceholder || '사용자명 입력'}
+                      placeholder={t.auth.findIdUsernamePlaceholder}
                       autoComplete="username"
                       onKeyDown={(e) => e.key === 'Enter' && handleFindId()}
                       className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
@@ -533,9 +570,7 @@ function LoginContent() {
                     disabled={findIdLoading}
                     className="w-full py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover disabled:opacity-50 transition-all"
                   >
-                    {findIdLoading
-                      ? (t.auth.findIdSearching || '검색 중...')
-                      : (t.auth.findIdSearch || '이메일 찾기')}
+                    {findIdLoading ? t.auth.findIdSearching : t.auth.findIdSearch}
                   </button>
 
                   <div className="p-4 rounded-xl bg-background-tertiary">
@@ -566,11 +601,11 @@ function LoginContent() {
 
                   <div>
                     <p className="text-sm text-text-secondary mb-2">
-                      {t.auth.findIdResultLabel || '등록된 이메일:'}
+                      {t.auth.findIdResultLabel}
                     </p>
                     <p className="text-lg font-bold text-accent-warm break-all">{findIdResult}</p>
                     <p className="text-sm text-text-secondary mt-3">
-                      {t.auth.findIdSuccessDesc || '이 이메일로 로그인하거나 비밀번호를 재설정하세요.'}
+                      {t.auth.findIdSuccessDesc}
                     </p>
                   </div>
 
@@ -584,6 +619,18 @@ function LoginContent() {
                     className="w-full py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all"
                   >
                     {t.common.confirm}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowFindIdModal(false);
+                      setFindIdUsername('');
+                      setFindIdResult('');
+                      setFindIdError('');
+                      setShowResetPasswordModal(true);
+                    }}
+                    className="w-full py-2.5 rounded-xl border border-white/10 text-sm text-text-muted hover:text-text-secondary transition-all"
+                  >
+                    {t.auth.findPassword}
                   </button>
                 </div>
               )}
@@ -618,6 +665,7 @@ function LoginContent() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-text-secondary">{t.auth.email}</label>
                   <input
+                    ref={resetEmailInputRef}
                     type="email"
                     value={resetEmail}
                     onChange={(e) => {
@@ -721,6 +769,14 @@ function LoginContent() {
                       />
                     ))}
                   </div>
+                  {passwordStrength > 0 && (
+                    <p className={`text-[10px] text-right font-medium ${passwordStrength <= 2 ? 'text-warning' : 'text-success'}`}>
+                      {passwordStrength === 1 ? t.auth.passwordStrengthWeak
+                        : passwordStrength === 2 ? t.auth.passwordStrengthFair
+                        : passwordStrength === 3 ? t.auth.passwordStrengthStrong
+                        : t.auth.passwordStrengthVeryStrong}
+                    </p>
+                  )}
                 </div>
 
                 {/* 비밀번호 확인 */}
