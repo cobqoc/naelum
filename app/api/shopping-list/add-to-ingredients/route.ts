@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
   const nameToId = new Map((masterRows ?? []).map(r => [r.name, r.id]))
 
   // 큐레이션 맵 기반 자동 분류 (lookupStorageByName 매칭, 없으면 카테고리 fallback).
+  // purchase_date 오늘 자동 설정 — 모달 경로(IngredientForm)와 일관성 유지 +
+  // 만료일 미설정 시에도 N일째 라벨이 정상 표시되도록.
+  const today = new Date().toISOString().slice(0, 10);
   const ingredientsToAdd = items.map(item => ({
     user_id: user.id,
     ingredient_name: item.ingredient_name,
@@ -36,6 +39,7 @@ export async function POST(request: NextRequest) {
     storage_location: inferStorageLocation(item.ingredient_name, item.category),
     expiry_alert: true,
     ingredient_id: nameToId.get(item.ingredient_name) ?? null,
+    purchase_date: today,
   }));
 
   const { error } = await supabase
