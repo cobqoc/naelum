@@ -207,6 +207,13 @@ export default function AdminDashboard() {
             <div className="text-2xl mb-2">📈</div>
             <div className="text-sm font-medium">통계 확인</div>
           </Link>
+          <Link
+            href="/delivery"
+            className="p-4 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/5 transition-colors text-center"
+          >
+            <div className="text-2xl mb-2">🛵</div>
+            <div className="text-sm font-medium">배달 (사용자 페이지)</div>
+          </Link>
         </div>
       </div>
 

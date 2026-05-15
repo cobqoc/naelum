@@ -1239,6 +1239,8 @@ export const ko = {
     notePlaceholder: '예: 유기농, 1+1',
     starAria: '즐겨찾기 추가',
     unstarAria: '즐겨찾기 해제',
+    noteSaveAria: '메모 저장',
+    noteCancelAria: '메모 취소',
     categoryLabels: {
       vegetable: '채소',
       fruit: '과일',
@@ -1387,5 +1389,33 @@ export const ko = {
   // 푸터 — /about, /tip, /recipes 등 콘텐츠 페이지 하단. 약관·개인정보·저작권 링크는 t.meta.* 재활용.
   footer: {
     copyright: '© 2026 낼름 (Naelum). 모든 권리 보유.',
+  },
+  // 배달 — 음식 완제품 배달 주문. 진입은 admin 페이지에서만 허용 (Header/BottomNav/홈 노출 X).
+  delivery: {
+    title: '배달 주문',
+    subtitle: '주변 식당에서 음식 주문',
+    nearbyRestaurants: '주변 식당',
+    allRestaurants: '전체 식당',
+    open: '영업 중',
+    closed: '영업 종료',
+    rating: '평점',
+    deliveryFee: '배달비',
+    minOrder: '최소 주문',
+    minOrderAmount: '최소 주문 금액',
+    cookTime: '조리 예상',
+    minutes: '분',
+    free: '무료',
+    won: '원',
+    noRestaurants: '아직 식당이 없습니다',
+    searchPlaceholder: '식당명, 메뉴 검색...',
+    filterAll: '전체',
+    cuisineKorean: '한식',
+    cuisineChinese: '중식',
+    cuisineJapanese: '일식',
+    cuisineWestern: '양식',
+    cuisineSnack: '분식',
+    cuisineVegan: '비건',
+    viewMenu: '메뉴 보기',
+    backToList: '식당 목록으로',
   },
 }
