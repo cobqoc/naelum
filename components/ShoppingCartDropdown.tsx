@@ -111,8 +111,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const [loading, setLoading] = useState(() => getCachedShoppingList() == null);
   const [addingToFridge, setAddingToFridge] = useState(false);
   const [groupMode, setGroupMode] = useState<GroupMode>(() => {
-    if (typeof window === 'undefined') return 'recipe';
-    return (localStorage.getItem('cart_group_mode') as GroupMode) ?? 'recipe';
+    if (typeof window === 'undefined') return 'category';
+    return (localStorage.getItem('cart_group_mode') as GroupMode) ?? 'category';
   });
 
   const switchGroupMode = (mode: GroupMode) => {
@@ -795,33 +795,51 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                           aria-label={t.cart.noteEditAria}
                           className="w-full bg-background-tertiary border border-white/15 rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-warm/60"
                         />
-                      ) : item.note ? (
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setEditingNoteId(item.id);
-                            setEditingNoteValue(item.note ?? '');
-                          }}
-                          aria-label={t.cart.noteEditAria}
-                          className={`inline-flex items-center gap-1 text-xs ${item.is_checked ? 'text-text-muted line-through' : 'text-text-secondary'} hover:text-accent-warm transition-colors`}
-                        >
-                          <span aria-hidden="true">📝</span>
-                          <span className="text-left">{item.note}</span>
-                        </button>
-                      ) : !item.is_checked ? (
-                        <button
-                          type="button"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setEditingNoteId(item.id);
-                            setEditingNoteValue('');
-                          }}
-                          className="inline-flex items-center text-[10px] text-text-muted hover:text-accent-warm transition-colors opacity-60 hover:opacity-100"
-                        >
-                          {t.cart.noteAddPrompt}
-                        </button>
-                      ) : null}
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* 카테고리 모드 한정 — 어느 레시피용인지 표시 */}
+                          {groupMode === 'category' && item.recipe_id && item.recipe_title && (
+                            <span
+                              className={`inline-flex items-center gap-0.5 text-xs max-w-[10rem] ${item.is_checked ? 'text-text-muted line-through' : 'text-text-muted'}`}
+                            >
+                              <span aria-hidden="true">🍲</span>
+                              <span className="truncate">{item.recipe_title}</span>
+                            </span>
+                          )}
+                          {/* divider — recipe chip + 우측에 메모(또는 + 메모) 둘 다 있을 때만 */}
+                          {groupMode === 'category' && item.recipe_id && item.recipe_title && (item.note || !item.is_checked) && (
+                            <span className="text-[10px] text-text-muted/50" aria-hidden="true">·</span>
+                          )}
+                          {/* 메모 */}
+                          {item.note ? (
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setEditingNoteId(item.id);
+                                setEditingNoteValue(item.note ?? '');
+                              }}
+                              aria-label={t.cart.noteEditAria}
+                              className={`inline-flex items-center gap-1 text-xs ${item.is_checked ? 'text-text-muted line-through' : 'text-text-secondary'} hover:text-accent-warm transition-colors`}
+                            >
+                              <span aria-hidden="true">📝</span>
+                              <span className="text-left">{item.note}</span>
+                            </button>
+                          ) : !item.is_checked ? (
+                            <button
+                              type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setEditingNoteId(item.id);
+                                setEditingNoteValue('');
+                              }}
+                              className="inline-flex items-center text-[10px] text-text-muted hover:text-accent-warm transition-colors opacity-60 hover:opacity-100"
+                            >
+                              {t.cart.noteAddPrompt}
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
 
                     </div>
