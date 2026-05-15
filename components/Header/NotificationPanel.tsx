@@ -28,7 +28,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
-  const [notifSettings, setNotifSettings] = useState({ expiry: true, meal_time: true });
+  const [notifSettings, setNotifSettings] = useState({ expiry: true });
   const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     }
   };
 
-  const toggleNotifSetting = (key: 'expiry' | 'meal_time') => {
+  const toggleNotifSetting = (key: 'expiry') => {
     setNotifSettings(prev => {
       const next = { ...prev, [key]: !prev[key] };
       localStorage.setItem('naelum_notif_settings', JSON.stringify(next));
@@ -236,7 +236,6 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
 
                 {([
                   { key: 'expiry' as const, icon: '⏰', label: '유통기한 알림' },
-                  { key: 'meal_time' as const, icon: '🍽️', label: '식사 추천 알림' },
                 ]).map(({ key, icon, label }) => (
                   <div key={key} className="flex items-center justify-between">
                     <span className="text-sm flex items-center gap-2">
