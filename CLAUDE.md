@@ -1094,6 +1094,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-16 기준)
 
 ### 기능 구현 현황
+- **장보기(cart) UX 개선 + 공유 cart + 가격 인프라** — 완료 (2026-05-16)
+  - cart 모달 PC width `26rem → 30rem`, recipe chip `max-w 10rem → 15rem` (잘림 해소)
+  - 레시피 chip 클릭 → 레시피 페이지 navigate + `sessionStorage` `naelum_cart_restore` 플래그 → 뒤로가기 시 Header·BottomNav 양쪽에서 cart 자동 재오픈
+  - 항목 스테퍼+단위 통합 `[−|수량|단위 ▾|+]` (DetailFields 패턴 일관), 입력창 단위 select도 동일 패턴 (`▾` 명시, placeholder "단위")
+  - quick-add chip 컴팩트화 + starred yellow tint + 긴 이름 `max-w`·truncate
+  - **공유 cart Phase 1 (read-only)**: `shopping_list_shares` 테이블(token PK, owner, expires/revoked, 사용자당 활성 1개 partial unique idx). `POST/DELETE /api/cart/share`(토큰 재사용·revoke), `GET /api/cart/share/[token]`(비로그인, admin client RLS 우회, 만료/취소 404). `/[lang]/cart/share/[token]` Server Component read-only 페이지(noindex). cart 모달 🔗 공유 버튼. **dev+prod 적용 완료**. read-write 협업은 사용자 100명+ 이후 Phase 2
+  - **재료 다 먹음 → 장보기 제안**: 냉장고 삭제 확정 시 한 토스트에 `[실행 취소][장보기에 추가]` 동시 노출. `useToast`에 `actions?: ToastAction[]` + `variant`(primary/secondary) 추가(백워드 컴팩트, 기존 `action` 단일 그대로). 비로그인/데모 skip
+  - **가격 파싱·저장 인프라 Phase 1**: `match-receipt`가 가격 버리던 것(route.ts:33) 수정 → `RawProduct[]`(name+price/quantity/unit). `stores`+`ingredient_price_reports` 테이블(price_per_unit 정규화: g/kg→100g, ml/l→100ml, 개수→개당). `POST /api/ingredients/price-report`(인증·price>0). **dev+prod 적용 완료**. 영수증 OCR UI 미연결 상태라 endpoint까지 사전 빌드(연결만 하면 가격 축적 시작)
+  - **트래킹 추가**: `cart_add_via_{chip,autocomplete,manual}`(카테고리 탭 추가 결정용), `cart_share_created`, `used_up_toast_shown`/`used_up_to_cart`(전환율 분모/분자)
+  - e2e: `cart-share.spec.ts`(6) + `price-report.spec.ts`(8) 전부 통과
+  - PR #48·#50·#52 (develop→main) 머지 완료
 - **배달 시스템 (음식 완제품 배달)** — 구현 완료 (2026-05-16), prod DB 미적용
   - **진입 통제**: `/admin` 사이드바·quick actions에서만 진입. Header/홈/BottomNav/Footer 노출 X. 직접 URL은 인증만 거치면 접근 (RLS로 데이터 보안). 검색엔진 `robots: noindex`
   - **소비자** (`app/[lang]/delivery/*`): 식당 리스트(검색·카테고리 필터) → 식당 상세·메뉴 → 카트 → 주문 확정(주소·mock 결제) → 주문 상세·상태 추적 → 주문 내역. cart는 localStorage(비로그인 OK), checkout부터 인증 필요(미인증 시 `/login` redirect)
@@ -1182,6 +1193,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - 대시보드 API: `GET /api/admin/analytics/events?days=N` — admin role 확인 후 raw events 반환 (최대 10000행)
   - 대시보드 UI: `/[lang]/admin/analytics/events` — recharts 기반 페이지뷰 추이·Top events·Top pages·디바이스 분포·홈 인터랙션 카운트
   - 기존 `search_history`·`recommendation_history`와 별개 유지 (충돌 없음)
+  - 2026-05-16 추가 이벤트: `cart_add_via_{chip,autocomplete,manual}`(cart 카테고리 탭 추가 결정용 — chip vs 검색 비율), `cart_share_created`(공유 실사용), `used_up_toast_shown`/`used_up_to_cart`(다 먹음 토스트 전환율 = 분자/분모). 1~2주 데이터 보고 결정할 보류 이슈용
 - **낼름함 (레시피 저장)** — 구현 완료
   - 레시피 카드의 👅 낼름 버튼으로 저장
   - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
@@ -1550,12 +1562,15 @@ CREATE TABLE ingredient_price_reports (
 ### 구현 우선순위
 ```
 1. 요리 도감 페이지 리뉴얼 (현재)
-2. ingredient_price_reports + stores 테이블 생성
-3. match-receipt API 수정 (가격 파싱 추가)
-4. KAMIS API 키 발급 + 연동
-5. 재료 상세 패널에 가격 정보 표시
-6. 지도 기능 (사용자 1,000명+ 이후)
+2. ✅ ingredient_price_reports + stores 테이블 생성 (2026-05-16, dev+prod)
+3. ✅ match-receipt API 수정 (가격 파싱 추가) + POST /api/ingredients/price-report (2026-05-16)
+4. 영수증 OCR UI 연결 — 현재 match-receipt 호출처 없음. UI에서 price-report 호출하면 가격 축적 시작
+5. KAMIS API 키 발급 + 연동
+6. 재료 상세 패널에 가격 정보 표시
+7. 지도 기능 (사용자 1,000명+ 이후)
 ```
+
+> **2026-05-16 상태**: 가격 파싱·저장 인프라(2·3) 완료. `match-receipt`가 `parsedPrice/Quantity/Unit` 반환, `price-report`가 `price_per_unit` 정규화 후 저장. **남은 건 영수증 OCR UI 연결(4)** — 그게 생기면 사용자 영수증 → 자동 가격 축적. KAMIS(5)는 공공데이터포털 `KAMIS_API_KEY` 발급 필요
 
 ---
 
