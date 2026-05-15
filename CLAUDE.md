@@ -1091,9 +1091,23 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 ---
 
-## 📌 데이터 현황 (2026-05-15 기준)
+## 📌 데이터 현황 (2026-05-16 기준)
 
 ### 기능 구현 현황
+- **배달 시스템 (음식 완제품 배달)** — 구현 완료 (2026-05-16), prod DB 미적용
+  - **진입 통제**: `/admin` 사이드바·quick actions에서만 진입. Header/홈/BottomNav/Footer 노출 X. 직접 URL은 인증만 거치면 접근 (RLS로 데이터 보안). 검색엔진 `robots: noindex`
+  - **소비자** (`app/[lang]/delivery/*`): 식당 리스트(검색·카테고리 필터) → 식당 상세·메뉴 → 카트 → 주문 확정(주소·mock 결제) → 주문 상세·상태 추적 → 주문 내역. cart는 localStorage(비로그인 OK), checkout부터 인증 필요(미인증 시 `/login` redirect)
+  - **사장님 어드민** (`app/[lang]/merchant/*`): 대시보드(오늘 주문·매출·영업토글) / onboarding(식당 등록) / 가게 정보 수정 / 메뉴 CRUD(카테고리·항목·품절) / 주문 칸반(결제완료→접수→조리→픽업대기, 30초 polling)
+  - **라이더** (`app/[lang]/rider`): 차량 선택 → online/offline → 배차 대기 주문(`ready`+미배차) 수락 → 픽업 → 배달 완료. PWA·네이티브 앱 아님 (prototype/MVP·운영 모니터링 용도). 실 라이더 앱은 향후 KMP 모바일
+  - **배차 모니터링** (`app/[lang]/admin/dispatch`): 운영팀용. 라이더 현황(온라인/배달중/오프라인)·활성 주문 테이블
+  - **상태 머신**: `delivery_order_status` enum 9개. 전환 검증 트리거(`delivery_validate_status_transition`)로 잘못된 전이 차단. 소비자 추적은 `inferStatus` 시간 기반 가상 진행 + 사장님 명시 status가 더 진행됐으면 우선
+  - **lib**: `lib/delivery/{api,cart,hooks,orders,storage,types}.ts`. `useSyncExternalStore` snapshot은 모듈 캐시로 안정 reference 유지(React error #185 회피 — [[feedback-use-sync-external-store-snapshot]])
+  - **`app/[lang]/error.tsx` 추가**: `app/error.tsx`가 I18nProvider 바깥이라 useI18n throw → 진짜 에러 가림. `[lang]/error.tsx`가 우선 적용돼 raw error 노출
+  - **i18n**: 8 locale에 `delivery`(cart/checkout/order/status 서브네임스페이스 포함)·`merchant`·`rider`. merchant/rider는 admin 전용이라 비-ko/en은 영어 폴백
+  - **e2e**: `e2e/delivery.spec.ts`(8) + `e2e/merchant-rider.spec.ts`(8) + `e2e/delivery-full-flow.spec.ts`(1, 한 유저 3역할 주문→조리→배달). 17개 전부 통과
+  - **미구현 (출시 전 필요)**: 메뉴 옵션(사이즈·맵기) / 결제 PG(현재 mock 즉시 paid) / 카카오 우편번호 / 메뉴 이미지 업로드 / 영업시간 UI / 푸시 알림(현재 polling) / 식당명·메뉴명 다국어
+  - **미구현 (출시 후)**: 실시간 위치 추적 / 리뷰 / 쿠폰 / 배차 매칭 알고리즘(현재 전체 노출) / 라이더 정산 / 주문 환불 UI / 다중 식당 / 카카오 지도
+  - PR #49 (develop→main) 머지 완료
 - **인증 페이지 UX 개선 및 버그 수정** — 완료 (2026-05-15)
   - `login/page.tsx`: 아이디 찾기·비밀번호 찾기 모달 열릴 때 input 자동 포커스, ESC 키 닫기
   - `login/page.tsx`: 아이디 찾기 성공 화면에 "비밀번호 찾기" 바로가기 버튼 추가
@@ -1296,6 +1310,17 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ```
 
 ---
+
+### 배달 DB (2026-05-16)
+- **dev 적용 완료 / prod 미적용** — 출시 결정 시 prod 적용 필요
+- 적용된 테이블 7개 (`naelum-dev` jmyrdoguxlizvajfcwep):
+  - `delivery_restaurants` / `delivery_menu_categories` / `delivery_menu_items` (`20260516_delivery_schema.sql`, 샘플 식당 6개)
+  - `delivery_addresses` / `delivery_orders` / `delivery_order_items` / `delivery_rider_profiles` (`20260517_delivery_orders.sql`)
+  - + `delivery_order_status` enum, 상태 전환 검증 트리거, RLS (소비자·식당owner·라이더·admin 권한 분리)
+- **마이그레이션 파일명 주의**: `20260516_delivery_schema.sql`이 `20260517_delivery_orders.sql`보다 먼저 적용돼야 함 (orders가 restaurants FK 참조). prod 적용 시 순서 준수
+- **프로덕션 추가 스키마 문서**: `docs/db/delivery-production-schema.sql` — 미적용 10개 테이블(rider_locations·order_status_history·payment_records·promotions·reviews·notifications·dispatch_log·settlements·business_hours_overrides·device_tokens). 출시 trigger별 적용 가이드 포함. **절대 자동 apply 금지**
+- ⚠️ `delivery_restaurants.owner_id`는 `ON DELETE SET NULL` — testUser 삭제 시 식당이 owner_id=NULL orphan으로 남음. e2e beforeEach에서 `name LIKE 'E2E%'` orphan 정리. 향후 `ON DELETE CASCADE` 검토(실 사용자 식당 데이터 손실 위험 있어 보류)
+- **cart는 DB 아님** — localStorage 유지 (구매 전 의도, 비로그인 OK). orders/addresses만 DB
 
 ### 레시피 DB
 - **prod: 1,443개** (published 1,408 + private 35) / **dev: 100개** (published)
