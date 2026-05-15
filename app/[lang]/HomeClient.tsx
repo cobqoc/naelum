@@ -41,7 +41,6 @@ import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import AuthPromptSheet from '@/components/Auth/AuthPromptSheet';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
-import DuplicateIngredientDialog from '@/components/Ingredients/DuplicateIngredientDialog';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
@@ -137,12 +136,6 @@ export default function HomeClient({
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-
-  // 같은 이름 재료 중복 추가 시 사용자 의도 확인 다이얼로그
-  const [dupDialog, setDupDialog] = useState<{
-    pending: IngredientFormData;
-    existingItems: FridgeItem[];
-  } | null>(null);
 
   // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
   // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
@@ -505,7 +498,9 @@ export default function HomeClient({
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
-  // AddIngredientModal onAddIngredient — 같은 이름 있으면 다이얼로그 띄움
+  // AddIngredientModal onAddIngredient
+  // 자동 판단: 같은 이름 + 만료일·보관위치 동일 → 수량 합치기. 다르면 따로 추가.
+  // 사용자에게 묻지 않음 (인지부담 제거). 합쳤을 땐 토스트로 명시.
   const addIngredientFromModal = async (formData: IngredientFormData) => {
     const sanitized: IngredientFormData = {
       ...formData,
@@ -517,19 +512,21 @@ export default function HomeClient({
     };
     if (!user) return;
 
-    // 같은 이름이 이미 냉장고에 있는지 확인 (case-insensitive)
+    // 같은 이름 + 만료일·보관위치까지 동일한 항목 검색
     const nameKey = sanitized.ingredient_name.trim().toLowerCase();
-    const duplicates = items.filter(
-      i => i.ingredient_name.trim().toLowerCase() === nameKey
+    const mergeTarget = items.find(i =>
+      i.ingredient_name.trim().toLowerCase() === nameKey &&
+      (i.expiry_date ?? null) === (sanitized.expiry_date ?? null) &&
+      (i.storage_location ?? null) === (sanitized.storage_location ?? null)
     );
 
-    if (duplicates.length > 0) {
-      // 사용자 의도 확인 — 따로 추가 vs 수량 합치기
-      setDupDialog({ pending: sanitized, existingItems: duplicates });
-      return;
+    if (mergeTarget) {
+      // 만료일·보관위치 같음 → 수량 합치기 (정보 손실 없음)
+      await mergeIngredientQuantity(mergeTarget.id, sanitized);
+    } else {
+      // 같은 이름이지만 만료일·보관위치 다름 → 별도 행으로 따로 저장
+      await performIngredientInsert(sanitized);
     }
-
-    await performIngredientInsert(sanitized);
   };
 
 
@@ -988,32 +985,6 @@ export default function HomeClient({
         onClose={() => setShowAuthPrompt(false)}
       />
 
-      {/* 같은 이름 재료 중복 확인 다이얼로그 — 따로 추가 vs 수량 합치기 */}
-      <DuplicateIngredientDialog
-        isOpen={dupDialog !== null}
-        newName={dupDialog?.pending.ingredient_name ?? ''}
-        existingItems={(dupDialog?.existingItems ?? []).map(i => ({
-          id: i.id,
-          ingredient_name: i.ingredient_name,
-          quantity: i.quantity ?? null,
-          unit: i.unit ?? null,
-          expiry_date: i.expiry_date ?? null,
-          storage_location: i.storage_location ?? null,
-        }))}
-        onClose={() => setDupDialog(null)}
-        onAddSeparate={async () => {
-          if (!dupDialog) return;
-          const pending = dupDialog.pending;
-          setDupDialog(null);
-          await performIngredientInsert(pending);
-        }}
-        onMerge={async (targetItemId) => {
-          if (!dupDialog) return;
-          const pending = dupDialog.pending;
-          setDupDialog(null);
-          await mergeIngredientQuantity(targetItemId, pending);
-        }}
-      />
 
 
       <BottomNav />

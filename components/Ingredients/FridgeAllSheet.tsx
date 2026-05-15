@@ -75,8 +75,9 @@ export default function FridgeAllSheet({
     };
   }, [isOpen]);
 
+  // 시트 닫힐 때 groupSheet도 닫음 — queueMicrotask로 cascading render 회피
   useEffect(() => {
-    if (!isOpen) setGroupSheet(null);
+    if (!isOpen) queueMicrotask(() => setGroupSheet(null));
   }, [isOpen]);
 
   if (!isOpen) return null;
