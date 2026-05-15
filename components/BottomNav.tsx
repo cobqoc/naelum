@@ -100,6 +100,18 @@ export default function BottomNav() {
   const [showSearch, setShowSearch] = useState(false);
   const { count: cartCount } = useCartCount();
 
+  // 레시피 chip → 레시피 페이지 navigate 후 뒤로 돌아왔을 때 cart 자동 재오픈.
+  // Header도 동일 로직을 갖고 있어서 PC/모바일 viewport 어느 쪽에서도 복원됨.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('naelum_cart_restore') === '1') {
+      queueMicrotask(() => {
+        setShowCart(true);
+        sessionStorage.removeItem('naelum_cart_restore');
+      });
+    }
+  }, []);
+
   // 프로필 슬롯은 모바일 헤더로 이관됨(중복 제거). 향후 다른 슬롯(예: 글쓰기) 추가 가능.
   const navItems: NavItem[] = [
     { href: '/', Icon: FridgeIcon, label: t.bottomNav.fridge },

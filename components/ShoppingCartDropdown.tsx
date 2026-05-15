@@ -16,6 +16,10 @@ import {
 import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
 import { useFavorites } from '@/lib/favorites/useFavorites';
 import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
+import { track } from '@/lib/analytics/track';
+
+// chip / autocomplete / manual 비율 측정 — 카테고리 탭 추가 vs 검색 강화 결정용
+type CartAddSource = 'chip' | 'autocomplete' | 'manual';
 
 // cart의 카테고리 키(vegetable/dairy/...) vs popularItems 카테고리(veggie/...) 매핑
 const POPULAR_CATEGORY_TO_CART: Record<string, string> = {
@@ -215,7 +219,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     };
   }, [inputText]);
 
-  const addItem = async (name: string, category = '', unit?: string) => {
+  const addItem = async (name: string, category = '', unit?: string, source: CartAddSource = 'manual') => {
     if (!name.trim() || adding) return;
     setAdding(true);
     try {
@@ -230,6 +234,11 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
+        // 추가 방식 트래킹 (GDPR 동의자만) — chip vs autocomplete vs manual 비율 결정용
+        track(`cart_add_via_${source}`, {
+          name: name.trim().slice(0, 50),
+          category: category || null,
+        });
         setInputText('');
         setInputUnit('');
         setSuggestions([]);
@@ -322,7 +331,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 입력창 바로 아래에 항상 노출 (빈 상태/항목 있는 상태 공통).
   // 호출 측에서 이미 cart category로 매핑 완료한 값 전달.
   const quickAdd = (name: string, cartCategory: string) => {
-    addItem(name, cartCategory);
+    addItem(name, cartCategory, undefined, 'chip');
   };
 
   type QuickItem = { name: string; category: string; icon: string; isStarred: boolean; fromFavorites: boolean };
@@ -427,7 +436,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${
             fromBottom
               ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm'
-              : 'absolute w-80 md:w-[26rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
+              : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
           }`}
         >
           {/* 헤더 */}
@@ -491,7 +500,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 md:w-[26rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
+      <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
         {/* 헤더 */}
         <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -596,7 +605,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 onKeyDown={e => {
                   if (e.key === 'Enter' && inputText.trim()) {
                     e.preventDefault();
-                    addItem(inputText);
+                    addItem(inputText, '', undefined, 'manual');
                   }
                   if (e.key === 'Escape') {
                     setInputText('');
@@ -609,25 +618,28 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none pl-3 pr-2 py-2 text-sm"
                 style={{ border: 'none', outline: 'none' }}
               />
-            {/* #2 단위 select — 직접 추가 시에만 활성 (입력값 있을 때) */}
-            <select
-              value={inputUnit}
-              onChange={e => setInputUnit(e.target.value)}
-              aria-label={t.cart.unitLabel}
-              className="flex-shrink-0 bg-background-tertiary text-text-secondary text-[11px] rounded-md px-1.5 py-1 mr-1.5 !outline-none !border-0 cursor-pointer hover:bg-background-tertiary/80"
-              style={{ border: 'none', outline: 'none', maxWidth: '4.5rem' }}
-              onClick={e => e.stopPropagation()}
-            >
-              <option value="">{t.cart.unitNone}</option>
-              {COMMON_UNITS.map(u => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
+            {/* 단위 select — DetailFields 패턴 (appearance-none + ▾) */}
+            <div className="relative flex-shrink-0 flex items-center mr-1.5">
+              <select
+                value={inputUnit}
+                onChange={e => setInputUnit(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                aria-label={t.cart.unitLabel}
+                className="bg-background-tertiary text-text-secondary text-xs rounded-md appearance-none cursor-pointer outline-none border-0 pl-2 pr-5 py-1 hover:bg-background-tertiary/80"
+                style={{ maxWidth: '5.5rem' }}
+              >
+                <option value="">{t.cart.unitLabel}</option>
+                {COMMON_UNITS.map(u => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-1.5 text-text-muted text-[9px]">▾</span>
+            </div>
             {adding ? (
               <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent flex-shrink-0 mr-3" />
             ) : (
               <button
-                onMouseDown={() => inputText.trim() && addItem(inputText)}
+                onMouseDown={() => inputText.trim() && addItem(inputText, '', undefined, 'manual')}
                 disabled={!inputText.trim()}
                 className="flex-shrink-0 mr-2 px-3 py-1.5 text-xs rounded-lg bg-accent-warm font-semibold text-background-primary transition-all hover:bg-accent-hover active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed !outline-none !border-0"
                 style={{ border: 'none' }}
@@ -643,7 +655,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
               {suggestions.map(s => (
                 <button
                   key={s.id}
-                  onMouseDown={() => addItem(s.name, s.category)}
+                  onMouseDown={() => addItem(s.name, s.category, undefined, 'autocomplete')}
                   className="w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
                 >
                   <span className="text-accent-warm flex-shrink-0">+</span>
@@ -652,7 +664,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                 </button>
               ))}
               <button
-                onMouseDown={() => addItem(inputText)}
+                onMouseDown={() => addItem(inputText, '', undefined, 'manual')}
                 className="w-full text-left px-4 py-2.5 text-xs hover:bg-accent-warm/10 transition-colors flex items-center gap-2 border-t border-white/5"
               >
                 <span className="text-accent-warm flex-shrink-0">+</span>
@@ -666,11 +678,15 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
             flex-shrink-0 영역이라 cart 길어져도 스크롤로 밀려나지 않음. */}
         {quickAddItems.length > 0 && (
           <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {quickAddItems.map(item => (
                 <div
                   key={item.name}
-                  className="inline-flex items-center rounded-full bg-background-tertiary hover:bg-accent-warm/15 text-text-secondary hover:text-accent-warm text-xs transition-colors"
+                  className={`inline-flex items-center rounded-full text-[11px] transition-colors ${
+                    item.isStarred
+                      ? 'bg-yellow-400/12 hover:bg-yellow-400/20 text-text-primary'
+                      : 'bg-background-tertiary hover:bg-accent-warm/15 text-text-secondary hover:text-accent-warm'
+                  }`}
                 >
                   {/* ⭐ 토글 — 로그인 사용자에게만 */}
                   {user && (
@@ -682,7 +698,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                       }}
                       aria-pressed={item.isStarred}
                       aria-label={item.isStarred ? t.cart.unstarAria : t.cart.starAria}
-                      className={`pl-2 pr-1 py-1.5 text-sm leading-none ${item.isStarred ? 'text-yellow-400' : 'text-text-muted/60 hover:text-yellow-400'}`}
+                      className={`pl-1.5 pr-0.5 py-1 text-xs leading-none ${item.isStarred ? 'text-yellow-400' : 'text-text-muted/60 hover:text-yellow-400'}`}
                     >
                       <span aria-hidden="true">{item.isStarred ? '⭐' : '☆'}</span>
                     </button>
@@ -691,10 +707,10 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                     type="button"
                     onClick={() => quickAdd(item.name, item.category)}
                     disabled={adding}
-                    className={`flex items-center gap-1 ${user ? 'pl-1' : 'pl-2.5'} pr-2.5 py-1.5 disabled:opacity-50`}
+                    className={`flex items-center gap-1 ${user ? 'pl-0.5' : 'pl-2'} pr-2 py-1 disabled:opacity-50 max-w-[8rem]`}
                   >
-                    <span aria-hidden="true">{item.icon}</span>
-                    <span>{item.name}</span>
+                    <span aria-hidden="true" className="flex-shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.name}</span>
                   </button>
                 </div>
               ))}
@@ -773,41 +789,43 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                         )}
                       </div>
 
-                      {/* 수량 스테퍼 — 체크되지 않은 항목만 */}
+                      {/* 수량 스테퍼 + 단위 통합 [−][수량 | 단위 ▾][+] — DetailFields와 일관 */}
                       {!item.is_checked ? (
-                        <div className="flex items-center gap-0.5 flex-shrink-0 bg-background-tertiary rounded-md">
+                        <div className="inline-flex items-center rounded-lg border border-white/10 bg-background-tertiary overflow-hidden flex-shrink-0 h-7">
                           <button
                             onClick={e => { e.stopPropagation(); updateQuantity(item, -1); }}
                             disabled={(item.quantity ?? 1) <= 1}
-                            className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                            className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-accent-warm hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
                             aria-label={t.cart.quantityDecrease}
                           >
                             −
                           </button>
-                          <span className="text-xs text-text-primary tabular-nums min-w-[1.25rem] text-center">
+                          <span className="text-xs text-text-primary tabular-nums min-w-[1.5rem] px-1.5 text-center border-l border-white/10 h-7 leading-7">
                             {item.quantity ?? 1}
                           </span>
+                          {/* 단위 드롭다운 — placeholder + 명시적 ▾ 화살표 */}
+                          <div className="relative flex items-center border-l border-white/10 h-7">
+                            <select
+                              value={item.unit ?? ''}
+                              onClick={e => e.stopPropagation()}
+                              onChange={e => { e.stopPropagation(); updateUnit(item, e.target.value); }}
+                              aria-label={t.cart.unitLabel}
+                              className="bg-transparent text-xs text-text-secondary appearance-none cursor-pointer outline-none pl-2 pr-5 h-full"
+                            >
+                              <option value="">{t.cart.unitLabel}</option>
+                              {COMMON_UNITS.map(u => (
+                                <option key={u} value={u}>{u}</option>
+                              ))}
+                            </select>
+                            <span className="pointer-events-none absolute right-1 text-text-muted text-[9px]">▾</span>
+                          </div>
                           <button
                             onClick={e => { e.stopPropagation(); updateQuantity(item, 1); }}
-                            className="w-6 h-6 flex items-center justify-center text-text-secondary hover:text-accent-warm transition-colors"
+                            className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-accent-warm hover:bg-white/5 transition-colors text-sm border-l border-white/10"
                             aria-label={t.cart.quantityIncrease}
                           >
                             +
                           </button>
-                          {/* #2 단위 select — 항목 내 변경 가능 */}
-                          <select
-                            value={item.unit ?? ''}
-                            onClick={e => e.stopPropagation()}
-                            onChange={e => { e.stopPropagation(); updateUnit(item, e.target.value); }}
-                            aria-label={t.cart.unitLabel}
-                            className="bg-transparent text-[10px] text-text-muted pr-1 cursor-pointer hover:text-text-secondary !outline-none !border-0 max-w-[3rem]"
-                            style={{ border: 'none', outline: 'none' }}
-                          >
-                            <option value="">·</option>
-                            {COMMON_UNITS.map(u => (
-                              <option key={u} value={u}>{u}</option>
-                            ))}
-                          </select>
                         </div>
                       ) : (
                         (item.quantity || item.unit) && (
@@ -892,9 +910,12 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
                               href={`/recipes/${item.recipe_id}`}
                               onClick={e => {
                                 e.stopPropagation();
+                                if (typeof window !== 'undefined') {
+                                  sessionStorage.setItem('naelum_cart_restore', '1');
+                                }
                                 onClose();
                               }}
-                              className={`inline-flex items-center gap-0.5 text-xs max-w-[10rem] transition-colors ${item.is_checked ? 'text-text-muted line-through hover:text-text-secondary' : 'text-text-muted hover:text-accent-warm hover:underline'}`}
+                              className={`inline-flex items-center gap-0.5 text-xs max-w-[15rem] transition-colors ${item.is_checked ? 'text-text-muted line-through hover:text-text-secondary' : 'text-text-muted hover:text-accent-warm hover:underline'}`}
                             >
                               <span aria-hidden="true">🍲</span>
                               <span className="truncate">{item.recipe_title}</span>

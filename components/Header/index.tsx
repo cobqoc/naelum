@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
@@ -36,6 +36,19 @@ export default function Header() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const { count: cartCount } = useCartCount();
+
+  // 레시피 chip → 레시피 페이지 navigate 후 뒤로 돌아왔을 때 cart 자동 재오픈.
+  // BottomNav도 동일 로직을 갖고 있어서 PC/모바일 viewport 어느 쪽에서도 복원됨.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (sessionStorage.getItem('naelum_cart_restore') === '1') {
+      // queueMicrotask: effect 안에서 동기 setState는 cascading render 경고를 일으킴
+      queueMicrotask(() => {
+        setShowCart(true);
+        sessionStorage.removeItem('naelum_cart_restore');
+      });
+    }
+  }, []);
 
   const handleLogout = async () => {
     localStorage.removeItem('naelum_auto_login');
