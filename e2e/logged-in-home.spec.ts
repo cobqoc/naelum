@@ -385,4 +385,60 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
       expect(r.ingredient_id).toBeNull();
     }
   });
+
+  // ── 온보딩 배너 회귀 ──
+  // HomeClient 분해 전 안전망(ARCHITECTURE.md: OnboardingBanner 첫 추출 후보, 기존 커버 0).
+  // 실제 트리거는 hasTempUsername(임시 username `user_<12hex>` + onboarding_completed=true).
+  // onboarding_completed=false면 미들웨어(proxy.ts)가 terms-agreement로 redirect → 홈 도달 불가.
+  test('온보딩 배너 — 임시 username 유저: 노출 + CTA→위자드 + X→영구 dismiss', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    const tempUsername = `user_${testUser.userId.replace(/-/g, '').slice(0, 12)}`;
+    const { data: orig } = await admin().from('profiles').select('username').eq('id', testUser.userId).single();
+    await admin().from('profiles').update({ username: tempUsername, onboarding_completed: true }).eq('id', testUser.userId);
+    try {
+      await page.goto('/');
+      await page.evaluate((uid) => localStorage.removeItem(`naelum_onboarding_banner_${uid}`), testUser.userId);
+      await page.goto('/');
+      await page.waitForLoadState('networkidle');
+
+      // (a) 임시 username → 배너 노출
+      const bannerTitle = page.getByText('나의 프로필 완성하기');
+      await expect(bannerTitle).toBeVisible({ timeout: 10000 });
+
+      // (b) CTA "완성하기" → OnboardingWizard 모달 오픈
+      const cta = page.getByRole('button', { name: '완성하기' });
+      await cta.click();
+      await expect(page.getByText(/프로필 설정 \(\d\/4\)/)).toBeVisible({ timeout: 5000 });
+
+      // wizard 의존 줄이려 reload 로 닫고(LS 아직 dismiss 안 됨 → 배너 재노출) X 검증
+      await page.reload({ waitUntil: 'networkidle' });
+      await expect(bannerTitle).toBeVisible({ timeout: 10000 });
+
+      // (c) 배너 X(= CTA 의 다음 button 형제) → hide + localStorage 영구 플래그
+      await page.getByRole('button', { name: '완성하기' })
+        .locator('xpath=following-sibling::button[1]').click();
+      await expect(bannerTitle).toHaveCount(0);
+      const flag = await page.evaluate((uid) => localStorage.getItem(`naelum_onboarding_banner_${uid}`), testUser.userId);
+      expect(flag).toBe('1');
+
+      // (d) reload 후에도 영구 dismiss 유지
+      await page.reload({ waitUntil: 'networkidle' });
+      await expect(page.getByText('나의 프로필 완성하기')).toHaveCount(0);
+    } finally {
+      // 워커 스코프 fixture — 반드시 원복 (이후 테스트 오염 방지)
+      await admin().from('profiles')
+        .update({ username: orig?.username ?? testUser.username, onboarding_completed: true })
+        .eq('id', testUser.userId);
+    }
+  });
+
+  test('온보딩 배너 — 정상 username + 온보딩 완료: 배너 미노출 (음성 검증)', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    // 기본 fixture 유저 = username pwtest_*(비-temp) + onboarding_completed=true
+    // → needsOnboarding=false → 배너 영구 미노출
+    await admin().from('profiles').update({ onboarding_completed: true }).eq('id', testUser.userId);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('나의 프로필 완성하기')).toHaveCount(0);
+  });
 });
