@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { uploadToBucket, getPublicUrl, type StorageBucket } from '@/lib/storage';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -70,20 +71,21 @@ export async function POST(request: NextRequest) {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const filename = `${user.id}/${Date.now()}.${ext}`;
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filename, bytes, {
-      contentType: file.type,
-      upsert: false,
-    });
+  // bucket 은 ALLOWED_BUCKETS 로 런타임 검증됨(위) → StorageBucket 캐스트 안전
+  const { path: uploadedPath, error } = await uploadToBucket(
+    supabase,
+    bucket as StorageBucket,
+    filename,
+    bytes,
+    { contentType: file.type, upsert: false }
+  );
 
   if (error) {
     return NextResponse.json({ error: '업로드 중 오류가 발생했습니다: ' + error.message }, { status: 500 });
   }
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(bucket).getPublicUrl(data.path);
+  const finalPath = uploadedPath ?? filename;
+  const publicUrl = getPublicUrl(supabase, bucket as StorageBucket, finalPath);
 
-  return NextResponse.json({ url: publicUrl, path: data.path });
+  return NextResponse.json({ url: publicUrl, path: finalPath });
 }

@@ -40,7 +40,8 @@ describe('sanitizeOutgoingPayload', () => {
 
   it('ingredient_id undefined/null → null', () => {
     expect(
-      sanitizeOutgoingPayload({ purchase_date: '', expiry_date: '' }).ingredient_id
+      sanitizeOutgoingPayload({ ingredient_id: undefined, purchase_date: '', expiry_date: '' })
+        .ingredient_id
     ).toBeNull();
     expect(
       sanitizeOutgoingPayload({ ingredient_id: null, purchase_date: '', expiry_date: '' })

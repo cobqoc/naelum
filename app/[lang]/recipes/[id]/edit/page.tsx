@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, use } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import {
@@ -280,18 +281,14 @@ export default function EditRecipePage(props: PageProps) {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('recipe-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(filePath);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
 
       updateStep(index, 'image_url', publicUrl);
 
@@ -333,18 +330,14 @@ export default function EditRecipePage(props: PageProps) {
       const fileName = `ingredients-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('recipe-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(filePath);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
 
       setIngredientsImage(publicUrl);
 
@@ -386,18 +379,14 @@ export default function EditRecipePage(props: PageProps) {
       const fileName = `thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('recipe-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(filePath);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
 
       setThumbnailImage(publicUrl);
 

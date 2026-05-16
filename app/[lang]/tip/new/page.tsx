@@ -5,6 +5,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import Header from '@/components/Header';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -51,10 +52,9 @@ export default function TipNewPage() {
 
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/knowhow-thumb-${Date.now()}.${ext}`;
-    const { data, error } = await supabase.storage.from('recipe-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
-    if (!error && data) {
-      const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
-      setThumbnail(urlData.publicUrl);
+    const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
+    if (!error && path) {
+      setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
     }
     setThumbnailUploading(false);
   };
@@ -70,10 +70,9 @@ export default function TipNewPage() {
 
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/knowhow-step-${Date.now()}-${idx}.${ext}`;
-    const { data, error } = await supabase.storage.from('recipe-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
-    if (!error && data) {
-      const { data: urlData } = supabase.storage.from('recipe-images').getPublicUrl(data.path);
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: urlData.publicUrl, uploading: false } : s));
+    const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
+    if (!error && path) {
+      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
     } else {
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
     }

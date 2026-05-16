@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
@@ -315,21 +316,17 @@ export default function NewRecipePage() {
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       // Supabase Storage에 업로드
-      const { data, error } = await supabase.storage
-        .from('recipe-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (error) {
         throw error;
       }
 
       // Public URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(data.path);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', path ?? fileName);
 
       // Step 업데이트
       updateStep(index, 'image_url', publicUrl);
@@ -373,21 +370,17 @@ export default function NewRecipePage() {
       const fileName = `${user.id}/ingredients-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       // Supabase Storage에 업로드
-      const { data, error } = await supabase.storage
-        .from('recipe-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (error) {
         throw error;
       }
 
       // Public URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(data.path);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', path ?? fileName);
 
       setIngredientsImage(publicUrl);
 
@@ -430,21 +423,17 @@ export default function NewRecipePage() {
       const fileName = `${user.id}/thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       // Supabase Storage에 업로드
-      const { data, error } = await supabase.storage
-        .from('recipe-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
       if (error) {
         throw error;
       }
 
       // Public URL 가져오기
-      const { data: { publicUrl } } = supabase.storage
-        .from('recipe-images')
-        .getPublicUrl(data.path);
+      const publicUrl = getPublicUrl(supabase, 'recipe-images', path ?? fileName);
 
       setThumbnailImage(publicUrl);
 
