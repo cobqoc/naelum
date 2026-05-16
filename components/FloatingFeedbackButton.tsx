@@ -18,6 +18,8 @@ const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
  * - /signup, /login — 가입/로그인 중엔 숨김
  * - /recipes/[id]/cook — 쿠킹 모드 풀스크린
  * - 관리자 페이지 — 별도 도구 사용
+ * - /delivery·/merchant·/rider — 배달 시스템은 앱 chrome 격리 플로우
+ *   (CLAUDE.md: Header/BottomNav 미노출). 고정 버튼이 결제 등 UI 클릭 가로챔
  *
  * 위치는 모바일에서 BottomNav 위, 데스크톱에서 우측 하단 고정.
  */
@@ -33,6 +35,9 @@ export default function FloatingFeedbackButton() {
     pathname.startsWith('/signup') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/admin') ||
+    pathname.startsWith('/delivery') ||
+    pathname.startsWith('/merchant') ||
+    pathname.startsWith('/rider') ||
     pathname === '/' ||
     /\/recipes\/[^/]+\/cook/.test(pathname)
 

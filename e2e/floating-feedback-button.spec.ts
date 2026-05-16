@@ -35,5 +35,11 @@ test.describe('FloatingFeedbackButton (layout 연결 회귀)', () => {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
     await expect(page.locator(fbBtn)).toHaveCount(0);
+
+    // /delivery — 배달은 앱 chrome 격리 플로우. 고정 버튼이 결제 UI 클릭을
+    // 가로채는 회귀 가드(CLAUDE.md: 배달 Header/BottomNav 미노출).
+    await page.goto('/delivery');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator(fbBtn)).toHaveCount(0);
   });
 });

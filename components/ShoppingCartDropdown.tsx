@@ -137,6 +137,10 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
+  // 메모 PATCH 진행 중인 item id — 냉장고 pendingDeleteIdsRef 와 동일 패턴.
+  // 백그라운드 force-refresh(loadShoppingList(true)) 가 편집 후 pre-PATCH 서버
+  // 데이터로 늦게 resolve → optimistic 메모를 clobber 하는 race 방어.
+  const pendingNoteEditIdsRef = useRef<Set<string>>(new Set());
 
   // 사용자별 즐겨찾기·자주 사용 재료 — 빈 상태 quick-add에 노출
   const { items: favorites, toggleStar: toggleFavoriteStar } = useFavorites(20);
@@ -155,6 +159,18 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   };
 
 
+  // 서버/캐시 데이터 적용 — 단, 메모 PATCH 진행 중인 id 는 로컬 optimistic
+  // 메모를 보존(stale 서버값으로 덮어쓰지 않음). 그 외 전부 서버값 채택.
+  const applyServerItems = useCallback((incoming: ShoppingItem[]) => {
+    setItems(prev => incoming.map(it => {
+      if (pendingNoteEditIdsRef.current.has(it.id)) {
+        const local = prev.find(p => p.id === it.id);
+        return local ? { ...it, note: local.note } : it;
+      }
+      return it;
+    }));
+  }, []);
+
   const fetchItems = useCallback(async () => {
     // 비로그인: API 호출 skip (401 silent fail 방지). 로그인 유도 뷰로 분기됨.
     if (!user) {
@@ -164,24 +180,24 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     // 캐시가 있으면 UI 즉시 업데이트, 백그라운드에서 리프레시
     const cached = getCachedShoppingList();
     if (cached) {
-      setItems(cached);
+      applyServerItems(cached);
       setLoading(false);
     }
     const fresh = await loadShoppingList(true);
-    setItems(fresh);
+    applyServerItems(fresh);
     setLoading(false);
-  }, [user]);
+  }, [user, applyServerItems]);
 
   // 공유 캐시 구독 — 다른 곳에서 업데이트되면 이 dropdown도 자동으로 따라감
   useEffect(() => {
     const unsub = subscribeShoppingList((cached) => {
       if (cached) {
-        setItems(cached);
+        applyServerItems(cached);
         setLoading(false);
       }
     });
     return unsub;
-  }, []);
+  }, [applyServerItems]);
 
   useEffect(() => {
     if (isOpen) {
@@ -308,14 +324,20 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     const trimmed = rawNote.trim().slice(0, 200);
     const finalNote: string | null = trimmed === '' ? null : trimmed;
     if (finalNote === (item.note ?? null)) return;
+    // race 가드: PATCH 정착 전까지 이 id 의 메모는 서버/캐시 재적용에서 보존.
+    pendingNoteEditIdsRef.current.add(item.id);
     const updated = items.map(i => (i.id === item.id ? { ...i, note: finalNote } : i));
     setItems(updated);
     setCachedShoppingList(updated);
-    await fetch('/api/shopping-list', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, note: finalNote }),
-    });
+    try {
+      await fetch('/api/shopping-list', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, note: finalNote }),
+      });
+    } finally {
+      pendingNoteEditIdsRef.current.delete(item.id);
+    }
   };
 
   // 공유 링크 생성 + 클립보드 복사. 활성 토큰 있으면 재사용 (서버에서 처리).
