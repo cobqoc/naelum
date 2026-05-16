@@ -153,7 +153,7 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
 
 ## 📜 개발 규칙
 - **컴포넌트**: 모든 새로운 컴포넌트는 `app/` 디렉토리 내의 App Router 컨벤션을 따릅니다.
-- **TypeScript**: `any` 타입 사용을 지양하고 인터페이스/타입을 명확히 정의합니다.
+- **TypeScript**: `any` 타입은 **기본 지양**하고 인터페이스/타입을 명확히 정의합니다. 단 불가피한 경우 `// eslint-disable-next-line @typescript-eslint/no-explicit-any`로 **범위를 한 줄에 한정**하여 허용합니다. 타입 완벽주의(perfectionism)를 위한 리팩터는 하지 않습니다 — 실용성 > 엄격성. (상세: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) "Anti-goal" 절. 두 문서는 **동일 정책**입니다.)
 - **Client/Server**: 기본적으로 Server Components를 사용하며, 인터랙션이 필요한 경우에만 `'use client'`를 사용합니다.
 - **스타일링**: Tailwind CSS 4의 유틸리티 클래스를 우선적으로 사용하며, 변수는 `globals.css`의 CSS 변수를 활용합니다.
 - **데이터 무결성**: DB 또는 파일에 데이터를 삽입할 때, 출처에서 확인되지 않은 가짜 데이터나 추정 데이터를 절대 삽입하지 않습니다. 확인할 수 없는 값은 NULL 또는 빈 값으로 남겨둡니다.
@@ -1119,6 +1119,16 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **미구현 (출시 전 필요)**: 메뉴 옵션(사이즈·맵기) / 결제 PG(현재 mock 즉시 paid) / 카카오 우편번호 / 메뉴 이미지 업로드 / 영업시간 UI / 푸시 알림(현재 polling) / 식당명·메뉴명 다국어
   - **미구현 (출시 후)**: 실시간 위치 추적 / 리뷰 / 쿠폰 / 배차 매칭 알고리즘(현재 전체 노출) / 라이더 정산 / 주문 환불 UI / 다중 식당 / 카카오 지도
   - PR #49 (develop→main) 머지 완료
+- **배달 지도 / 푸드트럭 위치공개 Phase 1** — 구현·검증 완료 (2026-05-16), prod DB 미적용
+  - **식당 좌표 입력**: `components/Merchant/PlaceLocationPicker.tsx`(지도 핀 드래그 + 주소·장소 검색 + 클릭 좌표) → merchant onboarding·가게정보 수정에서 `delivery_restaurants.lat/lng` 저장. 기존엔 푸드트럭만 지도에 뜰 수 있던 갭 해소
+  - **소비자 지도** (`app/[lang]/delivery/map`): `GET /api/delivery/nearby`(bbox/place_type/open 필터, ±5° 검증, 비활성 제외), `robots: noindex`. admin 사이드바에서만 진입
+  - **사장님 위치공개** (`app/[lang]/merchant/location`): 푸드트럭 live 위치 공개/재공개(항상 1개만 live)/영업종료. place_type 토글은 가게정보 수정에 통합
+  - **map 인프라**: `components/map/*` MapLibre 래퍼(WebGL 미지원 시 fallback 박스 — 폼 등 나머지 UI 생존), `lib/delivery/places.ts` VWorld(국토지리정보원) 검색. 카카오 미사용
+  - **i18n**: 8 locale에 `merchant`(place_type·location 공개) + map UI 키 추가
+  - **next.config CSP**: VWorld/Carto/OSM/OSRM 타일 `connect-src` 허용
+  - **e2e**: `e2e/delivery-map.spec.ts` 18개(API 검증·place_type DB반영·live row 1개유지·anon RLS·noindex). `describe` serial + `seedRestaurant` 단일왕복 self-verify로 격리 flaky 수정 — fresh-build 18×2 전부 통과·0 flaky
+  - **flaky 조사 부산물**: cart/favorites e2e 빨강은 flaky 아니라 2026-05-16 cart 개편 vs 옛 셀렉터(별도 수정됨). reuseExistingServer가 stale 빌드 재사용 → 결정적 회귀는 :3000 죽이고 fresh build로
+  - PR #54 (develop→main). prod DB(`20260516→17→18`) 미적용이라 머지해도 배달은 prod 휴면(admin 전용·noindex라 일반 사용자 무영향), 점등은 prod 마이그레이션 시점
 - **인증 페이지 UX 개선 및 버그 수정** — 완료 (2026-05-15)
   - `login/page.tsx`: 아이디 찾기·비밀번호 찾기 모달 열릴 때 input 자동 포커스, ESC 키 닫기
   - `login/page.tsx`: 아이디 찾기 성공 화면에 "비밀번호 찾기" 바로가기 버튼 추가
@@ -1328,8 +1338,9 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 - 적용된 테이블 7개 (`naelum-dev` jmyrdoguxlizvajfcwep):
   - `delivery_restaurants` / `delivery_menu_categories` / `delivery_menu_items` (`20260516_delivery_schema.sql`, 샘플 식당 6개)
   - `delivery_addresses` / `delivery_orders` / `delivery_order_items` / `delivery_rider_profiles` (`20260517_delivery_orders.sql`)
+  - `delivery_truck_locations` + `delivery_restaurants.place_type`(restaurant|food_truck) (`20260518_delivery_food_truck.sql`, 푸드트럭 위치공개). dev 적용·e2e 검증 완료, prod 미적용
   - + `delivery_order_status` enum, 상태 전환 검증 트리거, RLS (소비자·식당owner·라이더·admin 권한 분리)
-- **마이그레이션 파일명 주의**: `20260516_delivery_schema.sql`이 `20260517_delivery_orders.sql`보다 먼저 적용돼야 함 (orders가 restaurants FK 참조). prod 적용 시 순서 준수
+- **마이그레이션 파일명·순서 주의**: prod 적용 시 `20260516_delivery_schema.sql` → `20260517_delivery_orders.sql` → `20260518_delivery_food_truck.sql` 순서 준수 (orders가 restaurants FK 참조, food_truck이 둘 위에 빌드). 배달 prod 점등 = 이 3개 순서 적용이 선행 조건
 - **프로덕션 추가 스키마 문서**: `docs/db/delivery-production-schema.sql` — 미적용 10개 테이블(rider_locations·order_status_history·payment_records·promotions·reviews·notifications·dispatch_log·settlements·business_hours_overrides·device_tokens). 출시 trigger별 적용 가이드 포함. **절대 자동 apply 금지**
 - ⚠️ `delivery_restaurants.owner_id`는 `ON DELETE SET NULL` — testUser 삭제 시 식당이 owner_id=NULL orphan으로 남음. e2e beforeEach에서 `name LIKE 'E2E%'` orphan 정리. 향후 `ON DELETE CASCADE` 검토(실 사용자 식당 데이터 손실 위험 있어 보류)
 - **cart는 DB 아님** — localStorage 유지 (구매 전 의도, 비로그인 OK). orders/addresses만 DB
