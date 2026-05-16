@@ -33,7 +33,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // 로컬에서도 1번 재시도
-  workers: process.env.CI ? 1 : undefined,
+  // 로컬 기본(undefined ≈ CPU 50% ≈ 5워커)은 단일 Next prod 서버 + 단일 dev
+  // Supabase 를 동시 타격해 리소스 경합 → 타이머/네트워크가 단언 예산 초과,
+  // spec 을 회전하는 retry-pass flaky 발생(고립 실행 시 전부 통과로 확인).
+  // 근본 처방: 로컬 워커 상한(경합 자체 감소). per-test timeout 땜질은
+  // flake 가 회전하므로 whack-a-mole. CI 는 이미 1워커라 영향 없음.
+  workers: process.env.CI ? 1 : 3,
   reporter: 'html',
   timeout: 60000,
 

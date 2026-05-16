@@ -49,7 +49,14 @@ test.describe('냉장고 같은 이름 재료 자동 판단', () => {
     const addBtn = modalScope.locator('button:has-text("1개 추가")').first();
     await expect(addBtn).toBeVisible({ timeout: 5000 });
     await addBtn.click({ force: true });
-    await page.waitForTimeout(2000);
+
+    // 추가 API(비동기 write)가 DB에 정착할 때까지 결정적 대기. 고정 sleep 은
+    // 부하 시 write 미커밋 race(flaky) → end-state(1행·qty3)를 poll 로 단언.
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients').select('quantity').eq('user_id', testUser.userId);
+      return data?.length === 1 ? data[0].quantity : -1;
+    }, { timeout: 15000 }).toBe(3);
 
     // DB: 1행 유지, quantity 2+1 = 3
     const { data: rows } = await admin()
@@ -91,7 +98,14 @@ test.describe('냉장고 같은 이름 재료 자동 판단', () => {
     const addBtn = modalScope.locator('button:has-text("1개 추가")').first();
     await expect(addBtn).toBeVisible({ timeout: 5000 });
     await addBtn.click({ force: true });
-    await page.waitForTimeout(2000);
+
+    // 추가 write 정착까지 결정적 대기 — end-state(2행)를 poll 로 단언(고정
+    // sleep race 제거). 만료일 다르므로 따로 추가 → 2행에서 안정(merge 없음).
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients').select('id').eq('user_id', testUser.userId);
+      return data?.length ?? 0;
+    }, { timeout: 15000 }).toBe(2);
 
     // DB: 2행 (만료일 다르므로 따로 추가됨)
     const { data: rows } = await admin()
@@ -166,7 +180,15 @@ test.describe('냉장고 같은 이름 재료 자동 판단', () => {
       await page.waitForTimeout(500);
     }
 
-    // DB 검증 — 시드 1 + 추가 2 = quantity 3 (1행)
+    // DB 검증 — 시드 1 + 추가 2 = quantity 3 (1행). 마지막 add write 정착까지
+    // 결정적 대기(고정 sleep race 제거. 루프 내 modalScope hidden 은 UI 신호일
+    // 뿐 DB 커밋 보장 아님).
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients').select('quantity').eq('user_id', testUser.userId);
+      return data?.length === 1 ? data[0].quantity : -1;
+    }, { timeout: 15000 }).toBe(3);
+
     const { data: rows } = await admin()
       .from('user_ingredients')
       .select('ingredient_name, quantity')
@@ -207,7 +229,17 @@ test.describe('냉장고 같은 이름 재료 자동 판단', () => {
     const addBtn = modalScope.locator('button:has-text("2개 추가")').first();
     await expect(addBtn).toBeVisible({ timeout: 5000 });
     await addBtn.click({ force: true });
-    await page.waitForTimeout(2000);
+
+    // batch(Promise.all) write 정착까지 결정적 대기 — 전체 end-state(양파 1행
+    // qty2 merge + 마늘 1행)를 poll(고정 sleep race 제거. count 만 보면 merge
+    // 직전 transient 3행에 false-positive 가능 → 완성 조건 전체를 단언).
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients').select('ingredient_name, quantity').eq('user_id', testUser.userId);
+      const o = data?.filter(r => r.ingredient_name === '양파') ?? [];
+      const g = data?.filter(r => r.ingredient_name === '마늘') ?? [];
+      return o.length === 1 && o[0]?.quantity === 2 && g.length === 1;
+    }, { timeout: 15000 }).toBe(true);
 
     // DB 검증 — 양파는 1행 quantity=2 (합쳐짐), 마늘은 1행 새로 추가
     const { data: rows } = await admin()

@@ -341,7 +341,14 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
 
     // 저장 ("수정 완료")
     await page.locator('button[type="submit"]:has-text("수정 완료")').first().click();
-    await page.waitForTimeout(1500);
+
+    // 저장(비동기 write) 정착까지 결정적 대기 — 고정 sleep 은 부하 시 write
+    // 미커밋 race(flaky). end-state(1행·expiry_date null)를 poll 로 단언.
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients').select('expiry_date').eq('user_id', testUser.userId);
+      return data?.length === 1 ? data[0].expiry_date : 'pending';
+    }, { timeout: 15000 }).toBeNull();
 
     // DB 검증
     const { data: rows } = await admin()

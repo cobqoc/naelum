@@ -172,8 +172,17 @@ test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글
     await expect(starBtn).toBeVisible();
     await starBtn.click();
 
-    // PATCH 완료 → DB 검증
-    await page.waitForTimeout(500);
+    // PATCH(비동기 write) 정착까지 결정적 대기 — 고정 500ms sleep 은 부하 시
+    // write 미커밋 race(flaky). end-state(is_starred=true)를 poll 로 단언.
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_favorites_ingredients')
+        .select('is_starred')
+        .eq('user_id', testUser.userId)
+        .eq('ingredient_name', '즐겨찾기재료_F')
+        .single();
+      return data?.is_starred ?? null;
+    }, { timeout: 15000 }).toBe(true);
     const { data } = await admin()
       .from('user_favorites_ingredients')
       .select('is_starred')
