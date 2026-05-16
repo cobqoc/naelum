@@ -1094,6 +1094,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-16 기준)
 
 ### 기능 구현 현황
+- **FloatingFeedbackButton 연결 + cart 메모 race 근본 fix + e2e suite flakiness 제거** — 완료 (2026-05-17)
+  - **FloatingFeedbackButton 연결**: 레포 어디에도 마운트 안 되던 orphan("Day 3 런칭 준비물" 초기 유저 피드백 창구)을 `app/[lang]/layout.tsx` providers 안 마운트 → 동작 시작. 하드코딩 한글 → `t.contact.feedbackAria/feedbackButton`(8 locale). 자체 hide 로직(`useLocalizedPathname`): `/auth·/signup·/login·/admin·/(홈)·cook·/delivery·/merchant·/rider`. **회귀 주의**: 전역 마운트 시 `fixed z-40` 버튼이 `/delivery`(앱 chrome 격리 플로우, CLAUDE.md)에서 결제 버튼 클릭 가로채 e2e 60s timeout → hide 목록에 배달 3 prefix 추가로 해결. 회귀 가드 `e2e/floating-feedback-button.spec.ts`
+  - **cart 메모 optimistic clobber 근본 fix** (`ShoppingCartDropdown`): cart-open 시 발행된 백그라운드 force-refresh(`loadShoppingList(true)`)가 사용자 메모 편집 *후* pre-PATCH 서버 데이터로 늦게 resolve → `notifySubscribers`/`fetchItems` 의 `setItems` 가 optimistic 메모를 stale 값으로 덮어씀(실패 DOM 스냅샷서 옛 메모 잔존 확인). **냉장고 `pendingDeleteIdsRef` 와 동일 검증 패턴**: `pendingNoteEditIdsRef` + `applyServerItems`(서버/캐시 적용 시 PATCH 진행중 id 의 로컬 메모 보존, 정착 후 해제). cart-note `cart-note.spec.ts:117` 등 장기 flaky 의 진짜 원인 — patchPromise-first/timeout 땜질로 안 잡히던 게 소거됨
+  - **e2e suite 병렬부하 flakiness 근본 제거 (0 flaky)**: 다수 spec의 `UI write → 고정 waitForTimeout → 즉시 DB read-back → 단언` anti-pattern이 async DB 커밋과 race(부하 시 flake 가 spec 회전). `ingredient-auto-merge`(4)·`logged-in-home:310`·`favorites:146`·`cart-note`(3) DB-readback 을 **`expect.poll`(end-state 결정적 대기)**로 교체(불변식·커버리지 보존·은폐 아님). `playwright.config` `workers: CI?1:3`(경합류 감소; 비단조 실측 2<3 이 "잔여=경합 아닌 race" 역증명; CI 이미 1워커 불변). `cart.spec` 은 toast 완료신호 후 read 라 race 아님 → 무수정(작동 코드 churn 회피). **검증: full-suite fresh build 연속 2회 356 passed·0 failed·0 flaky** + `ingredient-auto-merge` repeat-each=5 50/50
+  - **재발 방지 규칙**: e2e 에서 UI 액션 후 DB 상태 단언 시 **고정 `waitForTimeout` 금지 → `expect.poll`(end-state)** 또는 완료신호(toast/response) 대기. fixed sleep 은 부하 시 write 미커밋 race
+  - Vercel Preview 라이브 검증 완료(`/delivery` 피드백 숨김·식당 클릭 navigate·홈 surface·콘솔 0). PR 머지 시 prod 반영
 - **god-file(HomeClient) 분해 주요 완료 + i18n 근본 버그 수정** — 완료 (2026-05-17)
   - **HomeClient `~1197→791줄 (-34%)`** — Strangler Fig, 전 단계 행위보존·독립 검증·독립 커밋
   - **표현 컴포넌트 5개 `_home/` 추출**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`. 순수 표현 — 상태·가드·track·핸들러는 HomeClient 소유, 자식은 값+콜백만, JSX byte-identical. `FridgeShelves`(선반 overlay: renderGroup chip+본체4단+대롱대롱 만료배너/펜던트, ~177줄)는 props 명=원 변수명으로 IIFE 본문 verbatim 이동

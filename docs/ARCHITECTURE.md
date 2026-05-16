@@ -224,6 +224,15 @@ export function subscribeItems(cb) { subscribers.add(cb); return () => subscribe
 `e2e/auth-fixtures.ts`의 `authenticatedPage` fixture를 사용하면 로그인 상태
 시나리오도 쉽게 테스트 가능.
 
+> ⚠️ **flaky 방지 철칙** (2026-05-17, suite 전반 0-flaky 달성): UI 액션 후
+> DB 상태를 단언할 때 **고정 `page.waitForTimeout(N)` 뒤 즉시 `admin().select()`
+> 금지**. async write 가 부하 시 N ms 내 미커밋 → write→read race(flake 가
+> spec 회전). **`expect.poll(async()=>…end-state…, {timeout:15000})`** 로
+> DB 가 기대 상태 도달까지 결정적 대기 후 상세 단언(불변식·커버리지 보존,
+> 잘못된 값은 15s 에도 실패 → 은폐 아님). 또는 완료신호(toast/`waitForResponse`)
+> 대기 후 read(cart.spec 패턴). 워커는 `CI?1:3`(경합류; 비단조라 워커튜닝은
+> race 의 부차 — 근본은 동기화). 상세: CLAUDE.md 기능현황 2026-05-17.
+
 ---
 
 ## 🚫 안티패턴 모음
@@ -299,7 +308,7 @@ e2e/
 | 파일 | 줄수 | 상태 | 다음 액션 |
 |---|---|---|---|
 | `app/[lang]/recipes/new/page.tsx` | ~1171 | ✅ 주요 분해 완료 | `TagsField`·`NutritionFields`·`StepsSection`·`IngredientsSection` 4개 `_components/` 추출 완료(행위보존·strict 타입·recipe-creation e2e 검증, 1587→1171줄 ≈ -26%). `validateNutritionInput` 응집 이동. 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약(순수 props, 상태 page 소유) |
-| `app/[lang]/HomeClient.tsx` | ~791 | ✅ 주요 분해 완료 | **~1197→791줄(-34%)**, 전 단계 행위보존·독립 검증·독립 커밋(Strangler Fig). **표현 5개 → `_home/`**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`(순수 표현·상태/가드/track 부모 소유·JSX byte-identical, FridgeShelves 는 props 명=원 변수명으로 IIFE 본문 verbatim). **순수 알고리즘 → `lib/home/fridgeShelfDistribution`**(useMemo 본문, `urgencyScore` 주입으로 lib 순수·vitest 7). **stateful hook → `_home/useFridgeInteractions`**(Step 3·고위험: actionItem/detailItem·longPress/pendingDelete refs·DELETE_UNDO dbTimer·옵티미스틱+rollback·long-press 분기를 재설계 0·핸들러 byte-identical 기계적 이동. cleanup useEffect 신규 추가/제거 없음=동작 보존. `pendingDeleteIdsRef` 반환→fetchItems 동일 ref 필터). **분해 중 i18n 근본 버그 발견·수정**: `lib/i18n/useLocalizedPathname`(`proxy.ts:stripLang` client 미러) — raw `usePathname()`(=`/ko…`) vs bare 경로 비교 다증상 버그(`BottomNav` 홈탭 active·홈검색 오버레이 dead / `FloatingFeedbackButton` 숨김) 동시 수정. MobileSearchOverlay 는 fix 전 dead(aria-hidden 계측 e2e 실측 — isVisible false-positive 함정). **안전망 선작성 전략**: `e2e/mobile-search-overlay.spec.ts`·`e2e/fridge-chip-interactions.spec.ts`(Step 0 — long-press 삭제+undo→dbTimer 취소·DELETE_UNDO 경과→DB delete·그룹→미니시트→액션 3 불변식이 Step 3 hook 추출의 가드, 6/6 green). 검증: lint 0 errors·build·unit 85·e2e 0 fail(잔여 flaky=cart-note·auto-merge, 미변경 경로·고립 재실행 통과·무관 timing). **Vercel Preview 배포 검증 완료**(fridgeShelfDistribution·RecommendationPill·i18n fix BottomNav aria-current·MobileSearchOverlay 개폐 라이브 확인). 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약 |
+| `app/[lang]/HomeClient.tsx` | ~791 | ✅ 주요 분해 완료 | **~1197→791줄(-34%)**, 전 단계 행위보존·독립 검증·독립 커밋(Strangler Fig). **표현 5개 → `_home/`**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`(순수 표현·상태/가드/track 부모 소유·JSX byte-identical, FridgeShelves 는 props 명=원 변수명으로 IIFE 본문 verbatim). **순수 알고리즘 → `lib/home/fridgeShelfDistribution`**(useMemo 본문, `urgencyScore` 주입으로 lib 순수·vitest 7). **stateful hook → `_home/useFridgeInteractions`**(Step 3·고위험: actionItem/detailItem·longPress/pendingDelete refs·DELETE_UNDO dbTimer·옵티미스틱+rollback·long-press 분기를 재설계 0·핸들러 byte-identical 기계적 이동. cleanup useEffect 신규 추가/제거 없음=동작 보존. `pendingDeleteIdsRef` 반환→fetchItems 동일 ref 필터). **분해 중 i18n 근본 버그 발견·수정**: `lib/i18n/useLocalizedPathname`(`proxy.ts:stripLang` client 미러) — raw `usePathname()`(=`/ko…`) vs bare 경로 비교 다증상 버그(`BottomNav` 홈탭 active·홈검색 오버레이 dead / `FloatingFeedbackButton` 숨김) 동시 수정. MobileSearchOverlay 는 fix 전 dead(aria-hidden 계측 e2e 실측 — isVisible false-positive 함정). **안전망 선작성 전략**: `e2e/mobile-search-overlay.spec.ts`·`e2e/fridge-chip-interactions.spec.ts`(Step 0 — long-press 삭제+undo→dbTimer 취소·DELETE_UNDO 경과→DB delete·그룹→미니시트→액션 3 불변식이 Step 3 hook 추출의 가드, 6/6 green). 검증: lint 0 errors·build·unit 85·e2e 0 fail. **Vercel Preview 배포 검증 완료**(fridgeShelfDistribution·RecommendationPill·i18n fix BottomNav aria-current·MobileSearchOverlay 개폐 라이브 확인). 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약. ※ 분해 중 보였던 cart-note·auto-merge flaky 는 별도 후속(2026-05-17)에서 근본(write→read race) 제거 → suite 0-flaky (위 "flaky 방지 철칙" 참조) |
 
 **추출 규약** (TagsField 가 레퍼런스):
 1. 상태·핸들러는 부모가 소유, 자식은 값+콜백만 받는 **순수 표현 컴포넌트**
