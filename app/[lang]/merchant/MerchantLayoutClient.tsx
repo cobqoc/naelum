@@ -9,6 +9,7 @@ interface RestaurantSnapshot {
   name: string;
   is_open: boolean;
   is_active: boolean;
+  place_type: string;
 }
 
 interface Props {
@@ -27,6 +28,10 @@ export default function MerchantLayoutClient({ lang, restaurant, userEmail, chil
     { key: 'restaurant', label: t.merchant.navRestaurant, icon: '🏪', href: `/${lang}/merchant/restaurant` },
     { key: 'menu', label: t.merchant.navMenu, icon: '📋', href: `/${lang}/merchant/menu` },
     { key: 'orders', label: t.merchant.navOrders, icon: '🛵', href: `/${lang}/merchant/orders` },
+    // 위치 설정 — 푸드트럭만 노출 (식당은 고정 주소라 불필요)
+    ...(restaurant?.place_type === 'food_truck'
+      ? [{ key: 'location', label: t.merchant.navLocation, icon: '📍', href: `/${lang}/merchant/location` }]
+      : []),
   ];
 
   const onOnboarding = pathname?.includes('/merchant/onboarding');

@@ -105,6 +105,9 @@ const nextConfig: NextConfig = {
         'https://*.sentry.io https://*.ingest.sentry.io',
         // Tesseract.js: WASM 코어(jsdelivr) + 한국어 언어팩(tessdata)
         'https://cdn.jsdelivr.net https://tessdata.projectnaptha.com',
+        // 자체 지도(map-core/MapLibre): V-World 타일·장소검색, CartoDB/OSM 폴백 타일,
+        // OSRM 도로 경로(라이더 추적 단계). maplibre는 raster 타일을 fetch로 로드 → connect-src 필요
+        'https://api.vworld.kr https://*.basemaps.cartocdn.com https://tile.openstreetmap.org https://router.project-osrm.org',
       ].filter(Boolean).join(' '),
       "font-src 'self' data:",
       "frame-src 'none'",     // iframe 삽입 차단

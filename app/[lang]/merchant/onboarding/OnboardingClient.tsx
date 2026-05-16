@@ -1,10 +1,23 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
+
+const PlaceLocationPicker = dynamic(
+  () => import('@/components/Merchant/PlaceLocationPicker'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center text-text-muted text-sm">
+        …
+      </div>
+    ),
+  },
+);
 
 export default function OnboardingClient({ lang }: { lang: string }) {
   const router = useRouter();
@@ -20,6 +33,8 @@ export default function OnboardingClient({ lang }: { lang: string }) {
     delivery_fee: 3000,
     min_order: 12000,
     avg_cook_time: 25,
+    lat: null as number | null,
+    lng: null as number | null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +60,8 @@ export default function OnboardingClient({ lang }: { lang: string }) {
         cuisine_types: cuisineTypes,
         phone: form.phone || null,
         address: form.address || null,
+        lat: form.lat,
+        lng: form.lng,
         delivery_fee: form.delivery_fee,
         min_order_price: form.min_order,
         avg_cook_time_min: form.avg_cook_time,
@@ -126,6 +143,17 @@ export default function OnboardingClient({ lang }: { lang: string }) {
             data-testid="form-address"
           />
         </label>
+
+        <div className="block">
+          <span className="text-xs text-text-muted mb-1 block">{t.merchant.locationPickerLabel}</span>
+          <div className="w-full h-64" data-testid="form-location">
+            <PlaceLocationPicker
+              value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+              onChange={(p) => setForm({ ...form, lat: p.lat, lng: p.lng })}
+              searchPlaceholder={t.merchant.locationSearchPlaceholder}
+            />
+          </div>
+        </div>
 
         <div className="grid grid-cols-3 gap-3">
           <label className="block">
