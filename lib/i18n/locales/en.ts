@@ -1349,6 +1349,8 @@ export const en = {
     errorMinLength: 'Please enter at least 10 characters.',
     errorSubmit: 'Failed to submit.',
     errorNetwork: 'Network error occurred.',
+    feedbackButton: 'Feedback',
+    feedbackAria: 'Send feedback',
   },
   meta: {
     aboutTitle: 'About Naelum — Korean recipes you can follow in your language',

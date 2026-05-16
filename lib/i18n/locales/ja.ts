@@ -1350,6 +1350,8 @@ export const ja = {
     errorMinLength: '10文字以上入力してください。',
     errorSubmit: '送信に失敗しました。',
     errorNetwork: 'ネットワークエラーが発生しました。',
+    feedbackButton: 'フィードバック',
+    feedbackAria: 'フィードバックを送る',
   },
   meta: {
     aboutTitle: '낼름について — あなたの言語で楽しむ韓国料理レシピ',

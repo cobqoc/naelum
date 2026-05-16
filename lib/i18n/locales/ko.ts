@@ -1350,6 +1350,8 @@ export const ko = {
     errorMinLength: '내용을 10자 이상 입력해주세요.',
     errorSubmit: '문의 접수에 실패했습니다.',
     errorNetwork: '네트워크 오류가 발생했습니다.',
+    feedbackButton: '피드백',
+    feedbackAria: '의견 보내기',
   },
   // 페이지별 SEO/탭 metadata. 정적 페이지 generateMetadata에서 사용. 50~60자 title, 120~160자 description.
   meta: {

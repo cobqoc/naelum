@@ -1350,6 +1350,8 @@ export const zh = {
     errorMinLength: '请输入至少10个字符。',
     errorSubmit: '提交失败。',
     errorNetwork: '发生网络错误。',
+    feedbackButton: '反馈',
+    feedbackAria: '发送反馈',
   },
   meta: {
     aboutTitle: '关于낼름 — 用您的语言学韩国菜',

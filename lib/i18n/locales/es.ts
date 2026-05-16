@@ -1350,6 +1350,8 @@ export const es = {
     errorMinLength: 'Por favor ingrese al menos 10 caracteres.',
     errorSubmit: 'Error al enviar.',
     errorNetwork: 'Error de red.',
+    feedbackButton: 'Comentarios',
+    feedbackAria: 'Enviar comentarios',
   },
   meta: {
     aboutTitle: 'Acerca de Naelum — recetas coreanas en tu idioma',
