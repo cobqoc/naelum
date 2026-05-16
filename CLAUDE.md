@@ -1094,6 +1094,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-16 기준)
 
 ### 기능 구현 현황
+- **코드 건전성 정비 (회귀 안전망·lint·god-file 분해)** — 완료 (2026-05-16, `bfe582b`)
+  - 영상 「2차 소프트웨어 위기」 처방 적용. 전부 lint 0 errors / unit 78 / build / e2e **338 passed·2 skipped·0 failed·0 flaky** 검증
+  - **테스트·CI 인프라**: vitest 도입 + 순수함수 단위테스트 49개(levenshtein·unitConversion·badWordsFilter·password·sanitize). i18n 8-locale shape 런타임 테스트(`as TranslationKeys` 캐스트가 삼키는 구조 drift 차단). `.github/workflows/ci.yml`(quality=무-secret 항상, e2e=secret-gated graceful skip). `playwright.config` testIgnore로 `e2e/_*.spec.ts`(시각검수 스크래치) 정식 스위트 분리, `npm run test:visual` 옵트인
+  - **lint 위생 62→10 (0 errors)**: `eslint.config`에 `^_` 관례 honor + `scripts/**` 사유명시 스코핑. 안정 제품코드 죽은 import·directive·var 정리(behavior 0). 잔여 10 = 사용자 배달코드(이미 커밋) + react-hooks 의식적 신호
+  - **cart e2e stale 테스트 root-cause**: "11 failed=샌드박스 flakiness" 오진 정정 — 실제는 2026-05-16 cart 개편 vs 옛 셀렉터. `ShoppingCartDropdown`에 `cart-list`/`cart-quick-add` testid 추가, 의도보존 재스코프. ([[project-cart-e2e-stale-not-flaky]])
+  - **god-file 분해 (Strangler Fig)**: `recipes/new/page.tsx`에서 `_components/`로 `TagsField`·`NutritionFields`·`StepsSection` 추출(순수 표현, 상태·로직은 page 소유, JSX byte-identical). 잔여: `IngredientsSection`, `HomeClient.tsx`(1199줄 미착수) — `docs/ARCHITECTURE.md` 분해계획 참조
+  - **IngredientForm 죽은 uncontrolled location 모드 제거**: 구 pill UI가 모달 헤더로 이관된 잔재(유일 호출자 AddIngredientModal은 controlled만 사용). 냉장/냉동/상온 기능 동작 무변화
+  - **i18n orphan 키 제거**: `quickAddTitle` 8 locale 삭제(2026-05-16 cart 개편으로 헤딩 제거됨). locale-shape 테스트가 균일성 자동 검증
 - **장보기(cart) UX 개선 + 공유 cart + 가격 인프라** — 완료 (2026-05-16)
   - cart 모달 PC width `26rem → 30rem`, recipe chip `max-w 10rem → 15rem` (잘림 해소)
   - 레시피 chip 클릭 → 레시피 페이지 navigate + `sessionStorage` `naelum_cart_restore` 플래그 → 뒤로가기 시 Header·BottomNav 양쪽에서 cart 자동 재오픈
