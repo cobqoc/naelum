@@ -1135,6 +1135,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-17 기준)
 
 ### 기능 구현 현황
+- **선존 데이터유실 버그 적발·수정 — `isDemoRecord` UUID 오판 (수정·삭제 침묵 유실)** — 완료 (2026-05-17, develop 푸시)
+  - **근본 원인**: `app/[lang]/_home/helpers.ts:isDemoRecord` 가 데모 판정을 `id.startsWith('d')` 로 → `gen_random_uuid()` UUID 중 첫 hex 글자가 `d`인 **약 1/16(~6%) 실제 `user_ingredients` 행을 데모로 오판**. `updateIngredient`(HomeClient:345 `isDemoRecord({ id })`) · 삭제(`useFridgeInteractions:101`)가 Supabase PATCH/DELETE 없이 로컬 `setItems`만 하고 return → **DB 침묵 유실**(모달은 정상 닫혀 사용자는 성공 착각). 인증 유저 전원의 냉장고 재료 ~1/16이 수정·삭제 시 미반영. 선존 버그(데모 id 스킴 `d1`..`d21` 가정의 부작용)
+  - **발견 경로**: naelum.app 스모크 → 풀 검증(lint/build/vitest/e2e) → `e2e/logged-in-home.spec.ts:310` ~6% flaky 추적 → 실패 trace **네트워크 PATCH 0건**(느린 write 아닌 미발생) 확정 → 5개 호출처 정독으로 근본 원인 격리. flaky 빈도(≈6%)가 1/16과 정확히 일치
+  - **수정**: 판정식을 `/^d\d+$/`(데모 id = `d`+숫자 전체일치) + `demo*` 로 좁혀 UUID와 분리. 진짜 데모 id(`d1`~`d21`)·`isDemoItem` 플래그 판정 그대로. fix(동작 변경)이라 e2e 결정적-대기 개선(test refactor)과 **별도 커밋**
+  - **회귀 가드**: `lib/home/__tests__/isDemoRecord.test.ts` 신규 vitest — UUID-`d` 오판을 결정적으로 차단(e2e ~6% 확률 의존 제거). `lib/**/*.test.ts` 수집 규칙상 `lib/home/__tests__/` 위치 + `@/app/...` alias import
+  - **부차 수정**: `e2e/logged-in-home.spec.ts:310` 모달/입력 고정 `waitForTimeout` → 가시성 결정적 대기(`toBeVisible`/`toHaveValue('')`). 행위보존 test refactor (2차 UI-렌더 race 제거)
+  - 검증: lint **0 errors** · build · vitest **12 files 117 passed**(신규 가드 포함) · 고친 e2e 격리 **50/50**(retries=0·fresh build) · 풀 e2e fresh build(:3000 kill) **373 passed**. 잔여 flaky 1 = `ingredient-auto-merge:202`(CLAUDE.md 기재 선존 병렬부하·무관·회귀 아님)
+  - 메모리: `project_is_demo_record_uuid_bug` 신설. 교훈: **id-prefix 휴리스틱으로 데모/실데이터 분기 금지**(UUID 충돌) — 명시 플래그(`isDemoItem`) 또는 충돌 불가 스킴만. silent-write 패턴은 [[project-recipe-children-rls-fix]] 와 동류(DB 쓰기 미발생·미표면화)
 - **god-file 분해 Phase 2 전체 완료 + 선존 RLS 데이터유실 버그 2건 적발·수정 + Storage 격리 + 유지 규칙 명문화** — 완료 (2026-05-17, develop 푸시)
   - **god-file 분해 6개** (영상 「2차 소프트웨어 위기」 처방, 행위보존·JSX byte-identical·상태/race/async/hook 부모 불변·안전망 선작성): `recipes/[id]/edit` 1365→864(`973bf16`) · `ShoppingCartDropdown` 1087→549(`5282cc4`) · `[username]/page` 928→426(`18c9a59`) · `IngredientForm` 899→480(`8126d33`) · `RecipeCookMode` 753→494(`df6ae43`) · `login/page` 877→601(`cee8ea1`). 순수함수 4개 `lib/`+vitest(groupItems·timeAgo·sanitizeOutgoingPayload·formatTime). **남은 god-file 분해 대상 0** (FridgeSVG·i18n locale·생성물 제외). 상세 표: `docs/ARCHITECTURE.md` "Phase 2" 절
   - **선존 버그①** recipe_ingredients/steps/tags RLS write 정책 부재(`20260413` 이래 잠복, dev+prod) → 유저 레시피 생성·수정 시 재료·단계·태그 조용히 유실. 분해 안전망 `e2e/recipe-edit.spec.ts` 가 적발. 수정: `supabase/migrations/20260517_recipe_children_owner_write_rls.sql`(owner-scoped INSERT/UPDATE/DELETE, idempotent) **dev+prod 적용·검증 완료** + `POST·PUT /api/recipes` `.error`→500 보강 (`4bfabe4`)
