@@ -1094,6 +1094,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-16 기준)
 
 ### 기능 구현 현황
+- **god-file(HomeClient) 분해 계속 + i18n 근본 버그 수정** — 진행 (2026-05-16)
+  - **표현 컴포넌트 4개 `_home/` 추출**: `RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`(+기존 `OnboardingBanner`). 전부 순수 표현 — 상태·가드·track·핸들러는 HomeClient 소유, 자식은 값+콜백만, JSX byte-identical. OnboardingBanner 규약 동일
+  - **순수 알고리즘 1개 분리**: `lib/home/fridgeShelfDistribution.ts` — 선반 그룹분배 useMemo 본문(알고리즘 byte-identical). 비순수 그래프 의존 `urgencyScore`(helpers→quickAddList/emoji)는 **주입**해 lib 순수 유지 → vitest node 단독 테스트(`lib/home/__tests__/`, 7케이스). HomeClient `~1197→1085줄`(−112)
+  - **분해 중 발견·수정한 i18n 시스템 버그**: `lib/i18n/useLocalizedPathname.ts` 신설(`proxy.ts:stripLang` client 미러). raw `usePathname()`(i18n redirect 후 항상 `/{lang}…`)을 bare 경로(`/`,`/login`…)와 직접 비교하던 다증상 버그. `BottomNav.tsx`(홈탭 active 안 됨 + 홈 검색 시 HomeClient 오버레이 대신 BottomNav 범용 다이얼로그 = MobileSearchOverlay dead) + `FloatingFeedbackButton.tsx`(login/admin/home/cook/auth/signup 숨김 전부 깨짐) 동시 수정. pathname 소스만 locale-aware 훅으로 교체(비교 로직 0줄 변경, 변수명 유지 = 최소 diff). **behavior 수정이라 refactor와 커밋 분리**
+  - **aria-hidden 계측 교훈**: MobileSearchOverlay 도달성 확인 시 `isVisible()`가 opacity-0+DOM상주로 false-positive. `aria-hidden={!open}` 속성 계측 e2e로 dead 여부 실측 확정 — "한계/도달가능" 섣부른 결론 금지, 올바른 계측 도구로 재검증이 정답
+  - **안전망 선작성 전략**(분해 전 통과 확인 후 추출, OnboardingBanner `1108745` 전략): `e2e/mobile-search-overlay.spec.ts`(i18n fix 검증 = 오버레이 도달·콘텐츠·닫기), `e2e/fridge-chip-interactions.spec.ts`(향후 `useFridgeInteractions` hook 추출용 Step 0 — long-press 삭제+undo→dbTimer 취소·DELETE_UNDO_WINDOW 경과→DB delete·그룹→미니시트→액션 라우팅 3 불변식)
+  - 검증: lint 0 errors·build·unit **85**(78→85)·e2e **351 pass·2 skip·0 fail**(잔여 1 flaky=`cart-note.spec.ts:117`, 본 작업 무관 기존 간헐 timing flake — 별도 안정화 대상). 전 단계 fresh build(:3000 kill) 결정적 회귀로 검증
+  - 분해계획·다음 단계(Step 2 `<FridgeShelves>` 표현추출 → Step 3 `useFridgeInteractions` stateful hook, Step 0 안전망이 가드): `docs/ARCHITECTURE.md` god-file 분해 테이블 참조
 - **코드 건전성 정비 (회귀 안전망·lint·god-file 분해)** — 완료 (2026-05-16, `bfe582b`)
   - 영상 「2차 소프트웨어 위기」 처방 적용. 전부 lint 0 errors / unit 78 / build / e2e **338 passed·2 skipped·0 failed·0 flaky** 검증
   - **테스트·CI 인프라**: vitest 도입 + 순수함수 단위테스트 49개(levenshtein·unitConversion·badWordsFilter·password·sanitize). i18n 8-locale shape 런타임 테스트(`as TranslationKeys` 캐스트가 삼키는 구조 drift 차단). `.github/workflows/ci.yml`(quality=무-secret 항상, e2e=secret-gated graceful skip). `playwright.config` testIgnore로 `e2e/_*.spec.ts`(시각검수 스크래치) 정식 스위트 분리, `npm run test:visual` 옵트인
