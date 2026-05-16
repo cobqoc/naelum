@@ -1127,14 +1127,22 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-15  
+**최종 수정일**: 2026-05-17  
 **작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-05-16 기준)
+## 📌 데이터 현황 (2026-05-17 기준)
 
 ### 기능 구현 현황
+- **god-file 분해 Phase 2 전체 완료 + 선존 RLS 데이터유실 버그 2건 적발·수정 + Storage 격리 + 유지 규칙 명문화** — 완료 (2026-05-17, develop 푸시)
+  - **god-file 분해 6개** (영상 「2차 소프트웨어 위기」 처방, 행위보존·JSX byte-identical·상태/race/async/hook 부모 불변·안전망 선작성): `recipes/[id]/edit` 1365→864(`973bf16`) · `ShoppingCartDropdown` 1087→549(`5282cc4`) · `[username]/page` 928→426(`18c9a59`) · `IngredientForm` 899→480(`8126d33`) · `RecipeCookMode` 753→494(`df6ae43`) · `login/page` 877→601(`cee8ea1`). 순수함수 4개 `lib/`+vitest(groupItems·timeAgo·sanitizeOutgoingPayload·formatTime). **남은 god-file 분해 대상 0** (FridgeSVG·i18n locale·생성물 제외). 상세 표: `docs/ARCHITECTURE.md` "Phase 2" 절
+  - **선존 버그①** recipe_ingredients/steps/tags RLS write 정책 부재(`20260413` 이래 잠복, dev+prod) → 유저 레시피 생성·수정 시 재료·단계·태그 조용히 유실. 분해 안전망 `e2e/recipe-edit.spec.ts` 가 적발. 수정: `supabase/migrations/20260517_recipe_children_owner_write_rls.sql`(owner-scoped INSERT/UPDATE/DELETE, idempotent) **dev+prod 적용·검증 완료** + `POST·PUT /api/recipes` `.error`→500 보강 (`4bfabe4`)
+  - **선존 버그②** `notifications` RLS INSERT 정책 부재 → 댓글·평점·낼름 알림 + `send-expiry` cron 조용히 무작동. 행위자≠수신자라 owner 정책 부적합 → **service-role 코드 픽스**(`lib/notifications/create.ts` 내부 admin client+`.error` 체크, `send-expiry` 라우트 service-role; DB 마이그레이션 불필요) (`232f0ab`). RLS 전수 감사로 그 외 테이블 무해 확인
+  - **Storage API 격리** `lib/storage`(uploadToBucket·getPublicUrl) — 직접 `supabase.storage.from()` 6곳 전부 경유, AWS 이전 대비 (`882f6be`)
+  - **유지 규칙 명문화** CLAUDE.md "🧱 코드 유지 체계" 블록 신설(검증·금지 규칙 직후, OVERRIDE 우선) — 분해·안전망·RLS·Storage·커밋 규율을 강제 규칙으로 (`5ac4b5e`)
+  - 검증: lint **0 errors** · vitest **112 passed** · build · 풀 e2e fresh build **0 failed** (잔여 flaky=ingredient-auto-merge 선존 병렬부하, 고립 재실행 10/10 클린으로 회귀 아님 입증). 신규 Step-0 안전망 spec: recipe-edit·cart-decomposition·profile-decomposition·login-decomposition
+  - 메모리: `project_god_file_phase2`·`project_recipe_children_rls_fix` 갱신
 - **FloatingFeedbackButton 연결 + cart 메모 race 근본 fix + e2e suite flakiness 제거** — 완료 (2026-05-17)
   - **FloatingFeedbackButton 연결**: 레포 어디에도 마운트 안 되던 orphan("Day 3 런칭 준비물" 초기 유저 피드백 창구)을 `app/[lang]/layout.tsx` providers 안 마운트 → 동작 시작. 하드코딩 한글 → `t.contact.feedbackAria/feedbackButton`(8 locale). 자체 hide 로직(`useLocalizedPathname`): `/auth·/signup·/login·/admin·/(홈)·cook·/delivery·/merchant·/rider`. **회귀 주의**: 전역 마운트 시 `fixed z-40` 버튼이 `/delivery`(앱 chrome 격리 플로우, CLAUDE.md)에서 결제 버튼 클릭 가로채 e2e 60s timeout → hide 목록에 배달 3 prefix 추가로 해결. 회귀 가드 `e2e/floating-feedback-button.spec.ts`
   - **cart 메모 optimistic clobber 근본 fix** (`ShoppingCartDropdown`): cart-open 시 발행된 백그라운드 force-refresh(`loadShoppingList(true)`)가 사용자 메모 편집 *후* pre-PATCH 서버 데이터로 늦게 resolve → `notifySubscribers`/`fetchItems` 의 `setItems` 가 optimistic 메모를 stale 값으로 덮어씀(실패 DOM 스냅샷서 옛 메모 잔존 확인). **냉장고 `pendingDeleteIdsRef` 와 동일 검증 패턴**: `pendingNoteEditIdsRef` + `applyServerItems`(서버/캐시 적용 시 PATCH 진행중 id 의 로컬 메모 보존, 정착 후 해제). cart-note `cart-note.spec.ts:117` 등 장기 flaky 의 진짜 원인 — patchPromise-first/timeout 땜질로 안 잡히던 게 소거됨
