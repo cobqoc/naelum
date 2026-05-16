@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import FridgeSVG from './_home/FridgeSVG';
+import OnboardingBanner from './_home/OnboardingBanner';
 import {
   DELETE_UNDO_WINDOW_MS,
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
@@ -615,38 +616,20 @@ export default function HomeClient({
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      {/* 온보딩 미완료 배너 — 비 sticky (자연 flow). X 버튼 또는 온보딩 완료 시 영구 dismiss. */}
+      {/* 온보딩 미완료 배너 — 비 sticky(자연 flow). X 또는 온보딩 완료 시 영구 dismiss.
+          _home/OnboardingBanner.tsx 로 추출(Strangler Fig) — 노출 가드·상태·
+          localStorage dismiss 로직은 HomeClient 소유, 컴포넌트는 표현만. */}
       {showOnboardingBanner && (
-        <div className="w-full border-b border-accent-warm/15 bg-gradient-to-r from-accent-warm/15 via-accent-warm/8 to-accent-warm/15 flex-shrink-0">
-          <div className="max-w-5xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="flex-shrink-0 text-sm leading-none" aria-hidden="true">✨</span>
-              <p className="text-[12px] md:text-sm text-text-primary font-medium truncate">
-                {t.home.onboardingBannerTitle}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => setShowOnboardingModal(true)}
-                className="px-2.5 py-0.5 rounded-full bg-accent-warm hover:bg-accent-hover text-background-primary text-[11px] font-bold active:scale-95 transition-all whitespace-nowrap"
-              >
-                {t.home.onboardingBannerCta}
-              </button>
-              <button
-                onClick={() => {
-                  if (user) localStorage.setItem(LS_KEY_ONBOARDING_BANNER(user.id), '1');
-                  setShowOnboardingBanner(false);
-                }}
-                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
-                aria-label={t.common.close}
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <OnboardingBanner
+          title={t.home.onboardingBannerTitle}
+          ctaLabel={t.home.onboardingBannerCta}
+          closeLabel={t.common.close}
+          onCta={() => setShowOnboardingModal(true)}
+          onDismiss={() => {
+            if (user) localStorage.setItem(LS_KEY_ONBOARDING_BANNER(user.id), '1');
+            setShowOnboardingBanner(false);
+          }}
+        />
       )}
 
       {/* 온보딩 위자드 */}

@@ -441,4 +441,39 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await page.waitForLoadState('networkidle');
     await expect(page.getByText('나의 프로필 완성하기')).toHaveCount(0);
   });
+
+  // ── 냉장고 칩 상호작용 회귀 ──
+  // useFridgeInteractions 추출 전 안전망. 칩 클릭(groupCount===1) → IngredientActionSheet
+  // (handleChipClickWithLongPress → setActionItem) → "수정하기" → IngredientDetailModal
+  // (handleEditFromSheet → setDetailItem). 펜던트→시트 'all'/배너→임박은 기존 테스트가 커버.
+  test('냉장고 칩 클릭 → 액션 시트(만들기/수정/삭제) + 수정→상세 모달', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    const name = 'e2e칩양파테스트';
+    await admin().from('user_ingredients').insert({
+      user_id: testUser.userId, ingredient_name: name, category: 'veggie',
+      expiry_date: isoDateOffsetDays(10), storage_location: '냉장',
+    });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // 시트 미오픈 초기엔 이 이름의 버튼 = 냉장고 칩 (단일 재료라 groupCount===1)
+    const chip = page.getByRole('button', { name: new RegExp(name) });
+    await expect(chip.first()).toBeVisible({ timeout: 10000 });
+    await chip.first().click({ force: true });
+
+    // 액션 시트: dialog + h3=재료명 + 3 액션
+    const sheet = page.locator('[role="dialog"]');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole('heading', { name })).toBeVisible();
+    await expect(sheet.getByText('이 재료로 만들기')).toBeVisible();
+    await expect(sheet.getByText('수정하기')).toBeVisible();
+    await expect(sheet.getByText('삭제하기')).toBeVisible();
+
+    // "수정하기" → 액션 시트 닫히고 IngredientDetailModal 오픈
+    await sheet.getByText('수정하기').click();
+    await expect(page.getByText('이 재료로 만들기')).toHaveCount(0); // 액션 시트 닫힘
+    // IngredientDetailModal — role=dialog 아님(fixed div). h2 = "{emoji} {재료명} 수정"
+    await expect(page.getByRole('heading', { name: new RegExp(`${name}.*수정`) }))
+      .toBeVisible({ timeout: 5000 });
+  });
 });
