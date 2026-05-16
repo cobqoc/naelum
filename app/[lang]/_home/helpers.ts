@@ -84,8 +84,15 @@ export function urgencyScore(item: FridgeItem): number {
   return Math.max(0, 99 - since);
 }
 
-/** DEMO 판정 — `isDemoItem` flag 우선, 기존 localStorage 호환을 위해 id prefix도 fallback. */
+/**
+ * DEMO 판정 — `isDemoItem` flag 우선, 기존 localStorage 호환을 위해 id 스킴도 fallback.
+ *
+ * ⚠️ 데모 id는 `d`+숫자(`d1`..`d21`, demoItems.ts) 또는 legacy `demo*`.
+ * 단순 `id.startsWith('d')` 는 `gen_random_uuid()` UUID 중 약 1/16(첫 hex 글자 'd')을
+ * 실제 DB 행인데도 데모로 오판 → updateIngredient/삭제가 PATCH 없이 로컬만 갱신,
+ * DB 침묵 유실. 따라서 `d`+숫자 전체 일치(`/^d\d+$/`)로만 판정해 UUID와 분리한다.
+ */
 export function isDemoRecord(item: { id: string; isDemoItem?: boolean }): boolean {
   if (item.isDemoItem) return true;
-  return item.id.startsWith('d') || item.id.startsWith('demo');
+  return /^d\d+$/.test(item.id) || item.id.startsWith('demo');
 }

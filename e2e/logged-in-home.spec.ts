@@ -329,18 +329,24 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await expect(onionChip).toBeVisible();
     await onionChip.click({ force: true }); // chip의 group hover pt 영향 회피
 
-    // 액션시트 "수정하기" → DetailModal 열림
+    // 액션시트 "수정하기" → DetailModal 열림.
+    // 고정 sleep 대신 다음 액션 대상("직접 입력" 버튼) 가시성으로 모달 오픈을 결정적 대기.
     await page.locator('button:has-text("수정하기")').first().click();
-    await page.waitForTimeout(500);
+    const directInputBtn = page.locator('button:has-text("직접 입력")').first();
+    await expect(directInputBtn).toBeVisible();
 
-    // 만료일 input 비우기 — 유통기한 섹션은 기본 프리셋 모드이므로 "직접 입력" 클릭 후 date input 노출
-    await page.locator('button:has-text("직접 입력")').first().click();
-    await page.waitForTimeout(300);
+    // 만료일 input 비우기 — "직접 입력" 클릭 후 date input 렌더를 가시성으로 결정적 대기.
+    await directInputBtn.click();
     const expiryInput = page.locator('input[type="date"]').nth(1); // [0]=purchase, [1]=expiry
+    await expect(expiryInput).toBeVisible();
     await expiryInput.fill('');
+    // clear 가 실제 반영된 뒤에만 저장 — 미반영 상태로 저장되던 게 잔존 flake 원인.
+    await expect(expiryInput).toHaveValue('');
 
     // 저장 ("수정 완료")
-    await page.locator('button[type="submit"]:has-text("수정 완료")').first().click();
+    const submitBtn = page.locator('button[type="submit"]:has-text("수정 완료")').first();
+    await expect(submitBtn).toBeVisible();
+    await submitBtn.click();
 
     // 저장(비동기 write) 정착까지 결정적 대기 — 고정 sleep 은 부하 시 write
     // 미커밋 race(flaky). end-state(1행·expiry_date null)를 poll 로 단언.
