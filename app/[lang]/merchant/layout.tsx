@@ -23,7 +23,7 @@ export default async function MerchantLayout({
   // 본인 소유 식당 조회 (없으면 onboarding으로)
   const { data: restaurant } = await supabase
     .from('delivery_restaurants')
-    .select('id, name, is_open, is_active')
+    .select('id, name, is_open, is_active, place_type')
     .eq('owner_id', user.id)
     .maybeSingle();
 

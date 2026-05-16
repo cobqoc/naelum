@@ -1,8 +1,21 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
+
+const PlaceLocationPicker = dynamic(
+  () => import('@/components/Merchant/PlaceLocationPicker'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center text-text-muted text-sm">
+        …
+      </div>
+    ),
+  },
+);
 
 interface Restaurant {
   id: string;
@@ -11,11 +24,14 @@ interface Restaurant {
   cuisine_types: string[];
   phone: string | null;
   address: string | null;
+  lat: number | string | null;
+  lng: number | string | null;
   delivery_fee: number;
   min_order_price: number;
   avg_cook_time_min: number;
   is_open: boolean;
   is_active: boolean;
+  place_type: string;
 }
 
 export default function RestaurantEditClient({ restaurant }: { restaurant: Restaurant }) {
@@ -29,6 +45,9 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
     delivery_fee: restaurant.delivery_fee,
     min_order: restaurant.min_order_price,
     avg_cook_time: restaurant.avg_cook_time_min,
+    place_type: restaurant.place_type === 'food_truck' ? 'food_truck' : 'restaurant',
+    lat: (restaurant.lat == null ? null : Number(restaurant.lat)) as number | null,
+    lng: (restaurant.lng == null ? null : Number(restaurant.lng)) as number | null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
@@ -52,9 +71,12 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
         phone: form.phone || null,
         address: form.address || null,
         cuisine_types: cuisineTypes,
+        lat: form.lat,
+        lng: form.lng,
         delivery_fee: form.delivery_fee,
         min_order_price: form.min_order,
         avg_cook_time_min: form.avg_cook_time,
+        place_type: form.place_type,
       })
       .eq('id', restaurant.id);
 
@@ -98,6 +120,19 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
         </label>
 
         <label className="block">
+          <span className="text-xs text-text-muted mb-1 block">{t.merchant.placeTypeLabel}</span>
+          <select
+            value={form.place_type}
+            onChange={(e) => setForm({ ...form, place_type: e.target.value })}
+            className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
+            data-testid="edit-place-type"
+          >
+            <option value="restaurant">{t.merchant.placeTypeRestaurant}</option>
+            <option value="food_truck">{t.merchant.placeTypeFoodTruck}</option>
+          </select>
+        </label>
+
+        <label className="block">
           <span className="text-xs text-text-muted mb-1 block">{t.merchant.cuisineLabel}</span>
           <input
             type="text"
@@ -127,6 +162,17 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
               className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
             />
           </label>
+        </div>
+
+        <div className="block">
+          <span className="text-xs text-text-muted mb-1 block">{t.merchant.locationPickerLabel}</span>
+          <div className="w-full h-64" data-testid="edit-location">
+            <PlaceLocationPicker
+              value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+              onChange={(p) => setForm({ ...form, lat: p.lat, lng: p.lng })}
+              searchPlaceholder={t.merchant.locationSearchPlaceholder}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">

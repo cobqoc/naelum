@@ -24,6 +24,7 @@ export default function AdminLayoutClient({ profile, children }: AdminLayoutClie
     { key: 'actions', label: '감사 로그', icon: '🗂️', href: '/admin/actions' },
     // 배달 — 진입은 admin 전용. 다른 nav(Header/BottomNav/홈)에는 노출 X
     { key: 'delivery', label: '배달 (사용자 페이지)', icon: '🛵', href: '/delivery' },
+    { key: 'delivery-map', label: '배달 지도 (사용자 페이지)', icon: '📍', href: '/delivery/map' },
     { key: 'merchant', label: '식당 사장님', icon: '🏪', href: '/merchant' },
     { key: 'rider', label: '라이더', icon: '🛴', href: '/rider' },
     { key: 'dispatch', label: '배차 모니터링', icon: '🗺️', href: '/admin/dispatch' },

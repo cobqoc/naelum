@@ -12,7 +12,7 @@ export default async function MerchantRestaurantPage({ params }: { params: Promi
 
   const { data: restaurant } = await supabase
     .from('delivery_restaurants')
-    .select('id, name, description, cuisine_types, phone, address, delivery_fee, min_order_price, avg_cook_time_min, is_open, is_active')
+    .select('id, name, description, cuisine_types, phone, address, lat, lng, delivery_fee, min_order_price, avg_cook_time_min, is_open, is_active, place_type')
     .eq('owner_id', user.id)
     .maybeSingle();
 
