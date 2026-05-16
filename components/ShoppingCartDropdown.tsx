@@ -715,7 +715,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         {/* Quick-add 행 — 입력창 바로 아래 항상 노출. 빈 상태/항목 있는 상태 공통.
             flex-shrink-0 영역이라 cart 길어져도 스크롤로 밀려나지 않음. */}
         {quickAddItems.length > 0 && (
-          <div className="px-3 py-2 border-b border-white/10 flex-shrink-0">
+          <div data-testid="cart-quick-add" className="px-3 py-2 border-b border-white/10 flex-shrink-0">
             <div className="flex flex-wrap gap-1">
               {quickAddItems.map(item => (
                 <div
@@ -756,8 +756,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           </div>
         )}
 
-        {/* 내용 */}
-        <div className="overflow-y-auto flex-1">
+        {/* 내용 — data-testid: e2e가 quick-add 칩 행과 실제 목록을 구분하기 위한 앵커.
+            (2026-05-16 개편으로 starred 항목이 칩으로도 노출돼 text= 셀렉터가 충돌) */}
+        <div data-testid="cart-list" className="overflow-y-auto flex-1">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />

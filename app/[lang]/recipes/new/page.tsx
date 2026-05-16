@@ -9,6 +9,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
+import TagsField from './_components/TagsField';
+import NutritionFields from './_components/NutritionFields';
+import StepsSection from './_components/StepsSection';
 import {
   CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS, UNITS,
   CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
@@ -282,19 +285,8 @@ export default function NewRecipePage() {
     setTags(tags.filter(t => t !== tag));
   };
 
-  // 영양 정보 검증 함수
-  const validateNutritionInput = (value: string, type: 'int' | 'decimal'): boolean => {
-    if (value === '') return true; // 빈 값 허용 (선택사항)
-
-    const num = parseFloat(value);
-    if (isNaN(num) || num < 0) return false;
-
-    if (type === 'int') {
-      return Number.isInteger(num) && num < 5000; // 칼로리 최대 5000
-    } else {
-      return num < 500; // 영양소 최대 500g
-    }
-  };
+  // (영양 정보 검증 validateNutritionInput → _components/NutritionFields.tsx 로 이동.
+  //  이 블록에서만 쓰이는 순수 함수라 응집상 컴포넌트와 함께 둠)
 
   // 이미지 업로드 함수
   const handleImageUpload = async (index: number, file: File) => {
@@ -1114,124 +1106,24 @@ export default function NewRecipePage() {
           </h2>
           <p className="text-sm text-text-muted">{tf.stepsHint}</p>
 
-          {steps.map((step, index) => (
-            <div key={index} className="p-4 rounded-xl bg-background-secondary space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center font-bold">
-                    {index + 1}
-                  </div>
-                  <span className="text-sm font-medium">{tf.stepNumber}</span>
-                </div>
-                {steps.length > 1 && (
-                  <button
-                    onClick={() => removeStep(index)}
-                    className="text-error text-sm hover:underline"
-                  >
-                    {t.common.delete}
-                  </button>
-                )}
-              </div>
-
-              <textarea
-                value={step.instruction}
-                onChange={(e) => updateStep(index, 'instruction', e.target.value)}
-                className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm min-h-[120px] resize-none"
-                placeholder={tf.stepInstructionPlaceholder}
-              />
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={step.tip}
-                    onChange={(e) => updateStep(index, 'tip', e.target.value)}
-                    className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm text-sm"
-                    placeholder={tf.stepTipPlaceholder}
-                  />
-                </div>
-                <div className="w-28">
-                  <input
-                    type="number"
-                    value={step.timer_minutes || ''}
-                    onChange={(e) => updateStep(index, 'timer_minutes', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm text-sm"
-                    placeholder={tf.stepTimerPlaceholder}
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              {/* 이미지 업로드 */}
-              <div className="space-y-2">
-                <label className="text-xs text-text-muted">{tf.stepImageLabel}</label>
-                {step.image_url ? (
-                  <div className="relative w-full h-48">
-                    <Image
-                      src={step.image_url}
-                      alt={`${tf.stepNumber} ${index + 1}`}
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => handleImageRemove(index)}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-error transition-all"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <label className="block w-full">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          handleImageUpload(index, file);
-                        }
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                      disabled={uploadingImage === index}
-                    />
-                    <div
-                      className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
-                        draggingStepIndex === index
-                          ? 'border-accent-warm bg-accent-warm/10'
-                          : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
-                      }`}
-                      onDragOver={handleStepDrag}
-                      onDragEnter={(e) => handleStepDragIn(e, index)}
-                      onDragLeave={handleStepDragOut}
-                      onDrop={(e) => handleStepDrop(e, index)}
-                    >
-                      {uploadingImage === index ? (
-                        <>
-                          <div className="w-6 h-6 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm text-text-muted">{tf.uploading}</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-8 h-8 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          <span className="text-sm text-text-muted">{tf.stepImageAdd}</span>
-                        </>
-                      )}
-                    </div>
-                  </label>
-                )}
-              </div>
-            </div>
-          ))}
-
-          <button
-            onClick={addStep}
-            className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
-          >
-            {tf.addStep}
-          </button>
+          {/* 조리 단계 — _components/StepsSection.tsx 로 추출 (Strangler Fig down-payment).
+              상태·로직(add/remove/update/이미지/DnD)은 page 가 소유, 컴포넌트는 값+콜백만. */}
+          <StepsSection
+            t={t}
+            tf={tf}
+            steps={steps}
+            uploadingImage={uploadingImage}
+            draggingStepIndex={draggingStepIndex}
+            onAddStep={addStep}
+            onRemoveStep={removeStep}
+            onUpdateStep={updateStep}
+            onImageUpload={handleImageUpload}
+            onImageRemove={handleImageRemove}
+            onStepDrag={handleStepDrag}
+            onStepDragIn={handleStepDragIn}
+            onStepDragOut={handleStepDragOut}
+            onStepDrop={handleStepDrop}
+          />
 
           {/* 완성된 요리 이미지 */}
           <div className="space-y-3 pt-4">
@@ -1350,184 +1242,37 @@ export default function NewRecipePage() {
             </div>
           </div>
 
-          {/* 영양 정보 */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-text-secondary">
-                {tf.nutritionLabel} <span className="text-text-muted text-xs">{tf.nutritionHint}</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowNutrition(!showNutrition)}
-                className="text-sm text-accent-warm hover:text-accent-hover transition-colors flex items-center gap-2"
-              >
-                {showNutrition ? tf.nutritionHide : tf.nutritionShow}
-                <svg className={`w-4 h-4 transition-transform ${showNutrition ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
+          {/* 영양 정보 — _components/NutritionFields.tsx 로 추출 (Strangler Fig down-payment).
+              상태는 page 가 소유, 컴포넌트는 값+setter 만 받는 순수 표현. */}
+          <NutritionFields
+            t={t}
+            tf={tf}
+            show={showNutrition}
+            onToggleShow={() => setShowNutrition(!showNutrition)}
+            calories={calories}
+            setCalories={setCalories}
+            protein={protein}
+            setProtein={setProtein}
+            carbs={carbs}
+            setCarbs={setCarbs}
+            fat={fat}
+            setFat={setFat}
+            fiber={fiber}
+            setFiber={setFiber}
+            sodium={sodium}
+            setSodium={setSodium}
+          />
 
-            {showNutrition && (
-              <div className="rounded-xl bg-background-secondary p-4 md:p-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* 칼로리 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.calories} <span className="text-text-muted text-xs">(kcal)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={calories}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'int')) {
-                          setCalories(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 350`}
-                    />
-                  </div>
-
-                  {/* 단백질 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.protein} <span className="text-text-muted text-xs">(g)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={protein}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'decimal')) {
-                          setProtein(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="0.1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 25.5`}
-                    />
-                  </div>
-
-                  {/* 탄수화물 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.carbs} <span className="text-text-muted text-xs">(g)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={carbs}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'decimal')) {
-                          setCarbs(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="0.1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 45.0`}
-                    />
-                  </div>
-
-                  {/* 지방 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.fat} <span className="text-text-muted text-xs">(g)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={fat}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'decimal')) {
-                          setFat(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="0.1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 12.5`}
-                    />
-                  </div>
-
-                  {/* 식이섬유 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.fiber} <span className="text-text-muted text-xs">(g)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={fiber}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'decimal')) {
-                          setFiber(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="0.1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 3.5`}
-                    />
-                  </div>
-
-                  {/* 나트륨 */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-secondary">
-                      {t.nutrition.sodium} <span className="text-text-muted text-xs">(mg)</span>
-                    </label>
-                    <input
-                      type="number"
-                      value={sodium}
-                      onChange={(e) => {
-                        if (validateNutritionInput(e.target.value, 'int')) {
-                          setSodium(e.target.value);
-                        }
-                      }}
-                      min="0"
-                      step="1"
-                      className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={`${t.common.example} 800`}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.tagsLabel}</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                className="flex-1 rounded-xl bg-background-secondary px-5 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                placeholder={tf.tagInputPlaceholder}
-              />
-              <button
-                onClick={addTag}
-                disabled={!tagInput.trim() || tags.length >= 10}
-                className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold disabled:opacity-50"
-              >
-                {t.quickAdd.addButton}
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full bg-background-secondary text-sm flex items-center gap-2"
-                  >
-                    #{tag}
-                    <button onClick={() => removeTag(tag)} className="text-text-muted hover:text-error">×</button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <TagsField
+            label={tf.tagsLabel}
+            placeholder={tf.tagInputPlaceholder}
+            addButtonLabel={t.quickAdd.addButton}
+            tagInput={tagInput}
+            onTagInputChange={setTagInput}
+            tags={tags}
+            onAdd={addTag}
+            onRemove={removeTag}
+          />
         </section>
 
         {/* 저작권 동의 */}

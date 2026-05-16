@@ -255,6 +255,10 @@ components/
     [Component].tsx
   Common/                 ← 범용 재사용
 lib/
+  api/
+    types.ts              ← API 응답 계약(contract) 단일 진실원 — 새 route 응답은 여기에 정의
+    auth.ts               ← requireAuth()
+    pagination.ts         ← parsePagination()
   [domain]/               ← 도메인별 비즈니스 로직
     cache.ts              ← 공유 캐시
     [action].ts           ← 서버/클라 공용 함수
@@ -286,6 +290,27 @@ e2e/
 3. **기존 코드는 실제 병목으로 드러날 때만 리팩터**한다.
 
 이게 Strangler Fig 패턴이고, 실패율이 낮은 리팩터 전략이다.
+
+### god-file 분해 계획 (recipes/new · HomeClient) — 검토하에 점진
+
+영상 「2차 소프트웨어 위기」의 "이해 부채" 표본 2개. **Big Rewrite 금지**
+원칙대로, 회귀 안전망을 먼저 두껍게 한 뒤 **결합도 낮은 블록부터** 추출한다.
+
+| 파일 | 줄수 | 상태 | 다음 액션 |
+|---|---|---|---|
+| `app/[lang]/recipes/new/page.tsx` | ~1431 | 🔄 진행 | `TagsField`·`NutritionFields` 추출 완료(`_components/`, 행위보존·strict 타입·e2e 검증, 1565→1431줄). `validateNutritionInput`은 NutritionFields 전용이라 응집 이동. 다음: `StepsSection` → `IngredientsSection` 순. 각 추출 = 순수 props 컴포넌트, 상태는 page 소유 유지 |
+| `app/[lang]/HomeClient.tsx` | ~1199 | ⬜ 설계됨 | 추출 후보(결합도 낮은 순): `OnboardingBanner` → `RecommendationPill` → 냉장고 영역 hook(`useFridgeInteractions`). **착수 전 제** `e2e/logged-in-home.spec.ts` 에 배너/추천 상호작용 회귀 추가 필수 |
+
+**추출 규약** (TagsField 가 레퍼런스):
+1. 상태·핸들러는 부모가 소유, 자식은 값+콜백만 받는 **순수 표현 컴포넌트**
+2. JSX 만 이동 (마크업·className·핸들러 시그니처 동일) → 행위 변경 0
+3. 검증: `npm run build`(strict props 정합) + 해당 e2e 회귀 + 순수 JSX 동일성
+4. `_components/` (App Router private 폴더) 에 배치
+
+> ⚠️ `/recipes/new` 는 루트 `'use client'` + `useSearchParams()` 라
+> `app/loading.tsx` Suspense fallback 뒤 하이드레이션된다. 일부 headless
+> 환경에서 splash hang → UI e2e 는 `test.fixme` 로 CI 게이트에 위임.
+> timeout 으로 가리지 말 것(증상 은폐 금지).
 
 ### 진짜 걱정해야 할 기술 부채 3가지
 
@@ -348,7 +373,9 @@ CLAUDE.md에 "사용자 규모 증가 시 AWS 이전 예정"이라고 쓰여 있
 - ❌ "더 나은 구조"를 위한 Big Rewrite
 - ❌ 실 사용 데이터 없이 ISR/캐싱 전략 설계
 - ❌ 외부 의존성(Supabase) 전면 교체 목적의 리팩터
-- ❌ TypeScript 타입 완벽주의 (`any` 허용 — 실용성 > 엄격성)
+- ❌ TypeScript 타입 완벽주의를 위한 리팩터 — `any`는 **기본 지양**하되 불가피하면
+  `eslint-disable-next-line`로 한 줄 한정 후 허용 (실용성 > 엄격성).
+  CLAUDE.md "개발 규칙"과 **동일 정책** (문구만 통일, 의미 변화 없음).
 
 ---
 

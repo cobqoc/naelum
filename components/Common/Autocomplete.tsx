@@ -41,7 +41,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // 커스터마이징
   renderItem,
   renderNoResults,
-  renderLoading: _renderLoading, // eslint-disable-line @typescript-eslint/no-unused-vars
+  renderLoading: _renderLoading,
 
   // 스타일링
   className = '',

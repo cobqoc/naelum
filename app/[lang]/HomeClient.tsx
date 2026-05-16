@@ -12,7 +12,6 @@ import Link from '@/components/Common/LocalizedLink';
 import dynamicImport from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { useCookieConsent } from '@/lib/cookieConsent/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
@@ -72,7 +71,6 @@ export default function HomeClient({
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
   const { t } = useI18n();
-  const { bannerVisible: cookieBannerVisible } = useCookieConsent();
   const { success: toastSuccess } = useToast();
   // SSR prefetch된 items가 있으면 초기 렌더부터 반영, 없으면 빈 배열 + loading 상태 유지.
   const [items, setItems] = useState<FridgeItem[]>(() => (initialItems as FridgeItem[] | null) ?? []);
@@ -84,7 +82,7 @@ export default function HomeClient({
   // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
   const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
   // 씬 요소(팬던트/웜스팟/콘센트) 배치용 — 데스크탑에선 냉장고 가까이, 모바일은 가장자리
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [_isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -412,7 +410,7 @@ export default function HomeClient({
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
+    // 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
     setExpiringRecipeMatch({ count: null, mode: null });
     const names = expiringItems.map(i => i.ingredient_name).join(',');
     const url = `/api/recommendations?type=ingredients&limit=${RECOMMENDATIONS_LIMIT}&mode=auto&ingredients=${encodeURIComponent(names)}`;

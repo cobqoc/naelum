@@ -26,6 +26,10 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './e2e',
+  // e2e/_*.spec.ts 는 스크린샷·시각검수용 스크래치 스펙(untracked)이라 정식 회귀
+  // 스위트에서 제외한다. 검수용으로 돌리려면 `npm run test:visual`.
+  // PLAYWRIGHT_INCLUDE_VISUAL=1 이면 제외 해제.
+  testIgnore: process.env.PLAYWRIGHT_INCLUDE_VISUAL ? undefined : /e2e\/_/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // 로컬에서도 1번 재시도

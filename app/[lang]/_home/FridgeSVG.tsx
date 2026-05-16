@@ -1,11 +1,8 @@
 'use client';
 
-import { useI18n } from '@/lib/i18n/context';
-
 // v9 — 웜 골드 + 바구니 타입별 디테일 (병 슬롯/메쉬/라벨/아이스 그리드)
 // (variant-warm-baskets.html 기반)
 export default function FridgeSVG() {
-  const { t } = useI18n();
   return (
     <svg viewBox="30 -5 540 670" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
       <defs>

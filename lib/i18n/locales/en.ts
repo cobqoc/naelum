@@ -1232,7 +1232,6 @@ export const en = {
     clearAll: 'Clear all',
     clearAllConfirm: 'Empty the shopping list?',
     clearAllAria: 'Clear all',
-    quickAddTitle: 'Frequently added',
     unitLabel: 'Unit',
     unitNone: 'No unit',
     mergedToast: 'Merged {count} duplicate item(s)',

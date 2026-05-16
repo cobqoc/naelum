@@ -159,9 +159,13 @@ test.describe('장보기 — 카테고리 그룹(마트 동선) + 레시피 chip
 
       await page.goto('/');
       await page.locator('header button[aria-label="장보기"]').click();
-      await page.locator('text=테스트치즈_G').first().waitFor({ state: 'visible', timeout: 5000 });
+      const cartList = page.locator('[data-testid="cart-list"]');
+      await cartList.locator('text=테스트치즈_G').first().waitFor({ state: 'visible', timeout: 5000 });
 
-      const recipeChip = page.locator('span', { hasText: /피자_G/ }).first();
+      // 2026-05-16 개편: line-through 는 recipe chip <span> 이 아니라 그 부모
+      // <Link>(=<a>) 에 적용된다. 테스트 의도(체크된 항목의 recipe chip 이
+      // 취소선 처리됨)는 동일하므로 링크 자체를 타겟.
+      const recipeChip = cartList.getByRole('link', { name: /피자_G/ });
       await expect(recipeChip).toBeVisible();
       await expect(recipeChip).toHaveClass(/line-through/);
     } finally {

@@ -42,9 +42,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     const stored = readStoredConsent();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setConsent(stored);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBannerVisible(!stored); // 없으면 배너 띄움
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInitialized(true);
   }, []);
 

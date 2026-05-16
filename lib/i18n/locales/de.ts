@@ -1233,7 +1233,6 @@ export const de = {
     clearAll: 'Alles löschen',
     clearAllConfirm: 'Einkaufsliste leeren?',
     clearAllAria: 'Alles löschen',
-    quickAddTitle: 'Häufig hinzugefügt',
     unitLabel: 'Einheit',
     unitNone: 'Keine Einheit',
     mergedToast: '{count} Duplikat(e) zusammengeführt',

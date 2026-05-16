@@ -1233,7 +1233,6 @@ export const fr = {
     clearAll: 'Tout effacer',
     clearAllConfirm: 'Vider la liste de courses ?',
     clearAllAria: 'Tout effacer',
-    quickAddTitle: 'Ajouts fréquents',
     unitLabel: 'Unité',
     unitNone: 'Sans unité',
     mergedToast: '{count} doublon(s) fusionné(s)',

@@ -1233,7 +1233,6 @@ export const es = {
     clearAll: 'Vaciar todo',
     clearAllConfirm: '¿Vaciar la lista de compras?',
     clearAllAria: 'Vaciar todo',
-    quickAddTitle: 'Añadidos frecuentes',
     unitLabel: 'Unidad',
     unitNone: 'Sin unidad',
     mergedToast: 'Combinados {count} elemento(s) duplicado(s)',

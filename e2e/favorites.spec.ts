@@ -158,11 +158,13 @@ test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글
 
     await page.goto('/');
     await page.locator('header button[aria-label="장보기"]').click();
-    // cart 비어있어서 quick-add 영역 보임
-    await expect(page.getByText(/자주 추가하는 재료|Frequently added/i)).toBeVisible({ timeout: 5000 });
+    // cart 비어있어서 quick-add 영역 보임 (2026-05-16 개편: '자주 추가하는 재료'
+    // 헤딩 제거 → 안정적인 cart-quick-add testid 로 검증)
+    const quickAddArea = page.locator('[data-testid="cart-quick-add"]');
+    await expect(quickAddArea).toBeVisible({ timeout: 5000 });
 
     // favorites 항목 노출
-    const item = page.locator('button', { hasText: '즐겨찾기재료_F' }).first();
+    const item = quickAddArea.locator('button', { hasText: '즐겨찾기재료_F' }).first();
     await expect(item).toBeVisible();
 
     // ⭐ 토글 버튼 (aria-pressed=false 상태)

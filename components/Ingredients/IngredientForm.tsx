@@ -48,9 +48,9 @@ interface IngredientFormProps {
   onSubmit: (formData: IngredientFormData) => void | Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<IngredientFormData>;
-  /** 외부 controlled 모드 — 값/핸들러 모두 주면 모달 헤더의 pill이 제어. 없으면 내부 state. */
+  /** 보관위치(냉장/냉동/상온) — 모달 헤더 pill(부모)이 제어하는 controlled 값.
+   *  미지정 시 null = 자동분류. (구 uncontrolled 겸용 모드는 UI 없는 죽은 경로라 제거됨) */
   selectedLocation?: LocMode;
-  onLocationChange?: (loc: LocMode) => void;
 }
 
 const UNITS = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
@@ -100,7 +100,6 @@ export default function IngredientForm({
   onCancel,
   initialData,
   selectedLocation: externalLocation,
-  onLocationChange,
 }: IngredientFormProps) {
   const { t } = useI18n();
   const { info: toastInfo, success: toastSuccess } = useToast();
@@ -111,10 +110,10 @@ export default function IngredientForm({
   // 저장 위치 모드:
   //   null = 자동 분류 (디폴트, 재료명 큐레이션 맵 기반)
   //   '냉장'|'냉동'|'상온' = 수동 override (모든 새+기존 재료 일괄 지정)
-  // Controlled(외부 주입) / Uncontrolled(내부 state) 겸용.
-  const isControlled = externalLocation !== undefined;
-  const [internalLocation, setInternalLocation] = useState<LocMode>(null);
-  const selectedLocation: LocMode = isControlled ? externalLocation : internalLocation;
+  // 보관위치는 모달 헤더 pill(부모)이 제어 — 이 컴포넌트는 값만 받는 controlled.
+  // (구 uncontrolled 분기는 그 모드용 UI 가 없어 영영 null 고정인 죽은 코드라 제거.
+  //  externalLocation 미지정도 동일하게 null=자동분류 — 행위 변화 0)
+  const selectedLocation: LocMode = externalLocation ?? null;
   const defaultLocationRef = useRef<LocMode>(null);
   useEffect(() => {
     defaultLocationRef.current = selectedLocation;
@@ -127,7 +126,6 @@ export default function IngredientForm({
       ...item,
       storage_location: selectedLocation ?? (lookupStorageByName(item.name) ?? '상온'),
     })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocation]);
 
   // 빠른 추가 모드 상태

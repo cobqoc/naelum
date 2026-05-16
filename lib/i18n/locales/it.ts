@@ -1233,7 +1233,6 @@ export const it = {
     clearAll: 'Svuota tutto',
     clearAllConfirm: 'Svuotare la lista della spesa?',
     clearAllAria: 'Svuota tutto',
-    quickAddTitle: 'Aggiunti di frequente',
     unitLabel: 'Unità',
     unitNone: 'Nessuna unità',
     mergedToast: 'Uniti {count} duplicati',

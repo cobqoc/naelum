@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import SafeImage from '@/components/Common/SafeImage';
 import dynamic from 'next/dynamic';
-import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 
@@ -119,7 +118,6 @@ export default function ProfilePage(props: PageProps) {
 
   const { t } = useI18n();
   const toast = useToast();
-  const supabase = createClient();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [interests, setInterests] = useState<string[]>([]);

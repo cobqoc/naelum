@@ -2,7 +2,7 @@
 
 import Link from '@/components/Common/LocalizedLink';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import SearchBar from './SearchBar';

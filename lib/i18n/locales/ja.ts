@@ -1233,7 +1233,6 @@ export const ja = {
     clearAll: 'すべて削除',
     clearAllConfirm: '買い物リストをすべて空にしますか？',
     clearAllAria: 'すべて削除',
-    quickAddTitle: 'よく追加する食材',
     unitLabel: '単位',
     unitNone: '単位なし',
     mergedToast: '同じ食材{count}個を合算しました',

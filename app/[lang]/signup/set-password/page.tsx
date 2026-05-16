@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
 import { useI18n } from '@/lib/i18n/context';
-import { createProfile, updateMarketingConsent, beginOnboarding } from '@/lib/auth/profile';
+import { createProfile, beginOnboarding } from '@/lib/auth/profile';
 import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
 export default function SetPasswordPage() {

@@ -1233,7 +1233,6 @@ export const zh = {
     clearAll: '清空全部',
     clearAllConfirm: '清空购物清单吗？',
     clearAllAria: '清空全部',
-    quickAddTitle: '常用食材',
     unitLabel: '单位',
     unitNone: '无单位',
     mergedToast: '已合并相同食材{count}个',
