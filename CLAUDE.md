@@ -110,6 +110,47 @@ feature/* → 기능 단위 브랜치 (선택)
   - 인증 체크, 리다이렉트 등 미들웨어(`proxy.ts`)가 담당하는 것을 클라이언트에서 다시 하지 말 것
   - 중복 `getUser()` 호출은 응답 속도 저하 및 무한 로딩의 원인
 
+## 🧱 코드 유지 체계 — 신규/수정/개선 시 필수 규칙 (영상 「2차 소프트웨어 위기」)
+
+> **이해 부채는 복리다. 아래는 권장이 아니라 필수.** 2026-05-17 Phase 2에서
+> god-file 8개 분해 + 선존 RLS 버그 2건 적발하며 확립한 규율 — 일회성 완료가
+> 아니라 *모든* 신규/수정 코드가 영구히 지켜야 하는 유지 체계다.
+> 상세·근거·분해 이력: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) "Phase 2"·"진짜 기술 부채" 절.
+
+### 1. god-file 예방 (분해 규약)
+- **파일이 god-file 되기 전에 막아라.** 로직 파일(컴포넌트/페이지)이 ~700줄
+  넘어가면 분해 검토. ~900줄 이상은 분해 필수. (i18n locale·생성물·SVG 마크업 제외)
+- 추출은 **순수 표현 컴포넌트만** `_components/`(App Router) 또는
+  `components/<area>/` 로. **상태·ref·race 가드·async 핸들러·subscribe·hook 은
+  부모가 소유 불변**, 자식은 값+콜백만 받음(hook 반환은 `ReturnType<typeof useX>`).
+- **JSX byte-identical** (마크업·className·핸들러 시그니처 동일) → 행위 변경 0.
+- **순수 함수는 `lib/` + vitest** 로 분리(테스트 가능·표현과 분리).
+- 진짜 동일할 때만 공유 재사용 — "쌍둥이 파일 재사용 가능" 가정은 **반드시
+  코드 정독으로 검증**(new↔edit 폼 분기 사례). 공유 심볼은 단일 `types.ts`.
+
+### 2. 위험 변경 전 회귀 안전망 *선작성* (방어막)
+- god-file 분해·race/async 로직 수정 등 위험 변경은 **건드리기 전에** 회귀
+  e2e/unit 작성 → **미수정 코드에서 green(baseline) 확인** → 변경 → **동일
+  통과수 확인**. 기존 e2e가 이미 강커버면 **갭만 보강(중복 spec 금지)**.
+- 검증은 항상 `lint(0 errors) → build → vitest → 해당 e2e`. 최종 판정 회귀는
+  `:3000` 죽이고 fresh build(reuseExistingServer가 stale 재사용 → 오염).
+
+### 3. DB 쓰기 / RLS (선존 데이터유실 버그 2건의 교훈)
+- **user 컨텍스트로 쓰는 테이블은 SELECT 외 write RLS 정책 필수.** 새 테이블
+  생성 시 INSERT/UPDATE/DELETE 정책 빠뜨리면 조용한 데이터유실 재발.
+- **cron·시스템·교차유저(행위자≠소유자) insert 는 service-role 클라이언트.**
+- **Supabase 는 RLS 거부 시 throw 안 하고 `{ error }` 반환** — `try/catch`로
+  못 잡는다. DB 쓰기는 **항상 `.error` 명시 체크**, 라우트는 실패 시 표면화.
+
+### 4. Storage / 이식성
+- 파일 업로드는 **반드시 `lib/storage`(uploadToBucket·getPublicUrl) 경유.**
+  직접 `supabase.storage.from()` 호출 금지(AWS 이전 격리).
+- Supabase realtime·Functions 사용 금지(shim 제거 완료). 표준 Postgres SQL 우선.
+
+### 5. 커밋 위생
+- **fix(동작 변경) vs refactor(행위보존)는 별도 커밋.** 분해는 god-file별/
+  관심사별 분리(bisect·리뷰). 검증 green 후 커밋, push 타이밍은 사용자 결정.
+
 ## 🔍 claude-in-chrome 으로 브라우저 검증하기 (배경 탭 우회)
 
 > **2026-05-15에 잡힌 함정.** claude-in-chrome MCP 자동화 탭은 항상 `document.hidden=true` 상태(사용자가 다른 탭을 보고 있어서 background). 이 때문에:
