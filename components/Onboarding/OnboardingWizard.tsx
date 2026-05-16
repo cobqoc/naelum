@@ -7,6 +7,7 @@ import OnboardingStep2Interests from './OnboardingStep2Interests';
 import OnboardingStep3Dietary from './OnboardingStep3Dietary';
 import OnboardingStep4Complete from './OnboardingStep4Complete';
 import { createClient } from '@/lib/supabase/client';
+import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -94,17 +95,14 @@ export default function OnboardingWizard({
         const fileExt = formData.avatar_file.name.split('.').pop();
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, formData.avatar_file);
+        const { error: uploadError } = await uploadToBucket(
+          supabase, 'avatars', fileName, formData.avatar_file
+        );
 
         if (uploadError) {
           console.error('Avatar upload error:', uploadError);
         } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-          avatarUrl = publicUrl;
+          avatarUrl = getPublicUrl(supabase, 'avatars', fileName);
         }
       }
 

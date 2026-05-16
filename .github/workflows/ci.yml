@@ -1,0 +1,92 @@
+# 낼름 CI — 필수 검증 순서(lint → build → e2e)를 자동 강제한다.
+#
+# CLAUDE.md "코드 수정 후 필수 검증 순서"를 사람 규율이 아니라 파이프라인으로 박는다.
+# (영상 「2차 소프트웨어 위기」의 처방: 처방을 알면서 외면하지 않도록 강제)
+#
+# 잡 구성
+#  - quality : lint + 단위 테스트(순수 함수). secret 불필요 → 항상 실행.
+#  - e2e     : build + playwright. Supabase secret 필요 → 미설정 시 graceful skip
+#              (secret 없는 fork PR / 초기 상태에서 CI가 빨강이 되지 않도록).
+#
+# e2e 활성화에 필요한 GitHub repo secrets (Settings → Secrets and variables → Actions):
+#   NEXT_PUBLIC_SUPABASE_URL        — naelum-dev 프로젝트 URL
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY   — naelum-dev anon key
+#   SUPABASE_SERVICE_ROLE_KEY       — e2e helper(테스트 유저 생성)용 service role
+#   TEST_SIGNIN_ALLOW               — "1" (e2e /api/test/signin 활성화)
+# (Sentry 토큰은 불필요 — 없으면 소스맵 업로드만 skip되고 빌드는 통과)
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint + Unit (no secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: ESLint (경고 0개)
+        run: npm run lint
+      - name: Unit tests (vitest — 순수 로직 회귀 안전망)
+        run: npm run test:unit
+
+  e2e:
+    name: Build + E2E (secrets-gated)
+    runs-on: ubuntu-latest
+    # 전체 스위트(chromium+Mobile Chrome, CI serial+retry)는 prod build 포함 시
+    # 시간이 걸린다. 너무 느리면 test:e2e 에 --project=chromium 으로 좁힐 것.
+    timeout-minutes: 45
+    steps:
+      - name: Preflight — secret 설정 여부 확인
+        id: precheck
+        env:
+          SUPA_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        run: |
+          if [ -z "$SUPA_URL" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=E2E skipped::Supabase secrets 미설정 — E2E를 건너뜁니다. repo secrets 추가 시 자동 활성화됩니다 (ci.yml 상단 주석 참고)."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.precheck.outputs.configured == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.precheck.outputs.configured == 'true'
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+        if: steps.precheck.outputs.configured == 'true'
+      - name: Playwright 브라우저 설치
+        if: steps.precheck.outputs.configured == 'true'
+        run: npx playwright install --with-deps chromium
+      - name: E2E (playwright — webServer가 prod build+start 자동 수행)
+        if: steps.precheck.outputs.configured == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_SIGNIN_ALLOW: ${{ secrets.TEST_SIGNIN_ALLOW }}
+          CI: 'true'
+        run: npm run test:e2e
+      - name: 실패 시 playwright 리포트 업로드
+        if: steps.precheck.outputs.configured == 'true' && failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

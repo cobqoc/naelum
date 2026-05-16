@@ -110,6 +110,47 @@ feature/* → 기능 단위 브랜치 (선택)
   - 인증 체크, 리다이렉트 등 미들웨어(`proxy.ts`)가 담당하는 것을 클라이언트에서 다시 하지 말 것
   - 중복 `getUser()` 호출은 응답 속도 저하 및 무한 로딩의 원인
 
+## 🧱 코드 유지 체계 — 신규/수정/개선 시 필수 규칙 (영상 「2차 소프트웨어 위기」)
+
+> **이해 부채는 복리다. 아래는 권장이 아니라 필수.** 2026-05-17 Phase 2에서
+> god-file 8개 분해 + 선존 RLS 버그 2건 적발하며 확립한 규율 — 일회성 완료가
+> 아니라 *모든* 신규/수정 코드가 영구히 지켜야 하는 유지 체계다.
+> 상세·근거·분해 이력: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) "Phase 2"·"진짜 기술 부채" 절.
+
+### 1. god-file 예방 (분해 규약)
+- **파일이 god-file 되기 전에 막아라.** 로직 파일(컴포넌트/페이지)이 ~700줄
+  넘어가면 분해 검토. ~900줄 이상은 분해 필수. (i18n locale·생성물·SVG 마크업 제외)
+- 추출은 **순수 표현 컴포넌트만** `_components/`(App Router) 또는
+  `components/<area>/` 로. **상태·ref·race 가드·async 핸들러·subscribe·hook 은
+  부모가 소유 불변**, 자식은 값+콜백만 받음(hook 반환은 `ReturnType<typeof useX>`).
+- **JSX byte-identical** (마크업·className·핸들러 시그니처 동일) → 행위 변경 0.
+- **순수 함수는 `lib/` + vitest** 로 분리(테스트 가능·표현과 분리).
+- 진짜 동일할 때만 공유 재사용 — "쌍둥이 파일 재사용 가능" 가정은 **반드시
+  코드 정독으로 검증**(new↔edit 폼 분기 사례). 공유 심볼은 단일 `types.ts`.
+
+### 2. 위험 변경 전 회귀 안전망 *선작성* (방어막)
+- god-file 분해·race/async 로직 수정 등 위험 변경은 **건드리기 전에** 회귀
+  e2e/unit 작성 → **미수정 코드에서 green(baseline) 확인** → 변경 → **동일
+  통과수 확인**. 기존 e2e가 이미 강커버면 **갭만 보강(중복 spec 금지)**.
+- 검증은 항상 `lint(0 errors) → build → vitest → 해당 e2e`. 최종 판정 회귀는
+  `:3000` 죽이고 fresh build(reuseExistingServer가 stale 재사용 → 오염).
+
+### 3. DB 쓰기 / RLS (선존 데이터유실 버그 2건의 교훈)
+- **user 컨텍스트로 쓰는 테이블은 SELECT 외 write RLS 정책 필수.** 새 테이블
+  생성 시 INSERT/UPDATE/DELETE 정책 빠뜨리면 조용한 데이터유실 재발.
+- **cron·시스템·교차유저(행위자≠소유자) insert 는 service-role 클라이언트.**
+- **Supabase 는 RLS 거부 시 throw 안 하고 `{ error }` 반환** — `try/catch`로
+  못 잡는다. DB 쓰기는 **항상 `.error` 명시 체크**, 라우트는 실패 시 표면화.
+
+### 4. Storage / 이식성
+- 파일 업로드는 **반드시 `lib/storage`(uploadToBucket·getPublicUrl) 경유.**
+  직접 `supabase.storage.from()` 호출 금지(AWS 이전 격리).
+- Supabase realtime·Functions 사용 금지(shim 제거 완료). 표준 Postgres SQL 우선.
+
+### 5. 커밋 위생
+- **fix(동작 변경) vs refactor(행위보존)는 별도 커밋.** 분해는 god-file별/
+  관심사별 분리(bisect·리뷰). 검증 green 후 커밋, push 타이밍은 사용자 결정.
+
 ## 🔍 claude-in-chrome 으로 브라우저 검증하기 (배경 탭 우회)
 
 > **2026-05-15에 잡힌 함정.** claude-in-chrome MCP 자동화 탭은 항상 `document.hidden=true` 상태(사용자가 다른 탭을 보고 있어서 background). 이 때문에:
@@ -1086,14 +1127,47 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-15  
+**최종 수정일**: 2026-05-17  
 **작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-05-16 기준)
+## 📌 데이터 현황 (2026-05-17 기준)
 
 ### 기능 구현 현황
+- **god-file 분해 Phase 2 전체 완료 + 선존 RLS 데이터유실 버그 2건 적발·수정 + Storage 격리 + 유지 규칙 명문화** — 완료 (2026-05-17, develop 푸시)
+  - **god-file 분해 6개** (영상 「2차 소프트웨어 위기」 처방, 행위보존·JSX byte-identical·상태/race/async/hook 부모 불변·안전망 선작성): `recipes/[id]/edit` 1365→864(`973bf16`) · `ShoppingCartDropdown` 1087→549(`5282cc4`) · `[username]/page` 928→426(`18c9a59`) · `IngredientForm` 899→480(`8126d33`) · `RecipeCookMode` 753→494(`df6ae43`) · `login/page` 877→601(`cee8ea1`). 순수함수 4개 `lib/`+vitest(groupItems·timeAgo·sanitizeOutgoingPayload·formatTime). **남은 god-file 분해 대상 0** (FridgeSVG·i18n locale·생성물 제외). 상세 표: `docs/ARCHITECTURE.md` "Phase 2" 절
+  - **선존 버그①** recipe_ingredients/steps/tags RLS write 정책 부재(`20260413` 이래 잠복, dev+prod) → 유저 레시피 생성·수정 시 재료·단계·태그 조용히 유실. 분해 안전망 `e2e/recipe-edit.spec.ts` 가 적발. 수정: `supabase/migrations/20260517_recipe_children_owner_write_rls.sql`(owner-scoped INSERT/UPDATE/DELETE, idempotent) **dev+prod 적용·검증 완료** + `POST·PUT /api/recipes` `.error`→500 보강 (`4bfabe4`)
+  - **선존 버그②** `notifications` RLS INSERT 정책 부재 → 댓글·평점·낼름 알림 + `send-expiry` cron 조용히 무작동. 행위자≠수신자라 owner 정책 부적합 → **service-role 코드 픽스**(`lib/notifications/create.ts` 내부 admin client+`.error` 체크, `send-expiry` 라우트 service-role; DB 마이그레이션 불필요) (`232f0ab`). RLS 전수 감사로 그 외 테이블 무해 확인
+  - **Storage API 격리** `lib/storage`(uploadToBucket·getPublicUrl) — 직접 `supabase.storage.from()` 6곳 전부 경유, AWS 이전 대비 (`882f6be`)
+  - **유지 규칙 명문화** CLAUDE.md "🧱 코드 유지 체계" 블록 신설(검증·금지 규칙 직후, OVERRIDE 우선) — 분해·안전망·RLS·Storage·커밋 규율을 강제 규칙으로 (`5ac4b5e`)
+  - 검증: lint **0 errors** · vitest **112 passed** · build · 풀 e2e fresh build **0 failed** (잔여 flaky=ingredient-auto-merge 선존 병렬부하, 고립 재실행 10/10 클린으로 회귀 아님 입증). 신규 Step-0 안전망 spec: recipe-edit·cart-decomposition·profile-decomposition·login-decomposition
+  - 메모리: `project_god_file_phase2`·`project_recipe_children_rls_fix` 갱신
+- **FloatingFeedbackButton 연결 + cart 메모 race 근본 fix + e2e suite flakiness 제거** — 완료 (2026-05-17)
+  - **FloatingFeedbackButton 연결**: 레포 어디에도 마운트 안 되던 orphan("Day 3 런칭 준비물" 초기 유저 피드백 창구)을 `app/[lang]/layout.tsx` providers 안 마운트 → 동작 시작. 하드코딩 한글 → `t.contact.feedbackAria/feedbackButton`(8 locale). 자체 hide 로직(`useLocalizedPathname`): `/auth·/signup·/login·/admin·/(홈)·cook·/delivery·/merchant·/rider`. **회귀 주의**: 전역 마운트 시 `fixed z-40` 버튼이 `/delivery`(앱 chrome 격리 플로우, CLAUDE.md)에서 결제 버튼 클릭 가로채 e2e 60s timeout → hide 목록에 배달 3 prefix 추가로 해결. 회귀 가드 `e2e/floating-feedback-button.spec.ts`
+  - **cart 메모 optimistic clobber 근본 fix** (`ShoppingCartDropdown`): cart-open 시 발행된 백그라운드 force-refresh(`loadShoppingList(true)`)가 사용자 메모 편집 *후* pre-PATCH 서버 데이터로 늦게 resolve → `notifySubscribers`/`fetchItems` 의 `setItems` 가 optimistic 메모를 stale 값으로 덮어씀(실패 DOM 스냅샷서 옛 메모 잔존 확인). **냉장고 `pendingDeleteIdsRef` 와 동일 검증 패턴**: `pendingNoteEditIdsRef` + `applyServerItems`(서버/캐시 적용 시 PATCH 진행중 id 의 로컬 메모 보존, 정착 후 해제). cart-note `cart-note.spec.ts:117` 등 장기 flaky 의 진짜 원인 — patchPromise-first/timeout 땜질로 안 잡히던 게 소거됨
+  - **e2e suite 병렬부하 flakiness 근본 제거 (0 flaky)**: 다수 spec의 `UI write → 고정 waitForTimeout → 즉시 DB read-back → 단언` anti-pattern이 async DB 커밋과 race(부하 시 flake 가 spec 회전). `ingredient-auto-merge`(4)·`logged-in-home:310`·`favorites:146`·`cart-note`(3) DB-readback 을 **`expect.poll`(end-state 결정적 대기)**로 교체(불변식·커버리지 보존·은폐 아님). `playwright.config` `workers: CI?1:3`(경합류 감소; 비단조 실측 2<3 이 "잔여=경합 아닌 race" 역증명; CI 이미 1워커 불변). `cart.spec` 은 toast 완료신호 후 read 라 race 아님 → 무수정(작동 코드 churn 회피). **검증: full-suite fresh build 연속 2회 356 passed·0 failed·0 flaky** + `ingredient-auto-merge` repeat-each=5 50/50
+  - **재발 방지 규칙**: e2e 에서 UI 액션 후 DB 상태 단언 시 **고정 `waitForTimeout` 금지 → `expect.poll`(end-state)** 또는 완료신호(toast/response) 대기. fixed sleep 은 부하 시 write 미커밋 race
+  - Vercel Preview 라이브 검증 완료(`/delivery` 피드백 숨김·식당 클릭 navigate·홈 surface·콘솔 0). PR 머지 시 prod 반영
+- **god-file(HomeClient) 분해 주요 완료 + i18n 근본 버그 수정** — 완료 (2026-05-17)
+  - **HomeClient `~1197→791줄 (-34%)`** — Strangler Fig, 전 단계 행위보존·독립 검증·독립 커밋
+  - **표현 컴포넌트 5개 `_home/` 추출**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`. 순수 표현 — 상태·가드·track·핸들러는 HomeClient 소유, 자식은 값+콜백만, JSX byte-identical. `FridgeShelves`(선반 overlay: renderGroup chip+본체4단+대롱대롱 만료배너/펜던트, ~177줄)는 props 명=원 변수명으로 IIFE 본문 verbatim 이동
+  - **순수 알고리즘 분리**: `lib/home/fridgeShelfDistribution.ts` — 선반 그룹분배 useMemo 본문(알고리즘 byte-identical). 비순수 그래프 의존 `urgencyScore`(helpers→quickAddList/emoji)는 **주입**해 lib 순수 유지 → vitest node 단독 7케이스
+  - **stateful hook 추출 (Step 3·고위험)**: `app/[lang]/_home/useFridgeInteractions.ts` — actionItem/detailItem 상태·longPress/pendingDelete refs·DELETE_UNDO dbTimer·옵티미스틱+rollback·long-press 분기를 **재설계 0·핸들러 byte-identical 기계적 이동**. hook 내부 useToast/useLocalizedRouter 보유, items/setItems/user/t 주입. `pendingDeleteIdsRef` 반환→fetchItems 동일 ref 필터(useEffect deps 추가, 안정 ref라 재실행 0). **cleanup useEffect 신규 추가/제거 안 함 = 동작 보존**. `router` 는 handleCookFromExpiring(미이동) 위해 HomeClient 유지
+  - **분해 중 발견·수정한 i18n 시스템 버그**: `lib/i18n/useLocalizedPathname.ts` 신설(`proxy.ts:stripLang` client 미러). raw `usePathname()`(i18n redirect 후 항상 `/{lang}…`)을 bare 경로(`/`,`/login`…)와 직접 비교하던 다증상 버그. `BottomNav.tsx`(홈탭 active 안 됨 + 홈 검색 시 HomeClient 오버레이 대신 BottomNav 범용 다이얼로그 = MobileSearchOverlay dead) + `FloatingFeedbackButton.tsx`(orphan 컴포넌트라 라이브 no-op이나 잠재 로직 교정) 수정. pathname 소스만 locale-aware 훅으로 교체(비교 로직 0줄 변경 = 최소 diff). **behavior 수정이라 refactor와 커밋 분리**
+  - **aria-hidden 계측 교훈**: MobileSearchOverlay 도달성 확인 시 `isVisible()`가 opacity-0+DOM상주로 false-positive. `aria-hidden={!open}` 속성 계측 e2e로 dead 실측 확정 — "한계/도달가능" 섣부른 결론 금지, 올바른 계측 도구 재검증이 정답
+  - **안전망 선작성 전략**(분해 전 통과 확인 후 추출, OnboardingBanner `1108745` 전략): `e2e/mobile-search-overlay.spec.ts`(i18n fix 검증) + `e2e/fridge-chip-interactions.spec.ts`(**Step 0 — Step 3 hook 추출의 가드**: long-press 삭제+undo→dbTimer 취소·DELETE_UNDO 경과→DB delete·그룹→미니시트→액션 3 불변식. 추출 후 6/6 green = 동작 보존 확정)
+  - 검증: lint 0 errors·build·unit **85**·e2e **0 fail**(잔여 flaky=`cart-note`·`ingredient-auto-merge`, 미변경 경로·고립 재실행 통과·무관 timing). 전 단계 fresh build(:3000 kill) 결정적 회귀
+  - **Vercel Preview 배포 검증 완료** (`/ko` 라이브): fridgeShelfDistribution(데모 칩 분배)·RecommendationPill(추천 pill)·i18n fix(BottomNav 홈탭 `aria-current=page`)·MobileSearchOverlay(BottomNav 검색→aria-hidden true→false→닫기 개폐)·`/recipes` 회귀 전부 정상. resize_window 가 이 환경서 렌더 뷰포트 미반영 → 모바일 동작은 viewport 아닌 pathname-로직이라 DOM/JS 계측으로 검증(시각보다 신뢰 높음)
+  - 분해 테이블·규약: `docs/ARCHITECTURE.md` god-file 분해 절 참조 (HomeClient 이제 ✅ 주요 분해 완료, 남은 god-file 아님)
+- **코드 건전성 정비 (회귀 안전망·lint·god-file 분해)** — 완료 (2026-05-16, `bfe582b`)
+  - 영상 「2차 소프트웨어 위기」 처방 적용. 전부 lint 0 errors / unit 78 / build / e2e **338 passed·2 skipped·0 failed·0 flaky** 검증
+  - **테스트·CI 인프라**: vitest 도입 + 순수함수 단위테스트 49개(levenshtein·unitConversion·badWordsFilter·password·sanitize). i18n 8-locale shape 런타임 테스트(`as TranslationKeys` 캐스트가 삼키는 구조 drift 차단). `.github/workflows/ci.yml`(quality=무-secret 항상, e2e=secret-gated graceful skip). `playwright.config` testIgnore로 `e2e/_*.spec.ts`(시각검수 스크래치) 정식 스위트 분리, `npm run test:visual` 옵트인
+  - **lint 위생 62→10 (0 errors)**: `eslint.config`에 `^_` 관례 honor + `scripts/**` 사유명시 스코핑. 안정 제품코드 죽은 import·directive·var 정리(behavior 0). 잔여 10 = 사용자 배달코드(이미 커밋) + react-hooks 의식적 신호
+  - **cart e2e stale 테스트 root-cause**: "11 failed=샌드박스 flakiness" 오진 정정 — 실제는 2026-05-16 cart 개편 vs 옛 셀렉터. `ShoppingCartDropdown`에 `cart-list`/`cart-quick-add` testid 추가, 의도보존 재스코프. ([[project-cart-e2e-stale-not-flaky]])
+  - **god-file 분해 (Strangler Fig)**: `recipes/new/page.tsx`에서 `_components/`로 `TagsField`·`NutritionFields`·`StepsSection` 추출(순수 표현, 상태·로직은 page 소유, JSX byte-identical). 잔여: `IngredientsSection`, `HomeClient.tsx`(1199줄 미착수) — `docs/ARCHITECTURE.md` 분해계획 참조
+  - **IngredientForm 죽은 uncontrolled location 모드 제거**: 구 pill UI가 모달 헤더로 이관된 잔재(유일 호출자 AddIngredientModal은 controlled만 사용). 냉장/냉동/상온 기능 동작 무변화
+  - **i18n orphan 키 제거**: `quickAddTitle` 8 locale 삭제(2026-05-16 cart 개편으로 헤딩 제거됨). locale-shape 테스트가 균일성 자동 검증
 - **장보기(cart) UX 개선 + 공유 cart + 가격 인프라** — 완료 (2026-05-16)
   - cart 모달 PC width `26rem → 30rem`, recipe chip `max-w 10rem → 15rem` (잘림 해소)
   - 레시피 chip 클릭 → 레시피 페이지 navigate + `sessionStorage` `naelum_cart_restore` 플래그 → 뒤로가기 시 Header·BottomNav 양쪽에서 cart 자동 재오픈

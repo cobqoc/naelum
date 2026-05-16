@@ -308,17 +308,20 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.locator('header button[aria-label="장보기"]').click();
-    await expect(page.locator('text=테스트사과').first()).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=테스트배').first()).toBeVisible();
+    // 2026-05-16 개편: starred 항목이 quick-add 칩으로도 노출 → text= 가 칩과 충돌.
+    // 실제 "목록"에서의 숨김/표시를 검증하는 게 이 테스트의 의도이므로 list로 scope.
+    const cartList = page.locator('[data-testid="cart-list"]');
+    await expect(cartList.locator('text=테스트사과').first()).toBeVisible({ timeout: 5000 });
+    await expect(cartList.locator('text=테스트배').first()).toBeVisible();
 
     // 숨김 토글 클릭
     await page.getByRole('button', { name: /완료 항목 숨기기/ }).click();
-    await expect(page.locator('text=테스트사과')).toHaveCount(0);
-    await expect(page.locator('text=테스트배').first()).toBeVisible();
+    await expect(cartList.locator('text=테스트사과')).toHaveCount(0);
+    await expect(cartList.locator('text=테스트배').first()).toBeVisible();
 
     // 다시 토글 → 모두 보기
     await page.getByRole('button', { name: /모두 보기/ }).click();
-    await expect(page.locator('text=테스트사과').first()).toBeVisible();
+    await expect(cartList.locator('text=테스트사과').first()).toBeVisible();
   });
 
   test('#5 전체 비우기 — confirm 후 모든 항목 삭제', async ({ authenticatedPage, testUser }) => {
@@ -338,12 +341,14 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     await page.locator('header button[aria-label="장보기"]').click();
-    await expect(page.locator('text=테스트김치').first()).toBeVisible({ timeout: 5000 });
+    const cartList = page.locator('[data-testid="cart-list"]');
+    await expect(cartList.locator('text=테스트김치').first()).toBeVisible({ timeout: 5000 });
 
     await page.getByRole('button', { name: /전체 비우기/ }).click();
 
-    // 빈 상태로 전환됨 (quick-add UI 노출)
-    await expect(page.getByText('자주 추가하는 재료')).toBeVisible({ timeout: 5000 });
+    // 빈 상태로 전환됨 — 2026-05-16 개편으로 '자주 추가하는 재료' 헤딩 제거,
+    // 빈 상태는 emptyHint placeholder 로 표시된다.
+    await expect(page.getByText('위 입력창에서 재료를 추가해보세요')).toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(800); // fetch 완료 대기
 
     // DB 검증
@@ -368,10 +373,10 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
 
     await page.locator('header button[aria-label="장보기"]').click();
 
-    // 빈 상태 quick-add 영역으로 scope 한정 (cart 항목과 quick-add 영역에 동시에 "양파"가 있을 가능성 차단)
-    const quickAddTitle = page.getByText('자주 추가하는 재료');
-    await expect(quickAddTitle).toBeVisible({ timeout: 10000 });
-    const quickAddArea = quickAddTitle.locator('..');
+    // 빈 상태 quick-add 영역으로 scope 한정 (cart 항목과 quick-add 영역에 동시에 "양파"가 있을 가능성 차단).
+    // 2026-05-16 개편으로 '자주 추가하는 재료' 헤딩 제거 → 안정적인 cart-quick-add testid 로 scope.
+    const quickAddArea = page.locator('[data-testid="cart-quick-add"]');
+    await expect(quickAddArea).toBeVisible({ timeout: 10000 });
 
     // quick-add 영역의 양파 버튼만 클릭 — 새 UI에선 ⭐ 토글과 별도 main button
     await quickAddArea.getByRole('button', { name: '양파', exact: true }).click();

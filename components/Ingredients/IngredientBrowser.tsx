@@ -126,7 +126,6 @@ export default function IngredientBrowser({
 
       // eslint-disable-next-line react-hooks/set-state-in-effect -- prop 기반 파생 리스트 갱신 (cascading render 허용 범위)
       setIngredients(merged);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

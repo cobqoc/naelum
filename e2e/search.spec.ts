@@ -1,49 +1,75 @@
-import { test, expect } from './fixtures';
+import { test, expect } from './auth-fixtures';
+import { deleteTestRecipe } from './helpers/auth';
 
-test.describe('검색 기능 테스트', () => {
-  test('검색 페이지 접근', async ({ page }) => {
+/**
+ * 검색 E2E.
+ *
+ * 기존 테스트는 `hasResults || noResults` 동어반복(둘 중 하나면 통과)이라
+ * 검색이 실제로 동작하는지 검증하지 못했다. seed 데이터에 의존하지 않고
+ * "유니크 레시피 생성 → 그 제목으로 검색 → 결과에 노출"을 결정론적으로 검증한다.
+ */
+test.describe('검색 기능', () => {
+  test('검색 페이지 접근 (smoke)', async ({ page }) => {
     await page.goto('/search');
     await page.waitForLoadState('networkidle');
-
-    // 검색 페이지 로딩 확인
     await expect(page).toHaveURL(/.*search/);
   });
 
-  test('검색어 입력 및 결과 표시', async ({ page }) => {
-    // URL 파라미터로 직접 검색하여 라우팅 타이밍 문제 회피
-    await page.goto('/search?q=김치');
-    await page.waitForLoadState('networkidle');
+  test('생성한 레시피가 제목 검색 결과에 노출 (결정론적)', async ({ authenticatedPage: page }) => {
+    const unique = `E2E검색유니크${Date.now()}`;
+    const createRes = await page.request.post('/api/recipes', {
+      data: {
+        title: unique,
+        description: 'search e2e',
+        cuisine_type: 'other',
+        dish_type: 'other',
+        difficulty_level: 'easy',
+        servings: 1,
+        prep_time_minutes: 1,
+        cook_time_minutes: 1,
+        status: 'published',
+      },
+    });
+    expect(createRes.ok()).toBeTruthy();
+    const { recipe } = await createRes.json();
 
-    // 로딩 완료 대기 (로딩 인디케이터가 사라질 때까지)
-    await page.waitForFunction(() => {
-      const loading = document.querySelector('.animate-bounce');
-      return !loading;
-    }, { timeout: 15000 });
+    try {
+      await page.goto(`/search?q=${encodeURIComponent(unique)}`);
+      await page.waitForLoadState('networkidle');
+      // 로딩 인디케이터 사라질 때까지
+      await page
+        .waitForFunction(() => !document.querySelector('.animate-bounce'), { timeout: 15000 })
+        .catch(() => {});
 
-    // 검색 결과 또는 "결과 없음" 메시지 확인
-    const hasResults =
-      (await page.locator('a[href*="/recipes/"]').count()) > 0;
-    const noResults =
-      (await page.locator('text=결과').count()) > 0;
-
-    expect(hasResults || noResults).toBeTruthy();
+      // 정확히 그 레시피 링크가 결과에 있어야 함 (tautology 아님)
+      const link = page.locator(`a[href*="/recipes/${recipe.id}"]`).first();
+      await expect(link).toBeVisible({ timeout: 10000 });
+    } finally {
+      await deleteTestRecipe(recipe.id);
+    }
   });
 
-  test('필터 기능 - 난이도 선택', async ({ page }) => {
+  test('존재할 수 없는 검색어는 그 레시피 링크가 없음 (음성 검증)', async ({ page }) => {
+    const nonsense = `절대없는검색어${Date.now()}xyzqwert`;
+    await page.goto(`/search?q=${encodeURIComponent(nonsense)}`);
+    await page.waitForLoadState('networkidle');
+    await page
+      .waitForFunction(() => !document.querySelector('.animate-bounce'), { timeout: 15000 })
+      .catch(() => {});
+    // 결과 레시피 카드/링크가 0개여야 정상 (필터링이 실제로 동작함을 보장)
+    await expect(page.locator('a[href*="/recipes/"]')).toHaveCount(0);
+  });
+
+  test('필터 UI - 난이도 select 존재', async ({ page }) => {
     await page.goto('/search?q=요리');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
 
-    // 필터 버튼 찾기 (여러 개 있을 수 있어 first 사용)
     const filterButton = page.locator('button:has-text("필터")').first();
-
-    if (await filterButton.count() > 0) {
+    if ((await filterButton.count()) > 0) {
       await filterButton.click();
-
-      // 난이도는 <select><option>으로 렌더되므로 select 존재 여부로 검증
-      // (option 자체는 select가 닫힌 상태에서 hidden으로 간주됨)
       const difficultySelect = page.locator('select').filter({ hasText: '초급' });
-      if (await difficultySelect.count() > 0) {
+      if ((await difficultySelect.count()) > 0) {
         await expect(difficultySelect.first()).toBeAttached();
       }
     }

@@ -128,7 +128,10 @@ export async function POST(request: NextRequest) {
       display_order: index + 1
     }))
 
-    await supabase.from('recipe_ingredients').insert(ingredientsToInsert)
+    const { error: ingErr } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert)
+    if (ingErr) {
+      return NextResponse.json({ error: `재료 저장 실패: ${ingErr.message}` }, { status: 500 })
+    }
   }
 
   // 조리 단계 추가
@@ -143,7 +146,10 @@ export async function POST(request: NextRequest) {
       image_url: step.image_url
     }))
 
-    await supabase.from('recipe_steps').insert(stepsToInsert)
+    const { error: stepErr } = await supabase.from('recipe_steps').insert(stepsToInsert)
+    if (stepErr) {
+      return NextResponse.json({ error: `조리 단계 저장 실패: ${stepErr.message}` }, { status: 500 })
+    }
   }
 
   // 태그 추가
@@ -153,7 +159,10 @@ export async function POST(request: NextRequest) {
       tag_name: tag
     }))
 
-    await supabase.from('recipe_tags').insert(tagsToInsert)
+    const { error: tagErr } = await supabase.from('recipe_tags').insert(tagsToInsert)
+    if (tagErr) {
+      return NextResponse.json({ error: `태그 저장 실패: ${tagErr.message}` }, { status: 500 })
+    }
   }
 
   // 사용자 레시피 카운트 업데이트

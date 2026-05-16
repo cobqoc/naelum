@@ -1233,7 +1233,6 @@ export const de = {
     clearAll: 'Alles löschen',
     clearAllConfirm: 'Einkaufsliste leeren?',
     clearAllAria: 'Alles löschen',
-    quickAddTitle: 'Häufig hinzugefügt',
     unitLabel: 'Einheit',
     unitNone: 'Keine Einheit',
     mergedToast: '{count} Duplikat(e) zusammengeführt',
@@ -1351,6 +1350,8 @@ export const de = {
     errorMinLength: 'Bitte mindestens 10 Zeichen eingeben.',
     errorSubmit: 'Senden fehlgeschlagen.',
     errorNetwork: 'Netzwerkfehler aufgetreten.',
+    feedbackButton: 'Feedback',
+    feedbackAria: 'Feedback senden',
   },
   meta: {
     aboutTitle: 'Über Naelum — koreanische Rezepte in deiner Sprache',

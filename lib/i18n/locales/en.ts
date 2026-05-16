@@ -1232,7 +1232,6 @@ export const en = {
     clearAll: 'Clear all',
     clearAllConfirm: 'Empty the shopping list?',
     clearAllAria: 'Clear all',
-    quickAddTitle: 'Frequently added',
     unitLabel: 'Unit',
     unitNone: 'No unit',
     mergedToast: 'Merged {count} duplicate item(s)',
@@ -1350,6 +1349,8 @@ export const en = {
     errorMinLength: 'Please enter at least 10 characters.',
     errorSubmit: 'Failed to submit.',
     errorNetwork: 'Network error occurred.',
+    feedbackButton: 'Feedback',
+    feedbackAria: 'Send feedback',
   },
   meta: {
     aboutTitle: 'About Naelum — Korean recipes you can follow in your language',

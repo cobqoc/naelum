@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import { createClient } from '@/lib/supabase/client';
+import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
@@ -296,13 +297,13 @@ export default function SettingsPage() {
     const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
-    const { error } = await supabase.storage.from('avatars').upload(filePath, avatarFile);
+    const { error } = await uploadToBucket(supabase, 'avatars', filePath, avatarFile);
     if (error) {
       console.error('Avatar upload error:', error);
       return avatarUrl;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const publicUrl = getPublicUrl(supabase, 'avatars', filePath);
     return publicUrl;
   };
 

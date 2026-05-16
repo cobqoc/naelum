@@ -1233,7 +1233,6 @@ export const fr = {
     clearAll: 'Tout effacer',
     clearAllConfirm: 'Vider la liste de courses ?',
     clearAllAria: 'Tout effacer',
-    quickAddTitle: 'Ajouts fréquents',
     unitLabel: 'Unité',
     unitNone: 'Sans unité',
     mergedToast: '{count} doublon(s) fusionné(s)',
@@ -1351,6 +1350,8 @@ export const fr = {
     errorMinLength: 'Veuillez saisir au moins 10 caractères.',
     errorSubmit: "Échec de l'envoi.",
     errorNetwork: 'Erreur réseau.',
+    feedbackButton: 'Commentaires',
+    feedbackAria: 'Envoyer un commentaire',
   },
   meta: {
     aboutTitle: 'À propos de Naelum — recettes coréennes dans votre langue',

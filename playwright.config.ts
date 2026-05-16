@@ -26,10 +26,19 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './e2e',
+  // e2e/_*.spec.ts 는 스크린샷·시각검수용 스크래치 스펙(untracked)이라 정식 회귀
+  // 스위트에서 제외한다. 검수용으로 돌리려면 `npm run test:visual`.
+  // PLAYWRIGHT_INCLUDE_VISUAL=1 이면 제외 해제.
+  testIgnore: process.env.PLAYWRIGHT_INCLUDE_VISUAL ? undefined : /e2e\/_/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1, // 로컬에서도 1번 재시도
-  workers: process.env.CI ? 1 : undefined,
+  // 로컬 기본(undefined ≈ CPU 50% ≈ 5워커)은 단일 Next prod 서버 + 단일 dev
+  // Supabase 를 동시 타격해 리소스 경합 → 타이머/네트워크가 단언 예산 초과,
+  // spec 을 회전하는 retry-pass flaky 발생(고립 실행 시 전부 통과로 확인).
+  // 근본 처방: 로컬 워커 상한(경합 자체 감소). per-test timeout 땜질은
+  // flake 가 회전하므로 whack-a-mole. CI 는 이미 1워커라 영향 없음.
+  workers: process.env.CI ? 1 : 3,
   reporter: 'html',
   timeout: 60000,
 

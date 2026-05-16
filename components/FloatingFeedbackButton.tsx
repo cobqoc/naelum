@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { usePathname } from 'next/navigation'
+import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname'
+import { useI18n } from '@/lib/i18n/context'
 
 // ContactModal은 무겁고(이미지 업로드 등) 거의 열리지 않으므로 lazy load
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
@@ -17,18 +18,26 @@ const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
  * - /signup, /login — 가입/로그인 중엔 숨김
  * - /recipes/[id]/cook — 쿠킹 모드 풀스크린
  * - 관리자 페이지 — 별도 도구 사용
+ * - /delivery·/merchant·/rider — 배달 시스템은 앱 chrome 격리 플로우
+ *   (CLAUDE.md: Header/BottomNav 미노출). 고정 버튼이 결제 등 UI 클릭 가로챔
  *
  * 위치는 모바일에서 BottomNav 위, 데스크톱에서 우측 하단 고정.
  */
 export default function FloatingFeedbackButton() {
   const [open, setOpen] = useState(false)
-  const pathname = usePathname()
+  const { t } = useI18n()
+  // i18n: /[lang] 제거된 bare 경로 — 숨김 조건이 /login·/admin·/ 등
+  // bare 경로 기준이라 raw usePathname()(=/ko…)이면 전부 매칭 실패(근본 원인 fix).
+  const pathname = useLocalizedPathname()
 
   const shouldHide =
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/signup') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/admin') ||
+    pathname.startsWith('/delivery') ||
+    pathname.startsWith('/merchant') ||
+    pathname.startsWith('/rider') ||
     pathname === '/' ||
     /\/recipes\/[^/]+\/cook/.test(pathname)
 
@@ -38,12 +47,12 @@ export default function FloatingFeedbackButton() {
     <>
       <button
         onClick={() => setOpen(true)}
-        aria-label="의견 보내기"
+        aria-label={t.contact.feedbackAria}
         className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 flex items-center gap-2 rounded-full bg-background-secondary/90 backdrop-blur-md border border-accent-warm/30 px-3 py-2 md:px-4 md:py-3 text-sm font-medium text-text-primary hover:bg-background-secondary hover:border-accent-warm/60 hover:scale-105 active:scale-95 transition-all shadow-xl"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <span className="text-base md:text-lg">💬</span>
-        <span className="hidden md:inline">피드백</span>
+        <span className="hidden md:inline">{t.contact.feedbackButton}</span>
       </button>
 
       <ContactModal isOpen={open} onClose={() => setOpen(false)} />

@@ -1,5 +1,17 @@
+import type { Page } from '@playwright/test'
 import { test, expect } from './auth-fixtures'
 import { deleteTestRecipe } from './helpers/auth'
+
+// /recipes/new 는 루트 'use client' + useSearchParams() 라 진입 시
+// app/loading.tsx("로딩 중", .animate-bounce) Suspense fallback 이 먼저 뜬다.
+// networkidle 만으로는 splash 위에서 끝날 수 있어, splash 가 사라질 때까지
+// 명시적으로 대기한다 (search.spec.ts 와 동일한 검증된 패턴).
+async function gotoRecipeNew(page: Page) {
+  await page.goto('/recipes/new', { waitUntil: 'domcontentloaded' })
+  await page
+    .waitForFunction(() => !document.querySelector('.animate-bounce'), { timeout: 30000 })
+    .catch(() => {})
+}
 
 /**
  * 레시피 작성 플로우 E2E.
@@ -116,5 +128,77 @@ test.describe('레시피 작성', () => {
     } finally {
       await deleteTestRecipe(recipe.id)
     }
+  })
+
+  /**
+   * 분해(god-file → 섹션 컴포넌트 / TagsField 추출) 회귀 안전망.
+   * 1587줄 NewRecipePage 를 섹션 컴포넌트로 추출할 때 가장 깨지기 쉬운 것:
+   *  (1) 동적 추가 버튼 핸들러 wiring (addStep / addIngredients)
+   *  (2) controlled input ↔ state 바인딩
+   *  (3) copyright 동의 게이트 → 제출 버튼 활성화
+   *  (4) 추출된 TagsField 의 태그 추가/삭제
+   *
+   * /recipes/new 는 루트 'use client' + useSearchParams() 라 app/loading.tsx
+   * ("로딩 중", .animate-bounce) Suspense fallback 뒤에서 하이드레이션된다.
+   * cold-start 단발 실행에서는 splash 가 느리게 걷힐 수 있어 gotoRecipeNew()
+   * 가 splash 소멸을 명시적으로 대기한다(검증된 패턴). 같은 디렉토리의 기존
+   * '폼 렌더' 테스트가 warm 전체 스위트에서 정상 통과함을 확인했다.
+   */
+  test('UI 회귀: 단계/재료/태그 동적 추가 + 입력 바인딩 + 에러 없음', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    await gotoRecipeNew(page)
+
+    // (2) 제목 controlled input 바인딩
+    const titleInput = page.locator('input[placeholder*="떡볶이"]').first()
+    await expect(titleInput).toBeVisible({ timeout: 15000 })
+    await titleInput.fill('분해 회귀 테스트 레시피')
+    await expect(titleInput).toHaveValue('분해 회귀 테스트 레시피')
+
+    // (1) 단계 추가 핸들러 — 단계 instruction textarea 개수 증가
+    const stepBoxes = page.locator('textarea[placeholder*="조리 방법을 단계별로"]')
+    const stepsBefore = await stepBoxes.count()
+    await page.getByRole('button', { name: '+ 단계 추가' }).click()
+    await expect(async () => {
+      expect(await stepBoxes.count()).toBe(stepsBefore + 1)
+    }).toPass({ timeout: 5000 })
+
+    // 새 단계 textarea 에 입력 → 바인딩 확인
+    const lastStep = stepBoxes.last()
+    await lastStep.fill('새 단계 설명')
+    await expect(lastStep).toHaveValue('새 단계 설명')
+
+    // (1) 재료 5개 추가 핸들러 — 재료 준비 섹션 input 개수 증가
+    const ingSection = page.locator('section').filter({ hasText: '재료 준비' })
+    const ingBefore = await ingSection.locator('input').count()
+    await page.getByRole('button', { name: '+ 재료 5개 추가' }).click()
+    await expect(async () => {
+      expect(await ingSection.locator('input').count()).toBeGreaterThan(ingBefore)
+    }).toPass({ timeout: 5000 })
+
+    // 추출된 TagsField 회귀: 태그 추가 → 칩 노출 → 삭제 → 사라짐
+    const tagInput = page.getByPlaceholder('태그 입력 후 추가 버튼 클릭')
+    await tagInput.fill('E2E태그')
+    await page
+      .locator('div')
+      .filter({ has: page.getByPlaceholder('태그 입력 후 추가 버튼 클릭') })
+      .getByRole('button', { name: '추가', exact: true })
+      .first()
+      .click()
+    const chip = page.locator('span', { hasText: '#E2E태그' })
+    await expect(chip).toBeVisible()
+    await chip.getByRole('button', { name: '×' }).click()
+    await expect(chip).toHaveCount(0)
+
+    // (3) copyright 게이트: 미동의 시 제출 비활성 → 동의 시 활성
+    const submitBtn = page.getByRole('button', { name: /레시피 등록하기/ })
+    await expect(submitBtn).toBeDisabled()
+    const copyright = page.locator('input[type="checkbox"]').last()
+    await copyright.check()
+    await expect(submitBtn).toBeEnabled()
+
+    // 전 과정에서 런타임 에러 없어야 (분해 시 stale closure / prop 누락 조기 탐지)
+    expect(pageErrors).toEqual([])
   })
 })

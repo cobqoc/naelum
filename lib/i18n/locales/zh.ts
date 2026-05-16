@@ -1233,7 +1233,6 @@ export const zh = {
     clearAll: '清空全部',
     clearAllConfirm: '清空购物清单吗？',
     clearAllAria: '清空全部',
-    quickAddTitle: '常用食材',
     unitLabel: '单位',
     unitNone: '无单位',
     mergedToast: '已合并相同食材{count}个',
@@ -1351,6 +1350,8 @@ export const zh = {
     errorMinLength: '请输入至少10个字符。',
     errorSubmit: '提交失败。',
     errorNetwork: '发生网络错误。',
+    feedbackButton: '反馈',
+    feedbackAria: '发送反馈',
   },
   meta: {
     aboutTitle: '关于낼름 — 用您的语言学韩国菜',

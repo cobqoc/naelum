@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
@@ -17,7 +17,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  // cron 은 유저 세션이 없다(anon). user-context 클라이언트면 RLS(auth.uid()=
+  // user_id)로 user_ingredients·notifications 등을 0건 읽어 cron 전체가 무력.
+  // → 시스템 cron 의 올바른 컨텍스트인 service-role 사용 (CRON_SECRET 게이트).
+  // 2026-05-17 RLS 감사서 발견한 선존 버그 수정.
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);

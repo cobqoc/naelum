@@ -13,6 +13,7 @@ import { loadLocale, SUPPORTED_LANGUAGES, type Language } from "@/lib/i18n/local
 import HtmlLangSync from "./_lang/HtmlLangSync";
 import PageViewTracker from "@/components/Analytics/PageViewTracker";
 import FavoritesSyncBoot from "@/components/FavoritesSyncBoot";
+import FloatingFeedbackButton from "@/components/FloatingFeedbackButton";
 
 // 8개 locale 각각 정적 prerender 대상.
 // generateStaticParams가 있어야 [lang] 라우트의 정적 변형들이 빌드 시 생성됨.
@@ -66,6 +67,9 @@ export default async function LangLayout({
                   <PageViewTracker />
                   {/* 로그인 사용자 첫 진입 시 자주 사용 재료 localStorage → DB 1회 이전 */}
                   <FavoritesSyncBoot />
+                  {/* 초기 유저 피드백 수집 — 자체 hide 로직(/auth·/login·/admin·/·cook
+                      + i18n useLocalizedPathname)으로 노출 페이지 한정. 홈은 미니멀 유지 위해 숨김 */}
+                  <FloatingFeedbackButton />
                 </AccessibilityProvider>
               </ConsentProvider>
             </ToastProvider>

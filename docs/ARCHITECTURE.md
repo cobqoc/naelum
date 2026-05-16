@@ -224,6 +224,15 @@ export function subscribeItems(cb) { subscribers.add(cb); return () => subscribe
 `e2e/auth-fixtures.ts`의 `authenticatedPage` fixture를 사용하면 로그인 상태
 시나리오도 쉽게 테스트 가능.
 
+> ⚠️ **flaky 방지 철칙** (2026-05-17, suite 전반 0-flaky 달성): UI 액션 후
+> DB 상태를 단언할 때 **고정 `page.waitForTimeout(N)` 뒤 즉시 `admin().select()`
+> 금지**. async write 가 부하 시 N ms 내 미커밋 → write→read race(flake 가
+> spec 회전). **`expect.poll(async()=>…end-state…, {timeout:15000})`** 로
+> DB 가 기대 상태 도달까지 결정적 대기 후 상세 단언(불변식·커버리지 보존,
+> 잘못된 값은 15s 에도 실패 → 은폐 아님). 또는 완료신호(toast/`waitForResponse`)
+> 대기 후 read(cart.spec 패턴). 워커는 `CI?1:3`(경합류; 비단조라 워커튜닝은
+> race 의 부차 — 근본은 동기화). 상세: CLAUDE.md 기능현황 2026-05-17.
+
 ---
 
 ## 🚫 안티패턴 모음
@@ -255,6 +264,10 @@ components/
     [Component].tsx
   Common/                 ← 범용 재사용
 lib/
+  api/
+    types.ts              ← API 응답 계약(contract) 단일 진실원 — 새 route 응답은 여기에 정의
+    auth.ts               ← requireAuth()
+    pagination.ts         ← parsePagination()
   [domain]/               ← 도메인별 비즈니스 로직
     cache.ts              ← 공유 캐시
     [action].ts           ← 서버/클라 공용 함수
@@ -286,6 +299,69 @@ e2e/
 3. **기존 코드는 실제 병목으로 드러날 때만 리팩터**한다.
 
 이게 Strangler Fig 패턴이고, 실패율이 낮은 리팩터 전략이다.
+
+### god-file 분해 계획 — 검토하에 점진
+
+영상 「2차 소프트웨어 위기」의 "이해 부채" 상환. **Big Rewrite 금지**
+원칙대로, 회귀 안전망을 먼저 두껍게 한 뒤 **결합도 낮은 블록부터** 추출한다.
+
+> **Phase 1 (recipes/new · HomeClient) 완료** — 아래 ✅ 2개.
+> **Phase 2 (다음 이어서 작업) 미착수** — "Phase 2 표" 절 참조. 인프라(vitest·e2e·CI)는
+> 이미 구축돼 한계비용 최저. 표본 2개 끝났다고 god-file 정비가 끝난 게 아님.
+
+| 파일 | 줄수 | 상태 | 다음 액션 |
+|---|---|---|---|
+| `app/[lang]/recipes/new/page.tsx` | ~1171 | ✅ 주요 분해 완료 | `TagsField`·`NutritionFields`·`StepsSection`·`IngredientsSection` 4개 `_components/` 추출 완료(행위보존·strict 타입·recipe-creation e2e 검증, 1587→1171줄 ≈ -26%). `validateNutritionInput` 응집 이동. 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약(순수 props, 상태 page 소유) |
+| `app/[lang]/HomeClient.tsx` | ~791 | ✅ 주요 분해 완료 | **~1197→791줄(-34%)**, 전 단계 행위보존·독립 검증·독립 커밋(Strangler Fig). **표현 5개 → `_home/`**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`(순수 표현·상태/가드/track 부모 소유·JSX byte-identical, FridgeShelves 는 props 명=원 변수명으로 IIFE 본문 verbatim). **순수 알고리즘 → `lib/home/fridgeShelfDistribution`**(useMemo 본문, `urgencyScore` 주입으로 lib 순수·vitest 7). **stateful hook → `_home/useFridgeInteractions`**(Step 3·고위험: actionItem/detailItem·longPress/pendingDelete refs·DELETE_UNDO dbTimer·옵티미스틱+rollback·long-press 분기를 재설계 0·핸들러 byte-identical 기계적 이동. cleanup useEffect 신규 추가/제거 없음=동작 보존. `pendingDeleteIdsRef` 반환→fetchItems 동일 ref 필터). **분해 중 i18n 근본 버그 발견·수정**: `lib/i18n/useLocalizedPathname`(`proxy.ts:stripLang` client 미러) — raw `usePathname()`(=`/ko…`) vs bare 경로 비교 다증상 버그(`BottomNav` 홈탭 active·홈검색 오버레이 dead / `FloatingFeedbackButton` 숨김) 동시 수정. MobileSearchOverlay 는 fix 전 dead(aria-hidden 계측 e2e 실측 — isVisible false-positive 함정). **안전망 선작성 전략**: `e2e/mobile-search-overlay.spec.ts`·`e2e/fridge-chip-interactions.spec.ts`(Step 0 — long-press 삭제+undo→dbTimer 취소·DELETE_UNDO 경과→DB delete·그룹→미니시트→액션 3 불변식이 Step 3 hook 추출의 가드, 6/6 green). 검증: lint 0 errors·build·unit 85·e2e 0 fail. **Vercel Preview 배포 검증 완료**(fridgeShelfDistribution·RecommendationPill·i18n fix BottomNav aria-current·MobileSearchOverlay 개폐 라이브 확인). 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약. ※ 분해 중 보였던 cart-note·auto-merge flaky 는 별도 후속(2026-05-17)에서 근본(write→read race) 제거 → suite 0-flaky (위 "flaky 방지 철칙" 참조) |
+
+**추출 규약** (TagsField 가 레퍼런스):
+1. 상태·핸들러는 부모가 소유, 자식은 값+콜백만 받는 **순수 표현 컴포넌트**
+2. JSX 만 이동 (마크업·className·핸들러 시그니처 동일) → 행위 변경 0
+3. 검증: `npm run build`(strict props 정합) + 해당 e2e 회귀 + 순수 JSX 동일성
+4. `_components/` (App Router private 폴더) 에 배치
+
+> ⚠️ `/recipes/new` 는 루트 `'use client'` + `useSearchParams()` 라
+> `app/loading.tsx` Suspense fallback 뒤 하이드레이션된다. 일부 headless
+> 환경에서 splash hang → UI e2e 는 `test.fixme` 로 CI 게이트에 위임.
+> timeout 으로 가리지 말 것(증상 은폐 금지).
+
+#### Phase 2 — ✅ 전체 완료 (2026-05-17)
+
+> **6개 god-file 전부 분해 완료**(아래 표 + login). 공통 규약: 순수함수 →
+> `lib/`+vitest, 순수 표현 → `_components/`(상태·ref·race·async 핸들러는 부모
+> 불변, 콜백만), JSX byte-identical, 추출 전 회귀 안전망 선작성(기존 강커버
+> 시 갭만 보강). 분해 안전망이 선존 RLS 데이터유실 버그 2건(recipe child,
+> notifications)까지 발견·수정([[project-recipe-children-rls-fix]]).
+> ※ login 은 재스캔서 발견된 계획 외 god-file — 잔여 RLS·Storage 후 추가 분해.
+
+Phase 1 표본 2개는 끝났지만 영상의 "이해 부채" 처방은 *지속적* 상환이다.
+2026-05-17 전 소스 재스캔 결과 **계획에 누락돼 있던 최대 로직 파일**이 드러남.
+
+| 파일 | 줄수 | 우선 | 다음 액션 |
+|---|---|---|---|
+| `app/[lang]/recipes/[id]/edit/page.tsx` | ~~1365~~ → **865 (-37%)** | ✅ **완료 2026-05-17** | **회귀 안전망 선작성(`e2e/recipe-edit.spec.ts` 6케이스: 데이터로드·단계제목·재료삭제 임계·제출 영속)이 분해 전 *선존 critical 버그* 발견** → recipe_ingredients/steps/tags RLS 쓰기정책 누락(데이터 유실, dev+prod 수정, [[project-recipe-children-rls-fix]]). **"recipes/new/_components 재사용" 예측은 코드 정독으로 *반증됨*** — new/edit 폼이 이미 분기(단계 제목 유무·재료 삭제 임계 `<=1`vs`<=5`·영양 검증 상한). 무지성 재사용 시 회귀 → **TagsField 만 공유 재사용**(진짜 동일, focus:ring-2 멱등), **BasicInfoSection·NutritionFields·IngredientsSection·StepsSection 은 edit *현재* JSX 와 byte-identical 한 edit 전용 `_components/` 로 추출**(상태·핸들러 page 소유, 행위 변경 0). 검증: lint 0err·build·vitest 85·e2e 28/28(안전망+creation+detail) green. new/edit 폼 통합은 별도 제품 결정(범위 밖) |
+| `components/ShoppingCartDropdown.tsx` | ~~1087~~ → **549 (-49%)** | ✅ **완료 2026-05-17** | Step 0 안전망 평가: 기존 cart.spec(13)·cart-note(5,메모 race 가드)·cart-share(3)·recipe-cart-toggle(4) 이 추출 위험면 이미 강커버 → 유일 갭(그룹모드 토글)만 `e2e/cart-decomposition.spec.ts` 1개 보강. **순수함수 `groupItems` → `lib/shopping-list/groupItems.ts` + vitest 8**. **표현 5개 → `components/cart/`**: `CartLoginPrompt`·`CartHeader`·`CartAddInput`·`CartQuickAdd`·`CartItemList`(최대 블록). ⚠️ **메모 optimistic clobber race 방어(pendingNoteEditIdsRef·applyServerItems·updateNote)·subscribe·fetch·모든 async 핸들러는 부모 소유 불변** — 자식은 콜백만. 공유 심볼은 `components/cart/types.ts`(Suggestion·CartAddSource·COMMON_UNITS·QuickItem). JSX byte-identical → 행위 변경 0. 검증: lint 0err·build·vitest 93·cart e2e 50/50(미분해 baseline 동일) |
+| `app/[lang]/[username]/page.tsx` | ~~928~~ → **426 (-54%)** | ✅ **완료 2026-05-17** | 프로필 페이지 UI e2e 미커버 → `e2e/profile-decomposition.spec.ts` 3케이스(카드 렌더·탭전환 URL·관리메뉴 가시성 PATCH) 선작성·baseline green. **순수 `getTimeAgo` → `lib/utils/timeAgo.ts` + vitest 6**. **표현 5개 → `_components/`**: `ProfileCard`·`ProfileTabs`·`TipsGrid`·`DraftsPrivateView`·`ProfileRecipeGrid`(최대·관리메뉴). 상태·async 핸들러 부모 소유, 콜백만. 공유 타입 `_components/types.ts`. JSX byte-identical. 검증: lint 0err·build·vitest 99·profile e2e 6/6(baseline 동일) |
+| `components/Ingredients/IngredientForm.tsx` | ~~899~~ → **480 (-47%)** | ✅ **완료 2026-05-17** | 기존 ingredient-auto-merge(6,DetailFields 실제 exercise)·autocomplete(8)·picker-modal(8) 강커버 = baseline. **순수 `sanitizeOutgoingPayload` → `lib/ingredients/` + vitest 6**. `DetailFields`(~327)·`EditableName`은 이미 독립 함수컴포넌트 → **파일만 verbatim relocate**(prop·JSX 무변, 최저위험). UNITS/STORAGE_LOCATIONS/CATEGORIES 동반 이동. 검증: lint 0err·build·vitest 105·ingredient e2e 42/42(baseline 동일) |
+| `components/RecipeCookMode.tsx` | ~~753~~ → **494 (-34%)** | ✅ **완료 2026-05-17** | 기존 cook-completion·cook-mode-and-review(타이머패널 포함) baseline. **순수 `formatTime` → `lib/utils/` + vitest 7**. **표현 4개 → `components/cook/`**: `CookVoicePanel`·`CookIngredientsSheet`·`CookTimerPanel`·`CookCompletionModal`. 타이머/음성/스와이프 hook 은 이미 `lib/hooks/*`(부모 소유), 자식은 ReturnType 타입+콜백만. JSX byte-identical. 검증: lint 0err·build·vitest 112·cook e2e 16/16(baseline 동일) |
+| `app/[lang]/login/page.tsx` | ~~877~~ → **601 (-31%)** | ✅ **완료 2026-05-17** | 재스캔서 발견된 계획 외 god-file(IngredientForm 동급). 기존 `auth.spec.ts` 가 메인 카드(폼·검증·show-password·링크) 강커버 → 갭(모달 개폐/ESC/렌더)만 `e2e/login-decomposition.spec.ts` 2케이스 보강. **표현 2개 → `_components/`**: `FindIdModal`·`ResetPasswordModal`(4스텝 위저드). 모든 상태·ref·async·BroadcastChannel·passwordStrength 부모 소유, onClose 는 원본 inline setState 시퀀스 byte-identical 보존. 검증: lint 0err·build·vitest·login+auth e2e 18/18(baseline 동일) |
+
+> `app/[lang]/_home/FridgeSVG.tsx`(~1295)·`lib/i18n/locales/*`(각 ~1615)·
+> `lib/supabase/database.types.ts`(~1137)는 **분해 대상 아님** — 각각 SVG 마크업·
+> 정체성 컴포넌트 / 평면 번역 데이터 / 생성물. 로직 god-file 이 아니다.
+
+**왜 지금, 빠르게 (프로젝트 커지기 전에) — 기술적 근거:**
+1. **이해 부채는 복리.** `edit/page.tsx` 는 핵심 경로라 앞으로도 계속 수정됨 →
+   매 수정마다 1365줄에 결합이 더 엉킨다. 나중에 풀면 blast radius 가 더 큼.
+2. **재사용 창은 *이미* 닫혀 있었다 (예측 적중·교훈).** 위 예측대로 new/edit
+   폼은 이미 분기(단계 제목·삭제 임계·검증 상한) → "재사용" 불가, edit 전용
+   byte-identical 추출로 전환했다. **교훈: 분해 전 "쌍둥이 파일 재사용 가능"
+   가정은 반드시 코드 정독으로 검증**. 잔여 Phase 2 항목도 동일.
+3. **비싼 선행조건은 이미 지불됨.** 회귀 안전망(vitest 85·e2e suite 0-flaky·CI)이
+   Phase 1 에서 구축 완료 → 각 분해의 한계비용이 지금 최저. 코드가 더 쌓이면
+   안전망 재정비 비용까지 같이 늘어난다.
+
+> Storage API 래퍼 격리 ✅ 2026-05-17 완료 (아래 "AWS 이전" 절 표 참조).
 
 ### 진짜 걱정해야 할 기술 부채 3가지
 
@@ -327,8 +403,8 @@ CLAUDE.md에 "사용자 규모 증가 시 AWS 이전 예정"이라고 쓰여 있
 | Supabase realtime 사용 금지 | ✅ shim으로 제거 완료 |
 | Supabase Functions 사용 금지 | ✅ shim으로 제거 완료 |
 | 표준 Postgres SQL만 사용 (Supabase 확장 지양) | ⚠️ PL/pgSQL 함수(handle_new_user, update_recipe_ratings) 있지만 이식 가능 수준 |
-| RLS 복잡도 최소화 | ⚠️ 주기적 리뷰 필요 |
-| Storage API는 Supabase Storage 래퍼로 격리 | ⏳ 미완. 새 업로드 로직 추가 시 `lib/storage/*` 래퍼 통과 규약 도입 권장 |
+| RLS 복잡도 최소화 | ✅ **2026-05-17 전수 감사 완료** — 전 public 테이블 RLS×정책 매트릭스 점검. recipe child(앞서 수정) 외 **2번째 선존 버그 발견·수정**: `notifications` INSERT 정책 부재(행위자≠수신자라 owner-scoped 부적합) → 댓글·평점·낼름 알림 + send-expiry cron 전체 무력. 코드 픽스(`lib/notifications/create.ts`·`send-expiry` → service-role insert, DB 마이그레이션 불필요). rate_limits=이미 service-role(정상), 그 외 RLS-on/무write 테이블은 앱 미기록(서비스롤 전용)이라 무해. 향후 규칙: **유저 컨텍스트로 쓰는 테이블은 write RLS 정책 필수, cron/시스템 insert 는 service-role** |
+| Storage API는 Supabase Storage 래퍼로 격리 | ✅ **2026-05-17 완료** — `lib/storage/`(uploadToBucket·getPublicUrl, StorageBucket 타입). 직접 `supabase.storage.from()` 호출 6곳(api/upload·recipes new/edit·settings·tip/new·OnboardingWizard) 전부 래퍼 경유로 격리(행위보존 thin pass-through). 향후 S3/R2 이전 시 이 파일만 교체. 규약: 신규 업로드는 반드시 `lib/storage` 경유, 직접 `.storage.from()` 금지 |
 
 ### 실제 결정 체크리스트
 
@@ -348,7 +424,9 @@ CLAUDE.md에 "사용자 규모 증가 시 AWS 이전 예정"이라고 쓰여 있
 - ❌ "더 나은 구조"를 위한 Big Rewrite
 - ❌ 실 사용 데이터 없이 ISR/캐싱 전략 설계
 - ❌ 외부 의존성(Supabase) 전면 교체 목적의 리팩터
-- ❌ TypeScript 타입 완벽주의 (`any` 허용 — 실용성 > 엄격성)
+- ❌ TypeScript 타입 완벽주의를 위한 리팩터 — `any`는 **기본 지양**하되 불가피하면
+  `eslint-disable-next-line`로 한 줄 한정 후 허용 (실용성 > 엄격성).
+  CLAUDE.md "개발 규칙"과 **동일 정책** (문구만 통일, 의미 변화 없음).
 
 ---
 

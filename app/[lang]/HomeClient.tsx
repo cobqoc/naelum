@@ -10,24 +10,24 @@
 
 import Link from '@/components/Common/LocalizedLink';
 import dynamicImport from 'next/dynamic';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/auth/context';
-import { useCookieConsent } from '@/lib/cookieConsent/context';
 import { useI18n } from '@/lib/i18n/context';
-import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import FridgeSVG from './_home/FridgeSVG';
+import OnboardingBanner from './_home/OnboardingBanner';
+import RecommendationPill from './_home/RecommendationPill';
+import EmptyFridgeGuide from './_home/EmptyFridgeGuide';
+import MobileSearchOverlay from './_home/MobileSearchOverlay';
+import FridgeShelves from './_home/FridgeShelves';
+import { useFridgeInteractions } from './_home/useFridgeInteractions';
+import { computeFridgeShelfDistribution } from '@/lib/home/fridgeShelfDistribution';
 import {
-  DELETE_UNDO_WINDOW_MS,
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
   RECOMMENDATIONS_LIMIT,
   TOAST_AUTO_HIDE_MS,
   LS_KEY_DEMO_ITEMS,
   LS_KEY_ONBOARDING_BANNER,
-  LONG_PRESS_MS,
-  SHELF_LEFT,
-  SHELF_WIDTH,
-  SHELVES,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
@@ -72,8 +72,6 @@ export default function HomeClient({
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
   const { t } = useI18n();
-  const { bannerVisible: cookieBannerVisible } = useCookieConsent();
-  const { success: toastSuccess } = useToast();
   // SSR prefetch된 items가 있으면 초기 렌더부터 반영, 없으면 빈 배열 + loading 상태 유지.
   const [items, setItems] = useState<FridgeItem[]>(() => (initialItems as FridgeItem[] | null) ?? []);
   const [loading, setLoading] = useState(initialItems === null);
@@ -84,7 +82,7 @@ export default function HomeClient({
   // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
   const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
   // 씬 요소(팬던트/웜스팟/콘센트) 배치용 — 데스크탑에선 냉장고 가까이, 모바일은 가장자리
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [_isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -115,42 +113,12 @@ export default function HomeClient({
   // 냉장고 본체·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
   // 도어 선반 분배 제거 — 모든 냉장 재료는 본체 선반(3단)에 통합 표시.
   // 같은 이름끼리 그룹화해 한 chip으로 표시 (×N 배지). 클릭 시 그룹 2+면 미니 시트.
-  const fridgeShelfDistribution = useMemo(() => {
-    // 같은 이름끼리 그룹화 (case-insensitive). 그룹 정렬 = 그룹 내 가장 임박한 항목 기준.
-    const groupByName = (list: FridgeItem[]): FridgeItem[][] => {
-      const buckets = new Map<string, FridgeItem[]>();
-      for (const item of list) {
-        const key = item.ingredient_name.trim().toLowerCase();
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key)!.push(item);
-      }
-      // 그룹 내 항목 정렬 (가장 임박 우선)
-      const groups = Array.from(buckets.values()).map(g => g.sort((a, b) => urgencyScore(a) - urgencyScore(b)));
-      // 그룹 간 정렬 = 그룹 대표(첫 항목) 기준
-      return groups.sort((a, b) => urgencyScore(a[0]) - urgencyScore(b[0]));
-    };
-
-    const nonFreezer = items.filter(i => i.storage_location !== '냉동');
-    const freezerRaw = items.filter(i => i.storage_location === '냉동');
-
-    const nonFreezerGroups = groupByName(nonFreezer);
-    const freezerGroups = groupByName(freezerRaw);
-
-    // 본체 선반 3단에 그룹 단위로 분배
-    const bodyShelfGroups: FridgeItem[][][] = [[], [], []];
-    nonFreezerGroups.forEach((group, i) => {
-      bodyShelfGroups[Math.min(Math.floor(i / shelfMax.body), 2)].push(group);
-    });
-
-    // overflow는 그룹 단위 카운트
-    let totalOverflow = 0;
-    bodyShelfGroups.forEach(list => {
-      if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
-    });
-    if (freezerGroups.length > shelfMax.body) totalOverflow += freezerGroups.length - shelfMax.body;
-
-    return { bodyShelfGroups, freezerGroups, totalOverflow };
-  }, [items, shelfMax.body]);
+  // 순수 알고리즘은 lib/home/fridgeShelfDistribution 로 추출(god-file 분해 Step 1).
+  // urgencyScore 는 비순수 그래프(helpers→quickAddList/emoji)라 주입 → lib 순수 유지.
+  const fridgeShelfDistribution = useMemo(
+    () => computeFridgeShelfDistribution(items, shelfMax.body, urgencyScore),
+    [items, shelfMax.body],
+  );
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
@@ -209,137 +177,24 @@ export default function HomeClient({
   // ESC 키로 모바일 검색 닫기
   useEscapeKey(() => setShowMobileSearch(false), showMobileSearch);
 
-  // 재료 액션 시트 (chip 탭 시 1차로 열림: 만들기/수정/삭제)
-  const [actionItem, setActionItem] = useState<FridgeItem | null>(null);
-  // 재료 상세 수정 모달 (액션 시트의 '수정' 선택 시 열림)
-  const [detailItem, setDetailItem] = useState<FridgeItem | null>(null);
+  // chip 인터랙션 — 상태(actionItem/detailItem)·refs·타이머·삭제 핸들러를
+  // _home/useFridgeInteractions hook 으로 추출(Step 3, 기계적 이동·동작 보존).
+  // pendingDeleteIdsRef 는 fetchItems 필터에 동일 ref 로 사용됨.
+  const {
+    actionItem, setActionItem,
+    detailItem, setDetailItem,
+    pendingDeleteIdsRef,
+    handleCook,
+    handleEditFromSheet,
+    handleChipPressStart,
+    handleChipPressEnd,
+    handleChipClickWithLongPress,
+    handleDeleteFromSheet,
+  } = useFridgeInteractions({ items, setItems, user, t });
 
+  // handleCookFromExpiring(임박 시트 "이걸로 만들기") 전용 — chip 인터랙션 hook 과
+  // 별개 경로라 router 는 HomeClient 가 직접 보유(hook 내부 router 와 독립 인스턴스).
   const router = useRouter();
-
-  // 액션 시트: "이 재료로 만들기" → 해당 재료 들어간 레시피 페이지로 이동.
-  const handleCook = (item: FridgeItem) => {
-    setActionItem(null);
-    router.push(`/recommendations?mode=all&ingredients=${encodeURIComponent(item.ingredient_name)}`);
-  };
-
-  // 액션 시트: "수정" → 상세 수정 모달 열기.
-  const handleEditFromSheet = (item: FridgeItem) => {
-    setActionItem(null);
-    setDetailItem(item);
-  };
-
-  // 삭제 pending id — 5.5초 undo 창 중 fetchItems가 외부에서 재실행돼도 삭제된 item이 state에 되살아나지 않도록 필터링.
-  const pendingDeleteIdsRef = useRef<Set<string>>(new Set());
-
-  // 모바일 chip long-press 삭제 — hover 없는 모바일에서 빠른 삭제 단축.
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggeredRef = useRef(false);
-  const handleChipPressStart = (item: FridgeItem) => {
-    longPressTriggeredRef.current = false;
-    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-    longPressTimerRef.current = setTimeout(() => {
-      longPressTriggeredRef.current = true;
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try { navigator.vibrate?.(40); } catch {}
-      }
-      handleDeleteFromSheet(item);
-    }, LONG_PRESS_MS);
-  };
-  const handleChipPressEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  };
-  const handleChipClickWithLongPress = (item: FridgeItem, e: React.MouseEvent) => {
-    if (longPressTriggeredRef.current) {
-      // long-press로 이미 삭제 triggered — click 무시.
-      longPressTriggeredRef.current = false;
-      return;
-    }
-    e.stopPropagation();
-    setActionItem(item);
-  };
-
-  // 액션 시트: "삭제" → 즉시 state 제거 + undo 토스트 (5초 안에 [실행 취소] 클릭 시 복원).
-  // DB 삭제는 토스트 만료 직전 (5.5초)에 비동기 실행 → undo 시 cancel.
-  const handleDeleteFromSheet = (item: FridgeItem) => {
-    track('ingredient_delete', { name: item.ingredient_name, items_total: items.length });
-    const indexBefore = items.findIndex(i => i.id === item.id);
-    pendingDeleteIdsRef.current.add(item.id);
-    setItems(prev => prev.filter(i => i.id !== item.id));
-    setActionItem(null);
-
-    let cancelled = false;
-    const isDemo = !user || isDemoRecord(item);
-    const dbTimer = setTimeout(async () => { /* DELETE_UNDO_WINDOW_MS 뒤 DB delete */
-      if (cancelled) return;
-      if (!isDemo && user) {
-        // RLS가 기본 방어지만 user_id 명시 필터로 이중 방어.
-        const client = createClient();
-        await client.from('user_ingredients').delete().eq('id', item.id).eq('user_id', user.id);
-        window.dispatchEvent(new Event('fridge-updated'));
-      }
-      // DEMO는 state만 변경했으므로 별도 작업 없음
-      pendingDeleteIdsRef.current.delete(item.id);
-    }, DELETE_UNDO_WINDOW_MS);
-
-    // 단일 토스트에 [실행 취소][장보기에 추가] 두 액션 동시 노출.
-    // 비로그인/데모는 cart 자체가 로그인 유도 화면이라 cart 액션 skip.
-    const actions: Array<{ label: string; onClick: () => void; variant?: 'primary' | 'secondary' }> = [
-      {
-        label: t.ingredient.undo,
-        variant: 'primary',
-        onClick: () => {
-          cancelled = true;
-          clearTimeout(dbTimer);
-          pendingDeleteIdsRef.current.delete(item.id);
-          // 원래 위치에 복원
-          setItems(prev => {
-            const next = [...prev];
-            const safeIdx = Math.min(Math.max(0, indexBefore), next.length);
-            next.splice(safeIdx, 0, item);
-            return next;
-          });
-        },
-      },
-    ];
-    if (user && !isDemo) {
-      actions.push({
-        label: t.home.usedUpAddAction,
-        variant: 'secondary',
-        onClick: async () => {
-          try {
-            const res = await fetch('/api/shopping-list', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                recipeId: null,
-                recipeTitle: t.cart.manualAdd,
-                ingredients: [{
-                  ingredient_name: item.ingredient_name,
-                  category: item.category || 'other',
-                  unit: item.unit ?? '',
-                }],
-              }),
-            });
-            if (res.ok) {
-              toastSuccess(t.home.usedUpAddedToast.replace('{name}', item.ingredient_name));
-              window.dispatchEvent(new Event('shopping-list-updated'));
-              track('used_up_to_cart', { name: item.ingredient_name });
-            }
-          } catch { /* silent */ }
-        },
-      });
-      // 토스트에 [장보기에 추가] 노출됨 = 전환율 분모. used_up_to_cart가 분자.
-      track('used_up_toast_shown', { name: item.ingredient_name });
-    }
-
-    toastSuccess(t.ingredient.deleteSuccess.replace('{name}', item.ingredient_name), {
-      actions,
-      duration: DELETE_UNDO_WINDOW_MS,
-    });
-  };
 
   // DB/localStorage에서 raw items 반환 (filter는 호출부에서 적용)
   const fetchItems = useCallback(async (): Promise<FridgeItem[]> => {
@@ -388,7 +243,8 @@ export default function HomeClient({
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [authLoading, fetchItems]);
+    // pendingDeleteIdsRef = hook 반환 안정 ref(identity 불변) → deps 추가해도 재실행 0.
+  }, [authLoading, fetchItems, pendingDeleteIdsRef]);
 
   // 외부에서 냉장고 변경 이벤트 발생 시 재fetch
   // (예: ShoppingCartDropdown에서 "냉장고에 추가" 후, 레시피 → 재료 추가 등).
@@ -399,7 +255,7 @@ export default function HomeClient({
     };
     window.addEventListener('fridge-updated', handler);
     return () => window.removeEventListener('fridge-updated', handler);
-  }, [fetchItems]);
+  }, [fetchItems, pendingDeleteIdsRef]);
 
   // 임박 재료 전용 매칭 fetch — 시트 열릴 때만 fetch (불필요한 호출 방지).
   // 임박 재료 변경 시 invalidate. 시트 닫혀있어도 임박 카운트 변하면 다음 오픈 시 새로 fetch.
@@ -412,7 +268,7 @@ export default function HomeClient({
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
+    // 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
     setExpiringRecipeMatch({ count: null, mode: null });
     const names = expiringItems.map(i => i.ingredient_name).join(',');
     const url = `/api/recommendations?type=ingredients&limit=${RECOMMENDATIONS_LIMIT}&mode=auto&ingredients=${encodeURIComponent(names)}`;
@@ -617,38 +473,20 @@ export default function HomeClient({
       <Header />
       <div className="h-14 md:h-20 flex-shrink-0" />
 
-      {/* 온보딩 미완료 배너 — 비 sticky (자연 flow). X 버튼 또는 온보딩 완료 시 영구 dismiss. */}
+      {/* 온보딩 미완료 배너 — 비 sticky(자연 flow). X 또는 온보딩 완료 시 영구 dismiss.
+          _home/OnboardingBanner.tsx 로 추출(Strangler Fig) — 노출 가드·상태·
+          localStorage dismiss 로직은 HomeClient 소유, 컴포넌트는 표현만. */}
       {showOnboardingBanner && (
-        <div className="w-full border-b border-accent-warm/15 bg-gradient-to-r from-accent-warm/15 via-accent-warm/8 to-accent-warm/15 flex-shrink-0">
-          <div className="max-w-5xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="flex-shrink-0 text-sm leading-none" aria-hidden="true">✨</span>
-              <p className="text-[12px] md:text-sm text-text-primary font-medium truncate">
-                {t.home.onboardingBannerTitle}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => setShowOnboardingModal(true)}
-                className="px-2.5 py-0.5 rounded-full bg-accent-warm hover:bg-accent-hover text-background-primary text-[11px] font-bold active:scale-95 transition-all whitespace-nowrap"
-              >
-                {t.home.onboardingBannerCta}
-              </button>
-              <button
-                onClick={() => {
-                  if (user) localStorage.setItem(LS_KEY_ONBOARDING_BANNER(user.id), '1');
-                  setShowOnboardingBanner(false);
-                }}
-                className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors"
-                aria-label={t.common.close}
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+        <OnboardingBanner
+          title={t.home.onboardingBannerTitle}
+          ctaLabel={t.home.onboardingBannerCta}
+          closeLabel={t.common.close}
+          onCta={() => setShowOnboardingModal(true)}
+          onDismiss={() => {
+            if (user) localStorage.setItem(LS_KEY_ONBOARDING_BANNER(user.id), '1');
+            setShowOnboardingBanner(false);
+          }}
+        />
       )}
 
       {/* 온보딩 위자드 */}
@@ -743,21 +581,16 @@ export default function HomeClient({
 
           {/* 빈 냉장고 가이드 — 로그인 신규 유저(items=0) 전용 overlay.
               단순 CTA → 모달의 multi-select(⭐ 자주 탭)로 한 번에 여러 재료 추가 유도.
-              기존 선반 overlay 경로는 items.length===0 시 자연히 렌더 결과 없으므로 영향 없음. */}
+              기존 선반 overlay 경로는 items.length===0 시 자연히 렌더 결과 없으므로 영향 없음.
+              _home/EmptyFridgeGuide.tsx 로 추출(Strangler Fig) — 노출 가드·showAuthPrompt/
+              addModalLocation 상태·CTA 분기·track 은 HomeClient 소유, 컴포넌트는 표시만. */}
           {user && !loading && items.length === 0 && (
-            <div className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none px-6">
-              <div className="pointer-events-auto bg-background-secondary/95 backdrop-blur-sm border border-accent-warm/30 rounded-2xl shadow-2xl p-5 max-w-[280px] text-center">
-                <div className="text-5xl mb-2" aria-hidden="true">🥕</div>
-                <h2 className="text-base md:text-lg font-bold mb-1.5">{t.home.emptyFridgeTitle}</h2>
-                <p className="text-xs md:text-sm text-text-secondary mb-4 leading-relaxed">{t.home.emptyFridgeDesc}</p>
-                <button
-                  onClick={() => { track('empty_cta_click'); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
-                  className="w-full px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold active:scale-95 transition-all"
-                >
-                  {t.home.emptyFridgeCta}
-                </button>
-              </div>
-            </div>
+            <EmptyFridgeGuide
+              title={t.home.emptyFridgeTitle}
+              desc={t.home.emptyFridgeDesc}
+              cta={t.home.emptyFridgeCta}
+              onCtaClick={() => { track('empty_cta_click'); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
+            />
           )}
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
@@ -773,241 +606,42 @@ export default function HomeClient({
 
 
           {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
-              클릭 시 /recommendations?mode=auto로 진입 → 페이지에서도 같은 판단 로직으로 pill 자동 선택. */}
-          {showRecipeBubble && (() => {
-            const ingQuery = isAuthenticated
-              ? ''
-              : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
-            const href = `/recommendations?mode=auto${ingQuery}`;
-            // 로딩 중이면 shimmer pill
-            if (matchingCount === null) {
-              return (
-                <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap animate-pulse">
-                  <span className="text-base md:text-lg leading-none">💡</span>
-                  <span>{t.home.pillDefault}</span>
-                </div>
-              );
-            }
-            // 라벨 결정
-            let icon = '💡';
-            let label = t.home.pillDefault;
-            if (matchingCount > 0 && resolvedMode) {
-              const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
-              if (resolvedMode === 'ready') { icon = '🔥'; label = t.home.pillReady.replace('{count}', countStr); }
-              else if (resolvedMode === 'almost') { icon = '🛒'; label = t.home.pillAlmost.replace('{count}', countStr); }
-              else { icon = '📋'; label = t.home.pillAll.replace('{count}', countStr); }
-            }
-            return (
-              <Link
-                href={href}
-                onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
-                className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm text-background-primary text-xs md:text-base font-bold shadow-xl shadow-accent-warm/60 ring-2 ring-accent-warm/30 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
-                style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-                aria-label={`${label} — ${t.home.pillAriaSuffix}`}
-              >
-                <span className="text-base md:text-lg leading-none">{icon}</span>
-                <span>{label}</span>
-                <span className="leading-none text-sm md:text-base">→</span>
-              </Link>
-            );
-          })()}
+              클릭 시 /recommendations?mode=auto 진입 → 페이지도 같은 판단 로직으로 pill 자동 선택.
+              _home/RecommendationPill.tsx 로 추출(Strangler Fig) — 노출 가드·matchingCount/
+              resolvedMode 상태·href(items/auth)·track 은 HomeClient 소유, 컴포넌트는 표시 파생만. */}
+          {showRecipeBubble && (
+            <RecommendationPill
+              matchingCount={matchingCount}
+              resolvedMode={resolvedMode}
+              href={`/recommendations?mode=auto${isAuthenticated ? '' : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}`}
+              onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
+              pillDefault={t.home.pillDefault}
+              pillReady={t.home.pillReady}
+              pillAlmost={t.home.pillAlmost}
+              pillAll={t.home.pillAll}
+              ariaSuffix={t.home.pillAriaSuffix}
+            />
+          )}
 
-          {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
-          <div className="absolute inset-0 pointer-events-none">
-            {(() => {
-              // 분배된 본체·냉동 그룹 + 통합 overflow를 상단 useMemo(fridgeShelfDistribution)에서 참조.
-              const { bodyShelfGroups, freezerGroups, totalOverflow } = fridgeShelfDistribution;
-
-              // 렌더 helper — 그룹 chip (대표 항목 + ×N 배지)
-              const renderGroup = (group: FridgeItem[], compact = false) => {
-                const repr = group[0]; // 가장 임박한 항목
-                const groupCount = group.length;
-                const { border, labelKind, labelN, isDanger } = freshState(repr);
-                const label = formatFreshLabel(labelKind, labelN, t);
-                const emoji = getEmoji(repr.ingredient_name, repr.category);
-                const displayName = getDisplayName(repr);
-                const handleClick = (e: React.MouseEvent) => {
-                  if (groupCount > 1) {
-                    e.stopPropagation();
-                    setGroupSheet({ name: displayName, items: group });
-                  } else {
-                    handleChipClickWithLongPress(repr, e);
-                  }
-                };
-                return (
-                  <div key={repr.id} className="relative pointer-events-auto group shrink-0 md:pt-2 md:pr-2 md:-mt-2 md:-mr-2">
-                    <button
-                      onClick={handleClick}
-                      onTouchStart={() => groupCount === 1 && handleChipPressStart(repr)}
-                      onTouchEnd={handleChipPressEnd}
-                      onTouchMove={handleChipPressEnd}
-                      onTouchCancel={handleChipPressEnd}
-                      className={`flex items-center gap-0.5 rounded-md border-2 hover:scale-105 active:scale-95 transition-all ${isDanger ? 'animate-pulse bg-red-100/95' : (label ? 'bg-amber-100/95' : 'bg-white/90')} ${compact ? 'px-0.5 py-0.5' : 'px-1 py-0.5'}`}
-                      style={{
-                        borderColor: border,
-                        boxShadow: isDanger ? `0 0 4px ${border}66` : undefined,
-                      }}
-                      title={`${displayName}${groupCount > 1 ? ` × ${groupCount}` : ''}${label ? ` · ${label}` : ''}`}
-                    >
-                      <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
-                      <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[10px] md:text-[11px] max-w-[80px]'}`}>
-                        {displayName}
-                      </span>
-                      {groupCount > 1 && (
-                        <span className={`font-bold leading-none rounded-full bg-gray-800 text-white ${compact ? 'text-[8px] px-0.5' : 'text-[9px] px-1'}`}>
-                          ×{groupCount}
-                        </span>
-                      )}
-                      {/* 도어 선반은 공간 타이트 → compact 모드에서는 만료 라벨 숨김(툴팁/시트에서 확인 가능) */}
-                      {label && !compact && (
-                        <span className="font-bold leading-none text-[10px] md:text-[11px]" style={{ color: border }}>
-                          {label}
-                        </span>
-                      )}
-                    </button>
-                    {/* 데스크톱 hover 시 우상단 X 버튼 — 그룹 1개일 때만 (다중은 미니 시트에서 개별 삭제) */}
-                    {groupCount === 1 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDeleteFromSheet(repr); }}
-                        className="hidden md:flex absolute top-0 right-0 w-4 h-4 items-center justify-center rounded-full bg-error text-white text-[9px] font-bold opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity shadow-md ring-2 ring-white"
-                        aria-label={`${displayName} ${t.common.delete}`}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                );
-              };
-
-              return (
-                <>
-                  {/* 본체 선반 4개 (냉장 3 + 냉동 1) — per-shelf +N 제거, 서랍에 통합 */}
-                  {SHELVES.map((shelf, idx) => {
-                    const list = idx < 3 ? bodyShelfGroups[idx] : freezerGroups;
-                    const visible = list.slice(0, shelfMax.body);
-                    return (
-                      <div
-                        key={`body-${idx}`}
-                        className="absolute flex flex-wrap items-end justify-center gap-0.5"
-                        style={{ left: SHELF_LEFT, width: SHELF_WIDTH, top: shelf.top, height: shelf.height, pointerEvents: 'none' }}
-                      >
-                        {visible.map(group => renderGroup(group, false))}
-                      </div>
-                    );
-                  })}
-
-                  {/* 도어 선반 데코는 FridgeSVG 내부에 SVG로 직접 렌더됨 (병·카톤 실루엣) */}
-
-                  {/* 전체 재료 목록 + 만료 배너 — 카툰 스타일 대롱대롱 효과.
-                      썸택(thumb-tack) → 노끈(rope) → 태그(tag).
-                      bold black outline + hard cartoon shadow + 미세 흔들림 애니메이션.
-                      비로그인은 데모 재료라 전체 목록 진입 필요성 낮음 + pill과 시각적 겹침 방지로 hide.
-
-                      stack 순서 (위 → 아래):
-                      1. 만료 배너 (expiringCount > 0일 때만, 빨강 톤, 펜던트보다 위)
-                      2. 펜던트 (재료 목록, cream/wood 톤) */}
-                  {isAuthenticated && (
-                  <div
-                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center animate-dangle"
-                    style={{ bottom: 'calc(100% - 2px)' }}
-                  >
-                    {/* 썸택 + 윗 노끈 (배너 위까지) — gradient는 항상 정의돼 있어야 두 SVG가 모두 참조 가능 */}
-                    <svg
-                      width="44"
-                      height={expiringCount > 0 ? 18 : 32}
-                      viewBox={`0 0 44 ${expiringCount > 0 ? 18 : 32}`}
-                      style={{ overflow: 'visible', display: 'block' }}
-                      aria-hidden="true"
-                    >
-                      <defs>
-                        <radialGradient id="dangleTackG" cx="32%" cy="28%" r="72%">
-                          <stop offset="0%" stopColor="#fff5c0"/>
-                          <stop offset="45%" stopColor="#e0a830"/>
-                          <stop offset="100%" stopColor="#5a3208"/>
-                        </radialGradient>
-                        <linearGradient id="dangleRopeG" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#6a3a10"/>
-                          <stop offset="40%" stopColor="#a8731c"/>
-                          <stop offset="100%" stopColor="#5a2e08"/>
-                        </linearGradient>
-                      </defs>
-
-                      {/* 노끈 (썸택 아래 ~ SVG 끝까지) — 배너 있을 땐 짧게, 없을 땐 풀 길이 */}
-                      <line x1="22" y1="9" x2="22" y2={expiringCount > 0 ? 18 : 32} stroke="#000" strokeWidth="4" strokeLinecap="round"/>
-                      <line x1="22" y1="9" x2="22" y2={expiringCount > 0 ? 18 : 32} stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
-                      {/* 꼬임 detail (긴 노끈일 때만 자연스러움) */}
-                      {expiringCount === 0 && (
-                        <>
-                          <line x1="20.5" y1="13" x2="23.5" y2="15" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                          <line x1="20.5" y1="19" x2="23.5" y2="21" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                          <line x1="20.5" y1="25" x2="23.5" y2="27" stroke="rgba(40,20,4,0.55)" strokeWidth="0.7" strokeLinecap="round"/>
-                          <line x1="21.5" y1="12" x2="21.5" y2="30" stroke="rgba(255,235,180,0.45)" strokeWidth="0.6" strokeLinecap="round"/>
-                        </>
-                      )}
-
-                      {/* 썸택 — 항상 노끈 시작점에 */}
-                      <circle cx="22" cy="7" r="7" fill="#000"/>
-                      <circle cx="22" cy="7" r="6" fill="url(#dangleTackG)"/>
-                      <ellipse cx="19.5" cy="4.5" rx="2.5" ry="1.8" fill="rgba(255,250,220,0.85)"/>
-                      <circle cx="22" cy="7" r="1.4" fill="#3a1f08" opacity="0.5"/>
-                    </svg>
-
-                    {/* 만료 임박 배너 — 윗 노끈 끝과 아랫 노끈 시작 사이에 매달림. 한 줄에 두 태그 효과. */}
-                    {expiringCount > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); track('expiring_banner_click', { expiring_count: expiringCount }); setAllSheetMode('expiring'); }}
-                          className="pointer-events-auto flex items-center gap-1 px-3 py-1 rounded-2xl text-[10px] md:text-xs font-extrabold whitespace-nowrap hover:scale-105 active:scale-95 transition-all animate-pulse"
-                          style={{
-                            background: '#fecaca',
-                            color: '#7c2d12',
-                            border: '2px solid #000',
-                            boxShadow: '0 3px 0 #000, 0 5px 8px rgba(0,0,0,0.3)',
-                          }}
-                          aria-label={t.home.expiringBannerAria.replace('{count}', String(expiringCount))}
-                        >
-                          <span>{t.home.expiringBannerLabel.replace('{count}', String(expiringCount))}</span>
-                        </button>
-
-                        {/* 아랫 노끈 — 배너 ~ 펜던트 태그 사이 연결. 같은 dangleRopeG 참조(첫 SVG 정의) */}
-                        <svg
-                          width="44"
-                          height="12"
-                          viewBox="0 0 44 12"
-                          style={{ overflow: 'visible', display: 'block' }}
-                          aria-hidden="true"
-                        >
-                          <line x1="22" y1="0" x2="22" y2="12" stroke="#000" strokeWidth="4" strokeLinecap="round"/>
-                          <line x1="22" y1="0" x2="22" y2="12" stroke="url(#dangleRopeG)" strokeWidth="2.4" strokeLinecap="round"/>
-                        </svg>
-                      </>
-                    )}
-
-                    {/* 펜던트 태그 — cream/wood 톤 (빈티지 나무 명패 컨셉). 노끈·썸택 갈색 톤과 일관 + 페이지 솔리드 오렌지 분포 감소.
-                        칩 truncate(60→80px 보강 후에도 정확 이름 확인) 동선의 진입점이므로 발견성 약간 강화 — 폰트 size 한 단계 ↑, padding 살짝 ↑, hover scale 더 강. */}
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); track('pendant_click', { items_count: items.length, overflow: totalOverflow }); setAllSheetMode('all'); }}
-                      className="pointer-events-auto -mt-[3px] flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[11px] md:text-sm font-extrabold whitespace-nowrap hover:scale-110 active:scale-95 transition-all"
-                      style={{
-                        background: '#f4d8a0',
-                        color: '#5a3208',
-                        border: '2px solid #000',
-                        boxShadow: '0 3px 0 #000, 0 6px 10px rgba(0,0,0,0.35)',
-                      }}
-                      title={t.home.ingredientList}
-                      aria-label={t.home.ingredientList}
-                    >
-                      <span className="text-base md:text-lg leading-none">📋</span>
-                      <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
-                    </button>
-                  </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
+          {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단).
+              _home/FridgeShelves.tsx 로 추출(Strangler Fig Step 2) — IIFE 본문 byte-identical.
+              chip 인터랙션 핸들러·상태는 HomeClient 소유(향후 Step 3 hook 추출 대상),
+              컴포넌트는 분배 결과·표시 헬퍼·콜백만. props 명 = 원 변수명(diff 0). */}
+          <FridgeShelves
+            fridgeShelfDistribution={fridgeShelfDistribution}
+            shelfMax={shelfMax}
+            items={items}
+            expiringCount={expiringCount}
+            isAuthenticated={isAuthenticated}
+            t={t}
+            getDisplayName={getDisplayName}
+            setGroupSheet={setGroupSheet}
+            handleChipClickWithLongPress={handleChipClickWithLongPress}
+            handleChipPressStart={handleChipPressStart}
+            handleChipPressEnd={handleChipPressEnd}
+            handleDeleteFromSheet={handleDeleteFromSheet}
+            setAllSheetMode={setAllSheetMode}
+          />
 
         </div>
 
@@ -1140,59 +774,17 @@ export default function HomeClient({
 
       <BottomNav />
 
-      {/* 모바일 검색 오버레이 (배경 블러 + 아이콘에서 나오는 애니메이션) */}
-      <div
-        onClick={() => setShowMobileSearch(false)}
-        aria-hidden={!showMobileSearch}
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ease-out ${
-          showMobileSearch
-            ? 'opacity-100 bg-black/50 backdrop-blur-md pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
+      {/* 모바일 검색 오버레이 — _home/MobileSearchOverlay.tsx 로 추출(Strangler Fig).
+          open(showMobileSearch) 상태·toggle-fridge-search 리스너·useEscapeKey 는
+          HomeClient 소유, 컴포넌트는 표시·onClose 만. 도달성은 useLocalizedPathname
+          기반 BottomNav.isFridgeHome 정상화에 의존(i18n dead 버그 fix). */}
+      <MobileSearchOverlay
+        open={showMobileSearch}
+        onClose={() => setShowMobileSearch(false)}
+        navRecipes={t.home.navRecipes}
+        navTips={t.home.navTips}
+        closeLabel={t.common.closeSearch}
       />
-      <div
-        aria-hidden={!showMobileSearch}
-        className={`fixed left-0 right-0 top-20 px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
-          showMobileSearch
-            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-            : 'opacity-0 translate-y-[20vh] scale-[0.5] pointer-events-none'
-        }`}
-      >
-        <div className="max-w-md mx-auto space-y-2">
-          {/* 페이지 빠른 이동 — 홈에서 레시피·팁 페이지로 바로 이동 */}
-          <div className="flex items-center gap-1.5">
-            <Link
-              href="/recipes"
-              onClick={() => setShowMobileSearch(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
-            >
-              <span>📋</span><span>{t.home.navRecipes}</span>
-            </Link>
-            <Link
-              href="/tip"
-              onClick={() => setShowMobileSearch(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
-            >
-              <span>💡</span><span>{t.home.navTips}</span>
-            </Link>
-          </div>
-          {/* 검색창 */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SearchBar autoFocus={showMobileSearch} />
-            </div>
-            <button
-              onClick={() => setShowMobileSearch(false)}
-              aria-label={t.common.closeSearch}
-              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

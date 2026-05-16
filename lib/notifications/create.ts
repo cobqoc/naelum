@@ -1,6 +1,20 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 
 type NotificationType = 'like' | 'comment' | 'rating' | 'save' | 'meal_time' | 'expiry';
+
+// 알림은 *행위자*(A)가 *수신자*(B) 행을 생성한다(A ≠ B). notifications RLS 는
+// SELECT/UPDATE 만(auth.uid()=user_id) — INSERT 정책이 없어 user-context
+// 클라이언트 insert 는 조용히 거부됐다(2026-05-17 RLS 감사서 발견한 선존
+// 데이터유실 버그: 댓글·평점·낼름 알림 미발송). owner-scoped INSERT 정책은
+// 의미상 부적합(타인 알림 차단) / true 정책은 스팸 취약 → 알림 insert 는
+// service-role 로 한다(lib/ratelimit.ts 와 동일 패턴). RLS 마이그레이션 아님.
+function notificationAdminClient(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 interface CreateNotificationParams {
   supabase: SupabaseClient;
@@ -15,7 +29,7 @@ interface CreateNotificationParams {
 }
 
 export async function createNotification({
-  supabase,
+  supabase: _supabase, // 시그니처 안정용 유지 — insert 는 service-role 로(위 주석)
   userId,
   type,
   title,
@@ -28,19 +42,20 @@ export async function createNotification({
   // Don't notify yourself
   if (relatedUserId && userId === relatedUserId) return;
 
-  try {
-    await supabase.from('notifications').insert({
-      user_id: userId,
-      notification_type: type,
-      title,
-      message,
-      action_url: actionUrl || null,
-      related_user_id: relatedUserId || null,
-      related_recipe_id: relatedRecipeId || null,
-      related_comment_id: relatedCommentId || null,
-      is_read: false,
-    });
-  } catch (error) {
+  // Supabase 는 RLS 거부 시 throw 하지 않고 { error } 반환 — try/catch 로는
+  // 못 잡는다. service-role insert + 명시적 error 체크(더 이상 silent 아님).
+  const { error } = await notificationAdminClient().from('notifications').insert({
+    user_id: userId,
+    notification_type: type,
+    title,
+    message,
+    action_url: actionUrl || null,
+    related_user_id: relatedUserId || null,
+    related_recipe_id: relatedRecipeId || null,
+    related_comment_id: relatedCommentId || null,
+    is_read: false,
+  });
+  if (error) {
     console.error('Failed to create notification:', error);
   }
 }

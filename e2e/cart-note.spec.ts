@@ -60,9 +60,14 @@ test.describe('장보기 항목 메모', () => {
       res.url().includes('/api/shopping-list') && res.request().method() === 'PATCH'
     );
     await input.press('Enter');
+    // onBlur 가 await updateNote(=await fetch PATCH) 후 setEditingNoteId(null) →
+    // input 닫힘/메모 표시는 PATCH 네트워크 종속. UI 단언 전에 PATCH 를 결정적
+    // 으로 대기(네트워크 지연을 단언 예산서 분리 = 올바른 동기화·flaky 완화).
+    // ⚠️ 잔여 flaky 는 ShoppingCartDropdown optimistic/캐시-이벤트 컴포넌트
+    // 레벨 race — test-side 만으로 완전 제거 불가(별도 컴포넌트 fix 필요).
+    await patchPromise;
     await expect(input).toBeHidden();
     await expect(page.locator('button', { hasText: '유기농 우대' })).toBeVisible();
-    await patchPromise;
 
     // DB 검증
     const { data } = await admin()
@@ -101,9 +106,10 @@ test.describe('장보기 항목 메모', () => {
       res.url().includes('/api/shopping-list') && res.request().method() === 'PATCH'
     );
     await input.blur();
+    // input 닫힘/메모 표시는 onBlur 의 await PATCH 종속 → 단언 전 결정적 대기(완화).
+    await patchPromise;
     await expect(input).toBeHidden();
     await expect(page.locator('button', { hasText: '마트B 1+2' })).toBeVisible();
-    await patchPromise;
 
     const { data } = await admin()
       .from('shopping_list_items')
@@ -133,10 +139,12 @@ test.describe('장보기 항목 메모', () => {
       res.url().includes('/api/shopping-list') && res.request().method() === 'PATCH'
     );
     await input.press('Enter');
-    await expect(input).toBeHidden();
-    // 다시 "+ 메모" 버튼이 노출됨
-    await expect(page.getByRole('button', { name: /\+ 메모/ })).toBeVisible();
+    // input 닫힘·"+ 메모" 재노출은 onBlur 의 await PATCH(note→null) 종속 →
+    // UI 단언 전에 PATCH 를 결정적으로 대기(flaky 완화. 잔여=컴포넌트 race).
     await patchPromise;
+    await expect(input).toBeHidden();
+    // 다시 "+ 메모" 버튼이 노출됨 (note→null 반영 후)
+    await expect(page.getByRole('button', { name: /\+ 메모/ })).toBeVisible();
 
     const { data } = await admin()
       .from('shopping_list_items')

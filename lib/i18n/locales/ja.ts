@@ -1233,7 +1233,6 @@ export const ja = {
     clearAll: 'すべて削除',
     clearAllConfirm: '買い物リストをすべて空にしますか？',
     clearAllAria: 'すべて削除',
-    quickAddTitle: 'よく追加する食材',
     unitLabel: '単位',
     unitNone: '単位なし',
     mergedToast: '同じ食材{count}個を合算しました',
@@ -1351,6 +1350,8 @@ export const ja = {
     errorMinLength: '10文字以上入力してください。',
     errorSubmit: '送信に失敗しました。',
     errorNetwork: 'ネットワークエラーが発生しました。',
+    feedbackButton: 'フィードバック',
+    feedbackAria: 'フィードバックを送る',
   },
   meta: {
     aboutTitle: '낼름について — あなたの言語で楽しむ韓国料理レシピ',

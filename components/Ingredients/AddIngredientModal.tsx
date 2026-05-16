@@ -74,7 +74,6 @@ export default function AddIngredientModal({
         : null
     );
     // 모달 닫혔다 다시 열릴 때 힌트 상태 초기화
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowHint(false);
   }, [isOpen, location]);
 
@@ -194,7 +193,6 @@ export default function AddIngredientModal({
             onSubmit={onAddIngredient}
             onCancel={onClose}
             selectedLocation={selectedLocation}
-            onLocationChange={setSelectedLocation}
           />
         </div>
       </div>
