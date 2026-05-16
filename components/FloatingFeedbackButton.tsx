@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { usePathname } from 'next/navigation'
+import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname'
 
 // ContactModal은 무겁고(이미지 업로드 등) 거의 열리지 않으므로 lazy load
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
@@ -22,7 +22,9 @@ const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
  */
 export default function FloatingFeedbackButton() {
   const [open, setOpen] = useState(false)
-  const pathname = usePathname()
+  // i18n: /[lang] 제거된 bare 경로 — 숨김 조건이 /login·/admin·/ 등
+  // bare 경로 기준이라 raw usePathname()(=/ko…)이면 전부 매칭 실패(근본 원인 fix).
+  const pathname = useLocalizedPathname()
 
   const shouldHide =
     pathname.startsWith('/auth/') ||

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from '@/components/Common/LocalizedLink';
-import { usePathname } from 'next/navigation';
+import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname';
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
@@ -94,7 +94,9 @@ interface NavItem {
 }
 
 export default function BottomNav() {
-  const pathname = usePathname();
+  // i18n: /[lang] prefix 제거된 bare 경로 — isActive·isFridgeHome 비교용.
+  // raw usePathname()(=/ko…)을 '/' 와 비교하면 항상 어긋남(근본 원인 fix).
+  const pathname = useLocalizedPathname();
   const { t } = useI18n();
   const [showCart, setShowCart] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
