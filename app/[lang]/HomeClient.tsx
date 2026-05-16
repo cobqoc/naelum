@@ -17,6 +17,10 @@ import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import FridgeSVG from './_home/FridgeSVG';
 import OnboardingBanner from './_home/OnboardingBanner';
+import RecommendationPill from './_home/RecommendationPill';
+import EmptyFridgeGuide from './_home/EmptyFridgeGuide';
+import MobileSearchOverlay from './_home/MobileSearchOverlay';
+import { computeFridgeShelfDistribution } from '@/lib/home/fridgeShelfDistribution';
 import {
   DELETE_UNDO_WINDOW_MS,
   RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
@@ -114,42 +118,12 @@ export default function HomeClient({
   // 냉장고 본체·냉동 선반 분배 + 통합 overflow — items·shelfMax 바뀔 때만 재계산.
   // 도어 선반 분배 제거 — 모든 냉장 재료는 본체 선반(3단)에 통합 표시.
   // 같은 이름끼리 그룹화해 한 chip으로 표시 (×N 배지). 클릭 시 그룹 2+면 미니 시트.
-  const fridgeShelfDistribution = useMemo(() => {
-    // 같은 이름끼리 그룹화 (case-insensitive). 그룹 정렬 = 그룹 내 가장 임박한 항목 기준.
-    const groupByName = (list: FridgeItem[]): FridgeItem[][] => {
-      const buckets = new Map<string, FridgeItem[]>();
-      for (const item of list) {
-        const key = item.ingredient_name.trim().toLowerCase();
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key)!.push(item);
-      }
-      // 그룹 내 항목 정렬 (가장 임박 우선)
-      const groups = Array.from(buckets.values()).map(g => g.sort((a, b) => urgencyScore(a) - urgencyScore(b)));
-      // 그룹 간 정렬 = 그룹 대표(첫 항목) 기준
-      return groups.sort((a, b) => urgencyScore(a[0]) - urgencyScore(b[0]));
-    };
-
-    const nonFreezer = items.filter(i => i.storage_location !== '냉동');
-    const freezerRaw = items.filter(i => i.storage_location === '냉동');
-
-    const nonFreezerGroups = groupByName(nonFreezer);
-    const freezerGroups = groupByName(freezerRaw);
-
-    // 본체 선반 3단에 그룹 단위로 분배
-    const bodyShelfGroups: FridgeItem[][][] = [[], [], []];
-    nonFreezerGroups.forEach((group, i) => {
-      bodyShelfGroups[Math.min(Math.floor(i / shelfMax.body), 2)].push(group);
-    });
-
-    // overflow는 그룹 단위 카운트
-    let totalOverflow = 0;
-    bodyShelfGroups.forEach(list => {
-      if (list.length > shelfMax.body) totalOverflow += list.length - shelfMax.body;
-    });
-    if (freezerGroups.length > shelfMax.body) totalOverflow += freezerGroups.length - shelfMax.body;
-
-    return { bodyShelfGroups, freezerGroups, totalOverflow };
-  }, [items, shelfMax.body]);
+  // 순수 알고리즘은 lib/home/fridgeShelfDistribution 로 추출(god-file 분해 Step 1).
+  // urgencyScore 는 비순수 그래프(helpers→quickAddList/emoji)라 주입 → lib 순수 유지.
+  const fridgeShelfDistribution = useMemo(
+    () => computeFridgeShelfDistribution(items, shelfMax.body, urgencyScore),
+    [items, shelfMax.body],
+  );
 
   // 추가 모달 (사진 업로드 포함) — FAB/빈 선반/overflow 탭 시 열림
   const [addModalLocation, setAddModalLocation] = useState<string | null>(null);
@@ -724,21 +698,16 @@ export default function HomeClient({
 
           {/* 빈 냉장고 가이드 — 로그인 신규 유저(items=0) 전용 overlay.
               단순 CTA → 모달의 multi-select(⭐ 자주 탭)로 한 번에 여러 재료 추가 유도.
-              기존 선반 overlay 경로는 items.length===0 시 자연히 렌더 결과 없으므로 영향 없음. */}
+              기존 선반 overlay 경로는 items.length===0 시 자연히 렌더 결과 없으므로 영향 없음.
+              _home/EmptyFridgeGuide.tsx 로 추출(Strangler Fig) — 노출 가드·showAuthPrompt/
+              addModalLocation 상태·CTA 분기·track 은 HomeClient 소유, 컴포넌트는 표시만. */}
           {user && !loading && items.length === 0 && (
-            <div className="absolute inset-0 z-[25] flex items-center justify-center pointer-events-none px-6">
-              <div className="pointer-events-auto bg-background-secondary/95 backdrop-blur-sm border border-accent-warm/30 rounded-2xl shadow-2xl p-5 max-w-[280px] text-center">
-                <div className="text-5xl mb-2" aria-hidden="true">🥕</div>
-                <h2 className="text-base md:text-lg font-bold mb-1.5">{t.home.emptyFridgeTitle}</h2>
-                <p className="text-xs md:text-sm text-text-secondary mb-4 leading-relaxed">{t.home.emptyFridgeDesc}</p>
-                <button
-                  onClick={() => { track('empty_cta_click'); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
-                  className="w-full px-4 py-2.5 rounded-xl bg-accent-warm hover:bg-accent-hover text-background-primary text-sm font-bold active:scale-95 transition-all"
-                >
-                  {t.home.emptyFridgeCta}
-                </button>
-              </div>
-            </div>
+            <EmptyFridgeGuide
+              title={t.home.emptyFridgeTitle}
+              desc={t.home.emptyFridgeDesc}
+              cta={t.home.emptyFridgeCta}
+              onCtaClick={() => { track('empty_cta_click'); if (!isAuthenticated) { setShowAuthPrompt(true); } else { setAddModalLocation('auto'); } }}
+            />
           )}
 
           {/* FAB(+) 재료 추가 — 왼쪽 냉동고 도어 내부 상단 (도어 선반 바로 위). y=63% 영역.
@@ -754,44 +723,22 @@ export default function HomeClient({
 
 
           {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
-              클릭 시 /recommendations?mode=auto로 진입 → 페이지에서도 같은 판단 로직으로 pill 자동 선택. */}
-          {showRecipeBubble && (() => {
-            const ingQuery = isAuthenticated
-              ? ''
-              : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
-            const href = `/recommendations?mode=auto${ingQuery}`;
-            // 로딩 중이면 shimmer pill
-            if (matchingCount === null) {
-              return (
-                <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap animate-pulse">
-                  <span className="text-base md:text-lg leading-none">💡</span>
-                  <span>{t.home.pillDefault}</span>
-                </div>
-              );
-            }
-            // 라벨 결정
-            let icon = '💡';
-            let label = t.home.pillDefault;
-            if (matchingCount > 0 && resolvedMode) {
-              const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
-              if (resolvedMode === 'ready') { icon = '🔥'; label = t.home.pillReady.replace('{count}', countStr); }
-              else if (resolvedMode === 'almost') { icon = '🛒'; label = t.home.pillAlmost.replace('{count}', countStr); }
-              else { icon = '📋'; label = t.home.pillAll.replace('{count}', countStr); }
-            }
-            return (
-              <Link
-                href={href}
-                onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
-                className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm text-background-primary text-xs md:text-base font-bold shadow-xl shadow-accent-warm/60 ring-2 ring-accent-warm/30 hover:bg-accent-hover hover:scale-105 active:scale-95 transition-transform whitespace-nowrap"
-                style={{ animation: 'naelum-bubble-pulse 2.4s ease-in-out infinite' }}
-                aria-label={`${label} — ${t.home.pillAriaSuffix}`}
-              >
-                <span className="text-base md:text-lg leading-none">{icon}</span>
-                <span>{label}</span>
-                <span className="leading-none text-sm md:text-base">→</span>
-              </Link>
-            );
-          })()}
+              클릭 시 /recommendations?mode=auto 진입 → 페이지도 같은 판단 로직으로 pill 자동 선택.
+              _home/RecommendationPill.tsx 로 추출(Strangler Fig) — 노출 가드·matchingCount/
+              resolvedMode 상태·href(items/auth)·track 은 HomeClient 소유, 컴포넌트는 표시 파생만. */}
+          {showRecipeBubble && (
+            <RecommendationPill
+              matchingCount={matchingCount}
+              resolvedMode={resolvedMode}
+              href={`/recommendations?mode=auto${isAuthenticated ? '' : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}`}
+              onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
+              pillDefault={t.home.pillDefault}
+              pillReady={t.home.pillReady}
+              pillAlmost={t.home.pillAlmost}
+              pillAll={t.home.pillAll}
+              ariaSuffix={t.home.pillAriaSuffix}
+            />
+          )}
 
           {/* 선반 overlay — 본체 선반(3단 냉장 + 1단 냉동) + 도어 선반(좌/우 각 2단) */}
           <div className="absolute inset-0 pointer-events-none">
@@ -1121,59 +1068,17 @@ export default function HomeClient({
 
       <BottomNav />
 
-      {/* 모바일 검색 오버레이 (배경 블러 + 아이콘에서 나오는 애니메이션) */}
-      <div
-        onClick={() => setShowMobileSearch(false)}
-        aria-hidden={!showMobileSearch}
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ease-out ${
-          showMobileSearch
-            ? 'opacity-100 bg-black/50 backdrop-blur-md pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
-        }`}
+      {/* 모바일 검색 오버레이 — _home/MobileSearchOverlay.tsx 로 추출(Strangler Fig).
+          open(showMobileSearch) 상태·toggle-fridge-search 리스너·useEscapeKey 는
+          HomeClient 소유, 컴포넌트는 표시·onClose 만. 도달성은 useLocalizedPathname
+          기반 BottomNav.isFridgeHome 정상화에 의존(i18n dead 버그 fix). */}
+      <MobileSearchOverlay
+        open={showMobileSearch}
+        onClose={() => setShowMobileSearch(false)}
+        navRecipes={t.home.navRecipes}
+        navTips={t.home.navTips}
+        closeLabel={t.common.closeSearch}
       />
-      <div
-        aria-hidden={!showMobileSearch}
-        className={`fixed left-0 right-0 top-20 px-4 z-50 md:hidden origin-bottom transition-all duration-[450ms] ease-out ${
-          showMobileSearch
-            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-            : 'opacity-0 translate-y-[20vh] scale-[0.5] pointer-events-none'
-        }`}
-      >
-        <div className="max-w-md mx-auto space-y-2">
-          {/* 페이지 빠른 이동 — 홈에서 레시피·팁 페이지로 바로 이동 */}
-          <div className="flex items-center gap-1.5">
-            <Link
-              href="/recipes"
-              onClick={() => setShowMobileSearch(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
-            >
-              <span>📋</span><span>{t.home.navRecipes}</span>
-            </Link>
-            <Link
-              href="/tip"
-              onClick={() => setShowMobileSearch(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-background-secondary border border-white/10 shadow-md text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-background-tertiary transition-colors active:scale-95"
-            >
-              <span>💡</span><span>{t.home.navTips}</span>
-            </Link>
-          </div>
-          {/* 검색창 */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SearchBar autoFocus={showMobileSearch} />
-            </div>
-            <button
-              onClick={() => setShowMobileSearch(false)}
-              aria-label={t.common.closeSearch}
-              className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-background-secondary border border-white/10 shadow-lg text-text-primary hover:bg-background-tertiary transition-colors"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
