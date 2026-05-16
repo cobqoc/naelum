@@ -12,8 +12,9 @@ import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
 import TagsField from './_components/TagsField';
 import NutritionFields from './_components/NutritionFields';
 import StepsSection from './_components/StepsSection';
+import IngredientsSection from './_components/IngredientsSection';
 import {
-  CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS, UNITS,
+  CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS,
   CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
@@ -912,190 +913,28 @@ export default function NewRecipePage() {
           </h2>
           <p className="text-sm text-text-muted">{tf.ingredientsHint}</p>
 
-          {/* 통합된 재료 준비 영역 */}
-          <div className="rounded-xl bg-background-secondary p-4 md:p-6 space-y-6">
-            {/* 재료 준비 이미지 */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-text-secondary">{tf.ingredientsPhotoLabel}</label>
-              {ingredientsImage ? (
-                <div className="relative w-full h-64">
-                  <Image
-                    src={ingredientsImage}
-                    alt={tf.ingredientsPhotoLabel}
-                    fill
-                    className="object-cover rounded-xl"
-                  />
-                  <button
-                    onClick={handleIngredientsImageRemove}
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-error transition-all text-xl"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : (
-                <label className="block w-full">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleIngredientsImageUpload(file);
-                      }
-                      e.target.value = '';
-                    }}
-                    className="hidden"
-                    disabled={uploadingIngredientsImage}
-                  />
-                  <div
-                    className={`w-full h-40 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                      isDraggingIngredients
-                        ? 'border-accent-warm bg-accent-warm/10'
-                        : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
-                    }`}
-                    onDragOver={handleIngredientsDrag}
-                    onDragEnter={handleIngredientsDragIn}
-                    onDragLeave={handleIngredientsDragOut}
-                    onDrop={handleIngredientsDrop}
-                  >
-                    {uploadingIngredientsImage ? (
-                      <>
-                        <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm text-text-muted">{tf.uploading}</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-10 h-10 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-text-primary">{tf.ingredientsPhotoAdd}</p>
-                          <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </label>
-              )}
-            </div>
-
-            {/* 구분선 */}
-            <div className="border-t border-white/10"></div>
-
-            {/* 재료 입력 테이블 */}
-            <div className="space-y-2">
-              {/* Header */}
-              <div className="hidden sm:grid sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 text-xs text-text-muted pb-2 border-b border-white/10">
-              <span>{tf.ingName} *</span>
-              <span>{tf.ingQuantity}</span>
-              <span>{tf.ingUnit}</span>
-              <span>{tf.ingNotes}</span>
-              <span></span>
-            </div>
-
-            {/* Ingredient Rows */}
-            {ingredients.map((ing, index) => {
-              const standardUnits = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
-              const isCustomUnit = ing.unit === '' || !standardUnits.includes(ing.unit);
-
-              return (
-                <div key={index} className="space-y-2">
-                  {/* Row 1: Main ingredient info (always visible) */}
-                  <div className="grid grid-cols-[1fr_80px_60px_32px] sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 items-center">
-                    {/* 재료명 입력 */}
-                    <input
-                      type="text"
-                      value={ing.ingredient_name}
-                      onChange={(e) => updateIngredient(index, 'ingredient_name', e.target.value)}
-                      className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={getPlaceholder(index, 'name')}
-                    />
-                    <input
-                      type="text"
-                      value={ing.quantity}
-                      onChange={(e) => updateIngredient(index, 'quantity', e.target.value)}
-                      className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={getPlaceholder(index, 'quantity')}
-                    />
-                    {isCustomUnit ? (
-                      <input
-                        ref={(el) => { unitInputRefs.current[index] = el; }}
-                        type="text"
-                        value={ing.unit}
-                        onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                        onBlur={(e) => {
-                          if (e.target.value === '') {
-                            updateIngredient(index, 'unit', '선택');
-                          }
-                        }}
-                        className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                        placeholder={tf.ingUnitPlaceholder}
-                      />
-                    ) : (
-                      <select
-                        value={ing.unit}
-                        onChange={(e) => {
-                          if (e.target.value === '기타') {
-                            updateIngredient(index, 'unit', '');
-                            // 다음 렌더링 후 input에 자동 포커스
-                            setTimeout(() => {
-                              unitInputRefs.current[index]?.focus();
-                            }, 0);
-                          } else {
-                            updateIngredient(index, 'unit', e.target.value);
-                          }
-                        }}
-                        className="w-full rounded-lg bg-background-tertiary px-1 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      >
-                        {UNITS.map(u => (
-                          <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
-                        ))}
-                      </select>
-                    )}
-                    {/* Notes - Desktop only (in grid) */}
-                    <input
-                      type="text"
-                      value={ing.notes}
-                      onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
-                      className="hidden sm:block w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={getPlaceholder(index, 'notes')}
-                    />
-                    <button
-                      onClick={() => removeIngredient(index)}
-                      disabled={ingredients.length <= 5}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                        ingredients.length <= 5
-                          ? 'text-text-muted opacity-30'
-                          : 'text-error hover:bg-error/10'
-                      }`}
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  {/* Row 2: Notes on mobile (full width below) */}
-                  <div className="sm:hidden">
-                    <input
-                      type="text"
-                      value={ing.notes}
-                      onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
-                      className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                      placeholder={tf.ingNotesPlaceholder}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            </div>
-
-            {/* 재료 추가 버튼 */}
-            <button
-              onClick={addIngredients}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
-            >
-              {tf.addFiveIngredients}
-            </button>
-          </div>
+          {/* 통합된 재료 준비 영역 — _components/IngredientsSection.tsx 로 추출
+              (Strangler Fig). 상태·로직·ref·getPlaceholder 는 page 소유, 컴포넌트는
+              값+콜백만 받는 순수 표현. 부모는 <section>·h2·hint 유지. */}
+          <IngredientsSection
+            t={t}
+            tf={tf}
+            ingredients={ingredients}
+            ingredientsImage={ingredientsImage}
+            uploadingIngredientsImage={uploadingIngredientsImage}
+            isDraggingIngredients={isDraggingIngredients}
+            unitInputRefs={unitInputRefs}
+            getPlaceholder={getPlaceholder}
+            onAddIngredients={addIngredients}
+            onRemoveIngredient={removeIngredient}
+            onUpdateIngredient={updateIngredient}
+            onImageUpload={handleIngredientsImageUpload}
+            onImageRemove={handleIngredientsImageRemove}
+            onDrag={handleIngredientsDrag}
+            onDragIn={handleIngredientsDragIn}
+            onDragOut={handleIngredientsDragOut}
+            onDrop={handleIngredientsDrop}
+          />
         </section>
 
         {/* Section 3: 조리 순서 */}

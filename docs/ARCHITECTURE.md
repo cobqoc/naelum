@@ -298,8 +298,8 @@ e2e/
 
 | 파일 | 줄수 | 상태 | 다음 액션 |
 |---|---|---|---|
-| `app/[lang]/recipes/new/page.tsx` | ~1431 | 🔄 진행 | `TagsField`·`NutritionFields` 추출 완료(`_components/`, 행위보존·strict 타입·e2e 검증, 1565→1431줄). `validateNutritionInput`은 NutritionFields 전용이라 응집 이동. 다음: `StepsSection` → `IngredientsSection` 순. 각 추출 = 순수 props 컴포넌트, 상태는 page 소유 유지 |
-| `app/[lang]/HomeClient.tsx` | ~1199 | ⬜ 설계됨 | 추출 후보(결합도 낮은 순): `OnboardingBanner` → `RecommendationPill` → 냉장고 영역 hook(`useFridgeInteractions`). **착수 전 제** `e2e/logged-in-home.spec.ts` 에 배너/추천 상호작용 회귀 추가 필수 |
+| `app/[lang]/recipes/new/page.tsx` | ~1171 | ✅ 주요 분해 완료 | `TagsField`·`NutritionFields`·`StepsSection`·`IngredientsSection` 4개 `_components/` 추출 완료(행위보존·strict 타입·recipe-creation e2e 검증, 1587→1171줄 ≈ -26%). `validateNutritionInput` 응집 이동. 남은 god-file 아님 — 추가 추출은 필요 시 동일 규약(순수 props, 상태 page 소유) |
+| `app/[lang]/HomeClient.tsx` | ~1197 | 🔄 진행 | `OnboardingBanner` 추출 완료(`_home/`, e2e 회귀 2종 + 냉장고 칩 회귀 선보강). 다음 후보: `RecommendationPill`(기존 e2e 커버 있음) → `useFridgeInteractions`(hook 추출 — 칩 안전망 추가됨, 상태+로직 이동이라 고위험·별도 패턴). 착수 전 해당 상호작용 e2e 회귀 확인 |
 
 **추출 규약** (TagsField 가 레퍼런스):
 1. 상태·핸들러는 부모가 소유, 자식은 값+콜백만 받는 **순수 표현 컴포넌트**
