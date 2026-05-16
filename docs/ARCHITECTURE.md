@@ -300,10 +300,14 @@ e2e/
 
 이게 Strangler Fig 패턴이고, 실패율이 낮은 리팩터 전략이다.
 
-### god-file 분해 계획 (recipes/new · HomeClient) — 검토하에 점진
+### god-file 분해 계획 — 검토하에 점진
 
-영상 「2차 소프트웨어 위기」의 "이해 부채" 표본 2개. **Big Rewrite 금지**
+영상 「2차 소프트웨어 위기」의 "이해 부채" 상환. **Big Rewrite 금지**
 원칙대로, 회귀 안전망을 먼저 두껍게 한 뒤 **결합도 낮은 블록부터** 추출한다.
+
+> **Phase 1 (recipes/new · HomeClient) 완료** — 아래 ✅ 2개.
+> **Phase 2 (다음 이어서 작업) 미착수** — "Phase 2 표" 절 참조. 인프라(vitest·e2e·CI)는
+> 이미 구축돼 한계비용 최저. 표본 2개 끝났다고 god-file 정비가 끝난 게 아님.
 
 | 파일 | 줄수 | 상태 | 다음 액션 |
 |---|---|---|---|
@@ -320,6 +324,36 @@ e2e/
 > `app/loading.tsx` Suspense fallback 뒤 하이드레이션된다. 일부 headless
 > 환경에서 splash hang → UI e2e 는 `test.fixme` 로 CI 게이트에 위임.
 > timeout 으로 가리지 말 것(증상 은폐 금지).
+
+#### Phase 2 — recipes/[id]/edit ✅ 완료 (2026-05-17), 나머지 미착수
+
+Phase 1 표본 2개는 끝났지만 영상의 "이해 부채" 처방은 *지속적* 상환이다.
+2026-05-17 전 소스 재스캔 결과 **계획에 누락돼 있던 최대 로직 파일**이 드러남.
+
+| 파일 | 줄수 | 우선 | 다음 액션 |
+|---|---|---|---|
+| `app/[lang]/recipes/[id]/edit/page.tsx` | ~~1365~~ → **865 (-37%)** | ✅ **완료 2026-05-17** | **회귀 안전망 선작성(`e2e/recipe-edit.spec.ts` 6케이스: 데이터로드·단계제목·재료삭제 임계·제출 영속)이 분해 전 *선존 critical 버그* 발견** → recipe_ingredients/steps/tags RLS 쓰기정책 누락(데이터 유실, dev+prod 수정, [[project-recipe-children-rls-fix]]). **"recipes/new/_components 재사용" 예측은 코드 정독으로 *반증됨*** — new/edit 폼이 이미 분기(단계 제목 유무·재료 삭제 임계 `<=1`vs`<=5`·영양 검증 상한). 무지성 재사용 시 회귀 → **TagsField 만 공유 재사용**(진짜 동일, focus:ring-2 멱등), **BasicInfoSection·NutritionFields·IngredientsSection·StepsSection 은 edit *현재* JSX 와 byte-identical 한 edit 전용 `_components/` 로 추출**(상태·핸들러 page 소유, 행위 변경 0). 검증: lint 0err·build·vitest 85·e2e 28/28(안전망+creation+detail) green. new/edit 폼 통합은 별도 제품 결정(범위 밖) |
+| `components/ShoppingCartDropdown.tsx` | ~1087 | 🟡 2순위 | cart 메모 race fix 들어간 파일. quick-add·항목 스테퍼·공유·메모편집 블록을 순수 표현으로 분리 가능 |
+| `app/[lang]/[username]/page.tsx` | ~928 | 🟡 3순위 | 프로필 탭(작성/낼름함/팔로우) 표현 분리 |
+| `components/Ingredients/IngredientForm.tsx` | ~899 | 🟡 3순위 | DetailFields 외 잔여 폼 블록 추출 |
+| `components/RecipeCookMode.tsx` | ~753 | 🟢 후순위 | 타이머/음성 hook 은 이미 분리됨. 스텝 렌더만 |
+
+> `app/[lang]/_home/FridgeSVG.tsx`(~1295)·`lib/i18n/locales/*`(각 ~1615)·
+> `lib/supabase/database.types.ts`(~1137)는 **분해 대상 아님** — 각각 SVG 마크업·
+> 정체성 컴포넌트 / 평면 번역 데이터 / 생성물. 로직 god-file 이 아니다.
+
+**왜 지금, 빠르게 (프로젝트 커지기 전에) — 기술적 근거:**
+1. **이해 부채는 복리.** `edit/page.tsx` 는 핵심 경로라 앞으로도 계속 수정됨 →
+   매 수정마다 1365줄에 결합이 더 엉킨다. 나중에 풀면 blast radius 가 더 큼.
+2. **재사용 창은 *이미* 닫혀 있었다 (예측 적중·교훈).** 위 예측대로 new/edit
+   폼은 이미 분기(단계 제목·삭제 임계·검증 상한) → "재사용" 불가, edit 전용
+   byte-identical 추출로 전환했다. **교훈: 분해 전 "쌍둥이 파일 재사용 가능"
+   가정은 반드시 코드 정독으로 검증**. 잔여 Phase 2 항목도 동일.
+3. **비싼 선행조건은 이미 지불됨.** 회귀 안전망(vitest 85·e2e suite 0-flaky·CI)이
+   Phase 1 에서 구축 완료 → 각 분해의 한계비용이 지금 최저. 코드가 더 쌓이면
+   안전망 재정비 비용까지 같이 늘어난다.
+
+> Storage API 래퍼 격리(⏳ 미완)는 아래 "AWS 이전" 절 표에 별도 추적.
 
 ### 진짜 걱정해야 할 기술 부채 3가지
 
