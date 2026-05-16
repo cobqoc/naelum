@@ -6,10 +6,14 @@ import dynamic from 'next/dynamic';
 import { useSwipeGesture } from '@/lib/hooks/useSwipeGesture';
 import { useKeyboardNavigation } from '@/lib/hooks/useKeyboardNavigation';
 import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
-import { useMultiTimer, Timer } from '@/lib/hooks/useMultiTimer';
+import { useMultiTimer } from '@/lib/hooks/useMultiTimer';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import CookVoicePanel from './cook/CookVoicePanel';
+import CookIngredientsSheet from './cook/CookIngredientsSheet';
+import CookTimerPanel from './cook/CookTimerPanel';
+import CookCompletionModal from './cook/CookCompletionModal';
 
 const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { ssr: false });
 
@@ -157,12 +161,6 @@ export default function RecipeCookMode({
   const isIngredientOwned = (name: string) =>
     userIngredients.some(ui => name.includes(ui) || ui.includes(name));
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // 완료 처리
   const handleCompleteRecipe = () => {
     setShowCompletionModal(true);
@@ -292,63 +290,9 @@ export default function RecipeCookMode({
         </div>
       </header>
 
-      {/* 음성 안내 설정 패널 */}
+      {/* 음성 안내 설정 패널 — components/cook/CookVoicePanel.tsx 로 추출 (Phase 2) */}
       {showVoiceSettings && voice.isSupported && (
-        <div className="flex-shrink-0 px-4 py-3 bg-background-secondary border-b border-white/5">
-          <div className="flex items-center justify-between gap-4">
-            <button
-              onClick={voice.toggle}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                voice.isEnabled
-                  ? 'bg-accent-warm text-background-primary'
-                  : 'bg-background-tertiary text-text-muted'
-              }`}
-            >
-              {voice.isEnabled ? t.cookMode.voiceOnLabel : t.cookMode.voiceOffLabel}
-            </button>
-            {voice.isEnabled && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-text-muted">{t.cookMode.speedLabel}:</span>
-                {(['slow', 'normal', 'fast'] as const).map(s => (
-                  <button
-                    key={s}
-                    onClick={() => voice.setSpeed(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                      voice.speed === s
-                        ? 'bg-accent-warm text-background-primary'
-                        : 'bg-background-tertiary text-text-muted hover:bg-white/10'
-                    }`}
-                  >
-                    {s === 'slow' ? t.cookMode.speedSlow : s === 'normal' ? t.cookMode.speedNormal : t.cookMode.speedFast}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          {voice.isEnabled && voice.isSpeaking && (
-            <div className="mt-2 flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {[12, 18, 10, 16].map((h, i) => (
-                  <div
-                    key={i}
-                    className="w-1 bg-accent-warm rounded-full animate-pulse"
-                    style={{
-                      height: `${h}px`,
-                      animationDelay: `${i * 0.15}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-accent-warm">{t.cookMode.reading}</span>
-              <button
-                onClick={voice.stop}
-                className="ml-auto text-xs text-text-muted hover:text-error transition-colors"
-              >
-                {t.cookMode.stopReading}
-              </button>
-            </div>
-          )}
-        </div>
+        <CookVoicePanel voice={voice} t={t} />
       )}
 
       {/* 스텝 버블 */}
@@ -495,243 +439,39 @@ export default function RecipeCookMode({
         {t.cookMode.ingredientsBtn}
       </button>
 
-      {/* 재료 하단 시트 */}
+      {/* 재료 하단 시트 — components/cook/CookIngredientsSheet.tsx 로 추출 (Phase 2) */}
       {showIngredients && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowIngredients(false)}
-          />
-          <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[70vh] bg-background-secondary rounded-t-2xl border-t border-white/10 overflow-hidden animate-slide-up">
-            {/* 드래그 핸들 */}
-            <div className="flex justify-center py-3">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
-            </div>
-            <div className="px-6 pb-6 overflow-y-auto max-h-[calc(70vh-48px)]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">{t.cookMode.ingredientsShort}</h3>
-                <button
-                  onClick={() => setShowIngredients(false)}
-                  className="w-8 h-8 rounded-full hover:bg-background-tertiary flex items-center justify-center transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {recipe.ingredients.map((ing, idx) => {
-                  const owned = isIngredientOwned(ing.ingredient_name);
-                  const prepared = preparedIngredients.has(idx);
-                  const converted = unitConv.convertIngredient(ing.quantity, ing.unit);
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => onTogglePrepared(idx)}
-                      className={`p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-95 ${
-                        prepared
-                          ? 'bg-success/20 border-success'
-                          : owned
-                            ? 'bg-background-tertiary border-text-muted/30'
-                            : 'bg-background-tertiary border-error/30'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-sm font-medium ${
-                          prepared ? 'text-success' : owned ? 'text-text-primary' : 'text-error'
-                        }`}>
-                          {ing.ingredient_name}
-                        </span>
-                        {prepared && <span className="text-success text-xs">✓</span>}
-                      </div>
-                      <div className="text-xs text-text-muted">
-                        {converted.isConverted ? (
-                          <><span className="text-info">{converted.quantity} {converted.unit}</span> <span className="opacity-60">({ing.quantity}{ing.unit})</span></>
-                        ) : (
-                          <>{ing.quantity} {ing.unit}</>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </>
+        <CookIngredientsSheet
+          t={t}
+          ingredients={recipe.ingredients}
+          preparedIngredients={preparedIngredients}
+          onTogglePrepared={onTogglePrepared}
+          isIngredientOwned={isIngredientOwned}
+          unitConv={unitConv}
+          onClose={() => setShowIngredients(false)}
+        />
       )}
 
-      {/* 멀티 타이머 패널 */}
-      {multiTimer.timers.length > 0 && (
-        <>
-          {/* 타이머 미니 표시 (접혔을 때) */}
-          {!showTimerPanel && (
-            <button
-              onClick={() => setShowTimerPanel(true)}
-              className="fixed top-16 right-4 z-50 bg-accent-warm text-background-primary py-2 px-4 rounded-full shadow-2xl flex items-center gap-2 animate-pulse"
-            >
-              <span>⏱️</span>
-              <span className="font-mono font-bold text-sm">
-                {multiTimer.activeTimers.length > 0
-                  ? formatTime(multiTimer.activeTimers[0].remainingSeconds)
-                  : t.cookMode.timerCompleted
-                }
-              </span>
-              {multiTimer.activeTimers.length > 1 && (
-                <span className="text-xs bg-background-primary/20 px-1.5 py-0.5 rounded-full">
-                  +{multiTimer.activeTimers.length - 1}
-                </span>
-              )}
-            </button>
-          )}
+      {/* 멀티 타이머 패널 — components/cook/CookTimerPanel.tsx 로 추출 (Phase 2).
+          빈 타이머면 컴포넌트가 null 반환 = 기존 조건부와 동일 */}
+      <CookTimerPanel
+        multiTimer={multiTimer}
+        showTimerPanel={showTimerPanel}
+        setShowTimerPanel={setShowTimerPanel}
+        t={t}
+      />
 
-          {/* 타이머 전체 패널 (펼쳤을 때) */}
-          {showTimerPanel && (
-            <div className="fixed top-14 left-2 right-2 z-50 bg-background-secondary rounded-2xl shadow-2xl border border-white/10 max-h-64 overflow-y-auto">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  ⏱️ 타이머 ({multiTimer.timers.length})
-                </h3>
-                <div className="flex gap-2">
-                  {multiTimer.completedTimers.length > 0 && (
-                    <button
-                      onClick={multiTimer.removeCompleted}
-                      className="text-xs text-text-muted hover:text-text-primary"
-                    >
-                      {t.cookMode.removeCompleted}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowTimerPanel(false)}
-                    className="text-text-muted hover:text-text-primary"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <div className="p-2 space-y-1.5">
-                {multiTimer.timers.map((timer: Timer) => (
-                  <div
-                    key={timer.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
-                      timer.isActive
-                        ? timer.isPaused
-                          ? 'bg-warning/10 border border-warning/20'
-                          : 'bg-accent-warm/10 border border-accent-warm/20'
-                        : 'bg-success/10 border border-success/20'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-text-muted">{timer.label}</div>
-                      <div className={`text-lg font-mono font-bold ${
-                        !timer.isActive ? 'text-success' :
-                        timer.remainingSeconds < 30 ? 'text-error animate-pulse' :
-                        'text-text-primary'
-                      }`}>
-                        {timer.isActive ? formatTime(timer.remainingSeconds) : '00:00 ✓'}
-                      </div>
-                      {/* Progress bar */}
-                      {timer.isActive && (
-                        <div className="h-1 bg-background-tertiary rounded-full mt-1 overflow-hidden">
-                          <div
-                            className="h-full bg-accent-warm rounded-full transition-all duration-1000"
-                            style={{ width: `${((timer.totalSeconds - timer.remainingSeconds) / timer.totalSeconds) * 100}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {timer.isActive && (
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => multiTimer.togglePause(timer.id)}
-                          className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-white/10"
-                        >
-                          {timer.isPaused ? '▶' : '⏸'}
-                        </button>
-                        <button
-                          onClick={() => multiTimer.stopTimer(timer.id)}
-                          className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-error/20 text-error"
-                        >
-                          ■
-                        </button>
-                      </div>
-                    )}
-                    {!timer.isActive && (
-                      <button
-                        onClick={() => multiTimer.stopTimer(timer.id)}
-                        className="text-xs text-text-muted hover:text-text-primary"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* 완성 후 선택 모달 */}
+      {/* 완성 후 선택 모달 — components/cook/CookCompletionModal.tsx 로 추출 (Phase 2) */}
       {showCompletionModal && !showReviewModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4">
-          <div className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold mb-2">{t.cookMode.recipeDone}</h3>
-              <p className="text-text-secondary text-sm">{t.cookMode.reviewPrompt}</p>
-            </div>
-
-            {/* 완성 사진 */}
-            <div className="mb-6">
-              <label className="block text-sm font-bold mb-3">{t.cookMode.completionPhotoLabel}</label>
-              {photoPreview ? (
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoPreview} alt={t.cookMode.completionPhotoLabel} className="w-full h-48 object-cover rounded-xl" />
-                  <button
-                    onClick={removePhoto}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-error text-white flex items-center justify-center hover:bg-error/90 transition-all"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <label className="block w-full py-8 border-2 border-dashed border-white/20 rounded-xl hover:border-accent-warm transition-all cursor-pointer bg-background-tertiary">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">📸</div>
-                    <p className="font-bold text-sm">{t.cookMode.takePhoto}</p>
-                    <p className="text-text-muted text-xs mt-1">{t.cookMode.orSelectFromGallery}</p>
-                  </div>
-                </label>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => setShowReviewModal(true)}
-                className="w-full py-3 px-6 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all flex items-center justify-center gap-2"
-              >
-                {t.cookMode.writeReview}
-              </button>
-              <button
-                onClick={handleSkipReview}
-                disabled={completing}
-                className="w-full py-3 px-6 rounded-xl bg-background-tertiary text-text-primary font-bold hover:bg-background-primary transition-all disabled:opacity-50"
-              >
-                {completing ? t.cookMode.saving : t.cookMode.skipReview}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CookCompletionModal
+          t={t}
+          photoPreview={photoPreview}
+          onPhotoChange={handlePhotoChange}
+          onRemovePhoto={removePhoto}
+          onWriteReview={() => setShowReviewModal(true)}
+          onSkip={handleSkipReview}
+          completing={completing}
+        />
       )}
 
       {/* 리뷰 모달 */}
