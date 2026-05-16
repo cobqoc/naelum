@@ -109,10 +109,11 @@ export function isIngredientMatch(userIng: string, recipeIng: string): boolean {
   const synonyms = INGREDIENT_SYNONYMS[a]
   if (synonyms && synonyms.some(s => s === b || b.includes(s) || s.includes(b))) return true
 
-  // 한쪽이 다른 한쪽을 완전히 포함 (최소 2글자 이상일 때만)
-  if (a.length >= 2 && b.length >= 2) {
-    if (a === b.slice(0, a.length) || b === a.slice(0, b.length)) return true
-  }
+  // ⚠️ prefix 부분일치 규칙 제거(2026-05-17): '고추'가 '고추장'의 접두라는
+  // 이유로 장류↔생고추를 오매칭하던 버그. 간장↔간, 김↔김치 등 의미가
+  // 완전히 다른 재료를 광범위 오매칭. 정당한 부분일치(다진마늘↔마늘,
+  // 대파↔파 등)는 INGREDIENT_SYNONYMS 가 커버하므로 동의어 테이블을
+  // 단일 진실원천으로 삼는다. 매칭은 exact + synonym + FK + Levenshtein 만.
 
   // 레벤슈타인 유사도 (0.7 이상이면 매칭)
   if (a.length >= 2 && b.length >= 2) {
@@ -126,6 +127,10 @@ export function isIngredientMatch(userIng: string, recipeIng: string): boolean {
 // 추천 mode 분류 술어 — recipesWithMatch 항목에 대해 평가.
 export const isReady = (r: { matchedCount: number; totalIngredients: number }) =>
   r.totalIngredients > 0 && r.matchedCount === r.totalIngredients
-export const isAlmost = (r: { missingCount: number }) =>
-  r.missingCount >= 1 && r.missingCount <= 2
+// '거의 가능' = 부족 1~2개 AND 이미 과반 이상 보유(matchRate ≥ 60%).
+// 절대기준(부족 ≤2)만 쓰면 3재료 레시피에서 1개(33%)만 있어도 '거의'로
+// 오분류됨(단감피클·우무오미자냉화채 사례). "1~2개만 더 사면 OK"라는
+// 약속은 이미 대부분을 가졌을 때만 참이다.
+export const isAlmost = (r: { missingCount: number; matchRate: number }) =>
+  r.missingCount >= 1 && r.missingCount <= 2 && r.matchRate >= 60
 export const isAny = (r: { matchRate: number }) => r.matchRate > 0
