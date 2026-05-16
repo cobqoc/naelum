@@ -102,7 +102,10 @@ export async function PUT(
 
     // 기존 재료 삭제 후 재추가
     if (Array.isArray(ingredients)) {
-      await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+      const { error: delErr } = await supabase.from('recipe_ingredients').delete().eq('recipe_id', recipeId);
+      if (delErr) {
+        return NextResponse.json({ error: `재료 삭제 실패: ${delErr.message}` }, { status: 500 });
+      }
 
       if (ingredients.length > 0) {
         const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
@@ -115,13 +118,19 @@ export async function PUT(
           display_order: index + 1
         }));
 
-        await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+        const { error: insErr } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
+        if (insErr) {
+          return NextResponse.json({ error: `재료 저장 실패: ${insErr.message}` }, { status: 500 });
+        }
       }
     }
 
     // 기존 조리 단계 삭제 후 재추가
     if (Array.isArray(steps)) {
-      await supabase.from('recipe_steps').delete().eq('recipe_id', recipeId);
+      const { error: delErr } = await supabase.from('recipe_steps').delete().eq('recipe_id', recipeId);
+      if (delErr) {
+        return NextResponse.json({ error: `조리 단계 삭제 실패: ${delErr.message}` }, { status: 500 });
+      }
 
       if (steps.length > 0) {
         const stepsToInsert = steps.map((step: { title: string; instruction: string; timer_minutes?: number; tip?: string; image_url?: string }, index: number) => ({
@@ -134,13 +143,19 @@ export async function PUT(
           image_url: step.image_url
         }));
 
-        await supabase.from('recipe_steps').insert(stepsToInsert);
+        const { error: insErr } = await supabase.from('recipe_steps').insert(stepsToInsert);
+        if (insErr) {
+          return NextResponse.json({ error: `조리 단계 저장 실패: ${insErr.message}` }, { status: 500 });
+        }
       }
     }
 
     // 기존 태그 삭제 후 재추가 (빈 배열도 처리 — 태그 전체 제거 허용)
     if (Array.isArray(tags)) {
-      await supabase.from('recipe_tags').delete().eq('recipe_id', recipeId);
+      const { error: delErr } = await supabase.from('recipe_tags').delete().eq('recipe_id', recipeId);
+      if (delErr) {
+        return NextResponse.json({ error: `태그 삭제 실패: ${delErr.message}` }, { status: 500 });
+      }
 
       if (tags.length > 0) {
         const tagsToInsert = tags.map((tag: string) => ({
@@ -148,7 +163,10 @@ export async function PUT(
           tag_name: tag
         }));
 
-        await supabase.from('recipe_tags').insert(tagsToInsert);
+        const { error: insErr } = await supabase.from('recipe_tags').insert(tagsToInsert);
+        if (insErr) {
+          return NextResponse.json({ error: `태그 저장 실패: ${insErr.message}` }, { status: 500 });
+        }
       }
     }
 
