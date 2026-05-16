@@ -127,10 +127,12 @@ export function isIngredientMatch(userIng: string, recipeIng: string): boolean {
 // 추천 mode 분류 술어 — recipesWithMatch 항목에 대해 평가.
 export const isReady = (r: { matchedCount: number; totalIngredients: number }) =>
   r.totalIngredients > 0 && r.matchedCount === r.totalIngredients
-// '거의 가능' = 부족 1~2개 AND 이미 과반 이상 보유(matchRate ≥ 60%).
+// '거의 가능' = 부족 1~2개 AND 이미 대부분 보유(matchRate ≥ 70%).
 // 절대기준(부족 ≤2)만 쓰면 3재료 레시피에서 1개(33%)만 있어도 '거의'로
 // 오분류됨(단감피클·우무오미자냉화채 사례). "1~2개만 더 사면 OK"라는
 // 약속은 이미 대부분을 가졌을 때만 참이다.
+// 임계값 70%: N=3 레시피는 ready 가 아니면 '거의 가능' 불가(2/3=67%<70),
+// N=4 는 3/4, N=5 는 4/5 부터. 사용자 결정(2026-05-17, 잡추천 최소화).
 export const isAlmost = (r: { missingCount: number; matchRate: number }) =>
-  r.missingCount >= 1 && r.missingCount <= 2 && r.matchRate >= 60
+  r.missingCount >= 1 && r.missingCount <= 2 && r.matchRate >= 70
 export const isAny = (r: { matchRate: number }) => r.matchRate > 0
