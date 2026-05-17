@@ -74,8 +74,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 데이터로 늦게 resolve → optimistic 메모를 clobber 하는 race 방어.
   const pendingNoteEditIdsRef = useRef<Set<string>>(new Set());
 
-  // 사용자별 즐겨찾기·자주 사용 재료 — 빈 상태 quick-add에 노출
-  const { items: favorites, toggleStar: toggleFavoriteStar } = useFavorites(20);
+  // 사용자별 자주 쓰는 재료 — 빈 상태 quick-add에 노출
+  const { items: favorites } = useFavorites(20);
 
   // 완료 항목 숨김 토글 (#4) — localStorage 저장
   const [hideChecked, setHideChecked] = useState<boolean>(() => {
@@ -327,7 +327,6 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         name: f.ingredient_name,
         category: f.category ?? 'other',
         icon: f.emoji ?? undefined,
-        isStarred: f.is_starred,
         fromFavorites: true,
       });
       if (merged.length >= 8) break;
@@ -340,7 +339,6 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         name: p.name,
         category: POPULAR_CATEGORY_TO_CART[p.category] ?? 'other',
         icon: p.icon,
-        isStarred: false,
         fromFavorites: false,
       });
     }
@@ -456,10 +454,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         {/* Quick-add 행 — components/cart/CartQuickAdd.tsx 로 추출 (Phase 2).
             빈 배열이면 컴포넌트가 null 반환 — 기존 조건부 렌더와 동일 */}
         <CartQuickAdd
-          t={t}
           quickAddItems={quickAddItems}
-          loggedIn={!!user}
-          toggleFavoriteStar={toggleFavoriteStar}
           quickAdd={quickAdd}
           adding={adding}
         />

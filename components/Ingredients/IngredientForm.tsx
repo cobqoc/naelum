@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import IngredientAutocompleteV2 from './IngredientAutocompleteV2';
 import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
@@ -112,12 +112,8 @@ export default function IngredientForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 사용자별 즐겨찾기·자주 사용 재료 (DB)
-  const { items: favorites, toggleStar } = useFavorites(50);
-  const starredNames = useMemo(
-    () => new Set(favorites.filter(f => f.is_starred).map(f => f.ingredient_name)),
-    [favorites]
-  );
+  // 사용자별 자주 쓰는 재료 (DB, Stage 2: score 기반)
+  const { items: favorites } = useFavorites(50);
 
   // 자주 쓰는 재료 로드 — DB favorites 우선, 비어있으면 localStorage(legacy/비로그인) fallback
   useEffect(() => {
@@ -130,7 +126,7 @@ export default function IngredientForm({
           name_en: null,
           category: f.category,
           timestamp: new Date(f.last_added_at).getTime(),
-          count: f.add_count,
+          count: f.score,
           emoji: f.emoji ?? null,
         }))
       );
@@ -334,8 +330,6 @@ export default function IngredientForm({
           selectedNames={pendingItems.map(p => p.name)}
           frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null, emoji: f.emoji ?? null }))}
           popularItems={presetFallback}
-          starredNames={starredNames}
-          onToggleStar={(ing, starred) => toggleStar(ing.name, ing.category, starred)}
           ownedNames={ownedNames}
         />
         <div className="mt-4">

@@ -607,7 +607,7 @@ export const zh = {
     addedToast: '🧊 已添加 {count} 个食材!',
     countSuffix: '个',
     addingButton: '保存中...',
-    minRecipeHint: '💡 添加3个以上食材即可获得食谱推荐。',
+    minRecipeHint: '💡 添加食材即可获得个性化食谱推荐。',
     searchHint: '找不到食材？使用搜索直接添加',
     detailTapHint: '💡 点击每个食材可设置数量、保质期等',
     storageTitle: '保存位置',

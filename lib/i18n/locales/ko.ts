@@ -607,7 +607,7 @@ export const ko = {
     addedToast: '🧊 재료 {count}개가 추가됐어요!',
     countSuffix: '개',
     addingButton: '저장 중...',
-    minRecipeHint: '💡 재료 3개 이상 추가하면 레시피 추천을 받을 수 있어요.',
+    minRecipeHint: '💡 재료를 추가하면 맞춤 레시피 추천을 받을 수 있어요.',
     searchHint: '찾는 재료가 없다면 검색으로 직접 추가',
     detailTapHint: '💡 각 재료를 탭하면 수량·유통기한 등 상세 설정을 할 수 있어요',
     storageTitle: '저장 위치',

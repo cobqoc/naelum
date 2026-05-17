@@ -607,7 +607,7 @@ export const ja = {
     addedToast: '🧊 食材 {count}個を追加しました!',
     countSuffix: '個',
     addingButton: '保存中...',
-    minRecipeHint: '💡 食材を3個以上追加すると、レシピのおすすめが届きます。',
+    minRecipeHint: '💡 食材を追加すると、レシピのおすすめが届きます。',
     searchHint: '探している食材が見つからない場合は、検索して追加',
     detailTapHint: '💡 各食材をタップして、数量や賞味期限などを設定できます',
     storageTitle: '保管場所',

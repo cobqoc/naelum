@@ -607,7 +607,7 @@ export const fr = {
     addedToast: '🧊 {count} ingrédients ajoutés !',
     countSuffix: '',
     addingButton: 'Enregistrement...',
-    minRecipeHint: '💡 Ajoutez 3 ingrédients ou plus pour des suggestions de recettes.',
+    minRecipeHint: '💡 Ajoutez des ingrédients pour des suggestions de recettes personnalisées.',
     searchHint: 'Pas dans la liste ? Recherchez pour ajouter',
     detailTapHint: '💡 Touchez chaque élément pour régler quantité, date limite, etc.',
     storageTitle: 'Stockage',
