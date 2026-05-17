@@ -724,6 +724,7 @@ export default function HomeClient({
         location={addModalLocation}
         onClose={() => setAddModalLocation(null)}
         onAddIngredient={addIngredientFromModal}
+        ownedNames={items.map(i => i.ingredient_name)}
       />
 
       {/* 비로그인 + 버튼 → 가입 유도 시트 */}
