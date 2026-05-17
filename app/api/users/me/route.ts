@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { full_name, bio } = body
+    const { full_name, bio, username } = body
 
     if (full_name !== undefined && typeof full_name === 'string' && full_name.length > 100) {
       return NextResponse.json({ error: '이름은 100자 이내여야 합니다' }, { status: 400 })
@@ -43,10 +43,28 @@ export async function PUT(request: NextRequest) {
     if (bio !== undefined && typeof bio === 'string' && bio.length > 500) {
       return NextResponse.json({ error: '소개는 500자 이내여야 합니다' }, { status: 400 })
     }
+    if (username !== undefined) {
+      if (typeof username !== 'string' || username.length < 2 || username.length > 20) {
+        return NextResponse.json({ error: '닉네임은 2~20자여야 합니다' }, { status: 400 })
+      }
+      if (!/^[a-z0-9_]+$/.test(username)) {
+        return NextResponse.json({ error: '닉네임은 영문 소문자, 숫자, _만 사용 가능합니다' }, { status: 400 })
+      }
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', username)
+        .neq('id', user!.id)
+        .maybeSingle()
+      if (existing) {
+        return NextResponse.json({ error: '이미 사용 중인 닉네임입니다' }, { status: 409 })
+      }
+    }
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (full_name !== undefined) updates.full_name = full_name ? sanitizeHtml(full_name) : null
     if (bio !== undefined) updates.bio = bio ? sanitizeHtml(bio) : null
+    if (username !== undefined) updates.username = username
 
     const { data: profile, error } = await supabase
       .from('profiles')
