@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { full_name, bio, username } = body
+    const { full_name, bio, username, avatar_url } = body
 
     if (full_name !== undefined && typeof full_name === 'string' && full_name.length > 100) {
       return NextResponse.json({ error: '이름은 100자 이내여야 합니다' }, { status: 400 })
@@ -65,6 +65,7 @@ export async function PUT(request: NextRequest) {
     if (full_name !== undefined) updates.full_name = full_name ? sanitizeHtml(full_name) : null
     if (bio !== undefined) updates.bio = bio ? sanitizeHtml(bio) : null
     if (username !== undefined) updates.username = username
+    if (avatar_url !== undefined) updates.avatar_url = typeof avatar_url === 'string' ? avatar_url : null
 
     const { data: profile, error } = await supabase
       .from('profiles')
