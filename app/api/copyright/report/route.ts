@@ -21,13 +21,21 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // contact_inquiries 테이블에 저장 (category='copyright')
-    await supabase.from('contact_inquiries').insert({
+    // Supabase는 RLS/제약 거부 시 throw 안 하고 { error } 반환 → 명시 체크 필수.
+    const { error: insertError } = await supabase.from('contact_inquiries').insert({
       user_id: null,
       email: reporter_email.trim(),
       category: 'other',
       content: `[저작권 신고]\n신고자: ${reporter_name?.trim() || '익명'}\n신고 URL: ${recipe_url?.trim() || '미기입'}\n\n${description.trim()}`,
       screenshot_url: null,
     });
+    if (insertError) {
+      console.error('Copyright report insert error:', insertError);
+      return NextResponse.json(
+        { error: '신고 접수에 실패했습니다. hello@naelum.app 으로 직접 연락해주세요.' },
+        { status: 500 }
+      );
+    }
 
     // 운영자 이메일 알림
     if (process.env.RESEND_API_KEY && process.env.DEVELOPER_NOTIFY_EMAIL) {

@@ -136,7 +136,12 @@ export async function createOrder(
 
   if (itemsErr || !itemsData) {
     // 주문은 만들어졌는데 항목 실패. 롤백 — 주문 삭제.
-    await supabase.from('delivery_orders').delete().eq('id', orderRow.id);
+    // ⚠️ delivery_orders 에 유저 DELETE RLS 정책 없음(insert/read/update만; admin·점주만 ALL).
+    //    → 일반 유저 컨텍스트 롤백은 RLS 거부돼 orphan 주문 행이 남을 수 있다.
+    //    배달 prod 점등 시 service-role 롤백 또는 "유저 본인 pending 주문 DELETE" 정책 추가 필요.
+    //    현재는 휴면(admin 전용·prod 미적용) — 최소한 .error 관찰화로 침묵 방지.
+    const { error: rollbackError } = await supabase.from('delivery_orders').delete().eq('id', orderRow.id);
+    if (rollbackError) console.error('delivery order rollback failed (orphan row possible):', rollbackError);
     throw new Error(`Failed to create order items: ${itemsErr?.message ?? 'unknown'}`);
   }
 

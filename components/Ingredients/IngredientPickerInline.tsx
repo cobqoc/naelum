@@ -274,7 +274,7 @@ function SelectedIngredientsDropdown({
                     className="w-full rounded-lg bg-background-tertiary px-2 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
                   >
                     {STANDARD_UNITS.map((unit) => (
-                      <option key={unit} value={unit}>{unit}</option>
+                      <option key={unit} value={unit}>{t.quickAdd.unitLabels[unit as keyof typeof t.quickAdd.unitLabels] ?? unit}</option>
                     ))}
                     <option value="custom">{t.ingredient.directInput}</option>
                   </select>

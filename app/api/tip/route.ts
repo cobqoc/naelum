@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
   // 태그 삽입
   if (tags && tags.length > 0) {
     const tagsToInsert = tags.map((tag: string) => ({ tip_id: tip.id, tag }));
-    await supabase.from('tip_tags').insert(tagsToInsert);
+    const { error: tagsError } = await supabase.from('tip_tags').insert(tagsToInsert);
+    if (tagsError) return NextResponse.json({ error: tagsError.message }, { status: 500 });
   }
 
   // 홈 공유 쿼리 캐시는 60초 revalidate로 자동 갱신됨

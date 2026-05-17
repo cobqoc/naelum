@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
@@ -14,32 +13,14 @@ import TagsField from './_components/TagsField';
 import NutritionFields from './_components/NutritionFields';
 import StepsSection from './_components/StepsSection';
 import IngredientsSection from './_components/IngredientsSection';
+import BasicInfoSection from './_components/BasicInfoSection';
+import RecipeFormFooter from './_components/RecipeFormFooter';
+import ThumbnailUploadField from './_components/ThumbnailUploadField';
+import DietaryOptionsField from './_components/DietaryOptionsField';
+import { computeAutoTags } from '@/lib/recipes/autoTags';
 import {
-  CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS,
-  CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
-
-// 한국어 감지 및 영어 변환 유틸리티 함수
-const detectKoreanAndTranslate = (text: string): { korean: string; english: string } => {
-  const trimmed = text.trim();
-  const hasKorean = /[가-힣]/.test(trimmed);
-
-  if (!hasKorean) {
-    // 영어만 있으면 그대로 반환
-    return { korean: trimmed, english: trimmed };
-  }
-
-  // 한국어가 있으면 로마자화
-  // 간단한 변환: 공백 제거 후 첫 글자 대문자
-  const romanized = trimmed
-    .replace(/\s+/g, '') // 공백 제거
-    .split('')
-    .map((char, idx) => idx === 0 ? char.toUpperCase() : char)
-    .join('');
-
-  return { korean: trimmed, english: romanized };
-};
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -184,46 +165,10 @@ export default function NewRecipePage() {
 
   // 자동 태그 생성
   useEffect(() => {
-    const autoTags: string[] = [];
-
-    // 1. 요리 종류 태그 (한국어 + 영어)
-    if (cuisineType && cuisineType !== 'other' && CUISINE_TYPE_TAGS[cuisineType]) {
-      autoTags.push(...CUISINE_TYPE_TAGS[cuisineType]);
-    }
-
-    // 1-1. 커스텀 요리 종류 태그 (한국어 + 영어 변환)
-    if (cuisineType === 'other' && customCuisineType.trim()) {
-      const { korean, english } = detectKoreanAndTranslate(customCuisineType);
-      autoTags.push(korean);
-      if (korean !== english) {
-        autoTags.push(english);
-      }
-    }
-
-    // 2. 요리 유형 태그 (선택된 경우만)
-    if (dishType && dishType !== 'other' && DISH_TYPE_TAGS[dishType]) {
-      autoTags.push(...DISH_TYPE_TAGS[dishType]);
-    }
-
-    // 2-1. 커스텀 요리 유형 태그 (한국어 + 영어 변환)
-    if (dishType === 'other' && customDishType.trim()) {
-      const { korean, english } = detectKoreanAndTranslate(customDishType);
-      autoTags.push(korean);
-      if (korean !== english) {
-        autoTags.push(english);
-      }
-    }
-
-    // 3. 식단 옵션 태그
-    if (isVegetarian) {
-      autoTags.push(...DIETARY_TAGS.vegetarian);
-    }
-    if (isVegan) {
-      autoTags.push(...DIETARY_TAGS.vegan);
-    }
-    if (isGlutenFree) {
-      autoTags.push(...DIETARY_TAGS.glutenFree);
-    }
+    const autoTags = computeAutoTags({
+      cuisineType, customCuisineType, dishType, customDishType,
+      isVegetarian, isVegan, isGlutenFree,
+    });
 
     // 기존 태그와 중복되지 않는 자동 태그만 추가 (함수형 업데이트로 최신 상태 사용)
     setTags(prevTags => {
@@ -758,140 +703,20 @@ export default function NewRecipePage() {
             {tf.section1Basic}
           </h2>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.title} *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              placeholder={tf.titlePlaceholder}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.description}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm min-h-[100px] resize-none"
-              placeholder={tf.descriptionPlaceholder}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.servings} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={servings}
-                onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
-                min="1"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.prepTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={prepTime}
-                onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.cookTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={cookTime}
-                onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.difficulty} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              >
-                <option value="">{tf.selectNone}</option>
-                {DIFFICULTY_LEVELS.map(d => (
-                  <option key={d.value} value={d.value}>{t.difficulty[d.value]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.cuisine}</label>
-            <div className="flex flex-wrap gap-2">
-              {CUISINE_TYPES.map(c => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setCuisineType(c.value)}
-                  className={`px-4 py-2 rounded-full text-sm transition-all ${
-                    cuisineType === c.value
-                      ? 'bg-accent-warm text-background-primary'
-                      : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                  }`}
-                >
-                  {t.cuisineLabels[c.value as keyof typeof t.cuisineLabels] ?? c.label}
-                </button>
-              ))}
-            </div>
-            {/* 기타 선택 시 커스텀 입력 */}
-            {cuisineType === 'other' && (
-              <input
-                type="text"
-                value={customCuisineType}
-                onChange={(e) => setCustomCuisineType(e.target.value)}
-                placeholder={tf.cuisinePlaceholder}
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            )}
-          </div>
-
-          {/* 요리 유형 (2단계) - 조건부 표시 */}
-          {cuisineType && (
-            <div className="space-y-2 animate-fadeIn">
-              <label className="text-sm font-medium text-text-secondary">
-                {tf.dishType} <span className="text-text-muted text-xs">{tf.optionalInputHint}</span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {DISH_TYPES.map(d => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => setDishType(d.value)}
-                    className={`px-4 py-2 rounded-full text-sm transition-all ${
-                      dishType === d.value
-                        ? 'bg-accent-warm text-background-primary'
-                        : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                    }`}
-                  >
-                    {t.dishLabels[d.value as keyof typeof t.dishLabels] ?? d.label}
-                  </button>
-                ))}
-              </div>
-              {/* 기타 선택 시 커스텀 입력 */}
-              {dishType === 'other' && (
-                <input
-                  type="text"
-                  value={customDishType}
-                  onChange={(e) => setCustomDishType(e.target.value)}
-                  placeholder={tf.dishTypePlaceholder}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                />
-              )}
-            </div>
-          )}
+          <BasicInfoSection
+            t={t}
+            tf={tf}
+            title={title} setTitle={setTitle}
+            description={description} setDescription={setDescription}
+            servings={servings} setServings={setServings}
+            prepTime={prepTime} setPrepTime={setPrepTime}
+            cookTime={cookTime} setCookTime={setCookTime}
+            difficulty={difficulty} setDifficulty={setDifficulty}
+            cuisineType={cuisineType} setCuisineType={setCuisineType}
+            customCuisineType={customCuisineType} setCustomCuisineType={setCustomCuisineType}
+            dishType={dishType} setDishType={setDishType}
+            customDishType={customDishType} setCustomDishType={setCustomDishType}
+          />
         </section>
 
         {/* Section 2: 재료 준비 */}
@@ -954,70 +779,18 @@ export default function NewRecipePage() {
           />
 
           {/* 완성된 요리 이미지 */}
-          <div className="space-y-3 pt-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.finalPhotoLabel}</label>
-            <p className="text-xs text-text-muted">{tf.finalPhotoDesc}</p>
-            {thumbnailImage ? (
-              <div className="relative w-full h-64">
-                <Image
-                  src={thumbnailImage}
-                  alt={tf.finalPhotoLabel}
-                  fill
-                  className="object-cover rounded-xl"
-                />
-                <button
-                  onClick={handleThumbnailRemove}
-                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-error transition-all text-xl"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <label className="block w-full">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleThumbnailUpload(file);
-                    }
-                    e.target.value = '';
-                  }}
-                  className="hidden"
-                  disabled={uploadingThumbnail}
-                />
-                <div
-                  className={`w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                    isDraggingThumbnail
-                      ? 'border-accent-warm bg-accent-warm/10'
-                      : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
-                  }`}
-                  onDragOver={handleThumbnailDrag}
-                  onDragEnter={handleThumbnailDragIn}
-                  onDragLeave={handleThumbnailDragOut}
-                  onDrop={handleThumbnailDrop}
-                >
-                  {uploadingThumbnail ? (
-                    <>
-                      <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-text-muted">{tf.uploading}</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-12 h-12 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-text-primary">{tf.finalPhotoAdd}</p>
-                        <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </label>
-            )}
-          </div>
+          <ThumbnailUploadField
+            tf={tf}
+            thumbnailImage={thumbnailImage}
+            uploadingThumbnail={uploadingThumbnail}
+            isDraggingThumbnail={isDraggingThumbnail}
+            onUpload={handleThumbnailUpload}
+            onRemove={handleThumbnailRemove}
+            onDrag={handleThumbnailDrag}
+            onDragIn={handleThumbnailDragIn}
+            onDragOut={handleThumbnailDragOut}
+            onDrop={handleThumbnailDrop}
+          />
         </section>
 
         {/* Section 4: 추가 정보 */}
@@ -1027,48 +800,14 @@ export default function NewRecipePage() {
             {t.nutrition.section4Additional}
           </h2>
 
-          <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.dietaryLabel}</label>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { value: isVegetarian, setter: setIsVegetarian, label: tf.dietaryVegetarian, key: 'vegetarian' },
-                { value: isVegan, setter: setIsVegan, label: tf.dietaryVegan, key: 'vegan' },
-                { value: isGlutenFree, setter: setIsGlutenFree, label: tf.dietaryGlutenFree, key: 'glutenFree' },
-              ].map(opt => (
-                <div
-                  key={opt.label}
-                  className="relative"
-                  onMouseEnter={() => setHoveredDietaryOption(opt.key)}
-                  onMouseLeave={() => setHoveredDietaryOption(null)}
-                  onTouchStart={() => setHoveredDietaryOption(opt.key)}
-                  onTouchEnd={() => setTimeout(() => setHoveredDietaryOption(null), 2000)}
-                >
-                  <button
-                    type="button"
-                    onClick={() => opt.setter(!opt.value)}
-                    className={`px-4 py-2 rounded-full text-sm transition-all ${
-                      opt.value
-                        ? 'bg-accent-warm text-background-primary'
-                        : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-
-                  {/* 툴팁 */}
-                  {hoveredDietaryOption === opt.key && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-background-tertiary text-text-primary text-xs rounded-lg shadow-lg whitespace-nowrap z-10 animate-fadeIn">
-                      {DIETARY_DESCRIPTIONS[opt.key as keyof typeof DIETARY_DESCRIPTIONS]}
-                      {/* 툴팁 화살표 */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-background-tertiary"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <DietaryOptionsField
+            tf={tf}
+            isVegetarian={isVegetarian} setIsVegetarian={setIsVegetarian}
+            isVegan={isVegan} setIsVegan={setIsVegan}
+            isGlutenFree={isGlutenFree} setIsGlutenFree={setIsGlutenFree}
+            hoveredDietaryOption={hoveredDietaryOption}
+            setHoveredDietaryOption={setHoveredDietaryOption}
+          />
 
           {/* 영양 정보 — _components/NutritionFields.tsx 로 추출 (Strangler Fig down-payment).
               상태는 page 가 소유, 컴포넌트는 값+setter 만 받는 순수 표현. */}
@@ -1103,41 +842,15 @@ export default function NewRecipePage() {
           />
         </section>
 
-        {/* 저작권 동의 */}
-        <div className="p-4 rounded-xl bg-background-secondary border border-white/10">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={copyrightAgreed}
-              onChange={e => setCopyrightAgreed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded accent-accent-warm flex-shrink-0"
-            />
-            <span className="text-sm text-text-secondary leading-relaxed">
-              이 레시피는 제가 직접 창작하였거나 저작권자의 허락을 받은 콘텐츠입니다.
-              타인의 레시피·영상·글에서 표현을 그대로 복사하지 않았음을 확인합니다.
-              <a href="/terms" target="_blank" className="text-accent-warm hover:text-accent-hover ml-1">이용약관</a> 제8조 준수에 동의합니다.
-            </span>
-          </label>
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-4 flex gap-3">
-          <button
-            onClick={handleDraft}
-            disabled={draftLoading || loading}
-            className="flex-1 py-4 rounded-xl bg-background-secondary border border-white/10 text-text-secondary font-bold hover:bg-background-tertiary transition-all disabled:opacity-50"
-          >
-            {draftLoading ? tf.saving : tf.saveDraft}
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading || draftLoading || !copyrightAgreed}
-            className="flex-[2] py-4 rounded-xl bg-accent-warm text-background-primary text-lg font-bold hover:bg-accent-hover transition-all disabled:opacity-50"
-            title={!copyrightAgreed ? '저작권 동의 체크 후 게시할 수 있어요' : undefined}
-          >
-            {loading ? tf.submitting : tf.submit}
-          </button>
-        </div>
+        <RecipeFormFooter
+          tf={tf}
+          copyrightAgreed={copyrightAgreed}
+          setCopyrightAgreed={setCopyrightAgreed}
+          loading={loading}
+          draftLoading={draftLoading}
+          onDraft={handleDraft}
+          onSubmit={handleSubmit}
+        />
       </div>
 
       {/* 재료 선택 모달 */}

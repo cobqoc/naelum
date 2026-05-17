@@ -104,7 +104,10 @@ export function useFridgeInteractions({
       if (!isDemo && user) {
         // RLS가 기본 방어지만 user_id 명시 필터로 이중 방어.
         const client = createClient();
-        await client.from('user_ingredients').delete().eq('id', item.id).eq('user_id', user.id);
+        const { error } = await client.from('user_ingredients').delete().eq('id', item.id).eq('user_id', user.id);
+        // 토스트는 이미 소멸 — 사용자 표면화 불가. .error 로깅(침묵 유실 방지).
+        // 실패 시에도 fridge-updated 발행: 재조회가 DB 진실(미삭제) 반영해 칩 복원.
+        if (error) console.error('user_ingredients delete failed:', error);
         window.dispatchEvent(new Event('fridge-updated'));
       }
       // DEMO는 state만 변경했으므로 별도 작업 없음

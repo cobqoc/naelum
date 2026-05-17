@@ -198,7 +198,94 @@ test.describe('레시피 작성', () => {
     await copyright.check()
     await expect(submitBtn).toBeEnabled()
 
+    // 임시저장 버튼 wiring (RecipeFormFooter 추출 회귀 가드) — copyright 무관 항상 활성
+    const draftBtn = page.getByRole('button', { name: '임시저장', exact: true })
+    await expect(draftBtn).toBeVisible()
+    await expect(draftBtn).toBeEnabled()
+
+    // 썸네일 업로드 드롭존 렌더 (ThumbnailUploadField 추출 회귀 가드)
+    await expect(page.getByText('완성된 요리 사진 추가')).toBeVisible()
+
     // 전 과정에서 런타임 에러 없어야 (분해 시 stale closure / prop 누락 조기 탐지)
+    expect(pageErrors).toEqual([])
+  })
+
+  /**
+   * 분해 회귀 안전망 — Section 1(기본 정보) 갭 보강.
+   * 기존 'UI 회귀' 테스트가 제목·단계·재료·태그·copyright 는 커버하나,
+   * BasicInfoSection 추출 시 깨지기 쉬운 다음을 커버하지 못해 갭 보강:
+   *  - description textarea ↔ state 바인딩
+   *  - servings number input ↔ state 바인딩
+   *  - difficulty select ↔ state 바인딩
+   *  - cuisine 버튼 선택 → '기타' 시 커스텀 입력 조건부 노출 + 바인딩
+   *  - cuisine 선택 후 dish type 섹션 조건부 노출
+   * 추출 전 미수정 코드에서 green(baseline) 확인 → 추출 후 동일 green.
+   */
+  test('UI 회귀(Section1 기본정보): 설명·인분·난이도·요리종류 바인딩 + 조건부 토글', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    await gotoRecipeNew(page)
+
+    // description textarea 바인딩
+    const desc = page.locator('textarea[placeholder*="간단한 설명"]').first()
+    await expect(desc).toBeVisible({ timeout: 15000 })
+    await desc.fill('분해 회귀 설명 텍스트')
+    await expect(desc).toHaveValue('분해 회귀 설명 텍스트')
+
+    // servings — Section1 첫 number input
+    const servings = page.locator('input[type="number"]').first()
+    await servings.fill('3')
+    await expect(servings).toHaveValue('3')
+
+    // difficulty select — '선택안함' 옵션을 가진 select
+    const difficulty = page
+      .locator('select')
+      .filter({ has: page.locator('option', { hasText: '선택안함' }) })
+      .first()
+    await difficulty.selectOption({ index: 1 })
+    await expect(difficulty).not.toHaveValue('')
+
+    // cuisine '기타' 선택 → 커스텀 입력 조건부 노출 + 바인딩
+    await page.getByRole('button', { name: '기타', exact: true }).first().click()
+    const customCuisine = page.locator('input[placeholder*="요리 종류를 입력"]')
+    await expect(customCuisine).toBeVisible({ timeout: 5000 })
+    await customCuisine.fill('퓨전')
+    await expect(customCuisine).toHaveValue('퓨전')
+
+    // cuisine 선택 후 dish type 섹션(요리 유형) 조건부 노출
+    await expect(page.getByText('요리 유형').first()).toBeVisible({ timeout: 5000 })
+
+    expect(pageErrors).toEqual([])
+  })
+
+  /**
+   * 분해 회귀 안전망 — 식단옵션 → 자동태그 연동 (DietaryOptionsField 추출 가드).
+   * 이번 분해 중 최고 위험: 식단 체크박스(자식) → setter(부모 소유) →
+   * 부모 useEffect(autoTags) → setTags → TagsField(추출됨) 칩.
+   * 추출 시 checkbox→setter wiring 이 깨지면 부모 effect 가 안 돌아
+   * 자동태그가 침묵 실패. '채식' 버튼 클릭 → DIETARY_TAGS.vegetarian
+   * = ['채식','Vegetarian'] 중 영문 '#Vegetarian' 칩 노출로 검증
+   * (버튼 라벨 '채식'과 충돌 회피). 추출 전 baseline green → 후 동일.
+   */
+  test('UI 회귀(식단옵션): 식단 체크 → 부모 effect → 자동태그 칩', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    await gotoRecipeNew(page)
+
+    // 페이지 핵심 필드 렌더 대기
+    await expect(page.locator('input[placeholder*="떡볶이"]').first()).toBeVisible({ timeout: 15000 })
+
+    // 자동태그 칩이 아직 없음
+    await expect(page.locator('span', { hasText: '#Vegetarian' })).toHaveCount(0)
+
+    // 식단 '채식' 토글 → 부모 useEffect 가 DIETARY_TAGS.vegetarian 자동 추가
+    await page.getByRole('button', { name: '채식', exact: true }).click()
+
+    // TagsField 에 자동태그 칩 노출 (checkbox→setter→effect→setTags→TagsField 체인)
+    await expect(page.locator('span', { hasText: '#Vegetarian' })).toBeVisible({ timeout: 5000 })
+
     expect(pageErrors).toEqual([])
   })
 })
