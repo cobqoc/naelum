@@ -203,6 +203,9 @@ test.describe('레시피 작성', () => {
     await expect(draftBtn).toBeVisible()
     await expect(draftBtn).toBeEnabled()
 
+    // 썸네일 업로드 드롭존 렌더 (ThumbnailUploadField 추출 회귀 가드)
+    await expect(page.getByText('완성된 요리 사진 추가')).toBeVisible()
+
     // 전 과정에서 런타임 에러 없어야 (분해 시 stale closure / prop 누락 조기 탐지)
     expect(pageErrors).toEqual([])
   })

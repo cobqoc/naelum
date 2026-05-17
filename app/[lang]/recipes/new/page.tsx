@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
@@ -16,6 +15,7 @@ import StepsSection from './_components/StepsSection';
 import IngredientsSection from './_components/IngredientsSection';
 import BasicInfoSection from './_components/BasicInfoSection';
 import RecipeFormFooter from './_components/RecipeFormFooter';
+import ThumbnailUploadField from './_components/ThumbnailUploadField';
 import {
   CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
@@ -835,70 +835,18 @@ export default function NewRecipePage() {
           />
 
           {/* 완성된 요리 이미지 */}
-          <div className="space-y-3 pt-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.finalPhotoLabel}</label>
-            <p className="text-xs text-text-muted">{tf.finalPhotoDesc}</p>
-            {thumbnailImage ? (
-              <div className="relative w-full h-64">
-                <Image
-                  src={thumbnailImage}
-                  alt={tf.finalPhotoLabel}
-                  fill
-                  className="object-cover rounded-xl"
-                />
-                <button
-                  onClick={handleThumbnailRemove}
-                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-error transition-all text-xl"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <label className="block w-full">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleThumbnailUpload(file);
-                    }
-                    e.target.value = '';
-                  }}
-                  className="hidden"
-                  disabled={uploadingThumbnail}
-                />
-                <div
-                  className={`w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                    isDraggingThumbnail
-                      ? 'border-accent-warm bg-accent-warm/10'
-                      : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
-                  }`}
-                  onDragOver={handleThumbnailDrag}
-                  onDragEnter={handleThumbnailDragIn}
-                  onDragLeave={handleThumbnailDragOut}
-                  onDrop={handleThumbnailDrop}
-                >
-                  {uploadingThumbnail ? (
-                    <>
-                      <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-text-muted">{tf.uploading}</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-12 h-12 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-text-primary">{tf.finalPhotoAdd}</p>
-                        <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </label>
-            )}
-          </div>
+          <ThumbnailUploadField
+            tf={tf}
+            thumbnailImage={thumbnailImage}
+            uploadingThumbnail={uploadingThumbnail}
+            isDraggingThumbnail={isDraggingThumbnail}
+            onUpload={handleThumbnailUpload}
+            onRemove={handleThumbnailRemove}
+            onDrag={handleThumbnailDrag}
+            onDragIn={handleThumbnailDragIn}
+            onDragOut={handleThumbnailDragOut}
+            onDrop={handleThumbnailDrop}
+          />
         </section>
 
         {/* Section 4: 추가 정보 */}
