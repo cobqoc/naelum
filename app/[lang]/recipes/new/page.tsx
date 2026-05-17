@@ -17,31 +17,10 @@ import BasicInfoSection from './_components/BasicInfoSection';
 import RecipeFormFooter from './_components/RecipeFormFooter';
 import ThumbnailUploadField from './_components/ThumbnailUploadField';
 import DietaryOptionsField from './_components/DietaryOptionsField';
+import { computeAutoTags } from '@/lib/recipes/autoTags';
 import {
-  CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
-
-// 한국어 감지 및 영어 변환 유틸리티 함수
-const detectKoreanAndTranslate = (text: string): { korean: string; english: string } => {
-  const trimmed = text.trim();
-  const hasKorean = /[가-힣]/.test(trimmed);
-
-  if (!hasKorean) {
-    // 영어만 있으면 그대로 반환
-    return { korean: trimmed, english: trimmed };
-  }
-
-  // 한국어가 있으면 로마자화
-  // 간단한 변환: 공백 제거 후 첫 글자 대문자
-  const romanized = trimmed
-    .replace(/\s+/g, '') // 공백 제거
-    .split('')
-    .map((char, idx) => idx === 0 ? char.toUpperCase() : char)
-    .join('');
-
-  return { korean: trimmed, english: romanized };
-};
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -186,46 +165,10 @@ export default function NewRecipePage() {
 
   // 자동 태그 생성
   useEffect(() => {
-    const autoTags: string[] = [];
-
-    // 1. 요리 종류 태그 (한국어 + 영어)
-    if (cuisineType && cuisineType !== 'other' && CUISINE_TYPE_TAGS[cuisineType]) {
-      autoTags.push(...CUISINE_TYPE_TAGS[cuisineType]);
-    }
-
-    // 1-1. 커스텀 요리 종류 태그 (한국어 + 영어 변환)
-    if (cuisineType === 'other' && customCuisineType.trim()) {
-      const { korean, english } = detectKoreanAndTranslate(customCuisineType);
-      autoTags.push(korean);
-      if (korean !== english) {
-        autoTags.push(english);
-      }
-    }
-
-    // 2. 요리 유형 태그 (선택된 경우만)
-    if (dishType && dishType !== 'other' && DISH_TYPE_TAGS[dishType]) {
-      autoTags.push(...DISH_TYPE_TAGS[dishType]);
-    }
-
-    // 2-1. 커스텀 요리 유형 태그 (한국어 + 영어 변환)
-    if (dishType === 'other' && customDishType.trim()) {
-      const { korean, english } = detectKoreanAndTranslate(customDishType);
-      autoTags.push(korean);
-      if (korean !== english) {
-        autoTags.push(english);
-      }
-    }
-
-    // 3. 식단 옵션 태그
-    if (isVegetarian) {
-      autoTags.push(...DIETARY_TAGS.vegetarian);
-    }
-    if (isVegan) {
-      autoTags.push(...DIETARY_TAGS.vegan);
-    }
-    if (isGlutenFree) {
-      autoTags.push(...DIETARY_TAGS.glutenFree);
-    }
+    const autoTags = computeAutoTags({
+      cuisineType, customCuisineType, dishType, customDishType,
+      isVegetarian, isVegan, isGlutenFree,
+    });
 
     // 기존 태그와 중복되지 않는 자동 태그만 추가 (함수형 업데이트로 최신 상태 사용)
     setTags(prevTags => {
