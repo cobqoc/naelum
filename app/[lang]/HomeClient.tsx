@@ -253,13 +253,22 @@ export default function HomeClient({
 
   // 외부에서 냉장고 변경 이벤트 발생 시 재fetch
   // (예: ShoppingCartDropdown에서 "냉장고에 추가" 후, 레시피 → 재료 추가 등).
+  // debounce 300ms: 배치 저장 시 이벤트가 연속 발생해도 마지막 한 번만 fetch
+  // (개별 dispatch가 race하여 stale 데이터로 items를 덮어쓰는 버그 방지).
   useEffect(() => {
-    const handler = async () => {
-      const rows = await fetchItems();
-      setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+    let timer: ReturnType<typeof setTimeout>;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const rows = await fetchItems();
+        setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+      }, 300);
     };
     window.addEventListener('fridge-updated', handler);
-    return () => window.removeEventListener('fridge-updated', handler);
+    return () => {
+      window.removeEventListener('fridge-updated', handler);
+      clearTimeout(timer);
+    };
   }, [fetchItems, pendingDeleteIdsRef]);
 
   // 임박 재료 전용 매칭 fetch — 시트 열릴 때만 fetch (불필요한 호출 방지).
@@ -395,8 +404,6 @@ export default function HomeClient({
       return;
     }
     if (data) setItems(prev => [...prev, data as FridgeItem]);
-    setAddModalLocation(null);
-    showToast(t.ingredient.addSuccessShort);
     track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
     window.dispatchEvent(new Event('fridge-updated'));
   };
@@ -435,7 +442,6 @@ export default function HomeClient({
       return;
     }
     setItems(prev => prev.map(i => (i.id === targetItemId ? { ...i, quantity: nextQty } : i)));
-    setAddModalLocation(null);
     showToast(t.ingredient.mergedToast.replace('{name}', pending.ingredient_name));
     track('ingredient_merge', { name: pending.ingredient_name });
     window.dispatchEvent(new Event('fridge-updated'));
