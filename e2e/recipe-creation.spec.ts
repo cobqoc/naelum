@@ -198,6 +198,11 @@ test.describe('레시피 작성', () => {
     await copyright.check()
     await expect(submitBtn).toBeEnabled()
 
+    // 임시저장 버튼 wiring (RecipeFormFooter 추출 회귀 가드) — copyright 무관 항상 활성
+    const draftBtn = page.getByRole('button', { name: '임시저장', exact: true })
+    await expect(draftBtn).toBeVisible()
+    await expect(draftBtn).toBeEnabled()
+
     // 전 과정에서 런타임 에러 없어야 (분해 시 stale closure / prop 누락 조기 탐지)
     expect(pageErrors).toEqual([])
   })

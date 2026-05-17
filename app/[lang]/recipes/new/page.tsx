@@ -15,6 +15,7 @@ import NutritionFields from './_components/NutritionFields';
 import StepsSection from './_components/StepsSection';
 import IngredientsSection from './_components/IngredientsSection';
 import BasicInfoSection from './_components/BasicInfoSection';
+import RecipeFormFooter from './_components/RecipeFormFooter';
 import {
   CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
@@ -983,41 +984,15 @@ export default function NewRecipePage() {
           />
         </section>
 
-        {/* 저작권 동의 */}
-        <div className="p-4 rounded-xl bg-background-secondary border border-white/10">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={copyrightAgreed}
-              onChange={e => setCopyrightAgreed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded accent-accent-warm flex-shrink-0"
-            />
-            <span className="text-sm text-text-secondary leading-relaxed">
-              이 레시피는 제가 직접 창작하였거나 저작권자의 허락을 받은 콘텐츠입니다.
-              타인의 레시피·영상·글에서 표현을 그대로 복사하지 않았음을 확인합니다.
-              <a href="/terms" target="_blank" className="text-accent-warm hover:text-accent-hover ml-1">이용약관</a> 제8조 준수에 동의합니다.
-            </span>
-          </label>
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-4 flex gap-3">
-          <button
-            onClick={handleDraft}
-            disabled={draftLoading || loading}
-            className="flex-1 py-4 rounded-xl bg-background-secondary border border-white/10 text-text-secondary font-bold hover:bg-background-tertiary transition-all disabled:opacity-50"
-          >
-            {draftLoading ? tf.saving : tf.saveDraft}
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading || draftLoading || !copyrightAgreed}
-            className="flex-[2] py-4 rounded-xl bg-accent-warm text-background-primary text-lg font-bold hover:bg-accent-hover transition-all disabled:opacity-50"
-            title={!copyrightAgreed ? '저작권 동의 체크 후 게시할 수 있어요' : undefined}
-          >
-            {loading ? tf.submitting : tf.submit}
-          </button>
-        </div>
+        <RecipeFormFooter
+          tf={tf}
+          copyrightAgreed={copyrightAgreed}
+          setCopyrightAgreed={setCopyrightAgreed}
+          loading={loading}
+          draftLoading={draftLoading}
+          onDraft={handleDraft}
+          onSubmit={handleSubmit}
+        />
       </div>
 
       {/* 재료 선택 모달 */}
