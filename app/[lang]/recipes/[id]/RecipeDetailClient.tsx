@@ -12,10 +12,8 @@ import RecipeBrowseView from '@/components/RecipeBrowseView';
 
 // 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
 const RecipeCookMode = dynamic(() => import('@/components/RecipeCookMode'), { ssr: false });
-const InteractiveFridge = dynamic(() => import('@/components/Fridge/InteractiveFridge'), { ssr: false });
 const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { ssr: false });
 const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { ssr: false });
-const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal'), { ssr: false });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -74,8 +72,6 @@ export interface RecipeDetailClientProps {
   initialIsLiked: boolean;
   initialLikesCount: number;
   initialHasCooked: boolean;
-  initialUserRating: number | null;
-  initialUserReview: string | null;
 }
 
 export default function RecipeDetailClient({
@@ -87,8 +83,6 @@ export default function RecipeDetailClient({
   initialIsLiked,
   initialLikesCount,
   initialHasCooked,
-  initialUserRating,
-  initialUserReview,
 }: RecipeDetailClientProps) {
   const router = useRouter();
   const toast = useToast();
@@ -118,12 +112,8 @@ export default function RecipeDetailClient({
   const [timerPaused, setTimerPaused] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
-  // Review states — 서버에서 초기값 받음, 이후 수정 시 클라에서 갱신
   // hasCooked는 현재 플로우에서 페이지 내 mutation이 없으므로 setter 생략
   const [hasCooked] = useState(initialHasCooked);
-  const [userRating, setUserRating] = useState<number | undefined>(initialUserRating ?? undefined);
-  const [userReview, setUserReview] = useState<string | undefined>(initialUserReview ?? undefined);
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -161,7 +151,7 @@ export default function RecipeDetailClient({
             playTimerSound();
             if (typeof window !== 'undefined' && 'Notification' in window) {
               if (Notification.permission === 'granted') {
-                new Notification('타이머 완료!', { body: '다음 단계로 진행하세요.' });
+                new Notification(t.recipe.timerDoneTitle, { body: t.recipe.timerDoneBody });
               }
             }
             return 0;
@@ -174,7 +164,7 @@ export default function RecipeDetailClient({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerActive, timerPaused, timerSeconds, playTimerSound]);
+  }, [timerActive, timerPaused, timerSeconds, playTimerSound, t]);
 
   // Scroll effect — 헤더 배경 전환
   useEffect(() => {
@@ -419,7 +409,7 @@ export default function RecipeDetailClient({
               <Link
                 href={`/recipes/${id}/edit`}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-background-secondary text-text-primary hover:bg-background-tertiary transition-all"
-                title="레시피 수정"
+                title={t.recipe.modify}
               >
                 ✏️
               </Link>
@@ -428,7 +418,7 @@ export default function RecipeDetailClient({
               <Link
                 href={`/@${currentUsername}`}
                 className="flex h-11 w-11 items-center justify-center text-2xl hover:opacity-70 transition-all"
-                title="내 프로필"
+                title={t.common.profile}
               >
                 👤
               </Link>
@@ -436,7 +426,7 @@ export default function RecipeDetailClient({
               <Link
                 href="/login"
                 className="flex h-11 w-11 items-center justify-center text-2xl hover:opacity-70 transition-all"
-                title="로그인"
+                title={t.common.login}
               >
                 👤
               </Link>
@@ -503,47 +493,81 @@ export default function RecipeDetailClient({
         currentUserId={currentUserId}
       />
 
-      {/* 냉장고 모달 */}
-      {showFridgeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowFridgeModal(false)}>
-          <div className="relative mx-4" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowFridgeModal(false)}
-              className="absolute -top-3 -right-3 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-background-tertiary border border-white/10 hover:bg-background-secondary transition-all shadow-lg"
+      {/* 냉장고 재료 비교 모달 */}
+      {showFridgeModal && (() => {
+        const isOwned = (name: string) =>
+          userIngredients.some(ui => name.includes(ui) || ui.includes(name));
+        const owned = recipe.ingredients.filter(i => isOwned(i.ingredient_name));
+        const missing = recipe.ingredients.filter(i => !isOwned(i.ingredient_name));
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowFridgeModal(false)}
+          >
+            <div
+              className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <InteractiveFridge />
-          </div>
-        </div>
-      )}
+              {/* 헤더 */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <span className="font-bold text-text-primary">{t.recipe.fridgeModalTitle}</span>
+                <button
+                  onClick={() => setShowFridgeModal(false)}
+                  className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-      {/* 리뷰 모달 */}
-      {reviewModalOpen && (
-        <RecipeReviewModal
-          recipeId={id}
-          isOpen={reviewModalOpen}
-          onClose={() => setReviewModalOpen(false)}
-          onSuccess={async () => {
-            setReviewModalOpen(false);
-            // 리뷰 정보 다시 로드
-            try {
-              const response = await fetch(`/api/recipes/${id}/rating`);
-              if (response.ok) {
-                const data = await response.json();
-                setUserRating(data.rating);
-                setUserReview(data.review);
-              }
-            } catch (error) {
-              console.error('Error reloading review:', error);
-            }
-          }}
-          initialRating={userRating}
-          initialReview={userReview}
-        />
-      )}
+              <div className="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-4">
+                {/* 보유 재료 */}
+                {owned.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-success mb-2">{t.recipe.fridgeModalOwned} ({owned.length})</p>
+                    <div className="space-y-1">
+                      {owned.map((ing, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-text-primary">
+                          <span className="text-success">✓</span>
+                          <span>{ing.ingredient_name}</span>
+                          {(ing.quantity || ing.unit) && (
+                            <span className="text-text-muted ml-auto">{ing.quantity} {ing.unit}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 없는 재료 */}
+                {missing.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-error mb-2">{t.recipe.fridgeModalMissing} ({missing.length})</p>
+                    <div className="space-y-1">
+                      {missing.map((ing, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm text-text-secondary">
+                          <span className="text-error">✗</span>
+                          <span>{ing.ingredient_name}</span>
+                          {(ing.quantity || ing.unit) && (
+                            <span className="text-text-muted ml-auto">{ing.quantity} {ing.unit}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 비로그인 or 냉장고 비어있음 */}
+                {userIngredients.length === 0 && (
+                  <p className="text-sm text-text-muted text-center py-4">{t.recipe.fridgeModalEmpty}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }

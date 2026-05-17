@@ -15,7 +15,7 @@ interface PageProps {
  * 레시피 상세 데이터를 한 번의 round-trip으로 병렬 fetch한다.
  * - 비로그인: recipe + cooked count
  * - 로그인: recipe + cooked count + user_ingredients + recipe_saves + recipe_likes
- *           + cooking_sessions(hasCooked) + rating API(userRating/userReview)
+ *           + cooking_sessions(hasCooked)
  */
 async function fetchRecipePageData(id: string) {
   const supabase = await createClient();
@@ -85,22 +85,6 @@ async function fetchRecipePageData(id: string) {
         .maybeSingle(),
     ]);
 
-    // 리뷰 데이터는 hasCooked한 유저만
-    let userRating: number | null = null;
-    let userReview: string | null = null;
-    if (cookingData) {
-      const { data: ratingRow } = await supabase
-        .from('recipe_ratings')
-        .select('rating, review')
-        .eq('recipe_id', id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (ratingRow) {
-        userRating = ratingRow.rating ?? null;
-        userReview = ratingRow.review ?? null;
-      }
-    }
-
     const recipe: Recipe = { ...recipeData, cooked_count: cookedCount || 0 };
 
     return {
@@ -112,8 +96,6 @@ async function fetchRecipePageData(id: string) {
       initialIsLiked: !!likeData,
       initialLikesCount: recipe.likes_count ?? 0,
       initialHasCooked: !!cookingData,
-      initialUserRating: userRating,
-      initialUserReview: userReview,
     };
   }
 
@@ -130,8 +112,6 @@ async function fetchRecipePageData(id: string) {
     initialIsLiked: false,
     initialLikesCount: recipe.likes_count ?? 0,
     initialHasCooked: false,
-    initialUserRating: null,
-    initialUserReview: null,
   };
 }
 
@@ -219,8 +199,6 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         initialIsLiked={data.initialIsLiked}
         initialLikesCount={data.initialLikesCount}
         initialHasCooked={data.initialHasCooked}
-        initialUserRating={data.initialUserRating}
-        initialUserReview={data.initialUserReview}
       />
     </>
   );

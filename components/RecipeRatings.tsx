@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
+import { useI18n } from '@/lib/i18n/context';
 
 const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { ssr: false });
 
@@ -31,8 +32,8 @@ interface RecipeRatingsProps {
   onRatingUpdate?: () => void;
 }
 
-export default function RecipeRatings({ recipeId, averageRating, ratingsCount, currentUserId, // eslint-disable-next-line @typescript-eslint/no-unused-vars
-hasCooked, onRatingUpdate }: RecipeRatingsProps) {
+export default function RecipeRatings({ recipeId, averageRating, ratingsCount, currentUserId, hasCooked, onRatingUpdate }: RecipeRatingsProps) {
+  const { t, language } = useI18n();
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -112,10 +113,10 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 60) return `${diffMins}분 전`;
-    if (diffHours < 24) return `${diffHours}시간 전`;
-    if (diffDays < 30) return `${diffDays}일 전`;
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (diffMins < 60) return t.recipe.timeMinutesAgo.replace('{n}', String(diffMins));
+    if (diffHours < 24) return t.recipe.timeHoursAgo.replace('{n}', String(diffHours));
+    if (diffDays < 30) return t.recipe.timeDaysAgo.replace('{n}', String(diffDays));
+    return date.toLocaleDateString(language, { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   // 별점 렌더링
@@ -133,20 +134,54 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
 
   const hasMore = page < totalPages;
   const remainingCount = displayRatingsCount - ratings.length;
+  const hasOwnReview = ratings.some(r => r.user_id === currentUserId);
+  const showCookedCta = hasCooked && currentUserId && !loading && !hasOwnReview;
 
   if (displayRatingsCount === 0) {
     return (
       <section className="px-6 py-8 bg-background-primary">
         <div className="container mx-auto max-w-2xl">
           <h2 className="text-xl font-bold text-text-primary mb-6">
-            리뷰 <span className="text-accent-warm">0</span>
+            {t.recipe.ratingsTitle} <span className="text-accent-warm">0</span>
           </h2>
+          {showCookedCta && (
+            <button
+              onClick={() => setReviewModalOpen(true)}
+              className="w-full mb-4 p-4 rounded-xl bg-accent-warm/10 border border-accent-warm/30
+                         text-left hover:bg-accent-warm/20 transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-accent-warm font-medium">{t.recipe.ratingCookedCta}</p>
+                <span className="text-accent-warm text-sm font-bold shrink-0 ml-3">
+                  {t.recipe.ratingAddReview} →
+                </span>
+              </div>
+            </button>
+          )}
           <div className="py-12 text-center rounded-2xl bg-background-secondary border border-white/5">
             <div className="text-6xl mb-4">⭐</div>
-            <p className="text-text-muted">아직 리뷰가 없습니다</p>
-            <p className="text-sm text-text-secondary mt-2">이 레시피를 만들고 첫 리뷰를 남겨보세요!</p>
+            <p className="text-text-muted">{t.recipe.ratingsEmpty}</p>
+            <p className="text-sm text-text-secondary mt-2">{t.recipe.ratingsEmptyHint}</p>
           </div>
         </div>
+
+        {reviewModalOpen && (
+          <RecipeReviewModal
+            recipeId={recipeId}
+            isOpen={reviewModalOpen}
+            onClose={() => setReviewModalOpen(false)}
+            onSuccess={async (data) => {
+              setReviewModalOpen(false);
+              if (data) {
+                setDisplayAverageRating(data.averageRating);
+                setDisplayRatingsCount(data.ratingsCount);
+                if (onRatingUpdate) onRatingUpdate();
+              }
+              await new Promise(resolve => setTimeout(resolve, 300));
+              fetchRatings(1);
+            }}
+          />
+        )}
       </section>
     );
   }
@@ -157,7 +192,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
         {/* 헤더 - 평균 평점 */}
         <div className="mb-6">
           <h2 className="text-xl font-bold text-text-primary mb-4">
-            리뷰 <span className="text-accent-warm">{displayRatingsCount}</span>
+            {t.recipe.ratingsTitle} <span className="text-accent-warm">{displayRatingsCount}</span>
           </h2>
           <div className="flex items-center gap-4 p-4 rounded-xl bg-background-secondary border border-white/5">
             <div className="text-center">
@@ -171,7 +206,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
               </div>
             </div>
             <div className="flex-1 text-sm text-text-secondary">
-              {displayRatingsCount}개의 리뷰
+              {t.recipe.ratingsCountLabel.replace('{count}', String(displayRatingsCount))}
             </div>
           </div>
         </div>
@@ -197,6 +232,22 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
           </div>
         ) : (
           <>
+            {/* 요리 완료했지만 리뷰 미작성 시 CTA */}
+            {showCookedCta && (
+              <button
+                onClick={() => setReviewModalOpen(true)}
+                className="w-full mb-4 p-4 rounded-xl bg-accent-warm/10 border border-accent-warm/30
+                           text-left hover:bg-accent-warm/20 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-accent-warm font-medium">{t.recipe.ratingCookedCta}</p>
+                  <span className="text-accent-warm text-sm font-bold shrink-0 ml-3">
+                    {t.recipe.ratingAddReview} →
+                  </span>
+                </div>
+              </button>
+            )}
+
             {/* 리뷰 목록 */}
             <div className="space-y-4">
               {ratings.map((rating, idx) => {
@@ -229,7 +280,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
                             {/* 사진만 있는 리뷰 배지 */}
                             {rating.is_photo_only && (
                               <span className="text-xs px-2 py-0.5 rounded-full bg-accent-warm/20 text-accent-warm">
-                                완료 인증 📸
+                                {t.recipe.ratingPhotoOnly}
                               </span>
                             )}
                           </div>
@@ -244,7 +295,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
                           className="flex items-center gap-1 text-sm text-text-muted hover:text-accent-warm transition-colors"
                         >
                           <span>✏️</span>
-                          <span>{rating.is_photo_only ? '리뷰 추가하기' : '수정'}</span>
+                          <span>{rating.is_photo_only ? t.recipe.ratingAddReview : t.common.edit}</span>
                         </button>
                       )}
                     </div>
@@ -261,7 +312,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
                       <div className="mb-3">
                         <Image
                           src={rating.photo_url}
-                          alt="완성 사진"
+                          alt={t.recipe.ratingPhotoAlt}
                           width={600}
                           height={400}
                           className="w-full max-w-md rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
@@ -280,7 +331,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
                     {/* 수정됨 표시 */}
                     {rating.updated_at !== rating.created_at && (
                       <div className="text-xs text-text-muted mt-2">
-                        (수정됨)
+                        {t.recipe.ratingEdited}
                       </div>
                     )}
                   </div>
@@ -299,8 +350,8 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
                            disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingMore
-                  ? '로딩 중...'
-                  : `리뷰 더보기 (${remainingCount}개 남음)`}
+                  ? t.common.loading
+                  : t.recipe.ratingsLoadMore.replace('{count}', String(remainingCount))}
               </button>
             )}
           </>
@@ -347,7 +398,7 @@ hasCooked, onRatingUpdate }: RecipeRatingsProps) {
         >
           <Image
             src={lightboxImage}
-            alt="완성 사진 크게 보기"
+            alt={t.recipe.ratingPhotoAlt}
             width={1200}
             height={800}
             className="max-w-full max-h-full object-contain"
