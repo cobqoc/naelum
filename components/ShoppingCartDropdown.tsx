@@ -14,7 +14,6 @@ import {
 } from '@/lib/shopping-list/cache';
 import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
 import { useFavorites } from '@/lib/favorites/useFavorites';
-import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { track } from '@/lib/analytics/track';
 import { groupItems, type GroupMode } from '@/lib/shopping-list/groupItems';
 import CartLoginPrompt from '@/components/cart/CartLoginPrompt';
@@ -327,7 +326,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       merged.push({
         name: f.ingredient_name,
         category: f.category ?? 'other',
-        icon: getIngredientEmoji(f.ingredient_name, f.category ?? 'other'),
+        icon: f.emoji ?? undefined,
         isStarred: f.is_starred,
         fromFavorites: true,
       });

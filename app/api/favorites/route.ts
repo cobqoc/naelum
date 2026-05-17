@@ -25,7 +25,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ items: data ?? [] });
+  // ingredients_master에서 emoji 보강 — 정적 파일 없이 DB 단일 소스
+  const names = (data ?? []).map(d => d.ingredient_name);
+  let nameToEmoji = new Map<string, string | null>();
+  if (names.length > 0) {
+    const { data: masterRows } = await supabase
+      .from('ingredients_master')
+      .select('name, emoji')
+      .in('name', names);
+    nameToEmoji = new Map((masterRows ?? []).map(r => [r.name, r.emoji ?? null]));
+  }
+
+  const items = (data ?? []).map(d => ({
+    ...d,
+    emoji: nameToEmoji.get(d.ingredient_name) ?? null,
+  }));
+
+  return NextResponse.json({ items });
 }
 
 // PATCH /api/favorites — ⭐ 토글

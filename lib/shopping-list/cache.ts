@@ -15,6 +15,7 @@ export interface ShoppingItem {
   is_checked: boolean
   is_owned: boolean
   note: string | null
+  emoji: string | null
 }
 
 type Subscriber = (items: ShoppingItem[] | null) => void

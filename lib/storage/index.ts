@@ -11,9 +11,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * client / service-role). 래퍼는 클라이언트 종류를 모름 = 격리 유지.
  */
 
-// 앱에서 실제 사용하는 버킷 전체 (api/upload 의 ALLOWED_BUCKETS 와 동일 집합)
+// 앱에서 실제 사용하는 버킷 전체 (api/upload·api/upload-video 의 ALLOWED_BUCKETS 와 동일 집합)
 export type StorageBucket =
   | 'recipe-images'
+  | 'recipe-videos'
   | 'tip-images'
   | 'avatars'
   | 'step-images'

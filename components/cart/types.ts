@@ -19,7 +19,7 @@ export const COMMON_UNITS = ['개', 'g', 'kg', 'ml', 'L', '팩', '봉지', '병'
 export type QuickItem = {
   name: string;
   category: string;
-  icon: string;
+  icon?: string;
   isStarred: boolean;
   fromFavorites: boolean;
 };

@@ -301,7 +301,6 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     expect(rows?.[0].ingredient_name).toBe('양파');
     expect(rows?.[0].expiry_date).toBeNull();
     expect(rows?.[0].purchase_date).toBe(new Date().toISOString().slice(0, 10));
-    expect(rows?.[0].ingredient_id).toBeNull();
   });
 
   // ── 시나리오 G: 수정 모드 — 만료일 지우고 저장 → sanitize로 null 저장 ───────
@@ -391,11 +390,10 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     expect(rows).toHaveLength(3);
     const names = rows?.map(r => r.ingredient_name).sort();
     expect(names).toEqual(['계란', '마늘', '양파']);
-    // 모두 sanitize 적용 — expiry null, purchase_date = 오늘(자동 채우기), preset ingredient_id null
+    // 모두 sanitize 적용 — expiry null, purchase_date = 오늘(자동 채우기)
     for (const r of rows ?? []) {
       expect(r.expiry_date).toBeNull();
       expect(r.purchase_date).toBe(new Date().toISOString().slice(0, 10));
-      expect(r.ingredient_id).toBeNull();
     }
   });
 

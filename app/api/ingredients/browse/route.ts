@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // 기본 쿼리 (approved된 재료만)
     let dbQuery = supabase
       .from('ingredients_master')
-      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail')
+      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji')
       .eq('status', 'approved'); // 승인된 재료만
 
     // 검색어 필터
@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       pairs_well_with: ingredient.pairs_well_with || null,
       description: ingredient.description || null,
       nutrition_detail: ingredient.nutrition_detail || null,
+      emoji: ingredient.emoji || null,
       // AutocompleteItem 필드
       label: ingredient.name_ko || ingredient.name,
       secondaryLabel: ingredient.name_en || undefined,

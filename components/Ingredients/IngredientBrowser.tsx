@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { INGREDIENT_CATEGORIES, IngredientItem } from './IngredientAutocompleteTypes';
-import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { useI18n } from '@/lib/i18n/context';
 
 interface FrequentItem {
   id: string;
   name: string;
   category: string | null;
+  emoji?: string | null;
 }
 
 interface PopularItemLite {
@@ -105,7 +105,7 @@ export default function IngredientBrowser({
           category: f.category,
           common_units: [],
           label: f.name,
-          icon: getIngredientEmoji(f.name, f.category || 'other'),
+          icon: f.emoji ?? undefined,
         });
       }
 
@@ -141,6 +141,7 @@ export default function IngredientBrowser({
           id: string; name: string; name_en: string | null;
           category: string | null; common_units: string[];
           search_count?: number; subcategory?: string | null; image_url?: string | null;
+          emoji?: string | null;
         }) => ({
           id: ing.id,
           name: ing.name,
@@ -152,7 +153,7 @@ export default function IngredientBrowser({
           search_count: ing.search_count,
           label: ing.name,
           secondaryLabel: ing.name_en || undefined,
-          icon: getIngredientEmoji(ing.name, ing.category || 'other'),
+          icon: ing.emoji ?? undefined,
           badge: ing.category || undefined,
         }));
         setIngredients(items);
@@ -259,7 +260,7 @@ export default function IngredientBrowser({
                     onClick={() => !isSelected && onSelect(ing)}
                     className={`flex items-center gap-1.5 ${showStar ? 'pl-1' : 'pl-3'} pr-3 py-1.5 ${isSelected ? 'cursor-default' : ''}`}
                   >
-                    <span className="text-base leading-none">{getIngredientEmoji(ing.name, ing.category || 'other')}</span>
+                    <span className="text-base leading-none">{ing.icon}</span>
                     <span>{ing.name}</span>
                     {isSelected && (
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { inferStorageLocation } from '@/lib/ingredients/storageMap';
+import { resolveIngredientIds } from '@/lib/ingredients/resolveIngredientId';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -18,13 +19,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '항목이 필요합니다.' }, { status: 400 });
   }
 
-  // ingredients_master에서 ingredient_id 일괄 조회 (정확도 매칭용)
+  // ingredients_master에서 ingredient_id 일괄 조회 (단어 분리 fallback 포함)
   const names = items.map(i => i.ingredient_name)
-  const { data: masterRows } = await supabase
-    .from('ingredients_master')
-    .select('id, name')
-    .in('name', names)
-  const nameToId = new Map((masterRows ?? []).map(r => [r.name, r.id]))
+  const nameToId = await resolveIngredientIds(names, supabase)
 
   // 큐레이션 맵 기반 자동 분류 (lookupStorageByName 매칭, 없으면 카테고리 fallback).
   // purchase_date 오늘 자동 설정 — 모달 경로(IngredientForm)와 일관성 유지 +

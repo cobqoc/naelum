@@ -6,52 +6,51 @@
 
 export type QuickAddIngredient = {
   name: string;          // 한국어 이름 (DB의 ingredient_name으로 그대로 저장)
-  emoji: string;
   category: 'veggie' | 'meat' | 'seafood' | 'dairy' | 'seasoning' | 'grain' | 'other';
   storage: '냉장' | '냉동' | '상온';
 };
 
 export const QUICK_ADD: QuickAddIngredient[] = [
   // 채소 (12)
-  { name: '양파', emoji: '🧅', category: 'veggie', storage: '상온' },
-  { name: '마늘', emoji: '🧄', category: 'veggie', storage: '냉장' },
-  { name: '대파', emoji: '🌱', category: 'veggie', storage: '냉장' },
-  { name: '당근', emoji: '🥕', category: 'veggie', storage: '냉장' },
-  { name: '감자', emoji: '🥔', category: 'veggie', storage: '상온' },
-  { name: '청양고추', emoji: '🌶️', category: 'veggie', storage: '냉장' },
-  { name: '애호박', emoji: '🥒', category: 'veggie', storage: '냉장' },
-  { name: '배추', emoji: '🥬', category: 'veggie', storage: '냉장' },
-  { name: '무', emoji: '🥕', category: 'veggie', storage: '냉장' },
-  { name: '콩나물', emoji: '🌱', category: 'veggie', storage: '냉장' },
-  { name: '시금치', emoji: '🥬', category: 'veggie', storage: '냉장' },
-  { name: '깻잎', emoji: '🌿', category: 'veggie', storage: '냉장' },
+  { name: '양파', category: 'veggie', storage: '상온' },
+  { name: '마늘', category: 'veggie', storage: '냉장' },
+  { name: '대파', category: 'veggie', storage: '냉장' },
+  { name: '당근', category: 'veggie', storage: '냉장' },
+  { name: '감자', category: 'veggie', storage: '상온' },
+  { name: '청양고추', category: 'veggie', storage: '냉장' },
+  { name: '애호박', category: 'veggie', storage: '냉장' },
+  { name: '배추', category: 'veggie', storage: '냉장' },
+  { name: '무', category: 'veggie', storage: '냉장' },
+  { name: '콩나물', category: 'veggie', storage: '냉장' },
+  { name: '시금치', category: 'veggie', storage: '냉장' },
+  { name: '깻잎', category: 'veggie', storage: '냉장' },
 
   // 육류/수산/단백질 (6)
-  { name: '돼지고기', emoji: '🥩', category: 'meat', storage: '냉장' },
-  { name: '소고기', emoji: '🥩', category: 'meat', storage: '냉장' },
-  { name: '닭고기', emoji: '🍗', category: 'meat', storage: '냉장' },
-  { name: '계란', emoji: '🥚', category: 'dairy', storage: '냉장' },
-  { name: '두부', emoji: '🫘', category: 'other', storage: '냉장' },
-  { name: '새우', emoji: '🍤', category: 'seafood', storage: '냉동' },
+  { name: '돼지고기', category: 'meat', storage: '냉장' },
+  { name: '소고기', category: 'meat', storage: '냉장' },
+  { name: '닭고기', category: 'meat', storage: '냉장' },
+  { name: '계란', category: 'dairy', storage: '냉장' },
+  { name: '두부', category: 'other', storage: '냉장' },
+  { name: '새우', category: 'seafood', storage: '냉동' },
 
   // 유제품 (2)
-  { name: '우유', emoji: '🥛', category: 'dairy', storage: '냉장' },
-  { name: '치즈', emoji: '🧀', category: 'dairy', storage: '냉장' },
+  { name: '우유', category: 'dairy', storage: '냉장' },
+  { name: '치즈', category: 'dairy', storage: '냉장' },
 
   // 조미료 (7)
-  { name: '간장', emoji: '🍶', category: 'seasoning', storage: '상온' },
-  { name: '된장', emoji: '🍶', category: 'seasoning', storage: '냉장' },
-  { name: '고추장', emoji: '🌶️', category: 'seasoning', storage: '냉장' },
-  { name: '참기름', emoji: '🍶', category: 'seasoning', storage: '상온' },
-  { name: '식용유', emoji: '🧴', category: 'seasoning', storage: '상온' },
-  { name: '설탕', emoji: '🍚', category: 'seasoning', storage: '상온' },
-  { name: '소금', emoji: '🧂', category: 'seasoning', storage: '상온' },
-  { name: '후추', emoji: '🌶️', category: 'seasoning', storage: '상온' },
+  { name: '간장', category: 'seasoning', storage: '상온' },
+  { name: '된장', category: 'seasoning', storage: '냉장' },
+  { name: '고추장', category: 'seasoning', storage: '냉장' },
+  { name: '참기름', category: 'seasoning', storage: '상온' },
+  { name: '식용유', category: 'seasoning', storage: '상온' },
+  { name: '설탕', category: 'seasoning', storage: '상온' },
+  { name: '소금', category: 'seasoning', storage: '상온' },
+  { name: '후추', category: 'seasoning', storage: '상온' },
 
   // 기타 핵심 (3)
-  { name: '김치', emoji: '🥬', category: 'other', storage: '냉장' },
-  { name: '밥', emoji: '🍚', category: 'grain', storage: '냉장' },
-  { name: '김', emoji: '🌿', category: 'other', storage: '상온' },
+  { name: '김치', category: 'other', storage: '냉장' },
+  { name: '밥', category: 'grain', storage: '냉장' },
+  { name: '김', category: 'other', storage: '상온' },
 ];
 
 /**

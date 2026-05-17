@@ -84,7 +84,7 @@ export default function IngredientAutocompleteV2({
         common_units: [],
         label: item.name,
         secondaryLabel: item.name_en || undefined,
-        icon: getCategoryIcon(item.category),
+        icon: undefined,
         badge: item.category || undefined,
       }));
       setRecentItems(items);
@@ -245,7 +245,7 @@ function convertRecentToIngredientItem(recent: RecentIngredient): IngredientItem
     common_units: [],
     label: recent.name,
     secondaryLabel: recent.name_en || undefined,
-    icon: getCategoryIcon(recent.category),
+    icon: undefined,
     badge: recent.category || undefined,
     metadata: {
       count: recent.count,
@@ -254,23 +254,6 @@ function convertRecentToIngredientItem(recent: RecentIngredient): IngredientItem
   };
 }
 
-/**
- * 카테고리 아이콘 매핑 (AutocompleteTypes에서 중복 방지)
- */
-function getCategoryIcon(categoryId: string | null): string {
-  const iconMap: Record<string, string> = {
-    veggie: '🥬',
-    fruit: '🍎',
-    meat: '🥩',
-    seafood: '🐟',
-    grain: '🌾',
-    dairy: '🧀',
-    seasoning: '🧂',
-    condiment: '🫙',
-    other: '📦',
-  };
-  return categoryId ? iconMap[categoryId] || '📦' : '📦';
-}
 
 /**
  * 재료 항목 렌더링 컴포넌트

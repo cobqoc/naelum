@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // name, name_ko, name_en 모두 검색
     let dbQuery = supabase
       .from('ingredients_master')
-      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count')
+      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, emoji')
       .or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%`);
 
     // 카테고리 필터 적용
@@ -50,7 +50,8 @@ export async function GET(request: NextRequest) {
       name_en: ingredient.name_en,
       category: ingredient.category,
       image_url: ingredient.image_url,
-      common_units: ingredient.common_units || []
+      common_units: ingredient.common_units || [],
+      emoji: ingredient.emoji || null
     }));
 
     return NextResponse.json({ suggestions });

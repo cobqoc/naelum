@@ -1,0 +1,1 @@
+ALTER TABLE ingredients_master ADD COLUMN IF NOT EXISTS emoji VARCHAR(10);

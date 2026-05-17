@@ -9,6 +9,7 @@ export interface FavoriteItem {
   is_starred: boolean;
   add_count: number;
   last_added_at: string;
+  emoji: string | null;
 }
 
 // 사용자 즐겨찾기·자주 사용 재료 hook
@@ -68,6 +69,7 @@ export function useFavorites(limit = 50) {
             is_starred: next,
             add_count: 0,
             last_added_at: new Date().toISOString(),
+            emoji: null,
           },
           ...prev,
         ];
