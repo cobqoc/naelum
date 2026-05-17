@@ -150,7 +150,7 @@ export default function CartItemList({
                         >
                           <option value="">{t.cart.unitLabel}</option>
                           {COMMON_UNITS.map(u => (
-                            <option key={u} value={u}>{u}</option>
+                            <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
                           ))}
                         </select>
                         <span className="pointer-events-none absolute right-1 text-text-muted text-[9px]">▾</span>
