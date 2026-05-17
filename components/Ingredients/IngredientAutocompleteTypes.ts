@@ -74,15 +74,6 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
 ];
 
 /**
- * 카테고리 ID를 아이콘으로 변환
- */
-export function getCategoryIcon(categoryId: string | null): string {
-  if (!categoryId) return '📦';
-  const category = INGREDIENT_CATEGORIES.find(c => c.id === categoryId);
-  return category?.icon || '📦';
-}
-
-/**
  * 카테고리 ID를 이름으로 변환
  */
 export function getCategoryName(categoryId: string | null): string {
@@ -159,6 +150,7 @@ export interface IngredientAutocompleteResponse {
     image_url: string | null;
     common_units: string[];
     search_count?: number;
+    emoji?: string | null;
   }>;
 }
 
@@ -181,7 +173,7 @@ export function convertToIngredientItem(
     // AutocompleteItem 필드
     label: name,
     secondaryLabel: apiItem.name_en || undefined,
-    icon: getCategoryIcon(apiItem.category),
+    icon: apiItem.emoji || undefined,
     badge: apiItem.category || undefined,
   };
 }

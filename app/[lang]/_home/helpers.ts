@@ -1,6 +1,3 @@
-import { QUICK_ADD } from './quickAddList';
-
-import { getIngredientEmoji, getPreciseIngredientEmoji } from '../../../lib/utils/ingredientEmoji';
 import type { FridgeItem } from './types';
 
 /** 오늘 기준 만료일까지 남은 일수. expiry_date 없으면 99(만료 아님). */
@@ -23,27 +20,6 @@ export function daysSincePurchase(d: string | null | undefined): number {
 export function addDaysISO(d: number): string {
   const date = new Date(); date.setDate(date.getDate() + d);
   return date.toISOString().slice(0, 10);
-}
-
-/** QUICK_ADD에 있으면 해당 이모지, 없으면 category 기본값, 그것도 없으면 📦.
- *  정확일치 → 부분포함 순서: '물' 검색이 '콩나물'에 잘못 잡히는 등 짧은 이름 오매칭 방지. */
-export function getEmoji(name: string, category: string): string {
-  const exact = QUICK_ADD.find(q => q.name === name);
-  if (exact) return exact.emoji;
-  const partial = QUICK_ADD.find(q => name.includes(q.name) || q.name.includes(name));
-  if (partial) return partial.emoji;
-  return getIngredientEmoji(name, category);
-}
-
-/** getEmoji 의 "정확한 것만" 버전 — QUICK_ADD(정확/부분) 또는 EXACT/KEYWORD
- *  매핑 히트만 반환, 카테고리 일반 폴백 자리에서는 null.
- *  칩처럼 부정확한 중복 이모지가 무(無)보다 나쁜 스캔 표면 전용. */
-export function getPreciseEmoji(name: string): string | null {
-  const exact = QUICK_ADD.find(q => q.name === name);
-  if (exact) return exact.emoji;
-  const partial = QUICK_ADD.find(q => name.includes(q.name) || q.name.includes(name));
-  if (partial) return partial.emoji;
-  return getPreciseIngredientEmoji(name);
 }
 
 /**

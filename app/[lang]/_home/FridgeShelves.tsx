@@ -1,4 +1,4 @@
-import { freshState, formatFreshLabel, getPreciseEmoji } from './helpers';
+import { freshState, formatFreshLabel } from './helpers';
 import { SHELF_LEFT, SHELF_WIDTH, SHELVES } from './constants';
 import { track } from '@/lib/analytics/track';
 import type { FridgeItem } from './types';
@@ -66,7 +66,7 @@ export default function FridgeShelves({
                 const groupCount = group.length;
                 const { border, labelKind, labelN, isDanger } = freshState(repr);
                 const label = formatFreshLabel(labelKind, labelN, t);
-                const emoji = getPreciseEmoji(repr.ingredient_name);
+                const emoji = repr.emoji ?? null;
                 const displayName = getDisplayName(repr);
                 const handleClick = (e: React.MouseEvent) => {
                   if (groupCount > 1) {

@@ -30,7 +30,7 @@ import {
   LS_KEY_ONBOARDING_BANNER,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
-import { freshState, formatFreshLabel, urgencyScore, getEmoji, getPreciseEmoji, isDemoRecord } from './_home/helpers';
+import { freshState, formatFreshLabel, urgencyScore, isDemoRecord } from './_home/helpers';
 import { DEMO } from './_home/demoItems';
 import { track } from '@/lib/analytics/track';
 import Header from '@/components/Header';
@@ -43,6 +43,7 @@ import IngredientActionSheet from '@/components/Ingredients/IngredientActionShee
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { resolveIngredientId } from '@/lib/ingredients/resolveIngredientId';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -218,10 +219,14 @@ export default function HomeClient({
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
-      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert')
+      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert, ingredients_master!ingredient_id(emoji)')
       .eq('user_id', user.id)
       .order('expiry_date', { ascending: true, nullsFirst: false });
-    return (data ?? []) as FridgeItem[];
+    return (data ?? []).map((row) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const master = (row as any).ingredients_master;
+      return { ...row, emoji: master?.emoji ?? null, ingredients_master: undefined } as FridgeItem;
+    });
   }, [user]);
 
   // 비로그인 체험 모드 — items 변경 시 localStorage에 저장
@@ -370,9 +375,18 @@ export default function HomeClient({
   const performIngredientInsert = async (sanitized: IngredientFormData) => {
     if (!user) return;
     const client = createClient();
+
+    // ingredient_id가 없으면 이름 기반 자동 조회.
+    // 1순위: 정확한 이름 일치, 2순위: 공백 분리 단어 일치
+    // ("엄마표 간장" → "간장" → 간장 ID → 이모지 연결)
+    let ingredientId = sanitized.ingredient_id ?? null;
+    if (!ingredientId) {
+      ingredientId = await resolveIngredientId(sanitized.ingredient_name, client);
+    }
+
     const { data, error } = await client
       .from('user_ingredients')
-      .insert({ ...sanitized, user_id: user.id })
+      .insert({ ...sanitized, user_id: user.id, ingredient_id: ingredientId })
       .select()
       .single();
     if (error) {
@@ -666,7 +680,6 @@ export default function HomeClient({
         }}
         onDelete={(item) => handleDeleteFromSheet(item as FridgeItem)}
         freshState={freshState}
-        getPreciseEmoji={getPreciseEmoji}
         getDisplayName={getDisplayName}
         expiringOnly={allSheetMode === 'expiring'}
         recipeMatch={allSheetMode === 'expiring' ? expiringRecipeMatch : null}
@@ -675,7 +688,7 @@ export default function HomeClient({
 
       {/* 재료 액션 시트 — chip 탭 시 1차로 열림 (만들기/수정/삭제) */}
       <IngredientActionSheet
-        item={actionItem ? { id: actionItem.id, ingredient_name: actionItem.ingredient_name, emoji: getEmoji(actionItem.ingredient_name, actionItem.category) } : null}
+        item={actionItem ? { id: actionItem.id, ingredient_name: actionItem.ingredient_name, emoji: actionItem.emoji ?? null } : null}
         onClose={() => setActionItem(null)}
         onCook={() => actionItem && handleCook(actionItem)}
         onEdit={() => actionItem && handleEditFromSheet(actionItem)}
@@ -689,6 +702,7 @@ export default function HomeClient({
             id: detailItem.id,
             ingredient_name: detailItem.ingredient_name,
             category: detailItem.category,
+            emoji: detailItem.emoji ?? null,
             quantity: detailItem.quantity ?? null,
             unit: detailItem.unit ?? null,
             purchase_date: detailItem.purchase_date ?? null,

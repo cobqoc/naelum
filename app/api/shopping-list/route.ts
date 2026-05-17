@@ -36,10 +36,10 @@ export async function GET() {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  // 클라이언트가 실제로 쓰는 필드만 선택 — SELECT * 대비 ~40% 응답 크기 감소.
+  // ingredients_master JOIN으로 emoji 포함 — 정적 파일 없이 DB 단일 소스
   const { data, error } = await supabase
     .from('shopping_list_items')
-    .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, is_owned, note')
+    .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, is_owned, note, ingredients_master!ingredient_id(emoji)')
     .eq('user_id', user.id)
     .order('is_checked', { ascending: true })
     .order('created_at', { ascending: false })
@@ -49,7 +49,13 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ items: data });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items = (data || []).map((row: any) => {
+    const { ingredients_master: master, ...rest } = row;
+    return { ...rest, emoji: master?.emoji ?? null };
+  });
+
+  return NextResponse.json({ items });
 }
 
 // POST: 레시피에서 재료 추가
@@ -85,11 +91,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
-  // 보유 재료 + 기존 장보기 항목 병렬 조회 (id·quantity까지 — 중복 시 합산용)
-  const [{ data: ownedIngredients }, { data: existingItems }] = await Promise.all([
+  // 보유 재료 + 기존 장보기 항목 + ingredients_master 병렬 조회
+  const names = ingredients.map(i => i.ingredient_name);
+  const [{ data: ownedIngredients }, { data: existingItems }, { data: masterRows }] = await Promise.all([
     supabase.from('user_ingredients').select('ingredient_name').eq('user_id', user.id),
     supabase.from('shopping_list_items').select('id, ingredient_name, quantity').eq('user_id', user.id).eq('is_checked', false),
+    supabase.from('ingredients_master').select('id, name').in('name', names),
   ]);
+  const nameToMasterId = new Map((masterRows ?? []).map(r => [r.name, r.id]));
 
   const ownedNames = new Set((ownedIngredients || []).map(i => i.ingredient_name.toLowerCase()));
   const existingByName = new Map(
@@ -120,6 +129,7 @@ export async function POST(request: NextRequest) {
         recipe_title: recipeTitle,
         is_owned: ownedNames.has(key),
         is_checked: false,
+        ingredient_id: nameToMasterId.get(i.ingredient_name) ?? null,
       });
     }
   }

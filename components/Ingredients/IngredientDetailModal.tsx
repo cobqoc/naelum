@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import IngredientForm from './IngredientForm';
-import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -10,6 +9,7 @@ interface Ingredient {
   id: string;
   ingredient_name: string;
   category: string;
+  emoji?: string | null;
   quantity?: number | null;
   unit?: string | null;
   purchase_date?: string | null;
@@ -87,7 +87,7 @@ export default function IngredientDetailModal({
 
   if (!isOpen) return null;
 
-  const emoji = getIngredientEmoji(ingredient.ingredient_name, ingredient.category);
+  const emoji = ingredient.emoji ?? null;
 
   return (
     // z-[60] — BottomNav(z-50) 위에 배치. 모바일 fullscreen, 데스크탑 센터 카드.
@@ -105,7 +105,7 @@ export default function IngredientDetailModal({
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
           <h2 className="text-lg font-bold text-text-primary truncate flex items-center gap-2 min-w-0">
-            <span className="text-xl flex-shrink-0">{emoji}</span>
+            {emoji && <span className="text-xl flex-shrink-0">{emoji}</span>}
             <span className="truncate">{ingredient.ingredient_name}</span>
             <span className="text-sm text-text-muted font-normal flex-shrink-0">수정</span>
           </h2>

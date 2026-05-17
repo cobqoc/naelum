@@ -6,7 +6,7 @@ import type { FridgeItem } from '@/app/[lang]/_home/types';
  * god-file(HomeClient) 분해 Step 1 — 순수 파생부터 분리(거의 무위험).
  * HomeClient 의 `fridgeShelfDistribution` useMemo 본문을 **알고리즘 byte-identical**
  * 로 이동(상태·React 의존 0). 유일한 비순수 그래프 의존(`urgencyScore` →
- * helpers.ts → quickAddList/ingredientEmoji)은 **주입**해 lib 순수성 유지.
+ * helpers.ts → quickAddList)은 **주입**해 lib 순수성 유지.
  * → vitest(node env)에서 단독 단위 테스트 가능. 동작 변경 0.
  *
  * 규칙:

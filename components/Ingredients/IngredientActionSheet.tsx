@@ -5,7 +5,7 @@ import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 interface ActionItem {
   id: string;
   ingredient_name: string;
-  emoji: string;
+  emoji?: string | null;
 }
 
 interface Props {
@@ -57,7 +57,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
 
         {/* Header */}
         <div className="px-6 pt-3 md:pt-5 pb-4 text-center border-b border-white/5">
-          <div className="text-4xl mb-1.5">{item.emoji}</div>
+          {item.emoji && <div className="text-4xl mb-1.5">{item.emoji}</div>}
           <h3 className="text-lg font-bold text-text-primary">{item.ingredient_name}</h3>
         </div>
 

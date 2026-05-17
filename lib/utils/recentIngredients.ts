@@ -28,6 +28,9 @@ export interface RecentIngredient {
 
   /** 선택 횟수 */
   count: number;
+
+  /** DB emoji — favorites 경로에서 채워짐, localStorage fallback은 undefined */
+  emoji?: string | null;
 }
 
 /**

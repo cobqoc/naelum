@@ -5,7 +5,6 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
-import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 
 
 // ─── 번역 없는 상수 ───────────────────────────────────────────
@@ -73,6 +72,7 @@ interface IngredientItem {
   nutrition_detail: NutritionDetail | null;
   pairs_well_with: string[] | null;
   description: string | null;
+  emoji: string | null;
 }
 
 // ─── 상세 패널 서브 컴포넌트 ─────────────────────────────────
@@ -197,7 +197,7 @@ function IngredientPanel({
     spring: tb.seasonSpring, summer: tb.seasonSummer,
     fall: tb.seasonFall, winter: tb.seasonWinter, year_round: tb.seasonYearRound,
   };
-  const emoji = getIngredientEmoji(item.name, item.category ?? 'other');
+  const emoji = item.emoji ?? null;
   const catLabel = tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? '';
   const hasTastes = item.tastes && Object.values(item.tastes).some(v => v > 0);
 
@@ -247,7 +247,7 @@ function IngredientPanel({
               <div className="flex flex-wrap gap-2">
                 {related.map(r => (
                   <button key={r.id} onClick={() => onSelect(r)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background-tertiary hover:bg-white/10 border border-white/5 hover:border-accent-warm/30 transition-all text-sm">
-                    <span>{getIngredientEmoji(r.name, r.category ?? 'other')}</span>
+                    {r.emoji && <span>{r.emoji}</span>}
                     <span className="text-text-secondary">{r.name}</span>
                   </button>
                 ))}
@@ -434,7 +434,7 @@ export default function IngredientBrowsePage() {
         ) : (
           <>
             {items.map(item => {
-              const emoji = getIngredientEmoji(item.name, item.category ?? 'other');
+              const emoji = item.emoji ?? null;
               const topTaste = item.tastes
                 ? Object.entries(item.tastes).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)[0]
                 : null;

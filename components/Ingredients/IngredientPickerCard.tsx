@@ -1,6 +1,6 @@
 'use client';
 
-import { IngredientItem, getCategoryIcon } from './IngredientAutocompleteTypes';
+import { IngredientItem } from './IngredientAutocompleteTypes';
 
 interface IngredientPickerCardProps {
   /** 재료 정보 */
@@ -53,10 +53,10 @@ export default function IngredientPickerCard({
             : 'border-white/10 hover:bg-white/5 hover:border-white/20'
         }`}
     >
-      {/* 아이콘 - 크기 감소 */}
-      <div className="text-xl text-center mb-3">
-        {ingredient.icon || getCategoryIcon(ingredient.category)}
-      </div>
+      {/* 아이콘 */}
+      {ingredient.icon && (
+        <div className="text-xl text-center mb-3">{ingredient.icon}</div>
+      )}
 
       {/* 재료명 - 크기 증가 */}
       <div className="text-center space-y-1">

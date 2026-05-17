@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import IngredientAutocompleteV2 from './IngredientAutocompleteV2';
 import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
-import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
 import { lookupStorageByName } from '@/lib/ingredients/storageMap';
 import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
@@ -32,7 +31,6 @@ interface PendingIngredient {
   id: string;
   name: string;
   category: string;
-  categoryIcon: string;
   ingredientId?: string;
   common_units: string[];
   quantity: number | null;
@@ -130,6 +128,7 @@ export default function IngredientForm({
           category: f.category,
           timestamp: new Date(f.last_added_at).getTime(),
           count: f.add_count,
+          emoji: f.emoji ?? null,
         }))
       );
     } else {
@@ -147,7 +146,6 @@ export default function IngredientForm({
       id: `pending-${++pendingIdCounter}`,
       name,
       category: category || 'other',
-      categoryIcon: getIngredientEmoji(name, category || 'other'),
       ingredientId: id,
       common_units: commonUnits || [],
       quantity: null,
@@ -331,7 +329,7 @@ export default function IngredientForm({
         <IngredientBrowser
           onSelect={handleQuickSelect}
           selectedNames={pendingItems.map(p => p.name)}
-          frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null }))}
+          frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null, emoji: f.emoji ?? null }))}
           popularItems={presetFallback}
           starredNames={starredNames}
           onToggleStar={(ing, starred) => toggleStar(ing.name, ing.category, starred)}
@@ -398,7 +396,6 @@ export default function IngredientForm({
                     : 'bg-accent-warm/15 text-accent-warm hover:bg-accent-warm/25'
                 }`}
               >
-                <span>{item.categoryIcon}</span>
                 <span className="font-medium">{item.name}</span>
                 {/* 저장 위치 배지 — 얇은 구분자로 카테고리 이모지와 분리, 가독성↑ */}
                 <span className="text-[11px] opacity-40" aria-hidden="true">·</span>
@@ -427,7 +424,7 @@ export default function IngredientForm({
             <div ref={detailRef} className="mt-3 rounded-2xl bg-background-tertiary/50 p-4 border border-white/5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-medium text-text-primary">
-                  {pendingItems[editingIndex].categoryIcon} {pendingItems[editingIndex].name} {t.quickAdd.detailSettings}
+                  {pendingItems[editingIndex].name} {t.quickAdd.detailSettings}
                 </p>
                 <button
                   type="button"
