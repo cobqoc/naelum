@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeIngredientName } from '@/lib/ingredients/normalizeIngredientName';
 
 // GET /api/favorites?limit=N — 사용자 자주 쓰는 재료 조회
 // Stage 2: user_ingredients 직접 집계 → score = recent_30day × 2 + total
@@ -23,13 +24,15 @@ export async function GET(request: NextRequest) {
   }
 
   // 재료별 score 집계: 최근 30일 추가 횟수 × 2 + 전체 추가 횟수
+  // 정규화 후 그룹핑 — "다진마늘"+"마늘"을 하나로, "다진파"→"대파" 통합
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const scoreMap = new Map<string, { category: string | null; total: number; recent: number; lastAdded: string }>();
 
   for (const row of rows ?? []) {
-    const existing = scoreMap.get(row.ingredient_name);
+    const key = normalizeIngredientName(row.ingredient_name);
+    const existing = scoreMap.get(key);
     if (!existing) {
-      scoreMap.set(row.ingredient_name, {
+      scoreMap.set(key, {
         category: row.category ?? null,
         total: 1,
         recent: new Date(row.created_at) > thirtyDaysAgo ? 1 : 0,

@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { normalizeIngredientName } from './normalizeIngredientName';
 
 /**
  * 재료명 → ingredients_master.id 조회
  *
  * 1순위: 정확한 이름 일치 ("간장" → 간장 ID)
- * 2순위: 공백 분리 단어 중 가장 긴 것 일치
+ * 2순위: 정규화 이름 일치 ("다진마늘" → "마늘" → 마늘 ID)
+ * 3순위: 공백 분리 단어 중 가장 긴 것 일치
  *        ("엄마표 간장" → "간장" → 간장 ID)
  *
  * 단어는 2자 이상만 후보로 사용 (조사·접속사 제외)
@@ -17,8 +19,10 @@ export async function resolveIngredientId(
   const trimmed = name.trim();
   if (!trimmed) return null;
 
+  const normalized = normalizeIngredientName(trimmed);
   const words = trimmed.split(/\s+/).filter(w => w.length >= 2);
-  const candidates = [...new Set([trimmed, ...words])];
+  const normalizedWords = normalized.split(/\s+/).filter(w => w.length >= 2);
+  const candidates = [...new Set([trimmed, normalized, ...words, ...normalizedWords])];
 
   const { data } = await supabase
     .from('ingredients_master')
@@ -27,8 +31,12 @@ export async function resolveIngredientId(
 
   if (!data || data.length === 0) return null;
 
+  // 정확 일치 → 정규화 이름 일치 → 가장 긴 단어 일치
   const exact = data.find((r: { name: string }) => r.name === trimmed);
   if (exact) return (exact as { id: string }).id;
+
+  const normalizedExact = data.find((r: { name: string }) => r.name === normalized);
+  if (normalizedExact) return (normalizedExact as { id: string }).id;
 
   // 가장 긴 단어 일치 우선 (구체적인 재료명 선호)
   const sorted = [...data].sort(
@@ -55,8 +63,10 @@ export async function resolveIngredientIds(
 
   for (const name of names) {
     const trimmed = name.trim();
+    const normalized = normalizeIngredientName(trimmed);
     const words = trimmed.split(/\s+/).filter(w => w.length >= 2);
-    const list = [...new Set([trimmed, ...words])];
+    const normalizedWords = normalized.split(/\s+/).filter(w => w.length >= 2);
+    const list = [...new Set([trimmed, normalized, ...words, ...normalizedWords])];
     candidatesOf.set(name, list);
     list.forEach(c => allCandidates.add(c));
   }
@@ -73,16 +83,21 @@ export async function resolveIngredientIds(
   const result = new Map<string, string>();
 
   for (const name of names) {
-    const candidates = candidatesOf.get(name) ?? [name.trim()];
+    const trimmed = name.trim();
+    const normalized = normalizeIngredientName(trimmed);
+    const candidates = candidatesOf.get(name) ?? [trimmed];
 
-    // 정확한 이름 우선
-    if (masterMap.has(candidates[0])) {
-      result.set(name, masterMap.get(candidates[0])!);
+    // 정확 이름 → 정규화 이름 → 가장 긴 단어 일치
+    if (masterMap.has(trimmed)) {
+      result.set(name, masterMap.get(trimmed)!);
+      continue;
+    }
+    if (masterMap.has(normalized)) {
+      result.set(name, masterMap.get(normalized)!);
       continue;
     }
 
-    // 가장 긴 단어 일치 (정확 이름 제외)
-    const wordMatches = candidates.slice(1).filter(c => masterMap.has(c));
+    const wordMatches = candidates.slice(2).filter(c => masterMap.has(c));
     if (wordMatches.length > 0) {
       wordMatches.sort((a, b) => b.length - a.length);
       result.set(name, masterMap.get(wordMatches[0])!);
