@@ -31,9 +31,10 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-05-13 기준)
+### dev DB 현황 (2026-05-18 기준)
 - `recipes`: 100개 (published; MAFF 2,050개 2026-05-13 삭제됨)
-- `ingredients_master`: 1,953개
+- `ingredients_master`: 1,953개 (emoji 컬럼 추가 완료)
+- `shopping_list_items`: ingredient_id 컬럼 추가 완료
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
 ### 주의사항
@@ -1135,7 +1136,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-17 기준)
 
 ### 기능 구현 현황
-- **재료 이모지 DB 단일 소스 전환 완료** — 완료 (2026-05-18, develop 푸시)
+- **재료 이모지 DB 단일 소스 전환 완료** — 완료 (2026-05-18, develop 푸시 / PR #64 main 머지)
   - **핵심 목표**: 정적 사전 파일(`ingredientEmoji.ts`) 완전 제거 → `ingredients_master.emoji` DB 단일 소스
   - **이모지 소스 확정**: DB emoji 있으면 표시, 없으면 **텍스트만** (정확하지 않은 카테고리 폴백 🥬·🥩·📦 등 전면 제거)
   - **`lib/ingredients/resolveIngredientId.ts` 신설**: "엄마표 간장" 자유 입력 → 공백 분리 → "간장" 단어 매칭 → `ingredient_id` 자동 연결. 단일(`resolveIngredientId`) + 배치(`resolveIngredientIds`) 두 함수. `HomeClient` 재료 추가 + `add-to-ingredients` API 양쪽 적용
@@ -1143,7 +1144,8 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **카테고리 폴백 전면 제거**: `getCategoryIcon` 호출 6개 파일(HomeClient·IngredientBrowseClient·ShoppingCartDropdown·IngredientBrowser·IngredientDetailModal·IngredientForm) 전부 제거. `IngredientAutocompleteV2`·`IngredientAutocompleteTypes` 독립 구현도 제거
   - **삭제된 파일**: `lib/utils/ingredientEmoji.ts`(정적 사전)·`lib/utils/categoryIcons.ts`(카테고리 폴백)·`lib/utils/__tests__/ingredientEmoji.test.ts`·`scripts/audit-emoji-coverage.ts`·`scripts/populate-ingredient-emoji.ts`
   - **유지 파일**: `lib/constants/categoryIcons.ts` — 레시피 필터 UI용 국가·요리종류 아이콘(재료 이모지와 무관, 삭제 불필요). `scripts/backfill-ingredient-id.ts` — 기존 NULL 행 백필용(신규 저장은 resolveIngredientId 자동 처리)
-  - 검증: lint 0 errors · build · vitest 15 files 138 passed · e2e fresh build **404 passed·2 skipped·0 failed·0 flaky** (ingredient-emoji.spec.ts 포함)
+  - **prod DB 마이그레이션 적용 완료** (2026-05-18): `ingredients_master.emoji`(1,256/2,126 = 59.1% 보유) + `shopping_list_items.ingredient_id` — 코드 배포 전 선적용으로 무중단
+  - 검증: lint 0 errors · build · vitest 15 files 138 passed · e2e fresh build **404 passed·2 skipped·0 failed·0 flaky** (ingredient-emoji.spec.ts 포함) · Vercel Preview 라이브 스모크(홈·요리도감·레시피·콘솔 0)
 - **추천 매칭 정확도 fix + 이모지 게이트 + DB write 안전성 + recipes/new god-file 분해 5패스** — 완료 (2026-05-17, develop 푸시 / PR #58·59·60·61·62 main 머지)
   - **추천 매칭 버그 2건** (사용자 제보, 보유=설탕/고추장/간장): ① `app/api/recommendations/route.ts` prefix 부분일치가 `고추장↔고추`·`간장↔간장게장`·`김↔김치` 등 의미정반대 오매칭 → 규칙 삭제(매칭=exact+synonym+FK+Levenshtein). ② `isAlmost` 절대기준(부족 1~2개)이 3재료 33%도 "거의 가능" 오분류 → `부족 1~2 AND matchRate ≥ 70%`(사용자 결정, 60→70). 순수로직 `lib/recommendations/match.ts` 추출(refactor)+vitest 후 fix. 메모리 [[project-ingredient-match-prefix-bug]]
   - **재료 칩 이모지 fallback 게이트**: 카테고리 일반 폴백(채소 전부 🥬)이 스캔 방해 → `getPreciseIngredientEmoji`(EXACT/KEYWORD만, 폴백자리 null) 추출. KEYWORD_MAP 11개 보강(고춧가루·단호박·호박·무우 등) 커버리지 57.4→60.2%. **→ 2026-05-18 DB 단일 소스 전환으로 완전 대체됨** — 정적 사전(`ingredientEmoji.ts`)·EXACT/KEYWORD map·`getPreciseIngredientEmoji`·`getIngredientEmoji` 모두 삭제, `audit-emoji-coverage.ts` 목적 달성 후 삭제
