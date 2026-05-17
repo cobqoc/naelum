@@ -99,6 +99,12 @@ feature/* → 기능 단위 브랜치 (선택)
   - 웹 앱 테스트는 Playwright (`npx playwright test`)가 유일한 정답
   - windows-mcp는 OS 데스크톱 GUI 조작 전용 (파일 탐색기, 윈도우 앱 등)
 
+- **E2E 실행 전 기존 프로세스 킬 필수**
+  - 새 테스트 시작 전 반드시: `pkill -f "playwright test" 2>/dev/null; pkill -f "next start" 2>/dev/null`
+  - 중복 실행 시 워커 6개(3+3)가 dev DB 동시 접근 → 10초 timeout + retry 반복 → 전체 2시간 소요 사례 있음
+  - 백그라운드 실행에 `| tail -15` 절대 금지 — 완료 전까지 출력 없어 실행 중인지 판단 불가 → 중복 실행 유발
+  - 백그라운드 출력 확인이 필요하면 `tee /tmp/pw_run.log` 사용
+
 - **증상 은폐(timeout, try-catch로 에러 묻기) 금지**
   - 근본 원인을 먼저 파악하고 제거할 것
   - `Promise.race(..., setTimeout)` 같은 우회책은 임시방편이며 반드시 실제 문제가 남는다
