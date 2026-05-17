@@ -5,15 +5,10 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
+import { getIngredientEmoji } from '@/lib/utils/ingredientEmoji';
 
 
 // ─── 번역 없는 상수 ───────────────────────────────────────────
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟',
-  grain: '🌾', dairy: '🧀', seasoning: '🧂', condiment: '🫙',
-  dessert: '🍰', asian: '🍜', other: '📦',
-};
 
 const TASTE_BAR: Record<string, string> = {
   sweet: 'bg-pink-400', salty: 'bg-blue-400', spicy: 'bg-red-400',
@@ -202,7 +197,7 @@ function IngredientPanel({
     spring: tb.seasonSpring, summer: tb.seasonSummer,
     fall: tb.seasonFall, winter: tb.seasonWinter, year_round: tb.seasonYearRound,
   };
-  const emoji = CATEGORY_EMOJI[item.category ?? ''] ?? '📦';
+  const emoji = getIngredientEmoji(item.name, item.category ?? 'other');
   const catLabel = tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? '';
   const hasTastes = item.tastes && Object.values(item.tastes).some(v => v > 0);
 
@@ -252,7 +247,7 @@ function IngredientPanel({
               <div className="flex flex-wrap gap-2">
                 {related.map(r => (
                   <button key={r.id} onClick={() => onSelect(r)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background-tertiary hover:bg-white/10 border border-white/5 hover:border-accent-warm/30 transition-all text-sm">
-                    <span>{CATEGORY_EMOJI[r.category ?? ''] ?? '📦'}</span>
+                    <span>{getIngredientEmoji(r.name, r.category ?? 'other')}</span>
                     <span className="text-text-secondary">{r.name}</span>
                   </button>
                 ))}
@@ -439,7 +434,7 @@ export default function IngredientBrowsePage() {
         ) : (
           <>
             {items.map(item => {
-              const emoji = CATEGORY_EMOJI[item.category ?? ''] ?? '📦';
+              const emoji = getIngredientEmoji(item.name, item.category ?? 'other');
               const topTaste = item.tastes
                 ? Object.entries(item.tastes).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)[0]
                 : null;
