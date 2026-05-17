@@ -68,11 +68,12 @@ export default function OnboardingWizard({
 
       // 약관은 동의한 상태이므로 onboarding_completed: true로 설정
       // (재로그인 시 terms-agreement로 다시 튕기는 문제 방지)
-      await supabase.from('profiles').update({
+      const { error: skipError } = await supabase.from('profiles').update({
         onboarding_completed: true,
         onboarding_step: step,
         updated_at: new Date().toISOString(),
       }).eq('id', user.id);
+      if (skipError) throw skipError;
 
       onClose();
     } catch (error) {
@@ -125,11 +126,12 @@ export default function OnboardingWizard({
 
       // 3. 관심사 저장
       if (formData.interests.length > 0) {
-        // 기존 관심사 삭제
-        await supabase.from('user_interests')
+        // 기존 관심사 삭제 (정리용 — 실패 비치명적, .error 로깅)
+        const { error: delInterestsError } = await supabase.from('user_interests')
           .delete()
           .eq('user_id', user.id)
           .eq('interest_type', 'cuisine');
+        if (delInterestsError) console.error('Interests cleanup error:', delInterestsError);
 
         // 새 관심사 추가
         const { error: interestsError } = await supabase.from('user_interests').insert(
@@ -147,10 +149,11 @@ export default function OnboardingWizard({
 
       // 4. 식단 선호도 저장
       if (formData.dietary_preferences.length > 0) {
-        // 기존 식단 선호도 삭제
-        await supabase.from('user_dietary_preferences')
+        // 기존 식단 선호도 삭제 (정리용 — 실패 비치명적, .error 로깅)
+        const { error: delDietaryError } = await supabase.from('user_dietary_preferences')
           .delete()
           .eq('user_id', user.id);
+        if (delDietaryError) console.error('Dietary cleanup error:', delDietaryError);
 
         // 새 식단 선호도 추가
         const { error: dietaryError } = await supabase.from('user_dietary_preferences').insert(
@@ -173,10 +176,11 @@ export default function OnboardingWizard({
         .filter((a) => a);
 
       if (allergiesList.length > 0) {
-        // 기존 알레르기 삭제
-        await supabase.from('user_allergies')
+        // 기존 알레르기 삭제 (정리용 — 실패 비치명적, .error 로깅)
+        const { error: delAllergiesError } = await supabase.from('user_allergies')
           .delete()
           .eq('user_id', user.id);
+        if (delAllergiesError) console.error('Allergies cleanup error:', delAllergiesError);
 
         // 새 알레르기 추가
         const { error: allergiesError } = await supabase.from('user_allergies').insert(

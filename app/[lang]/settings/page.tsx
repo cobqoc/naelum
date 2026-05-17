@@ -373,49 +373,53 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      await supabase.from('user_interests').delete().eq('user_id', profile.id);
+      // Supabase는 RLS/제약 거부 시 throw 안 하고 { error } 반환 → 명시 체크.
+      // 실패 시 throw → 아래 catch(toast.error)로 표면화, originals 미동기·성공토스트 미표시.
+      const assertOk = (r: { error: unknown }) => { if (r.error) throw r.error; };
+
+      assertOk(await supabase.from('user_interests').delete().eq('user_id', profile.id));
       if (interests.length > 0) {
-        await supabase.from('user_interests').insert(
+        assertOk(await supabase.from('user_interests').insert(
           interests.map(interest => ({
             user_id: profile.id,
             interest_type: 'cuisine',
             interest_value: interest,
           }))
-        );
+        ));
       }
 
-      await supabase.from('user_dietary_preferences').delete().eq('user_id', profile.id);
+      assertOk(await supabase.from('user_dietary_preferences').delete().eq('user_id', profile.id));
       if (dietary.length > 0) {
-        await supabase.from('user_dietary_preferences').insert(
+        assertOk(await supabase.from('user_dietary_preferences').insert(
           dietary.map(pref => ({
             user_id: profile.id,
             preference_type: pref,
             is_active: true,
           }))
-        );
+        ));
       }
 
-      await supabase.from('user_allergies').delete().eq('user_id', profile.id);
+      assertOk(await supabase.from('user_allergies').delete().eq('user_id', profile.id));
       const allergiesList = allergies.split(',').map(a => a.trim()).filter(a => a);
       if (allergiesList.length > 0) {
-        await supabase.from('user_allergies').insert(
+        assertOk(await supabase.from('user_allergies').insert(
           allergiesList.map(allergy => ({
             user_id: profile.id,
             ingredient_name: allergy,
             severity: 'moderate',
           }))
-        );
+        ));
       }
 
       // Save privacy settings to profiles table
-      await supabase
+      assertOk(await supabase
         .from('profiles')
         .update({
           show_saved_to_public: showSavedToPublic,
           show_cooked_to_public: showCookedToPublic,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', profile.id);
+        .eq('id', profile.id));
 
       // Sync originals
       setOriginalInterests([...interests]);

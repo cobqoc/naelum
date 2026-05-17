@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
         search_query: query,
         search_type: type,
         result_count: (results.recipes?.total || 0) + (results.users?.total || 0)
-      }).then(() => {})
+      }).then(({ error }) => { if (error) console.error('search_history insert failed:', error); })
     }
   })
 

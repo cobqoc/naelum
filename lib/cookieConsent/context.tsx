@@ -104,12 +104,14 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           cookie_consent_version: newConsent.version,
           cookie_consent_analytics: newConsent.analytics,
           cookie_consent_marketing: newConsent.marketing,
           cookie_consent_at: newConsent.timestamp,
         }).eq('id', user.id);
+        // localStorage가 source of truth라 DB 동기화는 best-effort. 단 .error 는 로깅.
+        if (error) console.error('Cookie consent DB sync failed:', error);
       }
     } catch {
       // 로그인 안 된 유저나 DB 에러 — localStorage는 이미 저장됨

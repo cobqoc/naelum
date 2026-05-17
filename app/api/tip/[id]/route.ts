@@ -20,8 +20,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // 조회수 증가
-  await supabase.from('tip').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id);
+  // 조회수 증가 — 비치명적(논블로킹). 실패해도 응답은 진행하되 .error 는 로깅.
+  const { error: viewError } = await supabase
+    .from('tip').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id);
+  if (viewError) console.error('tip views_count update failed:', viewError);
 
   const result = {
     ...data,
@@ -65,9 +67,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // 단계 교체
+  // 단계 교체 — Supabase는 RLS/제약 거부 시 throw 안 하고 { error } 반환.
+  // 자식 행(steps/tags) 침묵 유실 방지 위해 delete/insert 모두 .error 체크.
   if (Array.isArray(steps)) {
-    await supabase.from('tip_steps').delete().eq('tip_id', id);
+    const { error: delStepsError } = await supabase.from('tip_steps').delete().eq('tip_id', id);
+    if (delStepsError) return NextResponse.json({ error: delStepsError.message }, { status: 500 });
     if (steps.length > 0) {
       const stepsToInsert = steps.map(
         (s: { instruction: string; tip?: string; image_url?: string }, idx: number) => ({
@@ -78,16 +82,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           image_url: s.image_url || null,
         })
       );
-      await supabase.from('tip_steps').insert(stepsToInsert);
+      const { error: insStepsError } = await supabase.from('tip_steps').insert(stepsToInsert);
+      if (insStepsError) return NextResponse.json({ error: insStepsError.message }, { status: 500 });
     }
   }
 
   // 태그 교체
   if (Array.isArray(tags)) {
-    await supabase.from('tip_tags').delete().eq('tip_id', id);
+    const { error: delTagsError } = await supabase.from('tip_tags').delete().eq('tip_id', id);
+    if (delTagsError) return NextResponse.json({ error: delTagsError.message }, { status: 500 });
     if (tags.length > 0) {
       const tagsToInsert = tags.map((tag: string) => ({ tip_id: id, tag }));
-      await supabase.from('tip_tags').insert(tagsToInsert);
+      const { error: insTagsError } = await supabase.from('tip_tags').insert(tagsToInsert);
+      if (insTagsError) return NextResponse.json({ error: insTagsError.message }, { status: 500 });
     }
   }
 
