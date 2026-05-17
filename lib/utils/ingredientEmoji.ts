@@ -231,12 +231,14 @@ const KEYWORD_MAP: Array<[string, string]> = [
 ];
 
 /**
- * 재료 이름으로 이모지를 반환합니다.
- * 1순위: 정확한 이름 매핑
- * 2순위: 키워드 포함 매핑 (긴 키워드 우선)
- * 3순위: 카테고리 이모지
+ * 정확한(개별) 이모지만 반환. EXACT_MAP·KEYWORD_MAP 히트면 그 이모지,
+ * 카테고리 일반 폴백으로 떨어질 자리에서는 null.
+ *
+ * 칩처럼 "부정확한 중복 이모지가 무(無)보다 나쁜" 스캔 표면 전용 —
+ * 카테고리 폴백은 같은 이모지가 줄줄이 떠 오히려 훑기를 방해하므로,
+ * 그런 자리에서는 이모지를 아예 숨기는 게 낫다.
  */
-export function getIngredientEmoji(name: string, category: string): string {
+export function getPreciseIngredientEmoji(name: string): string | null {
   // 1. 정확한 매핑
   if (EXACT_MAP[name]) return EXACT_MAP[name];
 
@@ -245,6 +247,16 @@ export function getIngredientEmoji(name: string, category: string): string {
     if (name.includes(keyword)) return emoji;
   }
 
-  // 3. 카테고리 폴백
-  return CATEGORY_ICONS[category] || '📦';
+  // 정확한 매핑 없음 — 칩 표면에서는 숨김(null)
+  return null;
+}
+
+/**
+ * 재료 이름으로 이모지를 반환합니다.
+ * 1순위: 정확한 이름 매핑
+ * 2순위: 키워드 포함 매핑 (긴 키워드 우선)
+ * 3순위: 카테고리 이모지
+ */
+export function getIngredientEmoji(name: string, category: string): string {
+  return getPreciseIngredientEmoji(name) ?? (CATEGORY_ICONS[category] || '📦');
 }

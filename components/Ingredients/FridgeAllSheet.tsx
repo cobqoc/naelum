@@ -28,8 +28,8 @@ interface Props {
   freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category'>) => {
     border: string; labelKind: FreshLabelKind; labelN: number; isDanger: boolean;
   };
-  /** getEmoji 함수 주입 */
-  getEmoji: (name: string, category: string) => string;
+  /** 정확한 이모지만 반환하는 함수 주입(없으면 null → 칩에서 숨김) */
+  getPreciseEmoji: (name: string) => string | null;
   /** 데모 칩 표시명 변환 — HomeClient의 getDisplayName 주입. 기본은 ingredient_name 그대로. */
   getDisplayName?: (item: { id: string; ingredient_name: string; isDemoItem?: boolean }) => string;
   /** 임박 재료만 표시 모드. items는 그대로 받되 시트 내부에서 isDanger 필터링.
@@ -47,7 +47,7 @@ interface Props {
  * 냉장/냉동/상온 별로 그룹핑, 각 chip 탭은 액션 시트로 연결.
  */
 export default function FridgeAllSheet({
-  isOpen, items, onClose, onItemClick, onDelete, freshState, getEmoji, getDisplayName,
+  isOpen, items, onClose, onItemClick, onDelete, freshState, getPreciseEmoji, getDisplayName,
   expiringOnly = false, recipeMatch = null, onCookFromExpiring,
 }: Props) {
   const { t } = useI18n();
@@ -201,7 +201,7 @@ export default function FridgeAllSheet({
                     const repr = bucket[0];
                     const { border, labelKind, labelN, isDanger } = freshState(repr);
                     const freshLabel = formatFreshLabel(labelKind, labelN, t);
-                    const emoji = getEmoji(repr.ingredient_name, repr.category);
+                    const emoji = getPreciseEmoji(repr.ingredient_name);
                     const displayName = display(repr);
                     const groupCount = bucket.length;
                     return (
@@ -215,7 +215,7 @@ export default function FridgeAllSheet({
                           style={{ borderColor: border, boxShadow: isDanger ? `0 0 4px ${border}66` : '0 1px 2px rgba(0,0,0,0.15)' }}
                           title={`${displayName}${groupCount > 1 ? ` × ${groupCount}` : ''}${freshLabel ? ` · ${freshLabel}` : ''}`}
                         >
-                          <span className="text-base leading-none">{emoji}</span>
+                          {emoji && <span className="text-base leading-none">{emoji}</span>}
                           <span className="text-xs font-bold text-gray-800 leading-none max-w-[90px] truncate">
                             {displayName}
                           </span>

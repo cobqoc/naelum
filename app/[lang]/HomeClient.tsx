@@ -30,7 +30,7 @@ import {
   LS_KEY_ONBOARDING_BANNER,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
-import { freshState, formatFreshLabel, urgencyScore, getEmoji, isDemoRecord } from './_home/helpers';
+import { freshState, formatFreshLabel, urgencyScore, getEmoji, getPreciseEmoji, isDemoRecord } from './_home/helpers';
 import { DEMO } from './_home/demoItems';
 import { track } from '@/lib/analytics/track';
 import Header from '@/components/Header';
@@ -666,7 +666,7 @@ export default function HomeClient({
         }}
         onDelete={(item) => handleDeleteFromSheet(item as FridgeItem)}
         freshState={freshState}
-        getEmoji={getEmoji}
+        getPreciseEmoji={getPreciseEmoji}
         getDisplayName={getDisplayName}
         expiringOnly={allSheetMode === 'expiring'}
         recipeMatch={allSheetMode === 'expiring' ? expiringRecipeMatch : null}

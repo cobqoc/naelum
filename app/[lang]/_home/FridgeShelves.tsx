@@ -1,4 +1,4 @@
-import { freshState, formatFreshLabel, getEmoji } from './helpers';
+import { freshState, formatFreshLabel, getPreciseEmoji } from './helpers';
 import { SHELF_LEFT, SHELF_WIDTH, SHELVES } from './constants';
 import { track } from '@/lib/analytics/track';
 import type { FridgeItem } from './types';
@@ -66,7 +66,7 @@ export default function FridgeShelves({
                 const groupCount = group.length;
                 const { border, labelKind, labelN, isDanger } = freshState(repr);
                 const label = formatFreshLabel(labelKind, labelN, t);
-                const emoji = getEmoji(repr.ingredient_name, repr.category);
+                const emoji = getPreciseEmoji(repr.ingredient_name);
                 const displayName = getDisplayName(repr);
                 const handleClick = (e: React.MouseEvent) => {
                   if (groupCount > 1) {
@@ -91,7 +91,7 @@ export default function FridgeShelves({
                       }}
                       title={`${displayName}${groupCount > 1 ? ` × ${groupCount}` : ''}${label ? ` · ${label}` : ''}`}
                     >
-                      <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>
+                      {emoji && <span className={`leading-none ${compact ? 'text-[10px]' : 'text-sm md:text-base'}`}>{emoji}</span>}
                       <span className={`font-bold text-gray-800 leading-none truncate ${compact ? 'text-[8px] max-w-[28px]' : 'text-[10px] md:text-[11px] max-w-[80px]'}`}>
                         {displayName}
                       </span>
