@@ -65,7 +65,7 @@ export default function IngredientForm({
   ownedNames,
 }: IngredientFormProps) {
   const { t } = useI18n();
-  const { info: toastInfo, success: toastSuccess } = useToast();
+  const { success: toastSuccess } = useToast();
 
   // 기존 단일 입력 모드 (수정 모드에서 사용)
   const isEditMode = !!initialData?.ingredient_name;
@@ -159,15 +159,13 @@ export default function IngredientForm({
 
   const handleQuickSelect = useCallback((ingredient: IngredientItem) => {
     setPendingItems(prev => {
-      // 중복 재료 탭 시 사일런트 실패 → 사용자 혼란 방지용 토스트
-      if (prev.some(p => p.name === ingredient.name)) {
-        toastInfo(`"${ingredient.name}" ${t.quickAdd.alreadyAdded}`);
-        return prev;
-      }
+      const idx = prev.findIndex(p => p.name === ingredient.name);
+      // 이미 추가된 재료 재클릭 → 제거 (토글)
+      if (idx >= 0) return prev.filter((_, i) => i !== idx);
       return [...prev, createPendingItem(ingredient.name, ingredient.category || 'other', ingredient.id, ingredient.common_units)];
     });
     setInputValue('');
-  }, [toastInfo]);
+  }, []);
 
   // 태그 삭제
   const handleRemoveItem = useCallback((index: number) => {
@@ -313,15 +311,6 @@ export default function IngredientForm({
   return (
     <div className="space-y-4">
       {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
-
-      {/* 빈 상태 동기부여 메시지 — pending 0이고 재료 탐색 중인 사용자용 */}
-      {pendingItems.length === 0 && (
-        <div className="rounded-lg bg-accent-warm/5 border border-accent-warm/20 px-3 py-2">
-          <p className="text-[11px] text-text-secondary leading-relaxed">
-            {t.quickAdd.minRecipeHint}
-          </p>
-        </div>
-      )}
 
       {/* 1. 재료 브라우저 + 검색 — 상세 설정 열릴 때 숨겨 모바일 공간 확보 */}
       <div className={editingIndex !== null ? 'hidden' : ''}>

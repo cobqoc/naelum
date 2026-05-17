@@ -240,15 +240,21 @@ export default function IngredientBrowser({
                 >
                   <button
                     type="button"
-                    onClick={() => !isSelected && onSelect(ing)}
-                    className={`flex items-center gap-1.5 pl-3 pr-3 py-1.5 ${isSelected ? 'cursor-default' : ''}`}
+                    onClick={() => onSelect(ing)}
+                    className="group/chip flex items-center gap-1.5 pl-3 pr-3 py-1.5"
                   >
                     <span className="text-base leading-none">{ing.icon}</span>
                     <span>{ing.name}</span>
                     {isSelected && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <>
+                        {/* 기본: ✓, hover 시: ✕ — 재클릭하면 제거됨을 암시 */}
+                        <svg className="group-hover/chip:hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <svg className="hidden group-hover/chip:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </>
                     )}
                     {isOwned && (
                       <svg width="11" height="11" className="text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
