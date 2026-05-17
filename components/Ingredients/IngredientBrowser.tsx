@@ -28,6 +28,8 @@ interface IngredientBrowserProps {
   starredNames?: Set<string>;
   /** ⭐ 토글 핸들러 — 받으면 "자주" 탭 칩에 별 노출 */
   onToggleStar?: (ingredient: IngredientItem, currentStarred: boolean) => void;
+  /** 이미 냉장고에 있는 재료 이름 목록 — 칩에 보유 중 표시 */
+  ownedNames?: string[];
 }
 
 export default function IngredientBrowser({
@@ -37,6 +39,7 @@ export default function IngredientBrowser({
   popularItems = [],
   starredNames,
   onToggleStar,
+  ownedNames,
 }: IngredientBrowserProps) {
   const { t } = useI18n();
 
@@ -229,6 +232,7 @@ export default function IngredientBrowser({
             ))
           : ingredients.map(ing => {
               const isSelected = selectedNames.includes(ing.name);
+              const isOwned = !isSelected && (ownedNames?.includes(ing.name) ?? false);
               const showStar = activeCategory === 'frequent' && onToggleStar !== undefined;
               const starred = starredNames?.has(ing.name) ?? false;
               return (
@@ -237,6 +241,8 @@ export default function IngredientBrowser({
                   className={`inline-flex items-center rounded-xl text-sm font-medium transition-all ${
                     isSelected
                       ? 'bg-accent-warm text-background-primary'
+                      : isOwned
+                      ? 'bg-background-secondary text-text-primary hover:bg-white/10 ring-1 ring-emerald-500/40'
                       : 'bg-background-secondary text-text-primary hover:bg-white/10'
                   }`}
                 >
@@ -264,6 +270,11 @@ export default function IngredientBrowser({
                     <span>{ing.name}</span>
                     {isSelected && (
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                    {isOwned && (
+                      <svg width="11" height="11" className="text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}

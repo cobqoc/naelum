@@ -51,6 +51,8 @@ interface IngredientFormProps {
   /** 보관위치(냉장/냉동/상온) — 모달 헤더 pill(부모)이 제어하는 controlled 값.
    *  미지정 시 null = 자동분류. (구 uncontrolled 겸용 모드는 UI 없는 죽은 경로라 제거됨) */
   selectedLocation?: LocMode;
+  /** 이미 냉장고에 있는 재료 이름 목록 — 브라우저 칩에 보유 중 표시용 */
+  ownedNames?: string[];
 }
 
 let pendingIdCounter = 0;
@@ -60,6 +62,7 @@ export default function IngredientForm({
   onCancel,
   initialData,
   selectedLocation: externalLocation,
+  ownedNames,
 }: IngredientFormProps) {
   const { t } = useI18n();
   const { info: toastInfo, success: toastSuccess } = useToast();
@@ -333,6 +336,7 @@ export default function IngredientForm({
           popularItems={presetFallback}
           starredNames={starredNames}
           onToggleStar={(ing, starred) => toggleStar(ing.name, ing.category, starred)}
+          ownedNames={ownedNames}
         />
         <div className="mt-4">
           <IngredientAutocompleteV2

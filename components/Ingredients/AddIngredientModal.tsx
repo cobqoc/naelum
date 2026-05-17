@@ -25,6 +25,8 @@ interface AddIngredientModalProps {
   location: string | null;
   onClose: () => void;
   onAddIngredient: (formData: IngredientFormData) => void;
+  /** 이미 냉장고에 있는 재료 이름 목록 — 브라우저 칩에 보유 중 표시용 */
+  ownedNames?: string[];
 }
 
 export default function AddIngredientModal({
@@ -32,6 +34,7 @@ export default function AddIngredientModal({
   location,
   onClose,
   onAddIngredient,
+  ownedNames,
 }: AddIngredientModalProps) {
   const { t } = useI18n();
   // 저장 위치 선택 state — IngredientForm의 pill UI가 헤더로 이관됨.
@@ -193,6 +196,7 @@ export default function AddIngredientModal({
             onSubmit={onAddIngredient}
             onCancel={onClose}
             selectedLocation={selectedLocation}
+            ownedNames={ownedNames}
           />
         </div>
       </div>
