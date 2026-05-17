@@ -16,8 +16,9 @@ import IngredientsSection from './_components/IngredientsSection';
 import BasicInfoSection from './_components/BasicInfoSection';
 import RecipeFormFooter from './_components/RecipeFormFooter';
 import ThumbnailUploadField from './_components/ThumbnailUploadField';
+import DietaryOptionsField from './_components/DietaryOptionsField';
 import {
-  CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
+  CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
 
@@ -856,48 +857,14 @@ export default function NewRecipePage() {
             {t.nutrition.section4Additional}
           </h2>
 
-          <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.dietaryLabel}</label>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { value: isVegetarian, setter: setIsVegetarian, label: tf.dietaryVegetarian, key: 'vegetarian' },
-                { value: isVegan, setter: setIsVegan, label: tf.dietaryVegan, key: 'vegan' },
-                { value: isGlutenFree, setter: setIsGlutenFree, label: tf.dietaryGlutenFree, key: 'glutenFree' },
-              ].map(opt => (
-                <div
-                  key={opt.label}
-                  className="relative"
-                  onMouseEnter={() => setHoveredDietaryOption(opt.key)}
-                  onMouseLeave={() => setHoveredDietaryOption(null)}
-                  onTouchStart={() => setHoveredDietaryOption(opt.key)}
-                  onTouchEnd={() => setTimeout(() => setHoveredDietaryOption(null), 2000)}
-                >
-                  <button
-                    type="button"
-                    onClick={() => opt.setter(!opt.value)}
-                    className={`px-4 py-2 rounded-full text-sm transition-all ${
-                      opt.value
-                        ? 'bg-accent-warm text-background-primary'
-                        : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-
-                  {/* 툴팁 */}
-                  {hoveredDietaryOption === opt.key && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-background-tertiary text-text-primary text-xs rounded-lg shadow-lg whitespace-nowrap z-10 animate-fadeIn">
-                      {DIETARY_DESCRIPTIONS[opt.key as keyof typeof DIETARY_DESCRIPTIONS]}
-                      {/* 툴팁 화살표 */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
-                        <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-background-tertiary"></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <DietaryOptionsField
+            tf={tf}
+            isVegetarian={isVegetarian} setIsVegetarian={setIsVegetarian}
+            isVegan={isVegan} setIsVegan={setIsVegan}
+            isGlutenFree={isGlutenFree} setIsGlutenFree={setIsGlutenFree}
+            hoveredDietaryOption={hoveredDietaryOption}
+            setHoveredDietaryOption={setHoveredDietaryOption}
+          />
 
           {/* 영양 정보 — _components/NutritionFields.tsx 로 추출 (Strangler Fig down-payment).
               상태는 page 가 소유, 컴포넌트는 값+setter 만 받는 순수 표현. */}

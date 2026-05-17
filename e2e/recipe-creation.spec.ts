@@ -258,4 +258,34 @@ test.describe('레시피 작성', () => {
 
     expect(pageErrors).toEqual([])
   })
+
+  /**
+   * 분해 회귀 안전망 — 식단옵션 → 자동태그 연동 (DietaryOptionsField 추출 가드).
+   * 이번 분해 중 최고 위험: 식단 체크박스(자식) → setter(부모 소유) →
+   * 부모 useEffect(autoTags) → setTags → TagsField(추출됨) 칩.
+   * 추출 시 checkbox→setter wiring 이 깨지면 부모 effect 가 안 돌아
+   * 자동태그가 침묵 실패. '채식' 버튼 클릭 → DIETARY_TAGS.vegetarian
+   * = ['채식','Vegetarian'] 중 영문 '#Vegetarian' 칩 노출로 검증
+   * (버튼 라벨 '채식'과 충돌 회피). 추출 전 baseline green → 후 동일.
+   */
+  test('UI 회귀(식단옵션): 식단 체크 → 부모 effect → 자동태그 칩', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    await gotoRecipeNew(page)
+
+    // 페이지 핵심 필드 렌더 대기
+    await expect(page.locator('input[placeholder*="떡볶이"]').first()).toBeVisible({ timeout: 15000 })
+
+    // 자동태그 칩이 아직 없음
+    await expect(page.locator('span', { hasText: '#Vegetarian' })).toHaveCount(0)
+
+    // 식단 '채식' 토글 → 부모 useEffect 가 DIETARY_TAGS.vegetarian 자동 추가
+    await page.getByRole('button', { name: '채식', exact: true }).click()
+
+    // TagsField 에 자동태그 칩 노출 (checkbox→setter→effect→setTags→TagsField 체인)
+    await expect(page.locator('span', { hasText: '#Vegetarian' })).toBeVisible({ timeout: 5000 })
+
+    expect(pageErrors).toEqual([])
+  })
 })
