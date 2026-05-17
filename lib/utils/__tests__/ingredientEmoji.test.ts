@@ -32,6 +32,20 @@ describe('getPreciseIngredientEmoji — 칩 게이트', () => {
     expect(getPreciseIngredientEmoji('ZZZ존재하지않는재료')).toBeNull()
   })
 
+  it('2026-05-17 보강분 — 흔한 재료 precise 매핑 + 변이형 커버', () => {
+    expect(getPreciseIngredientEmoji('고춧가루')).toBe('🌶️')
+    expect(getPreciseIngredientEmoji('굵은 고춧가루')).toBe('🌶️')
+    expect(getPreciseIngredientEmoji('단호박')).toBe('🎃')
+    expect(getPreciseIngredientEmoji('주키니호박')).toBe('🎃')
+    expect(getPreciseIngredientEmoji('어묵')).toBe('🍢')
+    expect(getPreciseIngredientEmoji('떡국떡')).toBe('🍡')
+    expect(getPreciseIngredientEmoji('메밀')).toBe('🌾')
+    expect(getPreciseIngredientEmoji('유자')).toBe('🍋')
+    // 보강분이 기존 더 구체적인 매핑을 가리지 않음(끝=최저 우선순위)
+    expect(getPreciseIngredientEmoji('애호박')).toBe('🥒') // EXACT 우선
+    expect(getPreciseIngredientEmoji('떡갈비')).toBe('🍖') // '갈비' 우선
+  })
+
   it('getIngredientEmoji = precise ?? 카테고리 폴백 (위임 일관성)', () => {
     // precise non-null → 두 함수 동일
     expect(getIngredientEmoji('양파', 'veggie')).toBe(getPreciseIngredientEmoji('양파'))
