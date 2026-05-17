@@ -201,4 +201,53 @@ test.describe('레시피 작성', () => {
     // 전 과정에서 런타임 에러 없어야 (분해 시 stale closure / prop 누락 조기 탐지)
     expect(pageErrors).toEqual([])
   })
+
+  /**
+   * 분해 회귀 안전망 — Section 1(기본 정보) 갭 보강.
+   * 기존 'UI 회귀' 테스트가 제목·단계·재료·태그·copyright 는 커버하나,
+   * BasicInfoSection 추출 시 깨지기 쉬운 다음을 커버하지 못해 갭 보강:
+   *  - description textarea ↔ state 바인딩
+   *  - servings number input ↔ state 바인딩
+   *  - difficulty select ↔ state 바인딩
+   *  - cuisine 버튼 선택 → '기타' 시 커스텀 입력 조건부 노출 + 바인딩
+   *  - cuisine 선택 후 dish type 섹션 조건부 노출
+   * 추출 전 미수정 코드에서 green(baseline) 확인 → 추출 후 동일 green.
+   */
+  test('UI 회귀(Section1 기본정보): 설명·인분·난이도·요리종류 바인딩 + 조건부 토글', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    await gotoRecipeNew(page)
+
+    // description textarea 바인딩
+    const desc = page.locator('textarea[placeholder*="간단한 설명"]').first()
+    await expect(desc).toBeVisible({ timeout: 15000 })
+    await desc.fill('분해 회귀 설명 텍스트')
+    await expect(desc).toHaveValue('분해 회귀 설명 텍스트')
+
+    // servings — Section1 첫 number input
+    const servings = page.locator('input[type="number"]').first()
+    await servings.fill('3')
+    await expect(servings).toHaveValue('3')
+
+    // difficulty select — '선택안함' 옵션을 가진 select
+    const difficulty = page
+      .locator('select')
+      .filter({ has: page.locator('option', { hasText: '선택안함' }) })
+      .first()
+    await difficulty.selectOption({ index: 1 })
+    await expect(difficulty).not.toHaveValue('')
+
+    // cuisine '기타' 선택 → 커스텀 입력 조건부 노출 + 바인딩
+    await page.getByRole('button', { name: '기타', exact: true }).first().click()
+    const customCuisine = page.locator('input[placeholder*="요리 종류를 입력"]')
+    await expect(customCuisine).toBeVisible({ timeout: 5000 })
+    await customCuisine.fill('퓨전')
+    await expect(customCuisine).toHaveValue('퓨전')
+
+    // cuisine 선택 후 dish type 섹션(요리 유형) 조건부 노출
+    await expect(page.getByText('요리 유형').first()).toBeVisible({ timeout: 5000 })
+
+    expect(pageErrors).toEqual([])
+  })
 })

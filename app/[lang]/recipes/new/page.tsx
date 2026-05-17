@@ -14,8 +14,8 @@ import TagsField from './_components/TagsField';
 import NutritionFields from './_components/NutritionFields';
 import StepsSection from './_components/StepsSection';
 import IngredientsSection from './_components/IngredientsSection';
+import BasicInfoSection from './_components/BasicInfoSection';
 import {
-  CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS,
   CUISINE_TYPE_TAGS, DISH_TYPE_TAGS, DIETARY_TAGS, DIETARY_DESCRIPTIONS,
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
@@ -758,140 +758,20 @@ export default function NewRecipePage() {
             {tf.section1Basic}
           </h2>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.title} *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              placeholder={tf.titlePlaceholder}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.description}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm min-h-[100px] resize-none"
-              placeholder={tf.descriptionPlaceholder}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.servings} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={servings}
-                onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
-                min="1"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.prepTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={prepTime}
-                onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.cookTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={cookTime}
-                onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-secondary">{tf.difficulty} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              >
-                <option value="">{tf.selectNone}</option>
-                {DIFFICULTY_LEVELS.map(d => (
-                  <option key={d.value} value={d.value}>{t.difficulty[d.value]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{tf.cuisine}</label>
-            <div className="flex flex-wrap gap-2">
-              {CUISINE_TYPES.map(c => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setCuisineType(c.value)}
-                  className={`px-4 py-2 rounded-full text-sm transition-all ${
-                    cuisineType === c.value
-                      ? 'bg-accent-warm text-background-primary'
-                      : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                  }`}
-                >
-                  {t.cuisineLabels[c.value as keyof typeof t.cuisineLabels] ?? c.label}
-                </button>
-              ))}
-            </div>
-            {/* 기타 선택 시 커스텀 입력 */}
-            {cuisineType === 'other' && (
-              <input
-                type="text"
-                value={customCuisineType}
-                onChange={(e) => setCustomCuisineType(e.target.value)}
-                placeholder={tf.cuisinePlaceholder}
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
-            )}
-          </div>
-
-          {/* 요리 유형 (2단계) - 조건부 표시 */}
-          {cuisineType && (
-            <div className="space-y-2 animate-fadeIn">
-              <label className="text-sm font-medium text-text-secondary">
-                {tf.dishType} <span className="text-text-muted text-xs">{tf.optionalInputHint}</span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {DISH_TYPES.map(d => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => setDishType(d.value)}
-                    className={`px-4 py-2 rounded-full text-sm transition-all ${
-                      dishType === d.value
-                        ? 'bg-accent-warm text-background-primary'
-                        : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                    }`}
-                  >
-                    {t.dishLabels[d.value as keyof typeof t.dishLabels] ?? d.label}
-                  </button>
-                ))}
-              </div>
-              {/* 기타 선택 시 커스텀 입력 */}
-              {dishType === 'other' && (
-                <input
-                  type="text"
-                  value={customDishType}
-                  onChange={(e) => setCustomDishType(e.target.value)}
-                  placeholder={tf.dishTypePlaceholder}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                />
-              )}
-            </div>
-          )}
+          <BasicInfoSection
+            t={t}
+            tf={tf}
+            title={title} setTitle={setTitle}
+            description={description} setDescription={setDescription}
+            servings={servings} setServings={setServings}
+            prepTime={prepTime} setPrepTime={setPrepTime}
+            cookTime={cookTime} setCookTime={setCookTime}
+            difficulty={difficulty} setDifficulty={setDifficulty}
+            cuisineType={cuisineType} setCuisineType={setCuisineType}
+            customCuisineType={customCuisineType} setCustomCuisineType={setCustomCuisineType}
+            dishType={dishType} setDishType={setDishType}
+            customDishType={customDishType} setCustomDishType={setCustomDishType}
+          />
         </section>
 
         {/* Section 2: 재료 준비 */}
