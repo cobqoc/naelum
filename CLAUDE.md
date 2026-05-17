@@ -1136,6 +1136,15 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-17 기준)
 
 ### 기능 구현 현황
+- **레시피 상세 페이지 UX 개선** — 완료 (2026-05-18, develop 푸시)
+  - **i18n 일괄 수정**: `RecipeBrowseView`·`RecipeRatings`·`RecipeDetailClient` 하드코딩 한글 전수 제거 → `t.recipe.*` 키 24개 신규 추가 (8 locale)
+  - **`hasCooked` CTA 구현**: `RecipeRatings` — 요리 완료 후 리뷰 미작성 시 상단 CTA 카드 표시 → 리뷰 모달 연결. `ratingCookedCta` 키 8 locale 추가. `eslint-disable-next-line @typescript-eslint/no-unused-vars` 제거
+  - **냉장고 모달 교체**: `InteractiveFridge` (홈 전체 냉장고 컴포넌트) → 이 레시피 기준 보유/없는 재료 목록으로 교체. 추가 쿼리 없이 기존 `userIngredients` 재사용. `fridgeModalTitle/Owned/Missing/Empty` 키 8 locale 추가
+  - **냉장고 SVG 통일**: `RecipeBrowseView` 냉장고 버튼 SVG를 `BottomNav`와 동일한 테라코타 디자인으로 교체 (기존 청록색 → terracotta #e85a3a)
+  - **재료/조리순서 탭 구조**: 기존 접기/펼치기 → 모바일: 탭 전환, PC(md+): 2컬럼 나란히 배치. `ingredientsExpanded` 상태 → `activeTab` 상태로 교체
+  - **"요리 시작하기" 버튼 고정**: `sticky bottom-0` → `fixed bottom-0` 으로 변경. 스크롤 위치 무관하게 항상 하단 노출
+  - **dead code 정리**: `reviewModalOpen`·`initialUserRating`·`initialUserReview` 상태·prop·DB 쿼리 전체 제거. `InteractiveFridge` dynamic import 제거
+  - 검증: lint 0 errors · build · e2e fresh build **404 passed · 2 skipped · 0 failed · 0 flaky**
 - **재료 이모지 DB 단일 소스 전환 완료** — 완료 (2026-05-18, develop 푸시 / PR #64 main 머지)
   - **핵심 목표**: 정적 사전 파일(`ingredientEmoji.ts`) 완전 제거 → `ingredients_master.emoji` DB 단일 소스
   - **이모지 소스 확정**: DB emoji 있으면 표시, 없으면 **텍스트만** (정확하지 않은 카테고리 폴백 🥬·🥩·📦 등 전면 제거)

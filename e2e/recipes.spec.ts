@@ -92,11 +92,9 @@ test.describe('레시피 페이지 테스트', () => {
         await page.goto(href);
         await page.waitForLoadState('networkidle');
 
-        // 조리 시작 또는 따라하기 버튼
-        const cookBtn = page.locator('button:has-text("조리")').or(
-          page.locator('button:has-text("시작")').or(
-            page.locator('a:has-text("따라하기")')
-          )
+        // 조리 시작 버튼 (fixed 하단 고정 버튼)
+        const cookBtn = page.locator('button:has-text("요리 시작하기")').or(
+          page.locator('a:has-text("따라하기")')
         );
 
         if (await cookBtn.count() > 0) {
