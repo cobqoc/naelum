@@ -12,7 +12,7 @@ export async function GET() {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, bio, recipes_count')
+      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public')
       .eq('id', user!.id)
       .maybeSingle()
 
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { full_name, bio, username, avatar_url } = body
+    const { full_name, bio, username, avatar_url, show_saved_to_public, show_cooked_to_public } = body
 
     if (full_name !== undefined && typeof full_name === 'string' && full_name.length > 100) {
       return NextResponse.json({ error: '이름은 100자 이내여야 합니다' }, { status: 400 })
@@ -66,12 +66,14 @@ export async function PUT(request: NextRequest) {
     if (bio !== undefined) updates.bio = bio ? sanitizeHtml(bio) : null
     if (username !== undefined) updates.username = username
     if (avatar_url !== undefined) updates.avatar_url = typeof avatar_url === 'string' ? avatar_url : null
+    if (show_saved_to_public !== undefined) updates.show_saved_to_public = !!show_saved_to_public
+    if (show_cooked_to_public !== undefined) updates.show_cooked_to_public = !!show_cooked_to_public
 
     const { data: profile, error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', user!.id)
-      .select('id, username, full_name, avatar_url, bio, recipes_count')
+      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public')
       .single()
 
     if (error) {
