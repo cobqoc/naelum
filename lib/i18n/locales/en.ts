@@ -827,8 +827,6 @@ export const en = {
       beverage: 'Beverages',
       snack: 'Snacks',
       other: 'Other',
-      dessert: 'Dessert',
-      asian: 'Asian',
     },
     panelCountries: 'Used in',
     panelStorage: 'Storage',

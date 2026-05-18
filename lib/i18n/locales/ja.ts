@@ -828,8 +828,6 @@ export const ja = {
       beverage: '飲み物',
       snack: 'おやつ',
       other: 'その他',
-      dessert: 'デザート',
-      asian: 'アジア料理',
     },
     panelCountries: '主な使用国',
     panelStorage: '保存方法',

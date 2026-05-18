@@ -828,8 +828,6 @@ export const de = {
       beverage: 'Getränke',
       snack: 'Snacks',
       other: 'Andere',
-      dessert: 'Dessert',
-      asian: 'Asiatisch',
     },
     panelCountries: 'Verwendet in',
     panelStorage: 'Lagerung',

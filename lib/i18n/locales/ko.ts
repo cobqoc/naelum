@@ -828,8 +828,6 @@ export const ko = {
       beverage: '음료',
       snack: '간식',
       other: '기타',
-      dessert: '디저트',
-      asian: '아시아',
     },
     panelCountries: '주요 사용 국가',
     panelStorage: '보관 방법',

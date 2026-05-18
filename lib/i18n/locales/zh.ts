@@ -828,8 +828,6 @@ export const zh = {
       beverage: '饮料',
       snack: '零食',
       other: '其他',
-      dessert: '甜品',
-      asian: '亚洲菜',
     },
     panelCountries: '主要使用国家',
     panelStorage: '储存方法',
