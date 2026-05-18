@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { INGREDIENT_CATEGORIES, IngredientItem } from './IngredientAutocompleteTypes';
+import { MODAL_INGREDIENT_CATEGORIES, IngredientItem } from './IngredientAutocompleteTypes';
 import { useI18n } from '@/lib/i18n/context';
 
 interface FrequentItem {
@@ -43,8 +43,8 @@ export default function IngredientBrowser({
   // 자주 쓰는 재료/인기 프리셋이 있으면 첫 탭을 "자주"로, 없으면 "전체".
   const hasFrequent = frequentItems.length > 0 || popularItems.length > 0;
   const CATEGORIES = hasFrequent
-    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))]
-    : [ALL_CATEGORY, ...INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))];
+    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...MODAL_INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))]
+    : [ALL_CATEGORY, ...MODAL_INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))];
 
   const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : 'all');
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
