@@ -1142,6 +1142,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **전 카테고리 재료 재분류 정밀 감사** — 완료 (2026-05-19, prod+dev DB 직접)
+  - **veggie → spice**: 마늘가루·파슬리·고추냉이 (건조 분말·허브·향신료)
+  - **seasoning → condiment**: 겨자·연겨자·칠리소스·핫소스 (찍어먹는 소스류)
+  - **fruit → grain**: 치아씨드·깐밤·깐호두 (씨앗·견과류)
+  - **veggie → grain**: 팥·붉은팥·녹두 (건조 두류)
+  - **snack → bakery**: 카스텔라
+  - **prod 최종 분포**: veggie 136·grain 145·seafood 118·fruit 79·meat 72·seasoning 41·dairy 41·condiment 33·spice 23·beverage 22·bakery 21·snack 14 = **745 approved**
 - **향신료(spice) 카테고리 신설** — 완료 (2026-05-19, develop 푸시)
   - **목표**: 건조 분말·허브류를 `seasoning`(양념&소스)에서 분리해 독립 카테고리 신설
   - **이동 재료 20개** (seasoning → spice): 고춧가루·후추·후춧가루·강황·강황가루·계피·계피가루·카레·카레가루·파프리카가루·바질·로즈마리·시나몬·월계수잎·생강가루·겨자가루·녹차가루·바닐라빈·바닐라에센스·칠리
