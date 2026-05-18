@@ -12,7 +12,7 @@ export async function GET() {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications')
+      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country')
       .eq('id', user!.id)
       .maybeSingle()
 
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     if (authError) return authError
 
     const body = await request.json()
-    const { full_name, bio, username, avatar_url, show_saved_to_public, show_cooked_to_public, push_notifications } = body
+    const { full_name, bio, username, avatar_url, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country } = body
 
     if (full_name !== undefined && typeof full_name === 'string' && full_name.length > 100) {
       return NextResponse.json({ error: '이름은 100자 이내여야 합니다' }, { status: 400 })
@@ -80,12 +80,15 @@ export async function PUT(request: NextRequest) {
     if (show_saved_to_public !== undefined) updates.show_saved_to_public = !!show_saved_to_public
     if (show_cooked_to_public !== undefined) updates.show_cooked_to_public = !!show_cooked_to_public
     if (push_notifications !== undefined) updates.push_notifications = !!push_notifications
+    if (gender !== undefined) updates.gender = typeof gender === 'string' ? gender : null
+    if (birth_date !== undefined) updates.birth_date = typeof birth_date === 'string' && birth_date ? birth_date : null
+    if (country !== undefined) updates.country = typeof country === 'string' ? country : null
 
     const { data: profile, error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', user!.id)
-      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications')
+      .select('id, username, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country')
       .single()
 
     if (error) {
