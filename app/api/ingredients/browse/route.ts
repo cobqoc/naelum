@@ -18,13 +18,14 @@ export async function GET(request: NextRequest) {
   const namesParam = searchParams.get('names') || ''; // 이름 목록으로 직접 조회 (popular items 등)
   const sort = searchParams.get('sort') || 'search_count'; // search_count | name
   const taste = searchParams.get('taste') || ''; // sweet | salty | spicy | sour | bitter | umami
+  const includePending = searchParams.get('includePending') === 'true'; // 요리 도감용: pending 포함
 
   try {
-    // 기본 쿼리 (approved된 재료만)
+    // 기본 쿼리
     let dbQuery = supabase
       .from('ingredients_master')
-      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji')
-      .eq('status', 'approved'); // 승인된 재료만
+      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji', { count: 'exact' })
+      .in('status', includePending ? ['approved', 'pending'] : ['approved']);
 
     // 이름 목록 필터 (names 파라미터 있으면 카테고리/검색어 필터보다 우선)
     if (namesParam) {
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
     // 페이지네이션
     dbQuery = dbQuery.range(offset, rangeEnd);
 
-    const { data, error } = await dbQuery;
+    const { data, error, count } = await dbQuery;
 
     if (error) {
       console.error('Error fetching ingredients:', error);
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ingredients,
+      total: count ?? 0,
       page,
       limit,
       hasMore: ingredients.length === limit,

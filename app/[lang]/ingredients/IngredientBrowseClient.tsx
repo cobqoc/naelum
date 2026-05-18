@@ -289,6 +289,7 @@ export default function IngredientBrowsePage() {
   ];
 
   const [items, setItems] = useState<IngredientItem[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('');
   const [taste, setTaste] = useState('');
@@ -304,13 +305,14 @@ export default function IngredientBrowsePage() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count' });
+      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count', includePending: 'true' });
       if (category) params.set('categories', category);
       if (taste) params.set('taste', taste);
       if (debouncedSearch.length >= 2) params.set('q', debouncedSearch);
       const res = await fetch(`/api/ingredients/browse?${params}`);
       const data = await res.json();
       setItems(data.ingredients || []);
+      setTotal(data.total ?? null);
     } finally {
       setLoading(false);
     }
@@ -334,6 +336,9 @@ export default function IngredientBrowsePage() {
         {/* ── 타이틀 ── */}
         <div className="pt-4 pb-3 flex items-baseline gap-2">
           <h1 className="text-lg font-bold">{tb.browseTitle}</h1>
+          {total !== null && (
+            <span className="text-xs text-text-muted">{total.toLocaleString()}개</span>
+          )}
           <span className="text-xs text-text-muted">{tb.browseSubtitle}</span>
         </div>
 
