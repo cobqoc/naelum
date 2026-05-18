@@ -20,7 +20,18 @@ export async function GET() {
       return NextResponse.json({ error: '프로필을 찾을 수 없습니다' }, { status: 404 })
     }
 
-    return NextResponse.json({ profile })
+    const [{ data: interests }, { data: dietaryPrefs }, { data: allergies }] = await Promise.all([
+      supabase.from('user_interests').select('interest_value').eq('user_id', user!.id),
+      supabase.from('user_dietary_preferences').select('preference_type').eq('user_id', user!.id),
+      supabase.from('user_allergies').select('ingredient_name').eq('user_id', user!.id),
+    ])
+
+    return NextResponse.json({
+      profile,
+      interests: interests?.map(i => i.interest_value) || [],
+      dietaryPreferences: dietaryPrefs?.map(d => d.preference_type) || [],
+      allergies: allergies?.map(a => a.ingredient_name) || [],
+    })
   } catch (error) {
     console.error('[users/me] GET error:', error)
     return NextResponse.json({ error: '서버 오류가 발생했습니다' }, { status: 500 })
@@ -80,7 +91,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ profile })
+    const [{ data: interests }, { data: dietaryPrefs }, { data: allergies }] = await Promise.all([
+      supabase.from('user_interests').select('interest_value').eq('user_id', user!.id),
+      supabase.from('user_dietary_preferences').select('preference_type').eq('user_id', user!.id),
+      supabase.from('user_allergies').select('ingredient_name').eq('user_id', user!.id),
+    ])
+
+    return NextResponse.json({
+      profile,
+      interests: interests?.map(i => i.interest_value) || [],
+      dietaryPreferences: dietaryPrefs?.map(d => d.preference_type) || [],
+      allergies: allergies?.map(a => a.ingredient_name) || [],
+    })
   } catch (error) {
     console.error('[users/me] PUT error:', error)
     return NextResponse.json({ error: '서버 오류가 발생했습니다' }, { status: 500 })
