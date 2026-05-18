@@ -16,7 +16,7 @@
     "test:visual": "PLAYWRIGHT_INCLUDE_VISUAL=1 playwright test e2e/_*.spec.ts"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.47.0",
+    "@sentry/nextjs": "^10.53.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
     "@types/web-push": "^3.6.4",
