@@ -1134,14 +1134,22 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-18  
+**최종 수정일**: 2026-05-19  
 **작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-05-18 기준)
+## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **카테고리 시스템 통합 + 인기 재료 DB 단일 소스** — 완료 (2026-05-19, develop 푸시)
+  - **핵심 목표**: `POPULAR_ITEMS`(하드코딩 name+category+icon) 제거 → `POPULAR_ITEM_NAMES`(이름만) + `usePopularIngredients()` 훅(DB에서 category+emoji 런타임 조회). 요리 도감 = 카테고리·이모지 단일 소스 원칙 완성
+  - **카테고리 키 통일**: `vegetable→veggie`, `sauce→seasoning`, `condiment` 신규 추가 — 재료 추가 모달(`INGREDIENT_CATEGORIES`)과 장보기 카트(`CATEGORY_LABELS`) 키 일치. 기존 `POPULAR_CATEGORY_TO_CART` 매핑 테이블 삭제
+  - **`beverage`·`snack` 카테고리 신규 추가**: `INGREDIENT_CATEGORIES`에 음료(🥤)·간식(🍪) 추가 (ingredients_master DB에 이미 존재하던 카테고리, UI만 누락이었음)
+  - **`lib/ingredients/usePopularIngredients.ts` 신설**: 모듈 캐시 기반 훅 — 첫 사용 시 `/api/ingredients/browse?names=...`로 DB 조회, 이후 캐시 재사용. `IngredientForm`·`ShoppingCartDropdown` 양쪽 적용
+  - **`/api/ingredients/browse` `names` 파라미터 추가**: 이름 목록으로 직접 조회 (카테고리/검색어 필터 우회) — usePopularIngredients 훅용
+  - **i18n 8개 locale**: `ingredient.categoryLabels`에 beverage/snack 추가, `cart.categoryLabels` 키를 ingredients_master 표준으로 통일
+  - 검증: lint 0 errors · build · vitest **16 files 154 passed** · e2e fresh build **400 passed·2 skipped·0 failed**
 - **ingredients_master 데이터 품질 정리** — 완료 (2026-05-18, prod DB 직접)
   - **규모**: 1,990개 → **1,896개** (94개 삭제: 쓰레기 72 + 중복 통합 19 + 오분류 3)
   - **삭제 기준**: 0회 사용 + description 없음 + 명백한 쓰레기 (파싱 잔재 이름, 양념 복합체, 방언/식별불가, 조리법 설명)
