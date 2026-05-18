@@ -377,7 +377,8 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     // 3개 선택
     await page.locator('button:has-text("양파")').first().click();
     await page.locator('button:has-text("마늘")').first().click();
-    await page.locator('button:has-text("계란")').first().click();
+    // "유제품·계란" 탭 버튼과 구별: 탭명에 "유제품" 포함 → 제외
+    await page.locator('button:has-text("계란")').filter({ hasNotText: '유제품' }).first().click();
     // 저장
     await page.locator('button:has-text("3개 추가")').first().click();
     await page.waitForTimeout(2000);

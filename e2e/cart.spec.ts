@@ -29,7 +29,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await cartBtn.click();
 
     // dropdown 내부의 title (헤더 카트 dropdown 한정)
-    await expect(page.getByText('🛒 장보기', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('장보기', { exact: false }).first()).toBeVisible();
     // 빈 상태 메시지
     await expect(page.getByText('위 입력창에서 재료를 추가해보세요')).toBeVisible();
   });
@@ -188,7 +188,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await expect(cartNavBtn).toBeVisible();
     await cartNavBtn.click();
 
-    await expect(page.getByText('🛒 장보기').first()).toBeVisible();
+    await expect(page.getByText('장보기').first()).toBeVisible();
   });
 
   // ─── 신규 기능 검증 (#1 ~ #6) ───
