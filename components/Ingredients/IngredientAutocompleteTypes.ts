@@ -66,11 +66,12 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'meat', name: '육류', icon: '🥩' },
   { id: 'seafood', name: '해산물', icon: '🐟' },
   { id: 'grain', name: '곡물류', icon: '🌾' },
-  { id: 'dairy', name: '유제품·계란', icon: '🧀' },
+  { id: 'dairy', name: '유제품', icon: '🧀' },
   { id: 'seasoning', name: '양념&소스', icon: '🥫' },
   { id: 'condiment', name: '조미료', icon: '🧂' },
   { id: 'beverage', name: '음료', icon: '🥤' },
   { id: 'snack', name: '간식', icon: '🍪' },
+  { id: 'bakery', name: '베이커리', icon: '🍞' },
   { id: 'other', name: '기타', icon: '📦' },
 ];
 
