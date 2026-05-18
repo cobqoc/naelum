@@ -1231,6 +1231,7 @@ export const es = {
   },
   cart: {
     title: '🛒 Lista de compras',
+    titleText: 'Lista de compras',
     closeAria: 'Cerrar',
     checkedProgress: '{checked}/{total} marcados',
     groupByRecipe: 'Por receta',

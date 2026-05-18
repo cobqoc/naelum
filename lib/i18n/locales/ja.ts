@@ -1231,6 +1231,7 @@ export const ja = {
   },
   cart: {
     title: '🛒 買い物リスト',
+    titleText: '買い物リスト',
     closeAria: '閉じる',
     checkedProgress: '{checked}/{total} チェック済み',
     groupByRecipe: 'レシピ別',

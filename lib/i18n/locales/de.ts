@@ -1231,6 +1231,7 @@ export const de = {
   },
   cart: {
     title: '🛒 Einkaufsliste',
+    titleText: 'Einkaufsliste',
     closeAria: 'Schließen',
     checkedProgress: '{checked}/{total} geprüft',
     groupByRecipe: 'Nach Rezept',

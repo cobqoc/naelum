@@ -1231,6 +1231,7 @@ export const ko = {
   },
   cart: {
     title: '🛒 장보기',
+    titleText: '장보기',
     closeAria: '닫기',
     checkedProgress: '{checked}/{total} 체크됨',
     groupByRecipe: '레시피별',

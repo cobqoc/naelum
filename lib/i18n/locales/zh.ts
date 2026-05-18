@@ -1231,6 +1231,7 @@ export const zh = {
   },
   cart: {
     title: '🛒 购物清单',
+    titleText: '购物清单',
     closeAria: '关闭',
     checkedProgress: '{checked}/{total} 已勾选',
     groupByRecipe: '按食谱',

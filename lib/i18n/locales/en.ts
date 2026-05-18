@@ -1230,6 +1230,7 @@ export const en = {
   },
   cart: {
     title: '🛒 Shopping List',
+    titleText: 'Shopping List',
     closeAria: 'Close',
     checkedProgress: '{checked}/{total} checked',
     groupByRecipe: 'By recipe',

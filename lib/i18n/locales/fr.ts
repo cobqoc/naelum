@@ -1231,6 +1231,7 @@ export const fr = {
   },
   cart: {
     title: '🛒 Liste de courses',
+    titleText: 'Liste de courses',
     closeAria: 'Fermer',
     checkedProgress: '{checked}/{total} cochés',
     groupByRecipe: 'Par recette',
