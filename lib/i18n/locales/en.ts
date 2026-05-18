@@ -606,7 +606,7 @@ export const en = {
     addedToast: '🧊 {count} items added!',
     countSuffix: '',
     addingButton: 'Saving...',
-    minRecipeHint: '💡 Add 3+ ingredients to get recipe recommendations.',
+    minRecipeHint: '💡 Add ingredients to get personalized recipe recommendations.',
     searchHint: 'Not in the list? Search to add',
     detailTapHint: '💡 Tap each item to set quantity, expiry, etc.',
     storageTitle: 'Storage',

@@ -1,4 +1,5 @@
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
+import { normalizeIngredientName } from '@/lib/ingredients/normalizeIngredientName'
 
 // 재료 매칭: 퍼지 매칭 + 동의어 처리
 export const INGREDIENT_SYNONYMS: Record<string, string[]> = {
@@ -27,9 +28,9 @@ export const INGREDIENT_SYNONYMS: Record<string, string[]> = {
   '생크림': ['휘핑크림', '크림'],
 
   // 채소
-  '파': ['대파', '쪽파', '실파', '파대'],
-  '대파': ['파', '쪽파', '실파'],
-  '쪽파': ['파', '대파', '실파'],
+  '파': ['대파', '실파'],
+  '대파': ['파', '실파'],
+  '쪽파': ['실파'],
   '양파': ['어니언'],
   '마늘': ['다진마늘', '다진 마늘', '편마늘', '통마늘'],
   '다진마늘': ['마늘', '마늘즙', '다진 마늘'],
@@ -105,9 +106,14 @@ export function isIngredientMatch(userIng: string, recipeIng: string): boolean {
   // 정확히 일치
   if (a === b) return true
 
-  // 동의어 체크
-  const synonyms = INGREDIENT_SYNONYMS[a]
-  if (synonyms && synonyms.some(s => s === b || b.includes(s) || s.includes(b))) return true
+  // 조리법 접두사 정규화 후 비교 (다진파→대파, 채썬양파→양파, 다진마늘→마늘 등)
+  const na = normalizeIngredientName(a)
+  const nb = normalizeIngredientName(b)
+  if (na === nb) return true
+
+  // 동의어 체크 (원본 + 정규화 이름 양쪽에서 조회)
+  const synonyms = INGREDIENT_SYNONYMS[a] ?? INGREDIENT_SYNONYMS[na]
+  if (synonyms && synonyms.some(s => s === b || s === nb || b.includes(s) || s.includes(b))) return true
 
   // ⚠️ prefix 부분일치 규칙 제거(2026-05-17): '고추'가 '고추장'의 접두라는
   // 이유로 장류↔생고추를 오매칭하던 버그. 간장↔간, 김↔김치 등 의미가

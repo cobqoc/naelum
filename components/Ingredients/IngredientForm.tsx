@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import IngredientAutocompleteV2 from './IngredientAutocompleteV2';
 import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
@@ -65,7 +65,7 @@ export default function IngredientForm({
   ownedNames,
 }: IngredientFormProps) {
   const { t } = useI18n();
-  const { info: toastInfo, success: toastSuccess } = useToast();
+  const { success: toastSuccess } = useToast();
 
   // 기존 단일 입력 모드 (수정 모드에서 사용)
   const isEditMode = !!initialData?.ingredient_name;
@@ -112,12 +112,8 @@ export default function IngredientForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 사용자별 즐겨찾기·자주 사용 재료 (DB)
-  const { items: favorites, toggleStar } = useFavorites(50);
-  const starredNames = useMemo(
-    () => new Set(favorites.filter(f => f.is_starred).map(f => f.ingredient_name)),
-    [favorites]
-  );
+  // 사용자별 자주 쓰는 재료 (DB, Stage 2: score 기반)
+  const { items: favorites } = useFavorites(50);
 
   // 자주 쓰는 재료 로드 — DB favorites 우선, 비어있으면 localStorage(legacy/비로그인) fallback
   useEffect(() => {
@@ -130,7 +126,7 @@ export default function IngredientForm({
           name_en: null,
           category: f.category,
           timestamp: new Date(f.last_added_at).getTime(),
-          count: f.add_count,
+          count: f.score,
           emoji: f.emoji ?? null,
         }))
       );
@@ -163,15 +159,13 @@ export default function IngredientForm({
 
   const handleQuickSelect = useCallback((ingredient: IngredientItem) => {
     setPendingItems(prev => {
-      // 중복 재료 탭 시 사일런트 실패 → 사용자 혼란 방지용 토스트
-      if (prev.some(p => p.name === ingredient.name)) {
-        toastInfo(`"${ingredient.name}" ${t.quickAdd.alreadyAdded}`);
-        return prev;
-      }
+      const idx = prev.findIndex(p => p.name === ingredient.name);
+      // 이미 추가된 재료 재클릭 → 제거 (토글)
+      if (idx >= 0) return prev.filter((_, i) => i !== idx);
       return [...prev, createPendingItem(ingredient.name, ingredient.category || 'other', ingredient.id, ingredient.common_units)];
     });
     setInputValue('');
-  }, [toastInfo]);
+  }, []);
 
   // 태그 삭제
   const handleRemoveItem = useCallback((index: number) => {
@@ -318,15 +312,6 @@ export default function IngredientForm({
     <div className="space-y-4">
       {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
 
-      {/* 빈 상태 동기부여 메시지 — pending 0이고 재료 탐색 중인 사용자용 */}
-      {pendingItems.length === 0 && (
-        <div className="rounded-lg bg-accent-warm/5 border border-accent-warm/20 px-3 py-2">
-          <p className="text-[11px] text-text-secondary leading-relaxed">
-            {t.quickAdd.minRecipeHint}
-          </p>
-        </div>
-      )}
-
       {/* 1. 재료 브라우저 + 검색 — 상세 설정 열릴 때 숨겨 모바일 공간 확보 */}
       <div className={editingIndex !== null ? 'hidden' : ''}>
         <IngredientBrowser
@@ -334,8 +319,6 @@ export default function IngredientForm({
           selectedNames={pendingItems.map(p => p.name)}
           frequentItems={availableFrequent.map(f => ({ id: f.id, name: f.name, category: f.category ?? null, emoji: f.emoji ?? null }))}
           popularItems={presetFallback}
-          starredNames={starredNames}
-          onToggleStar={(ing, starred) => toggleStar(ing.name, ing.category, starred)}
           ownedNames={ownedNames}
         />
         <div className="mt-4">

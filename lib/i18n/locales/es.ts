@@ -607,7 +607,7 @@ export const es = {
     addedToast: '🧊 ¡{count} ingredientes añadidos!',
     countSuffix: '',
     addingButton: 'Guardando...',
-    minRecipeHint: '💡 Añade 3 o más ingredientes para obtener recomendaciones de recetas.',
+    minRecipeHint: '💡 Añade ingredientes para obtener recomendaciones de recetas personalizadas.',
     searchHint: '¿No está en la lista? Busca para añadir',
     detailTapHint: '💡 Toca cada elemento para configurar cantidad, caducidad, etc.',
     storageTitle: 'Almacenamiento',

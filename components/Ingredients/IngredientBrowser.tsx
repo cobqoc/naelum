@@ -24,10 +24,6 @@ interface IngredientBrowserProps {
   frequentItems?: FrequentItem[];
   /** 신규 사용자용 인기 재료 프리셋 — frequentItems가 적으면 보충 */
   popularItems?: PopularItemLite[];
-  /** ⭐ 별표한 ingredient_name Set — "자주" 탭 칩의 별 상태 결정 */
-  starredNames?: Set<string>;
-  /** ⭐ 토글 핸들러 — 받으면 "자주" 탭 칩에 별 노출 */
-  onToggleStar?: (ingredient: IngredientItem, currentStarred: boolean) => void;
   /** 이미 냉장고에 있는 재료 이름 목록 — 칩에 보유 중 표시 */
   ownedNames?: string[];
 }
@@ -37,8 +33,6 @@ export default function IngredientBrowser({
   selectedNames,
   frequentItems = [],
   popularItems = [],
-  starredNames,
-  onToggleStar,
   ownedNames,
 }: IngredientBrowserProps) {
   const { t } = useI18n();
@@ -233,8 +227,6 @@ export default function IngredientBrowser({
           : ingredients.map(ing => {
               const isSelected = selectedNames.includes(ing.name);
               const isOwned = !isSelected && (ownedNames?.includes(ing.name) ?? false);
-              const showStar = activeCategory === 'frequent' && onToggleStar !== undefined;
-              const starred = starredNames?.has(ing.name) ?? false;
               return (
                 <div
                   key={ing.id}
@@ -246,32 +238,23 @@ export default function IngredientBrowser({
                       : 'bg-background-secondary text-text-primary hover:bg-white/10'
                   }`}
                 >
-                  {/* ⭐ 토글 — 자주 탭에서만 */}
-                  {showStar && (
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation();
-                        onToggleStar(ing, starred);
-                      }}
-                      aria-pressed={starred}
-                      aria-label={starred ? t.cart.unstarAria : t.cart.starAria}
-                      className={`pl-2 pr-1 py-1.5 text-base leading-none ${starred ? 'text-yellow-400' : isSelected ? 'text-background-primary/50 hover:text-yellow-300' : 'text-text-muted hover:text-yellow-400'}`}
-                    >
-                      <span aria-hidden="true">{starred ? '⭐' : '☆'}</span>
-                    </button>
-                  )}
                   <button
                     type="button"
-                    onClick={() => !isSelected && onSelect(ing)}
-                    className={`flex items-center gap-1.5 ${showStar ? 'pl-1' : 'pl-3'} pr-3 py-1.5 ${isSelected ? 'cursor-default' : ''}`}
+                    onClick={() => onSelect(ing)}
+                    className="group/chip flex items-center gap-1.5 pl-3 pr-3 py-1.5"
                   >
                     <span className="text-base leading-none">{ing.icon}</span>
                     <span>{ing.name}</span>
                     {isSelected && (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <>
+                        {/* 기본: ✓, hover 시: ✕ — 재클릭하면 제거됨을 암시 */}
+                        <svg className="group-hover/chip:hidden" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <svg className="hidden group-hover/chip:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </>
                     )}
                     {isOwned && (
                       <svg width="11" height="11" className="text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

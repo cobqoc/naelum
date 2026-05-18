@@ -10,16 +10,7 @@ function admin() {
   });
 }
 
-async function seedShoppingList(userId: string) {
-  const { data: sl } = await admin()
-    .from('shopping_lists')
-    .insert({ user_id: userId, list_name: '기본' })
-    .select('id')
-    .single();
-  return sl!.id as string;
-}
-
-test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글', () => {
+test.describe('즐겨찾기·자주 사용 재료 — Stage 2 score 기반 자동 집계', () => {
   test.beforeEach(async ({ testUser }) => {
     await admin().from('shopping_list_items').delete().eq('user_id', testUser.userId);
     await admin().from('user_ingredients').delete().eq('user_id', testUser.userId);
@@ -27,7 +18,13 @@ test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글
   });
 
   test('shopping_list_items INSERT 트리거 — favorites 자동 행 생성 + add_count=1', async ({ testUser }) => {
-    const slId = await seedShoppingList(testUser.userId);
+    const { data: sl } = await admin()
+      .from('shopping_lists')
+      .insert({ user_id: testUser.userId, list_name: '기본' })
+      .select('id')
+      .single();
+    const slId = sl!.id as string;
+
     await admin().from('shopping_list_items').insert({
       user_id: testUser.userId,
       shopping_list_id: slId,
@@ -65,59 +62,33 @@ test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글
     expect(data?.add_count).toBe(2);
   });
 
-  test('GET /api/favorites — 정렬: starred → add_count → last_added_at', async ({ authenticatedPage, testUser }) => {
-    // count=3 (별표 안 됨), count=10 (별표 안 됨), count=1 (별표 됨)
-    // 기대 순서: count=1 별표 → count=10 → count=3
-    await admin().from('user_favorites_ingredients').insert([
-      { user_id: testUser.userId, ingredient_name: 'A_count3', category: 'vegetable', add_count: 3, is_starred: false },
-      { user_id: testUser.userId, ingredient_name: 'B_count10', category: 'vegetable', add_count: 10, is_starred: false },
-      { user_id: testUser.userId, ingredient_name: 'C_starred_count1', category: 'vegetable', add_count: 1, is_starred: true },
+  test('GET /api/favorites — Stage 2 score 정렬: recent×2+total 내림차순', async ({ authenticatedPage, testUser }) => {
+    // 재료별 추가 횟수:
+    //  A: 총 3번 (모두 30일 이내) → score = 3*2+3 = 9
+    //  B: 총 2번 (모두 오래됨) → score = 0*2+2 = 2
+    //  C: 총 5번 (모두 오래됨) → score = 0*2+5 = 5
+    // 기대 순서: A(9) → C(5) → B(2)
+    const recentDate = new Date().toISOString();
+    const oldDate = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+
+    await admin().from('user_ingredients').insert([
+      { user_id: testUser.userId, ingredient_name: 'A_recent3', category: 'vegetable', created_at: recentDate },
+      { user_id: testUser.userId, ingredient_name: 'A_recent3', category: 'vegetable', created_at: recentDate },
+      { user_id: testUser.userId, ingredient_name: 'A_recent3', category: 'vegetable', created_at: recentDate },
+      { user_id: testUser.userId, ingredient_name: 'B_old2', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'B_old2', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'C_old5', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'C_old5', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'C_old5', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'C_old5', category: 'vegetable', created_at: oldDate },
+      { user_id: testUser.userId, ingredient_name: 'C_old5', category: 'vegetable', created_at: oldDate },
     ]);
 
     const res = await authenticatedPage.request.get('/api/favorites?limit=10');
     expect(res.status()).toBe(200);
     const body = await res.json();
     const names: string[] = body.items.map((i: { ingredient_name: string }) => i.ingredient_name);
-    expect(names).toEqual(['C_starred_count1', 'B_count10', 'A_count3']);
-  });
-
-  test('PATCH /api/favorites — ⭐ 토글 → DB is_starred 갱신', async ({ authenticatedPage, testUser }) => {
-    await admin().from('user_favorites_ingredients').insert({
-      user_id: testUser.userId,
-      ingredient_name: '테스트토마토_F',
-      category: 'vegetable',
-      add_count: 1,
-      is_starred: false,
-    });
-
-    const res = await authenticatedPage.request.patch('/api/favorites', {
-      data: { ingredient_name: '테스트토마토_F', is_starred: true, category: 'vegetable' },
-    });
-    expect(res.status()).toBe(200);
-
-    const { data } = await admin()
-      .from('user_favorites_ingredients')
-      .select('is_starred')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '테스트토마토_F')
-      .single();
-    expect(data?.is_starred).toBe(true);
-  });
-
-  test('PATCH /api/favorites — 행이 없으면 새로 생성', async ({ authenticatedPage, testUser }) => {
-    const res = await authenticatedPage.request.patch('/api/favorites', {
-      data: { ingredient_name: '테스트새재료_F', is_starred: true, category: 'fruit' },
-    });
-    expect(res.status()).toBe(200);
-
-    const { data } = await admin()
-      .from('user_favorites_ingredients')
-      .select('is_starred, category, add_count')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '테스트새재료_F')
-      .single();
-    expect(data?.is_starred).toBe(true);
-    expect(data?.category).toBe('fruit');
+    expect(names).toEqual(['A_recent3', 'C_old5', 'B_old2']);
   });
 
   test('POST /api/favorites/sync — localStorage 데이터 일괄 upsert', async ({ authenticatedPage, testUser }) => {
@@ -143,52 +114,29 @@ test.describe('즐겨찾기·자주 사용 재료 — 자동 집계 + ⭐ 토글
     expect(map.get('동기화_재료2')).toBe(3);
   });
 
-  test('cart 빈 상태 — ⭐ 토글 가능 (UI 통합)', async ({ authenticatedPage, testUser }) => {
+  test('cart 빈 상태 — 자주 쓰는 재료 칩 노출 (별표 버튼 없음)', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    // favorites 미리 1개 시드 → cart 빈 상태 quick-add에 노출
-    await admin().from('user_favorites_ingredients').insert({
-      user_id: testUser.userId,
-      ingredient_name: '즐겨찾기재료_F',
-      category: 'vegetable',
-      add_count: 5,
-      is_starred: false,
-    });
+    // user_ingredients에 재료 시드 → GET /api/favorites가 이 데이터로 응답
+    await admin().from('user_ingredients').insert([
+      { user_id: testUser.userId, ingredient_name: '자주사용재료_F', category: 'vegetable' },
+      { user_id: testUser.userId, ingredient_name: '자주사용재료_F', category: 'vegetable' },
+      { user_id: testUser.userId, ingredient_name: '자주사용재료_F', category: 'vegetable' },
+    ]);
 
     await page.goto('/');
     await page.locator('header button[aria-label="장보기"]').click();
-    // cart 비어있어서 quick-add 영역 보임 (2026-05-16 개편: '자주 추가하는 재료'
-    // 헤딩 제거 → 안정적인 cart-quick-add testid 로 검증)
+
     const quickAddArea = page.locator('[data-testid="cart-quick-add"]');
     await expect(quickAddArea).toBeVisible({ timeout: 5000 });
 
     // favorites 항목 노출
-    const item = quickAddArea.locator('button', { hasText: '즐겨찾기재료_F' }).first();
+    const item = quickAddArea.locator('button', { hasText: '자주사용재료_F' }).first();
     await expect(item).toBeVisible();
 
-    // ⭐ 토글 버튼 (aria-pressed=false 상태)
-    const starBtn = page.getByRole('button', { name: /즐겨찾기 추가/ }).first();
-    await expect(starBtn).toBeVisible();
-    await starBtn.click();
-
-    // PATCH(비동기 write) 정착까지 결정적 대기 — 고정 500ms sleep 은 부하 시
-    // write 미커밋 race(flaky). end-state(is_starred=true)를 poll 로 단언.
-    await expect.poll(async () => {
-      const { data } = await admin()
-        .from('user_favorites_ingredients')
-        .select('is_starred')
-        .eq('user_id', testUser.userId)
-        .eq('ingredient_name', '즐겨찾기재료_F')
-        .single();
-      return data?.is_starred ?? null;
-    }, { timeout: 15000 }).toBe(true);
-    const { data } = await admin()
-      .from('user_favorites_ingredients')
-      .select('is_starred')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '즐겨찾기재료_F')
-      .single();
-    expect(data?.is_starred).toBe(true);
+    // ⭐ 별표 버튼 없음 (Stage 2에서 제거됨)
+    const starBtn = quickAddArea.getByRole('button', { name: /즐겨찾기/ });
+    await expect(starBtn).not.toBeVisible();
   });
 });

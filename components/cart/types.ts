@@ -20,6 +20,5 @@ export type QuickItem = {
   name: string;
   category: string;
   icon?: string;
-  isStarred: boolean;
   fromFavorites: boolean;
 };

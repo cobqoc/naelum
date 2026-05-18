@@ -17,10 +17,34 @@ describe('isIngredientMatch — exact / synonym', () => {
   })
 
   it('정당한 부분일치는 동의어 테이블이 커버 (prefix 규칙 없이도)', () => {
-    expect(isIngredientMatch('다진마늘', '마늘')).toBe(true) // synonym
-    expect(isIngredientMatch('대파', '파')).toBe(true) // synonym
+    expect(isIngredientMatch('다진마늘', '마늘')).toBe(true) // 정규화: 다진마늘→마늘
+    expect(isIngredientMatch('대파', '파')).toBe(true) // 정규화: 파→대파
     expect(isIngredientMatch('닭고기', '닭')).toBe(true) // synonym 목록에 '닭'
     expect(isIngredientMatch('설탕', '올리고당')).toBe(true) // synonym (C 미적용)
+  })
+})
+
+describe('isIngredientMatch — 정규화 기반 매칭 (2026-05-18)', () => {
+  it('다진X ↔ X 양방향', () => {
+    expect(isIngredientMatch('다진마늘', '마늘')).toBe(true)
+    expect(isIngredientMatch('마늘', '다진마늘')).toBe(true)
+    expect(isIngredientMatch('다진생강', '생강')).toBe(true)
+  })
+
+  it('다진파 ↔ 대파 (접두사 제거 + 별칭)', () => {
+    expect(isIngredientMatch('다진파', '대파')).toBe(true)
+    expect(isIngredientMatch('대파', '다진파')).toBe(true)
+  })
+
+  it('채썬/볶은/삶은 등 조리법 접두사', () => {
+    expect(isIngredientMatch('채썬양파', '양파')).toBe(true)
+    expect(isIngredientMatch('볶은 당근', '당근')).toBe(true)
+    expect(isIngredientMatch('삶은계란', '계란')).toBe(true)
+  })
+
+  it('오매칭 방지: 정규화 후에도 다른 재료는 여전히 불일치', () => {
+    expect(isIngredientMatch('간장', '고추장')).toBe(false)
+    expect(isIngredientMatch('쪽파', '대파')).toBe(false) // 쪽파 ≠ 대파 (동의어 테이블 수정)
   })
 })
 
