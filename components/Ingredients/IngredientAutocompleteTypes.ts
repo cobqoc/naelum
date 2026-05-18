@@ -76,6 +76,14 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
 ];
 
 /**
+ * 재료 추가 모달에서 사용하는 카테고리 목록
+ * 완성품(베이커리·간식·음료)과 기타는 검색으로만 추가하도록 탭에서 제외
+ */
+export const MODAL_INGREDIENT_CATEGORIES: IngredientCategory[] = INGREDIENT_CATEGORIES.filter(
+  c => !['bakery', 'snack', 'beverage', 'other'].includes(c.id)
+);
+
+/**
  * 카테고리 ID를 이름으로 변환
  */
 export function getCategoryName(categoryId: string | null): string {
