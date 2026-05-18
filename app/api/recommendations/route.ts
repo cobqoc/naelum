@@ -399,5 +399,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '추천을 불러오는데 실패했습니다' }, { status: 500 })
   }
 
+  // 로그인 사용자: 요리한 레시피 has_cooked 배지 enrichment
+  if (user && recommendations.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recipeIds = recommendations.map((r: any) => r.id).filter(Boolean) as string[]
+    const { data: cooked } = await supabase
+      .from('cooking_sessions')
+      .select('recipe_id')
+      .eq('user_id', user.id)
+      .in('recipe_id', recipeIds)
+    const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recommendations = recommendations.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
+  }
+
   return NextResponse.json({ recommendations, type, mode: resolvedMode })
 }
