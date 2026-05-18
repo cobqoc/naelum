@@ -58,18 +58,19 @@ export interface IngredientCategory {
 }
 
 /**
- * 재료 카테고리 목록 (9개)
- * ingredients_master 테이블의 category 컬럼과 일치
+ * 재료 카테고리 목록 (ingredients_master.category 값과 일치)
  */
 export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'veggie', name: '채소', icon: '🥬' },
   { id: 'fruit', name: '과일', icon: '🍎' },
   { id: 'meat', name: '육류', icon: '🥩' },
   { id: 'seafood', name: '해산물', icon: '🐟' },
-  { id: 'grain', name: '곡물', icon: '🌾' },
-  { id: 'dairy', name: '유제품', icon: '🧀' },
+  { id: 'grain', name: '곡물류', icon: '🌾' },
+  { id: 'dairy', name: '유제품·계란', icon: '🧀' },
   { id: 'seasoning', name: '양념&소스', icon: '🥫' },
   { id: 'condiment', name: '조미료', icon: '🧂' },
+  { id: 'beverage', name: '음료', icon: '🥤' },
+  { id: 'snack', name: '간식', icon: '🍪' },
   { id: 'other', name: '기타', icon: '📦' },
 ];
 

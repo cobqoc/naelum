@@ -51,13 +51,13 @@ describe('groupItems', () => {
   it('category 모드: category 별로 묶는다', () => {
     const groups = groupItems(
       [
-        item({ category: 'vegetable' }),
+        item({ category: 'veggie' }),
         item({ category: 'meat' }),
-        item({ category: 'vegetable' }),
+        item({ category: 'veggie' }),
       ],
       'category'
     );
-    const veg = groups.find(g => g.groupKey === 'vegetable')!;
+    const veg = groups.find(g => g.groupKey === 'veggie')!;
     expect(veg.items).toHaveLength(2);
     expect(veg.groupTitle).toBe('채소');
     expect(veg.groupIcon).toBe('🥬');
@@ -75,10 +75,10 @@ describe('groupItems', () => {
 
   it('category 모드: order 기준 정렬 (채소1 < 육류3 < 기타99)', () => {
     const groups = groupItems(
-      [item({ category: 'other' }), item({ category: 'meat' }), item({ category: 'vegetable' })],
+      [item({ category: 'other' }), item({ category: 'meat' }), item({ category: 'veggie' })],
       'category'
     );
-    expect(groups.map(g => g.groupKey)).toEqual(['vegetable', 'meat', 'other']);
+    expect(groups.map(g => g.groupKey)).toEqual(['veggie', 'meat', 'other']);
   });
 
   it('recipe 모드는 정렬하지 않고 삽입 순서를 유지', () => {
@@ -96,6 +96,6 @@ describe('groupItems', () => {
 
   it('getCategoryMeta: 미지정 카테고리는 other 메타', () => {
     expect(getCategoryMeta('nope')).toBe(CATEGORY_LABELS.other);
-    expect(getCategoryMeta('vegetable')).toBe(CATEGORY_LABELS.vegetable);
+    expect(getCategoryMeta('veggie')).toBe(CATEGORY_LABELS.veggie);
   });
 });

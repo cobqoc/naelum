@@ -29,7 +29,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await cartBtn.click();
 
     // dropdown 내부의 title (헤더 카트 dropdown 한정)
-    await expect(page.getByText('🛒 장보기', { exact: false }).first()).toBeVisible();
+    await expect(page.getByText('장보기', { exact: false }).first()).toBeVisible();
     // 빈 상태 메시지
     await expect(page.getByText('위 입력창에서 재료를 추가해보세요')).toBeVisible();
   });
@@ -73,7 +73,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       user_id: testUser.userId,
       shopping_list_id: sl!.id,
       ingredient_name: '테스트당근',
-      category: 'vegetable',
+      category: 'veggie',
       is_checked: false,
       is_owned: false,
     });
@@ -125,7 +125,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       user_id: testUser.userId,
       shopping_list_id: sl!.id,
       ingredient_name: '테스트감자',
-      category: 'vegetable',
+      category: 'veggie',
       quantity: 1,
       is_checked: false,
       is_owned: false,
@@ -188,7 +188,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await expect(cartNavBtn).toBeVisible();
     await cartNavBtn.click();
 
-    await expect(page.getByText('🛒 장보기').first()).toBeVisible();
+    await expect(page.getByText('장보기').first()).toBeVisible();
   });
 
   // ─── 신규 기능 검증 (#1 ~ #6) ───
@@ -201,7 +201,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await admin().from('user_ingredients').insert({
       user_id: testUser.userId,
       ingredient_name: '테스트양파_보유',
-      category: 'vegetable',
+      category: 'veggie',
     });
     const { data: sl } = await admin()
       .from('shopping_lists')
@@ -212,7 +212,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       user_id: testUser.userId,
       shopping_list_id: sl!.id,
       ingredient_name: '테스트양파_보유',
-      category: 'vegetable',
+      category: 'veggie',
       is_checked: false,
       is_owned: true,
     });
@@ -264,7 +264,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       user_id: testUser.userId,
       shopping_list_id: sl!.id,
       ingredient_name: '테스트양배추',
-      category: 'vegetable',
+      category: 'veggie',
       quantity: 2,
       is_checked: false,
       is_owned: false,
@@ -334,7 +334,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       .select('id')
       .single();
     await admin().from('shopping_list_items').insert([
-      { user_id: testUser.userId, shopping_list_id: sl!.id, ingredient_name: '테스트김치', category: 'vegetable', is_checked: false, is_owned: false },
+      { user_id: testUser.userId, shopping_list_id: sl!.id, ingredient_name: '테스트김치', category: 'veggie', is_checked: false, is_owned: false },
       { user_id: testUser.userId, shopping_list_id: sl!.id, ingredient_name: '테스트밥', category: 'grain', is_checked: false, is_owned: false },
     ]);
 
@@ -398,6 +398,6 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       .select('ingredient_name, category')
       .eq('user_id', testUser.userId);
     expect(data?.[0].ingredient_name).toBe('양파');
-    expect(data?.[0].category).toBe('vegetable'); // veggie → vegetable 매핑 검증
+    expect(data?.[0].category).toBe('veggie'); // DB ingredients_master 카테고리 그대로 저장
   });
 });

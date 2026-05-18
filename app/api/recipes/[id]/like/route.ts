@@ -3,6 +3,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 import { checkRateLimit } from '@/lib/ratelimit';
 
+// GET /api/recipes/[id]/like - 현재 사용자의 좋아요 여부 조회
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: recipeId } = await params;
+  const supabase = await createClient();
+
+  const { user, error: authError } = await requireAuth(supabase);
+  if (authError) return authError;
+
+  const { data } = await supabase
+    .from('recipe_likes')
+    .select('id')
+    .eq('recipe_id', recipeId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  return NextResponse.json({ liked: !!data });
+}
+
 // POST /api/recipes/[id]/like - 레시피 좋아요 토글
 export async function POST(
   request: NextRequest,

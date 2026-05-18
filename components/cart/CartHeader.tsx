@@ -1,3 +1,4 @@
+import CartIcon from '@/components/icons/CartIcon';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import type { GroupMode } from '@/lib/shopping-list/groupItems';
 
@@ -43,8 +44,9 @@ export default function CartHeader({
   return (
     <div className="px-4 pt-3 pb-2 border-b border-white/10 flex-shrink-0">
       <div className="flex items-center justify-between">
-        <span className="font-bold text-sm">
-          {t.cart.title} {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
+        <span className="font-bold text-sm flex items-center gap-1.5">
+          <CartIcon size={20} active />
+          {t.cart.titleText} {uncheckedCount > 0 && <span className="text-accent-warm">({uncheckedCount})</span>}
         </span>
         <button
           onClick={onClose}

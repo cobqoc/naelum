@@ -14,7 +14,7 @@ interface FrequentItem {
 interface PopularItemLite {
   name: string;
   category: string;
-  icon: string;
+  emoji: string | null;
 }
 
 interface IngredientBrowserProps {
@@ -117,7 +117,7 @@ export default function IngredientBrowser({
           category: p.category,
           common_units: [],
           label: p.name,
-          icon: p.icon,
+          icon: p.emoji ?? undefined,
         });
       }
 

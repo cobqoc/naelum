@@ -20,7 +20,7 @@ async function seedItem(userId: string, opts: { name: string; checked?: boolean;
     user_id: userId,
     shopping_list_id: sl!.id,
     ingredient_name: opts.name,
-    category: 'vegetable',
+    category: 'veggie',
     is_checked: opts.checked ?? false,
     is_owned: false,
     note: opts.note ?? null,

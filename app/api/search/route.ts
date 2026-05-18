@@ -138,9 +138,33 @@ export async function GET(request: NextRequest) {
 
   await Promise.all(searchPromises)
 
-  // 검색 히스토리 저장 (로그인 사용자, 논블로킹)
-  supabase.auth.getUser().then(({ data: { user } }) => {
-    if (user && query) {
+  // 로그인 사용자: has_cooked 배지 + 검색 히스토리 저장
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const allRecipeIds = [
+      ...(results.recipes?.data ?? []),
+      ...(results.ingredients?.data ?? []),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ].map((r: any) => r.id).filter(Boolean) as string[]
+
+    if (allRecipeIds.length > 0) {
+      const { data: cooked } = await supabase
+        .from('cooking_sessions')
+        .select('recipe_id')
+        .eq('user_id', user.id)
+        .in('recipe_id', allRecipeIds)
+      const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
+      if (results.recipes) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        results.recipes.data = results.recipes.data.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
+      }
+      if (results.ingredients) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        results.ingredients.data = results.ingredients.data.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
+      }
+    }
+
+    if (query) {
       supabase.from('search_history').insert({
         user_id: user.id,
         search_query: query,
@@ -148,7 +172,7 @@ export async function GET(request: NextRequest) {
         result_count: (results.recipes?.total || 0) + (results.users?.total || 0)
       }).then(({ error }) => { if (error) console.error('search_history insert failed:', error); })
     }
-  })
+  }
 
   return NextResponse.json({ results, query, pagination: { page, limit } })
 }

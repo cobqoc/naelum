@@ -27,7 +27,7 @@ test.describe('공유 cart (Phase 1 read-only)', () => {
       data: {
         recipeId: null,
         recipeTitle: '직접 추가',
-        ingredients: [{ ingredient_name: '테스트양파', category: 'vegetable', unit: '개' }],
+        ingredients: [{ ingredient_name: '테스트양파', category: 'veggie', unit: '개' }],
       },
     });
     expect(addRes.ok()).toBeTruthy();

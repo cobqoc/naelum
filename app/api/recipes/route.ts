@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
 
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams, { defaultLimit: 12 })
   const cuisine = searchParams.get('cuisine')
+  const dish = searchParams.get('dish')
   const difficulty = searchParams.get('difficulty')
   const maxTime = searchParams.get('maxTime')
   const dietary = searchParams.get('dietary')
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
   // 필터 적용
   if (cuisine) {
     query = query.eq('cuisine_type', cuisine)
+  }
+  if (dish) {
+    query = query.eq('dish_type', dish)
   }
   if (difficulty) {
     query = query.eq('difficulty_level', difficulty)

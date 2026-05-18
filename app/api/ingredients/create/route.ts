@@ -114,9 +114,8 @@ export async function POST(request: NextRequest) {
       'grain',
       'dairy',
       'seasoning',
-      'dessert',
+      'condiment',
       'beverage',
-      'asian',
       'snack',
       'other',
     ];
