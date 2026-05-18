@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
       'condiment',
       'beverage',
       'snack',
+      'bakery',
       'other',
     ];
 
