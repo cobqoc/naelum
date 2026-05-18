@@ -304,7 +304,7 @@ export default function IngredientBrowsePage() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count' });
+      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count', includePending: 'true' });
       if (category) params.set('categories', category);
       if (taste) params.set('taste', taste);
       if (debouncedSearch.length >= 2) params.set('q', debouncedSearch);
