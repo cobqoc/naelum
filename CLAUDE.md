@@ -1142,6 +1142,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 추가 모달 탭 정리** — 완료 (2026-05-19, develop 푸시 / PR #72 main 머지)
+  - **bakery 카테고리 신설**: 빵·케이크·도넛류 prod DB 23개를 grain/snack/other에서 bakery로 재분류. 8개 locale i18n `ingredient.categoryLabels`+`cart.categoryLabels` 동시 추가 (`베이커리`/`Bakery`/`ベーカリー`/`烘焙`/`Panadería`/`Boulangerie`/`Bäckerei`/`Panetteria`). `create API validCategories` bakery 추가. prod 최종 분포: grain 189·snack 27·bakery 23
+  - **재료 추가 모달 탭 필터링**: `MODAL_INGREDIENT_CATEGORIES` 상수 신설 — `INGREDIENT_CATEGORIES`에서 bakery·snack·beverage·other 4개 제거. `IngredientBrowser`가 이 상수 사용. 완성품(빵·과자·음료)은 탭 브라우징 대신 검색으로 추가. 요리 도감(`/ingredients`)은 `INGREDIENT_CATEGORIES` 전체 유지
+  - **달걀/계란 동의어 양방향 매칭 보강**: `isIngredientMatch`에 recipe 기준 역방향 조회 추가(`synonymsB` — exact 일치만, substring 제외: `쪽파⊃파 → 대파` 오매칭 방지). `INGREDIENT_SYNONYMS`에 `달걀노른자↔계란노른자`, `달걀흰자↔계란흰자`, `참깨/통깨↔깨` 추가. vitest match.test.ts 4케이스 추가
+  - **i18n dairy 레이블 수정**: `유제품·계란` → `유제품` (8개 locale)
+  - 검증: lint 0 errors · build 성공
 - **동의어 매칭 양방향 보강** — 완료 (2026-05-19, develop 푸시)
   - **문제**: `isIngredientMatch`가 user 기준 동의어만 단방향 조회 → `참깨`(user) + `깨`(레시피) 미스매칭. `달걀노른자↔계란노른자`·`달걀흰자↔계란흰자` Levenshtein 0.6 < 0.7 임계값으로 미스매칭
   - **수정①**: `isIngredientMatch`에 recipe 기준 역방향 조회 추가(`synonymsB` — 정확 일치만, substring 포함 제외: `쪽파⊃파 → 대파` 오매칭 방지)
@@ -1160,7 +1166,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **fruit 교정**: 소배살(!)→meat, 배춧잎→veggie, 겨잣가루→seasoning, 코코넛오일·포도씨유→seasoning, 포도술·흰포도술→beverage, 포도식초·2배식초→condiment, 잣가루→grain
   - **meat 교정**: 간수→other, 콩고기→grain, 돼지호박→veggie
   - **other → 재분류(대량)**: seafood 38개(가재미·골뱅이·장어·주꾸미 등), veggie 34개(고들빼기·래디쉬·로메인·아욱 등), grain 33개(렌틸콩·병아리콩·오트밀·청포묵 등), meat 11개(순대·사골·스팸 등), seasoning 20개(피쉬소스·오레가노·칠리 등), condiment 21개(단무지·와사비·살사 등), beverage 8개, dairy 6개, fruit 8개, snack 7개
-  - **prod 최종 분포**: veggie 344·seafood 212·grain 199·other 198·seasoning 178·meat 128·fruit 114·condiment 71·dairy 62·snack 36·beverage 28 = **1,570 approved**
+  - **prod 최종 분포**: veggie 344·seafood 212·grain 199·other 198·seasoning 178·meat 128·fruit 114·condiment 71·dairy 62·snack 36·beverage 28 = **1,570 approved** *(bakery 신설 후 grain 189·snack 27·bakery 23으로 재분류 — 총계 동일)*
 - **재료 카테고리 전면 정리 + 장보기 헤더 SVG 교체** — 완료 (2026-05-19, develop 푸시)
   - **재료칩 garbage 3단계 정리**: `recipe_extract` 방언/복합/브랜드/패턴 → pending (1차), 조미료 탭 채우기(36개) + 각/각각·고명·물 종류 pending (2차), `recipe_extract + description IS NULL` 전수 → pending (3차, 188개). prod approved **1,882 → 1,576개**
   - **browse API 정렬 개선**: `search_count` 동률(전수 0) 시 `description IS NOT NULL` 항목 우선, 이후 이름 가나다순
