@@ -11,6 +11,28 @@ import {
 // 2026-05-17 fix: prefix 부분일치 제거(A) + isAlmost 상대기준(B).
 // 실제 사용자 제보(보유=설탕/고추장/간장)로 드러난 3개 오분류를 결정적으로 차단.
 
+describe('isIngredientMatch — 동의어 양방향 (2026-05-19)', () => {
+  it('달걀 ↔ 계란 양방향', () => {
+    expect(isIngredientMatch('달걀', '계란')).toBe(true)
+    expect(isIngredientMatch('계란', '달걀')).toBe(true)
+  })
+
+  it('달걀노른자 ↔ 계란노른자 양방향', () => {
+    expect(isIngredientMatch('달걀노른자', '계란노른자')).toBe(true)
+    expect(isIngredientMatch('계란노른자', '달걀노른자')).toBe(true)
+  })
+
+  it('달걀흰자 ↔ 계란흰자 양방향', () => {
+    expect(isIngredientMatch('달걀흰자', '계란흰자')).toBe(true)
+    expect(isIngredientMatch('계란흰자', '달걀흰자')).toBe(true)
+  })
+
+  it('참깨 → 깨 (역방향, 이전엔 미스매칭)', () => {
+    expect(isIngredientMatch('참깨', '깨')).toBe(true)
+    expect(isIngredientMatch('깨', '참깨')).toBe(true)
+  })
+})
+
 describe('isIngredientMatch — exact / synonym', () => {
   it('정확 일치', () => {
     expect(isIngredientMatch('간장', '간장')).toBe(true)

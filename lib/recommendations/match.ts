@@ -21,6 +21,10 @@ export const INGREDIENT_SYNONYMS: Record<string, string[]> = {
   // 달걀/유제품
   '계란': ['달걀', '에그', '鷄卵'],
   '달걀': ['계란', '에그'],
+  '계란노른자': ['달걀노른자'],
+  '달걀노른자': ['계란노른자'],
+  '계란흰자': ['달걀흰자'],
+  '달걀흰자': ['계란흰자'],
   '우유': ['밀크', '우유팩'],
   '버터': ['마가린', '무염버터', '가염버터'],
   '치즈': ['슬라이스치즈', '체다치즈', '모짜렐라'],
@@ -88,6 +92,8 @@ export const INGREDIENT_SYNONYMS: Record<string, string[]> = {
   '고춧가루': ['고추가루', '빨간고춧가루'],
   '후추': ['후춧가루', '흑후추', '백후추'],
   '깨': ['참깨', '통깨', '깨소금'],
+  '참깨': ['깨', '통깨', '깨소금'],
+  '통깨': ['깨', '참깨'],
 }
 
 // 보편 재료 — 수돗물처럼 누구나 항상 갖고 있는 것으로 가정.
@@ -111,9 +117,12 @@ export function isIngredientMatch(userIng: string, recipeIng: string): boolean {
   const nb = normalizeIngredientName(b)
   if (na === nb) return true
 
-  // 동의어 체크 (원본 + 정규화 이름 양쪽에서 조회)
-  const synonyms = INGREDIENT_SYNONYMS[a] ?? INGREDIENT_SYNONYMS[na]
-  if (synonyms && synonyms.some(s => s === b || s === nb || b.includes(s) || s.includes(b))) return true
+  // 동의어 체크 — user 기준(a) + recipe 기준(b) 양방향으로 조회
+  const synonymsA = INGREDIENT_SYNONYMS[a] ?? INGREDIENT_SYNONYMS[na]
+  if (synonymsA && synonymsA.some(s => s === b || s === nb || b.includes(s) || s.includes(b))) return true
+  // recipe 기준 역방향 — substring 포함 체크 금지 (쪽파⊃파 → 대파 오매칭 방지)
+  const synonymsB = INGREDIENT_SYNONYMS[b] ?? INGREDIENT_SYNONYMS[nb]
+  if (synonymsB && synonymsB.some(s => s === a || s === na)) return true
 
   // ⚠️ prefix 부분일치 규칙 제거(2026-05-17): '고추'가 '고추장'의 접두라는
   // 이유로 장류↔생고추를 오매칭하던 버그. 간장↔간, 김↔김치 등 의미가
