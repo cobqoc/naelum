@@ -53,9 +53,12 @@ export async function GET(request: NextRequest) {
       dbQuery = dbQuery.gt(`tastes->>${taste}`, '0');
     }
 
-    // 정렬
+    // 정렬 — search_count 동률(0) 시 description 있는 항목 우선, 이후 이름 가나다순
     if (sort === 'search_count') {
-      dbQuery = dbQuery.order('search_count', { ascending: false, nullsFirst: false });
+      dbQuery = dbQuery
+        .order('search_count', { ascending: false, nullsFirst: false })
+        .order('description', { ascending: false, nullsFirst: false })
+        .order('name', { ascending: true });
     } else if (sort === 'name') {
       dbQuery = dbQuery.order('name', { ascending: true });
     }
