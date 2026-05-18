@@ -32,7 +32,7 @@ test.describe('장보기 — 카테고리 그룹(마트 동선) + 레시피 chip
 
     const slId = await seedShoppingList(testUser.userId);
     await admin().from('shopping_list_items').insert([
-      { user_id: testUser.userId, shopping_list_id: slId, ingredient_name: '테스트당근_G', category: 'vegetable', recipe_id: null, recipe_title: null, is_checked: false, is_owned: false },
+      { user_id: testUser.userId, shopping_list_id: slId, ingredient_name: '테스트당근_G', category: 'veggie', recipe_id: null, recipe_title: null, is_checked: false, is_owned: false },
       { user_id: testUser.userId, shopping_list_id: slId, ingredient_name: '테스트소고기_G', category: 'meat', recipe_id: null, recipe_title: null, is_checked: false, is_owned: false },
     ]);
 
@@ -56,7 +56,7 @@ test.describe('장보기 — 카테고리 그룹(마트 동선) + 레시피 chip
         user_id: testUser.userId,
         shopping_list_id: slId,
         ingredient_name: '테스트양파_G',
-        category: 'vegetable',
+        category: 'veggie',
         recipe_id: recipeId,
         recipe_title: '김치찌개_G',
         is_checked: false,
@@ -84,7 +84,7 @@ test.describe('장보기 — 카테고리 그룹(마트 동선) + 레시피 chip
       user_id: testUser.userId,
       shopping_list_id: slId,
       ingredient_name: '테스트감자_G',
-      category: 'vegetable',
+      category: 'veggie',
       recipe_id: null,
       recipe_title: null,
       is_checked: false,

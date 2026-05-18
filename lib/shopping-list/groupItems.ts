@@ -18,15 +18,16 @@ export interface GroupedItems {
 export type GroupMode = 'recipe' | 'category';
 
 export const CATEGORY_LABELS: Record<string, { label: string; icon: string; order: number }> = {
-  vegetable: { label: '채소', icon: '🥬', order: 1 },
+  veggie: { label: '채소', icon: '🥬', order: 1 },
   fruit: { label: '과일', icon: '🍎', order: 2 },
   meat: { label: '육류', icon: '🥩', order: 3 },
   seafood: { label: '해산물', icon: '🐟', order: 4 },
   dairy: { label: '유제품·계란', icon: '🥛', order: 5 },
   grain: { label: '곡물·면', icon: '🌾', order: 6 },
-  sauce: { label: '소스·양념', icon: '🍯', order: 7 },
-  beverage: { label: '음료', icon: '🥤', order: 8 },
-  snack: { label: '간식', icon: '🍪', order: 9 },
+  seasoning: { label: '양념&소스', icon: '🥫', order: 7 },
+  condiment: { label: '조미료', icon: '🧂', order: 8 },
+  beverage: { label: '음료', icon: '🥤', order: 9 },
+  snack: { label: '간식', icon: '🍪', order: 10 },
   other: { label: '기타', icon: '📦', order: 99 },
 };
 

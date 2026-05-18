@@ -6,7 +6,7 @@ import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
 import { lookupStorageByName } from '@/lib/ingredients/storageMap';
-import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
+import { usePopularIngredients } from '@/lib/ingredients/usePopularIngredients';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useFavorites } from '@/lib/favorites/useFavorites';
@@ -114,6 +114,7 @@ export default function IngredientForm({
 
   // 사용자별 자주 쓰는 재료 (DB, Stage 2: score 기반)
   const { items: favorites } = useFavorites(50);
+  const popularIngredients = usePopularIngredients();
 
   // 자주 쓰는 재료 로드 — DB favorites 우선, 비어있으면 localStorage(legacy/비로그인) fallback
   useEffect(() => {
@@ -297,12 +298,12 @@ export default function IngredientForm({
 
   // === 빠른 추가 모드 (새 디자인) ===
   // 자주 쓰는 재료 중 아직 pending에 없는 것만 표시.
-  // 기록 부족하면 POPULAR_ITEMS(한국 가정 필수 재료 20개)로 보충 — 신규 사용자도 바로 원탭 추가 가능.
+  // 기록 부족하면 인기 재료(DB에서 category+emoji 포함)로 보충 — 신규 사용자도 바로 원탭 추가 가능.
   const availableFrequent = frequentIngredients.filter(
     f => !pendingItems.some(p => p.name === f.name)
   );
   const presetFallback = availableFrequent.length < 6
-    ? POPULAR_ITEMS.filter(
+    ? popularIngredients.filter(
         p => !availableFrequent.some(f => f.name === p.name) &&
              !pendingItems.some(pi => pi.name === p.name)
       )

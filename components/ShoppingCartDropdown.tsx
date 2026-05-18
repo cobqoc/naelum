@@ -12,7 +12,7 @@ import {
   setCachedShoppingList,
   type ShoppingItem,
 } from '@/lib/shopping-list/cache';
-import { POPULAR_ITEMS } from '@/lib/ingredients/popularItems';
+import { usePopularIngredients } from '@/lib/ingredients/usePopularIngredients';
 import { useFavorites } from '@/lib/favorites/useFavorites';
 import { track } from '@/lib/analytics/track';
 import { groupItems, type GroupMode } from '@/lib/shopping-list/groupItems';
@@ -22,16 +22,6 @@ import CartAddInput from '@/components/cart/CartAddInput';
 import CartQuickAdd from '@/components/cart/CartQuickAdd';
 import CartItemList from '@/components/cart/CartItemList';
 import { type CartAddSource, type Suggestion, type QuickItem } from '@/components/cart/types';
-
-// cart의 카테고리 키(vegetable/dairy/...) vs popularItems 카테고리(veggie/...) 매핑
-const POPULAR_CATEGORY_TO_CART: Record<string, string> = {
-  veggie: 'vegetable',
-  meat: 'meat',
-  dairy: 'dairy',
-  grain: 'grain',
-  condiment: 'sauce',
-  seasoning: 'sauce',
-};
 
 interface Props {
   isOpen: boolean;
@@ -76,6 +66,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   // 사용자별 자주 쓰는 재료 — 빈 상태 quick-add에 노출
   const { items: favorites } = useFavorites(20);
+  const popularIngredients = usePopularIngredients();
 
   // 완료 항목 숨김 토글 (#4) — localStorage 저장
   const [hideChecked, setHideChecked] = useState<boolean>(() => {
@@ -310,9 +301,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     window.dispatchEvent(new Event('shopping-list-updated'));
   };
 
-  // Quick-add — favorites + POPULAR_ITEMS fallback 통합 (중복 제거, 최대 8개).
+  // Quick-add — favorites + popularIngredients fallback 통합 (중복 제거, 최대 8개).
   // 입력창 바로 아래에 항상 노출 (빈 상태/항목 있는 상태 공통).
-  // 호출 측에서 이미 cart category로 매핑 완료한 값 전달.
   const quickAdd = (name: string, cartCategory: string) => {
     addItem(name, cartCategory, undefined, 'chip');
   };
@@ -331,14 +321,14 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
       });
       if (merged.length >= 8) break;
     }
-    for (const p of POPULAR_ITEMS) {
+    for (const p of popularIngredients) {
       if (merged.length >= 8) break;
       if (seen.has(p.name)) continue;
       seen.add(p.name);
       merged.push({
         name: p.name,
-        category: POPULAR_CATEGORY_TO_CART[p.category] ?? 'other',
-        icon: p.icon,
+        category: p.category,
+        icon: p.emoji ?? undefined,
         fromFavorites: false,
       });
     }

@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams, { defaultLimit: 50 });
   const query = searchParams.get('q') || '';
   const categoriesParam = searchParams.get('categories') || '';
+  const namesParam = searchParams.get('names') || ''; // 이름 목록으로 직접 조회 (popular items 등)
   const sort = searchParams.get('sort') || 'search_count'; // search_count | name
   const taste = searchParams.get('taste') || ''; // sweet | salty | spicy | sour | bitter | umami
 
@@ -25,16 +26,24 @@ export async function GET(request: NextRequest) {
       .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji')
       .eq('status', 'approved'); // 승인된 재료만
 
-    // 검색어 필터
-    if (query.trim() && query.length >= 2) {
-      dbQuery = dbQuery.or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%`);
-    }
+    // 이름 목록 필터 (names 파라미터 있으면 카테고리/검색어 필터보다 우선)
+    if (namesParam) {
+      const names = namesParam.split(',').map(n => n.trim()).filter(Boolean);
+      if (names.length > 0) {
+        dbQuery = dbQuery.in('name', names);
+      }
+    } else {
+      // 검색어 필터
+      if (query.trim() && query.length >= 2) {
+        dbQuery = dbQuery.or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%`);
+      }
 
-    // 카테고리 필터
-    if (categoriesParam) {
-      const categories = categoriesParam.split(',').filter(Boolean);
-      if (categories.length > 0) {
-        dbQuery = dbQuery.in('category', categories);
+      // 카테고리 필터
+      if (categoriesParam) {
+        const categories = categoriesParam.split(',').filter(Boolean);
+        if (categories.length > 0) {
+          dbQuery = dbQuery.in('category', categories);
+        }
       }
     }
 
