@@ -33,6 +33,7 @@ export const ko = {
     languageSelect: '언어 선택',
     searching: '검색 중...',
     moreMenu: '더보기',
+    reset: '초기화',
   },
   nav: {
     recipes: '레시피',

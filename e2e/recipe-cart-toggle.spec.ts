@@ -38,7 +38,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
 
     try {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' });
-      const cartBtn = page.getByRole('button', { name: /🛒\s*장보기/ });
+      const cartBtn = page.getByRole('button', { name: /장보기/ });
       await cartBtn.waitFor({ state: 'visible', timeout: 10000 });
 
       await expect(page.getByText('냉장고에 있는 재료 제외', { exact: false })).toHaveCount(0);
@@ -73,7 +73,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
 
     try {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' });
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
+      await page.getByRole('button', { name: /장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
 
       await expect(page.getByText('냉장고에 있는 재료 제외 (1)', { exact: false })).toBeVisible({ timeout: 5000 });
 
@@ -83,7 +83,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
       const reqPromise = page.waitForRequest(req =>
         req.url().includes('/api/shopping-list') && req.method() === 'POST'
       );
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).click();
+      await page.getByRole('button', { name: /장보기/ }).click();
       const req = await reqPromise;
       const payload = JSON.parse(req.postData() || '{}');
       expect(payload.ingredients?.length).toBe(3);
@@ -108,7 +108,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
 
     try {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' });
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
+      await page.getByRole('button', { name: /장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
 
       const checkbox = page.locator('label').filter({ hasText: '냉장고에 있는 재료 제외' }).locator('input[type="checkbox"]');
       await expect(checkbox).toBeVisible({ timeout: 5000 });
@@ -118,7 +118,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
       const reqPromise = page.waitForRequest(req =>
         req.url().includes('/api/shopping-list') && req.method() === 'POST'
       );
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).click();
+      await page.getByRole('button', { name: /장보기/ }).click();
       const req = await reqPromise;
       const payload = JSON.parse(req.postData() || '{}');
 
@@ -149,7 +149,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
 
     try {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' });
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
+      await page.getByRole('button', { name: /장보기/ }).waitFor({ state: 'visible', timeout: 10000 });
 
       await expect(page.getByText('냉장고에 있는 재료 제외 (3)', { exact: false })).toBeVisible({ timeout: 5000 });
 
@@ -161,7 +161,7 @@ test.describe('레시피 → cart 보유 재료 제외 토글', () => {
         if (req.url().includes('/api/shopping-list') && req.method() === 'POST') cartPostCount++;
       });
 
-      await page.getByRole('button', { name: /🛒\s*장보기/ }).click();
+      await page.getByRole('button', { name: /장보기/ }).click();
       await expect(page.getByText('모든 재료가 이미 냉장고에 있어요')).toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(500);
       expect(cartPostCount).toBe(0);
