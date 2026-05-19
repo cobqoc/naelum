@@ -1271,6 +1271,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **피드백 버튼 레시피 하단 바 통합** — 완료 (2026-05-20, develop 푸시)
+  - **`RecipeBrowseView.tsx`**: 장보기 버튼 우측에 💬 피드백 버튼 통합. 모바일은 아이콘만, `sm:` 이상에서 "피드백" 텍스트 추가 노출. `ContactModal` dynamic import + `feedbackOpen` 상태 추가
+  - **`FloatingFeedbackButton.tsx`**: `shouldHide`에 `/recipes/*` 패턴 추가 → 레시피 상세에서 전역 플로팅 버튼 숨김 (중복 방지)
+  - 검증: lint 0 errors · build 성공
 - **KMP API Slices — /api/users/me 확장 (Slice 4.19·4.21·5.07)** — 완료 (2026-05-18, develop 푸시)
   - **Slice 4.19 — username 편집**: PUT /api/users/me에 `username` 필드 추가. 형식 검증(2~20자 영소문자·숫자·_) + 중복 확인(409 반환). KMP 앱에서 닉네임 변경 지원
   - **Slice 4.21 — avatar_url 편집**: PUT /api/users/me에 `avatar_url` 필드 추가. KMP 앱 프로필 사진 URL 저장 지원
