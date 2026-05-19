@@ -1279,6 +1279,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **`app/api/recipes/route.ts` + `[id]/route.ts`**: `ingredient_id` DB insert 추가
   - **compact 모드 신설** (좁은 grid cell 대응): `IngredientItemRenderer`·`IngredientAutocompleteV2Props`·`RecipeIngredientInputProps`에 `compact?: boolean` prop 추가. compact=true 시 이모지(text-2xl)·카테고리 배지·영문명 숨겨 단어 truncate 방지. `RecipeIngredientInput` 기본값 true (레시피 작성 폼은 1fr 좁은 grid). cart·홈 등 넓은 모달은 미지정으로 기존 디스플레이 유지
   - **dev DB 동기화 (2026-05-20)**: dev approved 907 → 334. prod approved 725개 기준으로 매칭 안 되는 dev approved 573개(recipe extraction garbage: `튀김용기름파`·`체에 친 엿기름` 등) 일괄 pending. UI 자동완성에 garbage 노출 차단. 자유 텍스트 입력은 그대로 가능 (`allowCustomIngredient = true`)
+  - **검색어 확장 (SEARCH_EXPANSIONS)**: `/api/ingredients/autocomplete`에 의도-이름 갭 보완용 확장 맵 추가. `기름` 검색 시 `식용유`도 결과에 포함 (식용유는 이름에 "기름" 없음). `오일` → `식용유·기름`. 정확 일치(trim 후)일 때만 트리거. **동의어 매핑(name-level)이 아니므로 안전** — 검색 결과에 추가될 뿐 식용유=기름으로 conflate되지 않음
   - 검증: lint 0 errors · build 성공
 - **ingredients_master 재료 정리 (2026-05-20)** — 완료 (prod+dev DB 직접)
   - **pending 처리 15개**: 미소된장·정종·피시소스·젓국·라면스프·멸치육수·닭육수·다시마육수·쇠고기육수·육수·초간장·깨소스·기름·깨·참깨 → status='pending' (UI에서 숨김, DB FK 보존)
