@@ -108,7 +108,7 @@ export default function RecipeBrowseView({
   const [excludeOwnedInCart, setExcludeOwnedInCart] = useState(false);
 
   // 인분 조절
-  const baseServings = Math.max(1, recipe.servings ?? 2);
+  const baseServings = Math.max(1, recipe.servings ?? 1);
   const [currentServings, setCurrentServings] = useState(baseServings);
 
   // 단계 완료 체크
