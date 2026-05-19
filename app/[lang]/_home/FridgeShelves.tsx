@@ -242,7 +242,7 @@ export default function FridgeShelves({
                       aria-label={t.home.ingredientList}
                     >
                       <span className="text-base md:text-lg leading-none">📋</span>
-                      <span>{totalOverflow > 0 ? t.home.ingredientListMore.replace('{count}', String(totalOverflow)) : t.home.ingredientList}</span>
+                      <span>{t.home.ingredientList}</span>
                     </button>
                   </div>
                   )}
