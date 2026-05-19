@@ -13,7 +13,7 @@ import { createTestRecipe, deleteTestRecipe } from './helpers/auth'
  */
 
 test.describe('쿠킹 모드 완료', () => {
-  test('요리 시작 버튼 → 쿠킹 모드 오버레이 진입', async ({ authenticatedPage: page, testUser }) => {
+  test('조리순서 단계 완료 토글 — 클릭 시 ✓ 표시', async ({ authenticatedPage: page, testUser }) => {
     const recipeId = await createTestRecipe(testUser.userId, {
       title: 'Cook Mode Entry Test',
       withSteps: true,
@@ -22,14 +22,20 @@ test.describe('쿠킹 모드 완료', () => {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
       await page.waitForTimeout(1500)
 
-      const cookBtn = page.locator('button:has-text("요리 시작하기")').first()
-      await expect(cookBtn).toBeVisible()
-      await cookBtn.click()
-      await page.waitForTimeout(800)
+      // 모바일: 조리순서 탭 클릭
+      const stepsTab = page.locator('button').filter({ hasText: /조리 순서/ }).first()
+      if (await stepsTab.isVisible()) {
+        await stepsTab.click()
+        await page.waitForTimeout(300)
+      }
 
-      // 쿠킹 모드 오버레이의 단계 표시 확인
-      const step1 = page.locator('text=/단계.*1|1단계/').first()
-      await expect(step1).toBeVisible({ timeout: 5000 })
+      // 단계 번호 원형 버튼 (title="완료") 클릭 → ✓ 상태 전환
+      const stepCircle = page.getByTitle('완료').first()
+      await expect(stepCircle).toBeVisible({ timeout: 5000 })
+      await stepCircle.click()
+      await page.waitForTimeout(300)
+
+      await expect(stepCircle).toContainText('✓')
     } finally {
       await deleteTestRecipe(recipeId)
     }

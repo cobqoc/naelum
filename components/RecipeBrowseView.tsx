@@ -7,8 +7,11 @@ import Link from '@/components/Common/LocalizedLink';
 import ShareButton from './Recipes/ShareButton';
 import { useToast } from '@/lib/toast/context';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
+import { useMultiTimer } from '@/lib/hooks/useMultiTimer';
+import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useI18n } from '@/lib/i18n/context';
 import CartIcon from '@/components/icons/CartIcon';
+import CookTimerPanel from '@/components/cook/CookTimerPanel';
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -37,6 +40,7 @@ interface Recipe {
   average_rating: number;
   ratings_count: number;
   cooked_count?: number;
+  likes_count?: number;
   author: { username: string; avatar_url: string | null; bio: string | null } | null;
   thumbnail_url: string | null;
   ingredients_image_url?: string | null;
@@ -65,7 +69,6 @@ interface RecipeBrowseViewProps {
   onUpdateMemo: (notes: string) => void;
   actionLoading: boolean;
   hasCooked: boolean;
-  onStartCooking: () => void;
   onShowFridge: () => void;
   isLiked?: boolean;
   likesCount?: number;
@@ -82,7 +85,6 @@ export default function RecipeBrowseView({
   onUpdateMemo,
   actionLoading,
   hasCooked,
-  onStartCooking,
   onShowFridge,
   isLiked = false,
   likesCount = 0,
@@ -91,13 +93,23 @@ export default function RecipeBrowseView({
 }: RecipeBrowseViewProps) {
   const toast = useToast();
   const unitConv = useUnitConversion();
+  const multiTimer = useMultiTimer();
+  const voice = useVoiceGuide();
   const { t } = useI18n();
+
   const [activeTab, setActiveTab] = useState<'ingredients' | 'steps'>('ingredients');
   const [memoOpen, setMemoOpen] = useState(false);
   const [memoText, setMemoText] = useState(saveNotes || '');
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
-  // 보유 재료 cart 제외 토글 — 기본 OFF. 보유 재료 있을 때만 UI 노출.
   const [excludeOwnedInCart, setExcludeOwnedInCart] = useState(false);
+
+  // 인분 조절
+  const baseServings = Math.max(1, recipe.servings ?? 2);
+  const [currentServings, setCurrentServings] = useState(baseServings);
+
+  // 단계 완료 체크
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [showTimerPanel, setShowTimerPanel] = useState(false);
 
   const isIngredientOwned = (name: string) =>
     userIngredients.some(ui => name.includes(ui) || ui.includes(name));
@@ -105,10 +117,50 @@ export default function RecipeBrowseView({
   const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
   const totalIngredients = recipe.ingredients.length;
 
+  // 재료 양 배율 계산
+  const scaleQty = (qty: string): string => {
+    if (currentServings === baseServings || !qty) return qty;
+    const num = parseFloat(qty);
+    if (isNaN(num)) return qty;
+    const scaled = num * (currentServings / baseServings);
+    return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
+  };
+
+  // 조리 지시문에서 타이머 파싱 (1~120분 범위만)
+  const parseTimerMinutes = (instruction: string): number | null => {
+    const match = instruction.match(/(\d+)\s*분(?:간|동안|씩|정도|가량)?/);
+    if (!match) return null;
+    const minutes = parseInt(match[1], 10);
+    return minutes >= 1 && minutes <= 120 ? minutes : null;
+  };
+
+  const getEffectiveTimer = (step: RecipeStep): number | null => {
+    if (step.timer_minutes && step.timer_minutes >= 1 && step.timer_minutes <= 120) {
+      return step.timer_minutes;
+    }
+    return parseTimerMinutes(step.instruction);
+  };
+
+  const toggleStep = (stepNumber: number) => {
+    setCompletedSteps(prev => {
+      const next = new Set(prev);
+      if (next.has(stepNumber)) {
+        next.delete(stepNumber);
+      } else {
+        next.add(stepNumber);
+      }
+      return next;
+    });
+  };
+
+  const sortedSteps = [...(recipe.steps || [])].sort((a, b) => a.step_number - b.step_number);
+  const completedCount = sortedSteps.filter(s => completedSteps.has(s.step_number)).length;
+  const stepProgress = sortedSteps.length > 0 ? (completedCount / sortedSteps.length) * 100 : 0;
+  const isScaling = currentServings !== baseServings;
+
   const handleAddToShoppingList = async () => {
     setAddingToShoppingList(true);
     try {
-      // 토글 ON + 보유 재료 있으면 필터링. OFF면 전체.
       const ingredientsToSend = excludeOwnedInCart
         ? recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_name))
         : recipe.ingredients;
@@ -150,12 +202,12 @@ export default function RecipeBrowseView({
     }
     setAddingToShoppingList(false);
   };
+
   const ingredientStatus = totalIngredients === 0 ? 'none'
     : ownedCount === 0 ? 'none'
     : ownedCount === totalIngredients ? 'all'
     : 'partial';
 
-  // 이미지 우선순위: 썸네일 → 마지막 단계 → 다른 단계 → 재료 이미지
   const getDisplayImage = () => {
     if (recipe.thumbnail_url) return recipe.thumbnail_url;
     const stepsWithImage = recipe.steps?.filter(s => s.image_url);
@@ -167,10 +219,6 @@ export default function RecipeBrowseView({
   };
 
   const displayImage = getDisplayImage();
-
-  const sortedSteps = [...(recipe.steps || [])].sort(
-    (a, b) => a.step_number - b.step_number
-  );
 
   return (
     <div className="container mx-auto max-w-2xl px-6">
@@ -453,72 +501,106 @@ export default function RecipeBrowseView({
 
           {/* 재료 패널 */}
           <div className={`${activeTab === 'ingredients' ? 'block' : 'hidden'} md:block`}>
-            {/* 헤더 (컨트롤 포함) */}
-            <div className="flex items-center justify-between pt-4 md:pt-0 mb-3">
-              <h2 className="hidden md:block text-lg font-bold">
-                {t.recipe.ingredientsLabel}
-                <span className="text-sm font-normal text-text-muted ml-2">{recipe.ingredients.length}</span>
-              </h2>
-              <div className="flex items-center gap-2 ml-auto">
-                <button
-                  onClick={unitConv.toggleSystem}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    unitConv.isImperial
-                      ? 'bg-info/20 text-info border border-info/30'
-                      : 'bg-background-tertiary text-text-muted hover:bg-white/10'
-                  }`}
-                  title={`${t.recipe.metricLabel} ↔ ${t.recipe.imperialLabel}`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                  {unitConv.isImperial ? t.recipe.imperialLabel : t.recipe.metricLabel}
-                </button>
-                <button onClick={onShowFridge} className="flex flex-col items-center gap-1">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all animate-pulse ${
-                    ingredientStatus === 'none'
-                      ? 'bg-error text-white shadow-[0_0_12px_rgba(244,67,54,0.5)]'
-                      : ingredientStatus === 'all'
-                      ? 'bg-success text-white shadow-[0_0_12px_rgba(76,175,80,0.5)]'
-                      : 'bg-warning text-white shadow-[0_0_12px_rgba(255,152,0,0.5)]'
-                  }`}>
-                    <svg width="22" height="22" viewBox="0 0 90 100" fill="none">
-                      <rect x="4" y="4" width="60" height="92" rx="6" fill="#e85a3a" stroke="#7a1810" strokeWidth="5"/>
-                      <rect x="4" y="4" width="28" height="62" rx="6" fill="#c93820"/>
-                      <rect x="4" y="66" width="60" height="4" fill="#7a1810"/>
-                      <rect x="9" y="14" width="17" height="10" rx="2" fill="#f4c030" stroke="#7a1810" strokeWidth="2.5"/>
-                      <rect x="32" y="4" width="32" height="62" fill="#e8f7ff"/>
-                      <rect x="55" y="12" width="3" height="16" rx="1" fill="#7a1810" opacity="0.4"/>
-                      <rect x="59" y="12" width="3" height="16" rx="1" fill="#7a1810" opacity="0.4"/>
-                      <ellipse cx="47" cy="30" rx="7" ry="5" fill="#e09848" stroke="#7a3c10" strokeWidth="2"/>
-                      <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#b07840" stroke="#7a1810" strokeWidth="2"/>
-                      <rect x="42" y="52" width="4" height="8" rx="1" fill="#e85040" stroke="#7a1810" strokeWidth="2"/>
-                      <rect x="48" y="52" width="4" height="8" rx="1" fill="#e85040" stroke="#7a1810" strokeWidth="2"/>
-                      <rect x="64" y="4" width="20" height="62" rx="4" fill="#e85a3a" stroke="#7a1810" strokeWidth="4"/>
-                      <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
-                      <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
-                      <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
-                      <rect x="28" y="20" width="8" height="14" rx="4" fill="#7a1810"/>
-                      <rect x="28" y="42" width="8" height="14" rx="4" fill="#7a1810"/>
-                      <rect x="4" y="70" width="60" height="26" rx="6" fill="#e85a3a"/>
-                      <rect x="28" y="80" width="12" height="6" rx="3" fill="#7a1810"/>
+            {/* 헤더 */}
+            <div className="pt-4 md:pt-0 mb-3">
+              <div className="flex items-center justify-between">
+                <h2 className="hidden md:block text-lg font-bold">
+                  {t.recipe.ingredientsLabel}
+                  <span className="text-sm font-normal text-text-muted ml-2">{recipe.ingredients.length}</span>
+                </h2>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    onClick={unitConv.toggleSystem}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      unitConv.isImperial
+                        ? 'bg-info/20 text-info border border-info/30'
+                        : 'bg-background-tertiary text-text-muted hover:bg-white/10'
+                    }`}
+                    title={`${t.recipe.metricLabel} ↔ ${t.recipe.imperialLabel}`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </svg>
-                  </div>
-                  <span className={`text-[10px] font-medium ${
-                    ingredientStatus === 'none' ? 'text-error'
-                      : ingredientStatus === 'all' ? 'text-success'
-                      : 'text-warning'
-                  }`}>
-                    {ownedCount}/{totalIngredients} {t.recipe.ownedSuffix}
+                    {unitConv.isImperial ? t.recipe.imperialLabel : t.recipe.metricLabel}
+                  </button>
+                  <button onClick={onShowFridge} className="flex flex-col items-center gap-1">
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all animate-pulse ${
+                      ingredientStatus === 'none'
+                        ? 'bg-error text-white shadow-[0_0_12px_rgba(244,67,54,0.5)]'
+                        : ingredientStatus === 'all'
+                        ? 'bg-success text-white shadow-[0_0_12px_rgba(76,175,80,0.5)]'
+                        : 'bg-warning text-white shadow-[0_0_12px_rgba(255,152,0,0.5)]'
+                    }`}>
+                      <svg width="22" height="22" viewBox="0 0 90 100" fill="none">
+                        <rect x="4" y="4" width="60" height="92" rx="6" fill="#e85a3a" stroke="#7a1810" strokeWidth="5"/>
+                        <rect x="4" y="4" width="28" height="62" rx="6" fill="#c93820"/>
+                        <rect x="4" y="66" width="60" height="4" fill="#7a1810"/>
+                        <rect x="9" y="14" width="17" height="10" rx="2" fill="#f4c030" stroke="#7a1810" strokeWidth="2.5"/>
+                        <rect x="32" y="4" width="32" height="62" fill="#e8f7ff"/>
+                        <rect x="55" y="12" width="3" height="16" rx="1" fill="#7a1810" opacity="0.4"/>
+                        <rect x="59" y="12" width="3" height="16" rx="1" fill="#7a1810" opacity="0.4"/>
+                        <ellipse cx="47" cy="30" rx="7" ry="5" fill="#e09848" stroke="#7a3c10" strokeWidth="2"/>
+                        <path d="M42 42 L52 42 L50 50 L44 50 Z" fill="#b07840" stroke="#7a1810" strokeWidth="2"/>
+                        <rect x="42" y="52" width="4" height="8" rx="1" fill="#e85040" stroke="#7a1810" strokeWidth="2"/>
+                        <rect x="48" y="52" width="4" height="8" rx="1" fill="#e85040" stroke="#7a1810" strokeWidth="2"/>
+                        <rect x="64" y="4" width="20" height="62" rx="4" fill="#e85a3a" stroke="#7a1810" strokeWidth="4"/>
+                        <rect x="68" y="18" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
+                        <rect x="68" y="26" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
+                        <rect x="68" y="34" width="10" height="3" rx="1.5" fill="#7a1810" opacity="0.35"/>
+                        <rect x="28" y="20" width="8" height="14" rx="4" fill="#7a1810"/>
+                        <rect x="28" y="42" width="8" height="14" rx="4" fill="#7a1810"/>
+                        <rect x="4" y="70" width="60" height="26" rx="6" fill="#e85a3a"/>
+                        <rect x="28" y="80" width="12" height="6" rx="3" fill="#7a1810"/>
+                      </svg>
+                    </div>
+                    <span className={`text-[10px] font-medium ${
+                      ingredientStatus === 'none' ? 'text-error'
+                        : ingredientStatus === 'all' ? 'text-success'
+                        : 'text-warning'
+                    }`}>
+                      {ownedCount}/{totalIngredients} {t.recipe.ownedSuffix}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 인분 조절 */}
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-xs text-text-muted">{t.recipe.servingsLabel}</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setCurrentServings(s => Math.max(1, s - 1))}
+                    className="w-7 h-7 rounded-full bg-background-tertiary flex items-center justify-center text-text-muted hover:bg-white/15 transition-all text-base font-bold leading-none"
+                  >
+                    −
+                  </button>
+                  <span className={`text-sm font-bold w-14 text-center ${isScaling ? 'text-accent-warm' : 'text-text-primary'}`}>
+                    {currentServings}{t.recipe.servingsSuffix}
                   </span>
-                </button>
+                  <button
+                    onClick={() => setCurrentServings(s => Math.min(20, s + 1))}
+                    className="w-7 h-7 rounded-full bg-background-tertiary flex items-center justify-center text-text-muted hover:bg-white/15 transition-all text-base font-bold leading-none"
+                  >
+                    +
+                  </button>
+                </div>
+                {isScaling && (
+                  <button
+                    onClick={() => setCurrentServings(baseServings)}
+                    className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    ({t.common.reset})
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pb-4">
               {recipe.ingredients.map((ing, idx) => {
                 const owned = isIngredientOwned(ing.ingredient_name);
-                const converted = unitConv.convertIngredient(ing.quantity, ing.unit);
+                const scaledQty = scaleQty(ing.quantity);
+                const converted = unitConv.convertIngredient(scaledQty, ing.unit);
+                const scaled = isScaling && scaledQty !== ing.quantity;
                 return (
                   <div
                     key={idx}
@@ -535,6 +617,8 @@ export default function RecipeBrowseView({
                           <span className="text-info font-medium">{converted.quantity} {converted.unit}</span>
                           <span className="text-text-muted/60 ml-1">({ing.quantity} {ing.unit})</span>
                         </>
+                      ) : scaled ? (
+                        <span className="text-accent-warm font-medium">{scaledQty} {ing.unit}</span>
                       ) : (
                         <>{ing.quantity} {ing.unit}</>
                       )}
@@ -550,46 +634,115 @@ export default function RecipeBrowseView({
 
           {/* 조리순서 패널 */}
           <div className={`${activeTab === 'steps' ? 'block' : 'hidden'} md:block`}>
-            {/* PC 전용 헤더 */}
-            <h2 className="hidden md:block text-lg font-bold mb-3">
-              {t.recipe.stepsTitle}
-              <span className="text-sm font-normal text-text-muted ml-2">{sortedSteps.length}</span>
-            </h2>
+            {/* PC 전용 헤더 (진행률 포함) */}
+            <div className="hidden md:block mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <h2 className="text-lg font-bold">
+                  {t.recipe.stepsTitle}
+                  <span className="text-sm font-normal text-text-muted ml-2">{sortedSteps.length}</span>
+                </h2>
+                {completedCount > 0 && (
+                  <span className="text-xs text-text-muted">{completedCount}/{sortedSteps.length}</span>
+                )}
+              </div>
+              {completedCount > 0 && (
+                <div className="h-1.5 bg-background-tertiary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success transition-all duration-300 rounded-full"
+                    style={{ width: `${stepProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 모바일 진행률 */}
+            {completedCount > 0 && (
+              <div className="flex items-center gap-2 pt-3 pb-1 md:hidden">
+                <div className="flex-1 h-1.5 bg-background-tertiary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success transition-all duration-300 rounded-full"
+                    style={{ width: `${stepProgress}%` }}
+                  />
+                </div>
+                <span className="text-xs text-text-muted flex-shrink-0">{completedCount}/{sortedSteps.length}</span>
+              </div>
+            )}
 
             <div className="pt-4 md:pt-0 space-y-6 pb-4">
-              {sortedSteps.map((step) => (
-                <div key={step.step_number} className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent-warm text-background-primary flex items-center justify-center font-bold">
-                    {step.step_number}
+              {sortedSteps.map((step) => {
+                const effectiveTimer = getEffectiveTimer(step);
+                const isDone = completedSteps.has(step.step_number);
+                return (
+                  <div key={step.step_number} className="flex gap-4">
+                    {/* 단계 번호 — 클릭으로 완료 토글 */}
+                    <button
+                      onClick={() => toggleStep(step.step_number)}
+                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all active:scale-95 ${
+                        isDone
+                          ? 'bg-success text-white'
+                          : 'bg-accent-warm text-background-primary hover:scale-105'
+                      }`}
+                      title={isDone ? t.cookMode.doneMark : t.cookMode.doneShort}
+                    >
+                      {isDone ? '✓' : step.step_number}
+                    </button>
+                    <div className={`flex-1 min-w-0 transition-opacity ${isDone ? 'opacity-50' : ''}`}>
+                      {step.title && <h3 className="font-bold mb-1">{step.title}</h3>}
+                      {step.image_url && (
+                        <div className="relative w-full aspect-[16/10] rounded-xl overflow-hidden mb-3">
+                          <SafeImage
+                            src={step.image_url}
+                            alt={t.recipe.stepImageAlt.replace('{n}', String(step.step_number))}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 600px"
+                          />
+                        </div>
+                      )}
+                      <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
+
+                      {/* 타이머 버튼 */}
+                      {effectiveTimer && (
+                        <button
+                          onClick={() => {
+                            multiTimer.startTimer(
+                              effectiveTimer,
+                              t.cookMode.stepTimerLabel.replace('{n}', String(step.step_number)),
+                              step.step_number
+                            );
+                            setShowTimerPanel(true);
+                            toast.success(t.cookMode.timerStarted.replace('{minutes}', String(effectiveTimer)));
+                          }}
+                          className="mt-2 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
+                        >
+                          <span>⏱️</span>
+                          <span>{effectiveTimer}{t.recipe.minuteSuffix}</span>
+                        </button>
+                      )}
+
+                      {/* 음성 읽기 */}
+                      {voice.isSupported && (
+                        <button
+                          onClick={() => voice.speakStep(step.step_number, step.instruction, step.tip)}
+                          className="mt-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
+                          title={t.cookMode.voiceOffTooltip}
+                        >
+                          🔊
+                        </button>
+                      )}
+
+                      {step.tip && (
+                        <div className="mt-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                          <p className="text-sm">
+                            <span className="font-bold text-warning">💡 팁:</span>{' '}
+                            <span className="text-text-secondary">{step.tip}</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    {step.title && <h3 className="font-bold mb-1">{step.title}</h3>}
-                    {step.image_url && (
-                      <div className="relative w-full aspect-[16/10] rounded-xl overflow-hidden mb-3">
-                        <SafeImage
-                          src={step.image_url}
-                          alt={t.recipe.stepImageAlt.replace('{n}', String(step.step_number))}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 600px"
-                        />
-                      </div>
-                    )}
-                    <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
-                    {step.timer_minutes && (
-                      <div className="mt-2 text-sm text-info font-medium">⏱️ {step.timer_minutes}분</div>
-                    )}
-                    {step.tip && (
-                      <div className="mt-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-                        <p className="text-sm">
-                          <span className="font-bold text-warning">💡 팁:</span>{' '}
-                          <span className="text-text-secondary">{step.tip}</span>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -660,13 +813,20 @@ export default function RecipeBrowseView({
         </p>
       </div>
 
-      {/* 하단 여백 (sticky 버튼 공간 확보) */}
+      {/* 하단 여백 */}
       <div className="h-20" />
 
-      {/* Fixed 하단 버튼 — 스크롤 위치 무관하게 항상 노출 */}
+      {/* 멀티 타이머 패널 */}
+      <CookTimerPanel
+        multiTimer={multiTimer}
+        showTimerPanel={showTimerPanel}
+        setShowTimerPanel={setShowTimerPanel}
+        t={t}
+      />
+
+      {/* Fixed 하단 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 z-10 pb-4 pt-2 bg-gradient-to-t from-background-primary via-background-primary to-transparent">
         <div className="container mx-auto max-w-2xl px-6">
-          {/* 보유 재료 제외 토글 — 보유 재료가 있을 때만 노출 */}
           {ownedCount > 0 && (
             <label className="flex items-center gap-2 px-2 pb-2 text-xs text-text-secondary cursor-pointer select-none">
               <input
@@ -678,23 +838,14 @@ export default function RecipeBrowseView({
               <span>{t.recipe.cartExcludeOwnedLabel.replace('{count}', String(ownedCount))}</span>
             </label>
           )}
-          <div className="flex gap-2">
           <button
             onClick={handleAddToShoppingList}
             disabled={addingToShoppingList}
-            className="flex-shrink-0 py-4 px-5 rounded-2xl bg-background-secondary border border-white/10 text-text-primary font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-4 rounded-2xl bg-accent-warm text-background-primary font-bold text-lg hover:bg-accent-hover transition-all shadow-[0_0_30px_rgba(255,153,102,0.3)] flex items-center justify-center gap-2 disabled:opacity-70"
           >
             <CartIcon size={22} active />
-            <span className="text-sm">{t.recipe.cartButton}</span>
+            <span>{t.recipe.cartButton}</span>
           </button>
-          <button
-            onClick={onStartCooking}
-            className="flex-1 py-4 rounded-2xl bg-accent-warm text-background-primary font-bold text-lg hover:bg-accent-hover transition-all shadow-[0_0_30px_rgba(255,153,102,0.3)] flex items-center justify-center gap-2"
-          >
-            <span className="text-xl">🍳</span>
-            {t.recipe.startCooking}
-          </button>
-          </div>
         </div>
       </div>
     </div>

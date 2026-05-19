@@ -14,10 +14,13 @@ export function useVoiceGuide() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speed, setSpeed] = useState<VoiceSpeed>('normal');
-  const [isSupported] = useState(() =>
-    typeof window !== 'undefined' && 'speechSynthesis' in window
-  );
+  const [isSupported, setIsSupported] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsSupported(typeof window !== 'undefined' && 'speechSynthesis' in window);
+  }, []);
 
   const stop = useCallback(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {

@@ -13,10 +13,8 @@ test.describe('쿠킹 모드 타이머', () => {
     authenticatedPage: page,
     testUser,
   }) => {
-    // 타이머 60초 카운트다운 + Notification/Audio 호출까지 Playwright page.clock으로 가속할
-    // 수도 있지만, useMultiTimer 내부의 setInterval → setState 체인이 React fiber 스케줄링과
-    // 얽혀 fastForward 시점에 flush되지 않는 이슈가 있어 DOM 기반 검증으로 대체.
-    // 여기서는 "타이머 추가" 버튼 클릭이 throw 없이 timer panel을 여는지까지만 검증.
+    // timer_minutes가 있는 단계의 인라인 타이머 버튼(⏱️)을 클릭해 멀티 타이머 패널이 열리는지 검증.
+    // cook mode 오버레이 없이 레시피 상세 페이지에서 바로 동작.
     const pageErrors: string[] = []
     page.on('pageerror', e => pageErrors.push(e.message))
 
@@ -29,13 +27,15 @@ test.describe('쿠킹 모드 타이머', () => {
       await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
       await page.waitForTimeout(1500)
 
-      const cookBtn = page.locator('button:has-text("요리 시작하기")').first()
-      await expect(cookBtn).toBeVisible()
-      await cookBtn.click()
-      await page.waitForTimeout(500)
+      // 모바일: 조리순서 탭 클릭
+      const stepsTab = page.locator('button').filter({ hasText: /조리 순서/ }).first()
+      if (await stepsTab.isVisible()) {
+        await stepsTab.click()
+        await page.waitForTimeout(300)
+      }
 
-      // 타이머 추가 버튼 (1분)
-      const timerBtn = page.locator('button:has-text("타이머 추가")').first()
+      // 인라인 타이머 버튼 (⏱️ 1분) — timer_minutes: 1 스텝에 표시됨
+      const timerBtn = page.locator('button').filter({ hasText: /⏱️/ }).first()
       await expect(timerBtn).toBeVisible({ timeout: 5000 })
       await timerBtn.click()
       await page.waitForTimeout(500)

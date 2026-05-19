@@ -906,7 +906,7 @@ NLP (검색 개선):
 ### Phase 2: 핵심 기능 (2-3개월)
 - [x] 재료 기반 추천 (ingredient_id FK 매칭, 2026-05-10)
 - [x] 저장/북마크 기능 (낼름함)
-- [ ] 레시피 따라하기 모드
+- [x] 레시피 따라하기 모드 (2026-05-20, RecipeBrowseView 인라인 통합)
 - [x] 소셜 기능 (만들어봤어요, 댓글, 공유)
 - [ ] 알림 시스템
 
@@ -1262,6 +1262,15 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **"요리 시작하기" 버튼 고정**: `sticky bottom-0` → `fixed bottom-0` 으로 변경. 스크롤 위치 무관하게 항상 하단 노출
   - **dead code 정리**: `reviewModalOpen`·`initialUserRating`·`initialUserReview` 상태·prop·DB 쿼리 전체 제거. `InteractiveFridge` dynamic import 제거
   - 검증: lint 0 errors · build · e2e fresh build **404 passed · 2 skipped · 0 failed · 0 flaky**
+- **쿠킹 모드 레시피 상세 페이지 인라인 통합** — 완료 (2026-05-20, develop 푸시)
+  - **목표**: 별도 오버레이(`RecipeCookMode`) 없이 레시피 상세 페이지에서 직접 단계 완료·타이머·음성 안내를 사용할 수 있도록 통합
+  - **`RecipeBrowseView.tsx` 통합**: `useMultiTimer()`, `useVoiceGuide()`, `useUnitConversion()` 훅 직접 탑재. 조리순서 단계 번호 원형 버튼(title="완료") 클릭 → ✓ 완료 토글. 단계별 `timer_minutes` 있으면 ⏱️ 인라인 타이머 버튼 표시 → 클릭 시 타이머 시작 토스트. 음성 안내 버튼은 `voice.isSupported`(브라우저 지원) 시에만 노출
+  - **`RecipeDetailClient.tsx` 정리**: `RecipeCookMode` dynamic import 제거. `isCookMode`·`completedSteps`·`timerActive` 등 상태 전부 제거. `onStartCooking` prop 제거. 574줄 → 446줄 (-128줄)
+  - **"요리 시작하기" 버튼 제거**: 별도 쿠킹 모드 진입 버튼 삭제. 레시피 상세 페이지 자체가 곧 쿠킹 모드
+  - **hydration mismatch 수정** (`useVoiceGuide.ts`): `useState(() => 'speechSynthesis' in window)` lazy initializer → `useState(false)` + `useEffect` 패턴 (SSR/클라이언트 초기값 불일치 해소). `eslint-disable-next-line react-hooks/set-state-in-effect` 위치를 `useEffect()` 선언 앞 → effect 본문 내 `setIsSupported()` 바로 위로 이동 (정확한 줄 억제)
+  - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
+  - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
+  - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
 - **KMP API Slices — /api/users/me 확장 (Slice 4.19·4.21·5.07)** — 완료 (2026-05-18, develop 푸시)
   - **Slice 4.19 — username 편집**: PUT /api/users/me에 `username` 필드 추가. 형식 검증(2~20자 영소문자·숫자·_) + 중복 확인(409 반환). KMP 앱에서 닉네임 변경 지원
   - **Slice 4.21 — avatar_url 편집**: PUT /api/users/me에 `avatar_url` 필드 추가. KMP 앱 프로필 사진 URL 저장 지원

@@ -33,6 +33,7 @@ export const ja = {
     languageSelect: '言語選択',
     searching: '検索中...',
     moreMenu: 'その他',
+    reset: 'リセット',
   },
   nav: {
     recipes: 'レシピ',

@@ -33,6 +33,7 @@ export const de = {
     languageSelect: 'Sprache',
     searching: 'Suche läuft...',
     moreMenu: 'Mehr',
+    reset: 'Zurücksetzen',
   },
   nav: {
     recipes: 'Rezepte',

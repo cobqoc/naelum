@@ -33,6 +33,7 @@ export const zh = {
     languageSelect: '语言选择',
     searching: '搜索中...',
     moreMenu: '更多',
+    reset: '重置',
   },
   nav: {
     recipes: '食谱',

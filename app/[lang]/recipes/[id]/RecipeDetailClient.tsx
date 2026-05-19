@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
@@ -11,7 +11,6 @@ import { useI18n } from '@/lib/i18n/context';
 import RecipeBrowseView from '@/components/RecipeBrowseView';
 
 // 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
-const RecipeCookMode = dynamic(() => import('@/components/RecipeCookMode'), { ssr: false });
 const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { ssr: false });
 const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { ssr: false });
 
@@ -101,70 +100,13 @@ export default function RecipeDetailClient({
   const [userIngredients] = useState<string[]>(initialUserIngredients);
   const [actionLoading, setActionLoading] = useState(false);
   const [showFridgeModal, setShowFridgeModal] = useState(false);
-  const [preparedIngredients, setPreparedIngredients] = useState<Set<number>>(new Set());
-  const [isCookMode, setIsCookMode] = useState(false);
   // 조회수 증가 중복 방지용 ref
   const viewIncrementedRef = useRef(false);
-
-  // Cooking mode states
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-  const [timerActive, setTimerActive] = useState(false);
-  const [timerPaused, setTimerPaused] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(0);
 
   // hasCooked는 현재 플로우에서 페이지 내 mutation이 없으므로 setter 생략
   const [hasCooked] = useState(initialHasCooked);
 
   const [isScrolled, setIsScrolled] = useState(false);
-
-  // Timer sound helper
-  const playTimerSound = useCallback(() => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      // 3회 비프음
-      [0, 300, 600].forEach(delay => {
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.frequency.value = 880;
-        oscillator.type = 'sine';
-        gainNode.gain.value = 0.3;
-        oscillator.start(audioCtx.currentTime + delay / 1000);
-        oscillator.stop(audioCtx.currentTime + delay / 1000 + 0.15);
-      });
-    } catch {
-      // AudioContext not supported
-    }
-  }, []);
-
-  // Timer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-
-    if (timerActive && !timerPaused && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => {
-          if (prev <= 1) {
-            setTimerActive(false);
-            setTimerPaused(false);
-            playTimerSound();
-            if (typeof window !== 'undefined' && 'Notification' in window) {
-              if (Notification.permission === 'granted') {
-                new Notification(t.recipe.timerDoneTitle, { body: t.recipe.timerDoneBody });
-              }
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [timerActive, timerPaused, timerSeconds, playTimerSound, t]);
 
   // Scroll effect — 헤더 배경 전환
   useEffect(() => {
@@ -340,50 +282,6 @@ export default function RecipeDetailClient({
     }
   };
 
-  // 재료 준비 완료 토글
-  const togglePreparedIngredient = (index: number) => {
-    setPreparedIngredients(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
-      return newSet;
-    });
-  };
-
-  // Cooking mode functions
-  const toggleStepComplete = (stepNumber: number) => {
-    const newCompleted = new Set(completedSteps);
-    if (newCompleted.has(stepNumber)) {
-      newCompleted.delete(stepNumber);
-    } else {
-      newCompleted.add(stepNumber);
-    }
-    setCompletedSteps(newCompleted);
-  };
-
-  const startTimer = (minutes: number) => {
-    setTimerSeconds(minutes * 60);
-    setTimerActive(true);
-    setTimerPaused(false);
-
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      Notification.requestPermission();
-    }
-  };
-
-  const toggleTimerPause = () => {
-    setTimerPaused(prev => !prev);
-  };
-
-  const stopTimer = () => {
-    setTimerActive(false);
-    setTimerPaused(false);
-    setTimerSeconds(0);
-  };
-
   const currentUsername = authProfile?.username ?? null;
 
   return (
@@ -444,38 +342,12 @@ export default function RecipeDetailClient({
         onUpdateMemo={handleUpdateMemo}
         actionLoading={actionLoading}
         hasCooked={hasCooked}
-        onStartCooking={() => {
-          if (!recipe.steps || recipe.steps.length === 0) {
-            toast.warning(t.recipe.noStepsWarning);
-            return;
-          }
-          setIsCookMode(true);
-        }}
         onShowFridge={() => setShowFridgeModal(true)}
         isLiked={isLiked}
         likesCount={likesCount}
         onToggleLike={handleLike}
         likeLoading={likeLoading}
       />
-
-      {isCookMode && (
-        <RecipeCookMode
-          recipe={recipe}
-          userIngredients={userIngredients}
-          preparedIngredients={preparedIngredients}
-          completedSteps={completedSteps}
-          onTogglePrepared={togglePreparedIngredient}
-          onToggleStepComplete={toggleStepComplete}
-          onStartTimer={startTimer}
-          timerActive={timerActive}
-          timerPaused={timerPaused}
-          timerSeconds={timerSeconds}
-          onToggleTimerPause={toggleTimerPause}
-          onStopTimer={stopTimer}
-          onClose={() => setIsCookMode(false)}
-          hasCooked={hasCooked}
-        />
-      )}
 
       {/* 리뷰 섹션 */}
       <RecipeRatings
