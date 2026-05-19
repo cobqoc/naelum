@@ -39,7 +39,7 @@ export default function FloatingFeedbackButton() {
     pathname.startsWith('/merchant') ||
     pathname.startsWith('/rider') ||
     pathname === '/' ||
-    /\/recipes\/[^/]+\/cook/.test(pathname)
+    /\/recipes\/[^/]/.test(pathname)  // 레시피 상세: 하단 바에 통합
 
   if (shouldHide) return null
 
