@@ -130,19 +130,23 @@ export default function RecipeBrowseView({
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
   };
 
-  // 조리 지시문에서 타이머 파싱 (1~120분 범위만)
-  const parseTimerMinutes = (instruction: string): number | null => {
-    const match = instruction.match(/(\d+)\s*분(?:간|동안|씩|정도|가량)?/);
-    if (!match) return null;
-    const minutes = parseInt(match[1], 10);
-    return minutes >= 1 && minutes <= 120 ? minutes : null;
+  // 조리 지시문에서 타이머 전체 파싱 — 중복 제거, 1~120분 범위만
+  const parseAllTimers = (instruction: string): number[] => {
+    const matches = [...instruction.matchAll(/(\d+)\s*분(?:간|동안|씩|정도|가량)?/g)];
+    const seen = new Set<number>();
+    return matches
+      .map(m => parseInt(m[1], 10))
+      .filter(m => m >= 1 && m <= 120 && !seen.has(m) && seen.add(m) !== undefined);
   };
 
-  const getEffectiveTimer = (step: RecipeStep): number | null => {
-    if (step.timer_minutes && step.timer_minutes >= 1 && step.timer_minutes <= 120) {
-      return step.timer_minutes;
+  const getEffectiveTimers = (step: RecipeStep): number[] => {
+    const fromText = parseAllTimers(step.instruction);
+    const dbVal = step.timer_minutes && step.timer_minutes >= 1 && step.timer_minutes <= 120
+      ? step.timer_minutes : null;
+    if (dbVal && !fromText.includes(dbVal)) {
+      return [dbVal, ...fromText];
     }
-    return parseTimerMinutes(step.instruction);
+    return fromText;
   };
 
   const toggleStep = (stepNumber: number) => {
@@ -674,7 +678,7 @@ export default function RecipeBrowseView({
 
             <div className="pt-4 md:pt-0 space-y-6 pb-4">
               {sortedSteps.map((step) => {
-                const effectiveTimer = getEffectiveTimer(step);
+                const effectiveTimers = getEffectiveTimers(step);
                 const isDone = completedSteps.has(step.step_number);
                 return (
                   <div key={step.step_number} className="flex gap-4">
@@ -705,23 +709,28 @@ export default function RecipeBrowseView({
                       )}
                       <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
 
-                      {/* 타이머 버튼 */}
-                      {effectiveTimer && (
-                        <button
-                          onClick={() => {
-                            multiTimer.startTimer(
-                              effectiveTimer,
-                              t.cookMode.stepTimerLabel.replace('{n}', String(step.step_number)),
-                              step.step_number
-                            );
-                            setShowTimerPanel(true);
-                            toast.success(t.cookMode.timerStarted.replace('{minutes}', String(effectiveTimer)));
-                          }}
-                          className="mt-2 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
-                        >
-                          <span>⏱️</span>
-                          <span>{effectiveTimer}{t.recipe.minuteSuffix}</span>
-                        </button>
+                      {/* 타이머 버튼 — 복수 타이머 지원 */}
+                      {effectiveTimers.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {effectiveTimers.map((minutes) => (
+                            <button
+                              key={minutes}
+                              onClick={() => {
+                                multiTimer.startTimer(
+                                  minutes,
+                                  t.cookMode.stepTimerLabel.replace('{n}', String(step.step_number)),
+                                  step.step_number
+                                );
+                                setShowTimerPanel(true);
+                                toast.success(t.cookMode.timerStarted.replace('{minutes}', String(minutes)));
+                              }}
+                              className="flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
+                            >
+                              <span>⏱️</span>
+                              <span>{minutes}{t.recipe.minuteSuffix}</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
 
                       {/* 음성 읽기 */}
