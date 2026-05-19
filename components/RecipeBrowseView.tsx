@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
 import Link from '@/components/Common/LocalizedLink';
@@ -12,6 +13,8 @@ import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useI18n } from '@/lib/i18n/context';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
+
+const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -101,6 +104,7 @@ export default function RecipeBrowseView({
   const [memoOpen, setMemoOpen] = useState(false);
   const [memoText, setMemoText] = useState(saveNotes || '');
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [excludeOwnedInCart, setExcludeOwnedInCart] = useState(false);
 
   // 인분 조절
@@ -838,16 +842,28 @@ export default function RecipeBrowseView({
               <span>{t.recipe.cartExcludeOwnedLabel.replace('{count}', String(ownedCount))}</span>
             </label>
           )}
-          <button
-            onClick={handleAddToShoppingList}
-            disabled={addingToShoppingList}
-            className="w-full py-4 rounded-2xl bg-accent-warm text-background-primary font-bold text-lg hover:bg-accent-hover transition-all shadow-[0_0_30px_rgba(255,153,102,0.3)] flex items-center justify-center gap-2 disabled:opacity-70"
-          >
-            <CartIcon size={22} active />
-            <span>{t.recipe.cartButton}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleAddToShoppingList}
+              disabled={addingToShoppingList}
+              className="flex-1 py-4 rounded-2xl bg-accent-warm text-background-primary font-bold text-lg hover:bg-accent-hover transition-all shadow-[0_0_30px_rgba(255,153,102,0.3)] flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              <CartIcon size={22} active />
+              <span>{t.recipe.cartButton}</span>
+            </button>
+            <button
+              onClick={() => setFeedbackOpen(true)}
+              aria-label={t.contact.feedbackAria}
+              className="py-4 px-4 rounded-2xl bg-background-secondary border border-white/10 text-text-secondary hover:text-text-primary hover:border-accent-warm/40 transition-all flex items-center gap-1.5 text-sm font-medium shrink-0"
+            >
+              <span className="text-base">💬</span>
+              <span className="hidden sm:inline">{t.contact.feedbackButton}</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      <ContactModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }
