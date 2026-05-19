@@ -57,6 +57,29 @@ export function useVoiceGuide() {
     window.speechSynthesis.speak(utterance);
   }, [isSupported, isEnabled, speed, stop]);
 
+  // isEnabled 게이트 없이 즉시 읽기 — 버튼 클릭 직접 호출용
+  const speakDirect = useCallback((text: string) => {
+    if (!isSupported) return;
+    stop();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = SPEED_RATES[speed];
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const koreanVoice = voices.find(v => v.lang.startsWith('ko'));
+    if (koreanVoice) {
+      utterance.voice = koreanVoice;
+      utterance.lang = 'ko-KR';
+    } else {
+      utterance.lang = 'ko-KR';
+    }
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  }, [isSupported, speed, stop]);
+
   const speakStep = useCallback((stepNumber: number, instruction: string, tip?: string) => {
     let text = `${stepNumber}단계. ${instruction}`;
     if (tip) {
@@ -64,6 +87,14 @@ export function useVoiceGuide() {
     }
     speak(text);
   }, [speak]);
+
+  const speakStepDirect = useCallback((stepNumber: number, instruction: string, tip?: string) => {
+    let text = `${stepNumber}단계. ${instruction}`;
+    if (tip) {
+      text += ` 팁: ${tip}`;
+    }
+    speakDirect(text);
+  }, [speakDirect]);
 
   const toggle = useCallback(() => {
     if (!isEnabled) {
@@ -91,7 +122,9 @@ export function useVoiceGuide() {
     setSpeed,
     toggle,
     speak,
+    speakDirect,
     speakStep,
+    speakStepDirect,
     stop,
   };
 }
