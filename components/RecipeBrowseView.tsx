@@ -727,7 +727,7 @@ export default function RecipeBrowseView({
                       {/* 음성 읽기 */}
                       {voice.isSupported && (
                         <button
-                          onClick={() => voice.speakStep(step.step_number, step.instruction, step.tip)}
+                          onClick={() => voice.speakStepDirect(step.step_number, step.instruction, step.tip)}
                           className="mt-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
                           title={t.cookMode.voiceOffTooltip}
                         >
