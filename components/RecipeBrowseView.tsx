@@ -8,6 +8,7 @@ import ShareButton from './Recipes/ShareButton';
 import { useToast } from '@/lib/toast/context';
 import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useI18n } from '@/lib/i18n/context';
+import CartIcon from '@/components/icons/CartIcon';
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -683,7 +684,7 @@ export default function RecipeBrowseView({
             disabled={addingToShoppingList}
             className="flex-shrink-0 py-4 px-5 rounded-2xl bg-background-secondary border border-white/10 text-text-primary font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-1.5"
           >
-            <span className="text-lg">🛒</span>
+            <CartIcon size={22} active />
             <span className="text-sm">{t.recipe.cartButton}</span>
           </button>
           <button
