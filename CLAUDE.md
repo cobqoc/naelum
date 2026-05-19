@@ -31,9 +31,9 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-05-18 기준)
+### dev DB 현황 (2026-05-20 기준)
 - `recipes`: 100개 (published; MAFF 2,050개 2026-05-13 삭제됨)
-- `ingredients_master`: 907개 (dev 동기화 완료 2026-05-18; prod: 740개 — 2026-05-19 카테고리 3차 감사 후 / other 0개)
+- `ingredients_master`: 907개 (dev 동기화 완료 2026-05-18; prod: **725개 approved** — 2026-05-20 재료 정리 후)
 - `shopping_list_items`: ingredient_id 컬럼 추가 완료
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
@@ -1271,6 +1271,20 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **레시피 작성 재료 자동완성 연결** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: `RecipeIngredientInput`·`IngredientAutocompleteV2`·`/api/ingredients/autocomplete` 모두 구현돼 있었으나 `IngredientsSection.tsx` 재료명 입력이 plain `<input type="text">`로 미연결 상태
+  - **`lib/constants/recipe.ts`**: `RecipeIngredient.ingredient_id?: string` 필드 추가
+  - **`IngredientsSection.tsx`**: `'use client'` 추가, `RecipeIngredientInput` 임포트, `onSelectIngredient` prop 추가, plain input → `RecipeIngredientInput` 교체
+  - **`recipes/new/page.tsx`**: `selectIngredient` 핸들러 추가 (ingredient_id + common_units 단위 자동추천), 두 API 페이로드(제출·임시저장) 모두 `ingredient_id` 포함
+  - **`app/api/recipes/route.ts` + `[id]/route.ts`**: `ingredient_id` DB insert 추가
+  - 자유 텍스트 입력도 그대로 가능 (`allowCustomIngredient = true`)
+  - 검증: lint 0 errors · build 성공
+- **ingredients_master 재료 정리 (2026-05-20)** — 완료 (prod+dev DB 직접)
+  - **pending 처리 15개**: 미소된장·정종·피시소스·젓국·라면스프·멸치육수·닭육수·다시마육수·쇠고기육수·육수·초간장·깨소스·기름·깨·참깨 → status='pending' (UI에서 숨김, DB FK 보존)
+  - **기름 → 식용유 교정**: recipe_ingredients 3건 (감자튀김·불고기찹쌀구이·효도강정) ingredient_name='식용유' + 식용유 ingredient_id로 직접 교정. 동의어 매핑 없음 — "기름"은 참기름·올리브유·식용유 모두 지칭 가능해 매핑 불가
+  - **깨 계열 정리**: 깨·참깨 pending, 통깨 approved 유지 (canonical). 깨소금은 별도 품목으로 유지
+  - **바닐라에센스**: spice → bakery 교정 (2026-05-19, prod+dev)
+  - **prod 현황**: approved **725개** / pending 962개
 - **피드백 버튼 레시피 하단 바 통합** — 완료 (2026-05-20, develop 푸시)
   - **`RecipeBrowseView.tsx`**: 장보기 버튼 우측에 💬 피드백 버튼 통합. 모바일은 아이콘만, `sm:` 이상에서 "피드백" 텍스트 추가 노출. `ContactModal` dynamic import + `feedbackOpen` 상태 추가
   - **`FloatingFeedbackButton.tsx`**: `shouldHide`에 `/recipes/*` 패턴 추가 → 레시피 상세에서 전역 플로팅 버튼 숨김 (중복 방지)

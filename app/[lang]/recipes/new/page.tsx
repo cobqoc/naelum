@@ -21,6 +21,7 @@ import { computeAutoTags } from '@/lib/recipes/autoTags';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
+import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -201,6 +202,18 @@ export default function NewRecipePage() {
   const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
+    setIngredients(updated);
+  };
+
+  const selectIngredient = (index: number, item: IngredientItem) => {
+    const updated = [...ingredients];
+    const current = updated[index];
+    updated[index] = {
+      ...current,
+      ingredient_name: item.name,
+      ingredient_id: item.id,
+      ...(item.common_units?.[0] && current.unit === '선택' ? { unit: item.common_units[0] } : {}),
+    };
     setIngredients(updated);
   };
 
@@ -566,6 +579,7 @@ export default function NewRecipePage() {
           sodium_mg: sodium ? parseInt(sodium) : null,
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
+            ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
             unit: i.unit,
             notes: i.notes.trim() || null,
@@ -638,6 +652,7 @@ export default function NewRecipePage() {
           sodium_mg: sodium ? parseInt(sodium) : null,
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
+            ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
             unit: i.unit,
             notes: i.notes.trim() || null,
@@ -742,6 +757,7 @@ export default function NewRecipePage() {
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}
             onUpdateIngredient={updateIngredient}
+            onSelectIngredient={selectIngredient}
             onImageUpload={handleIngredientsImageUpload}
             onImageRemove={handleIngredientsImageRemove}
             onDrag={handleIngredientsDrag}

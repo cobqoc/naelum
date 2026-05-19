@@ -122,9 +122,10 @@ export async function POST(request: NextRequest) {
 
   // 재료 추가
   if (ingredients && ingredients.length > 0) {
-    const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; quantity: number; unit: string; notes?: string; is_optional?: boolean }, index: number) => ({
+    const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: number; unit: string; notes?: string; is_optional?: boolean }, index: number) => ({
       recipe_id: recipe.id,
       ingredient_name: ing.ingredient_name,
+      ingredient_id: ing.ingredient_id || null,
       quantity: ing.quantity,
       unit: ing.unit,
       notes: ing.notes,

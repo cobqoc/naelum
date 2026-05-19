@@ -108,9 +108,10 @@ export async function PUT(
       }
 
       if (ingredients.length > 0) {
-        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
+        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
           recipe_id: recipeId,
           ingredient_name: ing.ingredient_name,
+          ingredient_id: ing.ingredient_id || null,
           quantity: ing.quantity,
           unit: ing.unit,
           notes: ing.notes,
