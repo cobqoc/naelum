@@ -1271,13 +1271,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
-- **레시피 작성 재료 자동완성 연결** — 완료 (2026-05-20, develop 푸시)
+- **레시피 작성 재료 자동완성 연결 + compact 모드 + dev DB 동기화** — 완료 (2026-05-20, develop 푸시)
   - **문제**: `RecipeIngredientInput`·`IngredientAutocompleteV2`·`/api/ingredients/autocomplete` 모두 구현돼 있었으나 `IngredientsSection.tsx` 재료명 입력이 plain `<input type="text">`로 미연결 상태
   - **`lib/constants/recipe.ts`**: `RecipeIngredient.ingredient_id?: string` 필드 추가
   - **`IngredientsSection.tsx`**: `'use client'` 추가, `RecipeIngredientInput` 임포트, `onSelectIngredient` prop 추가, plain input → `RecipeIngredientInput` 교체
   - **`recipes/new/page.tsx`**: `selectIngredient` 핸들러 추가 (ingredient_id + common_units 단위 자동추천), 두 API 페이로드(제출·임시저장) 모두 `ingredient_id` 포함
   - **`app/api/recipes/route.ts` + `[id]/route.ts`**: `ingredient_id` DB insert 추가
-  - 자유 텍스트 입력도 그대로 가능 (`allowCustomIngredient = true`)
+  - **compact 모드 신설** (좁은 grid cell 대응): `IngredientItemRenderer`·`IngredientAutocompleteV2Props`·`RecipeIngredientInputProps`에 `compact?: boolean` prop 추가. compact=true 시 이모지(text-2xl)·카테고리 배지·영문명 숨겨 단어 truncate 방지. `RecipeIngredientInput` 기본값 true (레시피 작성 폼은 1fr 좁은 grid). cart·홈 등 넓은 모달은 미지정으로 기존 디스플레이 유지
+  - **dev DB 동기화 (2026-05-20)**: dev approved 907 → 334. prod approved 725개 기준으로 매칭 안 되는 dev approved 573개(recipe extraction garbage: `튀김용기름파`·`체에 친 엿기름` 등) 일괄 pending. UI 자동완성에 garbage 노출 차단. 자유 텍스트 입력은 그대로 가능 (`allowCustomIngredient = true`)
   - 검증: lint 0 errors · build 성공
 - **ingredients_master 재료 정리 (2026-05-20)** — 완료 (prod+dev DB 직접)
   - **pending 처리 15개**: 미소된장·정종·피시소스·젓국·라면스프·멸치육수·닭육수·다시마육수·쇠고기육수·육수·초간장·깨소스·기름·깨·참깨 → status='pending' (UI에서 숨김, DB FK 보존)
