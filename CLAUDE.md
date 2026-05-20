@@ -1271,6 +1271,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **추천 시스템 전수 검증 + recipe_ingredients FK 백필** — 완료 (2026-05-21, prod+dev DB)
+  - **전수 검증 영역**: 매칭 알고리즘(FK+normalize+synonym+Levenshtein), 모드 분류(ready/almost/all), 동의어 매핑(라면·간장·치즈·달걀·통조림햄), 정규화·prefix 제거, 알레르기 필터링, 인덱싱, FK 커버리지
+  - **검증 결과**: 모든 영역 정상 작동. 2026-05-17 fix(prefix 오매칭 제거·almost 70% 임계값) 안정 유지
+  - **자동 백필 70개** (prod+dev): `recipe_ingredients.ingredient_id IS NULL` 중 `ingredients_master.name` 정확 매칭되는 항목 자동 백필. 양파·진간장·다진마늘·대파·식초·식용유·당근·설탕·감자·소금·마늘·다시마·참기름 등. **FK 커버리지 98.2% → 98.6%**
+  - **잔여 226개 null** (98.6%): 대부분 garbage 이름(`소금적당량`(54), `후추적당량`(13) 등) 또는 정규화 필요(`불린쌀`·`불린미역`). 텍스트 매칭(`ilike` + 동의어)으로 정상 커버
+  - **발견된 개선 여지** (버그 아님, 부가 개선): 평균 레시피 재료 11.2개 중 기본 양념(소금·물·설탕·간장·식용유·참기름·식초·후춧가루·고춧가루·깨소금) 7~8개 명시 추가 없으면 "거의 가능(70%+)" 매칭 어려움. 사용자가 양념 안 넣었을 때 산술적으로 자연스러운 결과. pantry_staples 자동 가정 옵션 향후 검토
+  - 코드 변경 없음. DB 자동 백필만
 - **콘텐츠 신고 시스템 — tip 신고 API + 인라인 ReportModal** — 완료 (2026-05-21, develop 푸시)
   - **기존 시스템 활용**: prod DB에 이미 `reports` 테이블, 레시피·사용자 신고 API, 관리자 페이지, DMCA `/copyright` 페이지·폼·API, 푸터·헤더 ⋯ 메뉴 링크, 이용약관 §5③ SLA + §8 3-Strike Rule 다 완비. 새로 만든 `content_reports` 테이블·API는 중복이라 롤백
   - **신규 추가 2개**:
