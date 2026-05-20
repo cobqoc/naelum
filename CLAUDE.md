@@ -1271,6 +1271,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **발효식품 카테고리 자체 검증 + 비발효 치즈 2개 환원** — 완료 (2026-05-20, prod+dev DB)
+  - **검증 결과**: prod fermented 49개 중 47개는 정확. 2개는 식품학상 발효 아님
+  - **리코타치즈 → dairy**: 유청 가열 응고 (whey cheese). 발효 아닌 단백질 응고
+  - **마스카르포네치즈 → dairy**: 크림에 산(시트르산·아세트산) 첨가해 응고. 발효 아님
+  - **근거**: 위키피디아 식품학 — Ricotta "recooked whey", Mascarpone "curdled with citric acid"
 - **양념&소스 탭 오분류 12개 정리** — 완료 (2026-05-20, prod+dev DB)
   - **잼·딸기잼·요리당 → condiment** (스프레드·시럽. 식약처 "절임식품>잼류" 또는 "당류". 양념·소스 아님)
   - **통깨·검은깨·들깨 → grain** (식약처 "유지종실류". 다른 견과·씨앗과 일관)
