@@ -1271,6 +1271,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **재료 추가 모달 '전체' 탭 제거** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: '전체' 탭이 사실상 "인기 60개" 탭. 페이지네이션 없어 prod approved 725개 중 ~8%만 보임. 사용자 "전체 다 못 본다" 피드백
+  - **해결**: IngredientBrowser에서 ALL_CATEGORY 제거. 디폴트 탭: 자주 있으면 자주(20개), 없으면 첫 카테고리(채소)
+  - **남는 탭**: 자주(20개 + popular 보충) · 채소·과일·육류·해산물·곡물·유제품·양념&소스·조미료·향신료·베이커리 (10개) · 검색
+  - **i18n `categoryAll` 키 유지**: 요리 도감(`/ingredients/IngredientBrowseClient.tsx`)에서 "전체" 옵션 의미 있어 유지. 재료 추가 모달만 제거
+  - 검증: lint 0 errors · build · vitest 158 passed
 - **저작권 동의 가입 페이지로 통합** — 완료 (2026-05-20, develop 푸시 / prod+dev DB 적용)
   - **이전 구현**: 레시피 작성 화면마다 저작권 동의 체크박스 (`RecipeFormFooter.tsx`). 매번 마찰 + "이용약관 제8조" 법률 용어 노출
   - **변경**: 글로벌 표준(Medium·Substack·WordPress 패턴) 따라 **가입 페이지 약관 동의로 통합**. 매 게시마다 받지 않음. 한국 약관규제법 제3조 "중요한 내용 별도 명시" 요건은 별도 체크박스로 충족

@@ -37,16 +37,20 @@ export default function IngredientBrowser({
 }: IngredientBrowserProps) {
   const { t } = useI18n();
 
-  const ALL_CATEGORY = { id: 'all', name: t.ingredient.categoryAll, icon: '🍽️' };
   const FREQUENT_CATEGORY = { id: 'frequent', name: t.ingredient.categoryFrequent, icon: '⭐' };
 
-  // 자주 쓰는 재료/인기 프리셋이 있으면 첫 탭을 "자주"로, 없으면 "전체".
+  // 자주 쓰는 재료/인기 프리셋이 있으면 첫 탭을 "자주", 없으면 첫 카테고리(채소).
+  // "전체" 탭은 2026-05-20 제거 (인기 60개만 보여 거짓말. 검색·자주·카테고리로 대체)
   const hasFrequent = frequentItems.length > 0 || popularItems.length > 0;
+  const categoryTabs = MODAL_INGREDIENT_CATEGORIES.map(c => ({
+    ...c,
+    name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id,
+  }));
   const CATEGORIES = hasFrequent
-    ? [FREQUENT_CATEGORY, ALL_CATEGORY, ...MODAL_INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))]
-    : [ALL_CATEGORY, ...MODAL_INGREDIENT_CATEGORIES.map(c => ({ ...c, name: (t.ingredient.categoryLabels as Record<string, string>)[c.id] ?? c.id }))];
+    ? [FREQUENT_CATEGORY, ...categoryTabs]
+    : categoryTabs;
 
-  const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : 'all');
+  const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : categoryTabs[0].id);
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(!hasFrequent);
 
@@ -127,9 +131,8 @@ export default function IngredientBrowser({
       return;
     }
 
-    // 일반 카테고리 탭: 서버 API 호출
-    const params = new URLSearchParams({ limit: '60', sort: 'search_count' });
-    if (activeCategory !== 'all') params.set('categories', activeCategory);
+    // 일반 카테고리 탭: 서버 API 호출 (categories 항상 명시 — 전체 탭 제거됨)
+    const params = new URLSearchParams({ limit: '60', sort: 'search_count', categories: activeCategory });
 
     fetch(`/api/ingredients/browse?${params}`)
       .then(r => r.json())
