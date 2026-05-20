@@ -1271,6 +1271,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **통조림 햄 제품 통일 — 라면 패턴 적용** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
+  - **웹 검증**: "통조림 햄" 일반명사. 구체 제품명은 스팸·리챔·로스팜·앙코르햄. "슬라이스햄"은 청정원·진주햄에서 정식 제품명으로 판매 → 유지
+  - **신규 추가 3개** (prod+dev): 리챔·로스팜·앙코르햄 (`category=meat, is_processed=true, emoji=🥫`)
+  - **"통조림 햄" pending** (일반명사 숨김)
+  - **동의어 매핑** (`INGREDIENT_SYNONYMS` + `SEARCH_EXPANSIONS`): `통조림 햄` ↔ 스팸·리챔·로스팜·앙코르햄 양방향
 - **달걀류 통합 — 모달엔 "달걀" 1개만** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
   - **문제**: 유제품 탭에 계란·달걀·노른자·계란노른자·달걀노른자·계란흰자·달걀흰자 7개가 다 같은 것 (계란=달걀 동의어, 노른자·흰자 중복)
   - **해결**: `달걀` 메인(표준국어대사전 표준어·식약처 표기) 1개만 approved. 나머지 6개 pending → 모달 숨김, 도감 노출

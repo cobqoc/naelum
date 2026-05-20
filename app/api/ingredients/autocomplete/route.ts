@@ -18,6 +18,8 @@ const SEARCH_EXPANSIONS: Record<string, string[]> = {
   '계란': ['달걀'],
   '노른자': ['달걀'],
   '흰자': ['달걀'],
+  // "통조림 햄"은 일반명사 — 검색 시 구체 제품 노출
+  '통조림 햄': ['스팸', '리챔', '로스팜', '앙코르햄'],
 };
 
 // GET /api/ingredients/autocomplete - 재료 자동완성
