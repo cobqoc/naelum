@@ -1271,6 +1271,16 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **콘텐츠 신고 시스템 — tip 신고 API + 인라인 ReportModal** — 완료 (2026-05-21, develop 푸시)
+  - **기존 시스템 활용**: prod DB에 이미 `reports` 테이블, 레시피·사용자 신고 API, 관리자 페이지, DMCA `/copyright` 페이지·폼·API, 푸터·헤더 ⋯ 메뉴 링크, 이용약관 §5③ SLA + §8 3-Strike Rule 다 완비. 새로 만든 `content_reports` 테이블·API는 중복이라 롤백
+  - **신규 추가 2개**:
+    - `/api/tip/[id]/report` — 팁 신고 API (레시피 패턴 복사, `reports.reported_type='tip'`)
+    - `components/Common/ReportModal.tsx` — 인라인 신고 모달 (사유 선택·설명·24~48시간 SLA 안내·저작권 선택 시 `/copyright` 정식 양식 안내)
+  - **레시피·팁 페이지 통합**: `RecipeBrowseView`·`tip/[id]/page.tsx` 헤더에 🚨 신고 버튼 추가 (자기 콘텐츠 아닐 때만 노출)
+  - **POPULAR_ITEM_NAMES 표준명**: `계란` → `달걀` (모달 표준명과 일관)
+  - **i18n 8 locale**: `report.{title,subtitle,reasonSpam,reasonInappropriate,reasonCopyright,reasonFalseInfo,reasonOther,copyrightNotice,copyrightLink,descLabel,descPlaceholder,optional,sla,submit,submitting,successSubmit,errorSubmit,warnReason,menuLabel}` 19개 키
+  - **e2e fix**: `logged-in-home.spec.ts:371` 양파·마늘·계란 → 양파·마늘·달걀 (계란 pending 후 모달 표준명 따라감)
+  - 검증: lint 0 errors · build · vitest 158 passed · **e2e fresh build 400 passed · 0 failed** (3.7분)
 - **곡물류 카테고리 145개 정리** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
   - **pending 11개**:
     - 중복/방언 4개: 농마(=녹말 방언)·길금가루(=엿기름)·흰떡(=가래떡)·깐호두(=호두)

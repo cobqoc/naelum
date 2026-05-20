@@ -367,7 +367,8 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
 
   // ── 시나리오 F: 모달 → 여러 재료 한 번에 추가 (handleBatchSubmit for loop) ───
   // 회귀: 다중 추가 시 첫 호출 후 모달 닫혀도 batch가 끝까지 진행되며 모두 DB 저장.
-  test('모달 → 여러 재료 한 번에 추가 (양파·마늘·계란) → DB 3개 저장', async ({ authenticatedPage, testUser }) => {
+  // 2026-05-21: 계란 → 달걀로 변경 (계란 pending 처리됨, 달걀이 모달에 노출되는 표준명)
+  test('모달 → 여러 재료 한 번에 추가 (양파·마늘·달걀) → DB 3개 저장', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
     await page.goto('/');
     await page.waitForLoadState('networkidle');
@@ -377,8 +378,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     // 3개 선택
     await page.locator('button:has-text("양파")').first().click();
     await page.locator('button:has-text("마늘")').first().click();
-    // "유제품·계란" 탭 버튼과 구별: 탭명에 "유제품" 포함 → 제외
-    await page.locator('button:has-text("계란")').filter({ hasNotText: '유제품' }).first().click();
+    await page.locator('button:has-text("달걀")').first().click();
     // 저장
     await page.locator('button:has-text("3개 추가")').first().click();
     await page.waitForTimeout(2000);
@@ -390,7 +390,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
       .eq('user_id', testUser.userId);
     expect(rows).toHaveLength(3);
     const names = rows?.map(r => r.ingredient_name).sort();
-    expect(names).toEqual(['계란', '마늘', '양파']);
+    expect(names).toEqual(['달걀', '마늘', '양파']);
     // 모두 sanitize 적용 — expiry null, purchase_date = 오늘(자동 채우기)
     for (const r of rows ?? []) {
       expect(r.expiry_date).toBeNull();

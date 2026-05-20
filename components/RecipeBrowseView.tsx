@@ -15,6 +15,7 @@ import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
+const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -105,6 +106,7 @@ export default function RecipeBrowseView({
   const [memoText, setMemoText] = useState(saveNotes || '');
   const [addingToShoppingList, setAddingToShoppingList] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [excludeOwnedInCart, setExcludeOwnedInCart] = useState(false);
 
   // 인분 조절
@@ -303,6 +305,14 @@ export default function RecipeBrowseView({
             title={recipe.title}
             description={recipe.description}
           />
+          <button
+            onClick={() => setReportOpen(true)}
+            aria-label={t.report.menuLabel}
+            title={t.report.menuLabel}
+            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-tertiary transition"
+          >
+            🚨
+          </button>
           <button
             onClick={onToggleLike}
             disabled={likeLoading || !onToggleLike}
@@ -873,6 +883,12 @@ export default function RecipeBrowseView({
       </div>
 
       <ContactModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        contentType="recipe"
+        contentId={recipe.id}
+      />
     </div>
   );
 }
