@@ -67,6 +67,7 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'seafood', name: '해산물', icon: '🐟' },
   { id: 'grain', name: '곡물류', icon: '🌾' },
   { id: 'dairy', name: '유제품', icon: '🧀' },
+  { id: 'fermented', name: '발효식품', icon: '🫙' },
   { id: 'seasoning', name: '양념&소스', icon: '🥫' },
   { id: 'condiment', name: '조미료', icon: '🧂' },
   { id: 'spice', name: '향신료', icon: '🌶️' },
