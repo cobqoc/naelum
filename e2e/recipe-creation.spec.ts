@@ -135,7 +135,7 @@ test.describe('레시피 작성', () => {
    * 1587줄 NewRecipePage 를 섹션 컴포넌트로 추출할 때 가장 깨지기 쉬운 것:
    *  (1) 동적 추가 버튼 핸들러 wiring (addStep / addIngredients)
    *  (2) controlled input ↔ state 바인딩
-   *  (3) copyright 동의 게이트 → 제출 버튼 활성화
+   *  (3) 제출 버튼 활성 상태 (2026-05-20: copyright 동의는 가입 페이지로 통합·게이트 제거)
    *  (4) 추출된 TagsField 의 태그 추가/삭제
    *
    * /recipes/new 는 루트 'use client' + useSearchParams() 라 app/loading.tsx
@@ -169,10 +169,10 @@ test.describe('레시피 작성', () => {
     await lastStep.fill('새 단계 설명')
     await expect(lastStep).toHaveValue('새 단계 설명')
 
-    // (1) 재료 5개 추가 핸들러 — 재료 준비 섹션 input 개수 증가
+    // (1) 재료 추가 핸들러 — 재료 준비 섹션 input 개수 증가 (2026-05-20: 5개씩 → 1개씩)
     const ingSection = page.locator('section').filter({ hasText: '재료 준비' })
     const ingBefore = await ingSection.locator('input').count()
-    await page.getByRole('button', { name: '+ 재료 5개 추가' }).click()
+    await page.getByRole('button', { name: '+ 재료 추가' }).click()
     await expect(async () => {
       expect(await ingSection.locator('input').count()).toBeGreaterThan(ingBefore)
     }).toPass({ timeout: 5000 })
@@ -191,14 +191,11 @@ test.describe('레시피 작성', () => {
     await chip.getByRole('button', { name: '×' }).click()
     await expect(chip).toHaveCount(0)
 
-    // (3) copyright 게이트: 미동의 시 제출 비활성 → 동의 시 활성
+    // (3) 제출 버튼 — 2026-05-20: copyright 동의는 가입 페이지로 통합·게이트 제거. 항상 활성
     const submitBtn = page.getByRole('button', { name: /레시피 등록하기/ })
-    await expect(submitBtn).toBeDisabled()
-    const copyright = page.locator('input[type="checkbox"]').last()
-    await copyright.check()
     await expect(submitBtn).toBeEnabled()
 
-    // 임시저장 버튼 wiring (RecipeFormFooter 추출 회귀 가드) — copyright 무관 항상 활성
+    // 임시저장 버튼 wiring (RecipeFormFooter 추출 회귀 가드)
     const draftBtn = page.getByRole('button', { name: '임시저장', exact: true })
     await expect(draftBtn).toBeVisible()
     await expect(draftBtn).toBeEnabled()
