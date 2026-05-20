@@ -1271,6 +1271,19 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **요리 도감 전수 검사 — 카테고리 오분류 25개 + 부산물 2개 pending** — 완료 (2026-05-20, prod+dev DB)
+  - **전수 검사 대상**: prod approved 721개 13개 카테고리. 식약처 식품유형 기준 + 사용자 직관 + 한국 마트 분류 패턴
+  - **이동 25개:**
+    - bakery → condiment: 바닐라에센스 (베이킹 향료, 빵 아님)
+    - fruit → grain: 밤·생밤·물밤·은행 (식약처 유지종실류, 깐밤과 통일)
+    - fruit → beverage: 감주·코코넛밀크·코코넛우유·코코넛워터·사과주스·오렌지주스·라임주스·레몬주스·포도주스·파인애플주스
+    - grain → condiment: 땅콩버터·젤라틴 (스프레드·응고제)
+    - grain → seafood: 우무·한천·한천가루 (우뭇가사리 = 해조류 응고제)
+    - grain → fermented: 템페 (인도네시아 발효 콩)
+    - seafood → fermented: 까나리액젓·멸치젓·새우젓·명란젓·액젓 (식약처 "젓갈류" = 발효식품)
+  - **pending 2개**: 녹말물·쌀뜨물 (조리 부산물, 재료 아님)
+  - **검증 OK**: 한식 발효 14개, 김치류 12개, 발효치즈 14개, 발효 유제품 4개, 양조식초 3개, 가공육·통조림류, 채소·과일·곡물 대부분 정확
+  - **유지 (의도)**: 와인·맥주·청주는 beverage (음료 직관), 즙류(배즙·사과즙·석류즙·레몬즙)는 fruit (조리용 vs 음료 모호), 즉석식품(콩물 등) 비통합
 - **발효식품 카테고리 자체 검증 + 비발효 치즈 2개 환원** — 완료 (2026-05-20, prod+dev DB)
   - **검증 결과**: prod fermented 49개 중 47개는 정확. 2개는 식품학상 발효 아님
   - **리코타치즈 → dairy**: 유청 가열 응고 (whey cheese). 발효 아닌 단백질 응고
