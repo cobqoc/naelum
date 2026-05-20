@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
+import dynamic from 'next/dynamic';
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import Header from '@/components/Header';
 import { createClient } from '@/lib/supabase/client';
+import { useI18n } from '@/lib/i18n/context';
+
+const ReportModal = dynamic(() => import('@/components/Common/ReportModal'), { ssr: false });
 
 const CATEGORY_ICONS: Record<string, string> = {
   '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
@@ -41,10 +45,12 @@ export default function TipDetailPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const { t } = useI18n();
   const [knowhow, setKnowhow] = useState<Knowhow | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,16 +132,25 @@ export default function TipDetailPage() {
               <span>·</span>
               <span>👁 {knowhow.views_count}</span>
             </div>
-            {isAuthor && (
-              <div className="flex gap-2">
+            <div className="flex gap-3 items-center">
+              {isAuthor ? (
                 <button
                   onClick={handleDelete} disabled={deleting}
                   className="text-xs text-error hover:underline disabled:opacity-50"
                 >
                   {deleting ? '삭제 중...' : '삭제'}
                 </button>
-              </div>
-            )}
+              ) : currentUserId ? (
+                <button
+                  onClick={() => setReportOpen(true)}
+                  aria-label={t.report.menuLabel}
+                  title={t.report.menuLabel}
+                  className="text-text-muted hover:text-text-primary text-sm"
+                >
+                  🚨
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {knowhow.description && (
@@ -181,6 +196,13 @@ export default function TipDetailPage() {
           </div>
         )}
       </main>
+
+      <ReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        contentType="tip"
+        contentId={knowhow.id}
+      />
     </div>
   );
 }
