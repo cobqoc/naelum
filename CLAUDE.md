@@ -1271,6 +1271,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **레시피·팁 작성 UX 1차 개선 (자동저장·sentinel·재료행)** — 완료 (2026-05-20, develop 푸시)
+  - **`lib/hooks/useAutosave.ts` 신설**: localStorage debounce 자동저장(1.5초). `useAutosave(key, data, {enabled})` + `loadAutosave<T>(key, maxAgeMs)` + `clearAutosave(key)`. 게시·임시저장 성공 시 clear 호출 필수. 7일 만료
+  - **레시피 작성 (`recipes/new/page.tsx`)**: AUTOSAVE_KEY `naelum_recipe_new_autosave_v1`. 27개 state 전수 스냅샷. remix 모드는 비활성. mount 시 이전 스냅샷+title 있으면 복원 banner 표시 → 복원/버리기 선택. 게시(`692`)·임시저장(`762`) 성공 시 clear
+  - **팁 작성 (`tip/new/page.tsx`)**: AUTOSAVE_KEY `naelum_tip_new_autosave_v1`. 동일 패턴. **부가 수정**: `alert()` 2건 → `useToast`로 통일, `placeholder="예: 10"` 하드코딩 → `t.tipForm.durationPlaceholder` 8 locale, `user!.id` non-null assertion → null 체크 후 `/login` 리다이렉트
+  - **sentinel `'선택'` DB 누수 차단**: 레시피 unit이 `'선택'` (placeholder)인 채로 제출되면 DB에 한글 `'선택'` 저장되던 문제 → submit 두 곳(`568`·`654`) `(i.unit && i.unit !== '선택') ? i.unit : null`로 필터. 화면 표시는 이미 `t.quickAdd.unitLabels['선택']`로 localized (en="Select" 등)
+  - **재료 빈 행 5→2 + 1개씩 추가**: 초기 `Array(5)` → `Array(2)` (빈 폼 압도감 감소). `addIngredients` 5개씩 → 1개씩. `removeIngredient` 최소 5행 유지 → 최소 1행. 버튼 라벨 `t.recipeForm.addFiveIngredients` → `addIngredient` ("+ 재료 추가") 8 locale
+  - **i18n 키 8 locale 추가**: `recipeForm.{addIngredient, autosaveSaved, autosaveRestoreBanner, autosaveRestore, autosaveDiscard, unitPlaceholder}`, `tipForm.durationPlaceholder`
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
 - **레시피 작성 재료 자동완성 연결 + compact 모드 + dev DB 동기화** — 완료 (2026-05-20, develop 푸시)
   - **문제**: `RecipeIngredientInput`·`IngredientAutocompleteV2`·`/api/ingredients/autocomplete` 모두 구현돼 있었으나 `IngredientsSection.tsx` 재료명 입력이 plain `<input type="text">`로 미연결 상태
   - **`lib/constants/recipe.ts`**: `RecipeIngredient.ingredient_id?: string` 필드 추가

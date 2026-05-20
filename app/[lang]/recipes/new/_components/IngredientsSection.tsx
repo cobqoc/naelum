@@ -238,12 +238,12 @@ export default function IngredientsSection({
       })}
       </div>
 
-      {/* 재료 추가 버튼 */}
+      {/* 재료 추가 버튼 — 1개씩 (빈 5행 압도감 줄임) */}
       <button
         onClick={onAddIngredients}
         className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
       >
-        {tf.addFiveIngredients}
+        {tf.addIngredient}
       </button>
     </div>
   );

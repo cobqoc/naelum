@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import Header from '@/components/Header';
 import { useI18n } from '@/lib/i18n/context';
+import { useToast } from '@/lib/toast/context';
+import { useAutosave, loadAutosave, clearAutosave } from '@/lib/hooks/useAutosave';
 
 const CATEGORIES = ['손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
 const CATEGORY_ICONS: Record<string, string> = {
@@ -26,6 +28,7 @@ export default function TipNewPage() {
   const router = useRouter();
   const supabase = createClient();
   const { t } = useI18n();
+  const toast = useToast();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,10 +44,59 @@ export default function TipNewPage() {
   const [draftSubmitting, setDraftSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // 자동저장 — localStorage 백업 (게시·임시저장 시 clear)
+  const AUTOSAVE_KEY = 'naelum_tip_new_autosave_v1';
+  const AUTOSAVE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+  const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
+  type AutosaveSnapshot = {
+    title: string; description: string; category: string;
+    durationMinutes: string; isPublic: boolean;
+    thumbnail: string | null;
+    steps: Step[]; tags: string[];
+  };
+  const autosaveSnapshotRef = useRef<AutosaveSnapshot | null>(null);
+
+  const autosaveData = useMemo<AutosaveSnapshot>(() => ({
+    title, description, category, durationMinutes, isPublic, thumbnail,
+    steps, tags,
+  }), [title, description, category, durationMinutes, isPublic, thumbnail, steps, tags]);
+
+  useAutosave(AUTOSAVE_KEY, autosaveData, { enabled: !autosaveRestoreVisible });
+
+  useEffect(() => {
+    const saved = loadAutosave<AutosaveSnapshot>(AUTOSAVE_KEY, AUTOSAVE_MAX_AGE);
+    if (saved && saved.data.title?.trim()) {
+      autosaveSnapshotRef.current = saved.data;
+      setAutosaveRestoreVisible(true);
+    }
+  }, []);
+
+  const handleRestoreAutosave = () => {
+    const s = autosaveSnapshotRef.current;
+    if (!s) return;
+    setTitle(s.title || '');
+    setDescription(s.description || '');
+    setCategory(s.category || '기타');
+    setDurationMinutes(s.durationMinutes || '');
+    setIsPublic(s.isPublic !== false);
+    if (s.thumbnail) setThumbnail(s.thumbnail);
+    if (Array.isArray(s.steps) && s.steps.length > 0) {
+      setSteps(s.steps.map(st => ({ ...st, uploading: false })));
+    }
+    if (Array.isArray(s.tags)) setTags(s.tags);
+    setAutosaveRestoreVisible(false);
+  };
+
+  const handleDiscardAutosave = () => {
+    clearAutosave(AUTOSAVE_KEY);
+    autosaveSnapshotRef.current = null;
+    setAutosaveRestoreVisible(false);
+  };
+
   // 썸네일 업로드
   const handleThumbnailUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) { alert(t.tipForm.errorImageSize); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
 
     setThumbnailUploading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,7 +114,7 @@ export default function TipNewPage() {
   // 단계 이미지 업로드
   const handleStepImageUpload = async (idx: number, file: File) => {
     if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) { alert(t.tipForm.errorImageSize); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
 
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: true } : s));
     const { data: { user } } = await supabase.auth.getUser();
@@ -115,6 +167,7 @@ export default function TipNewPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || t.tipForm.errorGeneric); return; }
+      clearAutosave(AUTOSAVE_KEY);
       router.push(`/tip/${data.tip.id}`);
     } catch {
       setError(t.tipForm.errorGeneric);
@@ -147,7 +200,9 @@ export default function TipNewPage() {
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user!.id).maybeSingle();
+      if (!user) { router.push('/login'); return; }
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      clearAutosave(AUTOSAVE_KEY);
       router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch {
       setError(t.tipForm.errorGeneric);
@@ -164,6 +219,32 @@ export default function TipNewPage() {
           <Link href="/" className="text-text-muted hover:text-text-primary transition-colors">←</Link>
           <h1 className="text-2xl font-bold">{t.tipForm.pageTitle}</h1>
         </div>
+
+        {/* 자동저장 복원 배너 */}
+        {autosaveRestoreVisible && (
+          <div className="mb-6 rounded-xl bg-accent-warm/10 border border-accent-warm/30 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="text-2xl">💾</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-text-primary">{t.recipeForm.autosaveRestoreBanner}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleRestoreAutosave}
+                className="px-4 py-2 rounded-lg bg-accent-warm text-background-primary text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                {t.recipeForm.autosaveRestore}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardAutosave}
+                className="px-4 py-2 rounded-lg bg-background-tertiary text-text-secondary text-sm font-medium hover:text-text-primary transition-colors"
+              >
+                {t.recipeForm.autosaveDiscard}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* 썸네일 */}
@@ -217,7 +298,7 @@ export default function TipNewPage() {
               <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.durationLabel}</label>
               <input
                 type="number" value={durationMinutes} onChange={e => setDurationMinutes(e.target.value)}
-                placeholder="예: 10"
+                placeholder={t.tipForm.durationPlaceholder}
                 min={1} max={999}
                 className="w-full bg-background-secondary border border-white/10 rounded-xl px-4 py-3 text-text-primary outline-none focus:border-accent-warm/50 transition-colors"
               />
