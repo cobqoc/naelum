@@ -165,6 +165,8 @@ export const ja = {
     termsNotice: '規約に同意しないとサービスをご利用いただけません',
     termsOptionalLabel: '(任意)',
     termsPrivacyLabel: 'プライバシーポリシーに同意',
+    termsCopyrightLabel: '著作権条項に同意',
+    termsCopyrightDesc: '投稿するレシピ・コツが自作または権利者の許諾を得たコンテンツであることを確認します（利用規約第8条）',
     termsRequired: '必須の規約に同意してください。',
     birthDateLabel: '生年月日',
     birthDateRequired: '生年月日を入力してください。',

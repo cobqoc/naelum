@@ -165,6 +165,8 @@ export const it = {
     termsNotice: 'Non puoi usare il servizio senza accettare i termini',
     termsOptionalLabel: '(Opzionale)',
     termsPrivacyLabel: 'Accetta l\'informativa sulla privacy',
+    termsCopyrightLabel: 'Accetta la clausola sul copyright',
+    termsCopyrightDesc: 'Confermo che le ricette e i consigli che pubblico sono opere mie o contenuti per cui ho l\'autorizzazione (Termini §8)',
     termsRequired: 'Accetta i termini richiesti.',
     birthDateLabel: 'Data di nascita',
     birthDateRequired: 'Inserisci la tua data di nascita.',

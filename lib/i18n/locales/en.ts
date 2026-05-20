@@ -165,6 +165,8 @@ export const en = {
     termsNotice: 'You cannot use the service without agreeing to the terms',
     termsOptionalLabel: '(Optional)',
     termsPrivacyLabel: 'Agree to Privacy Policy',
+    termsCopyrightLabel: 'Agree to Copyright Clause',
+    termsCopyrightDesc: 'I confirm that recipes and tips I post are my original work or content I have permission to share (Terms §8)',
     termsRequired: 'Please agree to the required terms.',
     birthDateLabel: 'Date of Birth',
     birthDateRequired: 'Please enter your date of birth.',

@@ -165,6 +165,8 @@ export const ko = {
     termsNotice: '약관에 동의하지 않으시면 서비스를 이용하실 수 없습니다',
     termsOptionalLabel: '(선택)',
     termsPrivacyLabel: '개인정보처리방침 동의',
+    termsCopyrightLabel: '저작권 조항 동의',
+    termsCopyrightDesc: '게시하는 레시피·팁이 본인 창작물이거나 저작권자 허락을 받은 콘텐츠임을 확인합니다 (이용약관 제8조)',
     termsRequired: '필수 약관에 동의해주세요.',
     birthDateLabel: '생년월일',
     birthDateRequired: '생년월일을 입력해주세요.',

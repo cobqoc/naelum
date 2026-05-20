@@ -165,6 +165,8 @@ export const zh = {
     termsNotice: '不同意条款将无法使用服务',
     termsOptionalLabel: '(可选)',
     termsPrivacyLabel: '同意隐私政策',
+    termsCopyrightLabel: '同意版权条款',
+    termsCopyrightDesc: '我确认发布的菜谱和窍门是原创内容或已获得版权方授权（使用条款第8条）',
     termsRequired: '请同意必要条款。',
     birthDateLabel: '出生日期',
     birthDateRequired: '请输入您的出生日期。',

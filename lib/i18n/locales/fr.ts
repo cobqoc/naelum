@@ -165,6 +165,8 @@ export const fr = {
     termsNotice: 'Vous ne pouvez pas utiliser le service sans accepter les conditions',
     termsOptionalLabel: '(Optionnel)',
     termsPrivacyLabel: 'Accepter la politique de confidentialité',
+    termsCopyrightLabel: 'Accepter la clause de droit d\'auteur',
+    termsCopyrightDesc: 'Je confirme que les recettes et astuces que je publie sont mes œuvres ou des contenus dont j\'ai l\'autorisation (CGU §8)',
     termsRequired: 'Veuillez accepter les conditions requises.',
     birthDateLabel: 'Date de naissance',
     birthDateRequired: 'Veuillez saisir votre date de naissance.',

@@ -34,7 +34,6 @@ export default function NewRecipePage() {
   const tf = t.recipeForm;
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
-  const [copyrightAgreed, setCopyrightAgreed] = useState(false);
   const [remixSource, setRemixSource] = useState<{ id: string; title: string; author: string } | null>(null);
 
   // 기본 정보
@@ -973,8 +972,6 @@ export default function NewRecipePage() {
 
         <RecipeFormFooter
           tf={tf}
-          copyrightAgreed={copyrightAgreed}
-          setCopyrightAgreed={setCopyrightAgreed}
           loading={loading}
           draftLoading={draftLoading}
           onDraft={handleDraft}

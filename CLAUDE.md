@@ -1271,6 +1271,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **저작권 동의 가입 페이지로 통합** — 완료 (2026-05-20, develop 푸시 / prod+dev DB 적용)
+  - **이전 구현**: 레시피 작성 화면마다 저작권 동의 체크박스 (`RecipeFormFooter.tsx`). 매번 마찰 + "이용약관 제8조" 법률 용어 노출
+  - **변경**: 글로벌 표준(Medium·Substack·WordPress 패턴) 따라 **가입 페이지 약관 동의로 통합**. 매 게시마다 받지 않음. 한국 약관규제법 제3조 "중요한 내용 별도 명시" 요건은 별도 체크박스로 충족
+  - **DB 마이그레이션** `20260520_copyright_agreement.sql`: `profiles.copyright_agreed_at TIMESTAMPTZ` 컬럼 추가 (audit trail). **dev+prod 적용 완료**
+  - **`lib/auth/profile.ts`**: `ProfileInsertData.copyrightAgreed?: boolean` 추가. `createProfile`·`beginOnboarding` 에서 `copyright_agreed_at = now` 기록
+  - **가입 페이지 양쪽 적용**:
+    - `signup/set-password/page.tsx` (이메일 가입): `agreedToCopyright` state·체크박스·validation 추가. master "전체 동의" 토글 포함
+    - `auth/terms-agreement/page.tsx` (OAuth 가입): 동일 패턴
+  - **레시피 작성 화면 정리**: `RecipeFormFooter.tsx` 저작권 박스·`copyrightAgreed` prop·게이트 로직 제거 (76→43줄). `recipes/new/page.tsx` state 제거
+  - **i18n 8 locale**: `auth.termsCopyrightLabel`·`termsCopyrightDesc` 추가
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
 - **레시피·팁 작성 UX 1차 개선 (자동저장·sentinel·재료행)** — 완료 (2026-05-20, develop 푸시)
   - **`lib/hooks/useAutosave.ts` 신설**: localStorage debounce 자동저장(1.5초). `useAutosave(key, data, {enabled})` + `loadAutosave<T>(key, maxAgeMs)` + `clearAutosave(key)`. 게시·임시저장 성공 시 clear 호출 필수. 7일 만료
   - **레시피 작성 (`recipes/new/page.tsx`)**: AUTOSAVE_KEY `naelum_recipe_new_autosave_v1`. 27개 state 전수 스냅샷. remix 모드는 비활성. mount 시 이전 스냅샷+title 있으면 복원 banner 표시 → 복원/버리기 선택. 게시(`692`)·임시저장(`762`) 성공 시 clear

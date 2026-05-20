@@ -13,6 +13,8 @@ export interface ProfileInsertData {
   termsAgreed?: boolean;
   /** 개인정보처리방침 동의 여부 — true일 때만 privacy_agreed_at 기록 */
   privacyAgreed?: boolean;
+  /** 저작권 조항 동의 여부 — true일 때만 copyright_agreed_at 기록 */
+  copyrightAgreed?: boolean;
   /** 생년월일 YYYY-MM-DD (선택 제공) */
   birthDate?: string | null;
   onboardingCompleted?: boolean;
@@ -41,6 +43,7 @@ export async function createProfile(
   // GDPR Art. 7 감사 기록 — 동의 시점 저장
   if (data.termsAgreed) row.terms_agreed_at = now;
   if (data.privacyAgreed) row.privacy_agreed_at = now;
+  if (data.copyrightAgreed) row.copyright_agreed_at = now;
   if (data.birthDate) row.birth_date = data.birthDate;
 
   const { error } = await supabase.from('profiles').insert(row);
@@ -68,7 +71,7 @@ export async function beginOnboarding(
   supabase: SupabaseClient,
   userId: string,
   marketingConsent: boolean,
-  options?: { termsAgreed?: boolean; privacyAgreed?: boolean; birthDate?: string | null }
+  options?: { termsAgreed?: boolean; privacyAgreed?: boolean; copyrightAgreed?: boolean; birthDate?: string | null }
 ): Promise<{ error?: string }> {
   const now = new Date().toISOString();
   const update: Record<string, unknown> = {
@@ -79,6 +82,7 @@ export async function beginOnboarding(
   };
   if (options?.termsAgreed) update.terms_agreed_at = now;
   if (options?.privacyAgreed) update.privacy_agreed_at = now;
+  if (options?.copyrightAgreed) update.copyright_agreed_at = now;
   if (options?.birthDate) update.birth_date = options.birthDate;
 
   const { error } = await supabase

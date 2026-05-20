@@ -165,6 +165,8 @@ export const de = {
     termsNotice: 'Ohne Zustimmung zu den Bedingungen können Sie den Dienst nicht nutzen',
     termsOptionalLabel: '(Optional)',
     termsPrivacyLabel: 'Datenschutzrichtlinie zustimmen',
+    termsCopyrightLabel: 'Urheberrechtsklausel zustimmen',
+    termsCopyrightDesc: 'Ich bestätige, dass meine veröffentlichten Rezepte und Tipps eigene Werke oder mit Erlaubnis geteilte Inhalte sind (AGB §8)',
     termsRequired: 'Bitte stimmen Sie den erforderlichen Bedingungen zu.',
     birthDateLabel: 'Geburtsdatum',
     birthDateRequired: 'Bitte gib dein Geburtsdatum ein.',
