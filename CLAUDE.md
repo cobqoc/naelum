@@ -1271,6 +1271,15 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **가공식품 탭 신설 — 이중 카테고리 시스템** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **컨셉**: 도감(`/ingredients`)은 정확한 세분화 유지(스팸=meat, 라면=grain), 재료 추가 모달은 "가공식품" 1개 탭으로 광범위 묶음. 사용자 멘탈 모델("스팸 어디 있지?") vs 데이터 정확성 양쪽 만족
+  - **DB 마이그레이션** `20260520_is_processed_column.sql`: `ingredients_master.is_processed BOOLEAN NOT NULL DEFAULT false`. dev+prod 적용
+  - **가공식품 39개 마킹 (prod)**: 라면·너구리·콘플레이크·만두 / 스팸·햄·통조림햄·슬라이스햄·소시지·비엔나·베이컨·살라미·초리조·프로슈토·판체타·페퍼로니 / 참치캔·꽁치통조림·골뱅이통조림·맛살·게맛살·크래미·칵테일새우 / 캔옥수수·홀토마토·후루츠칵테일 / 돈까스소스·바베큐소스·칠리소스·핫소스·케첩·마요네즈·머스터드·허니머스터드·우스터소스·두반장·쌈장·초고추장·맛간장
+  - **`MODAL_INGREDIENT_CATEGORIES`**: 기존 9개 + `{ id: 'processed', name: '가공식품', icon: '🥫' }` → 10개. `INGREDIENT_CATEGORIES`(도감)는 그대로
+  - **browse API**: `categories=processed` → `is_processed=true` 필터. 일반 카테고리 + 모달 컨텍스트(`includePending=false`) 시 `is_processed=false` 추가 필터 → 가공식품 중복 노출 차단 (스팸은 가공식품 탭에서만, 육류 탭에는 정육만)
+  - **도감(`includePending=true`)은 영향 없음** — 스팸은 육류 카테고리에 그대로 표시 (정확한 분류 유지)
+  - **i18n 8 locale**: `ingredient.categoryLabels.processed` + `cart.categoryLabels.processed` 양쪽
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed · e2e fresh build **400 passed · 2 skipped · 0 failed** (3.7분)
 - **자주 탭 limit 20→40 + 양념장 완전 삭제** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
   - **자주 탭 확장**: `IngredientForm.tsx` `favorites.slice(0, 20)` → `40`, `IngredientBrowser.tsx` `frequentItems.slice(0, 20)` → `40`. API `useFavorites(50)` 그대로. 자주 쓰는 재료 30~40개 사용자도 chip에서 직접 발견 가능
   - **양념장 완전 삭제 (prod+dev)**: garbage 패턴 — description NULL, 단일 재료 아닌 혼합물(간장+마늘+참기름+등), 2개 레시피만 참조. **pending은 도감(`includePending=true`)에서 보이므로 부족 → DELETE**. FK `ON DELETE SET NULL`로 recipe_ingredients 2건의 ingredient_id만 NULL 됨, 텍스트 "양념장"은 레시피 본문 보존

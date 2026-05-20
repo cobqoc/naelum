@@ -40,10 +40,22 @@ export async function GET(request: NextRequest) {
       }
 
       // 카테고리 필터
+      // - 'processed' (가공식품): is_processed=true 필터
+      // - 일반 카테고리(meat·grain 등): category=X + is_processed=false (가공식품 중복 노출 차단)
+      //   → 도감(/ingredients)은 excludeProcessed 미적용·기존 category 기준 그대로
       if (categoriesParam) {
         const categories = categoriesParam.split(',').filter(Boolean);
         if (categories.length > 0) {
-          dbQuery = dbQuery.in('category', categories);
+          if (categories.length === 1 && categories[0] === 'processed') {
+            dbQuery = dbQuery.eq('is_processed', true);
+          } else {
+            dbQuery = dbQuery.in('category', categories);
+            // 모달 컨텍스트(includePending=false)에서만 가공식품 중복 노출 차단.
+            // 도감(includePending=true)은 정확한 분류 유지 — 스팸이 meat 탭에서도 보임.
+            if (!includePending) {
+              dbQuery = dbQuery.eq('is_processed', false);
+            }
+          }
         }
       }
     }
