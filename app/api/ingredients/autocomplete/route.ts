@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const SEARCH_EXPANSIONS: Record<string, string[]> = {
   '기름': ['식용유'],
   '오일': ['식용유', '기름'],
+  // "라면" 검색 시 라면 제품들 모두 노출 (라면 자체는 pending이라 검색에 안 떠)
+  '라면': ['신라면', '진라면', '안성탕면', '짜파게티', '너구리라면', '삼양라면', '비빔면', '불닭볶음면'],
 };
 
 // GET /api/ingredients/autocomplete - 재료 자동완성

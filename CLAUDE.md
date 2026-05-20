@@ -1271,6 +1271,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **가공식품 정의 재정립 + 라면 제품 통일 + 중복/희소 항목 정리** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **중복 통합**: `캔참치` → `참치캔` 통합 (recipe_ingredients 재라우팅 + 마스터 DELETE)
+  - **이름 정확화**: `너구리` → `너구리라면` rename (ingredient_name + recipe_ingredients 동시)
+  - **희소 항목 7개 pending**: 판체타·홀토마토·프로슈토·살라미·초리조·후루츠칵테일·크래미 (한국 가정 사용 빈도 낮음)
+  - **가공식품 정의 재정립**: 진짜 가공식품 = "즉시 먹는 보존식품"(라면·통조림·만두·콘플레이크·가공육). 양념·소스류 13개(마요네즈·맛간장·케첩·핫소스·우스터·돈까스·바베큐·칠리·머스터드·허니머스터드·두반장·쌈장·초고추장) `is_processed=false` → 가공식품 탭에서 제외. 식약처 식품유형 기준 일관
+  - **인기 라면 7개 추가** (prod+dev): 신라면·진라면·안성탕면·짜파게티·삼양라면·비빔면·불닭볶음면 (+ 기존 너구리라면). 모두 `category=grain, is_processed=true, emoji=🍜`
+  - **"라면" → pending**: 일반명사 마스터 숨김. 사용자 검색은 SEARCH_EXPANSIONS로 라면 제품들 자동 노출
+  - **동의어 매핑 확장** (`INGREDIENT_SYNONYMS`): `'라면'` → 8개 제품. 역방향 `'신라면'/'진라면' 등` → `['라면']` 양방향. 추천 매칭에서 "라면 보유" ↔ "신라면 보유" 상호 인정
+  - **`SEARCH_EXPANSIONS`** (`/api/ingredients/autocomplete`): `'라면'` 검색 시 라면 제품 8개 결과 노출 (라면 자체 pending이라 검색 결과 빈약했던 문제 해소)
+  - **prod 결과**: 가공식품 approved 39 → 19개 (양념·소스 13개 제외 + 7개 pending) + 라면 제품 7개 추가
+  - 검증: lint 0 errors · build · vitest 158 passed
 - **발효식품(fermented) 카테고리 신설** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
   - **문제**: 김치류·장류·치즈류·식초류·낫토가 veggie/seasoning/dairy/condiment/grain에 흩어져 있어 사용자 직관과 불일치 ("김치 = 채소" 어색)
   - **신설**: `INGREDIENT_CATEGORIES`·`MODAL_INGREDIENT_CATEGORIES`에 `fermented (🫙 발효식품)` 추가. 도감·모달 둘 다 노출
