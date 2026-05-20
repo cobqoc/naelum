@@ -1271,6 +1271,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **달걀류 통합 — 모달엔 "달걀" 1개만** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **문제**: 유제품 탭에 계란·달걀·노른자·계란노른자·달걀노른자·계란흰자·달걀흰자 7개가 다 같은 것 (계란=달걀 동의어, 노른자·흰자 중복)
+  - **해결**: `달걀` 메인(표준국어대사전 표준어·식약처 표기) 1개만 approved. 나머지 6개 pending → 모달 숨김, 도감 노출
+  - **동의어 매핑 통합** (`INGREDIENT_SYNONYMS`): `달걀` ↔ `계란`·`노른자`·`달걀노른자`·`계란노른자`·`달걀흰자`·`계란흰자` 양방향. 노른자/흰자 입력해도 달걀 매칭
+  - **`SEARCH_EXPANSIONS`**: `계란`·`노른자`·`흰자` 검색 시 `달걀` 자동 노출
+  - 모달이 7개 → 1개로 깔끔. 동의어로 어느 호칭이든 매칭됨
 - **일반명사 pending + 자주 안 쓰는 치즈 정리 + 동의어 매핑 확장** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
   - **일반명사 pending** (모달 숨김, 도감 노출): 간장·액젓·치즈·메주·템페·메주가루
   - **자주 안 쓰는 치즈 10개 pending**: 고다·생모짜렐라·브리·까망베르·페타·에멘탈·슈레드·치즈가루·리코타·마스카르포네 → 모달에서 숨김 (도감엔 보임)
