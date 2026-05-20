@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import { useAutosave, loadAutosave, clearAutosave } from '@/lib/hooks/useAutosave';
 import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
 import TagsField from './_components/TagsField';
 import NutritionFields from './_components/NutritionFields';
@@ -21,6 +22,7 @@ import { computeAutoTags } from '@/lib/recipes/autoTags';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
+import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -32,7 +34,6 @@ export default function NewRecipePage() {
   const tf = t.recipeForm;
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
-  const [copyrightAgreed, setCopyrightAgreed] = useState(false);
   const [remixSource, setRemixSource] = useState<{ id: string; title: string; author: string } | null>(null);
 
   // 기본 정보
@@ -61,9 +62,9 @@ export default function NewRecipePage() {
   const [fiber, setFiber] = useState('');
   const [sodium, setSodium] = useState('');
 
-  // 재료 (기본 5개)
+  // 재료 (기본 2개 — 빈 5행 압도감 줄임. + 버튼으로 1개씩 추가)
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    Array(5).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false }))
+    Array(2).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false }))
   );
 
   // 완성된 요리 이미지 (썸네일)
@@ -97,6 +98,89 @@ export default function NewRecipePage() {
 
   const [showAddIngredientDialog, setShowAddIngredientDialog] = useState(false);
   const [addIngredientSearchQuery, setAddIngredientSearchQuery] = useState('');
+
+  // 자동저장 — localStorage 백업 (게시·임시저장 시 clear)
+  const AUTOSAVE_KEY = 'naelum_recipe_new_autosave_v1';
+  const AUTOSAVE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+  const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
+  type AutosaveSnapshot = {
+    title: string; description: string;
+    servings: number | ''; prepTime: number | ''; cookTime: number | '';
+    difficulty: string; cuisineType: string; customCuisineType: string;
+    dishType: string; customDishType: string;
+    isVegetarian: boolean; isVegan: boolean; isGlutenFree: boolean;
+    showNutrition: boolean;
+    calories: string; protein: string; carbs: string; fat: string; fiber: string; sodium: string;
+    ingredients: Ingredient[]; steps: Step[]; tags: string[];
+    thumbnailImage: string | null; ingredientsImage: string | null;
+  };
+  const autosaveSnapshotRef = useRef<AutosaveSnapshot | null>(null);
+
+  const autosaveData = useMemo<AutosaveSnapshot>(() => ({
+    title, description, servings, prepTime, cookTime, difficulty,
+    cuisineType, customCuisineType, dishType, customDishType,
+    isVegetarian, isVegan, isGlutenFree,
+    showNutrition, calories, protein, carbs, fat, fiber, sodium,
+    ingredients, steps, tags,
+    thumbnailImage, ingredientsImage,
+  }), [
+    title, description, servings, prepTime, cookTime, difficulty,
+    cuisineType, customCuisineType, dishType, customDishType,
+    isVegetarian, isVegan, isGlutenFree,
+    showNutrition, calories, protein, carbs, fat, fiber, sodium,
+    ingredients, steps, tags,
+    thumbnailImage, ingredientsImage,
+  ]);
+
+  // remix 모드에선 자동저장 비활성 (원본 데이터 덮어쓸 위험)
+  useAutosave(AUTOSAVE_KEY, autosaveData, { enabled: !remixId && !autosaveRestoreVisible });
+
+  // mount 시 이전 스냅샷 발견하면 banner 표시
+  useEffect(() => {
+    if (remixId) return;
+    const saved = loadAutosave<AutosaveSnapshot>(AUTOSAVE_KEY, AUTOSAVE_MAX_AGE);
+    if (saved && saved.data.title?.trim()) {
+      autosaveSnapshotRef.current = saved.data;
+      setAutosaveRestoreVisible(true);
+    }
+  }, [remixId]);
+
+  const handleRestoreAutosave = () => {
+    const s = autosaveSnapshotRef.current;
+    if (!s) return;
+    setTitle(s.title || '');
+    setDescription(s.description || '');
+    setServings(s.servings ?? '');
+    setPrepTime(s.prepTime ?? '');
+    setCookTime(s.cookTime ?? '');
+    setDifficulty(s.difficulty || '');
+    setCuisineType(s.cuisineType || '');
+    setCustomCuisineType(s.customCuisineType || '');
+    setDishType(s.dishType || '');
+    setCustomDishType(s.customDishType || '');
+    setIsVegetarian(!!s.isVegetarian);
+    setIsVegan(!!s.isVegan);
+    setIsGlutenFree(!!s.isGlutenFree);
+    setShowNutrition(!!s.showNutrition);
+    setCalories(s.calories || '');
+    setProtein(s.protein || '');
+    setCarbs(s.carbs || '');
+    setFat(s.fat || '');
+    setFiber(s.fiber || '');
+    setSodium(s.sodium || '');
+    if (Array.isArray(s.ingredients) && s.ingredients.length > 0) setIngredients(s.ingredients);
+    if (Array.isArray(s.steps) && s.steps.length > 0) setSteps(s.steps);
+    if (Array.isArray(s.tags)) setTags(s.tags);
+    if (s.thumbnailImage) setThumbnailImage(s.thumbnailImage);
+    if (s.ingredientsImage) setIngredientsImage(s.ingredientsImage);
+    setAutosaveRestoreVisible(false);
+  };
+
+  const handleDiscardAutosave = () => {
+    clearAutosave(AUTOSAVE_KEY);
+    autosaveSnapshotRef.current = null;
+    setAutosaveRestoreVisible(false);
+  };
 
   // 리믹스: 원본 레시피 데이터 로드
   useEffect(() => {
@@ -186,14 +270,15 @@ export default function NewRecipePage() {
   }, [cuisineType, dishType, customCuisineType, customDishType, isVegetarian, isVegan, isGlutenFree]);
 
   const addIngredients = () => {
-    const newIngredients = Array(5).fill(null).map(() => ({
-      ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false
-    }));
-    setIngredients([...ingredients, ...newIngredients]);
+    setIngredients([
+      ...ingredients,
+      { ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false },
+    ]);
   };
 
   const removeIngredient = (index: number) => {
-    if (ingredients.length > 5) {
+    // 최소 1행 유지 (5→1로 완화: 빈 행 초기 2개 + 1개씩 추가 UX와 일관)
+    if (ingredients.length > 1) {
       setIngredients(ingredients.filter((_, i) => i !== index));
     }
   };
@@ -201,6 +286,18 @@ export default function NewRecipePage() {
   const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
+    setIngredients(updated);
+  };
+
+  const selectIngredient = (index: number, item: IngredientItem) => {
+    const updated = [...ingredients];
+    const current = updated[index];
+    updated[index] = {
+      ...current,
+      ingredient_name: item.name,
+      ingredient_id: item.id,
+      ...(item.common_units?.[0] && current.unit === '선택' ? { unit: item.common_units[0] } : {}),
+    };
     setIngredients(updated);
   };
 
@@ -566,8 +663,9 @@ export default function NewRecipePage() {
           sodium_mg: sodium ? parseInt(sodium) : null,
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
+            ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
-            unit: i.unit,
+            unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional
           })),
@@ -590,6 +688,7 @@ export default function NewRecipePage() {
         throw new Error(data.error || tf.errorCreate);
       }
 
+      clearAutosave(AUTOSAVE_KEY);
       toast.success(tf.successCreate);
       router.push(`/recipes/${data.recipe.id}`);
     } catch (error) {
@@ -638,8 +737,9 @@ export default function NewRecipePage() {
           sodium_mg: sodium ? parseInt(sodium) : null,
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
+            ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
-            unit: i.unit,
+            unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,
           })),
@@ -659,6 +759,7 @@ export default function NewRecipePage() {
       if (!response.ok) throw new Error(data.error || tf.errorDraft);
 
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      clearAutosave(AUTOSAVE_KEY);
       toast.success(tf.successDraft);
       router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch (error) {
@@ -682,6 +783,32 @@ export default function NewRecipePage() {
       </header>
 
       <div className="container mx-auto max-w-3xl px-6 py-6 space-y-10">
+        {/* 자동저장 복원 배너 */}
+        {autosaveRestoreVisible && (
+          <div className="rounded-xl bg-accent-warm/10 border border-accent-warm/30 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="text-2xl">💾</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-text-primary">{tf.autosaveRestoreBanner}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleRestoreAutosave}
+                className="px-4 py-2 rounded-lg bg-accent-warm text-background-primary text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                {tf.autosaveRestore}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardAutosave}
+                className="px-4 py-2 rounded-lg bg-background-tertiary text-text-secondary text-sm font-medium hover:text-text-primary transition-colors"
+              >
+                {tf.autosaveDiscard}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 리믹스 원본 표시 */}
         {remixSource && (
           <div className="rounded-xl bg-accent-warm/10 border border-accent-warm/20 p-4 flex items-center gap-3">
@@ -742,6 +869,7 @@ export default function NewRecipePage() {
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}
             onUpdateIngredient={updateIngredient}
+            onSelectIngredient={selectIngredient}
             onImageUpload={handleIngredientsImageUpload}
             onImageRemove={handleIngredientsImageRemove}
             onDrag={handleIngredientsDrag}
@@ -844,8 +972,6 @@ export default function NewRecipePage() {
 
         <RecipeFormFooter
           tf={tf}
-          copyrightAgreed={copyrightAgreed}
-          setCopyrightAgreed={setCopyrightAgreed}
           loading={loading}
           draftLoading={draftLoading}
           onDraft={handleDraft}

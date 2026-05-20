@@ -145,6 +145,9 @@ export interface IngredientAutocompleteV2Props {
 
   /** 데스크톱에서 마운트 시 자동 포커스 */
   autoFocus?: boolean;
+
+  /** 컴팩트 모드 — 이모지·카테고리 배지·영문명 숨김 (좁은 폼에 적합) */
+  compact?: boolean;
 }
 
 /**

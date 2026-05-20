@@ -31,9 +31,9 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-05-18 기준)
+### dev DB 현황 (2026-05-20 기준)
 - `recipes`: 100개 (published; MAFF 2,050개 2026-05-13 삭제됨)
-- `ingredients_master`: 907개 (dev 동기화 완료 2026-05-18; prod: 740개 — 2026-05-19 카테고리 3차 감사 후 / other 0개)
+- `ingredients_master`: 907개 (dev 동기화 완료 2026-05-18; prod: **725개 approved** — 2026-05-20 재료 정리 후)
 - `shopping_list_items`: ingredient_id 컬럼 추가 완료
 - 함수·트리거·뷰 프로덕션과 동기화 완료
 
@@ -1271,6 +1271,47 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **재료 추가 모달 '전체' 탭 제거** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: '전체' 탭이 사실상 "인기 60개" 탭. 페이지네이션 없어 prod approved 725개 중 ~8%만 보임. 사용자 "전체 다 못 본다" 피드백
+  - **해결**: IngredientBrowser에서 ALL_CATEGORY 제거. 디폴트 탭: 자주 있으면 자주(20개), 없으면 첫 카테고리(채소)
+  - **남는 탭**: 자주(20개 + popular 보충) · 채소·과일·육류·해산물·곡물·유제품·양념&소스·조미료·향신료·베이커리 (10개) · 검색
+  - **i18n `categoryAll` 키 유지**: 요리 도감(`/ingredients/IngredientBrowseClient.tsx`)에서 "전체" 옵션 의미 있어 유지. 재료 추가 모달만 제거
+  - 검증: lint 0 errors · build · vitest 158 passed
+- **저작권 동의 가입 페이지로 통합** — 완료 (2026-05-20, develop 푸시 / prod+dev DB 적용)
+  - **이전 구현**: 레시피 작성 화면마다 저작권 동의 체크박스 (`RecipeFormFooter.tsx`). 매번 마찰 + "이용약관 제8조" 법률 용어 노출
+  - **변경**: 글로벌 표준(Medium·Substack·WordPress 패턴) 따라 **가입 페이지 약관 동의로 통합**. 매 게시마다 받지 않음. 한국 약관규제법 제3조 "중요한 내용 별도 명시" 요건은 별도 체크박스로 충족
+  - **DB 마이그레이션** `20260520_copyright_agreement.sql`: `profiles.copyright_agreed_at TIMESTAMPTZ` 컬럼 추가 (audit trail). **dev+prod 적용 완료**
+  - **`lib/auth/profile.ts`**: `ProfileInsertData.copyrightAgreed?: boolean` 추가. `createProfile`·`beginOnboarding` 에서 `copyright_agreed_at = now` 기록
+  - **가입 페이지 양쪽 적용**:
+    - `signup/set-password/page.tsx` (이메일 가입): `agreedToCopyright` state·체크박스·validation 추가. master "전체 동의" 토글 포함
+    - `auth/terms-agreement/page.tsx` (OAuth 가입): 동일 패턴
+  - **레시피 작성 화면 정리**: `RecipeFormFooter.tsx` 저작권 박스·`copyrightAgreed` prop·게이트 로직 제거 (76→43줄). `recipes/new/page.tsx` state 제거
+  - **i18n 8 locale**: `auth.termsCopyrightLabel`·`termsCopyrightDesc` 추가
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
+- **레시피·팁 작성 UX 1차 개선 (자동저장·sentinel·재료행)** — 완료 (2026-05-20, develop 푸시)
+  - **`lib/hooks/useAutosave.ts` 신설**: localStorage debounce 자동저장(1.5초). `useAutosave(key, data, {enabled})` + `loadAutosave<T>(key, maxAgeMs)` + `clearAutosave(key)`. 게시·임시저장 성공 시 clear 호출 필수. 7일 만료
+  - **레시피 작성 (`recipes/new/page.tsx`)**: AUTOSAVE_KEY `naelum_recipe_new_autosave_v1`. 27개 state 전수 스냅샷. remix 모드는 비활성. mount 시 이전 스냅샷+title 있으면 복원 banner 표시 → 복원/버리기 선택. 게시(`692`)·임시저장(`762`) 성공 시 clear
+  - **팁 작성 (`tip/new/page.tsx`)**: AUTOSAVE_KEY `naelum_tip_new_autosave_v1`. 동일 패턴. **부가 수정**: `alert()` 2건 → `useToast`로 통일, `placeholder="예: 10"` 하드코딩 → `t.tipForm.durationPlaceholder` 8 locale, `user!.id` non-null assertion → null 체크 후 `/login` 리다이렉트
+  - **sentinel `'선택'` DB 누수 차단**: 레시피 unit이 `'선택'` (placeholder)인 채로 제출되면 DB에 한글 `'선택'` 저장되던 문제 → submit 두 곳(`568`·`654`) `(i.unit && i.unit !== '선택') ? i.unit : null`로 필터. 화면 표시는 이미 `t.quickAdd.unitLabels['선택']`로 localized (en="Select" 등)
+  - **재료 빈 행 5→2 + 1개씩 추가**: 초기 `Array(5)` → `Array(2)` (빈 폼 압도감 감소). `addIngredients` 5개씩 → 1개씩. `removeIngredient` 최소 5행 유지 → 최소 1행. 버튼 라벨 `t.recipeForm.addFiveIngredients` → `addIngredient` ("+ 재료 추가") 8 locale
+  - **i18n 키 8 locale 추가**: `recipeForm.{addIngredient, autosaveSaved, autosaveRestoreBanner, autosaveRestore, autosaveDiscard, unitPlaceholder}`, `tipForm.durationPlaceholder`
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
+- **레시피 작성 재료 자동완성 연결 + compact 모드 + dev DB 동기화** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: `RecipeIngredientInput`·`IngredientAutocompleteV2`·`/api/ingredients/autocomplete` 모두 구현돼 있었으나 `IngredientsSection.tsx` 재료명 입력이 plain `<input type="text">`로 미연결 상태
+  - **`lib/constants/recipe.ts`**: `RecipeIngredient.ingredient_id?: string` 필드 추가
+  - **`IngredientsSection.tsx`**: `'use client'` 추가, `RecipeIngredientInput` 임포트, `onSelectIngredient` prop 추가, plain input → `RecipeIngredientInput` 교체
+  - **`recipes/new/page.tsx`**: `selectIngredient` 핸들러 추가 (ingredient_id + common_units 단위 자동추천), 두 API 페이로드(제출·임시저장) 모두 `ingredient_id` 포함
+  - **`app/api/recipes/route.ts` + `[id]/route.ts`**: `ingredient_id` DB insert 추가
+  - **compact 모드 신설** (좁은 grid cell 대응): `IngredientItemRenderer`·`IngredientAutocompleteV2Props`·`RecipeIngredientInputProps`에 `compact?: boolean` prop 추가. compact=true 시 이모지(text-2xl)·카테고리 배지·영문명 숨겨 단어 truncate 방지. `RecipeIngredientInput` 기본값 true (레시피 작성 폼은 1fr 좁은 grid). cart·홈 등 넓은 모달은 미지정으로 기존 디스플레이 유지
+  - **dev DB 동기화 (2026-05-20)**: dev approved 907 → 334. prod approved 725개 기준으로 매칭 안 되는 dev approved 573개(recipe extraction garbage: `튀김용기름파`·`체에 친 엿기름` 등) 일괄 pending. UI 자동완성에 garbage 노출 차단. 자유 텍스트 입력은 그대로 가능 (`allowCustomIngredient = true`)
+  - **검색어 확장 (SEARCH_EXPANSIONS)**: `/api/ingredients/autocomplete`에 의도-이름 갭 보완용 확장 맵 추가. `기름` 검색 시 `식용유`도 결과에 포함 (식용유는 이름에 "기름" 없음). `오일` → `식용유·기름`. 정확 일치(trim 후)일 때만 트리거. **동의어 매핑(name-level)이 아니므로 안전** — 검색 결과에 추가될 뿐 식용유=기름으로 conflate되지 않음
+  - 검증: lint 0 errors · build 성공
+- **ingredients_master 재료 정리 (2026-05-20)** — 완료 (prod+dev DB 직접)
+  - **pending 처리 15개**: 미소된장·정종·피시소스·젓국·라면스프·멸치육수·닭육수·다시마육수·쇠고기육수·육수·초간장·깨소스·기름·깨·참깨 → status='pending' (UI에서 숨김, DB FK 보존)
+  - **기름 → 식용유 교정**: recipe_ingredients 3건 (감자튀김·불고기찹쌀구이·효도강정) ingredient_name='식용유' + 식용유 ingredient_id로 직접 교정. 동의어 매핑 없음 — "기름"은 참기름·올리브유·식용유 모두 지칭 가능해 매핑 불가
+  - **깨 계열 정리**: 깨·참깨 pending, 통깨 approved 유지 (canonical). 깨소금은 별도 품목으로 유지
+  - **바닐라에센스**: spice → bakery 교정 (2026-05-19, prod+dev)
+  - **prod 현황**: approved **725개** / pending 962개
 - **피드백 버튼 레시피 하단 바 통합** — 완료 (2026-05-20, develop 푸시)
   - **`RecipeBrowseView.tsx`**: 장보기 버튼 우측에 💬 피드백 버튼 통합. 모바일은 아이콘만, `sm:` 이상에서 "피드백" 텍스트 추가 노출. `ContactModal` dynamic import + `feedbackOpen` 상태 추가
   - **`FloatingFeedbackButton.tsx`**: `shouldHide`에 `/recipes/*` 패턴 추가 → 레시피 상세에서 전역 플로팅 버튼 숨김 (중복 방지)

@@ -1,6 +1,10 @@
+'use client';
+
 import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { UNITS, type RecipeIngredient as Ingredient } from '@/lib/constants/recipe';
+import RecipeIngredientInput from '@/components/Recipes/RecipeIngredientInput';
+import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 
 /**
  * 레시피 작성 폼의 재료 준비 블록 (presentational).
@@ -30,6 +34,7 @@ interface IngredientsSectionProps {
   onAddIngredients: () => void;
   onRemoveIngredient: (index: number) => void;
   onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean) => void;
+  onSelectIngredient: (index: number, item: IngredientItem) => void;
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
   onDrag: (e: React.DragEvent) => void;
@@ -50,6 +55,7 @@ export default function IngredientsSection({
   onAddIngredients,
   onRemoveIngredient,
   onUpdateIngredient,
+  onSelectIngredient,
   onImageUpload,
   onImageRemove,
   onDrag,
@@ -147,12 +153,11 @@ export default function IngredientsSection({
           <div key={index} className="space-y-2">
             {/* Row 1: Main ingredient info (always visible) */}
             <div className="grid grid-cols-[1fr_80px_60px_32px] sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 items-center">
-              {/* 재료명 입력 */}
-              <input
-                type="text"
+              {/* 재료명 입력 — 자동완성 */}
+              <RecipeIngredientInput
                 value={ing.ingredient_name}
-                onChange={(e) => onUpdateIngredient(index, 'ingredient_name', e.target.value)}
-                className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
+                onChange={(value) => onUpdateIngredient(index, 'ingredient_name', value)}
+                onSelect={(item) => onSelectIngredient(index, item)}
                 placeholder={getPlaceholder(index, 'name')}
               />
               <input
@@ -233,12 +238,12 @@ export default function IngredientsSection({
       })}
       </div>
 
-      {/* 재료 추가 버튼 */}
+      {/* 재료 추가 버튼 — 1개씩 (빈 5행 압도감 줄임) */}
       <button
         onClick={onAddIngredients}
         className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
       >
-        {tf.addFiveIngredients}
+        {tf.addIngredient}
       </button>
     </div>
   );

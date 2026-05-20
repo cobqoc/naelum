@@ -25,6 +25,7 @@ export default function SetPasswordPage() {
   const [checking, setChecking] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  const [agreedToCopyright, setAgreedToCopyright] = useState(false);
   const [agreedToMarketing, setAgreedToMarketing] = useState(false);
   const [birthDate, setBirthDate] = useState('');
 
@@ -61,7 +62,7 @@ export default function SetPasswordPage() {
       return;
     }
 
-    if (!agreedToTerms || !agreedToPrivacy) {
+    if (!agreedToTerms || !agreedToPrivacy || !agreedToCopyright) {
       setError(t.auth.termsRequired);
       return;
     }
@@ -110,6 +111,7 @@ export default function SetPasswordPage() {
           marketingConsent: agreedToMarketing,
           termsAgreed: true,
           privacyAgreed: true,
+          copyrightAgreed: true,
           birthDate,
         });
       } else {
@@ -117,6 +119,7 @@ export default function SetPasswordPage() {
         await beginOnboarding(supabase, user.id, agreedToMarketing, {
           termsAgreed: true,
           privacyAgreed: true,
+          copyrightAgreed: true,
           birthDate,
         });
       }
@@ -272,10 +275,11 @@ export default function SetPasswordPage() {
               <div className="relative flex items-center justify-center">
                 <input
                   type="checkbox"
-                  checked={agreedToTerms && agreedToPrivacy && agreedToMarketing}
+                  checked={agreedToTerms && agreedToPrivacy && agreedToCopyright && agreedToMarketing}
                   onChange={(e) => {
                     setAgreedToTerms(e.target.checked);
                     setAgreedToPrivacy(e.target.checked);
+                    setAgreedToCopyright(e.target.checked);
                     setAgreedToMarketing(e.target.checked);
                   }}
                   className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
@@ -369,6 +373,41 @@ export default function SetPasswordPage() {
                 >
                   {t.auth.termsViewDetail}
                 </Link>
+              </div>
+            </label>
+
+            {/* 저작권 조항 동의 (필수) */}
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <div className="relative flex items-center justify-center mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={agreedToCopyright}
+                  onChange={(e) => setAgreedToCopyright(e.target.checked)}
+                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
+                />
+                <svg
+                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
+                    {t.auth.termsCopyrightLabel}
+                  </span>
+                  <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
+                </div>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {t.auth.termsCopyrightDesc}
+                </p>
               </div>
             </label>
 

@@ -74,6 +74,7 @@ export const DIETARY_DESCRIPTIONS: Record<string, string> = {
 
 export interface RecipeIngredient {
   ingredient_name: string;
+  ingredient_id?: string;
   quantity: string;
   unit: string;
   notes: string;

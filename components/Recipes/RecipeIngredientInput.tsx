@@ -33,6 +33,9 @@ interface RecipeIngredientInputProps {
 
   /** 추가 클래스명 */
   className?: string;
+
+  /** 컴팩트 모드 — 좁은 grid cell용 (이모지·카테고리·영문명 숨김). 기본 true */
+  compact?: boolean;
 }
 
 /**
@@ -65,6 +68,7 @@ export default function RecipeIngredientInput({
   allowCustomIngredient = true,
   disabled = false,
   className,
+  compact = true,
 }: RecipeIngredientInputProps) {
   return (
     <IngredientAutocompleteV2
@@ -77,6 +81,7 @@ export default function RecipeIngredientInput({
       allowCustomIngredient={allowCustomIngredient}
       disabled={disabled}
       className={className}
+      compact={compact}
     />
   );
 }

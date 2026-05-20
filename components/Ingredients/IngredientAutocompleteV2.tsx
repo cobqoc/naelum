@@ -51,6 +51,7 @@ export default function IngredientAutocompleteV2({
   className,
   disabled,
   autoFocus,
+  compact = false,
 }: IngredientAutocompleteV2Props) {
   // ===== 상태 관리 =====
   const [internalSelectedCategories, setInternalSelectedCategories] = useState<string[]>([]);
@@ -215,7 +216,7 @@ export default function IngredientAutocompleteV2({
         recentItems={recentItemsToShow}
         onRecentItemsClear={enableRecentItems ? handleClearRecentItems : undefined}
         filterComponent={filterComponent}
-        renderItem={renderIngredientItem}
+        renderItem={makeRenderIngredientItem(compact)}
         className={className}
         disabled={disabled}
         autoFocus={autoFocus}
@@ -258,14 +259,14 @@ function convertRecentToIngredientItem(recent: RecentIngredient): IngredientItem
 /**
  * 재료 항목 렌더링 컴포넌트
  */
-const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boolean }> = React.memo(
-  ({ item, isSelected }) => {
+const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boolean; compact?: boolean }> = React.memo(
+  ({ item, isSelected, compact }) => {
     const hasCount = item.metadata?.count !== undefined && typeof item.metadata.count === 'number';
     const count = hasCount ? item.metadata!.count as number : 0;
 
     return (
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{item.icon || '📦'}</span>
+      <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+        {!compact && <span className="text-2xl">{item.icon || '📦'}</span>}
 
         <div className="flex-1 min-w-0">
           <div
@@ -275,7 +276,7 @@ const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boole
           >
             {item.name}
           </div>
-          {item.name_en && (
+          {item.name_en && !compact && (
             <div className="text-sm text-text-muted truncate">{item.name_en}</div>
           )}
         </div>
@@ -286,7 +287,7 @@ const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boole
           </span>
         )}
 
-        {!hasCount && item.badge && typeof item.badge === 'string' && (
+        {!hasCount && !compact && item.badge && typeof item.badge === 'string' && (
           <span className="text-xs px-2 py-1 rounded-full bg-white/5 text-text-secondary">
             {item.badge}
           </span>
@@ -301,6 +302,8 @@ IngredientItemRenderer.displayName = 'IngredientItemRenderer';
 /**
  * 재료 항목 렌더링 래퍼 함수
  */
-function renderIngredientItem(item: IngredientItem, isSelected: boolean): React.ReactNode {
-  return <IngredientItemRenderer item={item} isSelected={isSelected} /> as React.ReactNode;
+function makeRenderIngredientItem(compact: boolean) {
+  return function renderIngredientItem(item: IngredientItem, isSelected: boolean): React.ReactNode {
+    return <IngredientItemRenderer item={item} isSelected={isSelected} compact={compact} /> as React.ReactNode;
+  };
 }
