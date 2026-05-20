@@ -1271,6 +1271,22 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **발효식품(fermented) 카테고리 신설** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **문제**: 김치류·장류·치즈류·식초류·낫토가 veggie/seasoning/dairy/condiment/grain에 흩어져 있어 사용자 직관과 불일치 ("김치 = 채소" 어색)
+  - **신설**: `INGREDIENT_CATEGORIES`·`MODAL_INGREDIENT_CATEGORIES`에 `fermented (🫙 발효식품)` 추가. 도감·모달 둘 다 노출
+  - **이동 50개 (prod)**:
+    - 한식 발효 14개: 간장·국간장·진간장·맛간장·어간장·된장·고추장·초고추장·쌈장·두반장·청국장·메주·메주가루·낫토
+    - 김치류 12개: 김치·배추김치·백김치·열무김치·신김치·김장김치·명이김치·동치미·동치미물·김치국물·김치잎·잘 익은 김치
+    - 유제품 발효 19개: 요거트·플레인요거트·그릭요거트·사워크림·치즈류 16개 (체다·고다·모짜렐라·파마산·파르메산·페타·브리·까망베르·리코타·크림치즈·코티지·마스카르포네·피자치즈·슈레드·슬라이스·에멘탈)
+    - 양조식초 5개: 식초·사과식초·발사믹식초·쌀식초·2배식초
+  - **유지 (의도)**: 와인·맥주·청주·소주·막걸리 = beverage (음료 탭이 직관), 빵류 = bakery, 단무지·피클 = veggie (양조식초 절임, 사실상 비발효)
+  - **i18n 8 locale**: `ingredient.categoryLabels.fermented` + `cart.categoryLabels.fermented`
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build **400 passed · 0 failed** (3.7분)
+- **김치류 분류 통일 — seasoning/condiment → veggie** — 완료 (2026-05-20, prod+dev DB)
+  - **문제**: 김치 분류 일관성 없음 — `김치(approved)`는 seasoning, 배추김치·백김치 등 7개(pending)는 condiment. 반면 단무지·피클·깻잎장아찌(절임 채소)는 이미 veggie로 통일됨
+  - **정답**: 김치 = 발효 채소 = **veggie** (식품학적 + 한국 마트 분류 패턴 + 낼름 내 일관성)
+  - **prod+dev UPDATE**: `김치·배추김치·백김치·열무김치·신김치·김장김치·명이김치·동치미·동치미물·김치국물·김치잎·잘 익은 김치` → category='veggie'
+  - **장류는 seasoning 유지**: 된장·간장·고추장·쌈장·청국장 등 액체/페이스트 발효 양념은 카테고리 의미 맞음
 - **가공식품 탭 신설 — 이중 카테고리 시스템** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
   - **컨셉**: 도감(`/ingredients`)은 정확한 세분화 유지(스팸=meat, 라면=grain), 재료 추가 모달은 "가공식품" 1개 탭으로 광범위 묶음. 사용자 멘탈 모델("스팸 어디 있지?") vs 데이터 정확성 양쪽 만족
   - **DB 마이그레이션** `20260520_is_processed_column.sql`: `ingredients_master.is_processed BOOLEAN NOT NULL DEFAULT false`. dev+prod 적용
