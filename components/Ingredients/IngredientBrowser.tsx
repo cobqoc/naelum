@@ -95,8 +95,8 @@ export default function IngredientBrowser({
       const merged: IngredientItem[] = [];
       const seen = new Set<string>();
 
-      // 1) 사용자 최근 사용 재료 우선 (최대 20개)
-      for (const f of frequentItems.slice(0, 20)) {
+      // 1) 사용자 최근 사용 재료 우선 (최대 40개 — 2026-05-20 20→40)
+      for (const f of frequentItems.slice(0, 40)) {
         if (seen.has(f.name)) continue;
         seen.add(f.name);
         merged.push({

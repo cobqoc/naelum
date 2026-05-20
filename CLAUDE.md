@@ -1271,6 +1271,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **자주 탭 limit 20→40 + 양념장 완전 삭제** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **자주 탭 확장**: `IngredientForm.tsx` `favorites.slice(0, 20)` → `40`, `IngredientBrowser.tsx` `frequentItems.slice(0, 20)` → `40`. API `useFavorites(50)` 그대로. 자주 쓰는 재료 30~40개 사용자도 chip에서 직접 발견 가능
+  - **양념장 완전 삭제 (prod+dev)**: garbage 패턴 — description NULL, 단일 재료 아닌 혼합물(간장+마늘+참기름+등), 2개 레시피만 참조. **pending은 도감(`includePending=true`)에서 보이므로 부족 → DELETE**. FK `ON DELETE SET NULL`로 recipe_ingredients 2건의 ingredient_id만 NULL 됨, 텍스트 "양념장"은 레시피 본문 보존
+  - **patten 일반화**: 향후 garbage 정리 시 0건 또는 본문 보존 가능하면 DELETE 우선, FK 보존이 진짜 필요한 경우만 pending
 - **재료 추가 모달 '전체' 탭 제거** — 완료 (2026-05-20, develop 푸시)
   - **문제**: '전체' 탭이 사실상 "인기 60개" 탭. 페이지네이션 없어 prod approved 725개 중 ~8%만 보임. 사용자 "전체 다 못 본다" 피드백
   - **해결**: IngredientBrowser에서 ALL_CATEGORY 제거. 디폴트 탭: 자주 있으면 자주(20개), 없으면 첫 카테고리(채소)
