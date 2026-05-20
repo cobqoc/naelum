@@ -1271,6 +1271,16 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **일반명사 pending + 자주 안 쓰는 치즈 정리 + 동의어 매핑 확장** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **일반명사 pending** (모달 숨김, 도감 노출): 간장·액젓·치즈·메주·템페·메주가루
+  - **자주 안 쓰는 치즈 10개 pending**: 고다·생모짜렐라·브리·까망베르·페타·에멘탈·슈레드·치즈가루·리코타·마스카르포네 → 모달에서 숨김 (도감엔 보임)
+  - **모달에 남는 치즈 6개**: 모짜렐라·체다·슬라이스·크림·파르메산·피자치즈 (한국 가정 가장 자주 사용)
+  - **`INGREDIENT_SYNONYMS` 확장** (`lib/recommendations/match.ts`):
+    - `'간장'` → 진간장·국간장·맛간장·어간장·양조간장 (역방향 양방향)
+    - `'액젓'` → 멸치젓·까나리액젓·멸치액젓
+    - `'치즈'` → 모짜렐라·체다·슬라이스·피자·크림·파르메산·파마산 (역방향 양방향)
+  - **`SEARCH_EXPANSIONS`** (`/api/ingredients/autocomplete`): `간장`·`액젓`·`치즈` 검색 시 구체 제품 자동 노출 (라면 패턴과 동일)
+  - **간장 vs 진간장 차이**: 간장=양조간장(콩+밀+누룩 6개월~1년), 진간장=양조간장 추가 숙성(1년+, 단맛 풍부, 조림용)
 - **요리 도감 전수 검사 — 카테고리 오분류 25개 + 부산물 2개 pending** — 완료 (2026-05-20, prod+dev DB)
   - **전수 검사 대상**: prod approved 721개 13개 카테고리. 식약처 식품유형 기준 + 사용자 직관 + 한국 마트 분류 패턴
   - **이동 25개:**
