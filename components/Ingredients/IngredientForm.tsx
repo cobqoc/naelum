@@ -121,7 +121,7 @@ export default function IngredientForm({
     if (isEditMode) return;
     if (favorites.length > 0) {
       setFrequentIngredients(
-        favorites.slice(0, 20).map(f => ({
+        favorites.slice(0, 40).map(f => ({
           id: `fav:${f.ingredient_name}`,
           name: f.ingredient_name,
           name_en: null,
@@ -133,7 +133,7 @@ export default function IngredientForm({
       );
     } else {
       const recent = getRecentIngredients();
-      setFrequentIngredients(recent.slice(0, 20));
+      setFrequentIngredients(recent.slice(0, 40));
     }
   }, [isEditMode, favorites]);
 
