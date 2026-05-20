@@ -1271,6 +1271,18 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
   - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
   - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **곡물류 카테고리 145개 정리** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
+  - **pending 11개**:
+    - 중복/방언 4개: 농마(=녹말 방언)·길금가루(=엿기름)·흰떡(=가래떡)·깐호두(=호두)
+    - 일반명사 5개: 면·견과류·잡곡·떡·홀그레인
+    - 희귀/중복 2개: 분탕·비지(=콩비지)
+  - **카테고리 이동 9개**:
+    - grain → **fermented** 5개: 이스트·드라이이스트·생이스트·효모·누룩 (발효 미생물)
+    - grain → **condiment** 2개: 베이킹소다·베이킹파우더 (팽창제)
+    - grain → **bakery** 1개: 빵가루
+    - grain → **meat** 1개: 콩고기 (대체육)
+  - **동의어 매핑** (`INGREDIENT_SYNONYMS`): 농마↔녹말, 길금가루↔엿기름, 흰떡↔가래떡, 깐호두↔호두, 비지↔콩비지 (양방향)
+  - **결과**: grain 150 → 130개 (모달 깔끔). 모든 변동은 도감에 includePending=true로 보임
 - **통조림 햄 제품 통일 — 라면 패턴 적용** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
   - **웹 검증**: "통조림 햄" 일반명사. 구체 제품명은 스팸·리챔·로스팜·앙코르햄. "슬라이스햄"은 청정원·진주햄에서 정식 제품명으로 판매 → 유지
   - **신규 추가 3개** (prod+dev): 리챔·로스팜·앙코르햄 (`category=meat, is_processed=true, emoji=🥫`)
