@@ -34,8 +34,12 @@ test.describe('쿠킹 모드 타이머', () => {
         await page.waitForTimeout(300)
       }
 
-      // 인라인 타이머 버튼 (⏱️ 1분) — timer_minutes: 1 스텝에 표시됨
-      const timerBtn = page.locator('button').filter({ hasText: /⏱️/ }).first()
+      // 인라인 타이머 버튼 (⏱️ 1분) — timer_minutes: 1 스텝에 표시됨.
+      // "분"으로 필터해 단계 타이머만 — ⏱️만으로는 "직접 타이머" 버튼이 먼저 잡힘.
+      const timerBtn = page.locator('button')
+        .filter({ hasText: /⏱️/ })
+        .filter({ hasText: /분/ })
+        .first()
       await expect(timerBtn).toBeVisible({ timeout: 5000 })
       await timerBtn.click()
       await page.waitForTimeout(500)
@@ -48,6 +52,53 @@ test.describe('쿠킹 모드 타이머', () => {
       expect(pageErrors).toEqual([])
 
       // 에러 페이지(error.tsx)가 뜨지 않았는지
+      const errorShown = await page.locator('text=문제가 발생').count()
+      expect(errorShown).toBe(0)
+    } finally {
+      await deleteTestRecipe(recipeId)
+    }
+  })
+
+  test('직접 타이머: 설정 모달에서 총 시간 입력 → 시작 → 토스트', async ({
+    authenticatedPage: page,
+    testUser,
+  }) => {
+    // 단계 본문에 없는 시간을 사용자가 직접 맞추는 타이머 — CustomTimerSetup 모달.
+    const pageErrors: string[] = []
+    page.on('pageerror', e => pageErrors.push(e.message))
+
+    const recipeId = await createTestRecipe(testUser.userId, {
+      title: 'Custom Timer Test Recipe',
+      withTimerStep: true,
+    })
+
+    try {
+      await page.goto(`/recipes/${recipeId}`, { waitUntil: 'domcontentloaded' })
+      await page.waitForTimeout(1500)
+
+      const stepsTab = page.locator('button').filter({ hasText: /조리 순서/ }).first()
+      if (await stepsTab.isVisible()) {
+        await stepsTab.click()
+        await page.waitForTimeout(300)
+      }
+
+      // "직접 타이머" 버튼 → 설정 모달
+      const customBtn = page.locator('button').filter({ hasText: '직접 타이머' }).first()
+      await expect(customBtn).toBeVisible({ timeout: 5000 })
+      await customBtn.click()
+      await page.waitForTimeout(300)
+
+      // 총 시간 입력 후 시작
+      const totalInput = page.locator('input[type="number"]').first()
+      await expect(totalInput).toBeVisible({ timeout: 3000 })
+      await totalInput.fill('1')
+      await page.getByRole('button', { name: '시작', exact: true }).click()
+      await page.waitForTimeout(500)
+
+      // 타이머 시작 토스트 + 에러 없음
+      const toastCount = await page.getByText(/타이머 시작/).count()
+      expect(toastCount).toBeGreaterThan(0)
+      expect(pageErrors).toEqual([])
       const errorShown = await page.locator('text=문제가 발생').count()
       expect(errorShown).toBe(0)
     } finally {

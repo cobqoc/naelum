@@ -6,8 +6,9 @@ import { formatTime } from '@/lib/utils/formatTime';
  * 쿠킹 모드 멀티 타이머 패널 (미니 + 전체) (순수 표현).
  *
  * god-file(RecipeCookMode) 분해 Phase 2. 타이머 상태·로직은 useMultiTimer
- * 훅(부모 소유) — 값+콜백만. JSX·className 원본과 byte-identical → 행위 변경 0.
- * 빈 타이머면 null 반환 = 기존 `{timers.length > 0 && ...}` 조건부와 동일.
+ * 훅(부모 소유) — 값+콜백만. 빈 타이머면 null 반환.
+ * 중간 체크포인트 알림(timer.checkpoints / checkpointAlert)도 여기서 표시 —
+ * 발화 배너 + 다음 체크포인트 미리보기.
  * 회귀 가드: e2e/cook-mode-and-review.spec.ts (타이머 시작 → 패널 표시).
  */
 
@@ -75,62 +76,93 @@ export default function CookTimerPanel({
             </div>
           </div>
           <div className="p-2 space-y-1.5">
-            {multiTimer.timers.map((timer: Timer) => (
-              <div
-                key={timer.id}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
-                  timer.isActive
-                    ? timer.isPaused
-                      ? 'bg-warning/10 border border-warning/20'
-                      : 'bg-accent-warm/10 border border-accent-warm/20'
-                    : 'bg-success/10 border border-success/20'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-text-muted">{timer.label}</div>
-                  <div className={`text-lg font-mono font-bold ${
-                    !timer.isActive ? 'text-success' :
-                    timer.remainingSeconds < 30 ? 'text-error animate-pulse' :
-                    'text-text-primary'
-                  }`}>
-                    {timer.isActive ? formatTime(timer.remainingSeconds) : '00:00 ✓'}
+            {multiTimer.timers.map((timer: Timer) => {
+              const nextCheckpoint = timer.isActive
+                ? timer.checkpoints.find((cp) => !cp.fired)
+                : undefined;
+              return (
+              <div key={timer.id} className="space-y-1.5">
+                <div
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
+                    timer.isActive
+                      ? timer.isPaused
+                        ? 'bg-warning/10 border border-warning/20'
+                        : 'bg-accent-warm/10 border border-accent-warm/20'
+                      : 'bg-success/10 border border-success/20'
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-text-muted">{timer.label}</div>
+                    <div className={`text-lg font-mono font-bold ${
+                      !timer.isActive ? 'text-success' :
+                      timer.remainingSeconds < 30 ? 'text-error animate-pulse' :
+                      'text-text-primary'
+                    }`}>
+                      {timer.isActive ? formatTime(timer.remainingSeconds) : '00:00 ✓'}
+                    </div>
+                    {/* Progress bar */}
+                    {timer.isActive && (
+                      <div className="h-1 bg-background-tertiary rounded-full mt-1 overflow-hidden">
+                        <div
+                          className="h-full bg-accent-warm rounded-full transition-all duration-1000"
+                          style={{ width: `${((timer.totalSeconds - timer.remainingSeconds) / timer.totalSeconds) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                    {/* 다음 체크포인트 미리보기 */}
+                    {nextCheckpoint && (() => {
+                      const until = nextCheckpoint.atSeconds - (timer.totalSeconds - timer.remainingSeconds);
+                      if (until <= 0) return null;
+                      return (
+                        <div className="text-[11px] text-text-muted mt-1 truncate">
+                          🔔 {nextCheckpoint.label} · {formatTime(until)}
+                        </div>
+                      );
+                    })()}
                   </div>
-                  {/* Progress bar */}
                   {timer.isActive && (
-                    <div className="h-1 bg-background-tertiary rounded-full mt-1 overflow-hidden">
-                      <div
-                        className="h-full bg-accent-warm rounded-full transition-all duration-1000"
-                        style={{ width: `${((timer.totalSeconds - timer.remainingSeconds) / timer.totalSeconds) * 100}%` }}
-                      />
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => multiTimer.togglePause(timer.id)}
+                        className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-white/10"
+                      >
+                        {timer.isPaused ? '▶' : '⏸'}
+                      </button>
+                      <button
+                        onClick={() => multiTimer.stopTimer(timer.id)}
+                        className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-error/20 text-error"
+                      >
+                        ■
+                      </button>
                     </div>
                   )}
-                </div>
-                {timer.isActive && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => multiTimer.togglePause(timer.id)}
-                      className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-white/10"
-                    >
-                      {timer.isPaused ? '▶' : '⏸'}
-                    </button>
+                  {!timer.isActive && (
                     <button
                       onClick={() => multiTimer.stopTimer(timer.id)}
-                      className="w-8 h-8 rounded-full bg-background-tertiary flex items-center justify-center text-xs hover:bg-error/20 text-error"
+                      className="text-xs text-text-muted hover:text-text-primary"
                     >
-                      ■
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {/* 발화된 체크포인트 알림 배너 */}
+                {timer.checkpointAlert && (
+                  <div className="flex items-center gap-2 mx-1 px-3 py-2 rounded-lg bg-accent-warm/15 border border-accent-warm/40 animate-pulse">
+                    <span>🔔</span>
+                    <span className="flex-1 min-w-0 text-sm font-bold text-accent-warm truncate">
+                      {timer.checkpointAlert}
+                    </span>
+                    <button
+                      onClick={() => multiTimer.clearCheckpointAlert(timer.id)}
+                      className="flex-shrink-0 text-xs font-medium text-text-muted hover:text-text-primary"
+                    >
+                      {t.common.confirm}
                     </button>
                   </div>
                 )}
-                {!timer.isActive && (
-                  <button
-                    onClick={() => multiTimer.stopTimer(timer.id)}
-                    className="text-xs text-text-muted hover:text-text-primary"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

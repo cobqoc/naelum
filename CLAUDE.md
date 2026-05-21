@@ -1149,6 +1149,21 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **레시피 조리 단계 직접 타이머 — 중간 알림(체크포인트)** — 완료 (2026-05-22, develop 푸시)
+  - **배경**: 한 조리 단계에 시간 점이 여럿인 경우("총 4분, 절반(2분)쯤 뒤집기")를 작성자 설정 단계 타이머·본문 자동감지(`getEffectiveTimers`)로는 못 풀음 — 별개 타이머 2개로 떠서 "동시에 켜라"가 비직관적. 타이머 1개 안의 중간 체크포인트로 모델링
+  - **`useMultiTimer` 확장**: `Timer`에 `checkpoints: TimerCheckpoint[]`(경과초·라벨·fired) + `checkpointAlert: string|null` 추가. `startTimer` 4번째 인자 `checkpointInput` — 범위(0<t<총시간) 필터·정렬. 틱마다 경과시간이 체크포인트 도달 시 `playTimerSound()` + `checkpointAlert` 세팅. `clearCheckpointAlert(id)` 추가. 기존 3-인자 호출은 `checkpoints=[]` → 행위 변경 0
+  - **`CustomTimerSetup.tsx` 신설**: 직접 타이머 설정 모달 — 총 시간 + 중간 알림(분·라벨) 행 추가/삭제. `prefill`은 *제안*일 뿐 자동 실행 안 함(잘못된 파싱이 조리 지시 되는 것 방지 — 사용자 확인 후 시작)
+  - **`CookTimerPanel`**: 발화된 체크포인트 알림 배너(🔔 라벨 + 확인) + 다음 체크포인트 미리보기(🔔 라벨 · 남은시간)
+  - **`RecipeBrowseView` 진입점 2개**: 조리순서 상단 "직접 타이머"(빈 모달) + 단계에 시간 점 2개+ 시 "단계 타이머"(최댓값=총시간, 나머지=중간알림으로 prefill)
+  - **i18n 8 locale**: `cookMode.{customTimerOpen,customTimerStepButton,customTimerTitle,timerTotalLabel,timerCheckpointsLabel,timerCheckpointAdd,timerCheckpointPlaceholder,timerStartButton}`
+  - **e2e**: `cook-mode-and-review.spec.ts` — 단계 타이머 셀렉터를 `⏱️`+`분`으로 특정(직접 타이머 버튼과 구분) + 직접 타이머 모달 회귀 테스트 추가
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
+- **추천 카드 냉장고 아이콘 + RecipeFridgeModal 공용화** — 완료 (2026-05-22, develop 푸시)
+  - **`RecipeFridgeModal.tsx` 신설**: 레시피↔냉장고 재료 대조 모달(보유 ✓ / 없는 ✗)을 순수 표현 공용 컴포넌트로 — 레시피 상세·추천 카드 공용
+  - **`RecipeDetailClient`**: 인라인 냉장고 모달 → 공용 컴포넌트로 교체. 거기 `isOwned`가 아직 단순 substring이던 것 → `isFundamental`+`isIngredientMatch`로 수정 (계란↔달걀 매칭·물엿↔물 오매칭 해소, RecipeBrowseView와 동일 기준)
+  - **추천 API**: 응답에 `ownedIngredientNames` 추가 (기존 `missingIngredientNames`만 내려주던 것 — 카드 모달이 보유도 표시하려면 필요). 이미 계산하던 `matchedIngredients`에서 이름만 추출
+  - **`FridgeRecipeCard`**: 카드 제목 옆 냉장고 SVG 아이콘 → 탭 시 보유/없는 둘 다 모달. `e.preventDefault()`+`e.stopPropagation()`로 카드 navigate 차단, 모달은 `<Link>` 형제로 렌더해 모달 클릭 누수 방지
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
 - **전 카테고리 재분류 웹 검색 기반 정밀 감사 (2차)** — 완료 (2026-05-19, prod+dev DB 직접)
   - **핵심 규칙 확립**: ① 이름에 "소스" 붙은 재료 → seasoning(양념&소스). ② 육수류 전부 → seasoning. ③ 건조 분말·허브 → spice. ④ 소금·설탕·식초·마요네즈·케첩 등 → condiment(조미료)
   - **condiment → seasoning**: 겨자·연겨자(한국 요리 냉채 양념), 돈까스소스·바베큐소스·칠리소스·토마토소스·핫소스 (이름에 "소스"), 토마토페이스트
