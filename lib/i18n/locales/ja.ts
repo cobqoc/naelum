@@ -264,7 +264,7 @@ export const ja = {
     metricLabel: 'メートル法',
     imperialLabel: 'ヤード法',
     ownedSuffix: '所持中',
-    cartButton: '買い物',
+    cartButton: '買い物リストに追加',
     cartExcludeOwnedLabel: '冷蔵庫にある食材を除外 ({count})',
     cartAllOwned: 'すべての食材がすでに冷蔵庫にあります',
     cartAddedSimple: '{count}個の食材を買い物リストに追加しました！',

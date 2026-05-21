@@ -264,7 +264,7 @@ export const zh = {
     metricLabel: '公制',
     imperialLabel: '英制',
     ownedSuffix: '已有',
-    cartButton: '购物',
+    cartButton: '加入购物清单',
     cartExcludeOwnedLabel: '排除冰箱里已有的食材 ({count})',
     cartAllOwned: '所有食材都已经在冰箱里',
     cartAddedSimple: '已将{count}个食材添加到购物清单！',

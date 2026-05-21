@@ -923,15 +923,6 @@ export default function RecipeBrowseView({
               <CartIcon size={22} active />
               <span>{t.recipe.cartButton}</span>
             </button>
-            {/* 타이머 — 어느 단계서나 항상 닿는 위치(하단 고정 바). 빈 폼으로 열림 */}
-            <button
-              onClick={() => setTimerSetup({})}
-              aria-label={t.cookMode.customTimerOpen}
-              className="py-4 px-4 rounded-2xl bg-background-secondary border border-white/10 text-text-secondary hover:text-text-primary hover:border-accent-warm/40 transition-all flex items-center gap-1.5 text-sm font-medium shrink-0"
-            >
-              <span className="text-base">⏱️</span>
-              <span className="hidden sm:inline">{t.cookMode.customTimerOpen}</span>
-            </button>
             <button
               onClick={() => setFeedbackOpen(true)}
               aria-label={t.contact.feedbackAria}
