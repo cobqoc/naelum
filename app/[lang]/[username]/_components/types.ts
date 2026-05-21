@@ -17,11 +17,13 @@ export interface Profile {
 }
 
 /**
- * 프로필 카드 통계 블록용 콘텐츠 카운트.
- * 레시피 수는 profile.recipes_count(비정규화 컬럼) 사용 — 여기엔 미포함.
- * drafts/private 는 본인 프로필에서만 의미 있음 (남의 프로필엔 0).
+ * 프로필 카드 통계 블록용 콘텐츠 카운트 — 4개 버킷(공개 레시피·공개 팁·
+ * 임시저장·비공개)이 서로 겹치지 않게 사용자의 모든 글을 분할한다.
+ * recipes/tips 는 '공개' 글만 — recipes_count(비정규화 컬럼)는 공개+비공개
+ * 합산이라 미사용. drafts/private 는 본인 프로필에서만 의미 있음(남에겐 0).
  */
 export interface ProfileCounts {
+  recipes: number;
   tips: number;
   drafts: number;
   private: number;
