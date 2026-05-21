@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 매칭 동의어/대체재 분리 — "보유" vs "대체 가능"** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: `INGREDIENT_SYNONYMS` 한 표가 *같은 재료*(달걀=계란)와 *대체재*(까나리액젓~멸치액젓)를 섞어 담아, 까나리액젓을 가졌으면 멸치액젓을 "보유 ✓"로 표시 — 다른 재료인데 가졌다고 거짓말. (substring 매칭 `'멸치액젓'.includes('액젓')`이 원인)
+  - **분리**: `INGREDIENT_ALIASES`(동의어·일반명↔특정명) + `INGREDIENT_SUBSTITUTES`(대체재). `isSameIngredient`(동의어만 — "보유" 판정), `isSubstituteFor`(대체재), `isIngredientMatch = same || substitute`(추천 "만들 수 있나"). 매칭은 양방향 *정확 일치*만 — substring 비교 제거
+  - **3분류**: 보유 ✓ / 대체 가능 🔄 / 없음 ✗. 추천 API가 `ownedIngredientNames`·`substitutableIngredients`(레시피재료→via)·`missingIngredientNames` 반환. `missingCount`=진짜 없는 것만(대체 가능은 부족 아님), `matchedCount`=보유+대체
+  - **UI**: `RecipeFridgeModal` 3섹션, 레시피 상세 재료 탭 3색(보유 회색·대체 amber+🔄via·없음 빨강)
+  - **i18n**: `recipe.fridgeModalSubstitute` 8 locale. vitest match.test.ts 신규 함수·까나리액젓 케이스 추가
+  - 검증: lint 0 errors · build · vitest 165 passed · e2e fresh build 408 passed · 0 failed
 - **냉장고 모달 보유 판정 단일화 — 중복 로직 제거** — 완료 (2026-05-22, develop 푸시)
   - **버그**: 레시피 상세 페이지가 "재료 보유 여부"를 두 곳에서 따로 계산 — `RecipeBrowseView.isIngredientOwned`(재료 탭·"N/N 보유")는 `isIngredientMatch`(동의어·정규화·Levenshtein), `RecipeDetailClient` 냉장고 모달 `isOwned`는 단순 substring. 같은 재료(멸치액젓)를 한 화면은 보유·다른 화면은 없음으로 표시
   - **근본 원인**: `isFundamental(name) || userIngredients.some(isIngredientMatch)` 식이 두 파일에 복붙 → 드리프트. (까나리액젓↔멸치액젓 매칭 자체는 `액젓` 동의어로 정상 — 둘 다 액젓)

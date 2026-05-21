@@ -300,6 +300,7 @@ export const it = {
     fridgeModalTitle: 'Controlla frigo',
     fridgeModalOwned: 'Disponibile',
     fridgeModalMissing: 'Mancante',
+    fridgeModalSubstitute: 'Sostituibile',
     fridgeModalEmpty: 'Nessun ingrediente registrato nel frigo.',
     ratingCookedCta: 'Hai cucinato questa ricetta! Lascia una recensione.',
     timerDoneTitle: 'Timer terminato!',

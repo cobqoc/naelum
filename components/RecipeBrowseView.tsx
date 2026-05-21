@@ -11,7 +11,7 @@ import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useMultiTimer } from '@/lib/hooks/useMultiTimer';
 import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useI18n } from '@/lib/i18n/context';
-import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
+import { isSameIngredient, isSubstituteFor, isFundamental } from '@/lib/recommendations/match';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
@@ -124,12 +124,15 @@ export default function RecipeBrowseView({
   // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
   const [showFridgeModal, setShowFridgeModal] = useState(false);
 
-  // 보유 판정 — 물·생수 등 기본 재료(isFundamental)는 항상 보유로 간주.
-  // 그 외엔 isIngredientMatch(동의어·조리법 접두사 처리, 추천 route 와 동일)로
-  // user 재료와 대조. 단순 substring 비교 금지 — 계란↔달걀 동의어를 놓치고,
-  // 고추↔고추장 오매칭 + '물엿'이 '물'을 substring 으로 오매칭하던 문제.
+  // 보유 판정 — 물 등 기본 재료(isFundamental)는 항상 보유. 그 외엔
+  // isSameIngredient(동의어만)로 대조. 까나리액젓을 가졌다고 멸치액젓을
+  // "보유"로 치지 않는다 — 그건 대체(findSubstitute) 영역.
   const isIngredientOwned = (name: string) =>
-    isFundamental(name) || userIngredients.some(ui => isIngredientMatch(ui, name));
+    isFundamental(name) || userIngredients.some(ui => isSameIngredient(ui, name));
+
+  // 대체 — 보유는 아니지만 가진 재료로 바꿔 쓸 수 있음. via(가진 재료명) 반환.
+  const findSubstitute = (name: string): string | null =>
+    userIngredients.find(ui => isSubstituteFor(ui, name)) ?? null;
 
   const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
   const totalIngredients = recipe.ingredients.length;
@@ -627,19 +630,25 @@ export default function RecipeBrowseView({
             <div className="grid grid-cols-2 gap-2 pb-4">
               {recipe.ingredients.map((ing, idx) => {
                 const owned = isIngredientOwned(ing.ingredient_name);
+                const subVia = owned ? null : findSubstitute(ing.ingredient_name);
                 const scaledQty = scaleQty(ing.quantity);
                 const converted = unitConv.convertIngredient(scaledQty, ing.unit);
                 const scaled = isScaling && scaledQty !== ing.quantity;
                 return (
                   <div
                     key={idx}
-                    className={`p-3 rounded-xl border-2 ${
-                      owned ? 'bg-background-tertiary border-text-muted/30' : 'bg-background-tertiary border-error/30'
+                    className={`p-3 rounded-xl border-2 bg-background-tertiary ${
+                      owned ? 'border-text-muted/30' : subVia ? 'border-warning/40' : 'border-error/30'
                     }`}
                   >
-                    <span className={`text-sm font-medium ${owned ? 'text-text-primary' : 'text-error'}`}>
+                    <span className={`text-sm font-medium ${
+                      owned ? 'text-text-primary' : subVia ? 'text-warning' : 'text-error'
+                    }`}>
                       {ing.ingredient_name}
                     </span>
+                    {subVia && (
+                      <div className="text-xs text-warning mt-0.5">🔄 {subVia}</div>
+                    )}
                     <div className="text-xs text-text-muted mt-0.5">
                       {converted.isConverted ? (
                         <>
@@ -899,15 +908,27 @@ export default function RecipeBrowseView({
         />
       )}
 
-      {/* 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 동일한 isIngredientOwned 단일 판정 */}
-      {showFridgeModal && (
-        <RecipeFridgeModal
-          onClose={() => setShowFridgeModal(false)}
-          ownedNames={recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).map(i => i.ingredient_name)}
-          missingNames={recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_name)).map(i => i.ingredient_name)}
-          fridgeEmpty={userIngredients.length === 0}
-        />
-      )}
+      {/* 냉장고 재료 비교 모달 — 재료 탭과 동일한 isIngredientOwned/findSubstitute 단일 판정 */}
+      {showFridgeModal && (() => {
+        const owned: string[] = [];
+        const substituteItems: { ingredient: string; via: string }[] = [];
+        const missing: string[] = [];
+        for (const ing of recipe.ingredients) {
+          if (isIngredientOwned(ing.ingredient_name)) { owned.push(ing.ingredient_name); continue; }
+          const via = findSubstitute(ing.ingredient_name);
+          if (via) substituteItems.push({ ingredient: ing.ingredient_name, via });
+          else missing.push(ing.ingredient_name);
+        }
+        return (
+          <RecipeFridgeModal
+            onClose={() => setShowFridgeModal(false)}
+            ownedNames={owned}
+            substituteItems={substituteItems}
+            missingNames={missing}
+            fridgeEmpty={userIngredients.length === 0}
+          />
+        );
+      })()}
 
       {/* Fixed 하단 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 z-10 pb-4 pt-2 bg-gradient-to-t from-background-primary via-background-primary to-transparent">

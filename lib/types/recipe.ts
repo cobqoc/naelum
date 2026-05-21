@@ -35,8 +35,8 @@ export interface RecipeWithMatch extends Recipe {
   matchedCount?: number;
   totalIngredients?: number;
   ownedIngredientNames?: string[];
+  substitutableIngredients?: { ingredient: string; via: string }[];
   missingIngredientNames?: string[];
-  substitutes?: Record<string, string[]>;
 }
 
 export const DIFFICULTY_LABELS: Record<string, string> = {

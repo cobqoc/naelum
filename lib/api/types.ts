@@ -38,10 +38,12 @@ export interface RecipeRecommendation {
   matchRate: number;
   /** 부족한 재료 개수. */
   missingCount: number;
-  /** 부족한 재료명 목록. */
+  /** 부족한 재료명 목록 (대체 불가 — 사야 함). */
   missingIngredientNames: string[];
-  /** 부족 재료 → 대체 가능 보유 재료. */
-  substitutes: Record<string, string[]>;
+  /** 보유 중인 재료명 (동의어 매칭). */
+  ownedIngredientNames: string[];
+  /** 대체 가능 — 레시피 재료 → 보유한 대체 재료. */
+  substitutableIngredients: { ingredient: string; via: string }[];
   /** recipes select 로 함께 내려오는 나머지 컬럼 (title 외). */
   [extra: string]: unknown;
 }

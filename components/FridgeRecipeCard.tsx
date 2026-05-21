@@ -23,6 +23,7 @@ interface FridgeRecipe {
   matchedCount?: number;
   totalIngredients?: number;
   ownedIngredientNames?: string[];
+  substitutableIngredients?: { ingredient: string; via: string }[];
   missingIngredientNames?: string[];
 }
 
@@ -166,6 +167,7 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
       <RecipeFridgeModal
         onClose={() => setFridgeOpen(false)}
         ownedNames={recipe.ownedIngredientNames ?? []}
+        substituteItems={recipe.substitutableIngredients ?? []}
         missingNames={missing}
       />
     )}

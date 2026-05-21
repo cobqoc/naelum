@@ -300,6 +300,7 @@ export const ja = {
     fridgeModalTitle: '冷蔵庫の食材確認',
     fridgeModalOwned: '持っている',
     fridgeModalMissing: '不足している',
+    fridgeModalSubstitute: '代用可能',
     fridgeModalEmpty: '冷蔵庫に食材が登録されていません。',
     ratingCookedCta: 'このレシピで料理しましたね！レビューを残しましょう。',
     timerDoneTitle: 'タイマー完了！',

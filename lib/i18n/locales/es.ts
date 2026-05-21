@@ -300,6 +300,7 @@ export const es = {
     fridgeModalTitle: 'Verificar nevera',
     fridgeModalOwned: 'Disponible',
     fridgeModalMissing: 'Faltante',
+    fridgeModalSubstitute: 'Sustituible',
     fridgeModalEmpty: 'No hay ingredientes registrados en tu nevera.',
     ratingCookedCta: '¡Has cocinado esta receta! Deja una reseña.',
     timerDoneTitle: '¡Temporizador listo!',

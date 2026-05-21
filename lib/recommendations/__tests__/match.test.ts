@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   isIngredientMatch,
+  isSameIngredient,
+  isSubstituteFor,
   isFundamental,
   isReady,
   isAlmost,
@@ -122,5 +124,56 @@ describe('mode 술어', () => {
   it('isAny: matchRate > 0', () => {
     expect(isAny({ matchRate: 1 })).toBe(true)
     expect(isAny({ matchRate: 0 })).toBe(false)
+  })
+})
+
+// 동의어/대체재 분리 (2026-05-22) — "보유"는 동의어만, 대체재는 "대체 가능".
+// 사용자 제보: 냉장고에 까나리액젓이 있다고 멸치액젓을 "보유"라 하면 안 됨.
+describe('isSameIngredient — 보유 판정 (동의어만)', () => {
+  it('같은 재료(동의어)는 같음', () => {
+    expect(isSameIngredient('달걀', '계란')).toBe(true)
+    expect(isSameIngredient('소고기', '쇠고기')).toBe(true)
+    expect(isSameIngredient('진간장', '간장')).toBe(true) // 특정명 ⊂ 일반명
+    expect(isSameIngredient('스팸', '통조림 햄')).toBe(true)
+    expect(isSameIngredient('다진마늘', '마늘')).toBe(true) // 정규화
+  })
+
+  it('대체재는 같은 재료가 아님 — 보유로 인정 안 함 (핵심)', () => {
+    expect(isSameIngredient('까나리액젓', '멸치액젓')).toBe(false)
+    expect(isSameIngredient('멸치액젓', '까나리액젓')).toBe(false)
+    expect(isSameIngredient('진간장', '국간장')).toBe(false)
+    expect(isSameIngredient('버터', '마가린')).toBe(false)
+    expect(isSameIngredient('설탕', '올리고당')).toBe(false)
+  })
+
+  it('일반명 ↔ 특정명은 보유 — 액젓(일반)과 까나리액젓', () => {
+    expect(isSameIngredient('까나리액젓', '액젓')).toBe(true)
+    expect(isSameIngredient('액젓', '멸치액젓')).toBe(true)
+  })
+})
+
+describe('isSubstituteFor — 대체 가능 판정', () => {
+  it('대체재끼리는 대체 가능', () => {
+    expect(isSubstituteFor('까나리액젓', '멸치액젓')).toBe(true)
+    expect(isSubstituteFor('멸치액젓', '까나리액젓')).toBe(true)
+    expect(isSubstituteFor('버터', '마가린')).toBe(true)
+    expect(isSubstituteFor('진간장', '국간장')).toBe(true)
+  })
+
+  it('같은 재료는 대체가 아님', () => {
+    expect(isSubstituteFor('달걀', '계란')).toBe(false)
+    expect(isSubstituteFor('소고기', '소고기')).toBe(false)
+  })
+
+  it('무관한 재료는 대체 아님', () => {
+    expect(isSubstituteFor('간장', '고추장')).toBe(false)
+    expect(isSubstituteFor('쪽파', '대파')).toBe(false)
+  })
+})
+
+describe('isIngredientMatch — 동의어 OR 대체 (만들 수 있나)', () => {
+  it('대체재도 매칭 — 추천엔 계속 뜸', () => {
+    expect(isIngredientMatch('까나리액젓', '멸치액젓')).toBe(true)
+    expect(isIngredientMatch('설탕', '올리고당')).toBe(true)
   })
 })

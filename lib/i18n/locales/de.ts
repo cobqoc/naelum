@@ -300,6 +300,7 @@ export const de = {
     fridgeModalTitle: 'Kühlschrank prüfen',
     fridgeModalOwned: 'Vorhanden',
     fridgeModalMissing: 'Fehlend',
+    fridgeModalSubstitute: 'Ersetzbar',
     fridgeModalEmpty: 'Keine Zutaten im Kühlschrank eingetragen.',
     ratingCookedCta: 'Sie haben dieses Rezept gekocht! Hinterlassen Sie eine Bewertung.',
     timerDoneTitle: 'Timer abgelaufen!',

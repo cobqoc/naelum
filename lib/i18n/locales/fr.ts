@@ -300,6 +300,7 @@ export const fr = {
     fridgeModalTitle: 'Vérifier le réfrigérateur',
     fridgeModalOwned: 'Disponible',
     fridgeModalMissing: 'Manquant',
+    fridgeModalSubstitute: 'Remplaçable',
     fridgeModalEmpty: "Aucun ingrédient enregistré dans votre réfrigérateur.",
     ratingCookedCta: 'Vous avez cuisiné cette recette ! Laissez un avis.',
     timerDoneTitle: 'Minuteur terminé !',
