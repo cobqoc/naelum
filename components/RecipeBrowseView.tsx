@@ -11,6 +11,7 @@ import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useMultiTimer } from '@/lib/hooks/useMultiTimer';
 import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useI18n } from '@/lib/i18n/context';
+import { isIngredientMatch } from '@/lib/recommendations/match';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 
@@ -117,8 +118,11 @@ export default function RecipeBrowseView({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showTimerPanel, setShowTimerPanel] = useState(false);
 
+  // 동의어·조리법 접두사까지 처리하는 isIngredientMatch 사용 (추천 route 와 동일).
+  // 단순 substring 비교는 계란↔달걀 등 동의어를 놓치고, 고추↔고추장 같은
+  // 의미 다른 부분일치를 오매칭함 — 동의어 테이블이 단일 진실원천.
   const isIngredientOwned = (name: string) =>
-    userIngredients.some(ui => name.includes(ui) || ui.includes(name));
+    userIngredients.some(ui => isIngredientMatch(ui, name));
 
   const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
   const totalIngredients = recipe.ingredients.length;
