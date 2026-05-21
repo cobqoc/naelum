@@ -1149,6 +1149,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 매칭 표시 가독성 — 대체 라벨 + 카드 보유 텍스트 색** — 완료 (2026-05-22, develop 푸시)
+  - 레시피 상세 재료 탭: 대체 가능 재료가 `🔄 {재료}` 이모지만이라 의미 불명확 → `[🔄 대체 가능]` 라벨 칩 + 재료명
+  - 추천 카드: `N/N 보유` 텍스트를 회색 → 상태별 색(초록/주황/빨강 — 냉장고 아이콘 원과 동색). 레시피 상세 페이지 보유 텍스트와 통일
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e 408 passed · 0 failed
 - **e2e 병렬부하 flakiness 안정화 — 워커 2 + DB-readback 폴링화** — 완료 (2026-05-22, develop 푸시)
   - **문제**: 병렬 부하(로컬 3워커)에서 단일 dev DB·Next 서버 경합 → `tip-creation`·`cart` 등이 retry-pass flaky (매 1~2회 실행마다)
   - **워커 3→2** (`playwright.config`): 경합 자체 감소 — config 문서화 처방(워커 상한)의 연장. 5→3 으로도 부족했음

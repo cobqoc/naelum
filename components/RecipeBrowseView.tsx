@@ -620,7 +620,12 @@ export default function RecipeBrowseView({
                       {ing.ingredient_name}
                     </span>
                     {subVia && (
-                      <div className="text-xs text-warning mt-0.5">🔄 {subVia}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        <span className="inline-flex items-center gap-0.5 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold text-warning">
+                          🔄 {t.recipe.fridgeModalSubstitute}
+                        </span>
+                        <span className="text-xs text-warning">{subVia}</span>
+                      </div>
                     )}
                     <div className="text-xs text-text-muted mt-0.5">
                       {converted.isConverted ? (
