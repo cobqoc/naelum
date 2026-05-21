@@ -1149,6 +1149,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **e2e 병렬부하 flakiness 안정화 — 워커 2 + DB-readback 폴링화** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: 병렬 부하(로컬 3워커)에서 단일 dev DB·Next 서버 경합 → `tip-creation`·`cart` 등이 retry-pass flaky (매 1~2회 실행마다)
+  - **워커 3→2** (`playwright.config`): 경합 자체 감소 — config 문서화 처방(워커 상한)의 연장. 5→3 으로도 부족했음
+  - **`waitForTimeout → DB read` 안티패턴 제거**: `cart.spec`(4곳)·`logged-in-home`(1곳)의 "고정 sleep 후 즉시 DB 단언"을 `expect.poll`(end-state 폴링)로 교체 — CLAUDE.md e2e 규칙대로
+  - **tip-creation**: `waitForURL`(무거운 프로필 페이지 로딩에 race 걸림)을 버리고 `expect.poll(readTipState)`로 DB 직접 폴링. 스위트 최중량 쓰기라 describe per-test 예산 `test.setTimeout(120s)` + poll 60s
+  - 검증: 전체 e2e fresh build **2회 연속 408 passed · 0 flaky · 0 failed**
 - **추천 카드 냉장고 아이콘 통일 + 매칭 정보 1줄 정리** — 완료 (2026-05-22, develop 푸시)
   - **문제**: 추천 카드 냉장고 아이콘이 손그림 outline — 레시피 상세 페이지의 테라코타 디테일 아이콘과 전혀 다름. 매칭 신호도 3개(배지·본문 텍스트·아이콘)가 겹쳐 잡다
   - **`FridgeIcon` 공용 컴포넌트 신설** (`components/icons/FridgeIcon.tsx`): 상세 페이지 테라코타 냉장고 SVG 추출 → 상세·카드 둘 다 사용 → 구조상 영구 동일

@@ -381,7 +381,15 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await page.locator('button:has-text("달걀")').first().click();
     // 저장
     await page.locator('button:has-text("3개 추가")').first().click();
-    await page.waitForTimeout(2000);
+
+    // 3개 insert 커밋까지 폴링 (고정 sleep 금지: 부하 시 race)
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('user_ingredients')
+        .select('id')
+        .eq('user_id', testUser.userId);
+      return data?.length ?? 0;
+    }, { timeout: 10000 }).toBe(3);
 
     // DB 검증 — 3개 모두 sanitize 적용
     const { data: rows } = await admin()

@@ -38,7 +38,9 @@ export default defineConfig({
   // spec 을 회전하는 retry-pass flaky 발생(고립 실행 시 전부 통과로 확인).
   // 근본 처방: 로컬 워커 상한(경합 자체 감소). per-test timeout 땜질은
   // flake 가 회전하므로 whack-a-mole. CI 는 이미 1워커라 영향 없음.
-  workers: process.env.CI ? 1 : 3,
+  // 5→3 으로도 tip-creation(팁 POST + 무거운 프로필 페이지 이동)이 부하
+  // 피크에서 간헐 flake(waitForURL 30s 초과) → 3→2 로 추가 하향(2026-05-22).
+  workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   timeout: 60000,
 

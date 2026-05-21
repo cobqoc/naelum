@@ -22,9 +22,9 @@ function admin() {
  *   비공개로 저장 → is_public=false, is_draft=false
  *   팁 공유하기   → is_public=true,  is_draft=false
  *
- * 검증 패턴: 버튼 클릭 → 저장 성공 시의 네비게이션을 명시적으로 대기
- * (POST 완료 = 확정 신호) → 그 다음 DB 상태 단언. 고정 타임아웃으로 느린
- * POST 를 race 하지 않는다 (병렬 부하 시 flake 방지 — CLAUDE.md e2e 규칙).
+ * 검증 패턴: 버튼 클릭 → DB 상태를 expect.poll 로 직접 폴링. 네비게이션을
+ * 완료 프록시로 쓰지 않는다 — waitForURL 이 무거운 프로필 페이지 로딩에
+ * race 가 걸려 병렬 부하 시 flake 했음(2026-05-22). 폴링이 곧 완료 대기다.
  */
 
 async function gotoTipNew(page: Page) {
@@ -54,6 +54,10 @@ async function readTipState(userId: string, title: string) {
 
 test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
   test.beforeEach(async ({ testUser }) => {
+    // 팁 생성 POST(tip + steps insert)는 스위트에서 가장 무거운 쓰기 —
+    // 병렬 부하 피크에서 느려질 수 있어 per-test 예산을 넉넉히 (기본 60s → 120s).
+    // 고정 sleep 이 아니라 폴링 상한 — 정상 동작은 1~3초에 끝난다.
+    test.setTimeout(120_000);
     await admin().from('tip').delete().eq('author_id', testUser.userId);
   });
   test.afterEach(async ({ testUser }) => {
@@ -68,10 +72,9 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     await gotoTipNew(page);
     await fillTipForm(page, title);
     await page.getByRole('button', { name: '임시저장', exact: true }).click();
-    // 저장 성공 → 프로필 임시저장 탭으로 이동 (네비게이션 = POST 완료)
-    await page.waitForURL((u) => u.searchParams.get('tab') === 'drafts', { timeout: 30000 });
+    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
     await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 10000 })
+      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
       .toBe('false/true');
   });
 
@@ -83,10 +86,9 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     await gotoTipNew(page);
     await fillTipForm(page, title);
     await page.getByRole('button', { name: '비공개로 저장', exact: true }).click();
-    // 저장 성공 → 프로필 비공개 탭으로 이동
-    await page.waitForURL((u) => u.searchParams.get('tab') === 'private', { timeout: 30000 });
+    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
     await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 10000 })
+      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
       .toBe('false/false');
   });
 
@@ -98,10 +100,9 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     await gotoTipNew(page);
     await fillTipForm(page, title);
     await page.getByRole('button', { name: '팁 공유하기', exact: true }).click();
-    // 저장 성공 → 생성된 팁 상세 페이지(/tip/{uuid})로 이동
-    await page.waitForURL((u) => /\/tip\/[0-9a-f-]{36}/.test(u.pathname), { timeout: 30000 });
+    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
     await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 10000 })
+      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
       .toBe('true/false');
   });
 });
