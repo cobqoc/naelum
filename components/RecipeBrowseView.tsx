@@ -14,6 +14,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
+import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
@@ -117,6 +118,10 @@ export default function RecipeBrowseView({
   // 단계 완료 체크
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showTimerPanel, setShowTimerPanel] = useState(false);
+  // 직접 타이머 설정 모달 — null=닫힘, 객체=열림(prefill 있으면 단계 본문 값으로 미리 채움)
+  const [timerSetup, setTimerSetup] = useState<
+    null | { prefill?: { totalMinutes: number; checkpointMinutes: number[] } }
+  >(null);
 
   // 보유 판정 — 물·생수 등 기본 재료(isFundamental)는 항상 보유로 간주.
   // 그 외엔 isIngredientMatch(동의어·조리법 접두사 처리, 추천 route 와 동일)로
@@ -691,6 +696,15 @@ export default function RecipeBrowseView({
               </div>
             )}
 
+            {/* 직접 타이머 — 본문에 없는 시간·중간 알림이 필요할 때 */}
+            <button
+              onClick={() => setTimerSetup({})}
+              className="mt-3 md:mt-1 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
+            >
+              <span>⏱️</span>
+              <span>{t.cookMode.customTimerOpen}</span>
+            </button>
+
             <div className="pt-4 md:pt-0 space-y-6 pb-4">
               {sortedSteps.map((step) => {
                 const effectiveTimers = getEffectiveTimers(step);
@@ -745,6 +759,24 @@ export default function RecipeBrowseView({
                               <span>{minutes}{t.recipe.minuteSuffix}</span>
                             </button>
                           ))}
+                          {/* 단계 타이머 — 시간 점이 2개+ 인 단계: 총 시간+중간 알림으로 묶기 */}
+                          {effectiveTimers.length >= 2 && (
+                            <button
+                              onClick={() => {
+                                const sorted = [...effectiveTimers].sort((a, b) => a - b);
+                                setTimerSetup({
+                                  prefill: {
+                                    totalMinutes: sorted[sorted.length - 1],
+                                    checkpointMinutes: sorted.slice(0, -1),
+                                  },
+                                });
+                              }}
+                              className="flex items-center gap-1.5 text-sm text-accent-warm font-medium hover:text-accent-warm/70 transition-colors"
+                            >
+                              <span>⏱️</span>
+                              <span>{t.cookMode.customTimerStepButton}</span>
+                            </button>
+                          )}
                         </div>
                       )}
 
@@ -851,6 +883,20 @@ export default function RecipeBrowseView({
         setShowTimerPanel={setShowTimerPanel}
         t={t}
       />
+
+      {/* 직접 타이머 설정 모달 */}
+      {timerSetup && (
+        <CustomTimerSetup
+          prefill={timerSetup.prefill}
+          onClose={() => setTimerSetup(null)}
+          onStart={(totalMinutes, checkpoints) => {
+            multiTimer.startTimer(totalMinutes, t.cookMode.customTimerOpen, undefined, checkpoints);
+            setShowTimerPanel(true);
+            setTimerSetup(null);
+            toast.success(t.cookMode.timerStarted.replace('{minutes}', String(totalMinutes)));
+          }}
+        />
+      )}
 
       {/* Fixed 하단 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 z-10 pb-4 pt-2 bg-gradient-to-t from-background-primary via-background-primary to-transparent">

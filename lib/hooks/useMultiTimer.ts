@@ -2,6 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 
+export interface TimerCheckpoint {
+  /** 경과 시간(초) — 이 시점에 도달하면 알림 발화 */
+  atSeconds: number;
+  label: string;
+  fired: boolean;
+}
+
 export interface Timer {
   id: string;
   label: string;
@@ -10,6 +17,10 @@ export interface Timer {
   isActive: boolean;
   isPaused: boolean;
   stepNumber?: number;
+  /** 중간 체크포인트 알림 — 총 시간 도달 전 단계별 알림 (없으면 빈 배열) */
+  checkpoints: TimerCheckpoint[];
+  /** 방금 발화돼 아직 사용자가 안 닫은 체크포인트 라벨 (배너 표시용). 없으면 null */
+  checkpointAlert: string | null;
 }
 
 export function useMultiTimer() {
@@ -35,9 +46,20 @@ export function useMultiTimer() {
     }
   }, []);
 
-  const startTimer = useCallback((minutes: number, label: string, stepNumber?: number) => {
+  const startTimer = useCallback((
+    minutes: number,
+    label: string,
+    stepNumber?: number,
+    checkpointInput?: { atMinutes: number; label: string }[],
+  ) => {
     const id = `timer_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const totalSeconds = minutes * 60;
+
+    // 체크포인트 — 경과초로 환산, 범위(0 < t < 총시간) 밖은 버리고 오름차순 정렬
+    const checkpoints: TimerCheckpoint[] = (checkpointInput ?? [])
+      .map(c => ({ atSeconds: Math.round(c.atMinutes * 60), label: c.label, fired: false }))
+      .filter(c => c.atSeconds > 0 && c.atSeconds < totalSeconds)
+      .sort((a, b) => a.atSeconds - b.atSeconds);
 
     const newTimer: Timer = {
       id,
@@ -47,6 +69,8 @@ export function useMultiTimer() {
       isActive: true,
       isPaused: false,
       stepNumber,
+      checkpoints,
+      checkpointAlert: null,
     };
 
     setTimers(prev => [...prev, newTimer]);
@@ -76,7 +100,20 @@ export function useMultiTimer() {
               }
               return { ...t, remainingSeconds: 0, isActive: false };
             }
-            return { ...t, remainingSeconds: t.remainingSeconds - 1 };
+            const newRemaining = t.remainingSeconds - 1;
+            // 중간 체크포인트 발화 검사 — 경과 시간이 체크포인트 시점에 도달하면 알림
+            const elapsed = t.totalSeconds - newRemaining;
+            const due = t.checkpoints.find(cp => !cp.fired && elapsed >= cp.atSeconds);
+            if (due) {
+              playTimerSound();
+              return {
+                ...t,
+                remainingSeconds: newRemaining,
+                checkpoints: t.checkpoints.map(cp => cp === due ? { ...cp, fired: true } : cp),
+                checkpointAlert: due.label,
+              };
+            }
+            return { ...t, remainingSeconds: newRemaining };
           }));
         }, 1000);
         intervalsRef.current.set(timer.id, interval);
@@ -124,6 +161,13 @@ export function useMultiTimer() {
     setTimers(prev => prev.filter(t => t.isActive));
   }, []);
 
+  // 발화된 체크포인트 알림 배너 닫기 ("확인")
+  const clearCheckpointAlert = useCallback((id: string) => {
+    setTimers(prev => prev.map(t =>
+      t.id === id ? { ...t, checkpointAlert: null } : t
+    ));
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     const intervals = intervalsRef.current;
@@ -146,5 +190,6 @@ export function useMultiTimer() {
     togglePause,
     stopTimer,
     removeCompleted,
+    clearCheckpointAlert,
   };
 }
