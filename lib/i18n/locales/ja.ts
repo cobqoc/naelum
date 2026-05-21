@@ -381,13 +381,8 @@ export const ja = {
     hard: '上級',
   },
   recipeCard: {
-    matchedLabel: 'マッチ',
-    missingCountBadge: 'あと{count}個',
-    cookedLabel: '作ったよ',
-    heldSuffix: '個保有',
-    missingLabel: '足りない食材',
-    allHeldLabel: 'すべて保有',
-    minutesSuffix: '分',
+    matchedLabel: 'マッチ',    cookedLabel: '作ったよ',
+    heldSuffix: '個保有',    minutesSuffix: '分',
   },
   ingredientPage: {
     title: 'マイ冷蔵庫',

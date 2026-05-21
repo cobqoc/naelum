@@ -381,13 +381,8 @@ export const de = {
     hard: 'Schwer',
   },
   recipeCard: {
-    matchedLabel: 'Übereinstimmung',
-    missingCountBadge: '{count} fehlen',
-    cookedLabel: 'Gekocht',
-    heldSuffix: ' vorhanden',
-    missingLabel: 'Fehlt',
-    allHeldLabel: 'Alle Zutaten vorhanden',
-    minutesSuffix: 'Min',
+    matchedLabel: 'Übereinstimmung',    cookedLabel: 'Gekocht',
+    heldSuffix: ' vorhanden',    minutesSuffix: 'Min',
   },
   ingredientPage: {
     title: 'Mein Kühlschrank',

@@ -381,13 +381,8 @@ export const en = {
     hard: 'Hard',
   },
   recipeCard: {
-    matchedLabel: 'match',
-    missingCountBadge: 'Need {count} more',
-    cookedLabel: 'Cooked',
-    heldSuffix: ' in stock',
-    missingLabel: 'Missing',
-    allHeldLabel: 'All ingredients in stock',
-    minutesSuffix: 'min',
+    matchedLabel: 'match',    cookedLabel: 'Cooked',
+    heldSuffix: ' in stock',    minutesSuffix: 'min',
   },
   ingredientPage: {
     title: 'My Fridge',

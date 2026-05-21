@@ -381,13 +381,8 @@ export const it = {
     hard: 'Difficile',
   },
   recipeCard: {
-    matchedLabel: 'corrispondenza',
-    missingCountBadge: '{count} mancanti',
-    cookedLabel: 'Cucinato',
-    heldSuffix: ' disponibili',
-    missingLabel: 'Mancanti',
-    allHeldLabel: 'Tutti gli ingredienti disponibili',
-    minutesSuffix: 'min',
+    matchedLabel: 'corrispondenza',    cookedLabel: 'Cucinato',
+    heldSuffix: ' disponibili',    minutesSuffix: 'min',
   },
   ingredientPage: {
     title: 'Il mio frigo',

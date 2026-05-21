@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **추천 카드 냉장고 아이콘 통일 + 매칭 정보 1줄 정리** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: 추천 카드 냉장고 아이콘이 손그림 outline — 레시피 상세 페이지의 테라코타 디테일 아이콘과 전혀 다름. 매칭 신호도 3개(배지·본문 텍스트·아이콘)가 겹쳐 잡다
+  - **`FridgeIcon` 공용 컴포넌트 신설** (`components/icons/FridgeIcon.tsx`): 상세 페이지 테라코타 냉장고 SVG 추출 → 상세·카드 둘 다 사용 → 구조상 영구 동일
+  - **카드 매칭 정보 1줄로 통합**: "재료 N개 부족" 배지 + "부족한 재료: 대파, 감자 +1" 본문 텍스트 모두 제거 → `[색 아이콘] N/N 보유` 한 줄. 줄 전체 탭 → `RecipeFridgeModal`(보유·대체·없는 전부). 아이콘 원 색 = 상태(초록 0개·주황 1~3·빨강 4+)
+  - **근거**: 부족 재료 *이름* 텍스트는 잘림(`+1`)·2줄 위험 = 반쪽짜리. "N/N 보유"는 항상 짧고 완전한 카운트. **색=글랜스 / 카운트=정밀 / 모달=완전한 이름목록** 3단. 카드엔 pulse 미적용(그리드 다중 pulse는 노이즈 — 상세 페이지만 pulse)
+  - i18n: `recipeCard.missingCountBadge`·`missingLabel`·`allHeldLabel` 제거. `recipe.ownedSuffix`는 상세 페이지와 공유
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 406 passed · 0 failed
 - **타이머 입력란 제거 + 파서 시간단위 보강 + timestamp 보정** — 완료 (2026-05-22, develop 푸시)
   - **레시피 작성 폼 타이머 입력란 제거**: 단계별 `timer_minutes` 입력은 본문 텍스트 파싱과 중복 (스텝은 거의 항상 "4분간 삶기"처럼 본문에 시간 명시). 작성/수정 폼 `StepsSection`에서 입력란만 제거 — DB 컬럼·`getEffectiveTimers`의 dbVal 읽기는 유지 → 기존 `timer_minutes` 레시피는 그대로 표시. i18n `stepTimerPlaceholder` 제거
   - **`parseAllTimers` → `lib/cook/parseTimers.ts` 추출 + 보강** (vitest 11): ① 시간 단위 — `N시간 M분`/`N시간` → 총 분, 매칭 구간 제거로 "1시간 30분→30분" 오파싱 수정 ② 오탐 — `N분의 M`(분수) 제외(`분(?!의)`). 3시간+ 는 120분 상한 초과로 제외. **한글 숫자는 미지원** — `오이`(=오5·이2) 등 일반 단어와 충돌해 가짜 타이머 생김
