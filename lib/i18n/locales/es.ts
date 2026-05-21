@@ -381,13 +381,8 @@ export const es = {
     hard: 'Difícil',
   },
   recipeCard: {
-    matchedLabel: 'coincide',
-    missingCountBadge: 'Faltan {count}',
-    cookedLabel: 'Cocinado',
-    heldSuffix: ' disponibles',
-    missingLabel: 'Falta',
-    allHeldLabel: 'Todos los ingredientes disponibles',
-    minutesSuffix: 'min',
+    matchedLabel: 'coincide',    cookedLabel: 'Cocinado',
+    heldSuffix: ' disponibles',    minutesSuffix: 'min',
   },
   ingredientPage: {
     title: 'Mi nevera',

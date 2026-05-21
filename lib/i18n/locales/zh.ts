@@ -381,13 +381,8 @@ export const zh = {
     hard: '高级',
   },
   recipeCard: {
-    matchedLabel: '匹配',
-    missingCountBadge: '还差 {count} 种',
-    cookedLabel: '做过了',
-    heldSuffix: '个已有',
-    missingLabel: '缺少食材',
-    allHeldLabel: '所有食材齐全',
-    minutesSuffix: '分',
+    matchedLabel: '匹配',    cookedLabel: '做过了',
+    heldSuffix: '个已有',    minutesSuffix: '分',
   },
   ingredientPage: {
     title: '我的冰箱',

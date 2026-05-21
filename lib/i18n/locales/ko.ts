@@ -381,13 +381,8 @@ export const ko = {
     hard: '고급',
   },
   recipeCard: {
-    matchedLabel: '매칭',
-    missingCountBadge: '재료 {count}개 부족',
-    cookedLabel: '만들어봤어요',
-    heldSuffix: '개 보유',
-    missingLabel: '부족한 재료',
-    allHeldLabel: '모든 재료 보유',
-    minutesSuffix: '분',
+    matchedLabel: '매칭',    cookedLabel: '만들어봤어요',
+    heldSuffix: '개 보유',    minutesSuffix: '분',
   },
   ingredientPage: {
     title: '내 냉장고',
