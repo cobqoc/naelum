@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
-import { type Profile, type Recipe, type Tip, type TabType } from './_components/types';
+import { type Profile, type ProfileCounts, type Recipe, type Tip, type TabType } from './_components/types';
 import ProfileCard from './_components/ProfileCard';
 import ProfileTabs from './_components/ProfileTabs';
 import TipsGrid from './_components/TipsGrid';
@@ -36,6 +36,7 @@ export default function ProfilePage(props: PageProps) {
   const { t } = useI18n();
   const toast = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [counts, setCounts] = useState<ProfileCounts>({ tips: 0, drafts: 0, private: 0 });
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<string[]>([]);
@@ -80,6 +81,7 @@ export default function ProfilePage(props: PageProps) {
 
       if (res.ok) {
         setProfile(data.profile);
+        setCounts(data.counts || { tips: 0, drafts: 0, private: 0 });
         setRecipes(data.recipes || []);
         setInterests(data.interests || []);
         setDietaryPreferences(data.dietaryPreferences || []);
@@ -350,6 +352,8 @@ export default function ProfilePage(props: PageProps) {
         <ProfileCard
           t={t}
           profile={profile}
+          counts={counts}
+          isOwnProfile={isOwnProfile}
           interests={interests}
           dietaryPreferences={dietaryPreferences}
           allergies={allergies}

@@ -16,6 +16,17 @@ export interface Profile {
   show_cooked_to_public?: boolean;
 }
 
+/**
+ * 프로필 카드 통계 블록용 콘텐츠 카운트.
+ * 레시피 수는 profile.recipes_count(비정규화 컬럼) 사용 — 여기엔 미포함.
+ * drafts/private 는 본인 프로필에서만 의미 있음 (남의 프로필엔 0).
+ */
+export interface ProfileCounts {
+  tips: number;
+  drafts: number;
+  private: number;
+}
+
 export interface Recipe {
   id: string;
   title: string;
