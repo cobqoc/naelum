@@ -9,8 +9,6 @@ import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import RecipeBrowseView from '@/components/RecipeBrowseView';
-import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
-import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
 
 // 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
 const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { ssr: false });
@@ -101,7 +99,6 @@ export default function RecipeDetailClient({
   const [likeLoading, setLikeLoading] = useState(false);
   const [userIngredients] = useState<string[]>(initialUserIngredients);
   const [actionLoading, setActionLoading] = useState(false);
-  const [showFridgeModal, setShowFridgeModal] = useState(false);
   // 조회수 증가 중복 방지용 ref
   const viewIncrementedRef = useRef(false);
 
@@ -344,7 +341,6 @@ export default function RecipeDetailClient({
         onUpdateMemo={handleUpdateMemo}
         actionLoading={actionLoading}
         hasCooked={hasCooked}
-        onShowFridge={() => setShowFridgeModal(true)}
         isLiked={isLiked}
         likesCount={likesCount}
         onToggleLike={handleLike}
@@ -366,22 +362,6 @@ export default function RecipeDetailClient({
         recipeId={id}
         currentUserId={currentUserId}
       />
-
-      {/* 냉장고 재료 비교 모달 — 공용 RecipeFridgeModal (추천 카드와 동일) */}
-      {showFridgeModal && (() => {
-        // 보유 판정 — 물 등 기본 재료는 항상 보유, 그 외엔 동의어 매칭(추천 route 와 동일).
-        // 단순 substring 비교 금지 (계란↔달걀 놓침·물엿↔물 오매칭).
-        const isOwned = (name: string) =>
-          isFundamental(name) || userIngredients.some(ui => isIngredientMatch(ui, name));
-        return (
-          <RecipeFridgeModal
-            onClose={() => setShowFridgeModal(false)}
-            ownedNames={recipe.ingredients.filter(i => isOwned(i.ingredient_name)).map(i => i.ingredient_name)}
-            missingNames={recipe.ingredients.filter(i => !isOwned(i.ingredient_name)).map(i => i.ingredient_name)}
-            fridgeEmpty={userIngredients.length === 0}
-          />
-        );
-      })()}
 
     </div>
   );

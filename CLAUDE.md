@@ -1149,6 +1149,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **냉장고 모달 보유 판정 단일화 — 중복 로직 제거** — 완료 (2026-05-22, develop 푸시)
+  - **버그**: 레시피 상세 페이지가 "재료 보유 여부"를 두 곳에서 따로 계산 — `RecipeBrowseView.isIngredientOwned`(재료 탭·"N/N 보유")는 `isIngredientMatch`(동의어·정규화·Levenshtein), `RecipeDetailClient` 냉장고 모달 `isOwned`는 단순 substring. 같은 재료(멸치액젓)를 한 화면은 보유·다른 화면은 없음으로 표시
+  - **근본 원인**: `isFundamental(name) || userIngredients.some(isIngredientMatch)` 식이 두 파일에 복붙 → 드리프트. (까나리액젓↔멸치액젓 매칭 자체는 `액젓` 동의어로 정상 — 둘 다 액젓)
+  - **수정**: `showFridgeModal` 상태 + `<RecipeFridgeModal>` 렌더를 `RecipeBrowseView`로 이동 → 재료 탭·"N/N 보유"·냉장고 모달이 물리적으로 같은 `isIngredientOwned` 한 개 공유 → 영구히 못 갈라짐. `RecipeDetailClient`에서 모달 블록·`showFridgeModal` 상태·`onShowFridge` prop 제거
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
 - **레시피 조리 단계 직접 타이머 — 중간 알림(체크포인트)** — 완료 (2026-05-22, develop 푸시)
   - **배경**: 한 조리 단계에 시간 점이 여럿인 경우("총 4분, 절반(2분)쯤 뒤집기")를 작성자 설정 단계 타이머·본문 자동감지(`getEffectiveTimers`)로는 못 풀음 — 별개 타이머 2개로 떠서 "동시에 켜라"가 비직관적. 타이머 1개 안의 중간 체크포인트로 모델링
   - **`useMultiTimer` 확장**: `Timer`에 `checkpoints: TimerCheckpoint[]`(경과초·라벨·fired) + `checkpointAlert: string|null` 추가. `startTimer` 4번째 인자 `checkpointInput` — 범위(0<t<총시간) 필터·정렬. 틱마다 경과시간이 체크포인트 도달 시 `playTimerSound()` + `checkpointAlert` 세팅. `clearCheckpointAlert(id)` 추가. 기존 3-인자 호출은 `checkpoints=[]` → 행위 변경 0

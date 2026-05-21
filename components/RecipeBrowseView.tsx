@@ -15,6 +15,7 @@ import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
+import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
@@ -75,7 +76,6 @@ interface RecipeBrowseViewProps {
   onUpdateMemo: (notes: string) => void;
   actionLoading: boolean;
   hasCooked: boolean;
-  onShowFridge: () => void;
   isLiked?: boolean;
   likesCount?: number;
   onToggleLike?: () => void;
@@ -91,7 +91,6 @@ export default function RecipeBrowseView({
   onUpdateMemo,
   actionLoading,
   hasCooked,
-  onShowFridge,
   isLiked = false,
   likesCount = 0,
   onToggleLike,
@@ -122,6 +121,8 @@ export default function RecipeBrowseView({
   const [timerSetup, setTimerSetup] = useState<
     null | { prefill?: { totalMinutes: number; checkpointMinutes: number[] } }
   >(null);
+  // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
+  const [showFridgeModal, setShowFridgeModal] = useState(false);
 
   // 보유 판정 — 물·생수 등 기본 재료(isFundamental)는 항상 보유로 간주.
   // 그 외엔 isIngredientMatch(동의어·조리법 접두사 처리, 추천 route 와 동일)로
@@ -551,7 +552,7 @@ export default function RecipeBrowseView({
                     </svg>
                     {unitConv.isImperial ? t.recipe.imperialLabel : t.recipe.metricLabel}
                   </button>
-                  <button onClick={onShowFridge} className="flex flex-col items-center gap-1">
+                  <button onClick={() => setShowFridgeModal(true)} className="flex flex-col items-center gap-1">
                     <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all animate-pulse ${
                       ingredientStatus === 'none'
                         ? 'bg-error text-white shadow-[0_0_12px_rgba(244,67,54,0.5)]'
@@ -895,6 +896,16 @@ export default function RecipeBrowseView({
             setTimerSetup(null);
             toast.success(t.cookMode.timerStarted.replace('{minutes}', String(totalMinutes)));
           }}
+        />
+      )}
+
+      {/* 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 동일한 isIngredientOwned 단일 판정 */}
+      {showFridgeModal && (
+        <RecipeFridgeModal
+          onClose={() => setShowFridgeModal(false)}
+          ownedNames={recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).map(i => i.ingredient_name)}
+          missingNames={recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_name)).map(i => i.ingredient_name)}
+          fridgeEmpty={userIngredients.length === 0}
         />
       )}
 
