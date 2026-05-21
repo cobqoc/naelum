@@ -264,7 +264,7 @@ export const en = {
     metricLabel: 'Metric',
     imperialLabel: 'Imperial',
     ownedSuffix: 'owned',
-    cartButton: 'Shopping list',
+    cartButton: 'Add ingredients to list',
     cartExcludeOwnedLabel: 'Skip ingredients already in fridge ({count})',
     cartAllOwned: 'All ingredients are already in your fridge',
     cartAddedSimple: 'Added {count} ingredient(s) to shopping list!',

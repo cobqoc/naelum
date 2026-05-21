@@ -264,7 +264,7 @@ export const ko = {
     metricLabel: '미터법',
     imperialLabel: 'Imperial',
     ownedSuffix: '보유',
-    cartButton: '장보기',
+    cartButton: '장보기에 재료 담기',
     cartExcludeOwnedLabel: '냉장고에 있는 재료 제외 ({count})',
     cartAllOwned: '모든 재료가 이미 냉장고에 있어요',
     cartAddedSimple: '{count}개 재료를 장보기에 담았어요!',

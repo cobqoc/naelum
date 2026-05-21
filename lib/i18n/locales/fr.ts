@@ -264,7 +264,7 @@ export const fr = {
     metricLabel: 'Métrique',
     imperialLabel: 'Impérial',
     ownedSuffix: 'disponible',
-    cartButton: 'Courses',
+    cartButton: 'Ajouter à la liste',
     cartExcludeOwnedLabel: 'Exclure les ingrédients déjà au frigo ({count})',
     cartAllOwned: 'Tous les ingrédients sont déjà dans votre frigo',
     cartAddedSimple: '{count} ingrédient(s) ajouté(s) à la liste de courses !',
