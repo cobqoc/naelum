@@ -47,12 +47,12 @@ interface FridgeRecipeCardProps {
   priority?: boolean;
 }
 
-// 냉장고 아이콘 원 배경색 — 상태를 한눈에. 레시피 상세 페이지와 같은 팔레트.
-// 0개=초록(바로 가능), 1~3개=주황(거의), 4개↑=빨강.
-function getFridgeIconBg(missingCount: number) {
-  if (missingCount === 0) return 'bg-success';
-  if (missingCount <= 3) return 'bg-warning';
-  return 'bg-error';
+// 냉장고 상태 색 — 아이콘 원 배경(bg) + "N/N 보유" 텍스트(text)를 같은 색으로.
+// 레시피 상세 페이지와 같은 팔레트: 0개=초록(바로 가능), 1~3개=주황(거의), 4개↑=빨강.
+function fridgeStatusColor(missingCount: number): { bg: string; text: string } {
+  if (missingCount === 0) return { bg: 'bg-success', text: 'text-success' };
+  if (missingCount <= 3) return { bg: 'bg-warning', text: 'text-warning' };
+  return { bg: 'bg-error', text: 'text-error' };
 }
 
 export default memo(function FridgeRecipeCard({ recipe, priority = false }: FridgeRecipeCardProps) {
@@ -102,21 +102,24 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
 
           {/* 냉장고 — 색 아이콘(글랜스) + N/N 보유(정밀 카운트). 줄 전체 탭 → 보유/대체/없는 모달.
               레시피 상세 페이지와 동일한 공용 FridgeIcon·ownedSuffix 사용 */}
-          {hasMatch && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFridgeOpen(true); }}
-              aria-label={t.recipe.fridgeModalTitle}
-              className="flex items-center gap-1.5 group/fridge"
-            >
-              <span className={`shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-transform group-hover/fridge:scale-110 ${getFridgeIconBg(missingCount)}`}>
-                <FridgeIcon size={16} />
-              </span>
-              <span className="text-[11px] text-text-secondary">
-                {ownedCount}/{totalCount} {t.recipe.ownedSuffix}
-              </span>
-            </button>
-          )}
+          {hasMatch && (() => {
+            const fc = fridgeStatusColor(missingCount);
+            return (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFridgeOpen(true); }}
+                aria-label={t.recipe.fridgeModalTitle}
+                className="flex items-center gap-1.5 group/fridge"
+              >
+                <span className={`shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-transform group-hover/fridge:scale-110 ${fc.bg}`}>
+                  <FridgeIcon size={16} />
+                </span>
+                <span className={`text-[11px] font-semibold ${fc.text}`}>
+                  {ownedCount}/{totalCount} {t.recipe.ownedSuffix}
+                </span>
+              </button>
+            );
+          })()}
 
           {/* 시간 · 난이도 · 평점 */}
           {(totalTime || difficultyLabel || (recipe.average_rating && recipe.average_rating > 0)) && (
