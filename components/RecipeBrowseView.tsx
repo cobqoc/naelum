@@ -739,22 +739,23 @@ export default function RecipeBrowseView({
                       )}
                       <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
 
-                      {/* 타이머 — 단계마다 1개. 본문 시간 자동 채움(없으면 빈 폼), 직접 수정 가능 */}
-                      <button
-                        onClick={() => {
-                          const sorted = [...effectiveTimers].sort((a, b) => a - b);
-                          setTimerSetup({
-                            stepNumber: step.step_number,
-                            prefill: sorted.length > 0
-                              ? { totalMinutes: sorted[sorted.length - 1], checkpointMinutes: sorted.slice(0, -1) }
-                              : undefined,
-                          });
-                        }}
-                        className="mt-2 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
-                      >
-                        <span>⏱️</span>
-                        <span>{t.cookMode.customTimerOpen}</span>
-                      </button>
+                      {/* 타이머 — 본문에 시간이 있는 단계에만. 그 단계 시간으로 prefill.
+                          시간 없는 단계/즉흥 타이머는 하단 바의 ⏱ 타이머 버튼으로. */}
+                      {effectiveTimers.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const sorted = [...effectiveTimers].sort((a, b) => a - b);
+                            setTimerSetup({
+                              stepNumber: step.step_number,
+                              prefill: { totalMinutes: sorted[sorted.length - 1], checkpointMinutes: sorted.slice(0, -1) },
+                            });
+                          }}
+                          className="mt-2 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
+                        >
+                          <span>⏱️</span>
+                          <span>{t.cookMode.customTimerOpen}</span>
+                        </button>
+                      )}
 
                       {/* 음성 읽기 */}
                       {voice.isSupported && (
@@ -921,6 +922,15 @@ export default function RecipeBrowseView({
             >
               <CartIcon size={22} active />
               <span>{t.recipe.cartButton}</span>
+            </button>
+            {/* 타이머 — 어느 단계서나 항상 닿는 위치(하단 고정 바). 빈 폼으로 열림 */}
+            <button
+              onClick={() => setTimerSetup({})}
+              aria-label={t.cookMode.customTimerOpen}
+              className="py-4 px-4 rounded-2xl bg-background-secondary border border-white/10 text-text-secondary hover:text-text-primary hover:border-accent-warm/40 transition-all flex items-center gap-1.5 text-sm font-medium shrink-0"
+            >
+              <span className="text-base">⏱️</span>
+              <span className="hidden sm:inline">{t.cookMode.customTimerOpen}</span>
             </button>
             <button
               onClick={() => setFeedbackOpen(true)}

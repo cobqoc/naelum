@@ -33,7 +33,7 @@ test.describe('쿠킹 모드 타이머', () => {
         await page.waitForTimeout(300)
       }
 
-      // 단계마다 있는 "⏱️ 타이머" 버튼
+      // 시간 있는 단계의 "⏱️ 타이머" 버튼 (DOM 상 하단 바 버튼보다 먼저)
       const timerBtn = page.locator('button').filter({ hasText: /⏱️/ }).first()
       await expect(timerBtn).toBeVisible({ timeout: 5000 })
       await timerBtn.click()
