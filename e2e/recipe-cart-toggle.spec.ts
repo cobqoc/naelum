@@ -11,9 +11,13 @@ function admin() {
   });
 }
 
-const ING_ONION = '테스트양파토글검증';
-const ING_CARROT = '테스트당근토글검증';
-const ING_POTATO = '테스트감자토글검증';
+// 재료명은 서로 Levenshtein 유사도 70% 미만이어야 한다 — isIngredientOwned 가
+// isIngredientMatch(동의어 + 정규화 + 레벤슈타인 0.7)를 쓰므로, 글자가 많이
+// 겹치는 이름은 서로 오매칭됨. 실제 재료(양파/당근/감자)처럼 서로 안 닮은
+// 이름을 쓴다 (공유 부분 문자열 금지).
+const ING_ONION = '양파테스트';
+const ING_CARROT = '당근목업';
+const ING_POTATO = '감자샘플';
 
 async function seedRecipeIngredients(recipeId: string) {
   await admin().from('recipe_ingredients').insert([

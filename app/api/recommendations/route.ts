@@ -222,8 +222,10 @@ export async function GET(request: NextRequest) {
         recommendations = recipesWithMatch
           .filter(predicate)
           .sort((a, b) => {
-            if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate
+            // 부족 재료 적은 순(= 만들기 쉬운 순) → 매칭률 → 평점.
+            // "재료 N개만 더 있으면" 추천이라 작은 N 이 위로 와야 자연스럽다.
             if (a.missingCount !== b.missingCount) return a.missingCount - b.missingCount
+            if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate
             return (b.average_rating || 0) - (a.average_rating || 0)
           })
           .slice(0, limit)

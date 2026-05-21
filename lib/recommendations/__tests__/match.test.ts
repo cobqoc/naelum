@@ -108,20 +108,15 @@ describe('mode 술어', () => {
     expect(isReady({ matchedCount: 0, totalIngredients: 0 })).toBe(false)
   })
 
-  it('isAlmost: 부족 1~2개 AND matchRate ≥ 70% (상대기준 B, 임계값 70)', () => {
-    // 정상 "거의" — 대부분 보유, 1~2개만 더
-    expect(isAlmost({ missingCount: 1, matchRate: 70 })).toBe(true) // 경계 정확히 70
-    expect(isAlmost({ missingCount: 1, matchRate: 75 })).toBe(true) // 3/4 보유
-    expect(isAlmost({ missingCount: 2, matchRate: 80 })).toBe(true) // 4/5 보유
+  it('isAlmost: 부족 1~3개 — 재료 N개만 더 있으면 (% 게이트 없음, 2026-05-21)', () => {
+    // 재료 1~3개만 더 있으면 만들 수 있음 — matchRate 와 무관
+    expect(isAlmost({ missingCount: 1 })).toBe(true)
+    expect(isAlmost({ missingCount: 2 })).toBe(true)
+    expect(isAlmost({ missingCount: 3 })).toBe(true) // 경계
 
-    // 70% 미만 — '거의'에서 제외
-    expect(isAlmost({ missingCount: 1, matchRate: 67 })).toBe(false) // 2/3=67% → N=3 제외
-    expect(isAlmost({ missingCount: 2, matchRate: 50 })).toBe(false) // 고추장아찌 2/4 (A 적용 후)
-    expect(isAlmost({ missingCount: 2, matchRate: 33 })).toBe(false) // 단감피클·우무오미자 1/3
-
-    // 경계/극단
-    expect(isAlmost({ missingCount: 0, matchRate: 100 })).toBe(false) // 부족 0 → ready 영역
-    expect(isAlmost({ missingCount: 3, matchRate: 80 })).toBe(false) // 너무 많이 부족
+    // 부족 0 → ready 영역 / 부족 4개↑ → "재료가 더 필요한 레시피" 영역
+    expect(isAlmost({ missingCount: 0 })).toBe(false)
+    expect(isAlmost({ missingCount: 4 })).toBe(false)
   })
 
   it('isAny: matchRate > 0', () => {
