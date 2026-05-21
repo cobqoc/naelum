@@ -138,27 +138,22 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     const incBtn = page.locator('button[aria-label="수량 증가"]').first();
     await incBtn.click();
     await incBtn.click();
-    await page.waitForTimeout(500);
 
-    // DB 검증
-    const { data: row } = await admin()
-      .from('shopping_list_items')
-      .select('quantity')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '테스트감자')
-      .single();
-    expect(row?.quantity).toBe(3);
+    // DB 검증 — 디바운스 쓰기 커밋까지 폴링 (고정 sleep 금지: 부하 시 race)
+    const readQty = async () => {
+      const { data } = await admin()
+        .from('shopping_list_items')
+        .select('quantity')
+        .eq('user_id', testUser.userId)
+        .eq('ingredient_name', '테스트감자')
+        .single();
+      return data?.quantity;
+    };
+    await expect.poll(readQty, { timeout: 10000 }).toBe(3);
 
     // - 1회 → 2
     await page.locator('button[aria-label="수량 감소"]').first().click();
-    await page.waitForTimeout(500);
-    const { data: row2 } = await admin()
-      .from('shopping_list_items')
-      .select('quantity')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '테스트감자')
-      .single();
-    expect(row2?.quantity).toBe(2);
+    await expect.poll(readQty, { timeout: 10000 }).toBe(2);
   });
 
   test('비로그인 — 헤더에 cart 버튼 노출되지 않음 (BottomNav cart에서 로그인 유도)', async ({ page }) => {
@@ -279,16 +274,16 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     const input = page.getByPlaceholder('재료 검색 또는 직접 입력...');
     await input.fill('테스트양배추');
     await input.press('Enter');
-    await page.waitForTimeout(800);
 
-    const { data } = await admin()
-      .from('shopping_list_items')
-      .select('quantity')
-      .eq('user_id', testUser.userId)
-      .eq('ingredient_name', '테스트양배추');
-    // 한 행만 있어야 하고 quantity = 2 + 1 = 3
-    expect(data?.length).toBe(1);
-    expect(data?.[0].quantity).toBe(3);
+    // 한 행만 있어야 하고 quantity = 2 + 1 = 3 — 커밋까지 폴링 (고정 sleep 금지)
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('shopping_list_items')
+        .select('quantity')
+        .eq('user_id', testUser.userId)
+        .eq('ingredient_name', '테스트양배추');
+      return `${data?.length ?? 0}:${data?.[0]?.quantity ?? 0}`;
+    }, { timeout: 10000 }).toBe('1:3');
   });
 
   test('#4 체크 항목 숨김 토글 — 체크된 항목 hide/show', async ({ authenticatedPage, testUser }) => {
@@ -349,14 +344,15 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     // 빈 상태로 전환됨 — 2026-05-16 개편으로 '자주 추가하는 재료' 헤딩 제거,
     // 빈 상태는 emptyHint placeholder 로 표시된다.
     await expect(page.getByText('위 입력창에서 재료를 추가해보세요')).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(800); // fetch 완료 대기
 
-    // DB 검증
-    const { data } = await admin()
-      .from('shopping_list_items')
-      .select('id')
-      .eq('user_id', testUser.userId);
-    expect(data?.length ?? 0).toBe(0);
+    // DB 검증 — 삭제 커밋까지 폴링 (고정 sleep 금지)
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('shopping_list_items')
+        .select('id')
+        .eq('user_id', testUser.userId);
+      return data?.length ?? 0;
+    }, { timeout: 10000 }).toBe(0);
   });
 
   test('#6 빈 상태 quick-add — 자주 추가하는 재료 버튼 원탭 추가', async ({ authenticatedPage, testUser }) => {
