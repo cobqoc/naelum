@@ -9,12 +9,11 @@ import { createTestRecipe, deleteTestRecipe } from './helpers/auth'
  */
 
 test.describe('쿠킹 모드 타이머', () => {
-  test('타이머 시작 버튼이 에러 없이 동작하고 멀티 타이머 패널이 표시됨', async ({
+  test('단계 ⏱️ 타이머 버튼 → 설정 모달 → 시작 → 패널·토스트', async ({
     authenticatedPage: page,
     testUser,
   }) => {
-    // timer_minutes가 있는 단계의 인라인 타이머 버튼(⏱️)을 클릭해 멀티 타이머 패널이 열리는지 검증.
-    // cook mode 오버레이 없이 레시피 상세 페이지에서 바로 동작.
+    // 단계마다 있는 "⏱️ 타이머" 버튼 → CustomTimerSetup 모달 → 시작.
     const pageErrors: string[] = []
     page.on('pageerror', e => pageErrors.push(e.message))
 
@@ -34,24 +33,23 @@ test.describe('쿠킹 모드 타이머', () => {
         await page.waitForTimeout(300)
       }
 
-      // 인라인 타이머 버튼 (⏱️ 1분) — timer_minutes: 1 스텝에 표시됨.
-      // "분"으로 필터해 단계 타이머만 — ⏱️만으로는 "직접 타이머" 버튼이 먼저 잡힘.
-      const timerBtn = page.locator('button')
-        .filter({ hasText: /⏱️/ })
-        .filter({ hasText: /분/ })
-        .first()
+      // 단계마다 있는 "⏱️ 타이머" 버튼
+      const timerBtn = page.locator('button').filter({ hasText: /⏱️/ }).first()
       await expect(timerBtn).toBeVisible({ timeout: 5000 })
       await timerBtn.click()
+      await page.waitForTimeout(300)
+
+      // 설정 모달 — 총 시간 입력 후 시작
+      const totalInput = page.locator('input[type="number"]').first()
+      await expect(totalInput).toBeVisible({ timeout: 3000 })
+      await totalInput.fill('1')
+      await page.getByRole('button', { name: '시작', exact: true }).click()
       await page.waitForTimeout(500)
 
-      // 토스트 확인 (타이머 시작: 1분)
+      // 토스트 + 페이지 에러 없음
       const toastCount = await page.getByText(/타이머 시작/).count()
       expect(toastCount).toBeGreaterThan(0)
-
-      // 페이지 에러 없음 (useMultiTimer가 정상 동작)
       expect(pageErrors).toEqual([])
-
-      // 에러 페이지(error.tsx)가 뜨지 않았는지
       const errorShown = await page.locator('text=문제가 발생').count()
       expect(errorShown).toBe(0)
     } finally {
@@ -59,16 +57,16 @@ test.describe('쿠킹 모드 타이머', () => {
     }
   })
 
-  test('직접 타이머: 설정 모달에서 총 시간 입력 → 시작 → 토스트', async ({
+  test('타이머 설정 모달 — 중간 알림(체크포인트) 추가 → 시작', async ({
     authenticatedPage: page,
     testUser,
   }) => {
-    // 단계 본문에 없는 시간을 사용자가 직접 맞추는 타이머 — CustomTimerSetup 모달.
+    // 한 단계에 총 시간 + 중간 알림을 얹는 체크포인트 타이머.
     const pageErrors: string[] = []
     page.on('pageerror', e => pageErrors.push(e.message))
 
     const recipeId = await createTestRecipe(testUser.userId, {
-      title: 'Custom Timer Test Recipe',
+      title: 'Checkpoint Timer Recipe',
       withTimerStep: true,
     })
 
@@ -82,20 +80,24 @@ test.describe('쿠킹 모드 타이머', () => {
         await page.waitForTimeout(300)
       }
 
-      // "직접 타이머" 버튼 → 설정 모달
-      const customBtn = page.locator('button').filter({ hasText: '직접 타이머' }).first()
-      await expect(customBtn).toBeVisible({ timeout: 5000 })
-      await customBtn.click()
+      await page.locator('button').filter({ hasText: /⏱️/ }).first().click()
       await page.waitForTimeout(300)
 
-      // 총 시간 입력 후 시작
       const totalInput = page.locator('input[type="number"]').first()
       await expect(totalInput).toBeVisible({ timeout: 3000 })
-      await totalInput.fill('1')
+      await totalInput.fill('10')
+
+      // 중간 알림 추가 → number input 한 개 늘어남
+      const before = await page.locator('input[type="number"]').count()
+      await page.getByRole('button', { name: /알림 추가/ }).click()
+      await page.waitForTimeout(200)
+      const numberInputs = page.locator('input[type="number"]')
+      await expect(numberInputs).toHaveCount(before + 1)
+      await numberInputs.last().fill('3')
+
       await page.getByRole('button', { name: '시작', exact: true }).click()
       await page.waitForTimeout(500)
 
-      // 타이머 시작 토스트 + 에러 없음
       const toastCount = await page.getByText(/타이머 시작/).count()
       expect(toastCount).toBeGreaterThan(0)
       expect(pageErrors).toEqual([])

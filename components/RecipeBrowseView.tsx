@@ -119,7 +119,7 @@ export default function RecipeBrowseView({
   const [showTimerPanel, setShowTimerPanel] = useState(false);
   // 직접 타이머 설정 모달 — null=닫힘, 객체=열림(prefill 있으면 단계 본문 값으로 미리 채움)
   const [timerSetup, setTimerSetup] = useState<
-    null | { prefill?: { totalMinutes: number; checkpointMinutes: number[] } }
+    null | { prefill?: { totalMinutes: number; checkpointMinutes: number[] }; stepNumber?: number }
   >(null);
   // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
   const [showFridgeModal, setShowFridgeModal] = useState(false);
@@ -706,15 +706,6 @@ export default function RecipeBrowseView({
               </div>
             )}
 
-            {/* 직접 타이머 — 본문에 없는 시간·중간 알림이 필요할 때 */}
-            <button
-              onClick={() => setTimerSetup({})}
-              className="mt-3 md:mt-1 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
-            >
-              <span>⏱️</span>
-              <span>{t.cookMode.customTimerOpen}</span>
-            </button>
-
             <div className="pt-4 md:pt-0 space-y-6 pb-4">
               {sortedSteps.map((step) => {
                 const effectiveTimers = getEffectiveTimers(step);
@@ -748,47 +739,22 @@ export default function RecipeBrowseView({
                       )}
                       <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
 
-                      {/* 타이머 버튼 — 복수 타이머 지원 */}
-                      {effectiveTimers.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {effectiveTimers.map((minutes) => (
-                            <button
-                              key={minutes}
-                              onClick={() => {
-                                multiTimer.startTimer(
-                                  minutes,
-                                  t.cookMode.stepTimerLabel.replace('{n}', String(step.step_number)),
-                                  step.step_number
-                                );
-                                setShowTimerPanel(true);
-                                toast.success(t.cookMode.timerStarted.replace('{minutes}', String(minutes)));
-                              }}
-                              className="flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
-                            >
-                              <span>⏱️</span>
-                              <span>{minutes}{t.recipe.minuteSuffix}</span>
-                            </button>
-                          ))}
-                          {/* 단계 타이머 — 시간 점이 2개+ 인 단계: 총 시간+중간 알림으로 묶기 */}
-                          {effectiveTimers.length >= 2 && (
-                            <button
-                              onClick={() => {
-                                const sorted = [...effectiveTimers].sort((a, b) => a - b);
-                                setTimerSetup({
-                                  prefill: {
-                                    totalMinutes: sorted[sorted.length - 1],
-                                    checkpointMinutes: sorted.slice(0, -1),
-                                  },
-                                });
-                              }}
-                              className="flex items-center gap-1.5 text-sm text-accent-warm font-medium hover:text-accent-warm/70 transition-colors"
-                            >
-                              <span>⏱️</span>
-                              <span>{t.cookMode.customTimerStepButton}</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      {/* 타이머 — 단계마다 1개. 본문 시간 자동 채움(없으면 빈 폼), 직접 수정 가능 */}
+                      <button
+                        onClick={() => {
+                          const sorted = [...effectiveTimers].sort((a, b) => a - b);
+                          setTimerSetup({
+                            stepNumber: step.step_number,
+                            prefill: sorted.length > 0
+                              ? { totalMinutes: sorted[sorted.length - 1], checkpointMinutes: sorted.slice(0, -1) }
+                              : undefined,
+                          });
+                        }}
+                        className="mt-2 flex items-center gap-1.5 text-sm text-info font-medium hover:text-info/70 transition-colors"
+                      >
+                        <span>⏱️</span>
+                        <span>{t.cookMode.customTimerOpen}</span>
+                      </button>
 
                       {/* 음성 읽기 */}
                       {voice.isSupported && (
@@ -900,7 +866,10 @@ export default function RecipeBrowseView({
           prefill={timerSetup.prefill}
           onClose={() => setTimerSetup(null)}
           onStart={(totalMinutes, checkpoints) => {
-            multiTimer.startTimer(totalMinutes, t.cookMode.customTimerOpen, undefined, checkpoints);
+            const label = timerSetup.stepNumber
+              ? t.cookMode.stepTimerLabel.replace('{n}', String(timerSetup.stepNumber))
+              : t.cookMode.customTimerOpen;
+            multiTimer.startTimer(totalMinutes, label, timerSetup.stepNumber, checkpoints);
             setShowTimerPanel(true);
             setTimerSetup(null);
             toast.success(t.cookMode.timerStarted.replace('{minutes}', String(totalMinutes)));
