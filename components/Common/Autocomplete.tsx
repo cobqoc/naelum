@@ -46,6 +46,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // 스타일링
   className = '',
   dropdownClassName = '',
+  dropdownDirection = 'down',
 
   // 접근성
   ariaLabel,
@@ -351,7 +352,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
       {shouldShowDropdown && (
         <div
           ref={dropdownRef}
-          className={`absolute top-full left-0 right-0 mt-2 rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden z-50 ${dropdownClassName}`}
+          className={`absolute left-0 right-0 ${dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden z-50 ${dropdownClassName}`}
           role="listbox"
           id="autocomplete-listbox"
         >

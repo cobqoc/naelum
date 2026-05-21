@@ -331,6 +331,7 @@ export default function IngredientForm({
             enableRecentItems={true}
             allowCustomIngredient={true}
             autoFocus={true}
+            dropdownDirection="up"
           />
         </div>
       </div>
