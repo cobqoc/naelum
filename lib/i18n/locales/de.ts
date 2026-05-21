@@ -1225,7 +1225,7 @@ export const de = {
     tagsLabel: 'Tags (optional, max. 10)',
     tagPlaceholder: 'Tag eingeben und Enter drücken',
     addTag: 'Hinzufügen',
-    isPublicLabel: 'Öffentlich',
+    savePrivate: 'Privat speichern',
     saveDraft: 'Entwurf speichern',
     saving: 'Speichern...',
     submit: 'Tipp teilen',

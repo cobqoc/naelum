@@ -1225,7 +1225,7 @@ export const ja = {
     tagsLabel: 'タグ（任意、最大10個）',
     tagPlaceholder: 'タグを入力してEnter',
     addTag: '追加',
-    isPublicLabel: '公開設定',
+    savePrivate: '非公開で保存',
     saveDraft: '下書き保存',
     saving: '保存中...',
     submit: 'ヒントを共有',

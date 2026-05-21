@@ -1,19 +1,22 @@
 import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
-import { type Profile, interestEmojis } from './types';
+import { type Profile, type ProfileCounts, interestEmojis } from './types';
 
 /**
  * 프로필 카드 — 아바타·소개·통계·관심사/식단/알레르기 (순수 표현).
  *
  * god-file([username]/page) 분해 Phase 2. 상태·로직 0 — 값 props 만.
  * hasExtraInfo 는 interests/dietary/allergies 에서만 파생돼 이 블록 전용이라
- * 함께 이동(부모 표면 축소, 동작 동일). JSX·className 원본과 byte-identical.
+ * 함께 이동(부모 표면 축소, 동작 동일). 통계 블록은 레시피 단일 → 레시피·팁·
+ * 임시저장·비공개 다중 통계로 확장(2026-05-21) — counts·isOwnProfile props 추가.
  * 회귀 가드: e2e/profile-decomposition.spec.ts (프로필 카드 렌더).
  */
 
 interface ProfileCardProps {
   t: TranslationKeys;
   profile: Profile;
+  counts: ProfileCounts;
+  isOwnProfile: boolean;
   interests: string[];
   dietaryPreferences: string[];
   allergies: string[];
@@ -22,11 +25,26 @@ interface ProfileCardProps {
 export default function ProfileCard({
   t,
   profile,
+  counts,
+  isOwnProfile,
   interests,
   dietaryPreferences,
   allergies,
 }: ProfileCardProps) {
   const hasExtraInfo = interests.length > 0 || dietaryPreferences.length > 0 || allergies.length > 0;
+
+  // 통계 블록 — 레시피 수는 비정규화 컬럼(recipes_count), 나머지는 API counts.
+  // 임시저장·비공개는 비공개 정보 → 본인 프로필에서만 노출.
+  const stats: { label: string; value: number }[] = [
+    { label: t.profile.recipes, value: profile.recipes_count },
+    { label: t.profile.tabTips, value: counts.tips },
+    ...(isOwnProfile
+      ? [
+          { label: t.profile.tabDrafts, value: counts.drafts },
+          { label: t.profile.tabPrivate, value: counts.private },
+        ]
+      : []),
+  ];
 
   return (
     <div className="mt-8 bg-gradient-to-br from-background-secondary to-background-tertiary rounded-3xl p-6 md:p-8 border border-white/5">
@@ -55,12 +73,14 @@ export default function ProfileCard({
             <p className="text-text-secondary text-base mb-4 max-w-xl">{profile.bio}</p>
           )}
 
-          {/* Stats */}
-          <div className="flex justify-center md:justify-start gap-6 mb-6">
-            <div className="text-center md:text-left">
-              <div className="font-bold text-2xl text-accent-warm">{profile.recipes_count}</div>
-              <div className="text-text-muted text-sm">{t.profile.recipes}</div>
-            </div>
+          {/* Stats — 레시피·팁(+본인: 임시저장·비공개). 좁은 화면은 flex-wrap 으로 줄바꿈 */}
+          <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-3 mb-6">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center md:text-left">
+                <div className="font-bold text-2xl text-accent-warm">{stat.value}</div>
+                <div className="text-text-muted text-sm">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

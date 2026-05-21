@@ -34,14 +34,13 @@ export default function TipNewPage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('기타');
   const [durationMinutes, setDurationMinutes] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [steps, setSteps] = useState<Step[]>([{ instruction: '', tip: '', image_url: null, uploading: false }]);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [draftSubmitting, setDraftSubmitting] = useState(false);
+  // 저장 진행 상태 — 3개 액션(임시저장/비공개/공개) 중 무엇이 진행 중인지.
+  const [pending, setPending] = useState<'draft' | 'private' | 'public' | null>(null);
   const [error, setError] = useState('');
 
   // 자동저장 — localStorage 백업 (게시·임시저장 시 clear)
@@ -50,16 +49,16 @@ export default function TipNewPage() {
   const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
   type AutosaveSnapshot = {
     title: string; description: string; category: string;
-    durationMinutes: string; isPublic: boolean;
+    durationMinutes: string;
     thumbnail: string | null;
     steps: Step[]; tags: string[];
   };
   const autosaveSnapshotRef = useRef<AutosaveSnapshot | null>(null);
 
   const autosaveData = useMemo<AutosaveSnapshot>(() => ({
-    title, description, category, durationMinutes, isPublic, thumbnail,
+    title, description, category, durationMinutes, thumbnail,
     steps, tags,
-  }), [title, description, category, durationMinutes, isPublic, thumbnail, steps, tags]);
+  }), [title, description, category, durationMinutes, thumbnail, steps, tags]);
 
   useAutosave(AUTOSAVE_KEY, autosaveData, { enabled: !autosaveRestoreVisible });
 
@@ -78,7 +77,6 @@ export default function TipNewPage() {
     setDescription(s.description || '');
     setCategory(s.category || '기타');
     setDurationMinutes(s.durationMinutes || '');
-    setIsPublic(s.isPublic !== false);
     if (s.thumbnail) setThumbnail(s.thumbnail);
     if (Array.isArray(s.steps) && s.steps.length > 0) {
       setSteps(s.steps.map(st => ({ ...st, uploading: false })));
@@ -147,12 +145,13 @@ export default function TipNewPage() {
     }
   }, [tagInput, tags]);
 
-  const handleSubmit = async () => {
+  // 공개/비공개 저장 — 둘 다 완성된 팁(is_draft=false). is_public 만 다름.
+  const handleSubmit = async (isPublic: boolean) => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
     if (steps.some(s => !s.instruction.trim())) { setError(t.tipForm.errorStepRequired); return; }
 
-    setSubmitting(true);
+    setPending(isPublic ? 'public' : 'private');
     try {
       const res = await fetch('/api/tip', {
         method: 'POST',
@@ -168,18 +167,27 @@ export default function TipNewPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || t.tipForm.errorGeneric); return; }
       clearAutosave(AUTOSAVE_KEY);
-      router.push(`/tip/${data.tip.id}`);
+      if (isPublic) {
+        router.push(`/tip/${data.tip.id}`);
+      } else {
+        // 비공개 팁은 공개 목록에 안 뜨므로 프로필 비공개 탭으로 이동
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = user
+          ? await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
+          : { data: null };
+        router.push(profile?.username ? `/@${profile.username}?tab=private` : '/');
+      }
     } catch {
       setError(t.tipForm.errorGeneric);
     } finally {
-      setSubmitting(false);
+      setPending(null);
     }
   };
 
   const handleDraft = async () => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
-    setDraftSubmitting(true);
+    setPending('draft');
     try {
       const res = await fetch('/api/tip', {
         method: 'POST',
@@ -207,7 +215,7 @@ export default function TipNewPage() {
     } catch {
       setError(t.tipForm.errorGeneric);
     } finally {
-      setDraftSubmitting(false);
+      setPending(null);
     }
   };
 
@@ -397,33 +405,27 @@ export default function TipNewPage() {
             )}
           </div>
 
-          {/* 공개 설정 */}
-          <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-background-secondary border border-white/10">
-            <span className="text-sm">{t.tipForm.isPublicLabel}</span>
-            <button
-              type="button" onClick={() => setIsPublic(v => !v)}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${isPublic ? 'bg-accent-warm' : 'bg-background-tertiary'}`}
-              role="switch" aria-checked={isPublic}
-            >
-              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${isPublic ? 'translate-x-4' : 'translate-x-0.5'}`} />
-            </button>
-          </div>
-
           {error && <p className="text-sm text-error bg-error/10 px-4 py-3 rounded-xl">{error}</p>}
 
-          {/* 제출 */}
-          <div className="flex gap-3">
+          {/* 저장 — 임시저장 / 비공개 / 공개 를 명시적으로 선택 */}
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={handleDraft} disabled={draftSubmitting || submitting}
+              onClick={handleDraft} disabled={pending !== null}
               className="flex-1 py-4 rounded-xl bg-background-secondary border border-white/10 text-text-secondary font-bold hover:bg-background-tertiary transition-colors disabled:opacity-50"
             >
-              {draftSubmitting ? t.tipForm.saving : t.tipForm.saveDraft}
+              {pending === 'draft' ? t.tipForm.saving : t.tipForm.saveDraft}
             </button>
             <button
-              onClick={handleSubmit} disabled={submitting || draftSubmitting}
-              className="flex-[2] py-4 rounded-xl bg-accent-warm text-background-primary font-bold text-base hover:bg-accent-hover transition-colors disabled:opacity-50"
+              onClick={() => handleSubmit(false)} disabled={pending !== null}
+              className="flex-1 py-4 rounded-xl bg-background-secondary border border-white/10 text-text-secondary font-bold hover:bg-background-tertiary transition-colors disabled:opacity-50"
             >
-              {submitting ? t.tipForm.uploading : t.tipForm.submit}
+              {pending === 'private' ? t.tipForm.saving : t.tipForm.savePrivate}
+            </button>
+            <button
+              onClick={() => handleSubmit(true)} disabled={pending !== null}
+              className="flex-1 py-4 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors disabled:opacity-50"
+            >
+              {pending === 'public' ? t.tipForm.uploading : t.tipForm.submit}
             </button>
           </div>
         </div>

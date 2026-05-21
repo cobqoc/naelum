@@ -60,8 +60,37 @@ export async function GET(
     .select('ingredient_name')
     .eq('user_id', profile.id)
 
+  // 콘텐츠 카운트 — 프로필 카드 통계 블록용 (레시피 수는 profile.recipes_count 사용).
+  // 비정규화 컬럼 없이 COUNT — 소유자 1명분(수십~수백 행, author 인덱스)이라 비용 무시 가능.
+  // 임시저장·비공개는 비공개 정보 → 본인 프로필일 때만 계산. 남에겐 공개 팁 수만.
+  const counts = { tips: 0, drafts: 0, private: 0 }
+  if (isOwnProfile) {
+    const [recipeRes, tipRes] = await Promise.all([
+      supabase.from('recipes').select('status').eq('author_id', profile.id),
+      supabase.from('tip').select('is_public, is_draft').eq('author_id', profile.id),
+    ])
+    const recipeRows = recipeRes.data || []
+    const tipRows = tipRes.data || []
+    counts.tips = tipRows.filter(x => x.is_public && !x.is_draft).length
+    counts.drafts =
+      recipeRows.filter(x => x.status === 'draft').length +
+      tipRows.filter(x => x.is_draft).length
+    counts.private =
+      recipeRows.filter(x => x.status === 'private').length +
+      tipRows.filter(x => !x.is_public && !x.is_draft).length
+  } else {
+    const { count: publishedTips } = await supabase
+      .from('tip')
+      .select('id', { count: 'exact', head: true })
+      .eq('author_id', profile.id)
+      .eq('is_public', true)
+      .eq('is_draft', false)
+    counts.tips = publishedTips || 0
+  }
+
   return NextResponse.json({
     profile,
+    counts,
     recipes: recipes || [],
     interests: interests?.map(i => i.interest_value) || [],
     // 알레르기·식단 선호도는 민감한 개인정보 — 본인만 조회 가능
