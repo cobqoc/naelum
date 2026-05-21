@@ -1,8 +1,9 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
+import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import { getDifficultyLabel, getTotalTime } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -21,6 +22,7 @@ interface FridgeRecipe {
   matchRate?: number;
   matchedCount?: number;
   totalIngredients?: number;
+  ownedIngredientNames?: string[];
   missingIngredientNames?: string[];
 }
 
@@ -53,6 +55,7 @@ function getMissingStyle(missingCount: number) {
 
 export default memo(function FridgeRecipeCard({ recipe, priority = false }: FridgeRecipeCardProps) {
   const { t } = useI18n();
+  const [fridgeOpen, setFridgeOpen] = useState(false);
   const imageUrl = recipe.thumbnail_url || recipe.display_image;
   const totalTime = getTotalTime(recipe);
   const difficultyLabel = getDifficultyLabel(recipe.difficulty_level, t.difficulty);
@@ -61,6 +64,7 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
   const missingCount = missing.length;
 
   return (
+    <>
     <Link href={`/recipes/${recipe.id}`} className="block group">
       <div className="rounded-2xl bg-background-secondary overflow-hidden border border-white/5 transition-all group-hover:border-accent-warm/50 group-hover:shadow-lg group-hover:shadow-accent-warm/10">
         {/* 이미지 */}
@@ -99,7 +103,25 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
 
         {/* 콘텐츠 */}
         <div className="p-3 space-y-1.5">
-          <h3 className="font-bold text-sm truncate">{recipe.title}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-bold text-sm truncate flex-1">{recipe.title}</h3>
+            {/* 냉장고 아이콘 — 탭하면 보유/없는 재료 모달 (카드 이동 막음) */}
+            {hasMatch && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFridgeOpen(true); }}
+                aria-label={t.recipe.fridgeModalTitle}
+                className="shrink-0 flex items-center justify-center w-7 h-7 -mr-1 rounded-full bg-background-tertiary text-text-secondary hover:bg-accent-warm/20 hover:text-accent-warm transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" />
+                  <line x1="5" y1="9" x2="19" y2="9" />
+                  <line x1="9" y1="5" x2="9" y2="6.5" />
+                  <line x1="9" y1="12" x2="9" y2="14" />
+                </svg>
+              </button>
+            )}
+          </div>
 
           {/* 부족 재료 목록 — % 진행바·분수 제거, 무엇이 부족한지만 표시 */}
           {hasMatch && (
@@ -138,5 +160,15 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
         </div>
       </div>
     </Link>
+
+    {/* 냉장고 모달 — Link 바깥(형제)으로 렌더해 모달 클릭이 카드 이동 안 되게 */}
+    {fridgeOpen && (
+      <RecipeFridgeModal
+        onClose={() => setFridgeOpen(false)}
+        ownedNames={recipe.ownedIngredientNames ?? []}
+        missingNames={missing}
+      />
+    )}
+    </>
   );
 });

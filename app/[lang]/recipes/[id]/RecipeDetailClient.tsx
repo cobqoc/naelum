@@ -9,6 +9,8 @@ import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import RecipeBrowseView from '@/components/RecipeBrowseView';
+import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
+import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
 
 // 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
 const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { ssr: false });
@@ -365,78 +367,19 @@ export default function RecipeDetailClient({
         currentUserId={currentUserId}
       />
 
-      {/* 냉장고 재료 비교 모달 */}
+      {/* 냉장고 재료 비교 모달 — 공용 RecipeFridgeModal (추천 카드와 동일) */}
       {showFridgeModal && (() => {
+        // 보유 판정 — 물 등 기본 재료는 항상 보유, 그 외엔 동의어 매칭(추천 route 와 동일).
+        // 단순 substring 비교 금지 (계란↔달걀 놓침·물엿↔물 오매칭).
         const isOwned = (name: string) =>
-          userIngredients.some(ui => name.includes(ui) || ui.includes(name));
-        const owned = recipe.ingredients.filter(i => isOwned(i.ingredient_name));
-        const missing = recipe.ingredients.filter(i => !isOwned(i.ingredient_name));
+          isFundamental(name) || userIngredients.some(ui => isIngredientMatch(ui, name));
         return (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowFridgeModal(false)}
-          >
-            <div
-              className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* 헤더 */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-                <span className="font-bold text-text-primary">{t.recipe.fridgeModalTitle}</span>
-                <button
-                  onClick={() => setShowFridgeModal(false)}
-                  className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 transition-all"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-4">
-                {/* 보유 재료 */}
-                {owned.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-success mb-2">{t.recipe.fridgeModalOwned} ({owned.length})</p>
-                    <div className="space-y-1">
-                      {owned.map((ing, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-text-primary">
-                          <span className="text-success">✓</span>
-                          <span>{ing.ingredient_name}</span>
-                          {(ing.quantity || ing.unit) && (
-                            <span className="text-text-muted ml-auto">{ing.quantity} {ing.unit}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 없는 재료 */}
-                {missing.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-error mb-2">{t.recipe.fridgeModalMissing} ({missing.length})</p>
-                    <div className="space-y-1">
-                      {missing.map((ing, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm text-text-secondary">
-                          <span className="text-error">✗</span>
-                          <span>{ing.ingredient_name}</span>
-                          {(ing.quantity || ing.unit) && (
-                            <span className="text-text-muted ml-auto">{ing.quantity} {ing.unit}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 비로그인 or 냉장고 비어있음 */}
-                {userIngredients.length === 0 && (
-                  <p className="text-sm text-text-muted text-center py-4">{t.recipe.fridgeModalEmpty}</p>
-                )}
-              </div>
-            </div>
-          </div>
+          <RecipeFridgeModal
+            onClose={() => setShowFridgeModal(false)}
+            ownedNames={recipe.ingredients.filter(i => isOwned(i.ingredient_name)).map(i => i.ingredient_name)}
+            missingNames={recipe.ingredients.filter(i => !isOwned(i.ingredient_name)).map(i => i.ingredient_name)}
+            fridgeEmpty={userIngredients.length === 0}
+          />
         );
       })()}
 

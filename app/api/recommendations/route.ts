@@ -200,6 +200,7 @@ export async function GET(request: NextRequest) {
             missingCount,
             matchedCount: matchedIngredients.length,
             totalIngredients: recipeIngredients.length,
+            ownedIngredientNames: matchedIngredients.map(i => i.ingredient_name),
             missingIngredientNames,
             substitutes,
           }

@@ -34,6 +34,7 @@ export interface RecipeWithMatch extends Recipe {
   missingCount?: number;
   matchedCount?: number;
   totalIngredients?: number;
+  ownedIngredientNames?: string[];
   missingIngredientNames?: string[];
   substitutes?: Record<string, string[]>;
 }
