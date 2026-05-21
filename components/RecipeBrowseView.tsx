@@ -11,7 +11,7 @@ import { useUnitConversion } from '@/lib/hooks/useUnitConversion';
 import { useMultiTimer } from '@/lib/hooks/useMultiTimer';
 import { useVoiceGuide } from '@/lib/hooks/useVoiceGuide';
 import { useI18n } from '@/lib/i18n/context';
-import { isIngredientMatch } from '@/lib/recommendations/match';
+import { isIngredientMatch, isFundamental } from '@/lib/recommendations/match';
 import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 
@@ -118,11 +118,12 @@ export default function RecipeBrowseView({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showTimerPanel, setShowTimerPanel] = useState(false);
 
-  // 동의어·조리법 접두사까지 처리하는 isIngredientMatch 사용 (추천 route 와 동일).
-  // 단순 substring 비교는 계란↔달걀 등 동의어를 놓치고, 고추↔고추장 같은
-  // 의미 다른 부분일치를 오매칭함 — 동의어 테이블이 단일 진실원천.
+  // 보유 판정 — 물·생수 등 기본 재료(isFundamental)는 항상 보유로 간주.
+  // 그 외엔 isIngredientMatch(동의어·조리법 접두사 처리, 추천 route 와 동일)로
+  // user 재료와 대조. 단순 substring 비교 금지 — 계란↔달걀 동의어를 놓치고,
+  // 고추↔고추장 오매칭 + '물엿'이 '물'을 substring 으로 오매칭하던 문제.
   const isIngredientOwned = (name: string) =>
-    userIngredients.some(ui => isIngredientMatch(ui, name));
+    isFundamental(name) || userIngredients.some(ui => isIngredientMatch(ui, name));
 
   const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
   const totalIngredients = recipe.ingredients.length;
