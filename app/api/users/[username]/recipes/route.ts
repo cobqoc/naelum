@@ -68,7 +68,9 @@ export async function GET(
           average_rating, views_count, created_at, status
         `, { count: 'exact' })
         .eq('author_id', profile.id)
-        .in('status', isOwnProfile ? ['published', 'private'] : ['published'])
+        // 레시피(created) 탭은 공개 레시피만 — 본인이 봐도 동일. 비공개는
+        // '비공개' 탭에만 노출되어 통계 블록의 '레시피' 수와 일치한다.
+        .eq('status', 'published')
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 

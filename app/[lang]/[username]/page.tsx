@@ -36,7 +36,7 @@ export default function ProfilePage(props: PageProps) {
   const { t } = useI18n();
   const toast = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [counts, setCounts] = useState<ProfileCounts>({ tips: 0, drafts: 0, private: 0 });
+  const [counts, setCounts] = useState<ProfileCounts>({ recipes: 0, tips: 0, drafts: 0, private: 0 });
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState<string[]>([]);
@@ -81,7 +81,7 @@ export default function ProfilePage(props: PageProps) {
 
       if (res.ok) {
         setProfile(data.profile);
-        setCounts(data.counts || { tips: 0, drafts: 0, private: 0 });
+        setCounts(data.counts || { recipes: 0, tips: 0, drafts: 0, private: 0 });
         setRecipes(data.recipes || []);
         setInterests(data.interests || []);
         setDietaryPreferences(data.dietaryPreferences || []);

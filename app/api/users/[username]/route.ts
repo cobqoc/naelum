@@ -36,7 +36,7 @@ export async function GET(
       id, title, thumbnail_url, average_rating, created_at, status
     `)
     .eq('author_id', profile.id)
-    .in('status', isOwnProfile ? ['published', 'private'] : ['published'])
+    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(6)
 
@@ -60,32 +60,34 @@ export async function GET(
     .select('ingredient_name')
     .eq('user_id', profile.id)
 
-  // 콘텐츠 카운트 — 프로필 카드 통계 블록용 (레시피 수는 profile.recipes_count 사용).
-  // 비정규화 컬럼 없이 COUNT — 소유자 1명분(수십~수백 행, author 인덱스)이라 비용 무시 가능.
-  // 임시저장·비공개는 비공개 정보 → 본인 프로필일 때만 계산. 남에겐 공개 팁 수만.
-  const counts = { tips: 0, drafts: 0, private: 0 }
+  // 콘텐츠 카운트 — 프로필 카드 통계 블록용. 4개 버킷(공개 레시피·공개 팁·
+  // 임시저장·비공개)은 서로 겹치지 않고 사용자의 모든 글을 정확히 분할한다.
+  // count:'exact',head:true — 행을 가져오지 않고 집계해 PostgREST 기본 1000행
+  // 제한에 안 걸림(레시피 1000개 넘는 작성자도 정확). recipes_count 컬럼은
+  // 공개+비공개 전 상태 합산이라 "공개 레시피" 통계엔 부적합 → 직접 센다.
+  const counts = { recipes: 0, tips: 0, drafts: 0, private: 0 }
+  const [pubRecipes, pubTips] = await Promise.all([
+    supabase.from('recipes').select('id', { count: 'exact', head: true })
+      .eq('author_id', profile.id).eq('status', 'published'),
+    supabase.from('tip').select('id', { count: 'exact', head: true })
+      .eq('author_id', profile.id).eq('is_public', true).eq('is_draft', false),
+  ])
+  counts.recipes = pubRecipes.count || 0
+  counts.tips = pubTips.count || 0
+  // 임시저장·비공개는 비공개 정보 → 본인 프로필일 때만 계산
   if (isOwnProfile) {
-    const [recipeRes, tipRes] = await Promise.all([
-      supabase.from('recipes').select('status').eq('author_id', profile.id),
-      supabase.from('tip').select('is_public, is_draft').eq('author_id', profile.id),
+    const [draftRecipes, privateRecipes, draftTips, privateTips] = await Promise.all([
+      supabase.from('recipes').select('id', { count: 'exact', head: true })
+        .eq('author_id', profile.id).eq('status', 'draft'),
+      supabase.from('recipes').select('id', { count: 'exact', head: true })
+        .eq('author_id', profile.id).eq('status', 'private'),
+      supabase.from('tip').select('id', { count: 'exact', head: true })
+        .eq('author_id', profile.id).eq('is_draft', true),
+      supabase.from('tip').select('id', { count: 'exact', head: true })
+        .eq('author_id', profile.id).eq('is_public', false).eq('is_draft', false),
     ])
-    const recipeRows = recipeRes.data || []
-    const tipRows = tipRes.data || []
-    counts.tips = tipRows.filter(x => x.is_public && !x.is_draft).length
-    counts.drafts =
-      recipeRows.filter(x => x.status === 'draft').length +
-      tipRows.filter(x => x.is_draft).length
-    counts.private =
-      recipeRows.filter(x => x.status === 'private').length +
-      tipRows.filter(x => !x.is_public && !x.is_draft).length
-  } else {
-    const { count: publishedTips } = await supabase
-      .from('tip')
-      .select('id', { count: 'exact', head: true })
-      .eq('author_id', profile.id)
-      .eq('is_public', true)
-      .eq('is_draft', false)
-    counts.tips = publishedTips || 0
+    counts.drafts = (draftRecipes.count || 0) + (draftTips.count || 0)
+    counts.private = (privateRecipes.count || 0) + (privateTips.count || 0)
   }
 
   return NextResponse.json({

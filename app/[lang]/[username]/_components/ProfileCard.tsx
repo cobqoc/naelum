@@ -36,7 +36,7 @@ export default function ProfileCard({
   // 통계 블록 — 레시피 수는 비정규화 컬럼(recipes_count), 나머지는 API counts.
   // 임시저장·비공개는 비공개 정보 → 본인 프로필에서만 노출.
   const stats: { label: string; value: number }[] = [
-    { label: t.profile.recipes, value: profile.recipes_count },
+    { label: t.profile.recipes, value: counts.recipes },
     { label: t.profile.tabTips, value: counts.tips },
     ...(isOwnProfile
       ? [
