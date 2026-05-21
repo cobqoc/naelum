@@ -300,6 +300,7 @@ export const zh = {
     fridgeModalTitle: '冰箱食材确认',
     fridgeModalOwned: '已有',
     fridgeModalMissing: '缺少',
+    fridgeModalSubstitute: '可替代',
     fridgeModalEmpty: '冰箱中没有已登记的食材。',
     ratingCookedCta: '您做过这道菜！留下评价吧。',
     timerDoneTitle: '计时结束！',

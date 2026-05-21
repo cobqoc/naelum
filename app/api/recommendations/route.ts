@@ -2,9 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import {
-  INGREDIENT_SYNONYMS,
+  INGREDIENT_ALIASES,
+  INGREDIENT_SUBSTITUTES,
   isFundamental,
-  isIngredientMatch,
+  isSameIngredient,
+  isSubstituteFor,
   isReady,
   isAlmost,
   isAny,
@@ -112,8 +114,9 @@ export async function GET(request: NextRequest) {
         // 2) 텍스트 ILIKE 매칭으로 추가 후보 조회 (미연결 재료 대응)
         const expandedSet = new Set<string>(ingredientNames)
         for (const ing of ingredientNames) {
-          const synonyms = INGREDIENT_SYNONYMS[ing]
-          if (synonyms) synonyms.forEach(s => expandedSet.add(s.toLowerCase().trim()))
+          // 후보 검색은 동의어 + 대체재 둘 다로 확장 (대체 가능한 레시피도 후보 포함)
+          const related = [...(INGREDIENT_ALIASES[ing] ?? []), ...(INGREDIENT_SUBSTITUTES[ing] ?? [])]
+          related.forEach(s => expandedSet.add(s.toLowerCase().trim()))
         }
 
         const ilikeClauses = [...expandedSet]
@@ -162,47 +165,43 @@ export async function GET(request: NextRequest) {
           // 보편 재료(물 등)는 매칭 계산에서 제외 — 항상 가졌다고 가정.
           const recipeIngredientsList: { ingredient_name: string; ingredient_id?: string | null }[] =
             (recipe.ingredients || []).filter((ri: { ingredient_name: string }) => !isFundamental(ri.ingredient_name))
-          const matchedIngredients = recipeIngredientsList.filter(ri => {
-            // ingredient_id FK 매칭 (정확도 최우선)
-            if (ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) return true
-            // 텍스트 매칭 (미연결 재료 fallback)
-            return ingredientNames.some(ui => isIngredientMatch(ui, ri.ingredient_name.toLowerCase()))
-          })
-          const recipeIngredients = recipeIngredientsList.map(i => i.ingredient_name.toLowerCase())
-          const missingIngredientNames = recipeIngredientsList
-            .filter(ri => {
-              if (ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) return false
-              return !ingredientNames.some(ui => isIngredientMatch(ui, ri.ingredient_name.toLowerCase()))
-            })
-            .map(i => i.ingredient_name)
-          const matchRate = recipeIngredients.length > 0
-            ? (matchedIngredients.length / recipeIngredients.length) * 100
-            : 0
-          const missingCount = recipeIngredients.length - matchedIngredients.length
+          // 보유 — FK 또는 같은 재료(동의어). "보유 ✓"로 인정.
+          const isOwnedRI = (ri: { ingredient_name: string; ingredient_id?: string | null }) =>
+            (!!ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) ||
+            ingredientNames.some(ui => isSameIngredient(ui, ri.ingredient_name.toLowerCase()))
 
-          // Generate substitute suggestions for missing ingredients
-          const substitutes: Record<string, string[]> = {}
-          for (const missing of missingIngredientNames) {
-            const syns = INGREDIENT_SYNONYMS[missing]
-            if (syns) {
-              const available = syns.filter(s =>
-                ingredientNames.some(ui => isIngredientMatch(ui, s.toLowerCase()))
-              )
-              if (available.length > 0) {
-                substitutes[missing] = available
-              }
+          // 각 레시피 재료를 보유 / 대체 가능 / 없음 으로 분류
+          const ownedIngredientNames: string[] = []
+          const substitutableIngredients: { ingredient: string; via: string }[] = []
+          const missingIngredientNames: string[] = []
+          for (const ri of recipeIngredientsList) {
+            if (isOwnedRI(ri)) {
+              ownedIngredientNames.push(ri.ingredient_name)
+              continue
             }
+            // 보유는 아니지만 대체 가능 — 어떤 user 재료로 바꿔 쓸지 기록
+            const via = ingredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
+            if (via) substitutableIngredients.push({ ingredient: ri.ingredient_name, via })
+            else missingIngredientNames.push(ri.ingredient_name)
           }
+
+          const totalIngredients = recipeIngredientsList.length
+          // 만들 수 있는 재료 = 보유 + 대체 가능. 부족 = 둘 다 아닌 것.
+          const matchedCount = ownedIngredientNames.length + substitutableIngredients.length
+          const missingCount = missingIngredientNames.length
+          const matchRate = totalIngredients > 0
+            ? (matchedCount / totalIngredients) * 100
+            : 0
 
           return {
             ...recipe,
             matchRate: Math.round(matchRate),
             missingCount,
-            matchedCount: matchedIngredients.length,
-            totalIngredients: recipeIngredients.length,
-            ownedIngredientNames: matchedIngredients.map(i => i.ingredient_name),
+            matchedCount,
+            totalIngredients,
+            ownedIngredientNames,
+            substitutableIngredients,
             missingIngredientNames,
-            substitutes,
           }
         })
 

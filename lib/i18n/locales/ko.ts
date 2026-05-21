@@ -300,6 +300,7 @@ export const ko = {
     fridgeModalTitle: '냉장고 재료 확인',
     fridgeModalOwned: '보유 중',
     fridgeModalMissing: '없는 재료',
+    fridgeModalSubstitute: '대체 가능',
     fridgeModalEmpty: '냉장고에 등록된 재료가 없습니다.',
     ratingCookedCta: '이 레시피로 요리했군요! 리뷰를 남겨보세요.',
     timerDoneTitle: '타이머 완료!',

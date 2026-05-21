@@ -300,6 +300,7 @@ export const en = {
     fridgeModalTitle: 'Fridge Check',
     fridgeModalOwned: 'Have',
     fridgeModalMissing: 'Missing',
+    fridgeModalSubstitute: 'Substitutable',
     fridgeModalEmpty: 'No ingredients registered in your fridge.',
     ratingCookedCta: "You've cooked this recipe! Leave a review.",
     timerDoneTitle: 'Timer done!',
