@@ -239,8 +239,15 @@ export default function ProfilePage(props: PageProps) {
         throw new Error(errorData.error || t.errors.recipeDeleteFailed);
       }
 
-      // 목록에서 제거
+      // 목록·통계에서 제거 — 삭제된 레시피 상태에 맞는 카운트도 즉시 차감
+      const deletedStatus = recipes.find(r => r.id === recipeId)?.status;
       setRecipes(prev => prev.filter(r => r.id !== recipeId));
+      setCounts(c => ({
+        ...c,
+        recipes: deletedStatus === 'published' ? Math.max(0, c.recipes - 1) : c.recipes,
+        private: deletedStatus === 'private' ? Math.max(0, c.private - 1) : c.private,
+        drafts: deletedStatus === 'draft' ? Math.max(0, c.drafts - 1) : c.drafts,
+      }));
       setProfile(prev => prev ? { ...prev, recipes_count: prev.recipes_count - 1 } : null);
       toast.success(t.recipe.recipeDeleted);
     } catch (error) {
@@ -274,6 +281,10 @@ export default function ProfilePage(props: PageProps) {
           ? prev.filter(r => r.id !== recipeId)
           : prev.map(r => r.id === recipeId ? { ...r, status: newStatus } : r);
       });
+      // 통계 블록 카운트도 즉시 반영 — 공개↔비공개 토글 (새로고침 불필요)
+      setCounts(c => newStatus === 'private'
+        ? { ...c, recipes: Math.max(0, c.recipes - 1), private: c.private + 1 }
+        : { ...c, private: Math.max(0, c.private - 1), recipes: c.recipes + 1 });
       toast.success(currentStatus === 'published' ? t.errors.recipeHidden : t.errors.recipePublished);
     } catch (error) {
       console.error('Error toggling visibility:', error);

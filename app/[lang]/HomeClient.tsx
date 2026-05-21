@@ -636,6 +636,7 @@ export default function HomeClient({
               href={`/recommendations?mode=auto${isAuthenticated ? '' : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}`}
               onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
               pillDefault={t.home.pillDefault}
+              pillLoading={t.home.pillLoading}
               pillReady={t.home.pillReady}
               pillAlmost={t.home.pillAlmost}
               pillAll={t.home.pillAll}
