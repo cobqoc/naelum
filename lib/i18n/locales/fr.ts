@@ -381,6 +381,7 @@ export const fr = {
   },
   recipeCard: {
     matchedLabel: 'correspondance',
+    missingCountBadge: '{count} manquant(s)',
     cookedLabel: 'Cuisiné',
     heldSuffix: ' en stock',
     missingLabel: 'Manquant',
@@ -739,6 +740,7 @@ export const fr = {
     pillAlmost: '{count} recettes presque prêtes',
     pillAll: '{count} recettes à compléter',
     pillDefault: 'Trouver des recettes',
+    pillLoading: 'Recherche de recettes...',
     pillAriaSuffix: 'voir les recettes',
     ingredientList: 'Tous les ingrédients',
     ingredientListMore: '+{count} de plus',

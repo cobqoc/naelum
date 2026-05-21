@@ -381,6 +381,7 @@ export const ko = {
   },
   recipeCard: {
     matchedLabel: '매칭',
+    missingCountBadge: '재료 {count}개 부족',
     cookedLabel: '만들어봤어요',
     heldSuffix: '개 보유',
     missingLabel: '부족한 재료',
@@ -739,6 +740,7 @@ export const ko = {
     pillAlmost: '거의 만들 수 있는 레시피 {count}개',
     pillAll: '재료가 더 필요한 레시피 {count}개',
     pillDefault: '레시피 찾기',
+    pillLoading: '레시피 찾는 중...',
     pillAriaSuffix: '레시피 보기',
     ingredientList: '전체 재료 목록',
     ingredientListMore: '+{count}개 더 보기',

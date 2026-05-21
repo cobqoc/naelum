@@ -381,6 +381,7 @@ export const zh = {
   },
   recipeCard: {
     matchedLabel: '匹配',
+    missingCountBadge: '还差 {count} 种',
     cookedLabel: '做过了',
     heldSuffix: '个已有',
     missingLabel: '缺少食材',
@@ -739,6 +740,7 @@ export const zh = {
     pillAlmost: '快可做的食谱 {count} 道',
     pillAll: '需要更多食材的食谱 {count} 道',
     pillDefault: '查找食谱',
+    pillLoading: '正在查找食谱...',
     pillAriaSuffix: '查看食谱',
     ingredientList: '全部食材清单',
     ingredientListMore: '+{count} 个更多',

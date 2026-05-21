@@ -24,14 +24,16 @@ interface FridgeRecipe {
   missingIngredientNames?: string[];
 }
 
+// dish_type 카테고리 → 대표 이모지 (사진 없는 레시피의 placeholder).
+// 카테고리 1개당 1개라 모든 레시피와 맞을 순 없음 — 가장 덜 빗나가는 것으로.
 const DISH_TYPE_EMOJI: Record<string, string> = {
-  side: '🥗',
+  side: '🥘',
   main: '🍖',
   rice: '🍚',
   soup: '🍲',
   dessert: '🍰',
   noodle: '🍜',
-  snack: '🍿',
+  snack: '🍟',
   brunch: '🥞',
   beverage: '🥤',
 };
@@ -41,10 +43,12 @@ interface FridgeRecipeCardProps {
   priority?: boolean;
 }
 
-function getMatchStyle(rate: number) {
-  if (rate >= 80) return { bg: 'bg-match-high', text: 'text-match-high-text', bar: 'bg-match-high' };
-  if (rate >= 50) return { bg: 'bg-match-mid', text: 'text-match-mid-text', bar: 'bg-match-mid' };
-  return { bg: 'bg-match-low', text: 'text-match-low-text', bar: 'bg-match-low' };
+// 부족 재료 개수 기반 뱃지 색 — 0개=초록(바로 가능), 1~3개=주황, 4개↑=빨강.
+// 매칭률 %는 양념 때문에 부풀려져 쓰지 않음 — 부족 개수가 정직한 지표.
+function getMissingStyle(missingCount: number) {
+  if (missingCount === 0) return 'bg-match-high';
+  if (missingCount <= 3) return 'bg-match-mid';
+  return 'bg-match-low';
 }
 
 export default memo(function FridgeRecipeCard({ recipe, priority = false }: FridgeRecipeCardProps) {
@@ -53,8 +57,8 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
   const totalTime = getTotalTime(recipe);
   const difficultyLabel = getDifficultyLabel(recipe.difficulty_level, t.difficulty);
   const hasMatch = recipe.matchRate !== undefined;
-  const matchStyle = hasMatch ? getMatchStyle(recipe.matchRate!) : null;
   const missing = recipe.missingIngredientNames ?? [];
+  const missingCount = missing.length;
 
   return (
     <Link href={`/recipes/${recipe.id}`} className="block group">
@@ -76,10 +80,12 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
             </div>
           )}
 
-          {/* 매칭률 뱃지 */}
+          {/* 부족 재료 뱃지 — % 대신 부족 개수 (양념 부풀림 없는 정직한 표시) */}
           {hasMatch && (
-            <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${matchStyle!.bg} shadow`}>
-              {recipe.matchRate}% {t.recipeCard.matchedLabel}
+            <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${getMissingStyle(missingCount)} shadow`}>
+              {missingCount === 0
+                ? `🔥 ${t.recommendations.modeReadyLabel}`
+                : t.recipeCard.missingCountBadge.replace('{count}', String(missingCount))}
             </div>
           )}
 
@@ -95,32 +101,19 @@ export default memo(function FridgeRecipeCard({ recipe, priority = false }: Frid
         <div className="p-3 space-y-1.5">
           <h3 className="font-bold text-sm truncate">{recipe.title}</h3>
 
-          {/* 매칭 정보 */}
+          {/* 부족 재료 목록 — % 진행바·분수 제거, 무엇이 부족한지만 표시 */}
           {hasMatch && (
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <div className="flex-1 h-1 bg-background-tertiary rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${matchStyle!.bar}`}
-                    style={{ width: `${recipe.matchRate}%` }}
-                  />
-                </div>
-                <span className={`text-[10px] font-semibold flex-shrink-0 ${matchStyle!.text}`}>
-                  {recipe.matchedCount}/{recipe.totalIngredients}{t.recipeCard.heldSuffix}
+            missingCount > 0 ? (
+              <p className="text-[11px] truncate">
+                <span className="text-text-muted font-semibold">{t.recipeCard.missingLabel}:</span>
+                <span className="ml-1 text-text-secondary">
+                  {missing.slice(0, 2).join(', ')}
+                  {missing.length > 2 && ` +${missing.length - 2}`}
                 </span>
-              </div>
-              {missing.length > 0 ? (
-                <p className="text-[11px] truncate">
-                  <span className="text-accent-warm font-bold">🛒 {t.recipeCard.missingLabel}:</span>
-                  <span className="ml-1 text-text-secondary">
-                    {missing.slice(0, 2).join(', ')}
-                    {missing.length > 2 && ` +${missing.length - 2}`}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-match-high-text font-bold">✓ {t.recipeCard.allHeldLabel}</p>
-              )}
-            </div>
+              </p>
+            ) : (
+              <p className="text-[11px] text-match-high-text font-bold">✓ {t.recipeCard.allHeldLabel}</p>
+            )
           )}
 
           {/* 시간 · 난이도 · 평점 */}

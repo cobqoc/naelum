@@ -381,6 +381,7 @@ export const ja = {
   },
   recipeCard: {
     matchedLabel: 'マッチ',
+    missingCountBadge: 'あと{count}個',
     cookedLabel: '作ったよ',
     heldSuffix: '個保有',
     missingLabel: '足りない食材',
@@ -739,6 +740,7 @@ export const ja = {
     pillAlmost: 'もうすぐ作れるレシピ {count}品',
     pillAll: '材料がもっと必要なレシピ {count}品',
     pillDefault: 'レシピを探す',
+    pillLoading: 'レシピを探しています...',
     pillAriaSuffix: 'レシピを見る',
     ingredientList: '全食材リスト',
     ingredientListMore: '+{count}個もっと見る',

@@ -22,6 +22,7 @@ interface RecommendationPillProps {
   /** 부모의 track 클로저 */
   onClick: () => void;
   pillDefault: string;
+  pillLoading: string;
   pillReady: string;
   pillAlmost: string;
   pillAll: string;
@@ -34,17 +35,18 @@ export default function RecommendationPill({
   href,
   onClick,
   pillDefault,
+  pillLoading,
   pillReady,
   pillAlmost,
   pillAll,
   ariaSuffix,
 }: RecommendationPillProps) {
-  // 로딩 중이면 shimmer pill
+  // 로딩 중 — 스피너 + "찾는 중" 라벨로 진행 중임을 명확히 (정적 버튼처럼 안 보이게)
   if (matchingCount === null) {
     return (
-      <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap animate-pulse">
-        <span className="text-base md:text-lg leading-none">💡</span>
-        <span>{pillDefault}</span>
+      <div className="absolute top-[63%] right-[4%] -translate-y-1/2 z-20 flex items-center gap-1.5 px-3.5 py-2 md:px-5 md:py-2.5 rounded-full bg-accent-warm/60 text-background-primary text-xs md:text-base font-bold whitespace-nowrap">
+        <span className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin rounded-full border-2 border-background-primary/70 border-t-transparent" />
+        <span>{pillLoading}</span>
       </div>
     );
   }
@@ -54,7 +56,7 @@ export default function RecommendationPill({
   if (matchingCount > 0 && resolvedMode) {
     const countStr = matchingCount >= 30 ? '30+' : String(matchingCount);
     if (resolvedMode === 'ready') { icon = '🔥'; label = pillReady.replace('{count}', countStr); }
-    else if (resolvedMode === 'almost') { icon = '🛒'; label = pillAlmost.replace('{count}', countStr); }
+    else if (resolvedMode === 'almost') { icon = '🥕'; label = pillAlmost.replace('{count}', countStr); }
     else { icon = '📋'; label = pillAll.replace('{count}', countStr); }
   }
   return (
