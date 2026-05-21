@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
       id, title, thumbnail_url, category, duration_minutes, created_at, views_count,
       author:profiles!tip_author_id_fkey(username)
     `)
+    // 공개 팁 = is_public AND NOT is_draft — 다른 엔드포인트(users/[username]/tips)와
+    // 동일 정의. DB CHECK 제약(tip_publish_state_valid)이 모순 상태를 막지만,
+    // 쿼리도 의도를 명시해 "공개 팁" 정의를 한 곳으로 통일.
     .eq('is_public', true)
+    .eq('is_draft', false)
     .order('created_at', { ascending: false });
 
   if (category) query = query.eq('category', category);
