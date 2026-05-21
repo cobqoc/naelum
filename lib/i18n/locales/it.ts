@@ -1225,7 +1225,7 @@ export const it = {
     tagsLabel: 'Tag (opzionale, max 10)',
     tagPlaceholder: 'Inserisci tag e premi Invio',
     addTag: 'Aggiungi',
-    isPublicLabel: 'Pubblico',
+    savePrivate: 'Salva come privato',
     saveDraft: 'Salva bozza',
     saving: 'Salvataggio...',
     submit: 'Condividi consiglio',

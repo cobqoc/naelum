@@ -1225,7 +1225,7 @@ export const es = {
     tagsLabel: 'Etiquetas (opcional, máx. 10)',
     tagPlaceholder: 'Escriba la etiqueta y presione Enter',
     addTag: 'Agregar',
-    isPublicLabel: 'Público',
+    savePrivate: 'Guardar como privado',
     saveDraft: 'Guardar borrador',
     saving: 'Guardando...',
     submit: 'Compartir consejo',

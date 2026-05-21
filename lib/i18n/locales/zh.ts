@@ -1225,7 +1225,7 @@ export const zh = {
     tagsLabel: '标签（可选，最多10个）',
     tagPlaceholder: '输入标签后按Enter',
     addTag: '添加',
-    isPublicLabel: '是否公开',
+    savePrivate: '保存为私密',
     saveDraft: '保存草稿',
     saving: '保存中...',
     submit: '分享技巧',

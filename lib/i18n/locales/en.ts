@@ -1224,7 +1224,7 @@ export const en = {
     tagsLabel: 'Tags (optional, max 10)',
     tagPlaceholder: 'Enter tag and press Enter',
     addTag: 'Add',
-    isPublicLabel: 'Public',
+    savePrivate: 'Save as private',
     saveDraft: 'Save draft',
     saving: 'Saving...',
     submit: 'Share tip',

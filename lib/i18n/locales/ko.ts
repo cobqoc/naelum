@@ -1225,7 +1225,7 @@ export const ko = {
     tagsLabel: '태그 (선택, 최대 10개)',
     tagPlaceholder: '태그 입력 후 Enter',
     addTag: '추가',
-    isPublicLabel: '공개 여부',
+    savePrivate: '비공개로 저장',
     saveDraft: '임시저장',
     saving: '저장 중...',
     submit: '팁 공유하기',

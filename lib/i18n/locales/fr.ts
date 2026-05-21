@@ -1225,7 +1225,7 @@ export const fr = {
     tagsLabel: 'Tags (optionnel, max. 10)',
     tagPlaceholder: 'Saisissez un tag et appuyez sur Entrée',
     addTag: 'Ajouter',
-    isPublicLabel: 'Public',
+    savePrivate: 'Enregistrer en privé',
     saveDraft: 'Enregistrer le brouillon',
     saving: 'Enregistrement...',
     submit: 'Partager le conseil',
