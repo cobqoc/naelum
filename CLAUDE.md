@@ -1149,6 +1149,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **타이머 입력란 제거 + 파서 시간단위 보강 + timestamp 보정** — 완료 (2026-05-22, develop 푸시)
+  - **레시피 작성 폼 타이머 입력란 제거**: 단계별 `timer_minutes` 입력은 본문 텍스트 파싱과 중복 (스텝은 거의 항상 "4분간 삶기"처럼 본문에 시간 명시). 작성/수정 폼 `StepsSection`에서 입력란만 제거 — DB 컬럼·`getEffectiveTimers`의 dbVal 읽기는 유지 → 기존 `timer_minutes` 레시피는 그대로 표시. i18n `stepTimerPlaceholder` 제거
+  - **`parseAllTimers` → `lib/cook/parseTimers.ts` 추출 + 보강** (vitest 11): ① 시간 단위 — `N시간 M분`/`N시간` → 총 분, 매칭 구간 제거로 "1시간 30분→30분" 오파싱 수정 ② 오탐 — `N분의 M`(분수) 제외(`분(?!의)`). 3시간+ 는 120분 상한 초과로 제외. **한글 숫자는 미지원** — `오이`(=오5·이2) 등 일반 단어와 충돌해 가짜 타이머 생김
+  - **타이머 timestamp 보정** (`useMultiTimer`): 남은 시간을 1초씩 깎던 방식 → `endsAt`(종료 예정 시각) 기준 재계산. 백그라운드에서 `setInterval`이 throttle/정지돼도 탭 복귀 시 정확. `visibilitychange` 재계산 + 순수 `computeTimerState` 분리(vitest 6). pause/resume은 endsAt 재설정. (폰 잠긴 채 알람 울리는 건 웹 한계상 불가 — OS 타이머 영역)
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 407 passed · 0 failed
 - **조리 단계 타이머 UX 정리 + 장보기 버튼 라벨** — 완료 (2026-05-22, develop 푸시)
   - **타이머 위치**: 단계별 `N분` 퀵버튼·`단계 타이머`·상단 전역 버튼 모두 제거. **본문에 시간이 있는 단계**에만 `⏱ 타이머` 1개 — 그 단계 시간으로 prefill(콩나물 "4분, 2분 뒤집기" 류). 시간 없는 단계엔 버튼 없음. 단계에서 시작한 타이머는 패널에 "N단계"로 표시(stepNumber 전달)
   - **하단 바엔 타이머 안 둠**: 하단 고정 바는 핵심 액션(장보기) 자리 — 곁들이 기능인 타이머가 차지하지 않게. 즉흥 타이머는 OS 타이머로 충분 (타이머의 차별점은 체크포인트뿐 — 더 투자 안 함)

@@ -16,6 +16,7 @@ import CartIcon from '@/components/icons/CartIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
+import { parseAllTimers } from '@/lib/cook/parseTimers';
 
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
@@ -144,15 +145,6 @@ export default function RecipeBrowseView({
     if (isNaN(num)) return qty;
     const scaled = num * (currentServings / baseServings);
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
-  };
-
-  // 조리 지시문에서 타이머 전체 파싱 — 중복 제거, 1~120분 범위만
-  const parseAllTimers = (instruction: string): number[] => {
-    const matches = [...instruction.matchAll(/(\d+)\s*분(?:간|동안|씩|정도|가량)?/g)];
-    const seen = new Set<number>();
-    return matches
-      .map(m => parseInt(m[1], 10))
-      .filter(m => m >= 1 && m <= 120 && !seen.has(m) && seen.add(m) !== undefined);
   };
 
   const getEffectiveTimers = (step: RecipeStep): number[] => {

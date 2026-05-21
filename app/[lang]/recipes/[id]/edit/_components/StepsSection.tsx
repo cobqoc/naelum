@@ -143,27 +143,13 @@ export default function StepsSection({
             )}
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={step.tip}
-                onChange={(e) => onUpdateStep(index, 'tip', e.target.value)}
-                className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-accent-warm text-sm"
-                placeholder={tf.stepTipPlaceholder}
-              />
-            </div>
-            <div className="w-28">
-              <input
-                type="number"
-                value={step.timer_minutes || ''}
-                onChange={(e) => onUpdateStep(index, 'timer_minutes', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-accent-warm text-sm"
-                placeholder={tf.stepTimerPlaceholder}
-                min="0"
-              />
-            </div>
-          </div>
+          <input
+            type="text"
+            value={step.tip}
+            onChange={(e) => onUpdateStep(index, 'tip', e.target.value)}
+            className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-accent-warm text-sm"
+            placeholder={tf.stepTipPlaceholder}
+          />
         </div>
       ))}
 
