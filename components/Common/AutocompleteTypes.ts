@@ -105,6 +105,9 @@ export interface AutocompleteProps<T extends AutocompleteItem> {
   /** 드롭다운 클래스명 */
   dropdownClassName?: string;
 
+  /** 드롭다운 열림 방향 — 'down'(기본, 입력창 아래) | 'up'(입력창 위) */
+  dropdownDirection?: 'down' | 'up';
+
   // ===== 접근성 =====
 
   /** ARIA 레이블 */

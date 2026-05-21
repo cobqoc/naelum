@@ -264,10 +264,16 @@ export default function ProfilePage(props: PageProps) {
         throw new Error(errorData.error || t.errors.visibilityChangeFailed);
       }
 
-      // 목록 업데이트
-      setRecipes(prev => prev.map(r =>
-        r.id === recipeId ? { ...r, status: newStatus } : r
-      ));
+      // 목록 업데이트 — 레시피(공개) 탭·비공개 탭은 각각 한 상태만 보여주므로,
+      // 토글로 상태가 바뀌어 현재 탭에 안 맞으면 새로고침 기다리지 말고 즉시 제거.
+      setRecipes(prev => {
+        const leavesTab =
+          (activeTab === 'created' && newStatus !== 'published') ||
+          (activeTab === 'private' && newStatus !== 'private');
+        return leavesTab
+          ? prev.filter(r => r.id !== recipeId)
+          : prev.map(r => r.id === recipeId ? { ...r, status: newStatus } : r);
+      });
       toast.success(currentStatus === 'published' ? t.errors.recipeHidden : t.errors.recipePublished);
     } catch (error) {
       console.error('Error toggling visibility:', error);

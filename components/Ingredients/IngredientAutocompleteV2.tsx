@@ -52,6 +52,7 @@ export default function IngredientAutocompleteV2({
   disabled,
   autoFocus,
   compact = false,
+  dropdownDirection = 'down',
 }: IngredientAutocompleteV2Props) {
   // ===== 상태 관리 =====
   const [internalSelectedCategories, setInternalSelectedCategories] = useState<string[]>([]);
@@ -220,6 +221,7 @@ export default function IngredientAutocompleteV2({
         className={className}
         disabled={disabled}
         autoFocus={autoFocus}
+        dropdownDirection={dropdownDirection}
         ariaLabel="재료 검색"
       />
 

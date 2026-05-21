@@ -114,6 +114,9 @@ export interface IngredientAutocompleteV2Props {
   /** Placeholder 텍스트 */
   placeholder?: string;
 
+  /** 드롭다운 열림 방향 — 'down'(기본) | 'up'(입력창 위) */
+  dropdownDirection?: 'down' | 'up';
+
   // ===== 재료 전용 기능 =====
 
   /** 카테고리 필터 활성화 */
