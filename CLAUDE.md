@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **핵심 루프(냉장고→추천) 전수 검사 + 수정 3건** — 완료 (2026-05-22, develop 푸시)
+  - **검사 방법**: 매칭(`match.ts`)·추천 API·표시(카드·모달·재료탭·홈 pill) 코드 audit + 추천 API 케이스 9종 직접 실행(빈/단일/다수/동의어/대체재/정규화/fundamental/mode별) + 로그인 흐름(signin→재료 추가→추천) 직접 실행. 매칭 엔진 전 동작 정상 확인
+  - **수정① 중복 카운트**: 추천 API가 같은 이름 재료를 2줄로 적은 레시피를 중복 카운트("후추" 2번 → total·missing 부풀림). `recipeIngredientsList` 이름 기준 dedup
+  - **수정② 상세탭 FK 매칭**: 레시피 상세 재료탭이 FK 매칭 불가(이름 배열만 받음) → 추천 API는 `FK||isSameIngredient`인데 상세탭은 이름만 → 불일치 가능. `page.tsx`가 user `ingredient_id`도 전달, `RecipeBrowseView`가 `fkOwnedNames`로 FK 매칭
+  - **수정③ add 경로 FK**: `POST /api/user-ingredients`(모바일 앱 경로)가 `ingredient_id` 미해석 → FK-blind. `resolveIngredientId` 추가 (HomeClient·add-to-ingredients 와 통일). 직접 테스트로 검증(마늘·달걀·양파 FK resolve)
+  - **보류**: 기본 양념(소금·간장 등)이 보유로 안 잡혀 "바로 가능" 추천이 거의 안 뜸 — pantry staples 자동가정은 정직성 문제로 추가 검토 필요(사용자 결정)
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 408 passed · 0 failed
 - **재료 매칭 표시 가독성 — 대체 라벨 + 카드 보유 텍스트 색** — 완료 (2026-05-22, develop 푸시)
   - 레시피 상세 재료 탭: 대체 가능 재료가 `🔄 {재료}` 이모지만이라 의미 불명확 → `[🔄 대체 가능]` 라벨 칩 + 재료명
   - 추천 카드: `N/N 보유` 텍스트를 회색 → 상태별 색(초록/주황/빨강 — 냉장고 아이콘 원과 동색). 레시피 상세 페이지 보유 텍스트와 통일

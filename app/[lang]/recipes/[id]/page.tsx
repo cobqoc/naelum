@@ -62,7 +62,7 @@ async function fetchRecipePageData(id: string) {
       cookedCountPromise,
       supabase
         .from('user_ingredients')
-        .select('ingredient_name')
+        .select('ingredient_name, ingredient_id')
         .eq('user_id', user.id),
       supabase
         .from('recipe_saves')
@@ -91,6 +91,9 @@ async function fetchRecipePageData(id: string) {
       recipe,
       currentUserId: user.id,
       initialUserIngredients: (userIngData || []).map(i => i.ingredient_name),
+      initialUserIngredientIds: (userIngData || [])
+        .map(i => i.ingredient_id)
+        .filter((x): x is string => !!x),
       initialIsSaved: !!saveData,
       initialSaveNotes: saveData?.notes ?? null,
       initialIsLiked: !!likeData,
@@ -107,6 +110,7 @@ async function fetchRecipePageData(id: string) {
     recipe,
     currentUserId: null,
     initialUserIngredients: [],
+    initialUserIngredientIds: [],
     initialIsSaved: false,
     initialSaveNotes: null,
     initialIsLiked: false,
@@ -194,6 +198,7 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         recipe={data.recipe}
         currentUserId={data.currentUserId}
         initialUserIngredients={data.initialUserIngredients}
+        initialUserIngredientIds={data.initialUserIngredientIds}
         initialIsSaved={data.initialIsSaved}
         initialSaveNotes={data.initialSaveNotes}
         initialIsLiked={data.initialIsLiked}
