@@ -37,7 +37,7 @@ interface Props {
   /** 매칭 pill 표시용 데이터 — null=로딩, 0=매칭없음, >0=숫자.
    *  expiringOnly=true일 때만 상단 노출. */
   recipeMatch?: { count: number | null; mode: 'ready' | 'almost' | 'all' | null } | null;
-  /** 매칭 pill 탭 핸들러 — 일반적으로 /recommendations로 이동. */
+  /** 매칭 pill 탭 핸들러 — 일반적으로 /recipes 재료 기반 탭으로 이동. */
   onCookFromExpiring?: () => void;
 }
 

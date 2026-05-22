@@ -138,7 +138,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
   });
 
   // ── 시나리오 A: 실제 추천 매칭 결과 ─────────────────────────────────────
-  test('임박 재료로 실제 추천 매칭 — pill 노출 + /recommendations 이동', async ({ authenticatedPage, testUser }) => {
+  test('임박 재료로 실제 추천 매칭 — pill 노출 + /recipes 재료 기반 탭 이동', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
 
     // dev DB에 흔하게 들어간 재료(양파·마늘·돼지고기)를 임박으로 seed → 매칭 가능성 ↑
@@ -164,9 +164,9 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     const sheetCta = dialog.locator('button:has-text("→")');
     await expect(sheetCta).toBeVisible({ timeout: 20000 });
 
-    // CTA 탭 → /recommendations로 이동. URL에 ingredients query가 양파·마늘·돼지고기 중 하나라도 인코딩되어 포함.
+    // CTA 탭 → /recipes 재료 기반 탭으로 이동. URL에 ingredients query가 양파·마늘·돼지고기 중 하나라도 인코딩되어 포함.
     await sheetCta.click({ force: true });
-    await expect(page).toHaveURL(/\/recommendations.*ingredients=.*(%EC%96%91%ED%8C%8C|%EB%A7%88%EB%8A%98|%EB%8F%BC%EC%A7%80%EA%B3%A0%EA%B8%B0)/);
+    await expect(page).toHaveURL(/\/recipes\?.*tab=ingredient.*ingredients=.*(%EC%96%91%ED%8C%8C|%EB%A7%88%EB%8A%98|%EB%8F%BC%EC%A7%80%EA%B3%A0%EA%B8%B0)/);
   });
 
   // ── 시나리오 B: 카운트 + 두 매달림 동시 노출 + 시트 필터링 ──────────────

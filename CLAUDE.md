@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **추천 페이지를 전체 레시피에 탭으로 병합** — 완료 (2026-05-23, develop 푸시)
+  - **2탭 통합**: `/recommendations` 페이지 제거 → `/recipes`에 `전체 | 재료 기반` 탭. 둘 다 "레시피 찾기"고 재료 기반 = 전체를 냉장고로 거른 것이라 한 페이지가 자연스러움. 기본 탭=전체, 홈 냉장고 pill은 `?tab=ingredient` deep-link
+  - **추천 4탭 → 1개**: 재료 기반만 유지. 트렌딩·맞춤추천·식사시간별은 초기 앱에 데이터(요리활동·평점·meal_type 태그)가 없어 hollow(평점순 fallback으로 수렴) → UI 제거. `/api/recommendations`의 type 케이스 코드는 보존 — 데이터 쌓이면 탭이 아니라 전체 탭의 섹션 스트립으로 부활
+  - **`IngredientRecsView` 추출**: 재료 기반 콘텐츠(모드 pill 바로/거의/전체·결과 그리드·빈 상태)를 `recipes/_components/`로. `AllRecipesClient`가 탭 호스트
+  - **`/recommendations` 완전 삭제**: 사용자 없어 redirect 불필요. 홈 pill·냉장고 footer 등 링크 전부 `/recipes?tab=ingredient`로 수정
+  - **`public/sw.js` CACHE_VERSION v10→v11**: /recipes 페이지 구조 변경(탭 추가)
+  - 검증: lint 0 errors · build · e2e fresh build 408 passed · 0 failed
 - **관리자 레시피 페이지 개선 — 일괄 작업·상태 탭·정렬** — 완료 (2026-05-23, develop 푸시)
   - **난이도 라벨 fix**: `admin/recipes` 페이지가 로컬 하드코딩 맵(`초급/중급/고급`)을 써서 통일된 앱(`쉬움/보통/어려움`)과 불일치 → 공유 `DIFFICULTY_LABELS` 사용
   - **일괄 작업**: 행 체크박스 + 페이지 전체 선택 + 일괄 공개/비공개/삭제. `POST /api/admin/recipes/bulk` 신설 (ids[]+action, 최대 200개)

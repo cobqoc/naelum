@@ -239,6 +239,7 @@ export const it = {
   },
   recipe: {
     allRecipes: 'Tutte le ricette',
+    tabAll: 'Tutto',
     writeRecipe: 'Scrivi ricetta',
     writeRecipeSub: 'Condividi la tua ricetta',
     easy: 'Facile',

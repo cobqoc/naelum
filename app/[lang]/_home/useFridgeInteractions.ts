@@ -46,7 +46,7 @@ export function useFridgeInteractions({
   // 액션 시트: "이 재료로 만들기" → 해당 재료 들어간 레시피 페이지로 이동.
   const handleCook = (item: FridgeItem) => {
     setActionItem(null);
-    router.push(`/recommendations?mode=all&ingredients=${encodeURIComponent(item.ingredient_name)}`);
+    router.push(`/recipes?tab=ingredient&mode=all&ingredients=${encodeURIComponent(item.ingredient_name)}`);
   };
 
   // 액션 시트: "수정" → 상세 수정 모달 열기.
