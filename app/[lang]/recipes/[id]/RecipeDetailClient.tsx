@@ -16,6 +16,7 @@ const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { ssr:
 
 interface RecipeIngredient {
   ingredient_name: string;
+  ingredient_id?: string | null;
   quantity: string;
   unit: string;
   notes?: string;
@@ -66,6 +67,7 @@ export interface RecipeDetailClientProps {
   recipe: Recipe;
   currentUserId: string | null;
   initialUserIngredients: string[];
+  initialUserIngredientIds: string[];
   initialIsSaved: boolean;
   initialSaveNotes: string | null;
   initialIsLiked: boolean;
@@ -77,6 +79,7 @@ export default function RecipeDetailClient({
   recipe: initialRecipe,
   currentUserId,
   initialUserIngredients,
+  initialUserIngredientIds,
   initialIsSaved,
   initialSaveNotes,
   initialIsLiked,
@@ -98,6 +101,7 @@ export default function RecipeDetailClient({
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [likeLoading, setLikeLoading] = useState(false);
   const [userIngredients] = useState<string[]>(initialUserIngredients);
+  const [userIngredientIds] = useState<string[]>(initialUserIngredientIds);
   const [actionLoading, setActionLoading] = useState(false);
   // 조회수 증가 중복 방지용 ref
   const viewIncrementedRef = useRef(false);
@@ -335,6 +339,7 @@ export default function RecipeDetailClient({
       <RecipeBrowseView
         recipe={recipe}
         userIngredients={userIngredients}
+        userIngredientIds={userIngredientIds}
         isSaved={isSaved}
         saveNotes={saveNotes}
         onToggleSave={handleSave}

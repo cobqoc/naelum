@@ -24,6 +24,7 @@ const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false }
 
 interface RecipeIngredient {
   ingredient_name: string;
+  ingredient_id?: string | null;
   quantity: string;
   unit: string;
   notes?: string;
@@ -72,6 +73,7 @@ interface Recipe {
 interface RecipeBrowseViewProps {
   recipe: Recipe;
   userIngredients: string[];
+  userIngredientIds: string[];
   isSaved: boolean;
   saveNotes: string | null;
   onToggleSave: () => void;
@@ -87,6 +89,7 @@ interface RecipeBrowseViewProps {
 export default function RecipeBrowseView({
   recipe,
   userIngredients,
+  userIngredientIds,
   isSaved,
   saveNotes,
   onToggleSave,
@@ -126,11 +129,20 @@ export default function RecipeBrowseView({
   // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
   const [showFridgeModal, setShowFridgeModal] = useState(false);
 
-  // 보유 판정 — 물 등 기본 재료(isFundamental)는 항상 보유. 그 외엔
-  // isSameIngredient(동의어만)로 대조. 까나리액젓을 가졌다고 멸치액젓을
-  // "보유"로 치지 않는다 — 그건 대체(findSubstitute) 영역.
+  // FK 매칭 — recipe 재료의 ingredient_id 가 user 보유 재료 id 와 일치하면 보유.
+  // 이름이 messy 해도("양파(중)" 등) FK 로 정확히 잡는다(추천 API 와 동일 기준).
+  const userIdSet = new Set(userIngredientIds);
+  const fkOwnedNames = new Set(
+    recipe.ingredients
+      .filter(i => i.ingredient_id && userIdSet.has(i.ingredient_id))
+      .map(i => i.ingredient_name),
+  );
+
+  // 보유 판정 — 물 등 기본 재료(isFundamental)는 항상 보유. FK 일치 또는
+  // isSameIngredient(동의어). 까나리액젓을 가졌다고 멸치액젓을 "보유"로
+  // 치지 않는다 — 그건 대체(findSubstitute) 영역.
   const isIngredientOwned = (name: string) =>
-    isFundamental(name) || userIngredients.some(ui => isSameIngredient(ui, name));
+    isFundamental(name) || fkOwnedNames.has(name) || userIngredients.some(ui => isSameIngredient(ui, name));
 
   // 대체 — 보유는 아니지만 가진 재료로 바꿔 쓸 수 있음. via(가진 재료명) 반환.
   const findSubstitute = (name: string): string | null =>

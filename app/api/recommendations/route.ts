@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') || 'ingredients'
   const rawLimit = parseInt(searchParams.get('limit') || '12')
   const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 12 : rawLimit), 50)
-  // 재료 기반 mode: ready(100%) | almost(missing 1~2) | all(>0%). ingredients type 에서만 사용.
+  // 재료 기반 mode: ready(부족 0) | almost(부족 1~3) | all(매칭 >0). ingredients type 에서만 사용.
   // 'auto'면 서버가 bestMode 자동 판단 (바로 가능 ≥1 → ready, 아니면 almost → all 순서).
   const modeParam = (searchParams.get('mode') || 'auto') as 'auto' | 'ready' | 'almost' | 'all'
 
@@ -163,8 +163,17 @@ export async function GET(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
           // 보편 재료(물 등)는 매칭 계산에서 제외 — 항상 가졌다고 가정.
-          const recipeIngredientsList: { ingredient_name: string; ingredient_id?: string | null }[] =
+          const nonFundamental: { ingredient_name: string; ingredient_id?: string | null }[] =
             (recipe.ingredients || []).filter((ri: { ingredient_name: string }) => !isFundamental(ri.ingredient_name))
+          // 같은 이름 재료 중복 제거 — 한 레시피가 "후추"를 2줄로 적으면
+          // total·missing 이 부풀려지고 missing 목록에 중복 노출됨
+          const seenIngNames = new Set<string>()
+          const recipeIngredientsList = nonFundamental.filter(ri => {
+            const k = ri.ingredient_name.toLowerCase().trim()
+            if (seenIngNames.has(k)) return false
+            seenIngNames.add(k)
+            return true
+          })
           // 보유 — FK 또는 같은 재료(동의어). "보유 ✓"로 인정.
           const isOwnedRI = (ri: { ingredient_name: string; ingredient_id?: string | null }) =>
             (!!ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) ||
