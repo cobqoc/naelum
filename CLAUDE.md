@@ -1141,7 +1141,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-22  
+**최종 수정일**: 2026-05-23  
 **작성자**: 낼름 개발팀
 
 ---
@@ -1149,6 +1149,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **프로필·법무 페이지 헤더 통일 + SW 캐시 v10** — 완료 (2026-05-23, develop 푸시)
+  - **프로필 `/[username]`**: 커스텀 `← 낼름 ⚙️` 헤더 → 표준 `Header`+`Footer`. ⚙️ 설정 접근은 `ProfileCard` 우상단 버튼으로 이전(본인 프로필만)
+  - **법무 4페이지**: copyright·privacy·terms 커스텀 `← 홈으로` 헤더 → 표준 `Header`+`Footer`. cookies(이미 표준 Header)에도 `Footer` 추가 → 법무 페이지 4개 전부 일관
+  - **`public/sw.js` CACHE_VERSION v9→v10**: 헤더 구조가 5개 페이지에서 변경 — 재방문 사용자 캐시 갱신
+  - 데스크톱·모바일 동일 반응형 `Header`라 모바일도 자동 통일 (모바일 스크린샷 확인 완료)
+  - 검증: lint 0 errors · build · e2e fresh build 408 passed · 0 failed
 - **추천 페이지 chrome 통일 + SW 캐시 버전 bump** — 완료 (2026-05-22, develop 푸시)
   - **추천 페이지 chrome 통일**: 추천 페이지가 커스텀 "홈으로 돌아가기" 바를 쓰던 것 → 전체·팁과 동일한 표준 `Header`+`Footer`로 교체. 탭 4개짜리 본격 페이지가 표준 헤더 없어 네비게이션 막다른 길이던 문제 해소. 추천 종류 탭은 본문으로 이동(비-sticky, 다른 페이지와 일관)
   - **`public/sw.js` CACHE_VERSION v8→v9**: 카드 구조 변경(전체·추천·검색·팁)이 페이지 구조 변경이라 SW 캐시 버전 갱신 필요 — 재방문 사용자가 옛 JS 번들로 옛 카드를 보던 문제 해소

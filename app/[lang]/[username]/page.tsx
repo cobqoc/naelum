@@ -14,6 +14,8 @@ import DraftsPrivateView from './_components/DraftsPrivateView';
 import ProfileRecipeGrid from './_components/ProfileRecipeGrid';
 
 const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal'), { ssr: false });
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
 
 interface PageProps {
@@ -336,35 +338,10 @@ export default function ProfilePage(props: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background-primary text-text-primary pb-24 md:pb-8">
-      {/* Modern Header */}
-      <header className="sticky top-0 z-50 bg-background-primary/95 backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto max-w-4xl px-4 md:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-text-muted hover:text-text-primary transition-colors">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-            </Link>
-            <Link href="/" className="text-xl font-bold text-accent-warm">낼름</Link>
-            {isOwnProfile ? (
-              <Link
-                href="/settings"
-                className="p-2 rounded-lg hover:bg-background-secondary transition-colors"
-              >
-                <svg className="w-6 h-6 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </Link>
-            ) : (
-              <div className="w-6" />
-            )}
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background-primary text-text-primary">
+      <Header />
 
-      <div className="container mx-auto max-w-4xl px-4 md:px-6">
+      <main className="container mx-auto max-w-4xl px-4 md:px-6 pt-20 md:pt-24 pb-24 md:pb-12">
         {/* Modern Profile Card — _components/ProfileCard.tsx 로 추출 (Phase 2) */}
         <ProfileCard
           t={t}
@@ -425,7 +402,7 @@ export default function ProfilePage(props: PageProps) {
             </p>
           </div>
         )}
-      </div>
+      </main>
 
       {/* 리뷰 모달 */}
       {selectedRecipe && (
@@ -441,6 +418,7 @@ export default function ProfilePage(props: PageProps) {
           initialReview={selectedRecipe.user_review || ''}
         />
       )}
+      <Footer />
       <BottomNav />
     </div>
   );

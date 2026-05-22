@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from '@/components/Common/LocalizedLink';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { type Profile, type ProfileCounts, interestEmojis } from './types';
 
@@ -47,7 +48,20 @@ export default function ProfileCard({
   ];
 
   return (
-    <div className="mt-8 bg-gradient-to-br from-background-secondary to-background-tertiary rounded-3xl p-6 md:p-8 border border-white/5">
+    <div className="relative mt-8 bg-gradient-to-br from-background-secondary to-background-tertiary rounded-3xl p-6 md:p-8 border border-white/5">
+      {/* 설정 — 본인 프로필만. 구 커스텀 헤더의 ⚙️ 를 카드로 이전 (헤더 표준화) */}
+      {isOwnProfile && (
+        <Link
+          href="/settings"
+          aria-label={t.common.settings}
+          className="absolute top-4 right-4 p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </Link>
+      )}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
         {/* Avatar */}
         <div className="w-32 h-32 rounded-2xl bg-background-tertiary overflow-hidden ring-4 ring-accent-warm/30 shadow-lg">
