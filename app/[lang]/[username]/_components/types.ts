@@ -65,11 +65,6 @@ export interface Tip {
   created_at: string;
 }
 
-export const TIP_CATEGORY_ICONS: Record<string, string> = {
-  '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
-};
-
 // 관심사 이모지 매핑
 export const interestEmojis: Record<string, string> = {
   '한식': '🍚',

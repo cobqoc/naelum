@@ -1141,7 +1141,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-19  
+**최종 수정일**: 2026-05-22  
 **작성자**: 낼름 개발팀
 
 ---
@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **레시피·팁 카드 통합 + 전체·검색 냉장고 줄 확장** — 완료 (2026-05-22, develop 푸시)
+  - **레시피 카드 단일화**: 전체·추천·검색 3페이지가 제각각 카드를 쓰던 것 → 단일 `RecipeCard`. 구 `FridgeRecipeCard` 병합·삭제. 메타 줄 = `시간·난이도·평점` (조회수·좋아요·만든수 의도적 제외 — 초기 앱 소셜 지표 빈약). fallback 그라데이션 통일·작성자 하단
+  - **난이도 라벨 불일치 버그 fix**: `t.recipe.easy/medium/hard`(쉬움/보통/어려움)와 `t.difficulty.*`(초급/중급/고급)가 갈려 같은 레시피가 화면마다 다르게 표시되던 버그 → 둘 다 `쉬움/보통/어려움`으로 통일 (8 locale + `DIFFICULTY_LABELS` 상수)
+  - **팁 카드 단일화**: `TipCard` 신설 — `/tip` 목록·프로필 팁탭 공용. `TipListClient` 하드코딩 한글 제거 → `tip` 네임스페이스 8 locale 추가. `TIP_CATEGORY_ICONS` 단일 출처화. 프로필 레시피·드래프트 카드는 관리 chrome(편집메뉴·공개토글·hover오버레이) 때문에 의도적 분리
+  - **전체·검색 냉장고 줄**: 추천 페이지에만 있던 냉장고 매칭 줄을 전체·검색 카드에도 확장. `computeRecipeMatch` 순수함수를 추천 라우트에서 추출 (추천·전체·검색 카운트 단일 출처) + `attachFridgeMatch` 클라이언트 헬퍼 (ISR 캐시 유지·setState 전 await로 CLS 방지)
+  - **green-only 모드**: `RecipeCard.fridgeRowMode` — `full`(추천: `N/N 보유` 3색 + 대체로 메워지면 `🔄 N` 마커) / `positive`(전체·검색: 바로 만들 수 있을 때만 초록 `✓ 바로 만들 수 있어요` 라벨, 못 만드는 건 줄 숨김 → 둘러보기 "빨간 벽" 방지). i18n `recipe.canMakeNow` 8 locale
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 2 skipped · 0 failed
 - **핵심 루프(냉장고→추천) 전수 검사 + 수정 3건** — 완료 (2026-05-22, develop 푸시)
   - **검사 방법**: 매칭(`match.ts`)·추천 API·표시(카드·모달·재료탭·홈 pill) 코드 audit + 추천 API 케이스 9종 직접 실행(빈/단일/다수/동의어/대체재/정규화/fundamental/mode별) + 로그인 흐름(signin→재료 추가→추천) 직접 실행. 매칭 엔진 전 동작 정상 확인
   - **수정① 중복 카운트**: 추천 API가 같은 이름 재료를 2줄로 적은 레시피를 중복 카운트("후추" 2번 → total·missing 부풀림). `recipeIngredientsList` 이름 기준 dedup

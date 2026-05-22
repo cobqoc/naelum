@@ -264,6 +264,7 @@ export const de = {
     metricLabel: 'Metrisch',
     imperialLabel: 'Imperial',
     ownedSuffix: 'vorhanden',
+    canMakeNow: 'Sofort kochbar',
     cartButton: 'Zur Einkaufsliste',
     cartExcludeOwnedLabel: 'Bereits vorhandene Zutaten ausschließen ({count})',
     cartAllOwned: 'Alle Zutaten sind bereits im Kühlschrank',
@@ -1198,6 +1199,15 @@ export const de = {
     recipeSub: 'Teile Zutaten und Schritt-für-Schritt-Anweisungen',
     tipTitle: 'Tipp schreiben',
     tipSub: 'Teile Kochtipps und -techniken',
+  },
+  tip: {
+    pageTitle: '💡 Kochtipps',
+    writeButton: '+ Tipp schreiben',
+    categoryAll: 'Alle',
+    emptyTitle: 'Noch keine Tipps',
+    emptySubtitle: 'Schreibe den ersten Kochtipp',
+    emptyAction: 'Tipp schreiben',
+    anonymous: 'Anonym',
   },
   tipForm: {
     pageTitle: '💡 Neuer Tipp',

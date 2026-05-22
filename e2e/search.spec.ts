@@ -68,7 +68,7 @@ test.describe('검색 기능', () => {
     const filterButton = page.locator('button:has-text("필터")').first();
     if ((await filterButton.count()) > 0) {
       await filterButton.click();
-      const difficultySelect = page.locator('select').filter({ hasText: '초급' });
+      const difficultySelect = page.locator('select').filter({ hasText: '쉬움' });
       if ((await difficultySelect.count()) > 0) {
         await expect(difficultySelect.first()).toBeAttached();
       }

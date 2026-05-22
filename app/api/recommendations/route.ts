@@ -4,9 +4,7 @@ import { checkRateLimit } from '@/lib/ratelimit'
 import {
   INGREDIENT_ALIASES,
   INGREDIENT_SUBSTITUTES,
-  isFundamental,
-  isSameIngredient,
-  isSubstituteFor,
+  computeRecipeMatch,
   isReady,
   isAlmost,
   isAny,
@@ -160,59 +158,12 @@ export async function GET(request: NextRequest) {
           ? await filterByDietaryPreferences(supabase, user.id, recipes)
           : recipes
 
+        // 보유/대체/없음 분류 — computeRecipeMatch(match.ts) 단일 출처. 전체·검색 페이지와 동일 로직.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const recipesWithMatch = filteredRecipes.map((recipe: any) => {
-          // 보편 재료(물 등)는 매칭 계산에서 제외 — 항상 가졌다고 가정.
-          const nonFundamental: { ingredient_name: string; ingredient_id?: string | null }[] =
-            (recipe.ingredients || []).filter((ri: { ingredient_name: string }) => !isFundamental(ri.ingredient_name))
-          // 같은 이름 재료 중복 제거 — 한 레시피가 "후추"를 2줄로 적으면
-          // total·missing 이 부풀려지고 missing 목록에 중복 노출됨
-          const seenIngNames = new Set<string>()
-          const recipeIngredientsList = nonFundamental.filter(ri => {
-            const k = ri.ingredient_name.toLowerCase().trim()
-            if (seenIngNames.has(k)) return false
-            seenIngNames.add(k)
-            return true
-          })
-          // 보유 — FK 또는 같은 재료(동의어). "보유 ✓"로 인정.
-          const isOwnedRI = (ri: { ingredient_name: string; ingredient_id?: string | null }) =>
-            (!!ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) ||
-            ingredientNames.some(ui => isSameIngredient(ui, ri.ingredient_name.toLowerCase()))
-
-          // 각 레시피 재료를 보유 / 대체 가능 / 없음 으로 분류
-          const ownedIngredientNames: string[] = []
-          const substitutableIngredients: { ingredient: string; via: string }[] = []
-          const missingIngredientNames: string[] = []
-          for (const ri of recipeIngredientsList) {
-            if (isOwnedRI(ri)) {
-              ownedIngredientNames.push(ri.ingredient_name)
-              continue
-            }
-            // 보유는 아니지만 대체 가능 — 어떤 user 재료로 바꿔 쓸지 기록
-            const via = ingredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
-            if (via) substitutableIngredients.push({ ingredient: ri.ingredient_name, via })
-            else missingIngredientNames.push(ri.ingredient_name)
-          }
-
-          const totalIngredients = recipeIngredientsList.length
-          // 만들 수 있는 재료 = 보유 + 대체 가능. 부족 = 둘 다 아닌 것.
-          const matchedCount = ownedIngredientNames.length + substitutableIngredients.length
-          const missingCount = missingIngredientNames.length
-          const matchRate = totalIngredients > 0
-            ? (matchedCount / totalIngredients) * 100
-            : 0
-
-          return {
-            ...recipe,
-            matchRate: Math.round(matchRate),
-            missingCount,
-            matchedCount,
-            totalIngredients,
-            ownedIngredientNames,
-            substitutableIngredients,
-            missingIngredientNames,
-          }
-        })
+        const recipesWithMatch = filteredRecipes.map((recipe: any) => ({
+          ...recipe,
+          ...computeRecipeMatch(ingredientNames, userIngredientIdSet, recipe.ingredients || []),
+        }))
 
         // mode별 필터 함수(isReady/isAlmost/isAny)는 @/lib/recommendations/match 에서 import
 

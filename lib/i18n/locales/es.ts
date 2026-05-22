@@ -264,6 +264,7 @@ export const es = {
     metricLabel: 'Métrico',
     imperialLabel: 'Imperial',
     ownedSuffix: 'disponible',
+    canMakeNow: 'Listo para cocinar',
     cartButton: 'Añadir a la lista',
     cartExcludeOwnedLabel: 'Excluir ingredientes que ya tienes ({count})',
     cartAllOwned: 'Ya tienes todos los ingredientes en la nevera',
@@ -1198,6 +1199,15 @@ export const es = {
     recipeSub: 'Comparte ingredientes e instrucciones paso a paso',
     tipTitle: 'Escribir un Consejo',
     tipSub: 'Comparte consejos y técnicas de cocina',
+  },
+  tip: {
+    pageTitle: '💡 Consejos de cocina',
+    writeButton: '+ Escribir consejo',
+    categoryAll: 'Todos',
+    emptyTitle: 'Aún no hay consejos',
+    emptySubtitle: 'Escribe el primer consejo de cocina',
+    emptyAction: 'Escribir un consejo',
+    anonymous: 'Anónimo',
   },
   tipForm: {
     pageTitle: '💡 Nuevo consejo',

@@ -264,6 +264,7 @@ export const en = {
     metricLabel: 'Metric',
     imperialLabel: 'Imperial',
     ownedSuffix: 'owned',
+    canMakeNow: 'Ready to cook',
     cartButton: 'Add ingredients to list',
     cartExcludeOwnedLabel: 'Skip ingredients already in fridge ({count})',
     cartAllOwned: 'All ingredients are already in your fridge',
@@ -1197,6 +1198,15 @@ export const en = {
     recipeSub: 'Share ingredients and step-by-step instructions',
     tipTitle: 'Write a Tip',
     tipSub: 'Share cooking tips and techniques',
+  },
+  tip: {
+    pageTitle: '💡 Cooking Tips',
+    writeButton: '+ Write Tip',
+    categoryAll: 'All',
+    emptyTitle: 'No tips yet',
+    emptySubtitle: 'Write the first cooking tip',
+    emptyAction: 'Write a Tip',
+    anonymous: 'Anonymous',
   },
   tipForm: {
     pageTitle: '💡 New Tip',
