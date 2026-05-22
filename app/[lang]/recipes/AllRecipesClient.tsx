@@ -11,7 +11,8 @@ import SafeImage from '@/components/Common/SafeImage';
 import { RecipeCardGridSkeleton } from '@/components/Common/Skeleton';
 import EmptyState from '@/components/Common/EmptyState';
 import { createClient } from '@/lib/supabase/client';
-import { type Recipe } from '@/lib/types/recipe';
+import { type RecipeWithMatch } from '@/lib/types/recipe';
+import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
 import { useI18n } from '@/lib/i18n/context';
 import { useScrollCache } from '@/lib/hooks/useScrollCache';
 import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
@@ -29,7 +30,7 @@ const CACHE_KEY = 'scroll_cache_recipes';
 const MAX_RECIPES_AUTO = 120; // 이 개수 이후엔 수동 버튼으로 전환 (DOM 누적 방지)
 
 interface RecipesCache {
-  recipes: Recipe[];
+  recipes: RecipeWithMatch[];
   page: number;
   hasMore: boolean;
   sortBy: 'latest' | 'rating' | 'views';
@@ -51,14 +52,14 @@ export default function AllRecipesPage() {
   const [manualCategoryTab, setManualCategoryTab] = useState<'cuisine' | 'dish' | null>(null);
 
   // 이번 주 인기 — 필터 없을 때만 상단에 가로 스크롤 스트립으로 노출.
-  const [trending, setTrending] = useState<Recipe[]>([]);
+  const [trending, setTrending] = useState<RecipeWithMatch[]>([]);
   const categoryTab: 'cuisine' | 'dish' = dishFilter
     ? 'dish'
     : cuisineFilter
       ? 'cuisine'
       : (manualCategoryTab ?? 'cuisine');
 
-  const [recipes, setRecipes] = useState<Recipe[]>(initialCache?.data.recipes ?? []);
+  const [recipes, setRecipes] = useState<RecipeWithMatch[]>(initialCache?.data.recipes ?? []);
   const [loading, setLoading] = useState(!initialCache);
   const [hasMore, setHasMore] = useState(initialCache?.data.hasMore ?? true);
   const [page, setPage] = useState(initialCache?.data.page ?? 0);
@@ -123,7 +124,7 @@ export default function AllRecipesPage() {
       return;
     }
 
-    let processedRecipes: Recipe[] = data.map(r => ({
+    let processedRecipes: RecipeWithMatch[] = data.map(r => ({
       ...r,
       author: Array.isArray(r.author) ? r.author[0] : r.author
     }));
@@ -143,6 +144,9 @@ export default function AllRecipesPage() {
         has_cooked: cookedRecipeIds.has(r.id)
       }));
     }
+
+    // 냉장고 match 부착 — setRecipes 전에 await 해 카드가 첫 렌더부터 냉장고 줄 포함(CLS 방지).
+    processedRecipes = await attachFridgeMatch(supabase, user?.id ?? null, processedRecipes);
 
     if (reset) {
       setRecipes(processedRecipes);
@@ -169,20 +173,21 @@ export default function AllRecipesPage() {
   useEffect(() => {
     if (hasFilter) return;
     const supabase = createClient();
-    supabase
-      .from('recipes')
-      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
-      .eq('status', 'published')
-      .order('views_count', { ascending: false })
-      .limit(4)
-      .then(({ data }) => {
-        if (!data) return;
-        const processed: Recipe[] = data.map(r => ({
-          ...r,
-          author: Array.isArray(r.author) ? r.author[0] : r.author,
-        }));
-        setTrending(processed);
-      });
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data } = await supabase
+        .from('recipes')
+        .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
+        .eq('status', 'published')
+        .order('views_count', { ascending: false })
+        .limit(4);
+      if (!data) return;
+      const processed: RecipeWithMatch[] = data.map(r => ({
+        ...r,
+        author: Array.isArray(r.author) ? r.author[0] : r.author,
+      }));
+      setTrending(await attachFridgeMatch(supabase, user?.id ?? null, processed));
+    })();
   }, [hasFilter]);
 
   // sortBy / 카테고리 필터 변경 시 재조회 (캐시 복원 직후 첫 실행은 스킵).
@@ -351,7 +356,7 @@ export default function AllRecipesPage() {
                 <div className="flex gap-3 px-4 md:px-0 pb-1">
                   {trending.map(recipe => (
                     <div key={recipe.id} className="w-40 md:w-48 flex-shrink-0">
-                      <RecipeCard recipe={recipe} showAuthor />
+                      <RecipeCard recipe={recipe} showAuthor fridgeRowMode="positive" />
                     </div>
                   ))}
                 </div>
@@ -372,7 +377,7 @@ export default function AllRecipesPage() {
                 }}
               >
                 {recipes.map((recipe, index) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} showAuthor priority={index < 4} />
+                  <RecipeCard key={recipe.id} recipe={recipe} showAuthor priority={index < 4} fridgeRowMode="positive" />
                 ))}
               </div>
 

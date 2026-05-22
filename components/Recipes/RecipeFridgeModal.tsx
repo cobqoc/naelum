@@ -17,7 +17,7 @@ interface RecipeFridgeModalProps {
 /**
  * 레시피 ↔ 내 냉장고 재료 대조 모달 (보유 ✓ / 대체 가능 🔄 / 없는 ✗).
  *
- * 레시피 상세(RecipeBrowseView)·추천 카드(FridgeRecipeCard) 공용.
+ * 레시피 상세(RecipeBrowseView)·레시피 카드(RecipeCard) 공용.
  * 순수 표현 — 분류된 목록을 props 로 받아 그리기만 한다.
  * "보유"는 같은 재료만(동의어). 까나리액젓을 가졌다고 멸치액젓을 "보유"라
  * 하지 않고 "대체 가능"으로 정직하게 보여준다. 호출처가 조건부 마운트.

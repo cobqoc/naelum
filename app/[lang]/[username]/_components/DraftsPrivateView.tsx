@@ -1,7 +1,8 @@
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import type { TranslationKeys } from '@/lib/i18n/translations';
-import { type Recipe, type Tip, TIP_CATEGORY_ICONS } from './types';
+import { type Recipe, type Tip } from './types';
+import { TIP_CATEGORY_ICONS } from '@/components/TipCard';
 
 /**
  * 임시저장/비공개 탭 — 레시피 + 팁 섹션 (순수 표현).

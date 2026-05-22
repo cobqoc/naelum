@@ -40,9 +40,9 @@ export interface RecipeWithMatch extends Recipe {
 }
 
 export const DIFFICULTY_LABELS: Record<string, string> = {
-  easy: '초급',
-  medium: '중급',
-  hard: '고급',
+  easy: '쉬움',
+  medium: '보통',
+  hard: '어려움',
 };
 
 export function getDifficultyLabel(

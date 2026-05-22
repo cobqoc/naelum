@@ -3,19 +3,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useScrollCache } from '@/lib/hooks/useScrollCache';
-import SafeImage from '@/components/Common/SafeImage';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
+import TipCard, { TIP_CATEGORY_ICONS } from '@/components/TipCard';
 import { RecipeCardGridSkeleton } from '@/components/Common/Skeleton';
 import EmptyState from '@/components/Common/EmptyState';
+import { useI18n } from '@/lib/i18n/context';
 
 
+// 카테고리 — DB 저장 한글 값(고정 enum). '전체'는 필터 미적용 sentinel.
 const CATEGORIES = ['전체', '손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
-const CATEGORY_ICONS: Record<string, string> = {
-  '전체': '✨', '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
-};
+// 카테고리 탭 아이콘 — 6개 카테고리는 TipCard 와 단일 출처, '전체'(✨)만 추가.
+const CATEGORY_ICONS: Record<string, string> = { '전체': '✨', ...TIP_CATEGORY_ICONS };
 
 const LIMIT = 20;
 const CACHE_KEY = 'scroll_cache_tips';
@@ -39,6 +39,7 @@ interface TipItem {
 }
 
 export default function TipListPage() {
+  const { t } = useI18n();
   const [tips, setTips] = useState<TipItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -142,12 +143,12 @@ export default function TipListPage() {
       <main className="container mx-auto max-w-6xl px-4 pt-20 pb-24">
         {/* 헤더 */}
         <div className="flex items-center justify-between py-6">
-          <h1 className="text-2xl font-bold">💡 요리 팁</h1>
+          <h1 className="text-2xl font-bold">{t.tip.pageTitle}</h1>
           <Link
             href="/tip/new"
             className="px-4 py-2 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors"
           >
-            + 팁 작성
+            {t.tip.writeButton}
           </Link>
         </div>
 
@@ -163,7 +164,7 @@ export default function TipListPage() {
                   : 'bg-background-secondary text-text-secondary hover:text-text-primary'
               }`}
             >
-              {CATEGORY_ICONS[cat]} {cat}
+              {CATEGORY_ICONS[cat]} {cat === '전체' ? t.tip.categoryAll : cat}
             </button>
           ))}
         </div>
@@ -174,9 +175,9 @@ export default function TipListPage() {
         ) : tips.length === 0 ? (
           <EmptyState
             icon="💡"
-            message="아직 팁이 없습니다"
-            subMessage="첫 번째 요리 팁을 작성해보세요"
-            actionLabel="팁 작성하기"
+            message={t.tip.emptyTitle}
+            subMessage={t.tip.emptySubtitle}
+            actionLabel={t.tip.emptyAction}
             actionHref="/tip/new"
           />
         ) : (
@@ -187,46 +188,8 @@ export default function TipListPage() {
                 if ((e.target as HTMLElement).closest('a')) isLeavingRef.current = true;
               }}
             >
-              {tips.map(tip => (
-                <Link
-                  key={tip.id}
-                  href={`/tip/${tip.id}`}
-                  className="group rounded-2xl bg-background-secondary overflow-hidden border border-white/5 hover:border-accent-warm/40 hover:shadow-lg hover:shadow-accent-warm/10 transition-all"
-                >
-                  {/* 썸네일 */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden">
-                    {tip.thumbnail_url ? (
-                      <SafeImage
-                        src={tip.thumbnail_url}
-                        alt={tip.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-background-tertiary flex items-center justify-center text-4xl">
-                        {CATEGORY_ICONS[tip.category] ?? '💡'}
-                      </div>
-                    )}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs">
-                      {CATEGORY_ICONS[tip.category]} {tip.category}
-                    </div>
-                  </div>
-
-                  {/* 정보 */}
-                  <div className="p-3">
-                    <h3 className="font-bold text-sm leading-snug line-clamp-2 group-hover:text-accent-warm transition-colors mb-2">
-                      {tip.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-xs text-text-muted">
-                      <span>@{tip.author?.username ?? '익명'}</span>
-                      <div className="flex items-center gap-2">
-                        {tip.duration_minutes && <span>⏱ {tip.duration_minutes}분</span>}
-                        <span>👁 {tip.views_count}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+              {tips.map((tip, index) => (
+                <TipCard key={tip.id} tip={tip} showAuthor priority={index < 4} />
               ))}
             </div>
 
@@ -234,7 +197,7 @@ export default function TipListPage() {
               {loadingMore && (
                 <div className="flex items-center gap-2 text-text-muted text-sm py-4">
                   <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                  <span>불러오는 중...</span>
+                  <span>{t.common.loading}</span>
                 </div>
               )}
             </div>

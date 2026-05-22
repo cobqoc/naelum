@@ -274,3 +274,72 @@ export const ALMOST_MAX_MISSING = 3
 export const isAlmost = (r: { missingCount: number }) =>
   r.missingCount >= 1 && r.missingCount <= ALMOST_MAX_MISSING
 export const isAny = (r: { matchRate: number }) => r.matchRate > 0
+
+export interface RecipeMatchResult {
+  matchRate: number
+  missingCount: number
+  matchedCount: number
+  totalIngredients: number
+  ownedIngredientNames: string[]
+  substitutableIngredients: { ingredient: string; via: string }[]
+  missingIngredientNames: string[]
+}
+
+/**
+ * 한 레시피의 재료를 사용자 보유 재료와 대조 — 보유 / 대체 가능 / 없음 분류.
+ * 추천·전체·검색 페이지가 같은 카운트를 내도록 하는 단일 출처(추천 라우트에서 추출).
+ * - userIngredientNames: 사용자 보유 재료명 (소문자)
+ * - userIngredientIdSet: 사용자 보유 재료의 ingredient_id FK 집합
+ * - recipeIngredients: 레시피 재료 (이름 + 선택적 FK)
+ */
+export function computeRecipeMatch(
+  userIngredientNames: string[],
+  userIngredientIdSet: Set<string>,
+  recipeIngredients: { ingredient_name: string; ingredient_id?: string | null }[],
+): RecipeMatchResult {
+  // 보편 재료(물 등)는 매칭에서 제외 — 항상 가졌다고 가정.
+  const nonFundamental = recipeIngredients.filter(ri => !isFundamental(ri.ingredient_name))
+  // 같은 이름 재료 중복 제거 — 한 레시피가 "후추"를 2줄로 적으면 total·missing 부풀려짐.
+  const seen = new Set<string>()
+  const list = nonFundamental.filter(ri => {
+    const k = ri.ingredient_name.toLowerCase().trim()
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+
+  // 보유 — FK 또는 같은 재료(동의어).
+  const isOwnedRI = (ri: { ingredient_name: string; ingredient_id?: string | null }) =>
+    (!!ri.ingredient_id && userIngredientIdSet.has(ri.ingredient_id)) ||
+    userIngredientNames.some(ui => isSameIngredient(ui, ri.ingredient_name.toLowerCase()))
+
+  const ownedIngredientNames: string[] = []
+  const substitutableIngredients: { ingredient: string; via: string }[] = []
+  const missingIngredientNames: string[] = []
+  for (const ri of list) {
+    if (isOwnedRI(ri)) {
+      ownedIngredientNames.push(ri.ingredient_name)
+      continue
+    }
+    // 보유는 아니지만 대체 가능 — 어떤 user 재료로 바꿔 쓸지 기록.
+    const via = userIngredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
+    if (via) substitutableIngredients.push({ ingredient: ri.ingredient_name, via })
+    else missingIngredientNames.push(ri.ingredient_name)
+  }
+
+  const totalIngredients = list.length
+  // 만들 수 있는 재료 = 보유 + 대체 가능. 부족 = 둘 다 아닌 것.
+  const matchedCount = ownedIngredientNames.length + substitutableIngredients.length
+  const missingCount = missingIngredientNames.length
+  const matchRate = totalIngredients > 0 ? Math.round((matchedCount / totalIngredients) * 100) : 0
+
+  return {
+    matchRate,
+    missingCount,
+    matchedCount,
+    totalIngredients,
+    ownedIngredientNames,
+    substitutableIngredients,
+    missingIngredientNames,
+  }
+}

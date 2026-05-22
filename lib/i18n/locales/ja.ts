@@ -264,6 +264,7 @@ export const ja = {
     metricLabel: 'メートル法',
     imperialLabel: 'ヤード法',
     ownedSuffix: '所持中',
+    canMakeNow: '今すぐ作れます',
     cartButton: '買い物リストに追加',
     cartExcludeOwnedLabel: '冷蔵庫にある食材を除外 ({count})',
     cartAllOwned: 'すべての食材がすでに冷蔵庫にあります',
@@ -376,9 +377,9 @@ export const ja = {
     signupCtaButton: '無料で新規登録',
   },
   difficulty: {
-    easy: '初級',
-    medium: '中級',
-    hard: '上級',
+    easy: '簡単',
+    medium: '普通',
+    hard: '難しい',
   },
   recipeCard: {
     matchedLabel: 'マッチ',    cookedLabel: '作ったよ',
@@ -1198,6 +1199,15 @@ export const ja = {
     recipeSub: '食材と手順をシェアしましょう',
     tipTitle: 'ティップスを書く',
     tipSub: '料理のコツやテクニックをシェアしましょう',
+  },
+  tip: {
+    pageTitle: '💡 料理のコツ',
+    writeButton: '+ コツを書く',
+    categoryAll: 'すべて',
+    emptyTitle: 'まだコツがありません',
+    emptySubtitle: '最初の料理のコツを書いてみましょう',
+    emptyAction: 'コツを書く',
+    anonymous: '匿名',
   },
   tipForm: {
     pageTitle: '💡 ヒント作成',

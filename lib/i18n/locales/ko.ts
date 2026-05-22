@@ -264,6 +264,7 @@ export const ko = {
     metricLabel: '미터법',
     imperialLabel: 'Imperial',
     ownedSuffix: '보유',
+    canMakeNow: '바로 만들 수 있어요',
     cartButton: '장보기에 재료 담기',
     cartExcludeOwnedLabel: '냉장고에 있는 재료 제외 ({count})',
     cartAllOwned: '모든 재료가 이미 냉장고에 있어요',
@@ -376,9 +377,9 @@ export const ko = {
     signupCtaButton: '무료로 회원가입',
   },
   difficulty: {
-    easy: '초급',
-    medium: '중급',
-    hard: '고급',
+    easy: '쉬움',
+    medium: '보통',
+    hard: '어려움',
   },
   recipeCard: {
     matchedLabel: '매칭',    cookedLabel: '만들어봤어요',
@@ -1198,6 +1199,15 @@ export const ko = {
     recipeSub: '재료와 단계별 조리법을 공유해보세요',
     tipTitle: '팁 작성',
     tipSub: '요리 팁과 기술을 단계별로 알려주세요',
+  },
+  tip: {
+    pageTitle: '💡 요리 팁',
+    writeButton: '+ 팁 작성',
+    categoryAll: '전체',
+    emptyTitle: '아직 팁이 없습니다',
+    emptySubtitle: '첫 번째 요리 팁을 작성해보세요',
+    emptyAction: '팁 작성하기',
+    anonymous: '익명',
   },
   tipForm: {
     pageTitle: '💡 팁 작성',

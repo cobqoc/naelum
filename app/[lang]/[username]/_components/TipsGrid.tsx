@@ -1,7 +1,7 @@
 import Link from '@/components/Common/LocalizedLink';
-import SafeImage from '@/components/Common/SafeImage';
+import TipCard from '@/components/TipCard';
 import type { TranslationKeys } from '@/lib/i18n/translations';
-import { type Tip, TIP_CATEGORY_ICONS } from './types';
+import { type Tip } from './types';
 
 /**
  * 팁 탭 그리드 (순수 표현).
@@ -44,26 +44,7 @@ export default function TipsGrid({ t, tips, tipsLoading, isOwnProfile }: TipsGri
             </Link>
           )}
           {tips.map(tip => (
-            <Link key={tip.id} href={`/tip/${tip.id}`} className="group rounded-2xl bg-background-secondary overflow-hidden border border-white/5 hover:border-accent-warm/30 transition-all">
-              <div className="aspect-square relative bg-background-tertiary flex items-center justify-center">
-                {tip.thumbnail_url ? (
-                  <SafeImage src={tip.thumbnail_url} alt={tip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <span className="text-5xl">{TIP_CATEGORY_ICONS[tip.category] || '💡'}</span>
-                )}
-                {!tip.is_public && (
-                  <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">🔒 {t.profile.privateBadge}</div>
-                )}
-              </div>
-              <div className="p-3">
-                <p className="text-text-primary font-bold text-sm line-clamp-2 mb-1">{tip.title}</p>
-                <div className="flex items-center gap-2 text-xs text-text-muted">
-                  <span className="px-1.5 py-0.5 rounded bg-background-tertiary">{tip.category}</span>
-                  {tip.duration_minutes && <span>⏱ {tip.duration_minutes}{t.profile.minuteSuffix}</span>}
-                  <span>👁 {tip.views_count}</span>
-                </div>
-              </div>
-            </Link>
+            <TipCard key={tip.id} tip={tip} />
           ))}
           {tips.length === 0 && !isOwnProfile && (
             <div className="col-span-2 md:col-span-3 text-center py-20">

@@ -264,6 +264,7 @@ export const zh = {
     metricLabel: '公制',
     imperialLabel: '英制',
     ownedSuffix: '已有',
+    canMakeNow: '现在就能做',
     cartButton: '加入购物清单',
     cartExcludeOwnedLabel: '排除冰箱里已有的食材 ({count})',
     cartAllOwned: '所有食材都已经在冰箱里',
@@ -376,9 +377,9 @@ export const zh = {
     signupCtaButton: '免费注册',
   },
   difficulty: {
-    easy: '初级',
-    medium: '中级',
-    hard: '高级',
+    easy: '简单',
+    medium: '中等',
+    hard: '困难',
   },
   recipeCard: {
     matchedLabel: '匹配',    cookedLabel: '做过了',
@@ -1198,6 +1199,15 @@ export const zh = {
     recipeSub: '分享食材和步骤',
     tipTitle: '写小贴士',
     tipSub: '分享烹饪技巧和窍门',
+  },
+  tip: {
+    pageTitle: '💡 烹饪技巧',
+    writeButton: '+ 写技巧',
+    categoryAll: '全部',
+    emptyTitle: '还没有技巧',
+    emptySubtitle: '写下第一个烹饪技巧',
+    emptyAction: '写技巧',
+    anonymous: '匿名',
   },
   tipForm: {
     pageTitle: '💡 撰写技巧',

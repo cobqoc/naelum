@@ -1,7 +1,7 @@
 /**
  * 냉장고 아이콘 (테라코타 디테일 SVG) — 공용.
  *
- * 레시피 상세(RecipeBrowseView 냉장고 버튼)와 추천 카드(FridgeRecipeCard)가
+ * 레시피 상세(RecipeBrowseView 냉장고 버튼)와 레시피 카드(RecipeCard 냉장고 줄)가
  * 같이 쓴다. 공용 컴포넌트라 두 곳이 구조상 영원히 동일.
  * 색상은 SVG 내부 고정(fill) — 바깥 원의 배경색으로 상태를 표시한다.
  */

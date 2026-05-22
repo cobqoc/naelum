@@ -7,6 +7,8 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
+import RecipeCard from '@/components/RecipeCard';
+import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
 import { createClient } from '@/lib/supabase/client';
 import { type Recipe } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
@@ -189,6 +191,12 @@ function SearchContent() {
           if (searchResults.ingredients?.data)
             searchResults.ingredients.data = searchResults.ingredients.data.map((r: Recipe) => ({ ...r, has_cooked: cookedSet.has(r.id) }));
         }
+
+        // 냉장고 match 부착 — setResults 전에 await(CLS 방지). 핵심 매칭은 추천과 동일(computeRecipeMatch).
+        if (searchResults.recipes?.data)
+          searchResults.recipes.data = await attachFridgeMatch(supabase, user.id, searchResults.recipes.data);
+        if (searchResults.ingredients?.data)
+          searchResults.ingredients.data = await attachFridgeMatch(supabase, user.id, searchResults.ingredients.data);
       }
 
       setResults(searchResults);
@@ -208,6 +216,15 @@ function SearchContent() {
     setLoadingMore(true);
     try {
       const more = await fetchSearch(query, nextPage);
+      // 추가 페이지에도 냉장고 match 부착 — 스크롤 후 카드도 첫 페이지와 동일하게.
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        if (more.recipes?.data)
+          more.recipes.data = await attachFridgeMatch(supabase, user.id, more.recipes.data);
+        if (more.ingredients?.data)
+          more.ingredients.data = await attachFridgeMatch(supabase, user.id, more.ingredients.data);
+      }
       setPages(prev => ({ ...prev, [activeTab]: nextPage }));
       setResults(prev => ({
         ...prev,
@@ -303,15 +320,6 @@ function SearchContent() {
   const clearHistory = async () => {
     await fetch('/api/search/history', { method: 'DELETE' });
     setSearchHistory([]);
-  };
-
-  const getDifficultyLabel = (level: string) => {
-    switch (level) {
-      case 'easy': return t.recipe.easy;
-      case 'medium': return t.recipe.medium;
-      case 'hard': return t.recipe.hard;
-      default: return level;
-    }
   };
 
   return (
@@ -518,48 +526,12 @@ function SearchContent() {
                   const mergedRecipes = [...(results.recipes?.data ?? []), ...extra];
                   return (
                   <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                     {mergedRecipes.map((recipe) => (
-                      <Link
-                        key={recipe.id}
-                        href={`/recipes/${recipe.id}`}
-                        className="group rounded-2xl bg-background-secondary overflow-hidden hover:ring-2 hover:ring-accent-warm/50 transition-all"
-                      >
-                        <div className="relative h-40">
-                          {recipe.display_image ? (
-                            <SafeImage
-                              src={recipe.display_image}
-                              alt={recipe.title}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform"
-                              fallback={<div className="w-full h-full flex items-center justify-center bg-background-tertiary"><span className="text-5xl">🍽️</span></div>}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-background-tertiary">
-                              <span className="text-5xl">🍽️</span>
-                            </div>
-                          )}
-                          {/* 만들어봄 배지 */}
-                          {recipe.has_cooked && (
-                            <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-accent-warm text-background-primary text-xs font-bold shadow-lg">
-                              ✓ {t.recipe.cooked}
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-bold mb-1 group-hover:text-accent-warm transition-colors">{recipe.title}</h3>
-                          <p className="text-sm text-text-muted line-clamp-2 mb-2">{recipe.description}</p>
-                          <div className="flex items-center gap-3 text-xs text-text-muted">
-                            <span>⭐ {(recipe.average_rating ?? 0).toFixed(1)}</span>
-                            <span>🍳 {recipe.cooked_count ?? 0}</span>
-                            <span>👁️ {recipe.views_count ?? 0}</span>
-                            {recipe.difficulty_level && <span>{getDifficultyLabel(recipe.difficulty_level)}</span>}
-                          </div>
-                        </div>
-                      </Link>
+                      <RecipeCard key={recipe.id} recipe={recipe} showAuthor fridgeRowMode="positive" />
                     ))}
                     {mergedRecipes.length === 0 && (
-                      <p className="col-span-2 text-center text-text-muted py-10">{t.search.noResults}</p>
+                      <p className="col-span-2 sm:col-span-3 md:col-span-4 text-center text-text-muted py-10">{t.search.noResults}</p>
                     )}
                   </div>
                   </>

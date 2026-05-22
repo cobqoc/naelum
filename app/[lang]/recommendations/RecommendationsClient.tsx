@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
-import FridgeRecipeCard from '@/components/FridgeRecipeCard';
+import RecipeCard from '@/components/RecipeCard';
 import BottomNav from '@/components/BottomNav';
 
 
@@ -263,7 +263,7 @@ export default function RecommendationsPage() {
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {recommendations.map((recipe) => (
-                <FridgeRecipeCard key={recipe.id} recipe={recipe} />
+                <RecipeCard key={recipe.id} recipe={recipe} showAuthor />
               ))}
             </div>
             {/* 비로그인 회원가입 CTA — 결과 보고 만족한 사용자가 가입할 수 있게 */}

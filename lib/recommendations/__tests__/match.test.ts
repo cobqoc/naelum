@@ -7,6 +7,7 @@ import {
   isReady,
   isAlmost,
   isAny,
+  computeRecipeMatch,
 } from '@/lib/recommendations/match'
 
 // route.ts(god-file)에서 추출한 순수 매칭 로직의 회귀 가드.
@@ -175,5 +176,65 @@ describe('isIngredientMatch — 동의어 OR 대체 (만들 수 있나)', () => 
   it('대체재도 매칭 — 추천엔 계속 뜸', () => {
     expect(isIngredientMatch('까나리액젓', '멸치액젓')).toBe(true)
     expect(isIngredientMatch('설탕', '올리고당')).toBe(true)
+  })
+})
+
+// 추천 라우트에서 추출한 per-recipe 대조 — 추천·전체·검색 단일 출처 (2026-05-22).
+describe('computeRecipeMatch — 레시피↔냉장고 대조', () => {
+  const noIds = new Set<string>()
+  const ri = (name: string, id?: string) => ({ ingredient_name: name, ingredient_id: id ?? null })
+
+  it('모두 보유 — missing 0, matchRate 100', () => {
+    const r = computeRecipeMatch(['양파', '마늘', '당근'], noIds, [ri('양파'), ri('마늘'), ri('당근')])
+    expect(r.ownedIngredientNames).toHaveLength(3)
+    expect(r.missingCount).toBe(0)
+    expect(r.totalIngredients).toBe(3)
+    expect(r.matchRate).toBe(100)
+  })
+
+  it('일부 부족 — missing 정확', () => {
+    const r = computeRecipeMatch(['양파'], noIds, [ri('양파'), ri('소고기'), ri('당근')])
+    expect(r.ownedIngredientNames).toEqual(['양파'])
+    expect(r.missingCount).toBe(2)
+    expect(r.missingIngredientNames).toEqual(expect.arrayContaining(['소고기', '당근']))
+  })
+
+  it('대체 가능 — 보유 아니지만 missing 도 아님', () => {
+    const r = computeRecipeMatch(['까나리액젓'], noIds, [ri('멸치액젓')])
+    expect(r.ownedIngredientNames).toHaveLength(0)
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+    expect(r.missingCount).toBe(0)
+    expect(r.matchedCount).toBe(1)
+  })
+
+  it('물(보편 재료)은 total 에서 제외', () => {
+    const r = computeRecipeMatch([], noIds, [ri('양파'), ri('물')])
+    expect(r.totalIngredients).toBe(1)
+    expect(r.missingIngredientNames).toEqual(['양파'])
+  })
+
+  it('같은 이름 재료 중복 제거 — total 부풀림 방지', () => {
+    const r = computeRecipeMatch([], noIds, [ri('후추'), ri('후추'), ri('소금')])
+    expect(r.totalIngredients).toBe(2)
+  })
+
+  it('FK(ingredient_id) 매칭 — 이름이 달라도 보유', () => {
+    const r = computeRecipeMatch([], new Set(['uuid-1']), [ri('엄마표 특제양념', 'uuid-1'), ri('소금')])
+    expect(r.ownedIngredientNames).toEqual(['엄마표 특제양념'])
+    expect(r.missingIngredientNames).toEqual(['소금'])
+  })
+
+  it('빈 냉장고 — 전부 missing', () => {
+    const r = computeRecipeMatch([], noIds, [ri('양파'), ri('마늘')])
+    expect(r.missingCount).toBe(2)
+    expect(r.matchedCount).toBe(0)
+    expect(r.matchRate).toBe(0)
+  })
+
+  it('재료 없는 레시피 — total 0, matchRate 0', () => {
+    const r = computeRecipeMatch(['양파'], noIds, [])
+    expect(r.totalIngredients).toBe(0)
+    expect(r.matchRate).toBe(0)
+    expect(r.missingCount).toBe(0)
   })
 })
