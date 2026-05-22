@@ -11,6 +11,7 @@ export default function Footer() {
       <div className="flex justify-center gap-6 mt-3 text-sm">
         <Link href="/terms" className="hover:text-text-secondary transition-colors">{t.meta.termsTitle}</Link>
         <Link href="/privacy" className="hover:text-text-secondary transition-colors">{t.meta.privacyTitle}</Link>
+        <Link href="/cookies" className="hover:text-text-secondary transition-colors">{t.meta.cookiesTitle}</Link>
         <Link href="/copyright" className="hover:text-text-secondary transition-colors">{t.meta.copyrightTitle}</Link>
       </div>
     </footer>

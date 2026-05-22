@@ -239,7 +239,6 @@ export const en = {
   },
   recipe: {
     allRecipes: 'All Recipes',
-    tabAll: 'All',
     writeRecipe: 'Write Recipe',
     writeRecipeSub: 'Share your own recipe',
     easy: 'Easy',

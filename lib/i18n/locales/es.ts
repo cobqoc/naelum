@@ -239,7 +239,6 @@ export const es = {
   },
   recipe: {
     allRecipes: 'Todas las recetas',
-    tabAll: 'Todo',
     writeRecipe: 'Escribir receta',
     writeRecipeSub: 'Comparte tu receta',
     easy: 'Fácil',

@@ -1149,6 +1149,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **전체 레시피 페이지 제목 정리 + 푸터 쿠키 링크** — 완료 (2026-05-23, develop 푸시)
+  - **상단 제목 정리**: 보이는 h1 "전체 레시피"가 탭 "전체 레시피"와 중복 — 화면에 "전체"가 제목·탭·모드 pill 3중복이었음. h1은 `sr-only`(화면 숨김, SEO·스크린리더용 유지), 탭 "전체" 라벨 → "전체 레시피". 미사용된 `t.recipe.tabAll` 키 8 locale 제거
+  - **푸터 쿠키 정책 링크**: 푸터가 법무 4페이지 중 3개(이용약관·개인정보·저작권)만 링크 — `/cookies` 페이지 있는데 누락 → 쿠키 정책 링크 추가
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 0 failed
 - **데스크톱 헤더 검색 아이콘 + 검색바 디자인 통일** — 완료 (2026-05-23, develop 푸시)
   - **헤더 검색 아이콘**: 데스크톱 비-홈 페이지엔 검색 진입로가 없던 문제(BottomNav는 모바일 전용, 헤더엔 검색 없음) → Header에 검색 아이콘 추가(`hidden md:flex` → `/search`). 모바일은 기존 BottomNav 검색 유지
   - **`SearchIcon` 공용화**: BottomNav 인라인 정의 → `components/icons/SearchIcon.tsx` 추출. BottomNav·Header가 같은 아이콘 공유

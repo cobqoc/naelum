@@ -249,9 +249,10 @@ export default function AllRecipesPage() {
 
       <main className="pt-20 md:pt-24 pb-24 md:pb-12 px-4 md:px-6">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">{t.recipe.allRecipes}</h1>
+          {/* 제목은 sr-only — 화면엔 탭이 곧 제목. h1 요소는 SEO·스크린리더용 유지 */}
+          <h1 className="sr-only">{t.recipe.allRecipes}</h1>
 
-          {/* 전체 | 재료 기반 탭 */}
+          {/* 전체 레시피 | 재료 기반 탭 */}
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setActiveTab('all')}
@@ -261,7 +262,7 @@ export default function AllRecipesPage() {
                   : 'bg-background-secondary text-text-muted hover:text-text-primary'
               }`}
             >
-              {t.recipe.tabAll}
+              {t.recipe.allRecipes}
             </button>
             <button
               onClick={() => setActiveTab('ingredient')}

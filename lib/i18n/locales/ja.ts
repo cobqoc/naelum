@@ -239,7 +239,6 @@ export const ja = {
   },
   recipe: {
     allRecipes: 'すべてのレシピ',
-    tabAll: 'すべて',
     writeRecipe: 'レシピを書く',
     writeRecipeSub: 'あなたのレシピをシェアしよう',
     easy: '簡単',
