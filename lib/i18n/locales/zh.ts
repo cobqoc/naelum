@@ -239,7 +239,6 @@ export const zh = {
   },
   recipe: {
     allRecipes: '所有食谱',
-    tabAll: '全部',
     writeRecipe: '写食谱',
     writeRecipeSub: '分享你的食谱',
     easy: '简单',
