@@ -239,6 +239,7 @@ export const ko = {
   },
   recipe: {
     allRecipes: '전체 레시피',
+    tabAll: '전체',
     writeRecipe: '레시피 작성',
     writeRecipeSub: '나만의 레시피를 공유해보세요',
     easy: '쉬움',

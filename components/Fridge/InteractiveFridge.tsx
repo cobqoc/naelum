@@ -50,7 +50,7 @@ function FridgeInterior({ grouped }: { grouped: GroupedIngredients }) {
       <ShelfSection sectionKey="냉장" label={t.fridge.refrigerator} icon="❄️" items={grouped.refrigerator} />
       <ShelfSection sectionKey="냉동" label={t.fridge.freezer} icon="🧊" items={grouped.freezer} />
       <ShelfSection sectionKey="상온" label={t.fridge.roomTemp} icon="🌡️" items={grouped.roomTemp} isLast />
-      <FridgeFooter href="/recommendations" label={`🔍 ${t.fridge.findRecipes}`} />
+      <FridgeFooter href="/recipes?tab=ingredient" label={`🔍 ${t.fridge.findRecipes}`} />
     </FridgeShell>
   );
 }

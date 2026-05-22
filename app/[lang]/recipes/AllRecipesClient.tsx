@@ -10,6 +10,7 @@ import RecipeCard from '@/components/RecipeCard';
 import SafeImage from '@/components/Common/SafeImage';
 import { RecipeCardGridSkeleton } from '@/components/Common/Skeleton';
 import EmptyState from '@/components/Common/EmptyState';
+import IngredientRecsView from './_components/IngredientRecsView';
 import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
@@ -50,6 +51,11 @@ export default function AllRecipesPage() {
   // 카테고리 탭 — URL 필터가 활성이면 강제, 없으면 유저의 수동 선택 유지.
   // setState-in-effect 패턴을 피하기 위해 render time에 파생.
   const [manualCategoryTab, setManualCategoryTab] = useState<'cuisine' | 'dish' | null>(null);
+
+  // 전체 | 재료 기반 탭 — 초기값은 ?tab= deep-link (홈 냉장고 pill → ?tab=ingredient)
+  const [activeTab, setActiveTab] = useState<'all' | 'ingredient'>(
+    searchParams.get('tab') === 'ingredient' ? 'ingredient' : 'all',
+  );
 
   // 이번 주 인기 — 필터 없을 때만 상단에 가로 스크롤 스트립으로 노출.
   const [trending, setTrending] = useState<RecipeWithMatch[]>([]);
@@ -243,9 +249,39 @@ export default function AllRecipesPage() {
 
       <main className="pt-20 md:pt-24 pb-24 md:pb-12 px-4 md:px-6">
         <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">{t.recipe.allRecipes}</h1>
+
+          {/* 전체 | 재료 기반 탭 */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                activeTab === 'all'
+                  ? 'bg-accent-warm text-background-primary'
+                  : 'bg-background-secondary text-text-muted hover:text-text-primary'
+              }`}
+            >
+              {t.recipe.tabAll}
+            </button>
+            <button
+              onClick={() => setActiveTab('ingredient')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                activeTab === 'ingredient'
+                  ? 'bg-accent-warm text-background-primary'
+                  : 'bg-background-secondary text-text-muted hover:text-text-primary'
+              }`}
+            >
+              <span>🥬</span>
+              {t.recommendations.byIngredients}
+            </button>
+          </div>
+
+          {activeTab === 'ingredient' ? (
+            <IngredientRecsView />
+          ) : (
+          <>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold">{t.recipe.allRecipes}</h1>
               {hasFilter && (
                 <p className="text-sm text-text-muted mt-0.5">
                   {cuisineFilter && `${t.home.filterCuisineLabel}: ${cuisineFilter}`}
@@ -398,6 +434,8 @@ export default function AllRecipesPage() {
                 )}
               </div>
             </>
+          )}
+          </>
           )}
         </div>
       </main>

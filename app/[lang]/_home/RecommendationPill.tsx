@@ -8,7 +8,7 @@ import Link from '@/components/Common/LocalizedLink';
  *     href 계산(items/auth)·track 은 전부 부모(HomeClient)가 소유.
  *     이 컴포넌트는 값+href+onClick 만 받는 순수 표현(JSX byte-identical).
  *  2. 검증: npm run build(strict props) + e2e/logged-in-home.spec.ts
- *     ("임박 재료로 실제 추천 매칭 — pill 노출 + /recommendations 이동")
+ *     ("임박 재료로 실제 추천 매칭 — pill 노출 + /recipes 재료 기반 탭 이동")
  *
  * 부모 렌더: `{showRecipeBubble && <RecommendationPill ... />}`
  * (matchingCount===null=로딩 shimmer / >0+resolvedMode=라벨 pill — 표시 파생만 담당)

@@ -299,11 +299,11 @@ export default function HomeClient({
     return () => { cancelled = true; };
   }, [allSheetMode, expiringCount, expiringItems]);
 
-  // 임박 재료로 요리하기 — /recommendations 페이지로 이동(임박 재료만 query).
+  // 임박 재료로 요리하기 — /recipes 재료 기반 탭으로 이동(임박 재료만 query).
   const handleCookFromExpiring = useCallback(() => {
-    if (expiringCount === 0) { router.push('/recommendations?mode=auto'); return; }
+    if (expiringCount === 0) { router.push('/recipes?tab=ingredient'); return; }
     const names = expiringItems.map(i => i.ingredient_name).join(',');
-    router.push(`/recommendations?mode=auto&ingredients=${encodeURIComponent(names)}`);
+    router.push(`/recipes?tab=ingredient&ingredients=${encodeURIComponent(names)}`);
     setAllSheetMode(null);
   }, [expiringCount, expiringItems, router]);
 
@@ -626,14 +626,14 @@ export default function HomeClient({
 
 
           {/* 레시피 추천 말풍선 — 매직 모드. 서버가 판단한 mode에 따라 라벨/이모지 동적.
-              클릭 시 /recommendations?mode=auto 진입 → 페이지도 같은 판단 로직으로 pill 자동 선택.
+              클릭 시 /recipes?tab=ingredient 진입 → 재료 기반 탭이 같은 판단 로직으로 pill 자동 선택.
               _home/RecommendationPill.tsx 로 추출(Strangler Fig) — 노출 가드·matchingCount/
               resolvedMode 상태·href(items/auth)·track 은 HomeClient 소유, 컴포넌트는 표시 파생만. */}
           {showRecipeBubble && (
             <RecommendationPill
               matchingCount={matchingCount}
               resolvedMode={resolvedMode}
-              href={`/recommendations?mode=auto${isAuthenticated ? '' : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}`}
+              href={`/recipes?tab=ingredient${isAuthenticated ? '' : `&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`}`}
               onClick={() => track('recipe_pill_click', { mode: resolvedMode, count: matchingCount, items_count: items.length })}
               pillDefault={t.home.pillDefault}
               pillLoading={t.home.pillLoading}
