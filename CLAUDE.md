@@ -1149,6 +1149,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **관리자 레시피 페이지 개선 — 일괄 작업·상태 탭·정렬** — 완료 (2026-05-23, develop 푸시)
+  - **난이도 라벨 fix**: `admin/recipes` 페이지가 로컬 하드코딩 맵(`초급/중급/고급`)을 써서 통일된 앱(`쉬움/보통/어려움`)과 불일치 → 공유 `DIFFICULTY_LABELS` 사용
+  - **일괄 작업**: 행 체크박스 + 페이지 전체 선택 + 일괄 공개/비공개/삭제. `POST /api/admin/recipes/bulk` 신설 (ids[]+action, 최대 200개)
+  - **상태 탭**: 드롭다운 → `전체·공개·비공개·임시저장` 탭 + 각 개수 배지. 기존 필터 버그 수정 — 드롭다운 "비공개"가 `draft`를 거르고 `private` 상태는 필터 불가였음
+  - **정렬**: 조회수·평점·작성일 컬럼 헤더 클릭 정렬. GET API에 `sort`·`order` 파라미터 + 동률 시 `id` tiebreak (페이지네이션 행 누락/중복 방지)
+  - **헤더 개수 분해 + 수정 링크**: "총 N개" → "공개 N·비공개 N·임시저장 N". 작업 칸에 `수정`(→`/edit`) 링크 추가
+  - **unpublish 의미 수정**: PATCH·bulk의 unpublish가 `draft`(임시저장)로 보내던 것 → `private`(비공개). "비공개" 버튼 누르면 "임시저장"이 되던 혼란 해소
+  - 검증: lint 0 errors · build · e2e fresh build 406 passed · 0 failed
 - **프로필·법무 페이지 헤더 통일 + SW 캐시 v10** — 완료 (2026-05-23, develop 푸시)
   - **프로필 `/[username]`**: 커스텀 `← 낼름 ⚙️` 헤더 → 표준 `Header`+`Footer`. ⚙️ 설정 접근은 `ProfileCard` 우상단 버튼으로 이전(본인 프로필만)
   - **법무 4페이지**: copyright·privacy·terms 커스텀 `← 홈으로` 헤더 → 표준 `Header`+`Footer`. cookies(이미 표준 Header)에도 `Footer` 추가 → 법무 페이지 4개 전부 일관
