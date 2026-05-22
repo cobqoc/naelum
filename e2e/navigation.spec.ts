@@ -31,14 +31,13 @@ test.describe('네비게이션 흐름 테스트', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const searchTab = page.locator('nav a[href*="search"]').or(page.locator('nav a[href*="recipes"]'));
-    if (await searchTab.count() > 0) {
-      await searchTab.first().click();
-      await page.waitForLoadState('networkidle');
-
-      const url = page.url();
-      expect(url.includes('search') || url.includes('recipes')).toBeTruthy();
-    }
+    // BottomNav 검색 버튼(<button>) → 검색 오버레이 열림. 헤더 데스크톱 검색 링크(<a>)와 구분.
+    const panel = page
+      .locator('div[aria-hidden]')
+      .filter({ has: page.locator('button[aria-label="검색 닫기"]') });
+    await expect(panel).toHaveAttribute('aria-hidden', 'true');
+    await page.locator('nav button[aria-label="검색"]').click();
+    await expect(panel).toHaveAttribute('aria-hidden', 'false');
   });
 
   test('헤더 스크롤 동작 - 검색바 표시', async ({ page }) => {

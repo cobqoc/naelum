@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
 import ShoppingCartDropdown, { useCartCount } from '../ShoppingCartDropdown';
 import CartIcon from '../icons/CartIcon';
+import SearchIcon from '../icons/SearchIcon';
 import NotificationPanel from './NotificationPanel';
 import UserDropdown from './UserDropdown';
 import { useAuth } from '@/lib/auth/context';
@@ -137,6 +138,14 @@ export default function Header() {
 
           {/* Right Side */}
           <div className="flex items-center gap-2 md:gap-3 pointer-events-auto">
+            {/* 검색 — 데스크톱 전용. 모바일은 BottomNav 검색 아이콘으로 접근 */}
+            <Link
+              href="/search"
+              aria-label={t.bottomNav.search}
+              className="hidden md:flex min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors items-center justify-center"
+            >
+              <SearchIcon size={24} />
+            </Link>
             {user ? (
               <>
                 {/* 글쓰기 버튼 — PC: solid orange + 텍스트. */}

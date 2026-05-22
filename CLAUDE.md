@@ -1149,6 +1149,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **데스크톱 헤더 검색 아이콘 + 검색바 디자인 통일** — 완료 (2026-05-23, develop 푸시)
+  - **헤더 검색 아이콘**: 데스크톱 비-홈 페이지엔 검색 진입로가 없던 문제(BottomNav는 모바일 전용, 헤더엔 검색 없음) → Header에 검색 아이콘 추가(`hidden md:flex` → `/search`). 모바일은 기존 BottomNav 검색 유지
+  - **`SearchIcon` 공용화**: BottomNav 인라인 정의 → `components/icons/SearchIcon.tsx` 추출. BottomNav·Header가 같은 아이콘 공유
+  - **`/search` 검색바 디자인 통일**: `SearchClient` 자체 검색바가 홈 `SearchBar`와 갈라져 있던 것(제출 버튼 텍스트 "검색" vs 아이콘, 좌측 🔍 유무) → `SearchBar` 디자인에 맞춤(아이콘 제출 버튼·좌측 🔍 제거·입력 패딩 통일)
+  - **e2e fix**: 헤더 검색 링크(`<a aria-label="검색">`) 추가로 느슨한 셀렉터 `nav [aria-label="검색"]`이 BottomNav 검색(`<button>`)과 중복 매칭 → `nav button[aria-label="검색"]`으로 특정. `navigation.spec` 검색탭 테스트가 vacuous(셀렉터가 아무것도 매칭 못 함)였던 것도 실제 검증으로 교체
+  - 검증: lint 0 errors · build · e2e fresh build 407 passed · 0 failed
 - **추천 페이지를 전체 레시피에 탭으로 병합** — 완료 (2026-05-23, develop 푸시)
   - **2탭 통합**: `/recommendations` 페이지 제거 → `/recipes`에 `전체 | 재료 기반` 탭. 둘 다 "레시피 찾기"고 재료 기반 = 전체를 냉장고로 거른 것이라 한 페이지가 자연스러움. 기본 탭=전체, 홈 냉장고 pill은 `?tab=ingredient` deep-link
   - **추천 4탭 → 1개**: 재료 기반만 유지. 트렌딩·맞춤추천·식사시간별은 초기 앱에 데이터(요리활동·평점·meal_type 태그)가 없어 hollow(평점순 fallback으로 수렴) → UI 제거. `/api/recommendations`의 type 케이스 코드는 보존 — 데이터 쌓이면 탭이 아니라 전체 탭의 섹션 스트립으로 부활

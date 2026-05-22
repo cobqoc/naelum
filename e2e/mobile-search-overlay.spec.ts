@@ -28,7 +28,7 @@ test.describe('모바일 검색 오버레이 (HomeClient)', () => {
     await expect(panel).toHaveAttribute('aria-hidden', 'true');
 
     // BottomNav 검색 아이콘 클릭 → toggle-fridge-search → 오버레이 열림
-    await page.locator('nav [aria-label="검색"]').click();
+    await page.locator('nav button[aria-label="검색"]').click();
     await expect(panel).toHaveAttribute('aria-hidden', 'false');
 
     // 열린 상태 콘텐츠: 검색바 + 레시피/팁 빠른 이동 링크
@@ -41,7 +41,7 @@ test.describe('모바일 검색 오버레이 (HomeClient)', () => {
     await expect(panel).toHaveAttribute('aria-hidden', 'true');
 
     // 다시 열고 → 배경(backdrop, z-40 aria-hidden div) 클릭으로도 닫힘
-    await page.locator('nav [aria-label="검색"]').click();
+    await page.locator('nav button[aria-label="검색"]').click();
     await expect(panel).toHaveAttribute('aria-hidden', 'false');
     await page.locator('div[aria-hidden].z-40').click();
     await expect(panel).toHaveAttribute('aria-hidden', 'true');
