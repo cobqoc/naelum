@@ -636,7 +636,9 @@ export default function RecipeBrowseView({
                         <span className="inline-flex items-center gap-0.5 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold text-warning">
                           🔄 {t.recipe.fridgeModalSubstitute}
                         </span>
-                        <span className="text-xs text-warning">{subVia}</span>
+                        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-success">
+                          <span aria-hidden>✓</span>{subVia}
+                        </span>
                       </div>
                     )}
                     <div className="text-xs text-text-muted mt-0.5">
