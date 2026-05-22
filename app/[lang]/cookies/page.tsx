@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 
@@ -164,6 +165,7 @@ export default function CookiePolicyPage() {
           <Link href="/settings" className="text-accent-warm underline">설정으로 돌아가기</Link>
         </nav>
       </main>
+      <Footer />
     </div>
   );
 }

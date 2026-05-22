@@ -1,6 +1,8 @@
 'use client';
 
 import Link from '@/components/Common/LocalizedLink';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import { useState, useEffect } from 'react';
 
 
@@ -28,14 +30,8 @@ export default function TermsOfServicePage() {
 
   return (
     <div className="min-h-screen bg-background-primary">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background-primary/80 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <Link href="/" className="text-accent-warm hover:text-accent-hover transition-colors">
-            ← 홈으로 돌아가기
-          </Link>
-        </div>
-      </header>
+      <Header />
+      <div className="h-14 md:h-20" />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-12">
@@ -304,6 +300,7 @@ export default function TermsOfServicePage() {
           </Link>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
