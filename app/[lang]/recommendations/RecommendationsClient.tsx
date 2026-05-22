@@ -9,6 +9,8 @@ import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
 import RecipeCard from '@/components/RecipeCard';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
 
 
@@ -127,38 +129,32 @@ export default function RecommendationsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background-primary text-text-primary pb-24 md:pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background-secondary/90 backdrop-blur-xl border-b border-white/10">
-        <div className="container mx-auto max-w-4xl px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <Link href="/" className="text-text-muted hover:text-text-primary">{t.recommendations.backToHome}</Link>
-            <h1 className="text-lg font-bold">{t.recommendations.title}</h1>
-            <div className="w-10" />
-          </div>
+    <div className="min-h-screen bg-background-primary text-text-primary">
+      <Header />
 
-          {/* Tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  activeTab === tab.key
-                    ? 'bg-accent-warm text-background-primary'
-                    : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                }`}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      <main className="container mx-auto max-w-4xl px-6 pt-20 md:pt-24 pb-24 md:pb-12">
+        <h1 className="text-2xl font-bold mb-4">{t.recommendations.title}</h1>
+
+        {/* 추천 종류 탭 */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-hide mb-4">
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                activeTab === tab.key
+                  ? 'bg-accent-warm text-background-primary'
+                  : 'bg-background-secondary text-text-muted hover:bg-white/10'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </header>
 
-      {/* Content */}
-      <div className="container mx-auto max-w-4xl px-6 py-6">
+        {/* Content */}
+        <div>
         {/* Ingredients mode pill 필터 */}
         {activeTab === 'ingredients' && (
           <div className="mb-3">
@@ -295,7 +291,9 @@ export default function RecommendationsPage() {
             <p className="text-text-muted">{t.recommendations.noRecommendations}</p>
           </div>
         )}
-      </div>
+        </div>
+      </main>
+      <Footer />
       <BottomNav />
     </div>
   );

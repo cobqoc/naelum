@@ -1149,6 +1149,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **추천 페이지 chrome 통일 + SW 캐시 버전 bump** — 완료 (2026-05-22, develop 푸시)
+  - **추천 페이지 chrome 통일**: 추천 페이지가 커스텀 "홈으로 돌아가기" 바를 쓰던 것 → 전체·팁과 동일한 표준 `Header`+`Footer`로 교체. 탭 4개짜리 본격 페이지가 표준 헤더 없어 네비게이션 막다른 길이던 문제 해소. 추천 종류 탭은 본문으로 이동(비-sticky, 다른 페이지와 일관)
+  - **`public/sw.js` CACHE_VERSION v8→v9**: 카드 구조 변경(전체·추천·검색·팁)이 페이지 구조 변경이라 SW 캐시 버전 갱신 필요 — 재방문 사용자가 옛 JS 번들로 옛 카드를 보던 문제 해소
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 0 failed
 - **레시피·팁 카드 통합 + 전체·검색 냉장고 줄 확장** — 완료 (2026-05-22, develop 푸시)
   - **레시피 카드 단일화**: 전체·추천·검색 3페이지가 제각각 카드를 쓰던 것 → 단일 `RecipeCard`. 구 `FridgeRecipeCard` 병합·삭제. 메타 줄 = `시간·난이도·평점` (조회수·좋아요·만든수 의도적 제외 — 초기 앱 소셜 지표 빈약). fallback 그라데이션 통일·작성자 하단
   - **난이도 라벨 불일치 버그 fix**: `t.recipe.easy/medium/hard`(쉬움/보통/어려움)와 `t.difficulty.*`(초급/중급/고급)가 갈려 같은 레시피가 화면마다 다르게 표시되던 버그 → 둘 다 `쉬움/보통/어려움`으로 통일 (8 locale + `DIFFICULTY_LABELS` 상수)
