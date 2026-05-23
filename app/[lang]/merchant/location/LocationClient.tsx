@@ -5,6 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface Restaurant {
   id: string;
@@ -157,14 +158,17 @@ export default function LocationClient({
 
       <label className="block mb-4">
         <span className="text-xs text-text-muted mb-1 block">{t.merchant.locationLabel}</span>
-        <input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder={t.merchant.locationLabelPlaceholder}
-          className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-          data-testid="loc-label"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={t.merchant.locationLabelPlaceholder}
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+            data-testid="loc-label"
+          />
+        </InputBoxWrapper>
       </label>
 
       {error && (

@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 const PlaceLocationPicker = dynamic(
   () => import('@/components/Merchant/PlaceLocationPicker'),
@@ -99,68 +100,86 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block">
           <span className="text-xs text-text-muted mb-1 block">{t.merchant.nameLabel} *</span>
-          <input
-            type="text"
-            required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            data-testid="edit-name"
-          />
+          <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+              data-testid="edit-name"
+            />
+          </InputBoxWrapper>
         </label>
 
         <label className="block">
           <span className="text-xs text-text-muted mb-1 block">{t.merchant.descLabel}</span>
-          <textarea
-            rows={2}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none resize-none"
-          />
+          <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2 !min-h-[60px] !items-start">
+            <textarea
+              rows={2}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
         </label>
 
         <label className="block">
           <span className="text-xs text-text-muted mb-1 block">{t.merchant.placeTypeLabel}</span>
-          <select
-            value={form.place_type}
-            onChange={(e) => setForm({ ...form, place_type: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            data-testid="edit-place-type"
-          >
-            <option value="restaurant">{t.merchant.placeTypeRestaurant}</option>
-            <option value="food_truck">{t.merchant.placeTypeFoodTruck}</option>
-          </select>
+          <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+            <select
+              value={form.place_type}
+              onChange={(e) => setForm({ ...form, place_type: e.target.value })}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+              data-testid="edit-place-type"
+            >
+              <option value="restaurant">{t.merchant.placeTypeRestaurant}</option>
+              <option value="food_truck">{t.merchant.placeTypeFoodTruck}</option>
+            </select>
+          </InputBoxWrapper>
         </label>
 
         <label className="block">
           <span className="text-xs text-text-muted mb-1 block">{t.merchant.cuisineLabel}</span>
-          <input
-            type="text"
-            value={form.cuisine}
-            onChange={(e) => setForm({ ...form, cuisine: e.target.value })}
-            placeholder={t.merchant.cuisinePlaceholder}
-            className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-          />
+          <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+            <input
+              type="text"
+              value={form.cuisine}
+              onChange={(e) => setForm({ ...form, cuisine: e.target.value })}
+              placeholder={t.merchant.cuisinePlaceholder}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
         </label>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="text-xs text-text-muted mb-1 block">{t.merchant.phoneLabel}</span>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </label>
           <label className="block">
             <span className="text-xs text-text-muted mb-1 block">{t.merchant.addressLabel}</span>
-            <input
-              type="text"
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+              <input
+                type="text"
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </label>
         </div>
 
@@ -178,33 +197,42 @@ export default function RestaurantEditClient({ restaurant }: { restaurant: Resta
         <div className="grid grid-cols-3 gap-3">
           <label className="block">
             <span className="text-xs text-text-muted mb-1 block">{t.merchant.deliveryFeeLabel}</span>
-            <input
-              type="number"
-              min={0}
-              value={form.delivery_fee}
-              onChange={(e) => setForm({ ...form, delivery_fee: Number(e.target.value) || 0 })}
-              className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+              <input
+                type="number"
+                min={0}
+                value={form.delivery_fee}
+                onChange={(e) => setForm({ ...form, delivery_fee: Number(e.target.value) || 0 })}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </label>
           <label className="block">
             <span className="text-xs text-text-muted mb-1 block">{t.merchant.minOrderLabel}</span>
-            <input
-              type="number"
-              min={0}
-              value={form.min_order}
-              onChange={(e) => setForm({ ...form, min_order: Number(e.target.value) || 0 })}
-              className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+              <input
+                type="number"
+                min={0}
+                value={form.min_order}
+                onChange={(e) => setForm({ ...form, min_order: Number(e.target.value) || 0 })}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </label>
           <label className="block">
             <span className="text-xs text-text-muted mb-1 block">{t.merchant.avgCookTimeLabel}</span>
-            <input
-              type="number"
-              min={1}
-              value={form.avg_cook_time}
-              onChange={(e) => setForm({ ...form, avg_cook_time: Number(e.target.value) || 0 })}
-              className="w-full px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2">
+              <input
+                type="number"
+                min={1}
+                value={form.avg_cook_time}
+                onChange={(e) => setForm({ ...form, avg_cook_time: Number(e.target.value) || 0 })}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </label>
         </div>
 
