@@ -79,6 +79,7 @@ export interface RecipeIngredient {
   unit: string;
   notes: string;
   is_optional: boolean;
+  substitutes?: string[];
 }
 
 export interface RecipeStep {

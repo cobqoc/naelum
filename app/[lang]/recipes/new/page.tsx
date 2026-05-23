@@ -64,7 +64,7 @@ export default function NewRecipePage() {
 
   // 재료 (기본 2개 — 빈 5행 압도감 줄임. + 버튼으로 1개씩 추가)
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    Array(2).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false }))
+    Array(2).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: [] }))
   );
 
   // 완성된 요리 이미지 (썸네일)
@@ -197,7 +197,7 @@ export default function NewRecipePage() {
 
       const { data: recipeIngredients } = await supabase
         .from('recipe_ingredients')
-        .select('ingredient_name, quantity, unit, notes, is_optional')
+        .select('ingredient_name, quantity, unit, notes, is_optional, substitutes')
         .eq('recipe_id', remixId)
         .order('order_index');
 
@@ -224,6 +224,7 @@ export default function NewRecipePage() {
           unit: i.unit || '선택',
           notes: i.notes || '',
           is_optional: i.is_optional || false,
+          substitutes: Array.isArray(i.substitutes) ? (i.substitutes as string[]) : [],
         })));
       }
 
@@ -272,7 +273,7 @@ export default function NewRecipePage() {
   const addIngredients = () => {
     setIngredients([
       ...ingredients,
-      { ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false },
+      { ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: [] },
     ]);
   };
 
@@ -283,7 +284,7 @@ export default function NewRecipePage() {
     }
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean) => {
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | string[]) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     setIngredients(updated);
@@ -667,7 +668,8 @@ export default function NewRecipePage() {
             quantity: parseFloat(i.quantity) || null,
             unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
-            is_optional: i.is_optional
+            is_optional: i.is_optional,
+            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
           })),
           steps: validSteps.map(s => ({
             instruction: s.instruction.trim(),
@@ -742,6 +744,7 @@ export default function NewRecipePage() {
             unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,
+            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
           })),
           steps: validSteps.map(s => ({
             instruction: s.instruction.trim(),

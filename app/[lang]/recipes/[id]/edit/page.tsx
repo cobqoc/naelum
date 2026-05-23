@@ -56,7 +56,7 @@ export default function EditRecipePage(props: PageProps) {
 
   // 재료
   const [ingredients, setIngredients] = useState<Ingredient[]>(
-    Array(5).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false }))
+    Array(5).fill(null).map(() => ({ ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: [] }))
   );
 
   const unitInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -174,12 +174,14 @@ export default function EditRecipePage(props: PageProps) {
 
         // 재료 설정
         if (ingredientsData && ingredientsData.length > 0) {
-          const loadedIngredients = ingredientsData.map((ing: { ingredient_name?: string; quantity?: number; unit?: string; notes?: string; is_optional?: boolean }) => ({
+          const loadedIngredients = ingredientsData.map((ing: { ingredient_name?: string; ingredient_id?: string | null; quantity?: number; unit?: string; notes?: string; is_optional?: boolean; substitutes?: unknown }) => ({
             ingredient_name: ing.ingredient_name || '',
+            ingredient_id: ing.ingredient_id ?? undefined,
             quantity: ing.quantity?.toString() || '',
             unit: ing.unit || '선택',
             notes: ing.notes || '',
-            is_optional: ing.is_optional || false
+            is_optional: ing.is_optional || false,
+            substitutes: Array.isArray(ing.substitutes) ? (ing.substitutes as string[]) : [],
           }));
           setIngredients(loadedIngredients);
         }
@@ -223,7 +225,7 @@ export default function EditRecipePage(props: PageProps) {
 
   const addIngredients = () => {
     const newIngredients = Array(5).fill(null).map(() => ({
-      ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false
+      ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: []
     }));
     setIngredients([...ingredients, ...newIngredients]);
   };
@@ -234,7 +236,7 @@ export default function EditRecipePage(props: PageProps) {
     }
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean) => {
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | string[]) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     setIngredients(updated);
@@ -572,10 +574,12 @@ export default function EditRecipePage(props: PageProps) {
           sodium_mg: sodium ? parseInt(sodium) : null,
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
+            ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
             unit: i.unit,
             notes: i.notes.trim() || null,
-            is_optional: i.is_optional
+            is_optional: i.is_optional,
+            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
           })),
           steps: validSteps.map(s => ({
             title: s.title?.trim() || null,

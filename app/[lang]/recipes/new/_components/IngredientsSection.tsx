@@ -33,7 +33,7 @@ interface IngredientsSectionProps {
   getPlaceholder: (index: number, field: 'name' | 'quantity' | 'notes') => string;
   onAddIngredients: () => void;
   onRemoveIngredient: (index: number) => void;
-  onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean) => void;
+  onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean | string[]) => void;
   onSelectIngredient: (index: number, item: IngredientItem) => void;
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
@@ -231,6 +231,27 @@ export default function IngredientsSection({
                 onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
                 className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
                 placeholder={tf.ingNotesPlaceholder}
+              />
+            </div>
+
+            {/* Row 3: 옵션 줄 — "없어도 OK" 토글 + 대체 재료 입력 (행마다 항상 노출) */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs pl-0.5">
+              <label className="flex items-center gap-1.5 text-text-muted cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={ing.is_optional}
+                  onChange={(e) => onUpdateIngredient(index, 'is_optional', e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border border-white/20 bg-background-tertiary accent-accent-warm"
+                />
+                <span>{tf.ingOptionalLabel}</span>
+              </label>
+              <span className="text-text-muted/40 shrink-0">·</span>
+              <input
+                type="text"
+                value={(ing.substitutes ?? []).join(', ')}
+                onChange={(e) => onUpdateIngredient(index, 'substitutes', e.target.value.split(',').map(s => s.trim()))}
+                placeholder={tf.ingSubstitutePlaceholder}
+                className="flex-1 min-w-0 rounded-md bg-background-tertiary px-2.5 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
               />
             </div>
           </div>

@@ -307,6 +307,8 @@ export const es = {
     ratingCookedCta: '¡Has cocinado esta receta! Deja una reseña.',
     timerDoneTitle: '¡Temporizador listo!',
     timerDoneBody: 'Continúa con el siguiente paso.',
+    ingredientOptional: 'Opcional',
+    ingredientSubstituteOr: 'o',
   },
   profile: {
     recipes: 'Recetas',
@@ -1051,6 +1053,8 @@ export const es = {
     ingNotes: 'Notas',
     ingUnitPlaceholder: 'Unidad',
     ingNotesPlaceholder: 'Notas (ej. picado, cortado)',
+    ingOptionalLabel: 'Opcional',
+    ingSubstitutePlaceholder: 'Sustitutos (separados por comas): ej. pepperoncino, chile verde',
     ingNamePlaceholder1: 'ej. Cerdo',
     ingQuantityPlaceholder1: 'ej. 200',
     ingNotesPlaceholder1: 'ej. para guiso, tamaño bocado',

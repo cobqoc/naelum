@@ -16,7 +16,7 @@ export async function GET(
       .select(`
         *,
         author:profiles!recipes_author_id_fkey(id, username, avatar_url, bio),
-        ingredients:recipe_ingredients(id, ingredient_name, quantity, unit, notes, is_optional, display_order),
+        ingredients:recipe_ingredients(id, ingredient_name, ingredient_id, quantity, unit, notes, is_optional, substitutes, display_order),
         steps:recipe_steps(id, step_number, title, instruction, timer_minutes, tip, image_url),
         tags:recipe_tags(id, tag_name)
       `)
@@ -108,7 +108,7 @@ export async function PUT(
       }
 
       if (ingredients.length > 0) {
-        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean }, index: number) => ({
+        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean; substitutes?: string[] | null }, index: number) => ({
           recipe_id: recipeId,
           ingredient_name: ing.ingredient_name,
           ingredient_id: ing.ingredient_id || null,
@@ -116,6 +116,7 @@ export async function PUT(
           unit: ing.unit,
           notes: ing.notes,
           is_optional: ing.is_optional || false,
+          substitutes: Array.isArray(ing.substitutes) && ing.substitutes.length > 0 ? ing.substitutes : null,
           display_order: index + 1
         }));
 

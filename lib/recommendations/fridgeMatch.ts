@@ -31,13 +31,18 @@ export async function attachFridgeMatch<T extends { id: string }>(
 
   const { data: riRows } = await supabase
     .from('recipe_ingredients')
-    .select('recipe_id, ingredient_name, ingredient_id')
+    .select('recipe_id, ingredient_name, ingredient_id, is_optional, substitutes')
     .in('recipe_id', recipes.map(r => r.id))
 
-  const byRecipe = new Map<string, { ingredient_name: string; ingredient_id: string | null }[]>()
+  const byRecipe = new Map<string, { ingredient_name: string; ingredient_id: string | null; is_optional?: boolean; substitutes?: string[] | null }[]>()
   for (const row of riRows ?? []) {
     const arr = byRecipe.get(row.recipe_id) ?? []
-    arr.push({ ingredient_name: row.ingredient_name, ingredient_id: row.ingredient_id })
+    arr.push({
+      ingredient_name: row.ingredient_name,
+      ingredient_id: row.ingredient_id,
+      is_optional: row.is_optional ?? false,
+      substitutes: Array.isArray(row.substitutes) ? (row.substitutes as string[]) : null,
+    })
     byRecipe.set(row.recipe_id, arr)
   }
 

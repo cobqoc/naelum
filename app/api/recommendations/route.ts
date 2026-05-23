@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
-            ingredients:recipe_ingredients(ingredient_name, ingredient_id)
+            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional, substitutes)
           `)
           .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
@@ -158,11 +158,26 @@ export async function GET(request: NextRequest) {
           ? await filterByDietaryPreferences(supabase, user.id, recipes)
           : recipes
 
+        // 어드민 승격된 대체재 매핑 fetch — 양방향 Map 구성.
+        // 코드 상수 INGREDIENT_SUBSTITUTES와 동등 우선순위로 매칭에 사용.
+        const { data: globalSubs } = await supabase
+          .from('ingredient_substitutes_global')
+          .select('from_name, to_name')
+        const extraSubs = new Map<string, Set<string>>()
+        for (const row of globalSubs ?? []) {
+          const a = row.from_name.toLowerCase().trim()
+          const b = row.to_name.toLowerCase().trim()
+          if (!extraSubs.has(a)) extraSubs.set(a, new Set())
+          extraSubs.get(a)!.add(b)
+          if (!extraSubs.has(b)) extraSubs.set(b, new Set())
+          extraSubs.get(b)!.add(a)
+        }
+
         // 보유/대체/없음 분류 — computeRecipeMatch(match.ts) 단일 출처. 전체·검색 페이지와 동일 로직.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => ({
           ...recipe,
-          ...computeRecipeMatch(ingredientNames, userIngredientIdSet, recipe.ingredients || []),
+          ...computeRecipeMatch(ingredientNames, userIngredientIdSet, recipe.ingredients || [], extraSubs),
         }))
 
         // mode별 필터 함수(isReady/isAlmost/isAny)는 @/lib/recommendations/match 에서 import

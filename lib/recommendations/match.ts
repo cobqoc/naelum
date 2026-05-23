@@ -290,15 +290,31 @@ export interface RecipeMatchResult {
  * 추천·전체·검색 페이지가 같은 카운트를 내도록 하는 단일 출처(추천 라우트에서 추출).
  * - userIngredientNames: 사용자 보유 재료명 (소문자)
  * - userIngredientIdSet: 사용자 보유 재료의 ingredient_id FK 집합
- * - recipeIngredients: 레시피 재료 (이름 + 선택적 FK)
+ * - recipeIngredients: 레시피 재료 (이름 + 선택적 FK + is_optional + recipe-specific substitutes)
+ *
+ * is_optional=true 재료는 매칭에서 완전 제외 — 보유 여부와 무관하게 total/missing/matched에
+ * 들어가지 않는다 ("없어도 OK" = 부족하지 않음 = 매칭에 영향 없음).
+ *
+ * recipe-specific substitutes — 작성자가 그 레시피에 한해 명시한 대체재. 전역
+ * INGREDIENT_SUBSTITUTES와 동등하게 인정한다 (둘 중 하나로 매칭되면 substitutable).
  */
 export function computeRecipeMatch(
   userIngredientNames: string[],
   userIngredientIdSet: Set<string>,
-  recipeIngredients: { ingredient_name: string; ingredient_id?: string | null }[],
+  recipeIngredients: {
+    ingredient_name: string;
+    ingredient_id?: string | null;
+    is_optional?: boolean;
+    substitutes?: string[] | null;
+  }[],
+  // 어드민 승격된 동적 매핑(ingredient_substitutes_global) — server-side에서만 사용.
+  // 키·값 모두 소문자, 양방향 조회. 코드 상수 INGREDIENT_SUBSTITUTES와 동등 우선순위.
+  extraGlobalSubstitutes?: Map<string, Set<string>>,
 ): RecipeMatchResult {
-  // 보편 재료(물 등)는 매칭에서 제외 — 항상 가졌다고 가정.
-  const nonFundamental = recipeIngredients.filter(ri => !isFundamental(ri.ingredient_name))
+  // 보편 재료(물 등) + is_optional 재료는 매칭에서 제외 — 부족 카운트 왜곡 방지.
+  const nonFundamental = recipeIngredients.filter(ri =>
+    !isFundamental(ri.ingredient_name) && !ri.is_optional
+  )
   // 같은 이름 재료 중복 제거 — 한 레시피가 "후추"를 2줄로 적으면 total·missing 부풀려짐.
   const seen = new Set<string>()
   const list = nonFundamental.filter(ri => {
@@ -322,7 +338,26 @@ export function computeRecipeMatch(
       continue
     }
     // 보유는 아니지만 대체 가능 — 어떤 user 재료로 바꿔 쓸지 기록.
-    const via = userIngredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
+    // ① 전역 INGREDIENT_SUBSTITUTES
+    let via = userIngredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
+    // ② recipe-specific substitutes (작성자가 직접 명시)
+    if (!via && Array.isArray(ri.substitutes) && ri.substitutes.length > 0) {
+      const subsLC = ri.substitutes
+        .map(s => s.toLowerCase().trim())
+        .filter(Boolean)
+      via = userIngredientNames.find(ui => {
+        const u = ui.toLowerCase().trim()
+        return subsLC.some(s => s === u || isSameIngredient(u, s))
+      })
+    }
+    // ③ admin-promoted dynamic substitutes (ingredient_substitutes_global)
+    if (!via && extraGlobalSubstitutes && extraGlobalSubstitutes.size > 0) {
+      const recipeKey = ri.ingredient_name.toLowerCase().trim()
+      const subs = extraGlobalSubstitutes.get(recipeKey)
+      if (subs && subs.size > 0) {
+        via = userIngredientNames.find(ui => subs.has(ui.toLowerCase().trim()))
+      }
+    }
     if (via) substitutableIngredients.push({ ingredient: ri.ingredient_name, via })
     else missingIngredientNames.push(ri.ingredient_name)
   }

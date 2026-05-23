@@ -307,6 +307,8 @@ export const de = {
     ratingCookedCta: 'Sie haben dieses Rezept gekocht! Hinterlassen Sie eine Bewertung.',
     timerDoneTitle: 'Timer abgelaufen!',
     timerDoneBody: 'Fahren Sie mit dem nächsten Schritt fort.',
+    ingredientOptional: 'Optional',
+    ingredientSubstituteOr: 'oder',
   },
   profile: {
     recipes: 'Rezepte',
@@ -1051,6 +1053,8 @@ export const de = {
     ingNotes: 'Notizen',
     ingUnitPlaceholder: 'Einheit',
     ingNotesPlaceholder: 'Notizen (z.B. gehackt, gewürfelt)',
+    ingOptionalLabel: 'Optional',
+    ingSubstitutePlaceholder: 'Ersatz (Komma-getrennt): z.B. Pepperoncino, grüne Chili',
     ingNamePlaceholder1: 'z.B. Schweinefleisch',
     ingQuantityPlaceholder1: 'z.B. 200',
     ingNotesPlaceholder1: 'z.B. für Eintopf',

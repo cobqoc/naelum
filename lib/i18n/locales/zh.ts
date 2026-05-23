@@ -307,6 +307,8 @@ export const zh = {
     ratingCookedCta: '您做过这道菜！留下评价吧。',
     timerDoneTitle: '计时结束！',
     timerDoneBody: '请进行下一步。',
+    ingredientOptional: '可选',
+    ingredientSubstituteOr: '或',
   },
   profile: {
     recipes: '食谱',
@@ -1051,6 +1053,8 @@ export const zh = {
     ingNotes: '备注',
     ingUnitPlaceholder: '单位',
     ingNotesPlaceholder: '备注 (例：切碎、切块)',
+    ingOptionalLabel: '没有也可以',
+    ingSubstitutePlaceholder: '替代食材 (用逗号分隔): 例) 意式辣椒, 青辣椒',
     ingNamePlaceholder1: '例：猪肉',
     ingQuantityPlaceholder1: '例：200',
     ingNotesPlaceholder1: '例：炖用、一口大小',
