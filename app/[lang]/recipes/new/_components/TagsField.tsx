@@ -1,3 +1,5 @@
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+
 /**
  * 레시피 작성 폼의 태그 입력 블록 (presentational).
  *
@@ -35,14 +37,17 @@ export default function TagsField({
     <div className="space-y-4">
       <label className="text-sm font-medium text-text-secondary">{label}</label>
       <div className="flex gap-2">
-        <input
-          type="text"
-          value={tagInput}
-          onChange={(e) => onTagInputChange(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAdd())}
-          className="flex-1 rounded-xl bg-background-secondary px-5 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-          placeholder={placeholder}
-        />
+        <InputBoxWrapper className="flex-1 !bg-background-secondary !rounded-xl !px-5 !py-3">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => onTagInputChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAdd())}
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+            placeholder={placeholder}
+          />
+        </InputBoxWrapper>
         <button
           onClick={onAdd}
           disabled={!tagInput.trim() || tags.length >= 10}

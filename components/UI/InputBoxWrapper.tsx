@@ -56,3 +56,17 @@ export const INPUT_INNER_STYLE: CSSProperties = {
   borderRight: 'none',
   outline: 'none',
 };
+
+/**
+ * 큰 padding + secondary bg + rounded-xl 변형 — 페이지 수준 메인 input.
+ * 카드 안 작은 input (default) 보다 prominent. BasicInfoSection·NutritionFields·TagsField 용.
+ * InputBoxWrapper 의 default className 을 override 하는 utility — `className` prop 으로 전달.
+ */
+export const INPUT_VARIANT_COMFORTABLE =
+  '!bg-background-secondary !rounded-xl !px-5 !py-4';
+/** 큰 textarea 변형 — comfortable + 자유 min-height + top alignment */
+export const INPUT_VARIANT_COMFORTABLE_TEXTAREA =
+  '!bg-background-secondary !rounded-xl !px-5 !py-4 !min-h-[100px] !items-start';
+/** comfortable 자식 input 의 text size override — wrapper padding 이 크니 본문 텍스트도 base */
+export const INPUT_INNER_COMFORTABLE_CLASS =
+  'w-full bg-transparent text-text-primary !outline-none !border-0 !border-none placeholder:text-text-muted/60';
