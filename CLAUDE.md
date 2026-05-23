@@ -1149,6 +1149,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 작성 폼 UX 재구성 — 카드 + row1 통합 토글 + chip 입력** — 완료 (2026-05-23, develop 푸시)
+  - **문제**: 재료당 3줄(메인+메모+옵션) × 6개 = 18 회색 박스가 벽처럼 붙어있어 시각적 청크 단위 부재 — 어느 메모가 어느 재료 거인지, 옵션 줄이 위/아래 어느 재료 시작인지 매번 머리로 파싱. 옵션 줄도 `"없어도 OK"` verbose 라벨 + `"대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추"` 긴 instructional placeholder 가 가로 노이즈 (placeholder 가 형식 보여주는데 라벨이 또 설명 = 중복)
+  - **카드 wrap**: 각 재료를 `rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-2` 카드로 — 시각 청크 분명, "재료 1개 = 카드 1개" 멘탈 모델 명확, 향후 드래그 reorder 시 "잡을 거리" 형성. **선택 재료 토글 ON 시 카드 border·bg가 amber 톤(`border-warning/30 bg-warning/[0.04]`)으로 전환** — 일별 가능한 추가 시각 신호
+  - **Row1 통합**: `[재료명 자동완성][수량][단위][☐선택재료 pill][×]` — 별도 옵션 줄에 있던 `없어도 OK` 토글이 메인 그리드 안으로. 라벨 = `ingOptionalShort` 짧은 표현 (`선택 재료`/`Optional`/`任意` 등 8 locale). 풀라벨 `없어도 OK` 는 `title` attribute 로만 보존 (접근성)
+  - **Row2 메모+chip 통합**: 메모 input 과 `🔄` 대체재료 chip 입력을 한 줄로 (`flex-col sm:flex-row gap-2` — 데스크톱 side-by-side·모바일 stack). 이전 별도 옵션 줄 + 모바일 메모 줄 제거. **재료당 3줄(데스크톱) → 2줄, 모바일은 카드 묶음으로 시각적 청크 해결**
+  - **`SubstituteChipInput.tsx` 신설** (`components/Recipes/`): 쉼표/Enter로 chip 추가, Backspace(빈 입력)로 마지막 chip 제거, ✕ 클릭으로 개별 chip 제거, blur 시 잔여 입력 commit. amber 톤 (`bg-warning/15 text-warning`) — `RecipeBrowseView` substitute 표시(`bg-warning/20 text-warning 🔄`)와 시각 언어 통일. 입력 검증(빈 값·중복) 즉시 시각화
+  - **순수 로직 분리** (`lib/recipes/substituteChips.ts`): `addSubstituteChip`(trim·dedup case-insensitive·empty skip·불변 새 배열) + `removeSubstituteChipAt`(out-of-range 무변경·동일 reference 반환). 컴포넌트=React state 책임, lib=비즈니스 규칙. vitest 11 케이스(추가/제거/dedup/대소문자/공백/out-of-range/불변성)
+  - **i18n 8 locale**: `recipeForm.ingOptionalShort` 신규 (`선택 재료`/`Optional`/`任意`/`可选`/`Opcional`/`Facultatif`/`Optional`/`Opzionale`) + `ingSubstitutePlaceholder` 짧은 표현으로 변경 (`대체 재료 추가...`/`Add substitute...` 등) — chip UI 가 쉼표 구분을 시각적으로 처리하므로 long instructional text 불필요
+  - **edit 페이지 동일 패턴 적용**: 차이점 보존 (`<=1` 삭제 임계·`addFiveIngredients` 라벨·plain input — 자동완성 적용은 별개 작업 영역)
+  - **e2e 갱신**: `recipe-optional-substitutes.spec.ts` visible 라벨 검증을 `없어도 OK` → `선택 재료`로 (풀라벨이 title-only attribute 라 visible 텍스트 키 변경 필요). API round-trip·비-admin 차단 테스트는 무수정
+  - 검증: lint 0 errors · build · vitest **19 files 209 passed** (substituteChips 11 신규) · e2e fresh build **414 passed · 2 skipped · 0 failed**
 - **선택 재료 토글 + 대체 재료 입력 + 어드민 승격 페이지** — 완료 (2026-05-23, develop 푸시 / dev+prod DB)
   - **문제**: "있어도 되고 없어도 되는" 재료(예: 청양고추)·"다른 재료로 대체 가능"한 경우가 자주 있는데 작성 폼에 표현 방법 없음. 단계 본문·description 자연어로 적으면 냉장고 매칭(`computeRecipeMatch`)이 "필수"로 읽어 "N개 부족" 오표시. 또 동의어/대체재 표(`INGREDIENT_ALIASES`·`INGREDIENT_SUBSTITUTES`)는 영원히 다 못 채우는데 사용자가 직접 적은 데이터가 시스템에 안 흘러들어옴
   - **작성 폼 — 행마다 옵션 줄 1개씩 항상 노출**: `IngredientsSection`(new·edit 둘 다) 각 재료 행 아래 작은 보조 줄 — `[☐ 없어도 OK]` 토글 + `대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추` 텍스트 입력. 펼침 UI 안 씀(발견성 우선). DB는 이미 `recipe_ingredients.is_optional boolean`·`substitutes jsonb` 컬럼 존재(미연결 상태였음). 타입 `RecipeIngredient.substitutes?: string[]` 추가, POST/PUT `/api/recipes` payload·GET 응답에 포함. 빈 배열은 NULL로 정규화 저장
