@@ -1149,6 +1149,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **chip input SearchBar 패턴 적용 + 매칭 표시 한 줄 통합** — 완료 (2026-05-24, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 PR #127 후 2가지 잔존
+    - ① **chip input 박스 이중 여전** — `border` (1px) 로 바꿨는데도 박스 두 줄로 보임. 사용자 힌트: "예전에 홈페이지 검색바 만들 때도 비슷한 문제 있었음. 검색바 스타일 참고해봐"
+    - ② **매칭 표시 두 줄 awkward** — 재료 탭에 `밥` / 다음 줄에 `🔄 대체 가능 ✓ 쌀` 두 줄로 표시. 사용자 제안: `밥` 옆에 `✓쌀로 대체 가능` 한 줄 통합
+  - **fix① SearchBar 패턴 차용**: 진단 = **user-agent default input border/outline 이 다크모드에서 visible**. Tailwind `outline-none` 만으론 부족. SearchBar 가 이미 입증한 패턴: ① container `overflow-hidden` ② 자식 모두 `[&>*]:!border-0 !border-l-0 !border-r-0` Tailwind important ③ container `style={{ border: 'none' }}` inline ④ input `style={{ border: 'none', outline: 'none' }}` inline + class `!outline-none !border-0 !border-none`. claude-in-chrome zoom 검증 — amber outline **단일 line** 만 보임
+  - **fix② 매칭 라벨 한 줄**: `RecipeBrowseView` 재료 탭 substitute 표시를 `🔄 대체 가능 / ✓ 쌀` 두 line → `✓ 쌀 · 대체 가능` 단일 inline pill 로 통합. 정보 동일 + 시각 정렬·여백 절약. 기존 `t.recipe.fridgeModalSubstitute` ("대체 가능") 키 재사용 → 새 i18n 불필요. 8 locale 자동 적용
+  - **교훈 ([[feedback-search-bar-input-pattern]])**: dark theme 에서 native `<input>` border/outline 이 visible 잔존. Tailwind class 만으론 강제 못함 — `overflow-hidden` + `[&>*]:!border-0` + inline `style={{ border:'none', outline:'none' }}` 세 가지 동시 필요. *이미 SearchBar 에서 입증된 패턴*이 있으면 그것부터 참고
+  - 검증: lint 0 errors · build · claude-in-chrome 526px 시각 캡쳐 (chip input focus 시 amber outline 단일 · "밥" 카드의 `✓ 쌀 · 대체 가능` 단일 line)
 - **단계 본문 (선택) 배지 — 색상·정책·tooltip 개편 + chip input 박스 진짜 fix + SW v12** — 완료 (2026-05-24, develop 푸시)
   - **문제 (사용자 직접 발견)**: 직전 PR #125·#126 후 4가지 회귀
     - ① **재료명 amber 색상 혼란** — 본문 안 청양고추가 amber 텍스트 → 클릭 가능 링크처럼 보임. "뭔가 특별한 거 같기도 하고 혼란스러움"
