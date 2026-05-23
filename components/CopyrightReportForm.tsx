@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 export default function CopyrightReportForm() {
   const [form, setForm] = useState({ reporter_name: '', reporter_email: '', recipe_url: '', description: '' });
@@ -44,45 +45,57 @@ export default function CopyrightReportForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-text-primary mb-1">이름 또는 채널명</label>
-        <input
-          type="text"
-          value={form.reporter_name}
-          onChange={e => setForm(f => ({ ...f, reporter_name: e.target.value }))}
-          placeholder="홍길동 / @채널명"
-          className="w-full px-4 py-2.5 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
+          <input
+            type="text"
+            value={form.reporter_name}
+            onChange={e => setForm(f => ({ ...f, reporter_name: e.target.value }))}
+            placeholder="홍길동 / @채널명"
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
       <div>
         <label className="block text-sm font-medium text-text-primary mb-1">연락처 이메일 <span className="text-accent-warm">*</span></label>
-        <input
-          type="email"
-          required
-          value={form.reporter_email}
-          onChange={e => setForm(f => ({ ...f, reporter_email: e.target.value }))}
-          placeholder="example@email.com"
-          className="w-full px-4 py-2.5 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
+          <input
+            type="email"
+            required
+            value={form.reporter_email}
+            onChange={e => setForm(f => ({ ...f, reporter_email: e.target.value }))}
+            placeholder="example@email.com"
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
       <div>
         <label className="block text-sm font-medium text-text-primary mb-1">침해가 의심되는 낼름 레시피 URL</label>
-        <input
-          type="url"
-          value={form.recipe_url}
-          onChange={e => setForm(f => ({ ...f, recipe_url: e.target.value }))}
-          placeholder="https://naelum.app/recipes/..."
-          className="w-full px-4 py-2.5 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
+          <input
+            type="url"
+            value={form.recipe_url}
+            onChange={e => setForm(f => ({ ...f, recipe_url: e.target.value }))}
+            placeholder="https://naelum.app/recipes/..."
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
       <div>
         <label className="block text-sm font-medium text-text-primary mb-1">침해 내용 설명 <span className="text-accent-warm">*</span></label>
-        <textarea
-          required
-          rows={4}
-          value={form.description}
-          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-          placeholder="원본 영상/콘텐츠 URL, 침해된 표현, 본인이 저작권자임을 확인하는 진술 등을 포함해 주세요."
-          className="w-full px-4 py-2.5 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm resize-none"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5 !min-h-[100px] !items-start">
+          <textarea
+            required
+            rows={4}
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="원본 영상/콘텐츠 URL, 침해된 표현, 본인이 저작권자임을 확인하는 진술 등을 포함해 주세요."
+            className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
       {status === 'error' && (
         <p className="text-red-400 text-sm">{errorMsg}</p>

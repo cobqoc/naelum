@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -161,19 +162,22 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
               <label className="text-sm font-medium text-text-secondary mb-2 block">
                 {t.contact.contentLabel} <span className="text-error">*</span>
               </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={5}
-                placeholder={
-                  category === 'bug'
-                    ? t.contact.bugPlaceholder
-                    : category === 'feature'
-                    ? t.contact.featurePlaceholder
-                    : t.contact.otherPlaceholder
-                }
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm/50 transition-all resize-none"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3 !min-h-[120px] !items-start">
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={5}
+                  placeholder={
+                    category === 'bug'
+                      ? t.contact.bugPlaceholder
+                      : category === 'feature'
+                      ? t.contact.featurePlaceholder
+                      : t.contact.otherPlaceholder
+                  }
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm resize-none`}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
               <p className="text-xs text-text-muted mt-1 text-right">{t.contact.charCount.replace('{n}', String(content.length))}</p>
             </div>
 
@@ -230,13 +234,16 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                 <label className="text-sm font-medium text-text-secondary mb-2 block">
                   {t.contact.emailLabel} <span className="text-error">*</span>
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.contact.emailPlaceholder}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-sm text-text-primary placeholder:text-text-muted outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm/50 transition-all"
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.contact.emailPlaceholder}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+                    style={INPUT_INNER_STYLE}
+                  />
+                </InputBoxWrapper>
               </div>
             )}
 
