@@ -1149,6 +1149,19 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **조리 단계 본문 — `is_optional` 재료 자동 highlight** — 완료 (2026-05-24, develop 푸시)
+  - **문제**: 작성자가 재료 카드에서 "없어도 OK" 토글해도 *조리 단계 본문*엔 그 정보가 없음 → 따라하는 사람이 "청양고추를 더하시려면..." 같은 문장을 봐도 "선택"인지 모름. 재료 탭과 단계 탭을 오가며 머리로 cross-reference 필요. 작성자가 본문에 "(선택)" 매번 적게 만들면 빠뜨리기 쉽고 본문도 지저분
+  - **자동 매칭·렌더**: `is_optional=true` 재료가 단계 본문에 등장하면 시스템이 자동으로 amber 색 + `(선택)` 배지 표시. 작성자는 토글 한 번만, 따라하는 사용자는 본문 읽는 동안 한눈에
+  - **순수 함수 분리** (`lib/recipes/highlightOptionalIngredients.ts`): `tokenizeStepText(text, optionalIngredients, alreadyMentioned)` → `HighlightToken[]`. text 토큰 + optional 토큰(matchedText·ingredientName·isFirstMention·substitutes) 배열. **첫 멘션만 (선택) 배지**, 이후 멘션은 amber 색만. alreadyMentioned Set 을 호출자가 단계 간 공유 (step1 "청양고추(선택)" → step2 "청양고추")
+  - **매칭 정책**:
+    - `INGREDIENT_ALIASES` 동의어 모두 후보 (대파 optional → 본문 "파" 도 매칭)
+    - 길이 내림차순 — 긴 매칭 우선 ("대파"·"파" 둘 다 후보 시 "대파" 우선)
+    - Word boundary 차단: 매칭 직전 한글 또는 매칭 직후 한글이 조사 아니면 skip → "고추" optional + 본문 "고추장" *매칭 안 됨* (false positive 차단)
+    - 한국어 조사 set: `은/는/이/가/을/를/에/도/만/와/과/의/로` + `으로/에서/에는/까지` 등 1~3글자
+  - **`RecipeBrowseView` 적용**: `optionalIngredients = recipe.ingredients.filter(i => i.is_optional)` 한 번 계산. 조리순서 패널 `sortedSteps.map()` 을 IIFE 로 감싸 `alreadyMentioned = new Set()` 단계 간 공유. `step.instruction` 렌더를 `tokenizeStepText` 결과 매핑으로 교체 — text 는 plain span, optional 은 `text-warning font-medium` + `isFirstMention` 시 `(t.recipe.ingredientOptional)` amber 배지
+  - **시각 검증** (claude-in-chrome): 청양고추 `is_optional=true` + substitutes `['페페론치노','풋고추']` 시드. Step 1 "...청양고추(선택)를 더하시려면..." amber + 배지 ✓ / Step 2 "...청양고추도 함께 볶아주세요" amber 색만 (배지 없음) ✓ / "양배추·대파·마늘" highlight 안 됨 ✓
+  - **부가 확인**: `INGREDIENT_ALIASES` 검토 중 사용자 발견 — 양파와 파는 *동의어 아님* (제가 임시 예시로 잘못 적었던 매핑). 실제: `'파':['대파']`, `'대파':['파']`, `'양파':['어니언']` 별개. 정확함
+  - 검증: lint 0 errors · build · vitest **20 files 228 passed** (highlightOptionalIngredients 19 신규) · claude-in-chrome 시각 캡쳐 (모바일 526px)
 - **재료 작성 폼 fix — 체크박스 시각 피드백 + chip 박스 이중 해소** — 완료 (2026-05-23, develop 푸시)
   - **문제 (사용자 직접 발견)**: 직전 fix `b789fe9` 후 2가지 시각 회귀
     - ① **체크박스 클릭 후 시각 변화 부재** — 다크 모드 native checkbox 가 unchecked/checked 모두 거의 안 보임. 사용자가 클릭해도 토글됐는지 알 수 없음 (실제 state 는 업데이트됨 — 카드 amber 강조로 간접 확인 가능했으나 본인은 못 알아챔)
