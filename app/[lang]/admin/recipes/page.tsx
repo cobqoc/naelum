@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useToast } from '@/lib/toast/context';
 import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface AdminRecipe {
   id: string;
@@ -168,13 +169,16 @@ export default function AdminRecipesPage() {
       </div>
 
       {/* 검색 */}
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-        placeholder="레시피 제목 검색..."
-        className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-      />
+      <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          placeholder="레시피 제목 검색..."
+          className={INPUT_INNER_COMFORTABLE_CLASS}
+          style={INPUT_INNER_STYLE}
+        />
+      </InputBoxWrapper>
 
       {/* 상태 탭 */}
       <div className="flex gap-1.5 flex-wrap">

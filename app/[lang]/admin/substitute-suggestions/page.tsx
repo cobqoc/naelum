@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface SuggestionRow {
   from_name: string;
@@ -148,21 +149,27 @@ export default function AdminSubstituteSuggestionsPage() {
       <div className="rounded-xl border border-white/10 bg-background-secondary p-4">
         <h2 className="text-sm font-semibold text-text-primary mb-3">직접 추가</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={manualFrom}
-            onChange={e => setManualFrom(e.target.value)}
-            placeholder="레시피 재료 (예: 청양고추)"
-            className="flex-1 min-w-[180px] rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-          />
+          <InputBoxWrapper className="flex-1 min-w-[180px] !rounded-lg !px-3 !py-2">
+            <input
+              type="text"
+              value={manualFrom}
+              onChange={e => setManualFrom(e.target.value)}
+              placeholder="레시피 재료 (예: 청양고추)"
+              className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
           <span className="text-text-muted">↔</span>
-          <input
-            type="text"
-            value={manualTo}
-            onChange={e => setManualTo(e.target.value)}
-            placeholder="대체 재료 (예: 페페론치노)"
-            className="flex-1 min-w-[180px] rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-          />
+          <InputBoxWrapper className="flex-1 min-w-[180px] !rounded-lg !px-3 !py-2">
+            <input
+              type="text"
+              value={manualTo}
+              onChange={e => setManualTo(e.target.value)}
+              placeholder="대체 재료 (예: 페페론치노)"
+              className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
           <button
             onClick={addManual}
             disabled={busy === 'manual'}

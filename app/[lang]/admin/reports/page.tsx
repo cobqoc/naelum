@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface TargetInfo {
   id?: string;
@@ -254,24 +255,30 @@ export default function AdminReportsPage() {
 
             <div>
               <label className="block text-sm text-text-muted mb-1">조치 내용</label>
-              <input
-                type="text"
-                value={actionTaken}
-                onChange={(e) => setActionTaken(e.target.value)}
-                placeholder="예: 경고 발송, 게시물 삭제, 계정 차단 등"
-                className="w-full rounded-lg bg-background-tertiary border border-white/10 px-3 py-2 text-sm outline-none focus:border-accent-warm"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                <input
+                  type="text"
+                  value={actionTaken}
+                  onChange={(e) => setActionTaken(e.target.value)}
+                  placeholder="예: 경고 발송, 게시물 삭제, 계정 차단 등"
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
 
             <div>
               <label className="block text-sm text-text-muted mb-1">처리 메모</label>
-              <textarea
-                value={resolveNote}
-                onChange={(e) => setResolveNote(e.target.value)}
-                rows={3}
-                placeholder="내부 처리 메모를 입력하세요"
-                className="w-full rounded-lg bg-background-tertiary border border-white/10 px-3 py-2 text-sm outline-none focus:border-accent-warm resize-none"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2 !min-h-[80px] !items-start">
+                <textarea
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  rows={3}
+                  placeholder="내부 처리 메모를 입력하세요"
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm resize-none`}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
 
             <div className="flex gap-3">
