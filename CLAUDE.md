@@ -1149,6 +1149,18 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 작성 폼 fix — IME 가드 + "없어도 OK" 라벨 복원 + 메모/chip 진짜 한 줄** — 완료 (2026-05-23, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 commit `18e35be` 카드 + chip 입력 도입 후 3가지 회귀
+    - ① **chip "고추, 추, 간O, O" 식 fragmentation** — 한글 IME 조합 중 `,` onChange / `Enter` onKeyDown 핸들러가 발화해 조합 도중 chip 추가. e2e 414 통과했지만 한글 IME 입력은 자동화 테스트 못 잡음
+    - ② **"선택 재료" 라벨 동사로 오해** — `ingOptionalShort` 짧은 alias 가 "이 재료를 선택해라" 동작처럼 읽힘 (의도: "이 재료는 선택사항=없어도 OK")
+    - ③ **메모+chip 같은 줄 약속 위반** — `flex-col sm:flex-row` 가 640px 미만에서 강제 stack → 526px 모바일 폭에서도 사용자 기대(같은 줄) 어긋남
+  - **fix① IME 가드 (`SubstituteChipInput`)**: `composingRef` ref + `onCompositionStart`/`onCompositionEnd` 추적. `handleKeyDown` early return: `composingRef.current || e.nativeEvent.isComposing || e.keyCode === 229` 셋 다 체크(브라우저별 isComposing 누락 대비). `onChange` 도 composing 중엔 draft 만 갱신·`,` split 안 함. `onBlur` 도 composing 중엔 commit skip. paste(쉼표 포함 문자열)는 `commitWithCommas` 헬퍼로 모든 segment commit. **claude-in-chrome 으로 native CompositionEvent dispatch → `{ duringComposition: 0, afterCommit: 1 }` 검증 완료** (조합 중 comma 무시·종료 후 commit 정상)
+  - **fix② 라벨 복원**: `ingOptionalShort` 키 8 locale 전부 제거, visible 라벨을 풀텍스트 `ingOptionalLabel`("없어도 OK"/"Optional"/"なくてもOK"/등)로. 가로 폭 ~95px 차지하지만 의미 명확성 우선
+  - **fix③ 진짜 같은 줄**: `flex flex-col sm:flex-row` → `flex flex-row flex-wrap`. 양쪽 children `flex-1 min-w-[160px]` 으로 좁으면 자연 wrap, 충분하면 같은 줄. 526px 폭에서 같은 줄 시각 확인됨
+  - **검증 방식 교정**: e2e 414 통과만 보고 녹색 단정한 게 원인 — 한글 IME 입력은 Playwright 가 simulate 못함. claude-in-chrome 으로 `prod build` (`npm run start`) 띄우고 실제 native CompositionEvent dispatch + 시각 캡쳐(526px·1227px 폭)로 직접 확인. 이번 fix 후 같은 방식으로 회귀 확인
+  - **부산물**: edit IngredientsSection 도 같은 패턴 동시 적용. `recipe-optional-substitutes.spec.ts` visible 라벨 검증 `선택 재료` → `없어도 OK` 복원
+  - **교훈 ([[feedback-verify-ime-in-browser]])**: 한국어/일본어/중국어 chip 입력·검색·입력 UI 신규 작성 시 IME compositionstart/end 가드는 *기본*. unit/e2e 모두 IME 시뮬레이션 못하므로 claude-in-chrome 으로 직접 native CompositionEvent dispatch 검증 필수
+  - 검증: lint 0 errors · build · vitest **19 files 209 passed** (선존 substituteChips 11 유지) · 회귀 e2e `recipe-optional-substitutes.spec.ts` 6/6 · claude-in-chrome IME native dispatch 검증
 - **재료 작성 폼 UX 재구성 — 카드 + row1 통합 토글 + chip 입력** — 완료 (2026-05-23, develop 푸시)
   - **문제**: 재료당 3줄(메인+메모+옵션) × 6개 = 18 회색 박스가 벽처럼 붙어있어 시각적 청크 단위 부재 — 어느 메모가 어느 재료 거인지, 옵션 줄이 위/아래 어느 재료 시작인지 매번 머리로 파싱. 옵션 줄도 `"없어도 OK"` verbose 라벨 + `"대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추"` 긴 instructional placeholder 가 가로 노이즈 (placeholder 가 형식 보여주는데 라벨이 또 설명 = 중복)
   - **카드 wrap**: 각 재료를 `rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-2` 카드로 — 시각 청크 분명, "재료 1개 = 카드 1개" 멘탈 모델 명확, 향후 드래그 reorder 시 "잡을 거리" 형성. **선택 재료 토글 ON 시 카드 border·bg가 amber 톤(`border-warning/30 bg-warning/[0.04]`)으로 전환** — 일별 가능한 추가 시각 신호

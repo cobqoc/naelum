@@ -1054,7 +1054,6 @@ export const de = {
     ingUnitPlaceholder: 'Einheit',
     ingNotesPlaceholder: 'Notizen (z.B. gehackt, gewürfelt)',
     ingOptionalLabel: 'Optional',
-    ingOptionalShort: 'Optional',
     ingSubstitutePlaceholder: 'Ersatz hinzufügen...',
     ingNamePlaceholder1: 'z.B. Schweinefleisch',
     ingQuantityPlaceholder1: 'z.B. 200',

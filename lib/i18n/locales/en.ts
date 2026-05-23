@@ -1053,7 +1053,6 @@ export const en = {
     ingUnitPlaceholder: 'Unit',
     ingNotesPlaceholder: 'Notes (e.g. chopped, diced)',
     ingOptionalLabel: 'Optional',
-    ingOptionalShort: 'Optional',
     ingSubstitutePlaceholder: 'Add substitute...',
     ingNamePlaceholder1: 'e.g. Pork',
     ingQuantityPlaceholder1: 'e.g. 200',

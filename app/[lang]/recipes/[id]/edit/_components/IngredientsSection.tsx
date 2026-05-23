@@ -189,14 +189,13 @@ export default function IngredientsSection({
                     ))}
                   </select>
                 )}
-                {/* ☐ 선택 재료 토글 */}
+                {/* "없어도 OK" 토글 — 풀라벨로 의미 명확화 */}
                 <label
                   className={`flex items-center gap-1.5 px-2 py-2 rounded-lg cursor-pointer select-none text-xs whitespace-nowrap transition-colors ${
                     ing.is_optional
                       ? 'text-warning bg-warning/10'
                       : 'text-text-muted hover:bg-white/5'
                   }`}
-                  title={tf.ingOptionalLabel}
                 >
                   <input
                     type="checkbox"
@@ -204,7 +203,7 @@ export default function IngredientsSection({
                     onChange={(e) => onUpdateIngredient(index, 'is_optional', e.target.checked)}
                     className="w-3.5 h-3.5 rounded border border-white/20 bg-background-tertiary accent-accent-warm"
                   />
-                  <span>{tf.ingOptionalShort}</span>
+                  <span>{tf.ingOptionalLabel}</span>
                 </label>
                 <button
                   onClick={() => onRemoveIngredient(index)}
@@ -219,16 +218,16 @@ export default function IngredientsSection({
                 </button>
               </div>
 
-              {/* Row 2: 메모 + 🔄 대체 재료 chip */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              {/* Row 2: 메모 + 🔄 대체 재료 chip — 항상 같은 줄, 좁으면 자연 wrap */}
+              <div className="flex flex-row flex-wrap gap-2">
                 <input
                   type="text"
                   value={ing.notes}
                   onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
-                  className="w-full sm:flex-1 sm:min-w-0 rounded-md bg-background-tertiary px-3 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
+                  className="flex-1 min-w-[160px] rounded-md bg-background-tertiary px-3 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
                   placeholder={getPlaceholder(index, 'notes')}
                 />
-                <div className="w-full sm:flex-1 sm:min-w-0">
+                <div className="flex-1 min-w-[160px]">
                   <SubstituteChipInput
                     value={ing.substitutes ?? []}
                     onChange={(next) => onUpdateIngredient(index, 'substitutes', next)}

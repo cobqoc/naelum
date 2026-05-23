@@ -1054,7 +1054,6 @@ export const es = {
     ingUnitPlaceholder: 'Unidad',
     ingNotesPlaceholder: 'Notas (ej. picado, cortado)',
     ingOptionalLabel: 'Opcional',
-    ingOptionalShort: 'Opcional',
     ingSubstitutePlaceholder: 'Añadir sustituto...',
     ingNamePlaceholder1: 'ej. Cerdo',
     ingQuantityPlaceholder1: 'ej. 200',

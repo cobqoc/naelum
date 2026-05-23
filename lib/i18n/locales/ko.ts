@@ -1054,7 +1054,6 @@ export const ko = {
     ingUnitPlaceholder: '단위',
     ingNotesPlaceholder: '메모 (예: 잘게 썬, 굵게 다진)',
     ingOptionalLabel: '없어도 OK',
-    ingOptionalShort: '선택 재료',
     ingSubstitutePlaceholder: '대체 재료 추가...',
     ingNamePlaceholder1: '예: 돼지고기',
     ingQuantityPlaceholder1: '예: 200',
