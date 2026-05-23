@@ -4,6 +4,8 @@ import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { UNITS, type RecipeIngredient as Ingredient } from '@/lib/constants/recipe';
 import SubstituteChipInput from '@/components/Recipes/SubstituteChipInput';
+import RecipeIngredientInput from '@/components/Recipes/RecipeIngredientInput';
+import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/components/UI/InputBoxWrapper';
 
 /**
@@ -28,6 +30,8 @@ interface IngredientsSectionProps {
   onAddIngredients: () => void;
   onRemoveIngredient: (index: number) => void;
   onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean | string[]) => void;
+  /** 자동완성에서 재료 선택 시 — ingredient_id FK 설정 + 단위 추천 (new page 와 동일) */
+  onSelectIngredient: (index: number, item: IngredientItem) => void;
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
   onDrag: (e: React.DragEvent) => void;
@@ -48,6 +52,7 @@ export default function IngredientsSection({
   onAddIngredients,
   onRemoveIngredient,
   onUpdateIngredient,
+  onSelectIngredient,
   onImageUpload,
   onImageRemove,
   onDrag,
@@ -138,16 +143,13 @@ export default function IngredientsSection({
             >
               {/* Row 1: 재료명·수량·단위·☐선택·× */}
               <div className="grid grid-cols-[1fr_64px_60px_auto_28px] sm:grid-cols-[1fr_90px_72px_auto_32px] gap-2 items-center">
-                <InputBoxWrapper>
-                  <input
-                    type="text"
-                    value={ing.ingredient_name}
-                    onChange={(e) => onUpdateIngredient(index, 'ingredient_name', e.target.value)}
-                    className={INPUT_INNER_CLASS}
-                    style={INPUT_INNER_STYLE}
-                    placeholder={getPlaceholder(index, 'name')}
-                  />
-                </InputBoxWrapper>
+                {/* 재료명 자동완성 — new 페이지와 일관 (ingredient_id FK 매칭 정확도 위해) */}
+                <RecipeIngredientInput
+                  value={ing.ingredient_name}
+                  onChange={(value) => onUpdateIngredient(index, 'ingredient_name', value)}
+                  onSelect={(item) => onSelectIngredient(index, item)}
+                  placeholder={getPlaceholder(index, 'name')}
+                />
                 <InputBoxWrapper>
                   <input
                     type="text"

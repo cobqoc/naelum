@@ -10,6 +10,7 @@ import { useI18n } from '@/lib/i18n/context';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
+import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 import TagsField from '../../new/_components/TagsField';
 import BasicInfoSection from './_components/BasicInfoSection';
 import NutritionFields from './_components/NutritionFields';
@@ -239,6 +240,19 @@ export default function EditRecipePage(props: PageProps) {
   const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | string[]) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
+    setIngredients(updated);
+  };
+
+  // 자동완성에서 재료 선택 — ingredient_id FK 설정 + common_units 자동 단위 추천 (new page와 동일)
+  const selectIngredient = (index: number, item: IngredientItem) => {
+    const updated = [...ingredients];
+    const current = updated[index];
+    updated[index] = {
+      ...current,
+      ingredient_name: item.name,
+      ingredient_id: item.id,
+      ...(item.common_units?.[0] && current.unit === '선택' ? { unit: item.common_units[0] } : {}),
+    };
     setIngredients(updated);
   };
 
@@ -672,6 +686,7 @@ export default function EditRecipePage(props: PageProps) {
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}
             onUpdateIngredient={updateIngredient}
+            onSelectIngredient={selectIngredient}
             onImageUpload={handleIngredientsImageUpload}
             onImageRemove={handleIngredientsImageRemove}
             onDrag={handleIngredientsDrag}
