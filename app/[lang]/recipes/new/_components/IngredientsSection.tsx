@@ -139,11 +139,7 @@ export default function IngredientsSection({
           return (
             <div
               key={index}
-              className={`rounded-lg border p-3 space-y-2 transition-colors ${
-                ing.is_optional
-                  ? 'border-warning/30 bg-warning/[0.04]'
-                  : 'border-white/5 bg-white/[0.02]'
-              }`}
+              className="rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-2"
             >
               {/* Row 1: 재료명·수량·단위·☐선택·× */}
               <div className="grid grid-cols-[1fr_64px_60px_auto_28px] sm:grid-cols-[1fr_90px_72px_auto_32px] gap-2 items-center">
@@ -195,23 +191,46 @@ export default function IngredientsSection({
                     ))}
                   </select>
                 )}
-                {/* "없어도 OK" 토글 — 풀라벨로 의미 명확화 (`ingOptionalShort` 같은 줄임말은
-                    "선택 재료" 처럼 동사로 오해 유발) */}
-                <label
+                {/* "없어도 OK" 토글 — native checkbox 는 다크모드에서 unchecked/checked 시각
+                    구분 약함. button + SVG check 으로 ON/OFF 상태 분명하게.
+                    카드 amber 강조 제거 후 토글 자체가 is_optional 의 유일한 시각 신호.
+                    Sr-only checkbox 유지 → 접근성·폼 시맨틱 보존 */}
+                <button
+                  type="button"
+                  onClick={() => onUpdateIngredient(index, 'is_optional', !ing.is_optional)}
+                  aria-pressed={ing.is_optional}
                   className={`flex items-center gap-1.5 px-2 py-2 rounded-lg cursor-pointer select-none text-xs whitespace-nowrap transition-colors ${
                     ing.is_optional
                       ? 'text-warning bg-warning/10'
                       : 'text-text-muted hover:bg-white/5'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={ing.is_optional}
-                    onChange={(e) => onUpdateIngredient(index, 'is_optional', e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border border-white/20 bg-background-tertiary accent-accent-warm"
-                  />
+                  <span
+                    className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                      ing.is_optional
+                        ? 'border-warning bg-warning'
+                        : 'border-white/40 bg-transparent'
+                    }`}
+                  >
+                    {ing.is_optional && (
+                      <svg
+                        className="w-3 h-3 text-background-secondary"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden
+                      >
+                        <path
+                          d="M2.5 6.5L4.8 8.8L9.5 3.5"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
                   <span>{tf.ingOptionalLabel}</span>
-                </label>
+                </button>
                 <button
                   onClick={() => onRemoveIngredient(index)}
                   disabled={ingredients.length <= 5}
