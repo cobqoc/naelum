@@ -1,4 +1,7 @@
 import type { TranslationKeys } from '@/lib/i18n/translations'
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper'
+
+const NUTRITION_WRAPPER = '!rounded-xl !px-4 !py-3'
 
 /**
  * 레시피 *수정* 폼 영양 정보 블록 표현 컴포넌트.
@@ -90,19 +93,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.calories} <span className="text-text-muted text-xs">(kcal)</span>
               </label>
-              <input
-                type="number"
-                value={calories}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'int')) {
-                    setCalories(e.target.value)
-                  }
-                }}
-                min="0"
-                step="1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 350`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={calories}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'int')) {
+                      setCalories(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 350`}
+                />
+              </InputBoxWrapper>
             </div>
 
             {/* 단백질 */}
@@ -110,19 +116,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.protein} <span className="text-text-muted text-xs">(g)</span>
               </label>
-              <input
-                type="number"
-                value={protein}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'decimal')) {
-                    setProtein(e.target.value)
-                  }
-                }}
-                min="0"
-                step="0.1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 25.5`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={protein}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'decimal')) {
+                      setProtein(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="0.1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 25.5`}
+                />
+              </InputBoxWrapper>
             </div>
 
             {/* 탄수화물 */}
@@ -130,19 +139,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.carbs} <span className="text-text-muted text-xs">(g)</span>
               </label>
-              <input
-                type="number"
-                value={carbs}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'decimal')) {
-                    setCarbs(e.target.value)
-                  }
-                }}
-                min="0"
-                step="0.1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 45.0`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={carbs}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'decimal')) {
+                      setCarbs(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="0.1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 45.0`}
+                />
+              </InputBoxWrapper>
             </div>
 
             {/* 지방 */}
@@ -150,19 +162,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.fat} <span className="text-text-muted text-xs">(g)</span>
               </label>
-              <input
-                type="number"
-                value={fat}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'decimal')) {
-                    setFat(e.target.value)
-                  }
-                }}
-                min="0"
-                step="0.1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 12.5`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={fat}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'decimal')) {
+                      setFat(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="0.1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 12.5`}
+                />
+              </InputBoxWrapper>
             </div>
 
             {/* 식이섬유 */}
@@ -170,19 +185,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.fiber} <span className="text-text-muted text-xs">(g)</span>
               </label>
-              <input
-                type="number"
-                value={fiber}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'decimal')) {
-                    setFiber(e.target.value)
-                  }
-                }}
-                min="0"
-                step="0.1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 3.5`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={fiber}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'decimal')) {
+                      setFiber(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="0.1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 3.5`}
+                />
+              </InputBoxWrapper>
             </div>
 
             {/* 나트륨 */}
@@ -190,19 +208,22 @@ export default function NutritionFields({
               <label className="text-sm font-medium text-text-secondary">
                 {t.nutrition.sodium} <span className="text-text-muted text-xs">(mg)</span>
               </label>
-              <input
-                type="number"
-                value={sodium}
-                onChange={(e) => {
-                  if (validateNutritionInput(e.target.value, 'int')) {
-                    setSodium(e.target.value)
-                  }
-                }}
-                min="0"
-                step="1"
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={`${t.common.example} 800`}
-              />
+              <InputBoxWrapper className={NUTRITION_WRAPPER}>
+                <input
+                  type="number"
+                  value={sodium}
+                  onChange={(e) => {
+                    if (validateNutritionInput(e.target.value, 'int')) {
+                      setSodium(e.target.value)
+                    }
+                  }}
+                  min="0"
+                  step="1"
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={`${t.common.example} 800`}
+                />
+              </InputBoxWrapper>
             </div>
           </div>
         </div>
