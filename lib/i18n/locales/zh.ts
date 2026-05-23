@@ -312,6 +312,8 @@ export const zh = {
     optionalBadgeTooltip: '没有也可以做',
     optionalBadgeOr: '或者:',
     optionalBadgeAria: '查看可选食材说明',
+    substituteBadgeTooltip: '可以用现有食材替代',
+    substituteBadgeAria: '查看替代食材说明',
   },
   profile: {
     recipes: '食谱',
