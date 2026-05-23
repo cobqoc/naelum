@@ -857,14 +857,31 @@ export default function RecipeBrowseView({
                         </button>
                       )}
 
-                      {step.tip && (
-                        <div className="mt-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
-                          <p className="text-sm">
-                            <span className="font-bold text-warning">💡 팁:</span>{' '}
-                            <span className="text-text-secondary">{step.tip}</span>
-                          </p>
-                        </div>
-                      )}
+                      {step.tip && (() => {
+                        // tip 본문도 instruction 과 같은 토크나이저로 optional 재료 highlight.
+                        // alreadyMentioned Set 공유 — 같은 재료가 instruction·tip 양쪽 등장 시 첫 멘션만 ⓘ.
+                        const tipTokens = tokenizeStepText(step.tip, optionalIngredients, alreadyMentioned);
+                        return (
+                          <div className="mt-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                            <p className="text-sm">
+                              <span className="font-bold text-warning">💡 팁:</span>{' '}
+                              <span className="text-text-secondary">
+                                {tipTokens.map((tok, i) =>
+                                  tok.type === 'text' ? (
+                                    <span key={i}>{tok.value}</span>
+                                  ) : (
+                                    <OptionalIngredientBadge
+                                      key={i}
+                                      name={tok.matchedText}
+                                      substitutes={tok.substitutes}
+                                    />
+                                  )
+                                )}
+                              </span>
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
