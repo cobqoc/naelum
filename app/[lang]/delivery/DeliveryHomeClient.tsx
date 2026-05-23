@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import DeliveryFloatingNav from './DeliveryFloatingNav';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface Restaurant {
   id: string;
@@ -96,13 +97,16 @@ export default function DeliveryHomeClient() {
 
         {/* Search */}
         <div className="mb-4">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.delivery.searchPlaceholder}
-            className="w-full px-4 py-3 rounded-xl bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none transition-colors"
-          />
+          <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.delivery.searchPlaceholder}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
         </div>
 
         {/* Cuisine filter */}
