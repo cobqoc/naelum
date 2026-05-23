@@ -18,6 +18,7 @@ import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import { parseAllTimers } from '@/lib/cook/parseTimers';
+import { tokenizeStepText } from '@/lib/recipes/highlightOptionalIngredients';
 
 const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
@@ -174,6 +175,11 @@ export default function RecipeBrowseView({
     const scaled = num * (currentServings / baseServings);
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
   };
+
+  // is_optional 재료 목록 + substitutes — 단계 본문 자동 highlight 용
+  const optionalIngredients = recipe.ingredients
+    .filter(i => i.is_optional)
+    .map(i => ({ name: i.ingredient_name, substitutes: i.substitutes ?? undefined }));
 
   const getEffectiveTimers = (step: RecipeStep): number[] => {
     const fromText = parseAllTimers(step.instruction);
@@ -733,9 +739,14 @@ export default function RecipeBrowseView({
             )}
 
             <div className="pt-4 md:pt-0 space-y-6 pb-4">
-              {sortedSteps.map((step) => {
+              {(() => {
+                // 단계 간 첫 멘션 추적 — step1 의 "청양고추(선택)" → step2 의 "청양고추" 색만.
+                // IIFE 로 mutable Set 을 .map 외부에 두지 않고 일회성 캡쳐.
+                const alreadyMentioned = new Set<string>();
+                return sortedSteps.map((step) => {
                 const effectiveTimers = getEffectiveTimers(step);
                 const isDone = completedSteps.has(step.step_number);
+                const stepTokens = tokenizeStepText(step.instruction, optionalIngredients, alreadyMentioned);
                 return (
                   <div key={step.step_number} className="flex gap-4">
                     {/* 단계 번호 — 클릭으로 완료 토글 */}
@@ -763,7 +774,22 @@ export default function RecipeBrowseView({
                           />
                         </div>
                       )}
-                      <p className="text-text-secondary leading-relaxed">{step.instruction}</p>
+                      <p className="text-text-secondary leading-relaxed">
+                        {stepTokens.map((tok, i) =>
+                          tok.type === 'text' ? (
+                            <span key={i}>{tok.value}</span>
+                          ) : (
+                            <span key={i} className="text-warning font-medium">
+                              {tok.matchedText}
+                              {tok.isFirstMention && (
+                                <span className="ml-0.5 inline-flex items-center rounded bg-warning/15 px-1 py-0 text-[10px] font-bold align-middle">
+                                  ({t.recipe.ingredientOptional})
+                                </span>
+                              )}
+                            </span>
+                          )
+                        )}
+                      </p>
 
                       {/* 타이머 — 본문에 시간이 있는 단계에만. 그 단계 시간으로 prefill.
                           시간 없는 단계/즉흥 타이머는 하단 바의 ⏱ 타이머 버튼으로. */}
@@ -805,7 +831,8 @@ export default function RecipeBrowseView({
                     </div>
                   </div>
                 );
-              })}
+              });
+              })()}
             </div>
           </div>
 
