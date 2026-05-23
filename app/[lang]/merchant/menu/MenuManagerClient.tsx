@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface Category {
   id: string;
@@ -120,14 +121,17 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
 
       {/* Add category */}
       <div className="flex items-center gap-2 mb-6">
-        <input
-          type="text"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-          placeholder={t.merchant.menuCategoryName}
-          className="flex-1 px-3 py-2 rounded-lg bg-background-secondary border border-white/10 focus:border-accent-warm focus:outline-none"
-          data-testid="new-category-name"
-        />
+        <InputBoxWrapper className="flex-1 !bg-background-secondary !rounded-lg !px-3 !py-2">
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder={t.merchant.menuCategoryName}
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+            data-testid="new-category-name"
+          />
+        </InputBoxWrapper>
         <button
           type="button"
           onClick={addCategory}
@@ -223,32 +227,41 @@ function CategoryBlock({
 
       {adding && (
         <div className="rounded-xl bg-background-secondary border border-accent-warm/40 p-3 mb-3 space-y-2">
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder={t.merchant.menuItemName}
-            className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10"
-            data-testid={`new-item-name-${category.id}`}
-          />
-          <div className="grid grid-cols-2 gap-2">
+          <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
             <input
-              type="number"
-              min={0}
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: Number(e.target.value) || 0 })}
-              placeholder={t.merchant.menuItemPrice}
-              className="px-3 py-2 rounded-lg bg-background-tertiary border border-white/10"
-              data-testid={`new-item-price-${category.id}`}
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder={t.merchant.menuItemName}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+              data-testid={`new-item-name-${category.id}`}
             />
+          </InputBoxWrapper>
+          <div className="grid grid-cols-2 gap-2">
+            <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+              <input
+                type="number"
+                min={0}
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: Number(e.target.value) || 0 })}
+                placeholder={t.merchant.menuItemPrice}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+                data-testid={`new-item-price-${category.id}`}
+              />
+            </InputBoxWrapper>
           </div>
-          <input
-            type="text"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder={t.merchant.menuItemDesc}
-            className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10"
-          />
+          <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+            <input
+              type="text"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder={t.merchant.menuItemDesc}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
           <div className="flex gap-2">
             <button
               type="button"
