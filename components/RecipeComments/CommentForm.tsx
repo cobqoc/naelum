@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
 import { CommentFormProps, Comment } from './types';
@@ -80,17 +81,18 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="bg-background-secondary rounded-xl p-4 border border-white/5">
+      <InputBoxWrapper className="!rounded-lg !px-4 !py-3 !min-h-[80px] !items-start">
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder={resolvedPlaceholder}
         autoFocus={autoFocus}
-        className="w-full bg-background-tertiary rounded-lg px-4 py-3 text-base text-text-primary
-                   placeholder-text-muted focus:outline-none focus:ring-2
-                   focus:ring-2 focus:ring-accent-warm/50 resize-none"
+        className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+        style={INPUT_INNER_STYLE}
         rows={3}
         disabled={isSubmitting}
       />
+      </InputBoxWrapper>
 
       {error && (
         <div className="mt-2 p-2 rounded-lg bg-error/10 border border-error/20 text-error text-sm">

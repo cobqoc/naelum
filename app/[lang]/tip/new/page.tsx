@@ -10,6 +10,7 @@ import Header from '@/components/Header';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { useAutosave, loadAutosave, clearAutosave } from '@/lib/hooks/useAutosave';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 const CATEGORIES = ['손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
 const CATEGORY_ICONS: Record<string, string> = {
@@ -281,47 +282,59 @@ export default function TipNewPage() {
           {/* 제목 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.titleLabel}</label>
-            <input
-              type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder={t.tipForm.titlePlaceholder}
-              maxLength={200}
-              className="w-full bg-background-secondary border border-white/10 rounded-xl px-4 py-3 text-text-primary outline-none focus:border-accent-warm/50 transition-colors"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+              <input
+                type="text" value={title} onChange={e => setTitle(e.target.value)}
+                placeholder={t.tipForm.titlePlaceholder}
+                maxLength={200}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </div>
 
           {/* 카테고리 + 소요시간 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.categoryLabel}</label>
-              <select
-                value={category} onChange={e => setCategory(e.target.value)}
-                className="w-full bg-background-secondary border border-white/10 rounded-xl px-4 py-3 text-text-primary outline-none focus:border-accent-warm/50 transition-colors cursor-pointer"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c} value={c}>{CATEGORY_ICONS[c]} {t.tipForm.categories[c as keyof typeof t.tipForm.categories]}</option>
-                ))}
-              </select>
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <select
+                  value={category} onChange={e => setCategory(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} cursor-pointer`}
+                  style={INPUT_INNER_STYLE}
+                >
+                  {CATEGORIES.map(c => (
+                    <option key={c} value={c}>{CATEGORY_ICONS[c]} {t.tipForm.categories[c as keyof typeof t.tipForm.categories]}</option>
+                  ))}
+                </select>
+              </InputBoxWrapper>
             </div>
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.durationLabel}</label>
-              <input
-                type="number" value={durationMinutes} onChange={e => setDurationMinutes(e.target.value)}
-                placeholder={t.tipForm.durationPlaceholder}
-                min={1} max={999}
-                className="w-full bg-background-secondary border border-white/10 rounded-xl px-4 py-3 text-text-primary outline-none focus:border-accent-warm/50 transition-colors"
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <input
+                  type="number" value={durationMinutes} onChange={e => setDurationMinutes(e.target.value)}
+                  placeholder={t.tipForm.durationPlaceholder}
+                  min={1} max={999}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
           </div>
 
           {/* 설명 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.descriptionLabel}</label>
-            <textarea
-              value={description} onChange={e => setDescription(e.target.value)}
-              placeholder={t.tipForm.descriptionPlaceholder}
-              rows={3}
-              className="w-full bg-background-secondary border border-white/10 rounded-xl px-4 py-3 text-text-primary outline-none focus:border-accent-warm/50 transition-colors resize-none"
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3 !min-h-[100px] !items-start">
+              <textarea
+                value={description} onChange={e => setDescription(e.target.value)}
+                placeholder={t.tipForm.descriptionPlaceholder}
+                rows={3}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
           </div>
 
           {/* 단계 */}
@@ -355,21 +368,27 @@ export default function TipNewPage() {
                   )}
 
                   {/* 지시사항 */}
-                  <textarea
-                    value={step.instruction}
-                    onChange={e => updateStep(idx, 'instruction', e.target.value)}
-                    placeholder={t.tipForm.stepInstructionPlaceholder}
-                    rows={2}
-                    className="w-full bg-background-tertiary border border-white/5 rounded-xl px-3 py-2.5 text-sm text-text-primary outline-none focus:border-accent-warm/40 transition-colors resize-none mb-2"
-                  />
+                  <InputBoxWrapper className="!rounded-xl !px-3 !py-2.5 !min-h-[60px] !items-start mb-2">
+                    <textarea
+                      value={step.instruction}
+                      onChange={e => updateStep(idx, 'instruction', e.target.value)}
+                      placeholder={t.tipForm.stepInstructionPlaceholder}
+                      rows={2}
+                      className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm resize-none`}
+                      style={INPUT_INNER_STYLE}
+                    />
+                  </InputBoxWrapper>
 
                   {/* 팁 */}
-                  <input
-                    type="text" value={step.tip}
-                    onChange={e => updateStep(idx, 'tip', e.target.value)}
-                    placeholder={t.tipForm.stepTipPlaceholder}
-                    className="w-full bg-background-tertiary border border-white/5 rounded-xl px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-warm/40 transition-colors"
-                  />
+                  <InputBoxWrapper className="!rounded-xl !px-3 !py-2">
+                    <input
+                      type="text" value={step.tip}
+                      onChange={e => updateStep(idx, 'tip', e.target.value)}
+                      placeholder={t.tipForm.stepTipPlaceholder}
+                      className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+                      style={INPUT_INNER_STYLE}
+                    />
+                  </InputBoxWrapper>
                 </div>
               ))}
             </div>
@@ -385,12 +404,15 @@ export default function TipNewPage() {
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.tagsLabel}</label>
             <div className="flex gap-2 mb-2">
-              <input
-                type="text" value={tagInput} onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                placeholder={t.tipForm.tagPlaceholder}
-                className="flex-1 bg-background-secondary border border-white/10 rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent-warm/50 transition-colors"
-              />
+              <InputBoxWrapper className="flex-1 !bg-background-secondary !rounded-xl !px-4 !py-2.5">
+                <input
+                  type="text" value={tagInput} onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                  placeholder={t.tipForm.tagPlaceholder}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} text-sm`}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
               <button onClick={addTag} className="px-4 py-2.5 rounded-xl bg-background-secondary border border-white/10 text-sm hover:border-accent-warm/40 transition-colors">{t.tipForm.addTag}</button>
             </div>
             {tags.length > 0 && (

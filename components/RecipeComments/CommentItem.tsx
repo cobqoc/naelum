@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from '@/components/Common/LocalizedLink';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { CommentItemProps } from './types';
@@ -237,13 +238,15 @@ export default function CommentItem({
         {/* 댓글 내용 */}
         {isEditing ? (
           <div className="mb-3">
-            <textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="w-full bg-background-tertiary rounded-lg px-4 py-3 text-text-primary
-                         focus:outline-none focus:ring-2 focus:ring-2 focus:ring-accent-warm/50 resize-none"
-              rows={3}
-            />
+            <InputBoxWrapper className="!rounded-lg !px-4 !py-3 !min-h-[80px] !items-start">
+              <textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+                style={INPUT_INNER_STYLE}
+                rows={3}
+              />
+            </InputBoxWrapper>
             <div className="mt-2 flex gap-2">
               <button
                 onClick={handleSaveEdit}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { createClient } from '@/lib/supabase/client';
 
 interface RecipeReviewModalProps {
@@ -155,15 +156,18 @@ export default function RecipeReviewModal({
           <label className="block text-sm font-bold text-text-primary mb-2">
             리뷰 (선택사항)
           </label>
-          <textarea
-            value={review}
-            onChange={(e) => setReview(e.target.value)}
-            disabled={submitting}
-            placeholder="이 레시피에 대한 경험을 공유해주세요..."
-            className="w-full px-4 py-3 rounded-xl bg-background-tertiary text-text-primary placeholder-text-muted border border-white/5 focus:border-accent-warm focus:outline-none resize-none disabled:opacity-50"
-            rows={4}
-            maxLength={500}
-          />
+          <InputBoxWrapper className="!rounded-xl !px-4 !py-3 !min-h-[100px] !items-start">
+            <textarea
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              disabled={submitting}
+              placeholder="이 레시피에 대한 경험을 공유해주세요..."
+              className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none disabled:opacity-50`}
+              style={INPUT_INNER_STYLE}
+              rows={4}
+              maxLength={500}
+            />
+          </InputBoxWrapper>
           <p className="text-xs text-text-muted text-right mt-1">
             {review.length}/500
           </p>
