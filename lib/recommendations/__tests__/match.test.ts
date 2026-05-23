@@ -238,3 +238,89 @@ describe('computeRecipeMatch — 레시피↔냉장고 대조', () => {
     expect(r.missingCount).toBe(0)
   })
 })
+
+// is_optional 처리·recipe-specific substitutes·admin-promoted dynamic substitutes (2026-05-23)
+describe('computeRecipeMatch — is_optional·substitutes·extraGlobalSubstitutes', () => {
+  const noIds = new Set<string>()
+  const ri = (name: string, opts?: { id?: string; is_optional?: boolean; substitutes?: string[] }) => ({
+    ingredient_name: name,
+    ingredient_id: opts?.id ?? null,
+    is_optional: opts?.is_optional ?? false,
+    substitutes: opts?.substitutes ?? null,
+  })
+
+  it('is_optional=true 재료는 total/missing/matched에서 모두 제외', () => {
+    const r = computeRecipeMatch(['양파', '마늘'], noIds, [
+      ri('양파'),
+      ri('마늘'),
+      ri('청양고추', { is_optional: true }),
+    ])
+    expect(r.totalIngredients).toBe(2) // 청양고추 제외
+    expect(r.missingCount).toBe(0) // 청양고추는 부족 아님
+    expect(r.matchRate).toBe(100)
+    expect(r.ownedIngredientNames).toEqual(['양파', '마늘'])
+  })
+
+  it('is_optional 재료를 안 가져도 ready 판정', () => {
+    const r = computeRecipeMatch(['양파', '마늘'], noIds, [
+      ri('양파'),
+      ri('마늘'),
+      ri('파슬리', { is_optional: true }),
+    ])
+    expect(isReady(r)).toBe(true)
+  })
+
+  it('recipe-specific substitutes — 작성자 명시 대체재 인정', () => {
+    // 사용자는 페페론치노 보유. 레시피 재료 청양고추, 작성자가 substitutes=[페페론치노] 명시
+    const r = computeRecipeMatch(['페페론치노'], noIds, [
+      ri('청양고추', { substitutes: ['페페론치노', '풋고추'] }),
+    ])
+    expect(r.ownedIngredientNames).toHaveLength(0)
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '청양고추', via: '페페론치노' }])
+    expect(r.missingCount).toBe(0)
+    expect(r.matchedCount).toBe(1)
+  })
+
+  it('recipe-specific substitutes — 전역 매핑 없는 새 쌍도 인정', () => {
+    // 전역에 없는 매핑: 뉴 칠리(가상) → 청양고추. 작성자가 직접 적은 것
+    const r = computeRecipeMatch(['뉴칠리'], noIds, [
+      ri('청양고추', { substitutes: ['뉴칠리'] }),
+    ])
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '청양고추', via: '뉴칠리' }])
+  })
+
+  it('recipe-specific substitutes — 빈 배열·null은 영향 없음', () => {
+    const r1 = computeRecipeMatch([], noIds, [ri('양파', { substitutes: [] })])
+    expect(r1.missingCount).toBe(1)
+    const r2 = computeRecipeMatch([], noIds, [ri('양파', { substitutes: null as unknown as string[] })])
+    expect(r2.missingCount).toBe(1)
+  })
+
+  it('extraGlobalSubstitutes — admin-promoted 매핑 양방향 인정', () => {
+    // 어드민이 "콜리플라워 ↔ 브로콜리" 매핑 승격. row는 단방향이지만 호출처가 양방향 풀어줌.
+    const extras = new Map<string, Set<string>>([
+      ['콜리플라워', new Set(['브로콜리'])],
+      ['브로콜리', new Set(['콜리플라워'])],
+    ])
+    // 사용자 콜리플라워 보유 → 레시피의 브로콜리 대체 가능
+    const r = computeRecipeMatch(['콜리플라워'], noIds, [ri('브로콜리')], extras)
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '브로콜리', via: '콜리플라워' }])
+    expect(r.missingCount).toBe(0)
+  })
+
+  it('extraGlobalSubstitutes — 전역에 이미 있으면 그쪽 우선 (둘 다 substitutable)', () => {
+    const extras = new Map<string, Set<string>>()
+    // 까나리액젓 ↔ 멸치액젓은 이미 코드 상수에 있어 extras 없이도 풀림
+    const r = computeRecipeMatch(['까나리액젓'], noIds, [ri('멸치액젓')], extras)
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+  })
+
+  it('우선순위: 전역 INGREDIENT_SUBSTITUTES → recipe-specific → extras', () => {
+    // 사용자가 까나리액젓 보유. 레시피의 멸치액젓은 ① 전역에서 대체로 풀림.
+    // recipe-specific에 다른 매핑이 있어도 전역이 먼저.
+    const r = computeRecipeMatch(['까나리액젓'], noIds, [
+      ri('멸치액젓', { substitutes: ['엉뚱한대체재'] }),
+    ])
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+  })
+})

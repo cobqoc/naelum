@@ -307,6 +307,8 @@ export const fr = {
     ratingCookedCta: 'Vous avez cuisiné cette recette ! Laissez un avis.',
     timerDoneTitle: 'Minuteur terminé !',
     timerDoneBody: "Passez à l'étape suivante.",
+    ingredientOptional: 'Facultatif',
+    ingredientSubstituteOr: 'ou',
   },
   profile: {
     recipes: 'Recettes',
@@ -1051,6 +1053,8 @@ export const fr = {
     ingNotes: 'Notes',
     ingUnitPlaceholder: 'Unité',
     ingNotesPlaceholder: 'Notes (ex. haché, coupé)',
+    ingOptionalLabel: 'Facultatif',
+    ingSubstitutePlaceholder: 'Substituts (séparés par virgules): ex. pepperoncino, piment vert',
     ingNamePlaceholder1: 'ex. Porc',
     ingQuantityPlaceholder1: 'ex. 200',
     ingNotesPlaceholder1: 'ex. pour ragoût',

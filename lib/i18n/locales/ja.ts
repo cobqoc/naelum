@@ -307,6 +307,8 @@ export const ja = {
     ratingCookedCta: 'このレシピで料理しましたね！レビューを残しましょう。',
     timerDoneTitle: 'タイマー完了！',
     timerDoneBody: '次のステップに進んでください。',
+    ingredientOptional: 'オプション',
+    ingredientSubstituteOr: 'または',
   },
   profile: {
     recipes: 'レシピ',
@@ -1051,6 +1053,8 @@ export const ja = {
     ingNotes: 'メモ',
     ingUnitPlaceholder: '単位',
     ingNotesPlaceholder: 'メモ (例: 細かく切る)',
+    ingOptionalLabel: 'なくてもOK',
+    ingSubstitutePlaceholder: '代用食材 (カンマ区切り): 例) ペペロンチーノ、青唐辛子',
     ingNamePlaceholder1: '例: 豚肉',
     ingQuantityPlaceholder1: '例: 200',
     ingNotesPlaceholder1: '例: 鍋用、一口大',

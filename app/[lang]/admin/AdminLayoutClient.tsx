@@ -18,6 +18,7 @@ export default function AdminLayoutClient({ profile, children }: AdminLayoutClie
     { key: 'dashboard', label: '대시보드', icon: '📊', href: '/admin' },
     { key: 'users', label: '사용자 관리', icon: '👥', href: '/admin/users' },
     { key: 'recipes', label: '레시피 관리', icon: '🍳', href: '/admin/recipes' },
+    { key: 'substitutes', label: '대체 재료 제안', icon: '🔄', href: '/admin/substitute-suggestions' },
     { key: 'reports', label: '신고 관리', icon: '🚨', href: '/admin/reports' },
     { key: 'inquiries', label: '문의 관리', icon: '✉️', href: '/admin/inquiries' },
     { key: 'analytics', label: '통계', icon: '📈', href: '/admin/analytics' },

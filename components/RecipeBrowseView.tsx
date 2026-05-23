@@ -28,6 +28,8 @@ interface RecipeIngredient {
   quantity: string;
   unit: string;
   notes?: string;
+  is_optional?: boolean;
+  substitutes?: string[] | null;
 }
 
 interface RecipeStep {
@@ -145,11 +147,24 @@ export default function RecipeBrowseView({
     isFundamental(name) || fkOwnedNames.has(name) || userIngredients.some(ui => isSameIngredient(ui, name));
 
   // 대체 — 보유는 아니지만 가진 재료로 바꿔 쓸 수 있음. via(가진 재료명) 반환.
-  const findSubstitute = (name: string): string | null =>
-    userIngredients.find(ui => isSubstituteFor(ui, name)) ?? null;
+  // ① 전역 INGREDIENT_SUBSTITUTES → ② recipe-specific(작성자가 적은 substitutes 배열) 순서.
+  const findSubstitute = (name: string, recipeSpecific?: string[] | null): string | null => {
+    const globalVia = userIngredients.find(ui => isSubstituteFor(ui, name)) ?? null;
+    if (globalVia) return globalVia;
+    if (Array.isArray(recipeSpecific) && recipeSpecific.length > 0) {
+      const subsLC = recipeSpecific.map(s => s.toLowerCase().trim()).filter(Boolean);
+      return userIngredients.find(ui => {
+        const u = ui.toLowerCase().trim();
+        return subsLC.some(s => s === u || isSameIngredient(u, s));
+      }) ?? null;
+    }
+    return null;
+  };
 
-  const ownedCount = recipe.ingredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
-  const totalIngredients = recipe.ingredients.length;
+  // 매칭 카운트는 is_optional 재료를 제외하고 계산 ("선택" 재료는 보유 여부와 무관).
+  const requiredIngredients = recipe.ingredients.filter(i => !i.is_optional);
+  const ownedCount = requiredIngredients.filter(i => isIngredientOwned(i.ingredient_name)).length;
+  const totalIngredients = requiredIngredients.length;
 
   // 재료 양 배율 계산
   const scaleQty = (qty: string): string => {
@@ -615,22 +630,34 @@ export default function RecipeBrowseView({
             <div className="grid grid-cols-2 gap-2 pb-4">
               {recipe.ingredients.map((ing, idx) => {
                 const owned = isIngredientOwned(ing.ingredient_name);
-                const subVia = owned ? null : findSubstitute(ing.ingredient_name);
+                const subVia = owned ? null : findSubstitute(ing.ingredient_name, ing.substitutes);
                 const scaledQty = scaleQty(ing.quantity);
                 const converted = unitConv.convertIngredient(scaledQty, ing.unit);
                 const scaled = isScaling && scaledQty !== ing.quantity;
+                const isOptional = !!ing.is_optional;
+                // optional 재료는 부족 빨강이 아니라 회색 중성 (있어도 없어도 OK).
+                const borderClass = isOptional
+                  ? 'border-text-muted/20'
+                  : owned ? 'border-text-muted/30' : subVia ? 'border-warning/40' : 'border-error/30';
+                const nameColor = isOptional
+                  ? 'text-text-secondary'
+                  : owned ? 'text-text-primary' : subVia ? 'text-warning' : 'text-error';
+                const recipeSubsList = (ing.substitutes ?? []).map(s => s.trim()).filter(Boolean);
                 return (
                   <div
                     key={idx}
-                    className={`p-3 rounded-xl border-2 bg-background-tertiary ${
-                      owned ? 'border-text-muted/30' : subVia ? 'border-warning/40' : 'border-error/30'
-                    }`}
+                    className={`p-3 rounded-xl border-2 bg-background-tertiary ${borderClass}`}
                   >
-                    <span className={`text-sm font-medium ${
-                      owned ? 'text-text-primary' : subVia ? 'text-warning' : 'text-error'
-                    }`}>
-                      {ing.ingredient_name}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={`text-sm font-medium ${nameColor}`}>
+                        {ing.ingredient_name}
+                      </span>
+                      {isOptional && (
+                        <span className="inline-flex items-center rounded bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-bold text-text-muted">
+                          {t.recipe.ingredientOptional}
+                        </span>
+                      )}
+                    </div>
                     {subVia && (
                       <div className="mt-1 flex flex-wrap items-center gap-1">
                         <span className="inline-flex items-center gap-0.5 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold text-warning">
@@ -639,6 +666,13 @@ export default function RecipeBrowseView({
                         <span className="inline-flex items-center gap-0.5 text-xs font-medium text-success">
                           <span aria-hidden>✓</span>{subVia}
                         </span>
+                      </div>
+                    )}
+                    {/* 작성자가 명시한 대체재 — 보유 여부와 무관하게 항상 노출 (정보 제공) */}
+                    {recipeSubsList.length > 0 && (
+                      <div className="text-xs text-text-muted mt-1">
+                        <span className="text-text-muted/70">{t.recipe.ingredientSubstituteOr}</span>{' '}
+                        <span className="text-text-secondary">{recipeSubsList.join(', ')}</span>
                       </div>
                     )}
                     <div className="text-xs text-text-muted mt-0.5">
@@ -870,14 +904,16 @@ export default function RecipeBrowseView({
         />
       )}
 
-      {/* 냉장고 재료 비교 모달 — 재료 탭과 동일한 isIngredientOwned/findSubstitute 단일 판정 */}
+      {/* 냉장고 재료 비교 모달 — 재료 탭과 동일한 isIngredientOwned/findSubstitute 단일 판정.
+          is_optional 재료는 매칭에서 제외 (재료 탭의 ownedCount·totalIngredients와 일관) */}
       {showFridgeModal && (() => {
         const owned: string[] = [];
         const substituteItems: { ingredient: string; via: string }[] = [];
         const missing: string[] = [];
         for (const ing of recipe.ingredients) {
+          if (ing.is_optional) continue;
           if (isIngredientOwned(ing.ingredient_name)) { owned.push(ing.ingredient_name); continue; }
-          const via = findSubstitute(ing.ingredient_name);
+          const via = findSubstitute(ing.ingredient_name, ing.substitutes);
           if (via) substituteItems.push({ ingredient: ing.ingredient_name, via });
           else missing.push(ing.ingredient_name);
         }

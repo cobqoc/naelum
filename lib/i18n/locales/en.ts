@@ -307,6 +307,8 @@ export const en = {
     ratingCookedCta: "You've cooked this recipe! Leave a review.",
     timerDoneTitle: 'Timer done!',
     timerDoneBody: 'Proceed to the next step.',
+    ingredientOptional: 'Optional',
+    ingredientSubstituteOr: 'or',
   },
   profile: {
     recipes: 'Recipes',
@@ -1050,6 +1052,8 @@ export const en = {
     ingNotes: 'Notes',
     ingUnitPlaceholder: 'Unit',
     ingNotesPlaceholder: 'Notes (e.g. chopped, diced)',
+    ingOptionalLabel: 'Optional',
+    ingSubstitutePlaceholder: 'Substitutes (comma-separated): e.g. pepperoncino, green chili',
     ingNamePlaceholder1: 'e.g. Pork',
     ingQuantityPlaceholder1: 'e.g. 200',
     ingNotesPlaceholder1: 'e.g. for stew, bite-size',

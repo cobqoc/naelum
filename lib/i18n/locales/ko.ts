@@ -307,6 +307,8 @@ export const ko = {
     ratingCookedCta: '이 레시피로 요리했군요! 리뷰를 남겨보세요.',
     timerDoneTitle: '타이머 완료!',
     timerDoneBody: '다음 단계로 진행하세요.',
+    ingredientOptional: '선택',
+    ingredientSubstituteOr: '또는',
   },
   profile: {
     recipes: '레시피',
@@ -1051,6 +1053,8 @@ export const ko = {
     ingNotes: '메모',
     ingUnitPlaceholder: '단위',
     ingNotesPlaceholder: '메모 (예: 잘게 썬, 굵게 다진)',
+    ingOptionalLabel: '없어도 OK',
+    ingSubstitutePlaceholder: '대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추',
     ingNamePlaceholder1: '예: 돼지고기',
     ingQuantityPlaceholder1: '예: 200',
     ingNotesPlaceholder1: '예: 찌개용, 한입 크기로 준비',

@@ -307,6 +307,8 @@ export const it = {
     ratingCookedCta: 'Hai cucinato questa ricetta! Lascia una recensione.',
     timerDoneTitle: 'Timer terminato!',
     timerDoneBody: 'Procedi al passo successivo.',
+    ingredientOptional: 'Opzionale',
+    ingredientSubstituteOr: 'o',
   },
   profile: {
     recipes: 'Ricette',
@@ -1051,6 +1053,8 @@ export const it = {
     ingNotes: 'Note',
     ingUnitPlaceholder: 'Unità',
     ingNotesPlaceholder: 'Note (es. tritato, a cubetti)',
+    ingOptionalLabel: 'Opzionale',
+    ingSubstitutePlaceholder: 'Sostituti (separati da virgole): es. pepperoncino, peperoncino verde',
     ingNamePlaceholder1: 'es. Maiale',
     ingQuantityPlaceholder1: 'es. 200',
     ingNotesPlaceholder1: 'es. per stufato',
