@@ -331,7 +331,8 @@ export function computeRecipeMatch(
     ingredient_name: string;
     ingredient_id?: string | null;
     is_optional?: boolean;
-    substitutes?: string[] | null;
+    // legacy string[] 또는 신규 { name; note? }[] — 매칭은 name 만 본다(note 무시).
+    substitutes?: (string | { name?: string; note?: string })[] | null;
   }[],
   // 어드민 승격된 동적 매핑(ingredient_substitutes_global) — server-side에서만 사용.
   // 키·값 모두 소문자, 양방향 조회. 코드 상수 INGREDIENT_SUBSTITUTES와 동등 우선순위.
@@ -366,10 +367,10 @@ export function computeRecipeMatch(
     // 보유는 아니지만 대체 가능 — 어떤 user 재료로 바꿔 쓸지 기록.
     // ① 전역 INGREDIENT_SUBSTITUTES
     let via = userIngredientNames.find(ui => isSubstituteFor(ui, ri.ingredient_name.toLowerCase()))
-    // ② recipe-specific substitutes (작성자가 직접 명시)
+    // ② recipe-specific substitutes (작성자가 직접 명시) — legacy string[] / 신규 {name,note}[] 양형식 지원.
     if (!via && Array.isArray(ri.substitutes) && ri.substitutes.length > 0) {
       const subsLC = ri.substitutes
-        .map(s => s.toLowerCase().trim())
+        .map(s => (typeof s === 'string' ? s : (s?.name ?? '')).toLowerCase().trim())
         .filter(Boolean)
       via = userIngredientNames.find(ui => {
         const u = ui.toLowerCase().trim()

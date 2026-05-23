@@ -581,7 +581,7 @@ export const es = {
     vitaminC: 'Vitamina C',
     vitaminD: 'Vitamina D',
     niacin: 'Niacina',
-    section4Additional: 'Información adicional',
+    section4Additional: 'Dieta y nutrición',
   },
   quickAdd: {
     placeholder: 'p. ej. rúcula, trufa...',
@@ -1060,6 +1060,8 @@ export const es = {
     ingNotesPlaceholder: 'Notas (ej. picado, cortado)',
     ingOptionalLabel: 'Opcional',
     ingSubstitutePlaceholder: 'Añadir sustituto...',
+    ingSubstituteNoteHint: '+ ctd.',
+    ingSubstituteNotePlaceholder: 'ej: 1 cda',
     ingNamePlaceholder1: 'ej. Cerdo',
     ingQuantityPlaceholder1: 'ej. 200',
     ingNotesPlaceholder1: 'ej. para guiso, tamaño bocado',

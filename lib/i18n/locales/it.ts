@@ -581,7 +581,7 @@ export const it = {
     vitaminC: 'Vitamina C',
     vitaminD: 'Vitamina D',
     niacin: 'Niacina',
-    section4Additional: 'Info aggiuntive',
+    section4Additional: 'Dieta e nutrizione',
   },
   quickAdd: {
     placeholder: 'es. rucola, tartufo...',
@@ -1060,6 +1060,8 @@ export const it = {
     ingNotesPlaceholder: 'Note (es. tritato, a cubetti)',
     ingOptionalLabel: 'Opzionale',
     ingSubstitutePlaceholder: 'Aggiungi sostituto...',
+    ingSubstituteNoteHint: '+ qtà',
+    ingSubstituteNotePlaceholder: 'es. 1 cucchiaio',
     ingNamePlaceholder1: 'es. Maiale',
     ingQuantityPlaceholder1: 'es. 200',
     ingNotesPlaceholder1: 'es. per stufato',

@@ -191,7 +191,10 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         servings={recipe.servings}
         rating={recipe.average_rating}
         ratingsCount={recipe.ratings_count}
-        ingredients={recipe.ingredients.map(i => `${i.ingredient_name} ${i.quantity} ${i.unit}`.trim())}
+        ingredients={recipe.ingredients.map(i => {
+          const displayUnit = (i.unit && i.unit !== '선택') ? i.unit : '';
+          return `${i.ingredient_name} ${i.quantity} ${displayUnit}`.trim();
+        })}
         steps={recipe.steps.map(s => s.instruction)}
       />
       <RecipeDetailClient

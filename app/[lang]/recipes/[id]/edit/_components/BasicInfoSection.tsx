@@ -27,8 +27,6 @@ interface BasicInfoSectionProps {
   setDescription: (v: string) => void
   servings: number | ''
   setServings: (v: number | '') => void
-  prepTime: number | ''
-  setPrepTime: (v: number | '') => void
   cookTime: number | ''
   setCookTime: (v: number | '') => void
   difficulty: string
@@ -46,8 +44,6 @@ export default function BasicInfoSection({
   setDescription,
   servings,
   setServings,
-  prepTime,
-  setPrepTime,
   cookTime,
   setCookTime,
   difficulty,
@@ -89,7 +85,7 @@ export default function BasicInfoSection({
         </InputBoxWrapper>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-text-secondary">{tf.servings} <span className="text-text-muted text-xs">{tf.optional}</span></label>
           <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
@@ -98,20 +94,6 @@ export default function BasicInfoSection({
               value={servings}
               onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
               min="1"
-              placeholder={tf.optionalPlaceholder}
-              className={INPUT_INNER_COMFORTABLE_CLASS}
-              style={INPUT_INNER_STYLE}
-            />
-          </InputBoxWrapper>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-text-secondary">{tf.prepTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-          <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
-            <input
-              type="number"
-              value={prepTime}
-              onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
-              min="0"
               placeholder={tf.optionalPlaceholder}
               className={INPUT_INNER_COMFORTABLE_CLASS}
               style={INPUT_INNER_STYLE}

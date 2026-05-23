@@ -19,6 +19,7 @@ import RecipeFormFooter from './_components/RecipeFormFooter';
 import ThumbnailUploadField from './_components/ThumbnailUploadField';
 import DietaryOptionsField from './_components/DietaryOptionsField';
 import { computeAutoTags } from '@/lib/recipes/autoTags';
+import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
@@ -40,7 +41,6 @@ export default function NewRecipePage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [servings, setServings] = useState<number | ''>('');
-  const [prepTime, setPrepTime] = useState<number | ''>('');
   const [cookTime, setCookTime] = useState<number | ''>('');
   const [difficulty, setDifficulty] = useState('');
   const [cuisineType, setCuisineType] = useState('');
@@ -105,7 +105,7 @@ export default function NewRecipePage() {
   const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
   type AutosaveSnapshot = {
     title: string; description: string;
-    servings: number | ''; prepTime: number | ''; cookTime: number | '';
+    servings: number | ''; cookTime: number | '';
     difficulty: string; cuisineType: string; customCuisineType: string;
     dishType: string; customDishType: string;
     isVegetarian: boolean; isVegan: boolean; isGlutenFree: boolean;
@@ -117,14 +117,14 @@ export default function NewRecipePage() {
   const autosaveSnapshotRef = useRef<AutosaveSnapshot | null>(null);
 
   const autosaveData = useMemo<AutosaveSnapshot>(() => ({
-    title, description, servings, prepTime, cookTime, difficulty,
+    title, description, servings, cookTime, difficulty,
     cuisineType, customCuisineType, dishType, customDishType,
     isVegetarian, isVegan, isGlutenFree,
     showNutrition, calories, protein, carbs, fat, fiber, sodium,
     ingredients, steps, tags,
     thumbnailImage, ingredientsImage,
   }), [
-    title, description, servings, prepTime, cookTime, difficulty,
+    title, description, servings, cookTime, difficulty,
     cuisineType, customCuisineType, dishType, customDishType,
     isVegetarian, isVegan, isGlutenFree,
     showNutrition, calories, protein, carbs, fat, fiber, sodium,
@@ -151,7 +151,6 @@ export default function NewRecipePage() {
     setTitle(s.title || '');
     setDescription(s.description || '');
     setServings(s.servings ?? '');
-    setPrepTime(s.prepTime ?? '');
     setCookTime(s.cookTime ?? '');
     setDifficulty(s.difficulty || '');
     setCuisineType(s.cuisineType || '');
@@ -189,7 +188,7 @@ export default function NewRecipePage() {
     const loadRemixData = async () => {
       const { data: recipe } = await supabase
         .from('recipes')
-        .select('id, title, description, prep_time_minutes, cook_time_minutes, difficulty_level, servings, cuisine_type, dish_type, author_id, profiles:author_id(username)')
+        .select('id, title, description, cook_time_minutes, difficulty_level, servings, cuisine_type, dish_type, author_id, profiles:author_id(username)')
         .eq('id', remixId)
         .single();
 
@@ -211,7 +210,6 @@ export default function NewRecipePage() {
       setTitle(`리믹스: ${recipe.title}`);
       setDescription(recipe.description || '');
       setServings(recipe.servings || '');
-      setPrepTime(recipe.prep_time_minutes || '');
       setCookTime(recipe.cook_time_minutes || '');
       setDifficulty(recipe.difficulty_level || '');
       setCuisineType(recipe.cuisine_type || '');
@@ -224,7 +222,8 @@ export default function NewRecipePage() {
           unit: i.unit || '선택',
           notes: i.notes || '',
           is_optional: i.is_optional || false,
-          substitutes: Array.isArray(i.substitutes) ? (i.substitutes as string[]) : [],
+          // legacy string[] / 신규 {name,note?}[] — read boundary 에서 정규화 후 state 진입.
+          substitutes: normalizeSubstitutes(i.substitutes),
         })));
       }
 
@@ -284,7 +283,7 @@ export default function NewRecipePage() {
     }
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | string[]) => {
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     setIngredients(updated);
@@ -646,7 +645,6 @@ export default function NewRecipePage() {
           thumbnail_url: thumbnailImage,
           ingredients_image_url: ingredientsImage,
           servings: servings !== '' ? servings : null,
-          prep_time_minutes: prepTime !== '' ? prepTime : null,
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
           cuisine_type: cuisineType === 'other' && customCuisineType.trim() ? customCuisineType.trim() : cuisineType,
@@ -669,7 +667,7 @@ export default function NewRecipePage() {
             unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,
-            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
+            substitutes: i.substitutes ?? [],
           })),
           steps: validSteps.map(s => ({
             instruction: s.instruction.trim(),
@@ -722,7 +720,6 @@ export default function NewRecipePage() {
           thumbnail_url: thumbnailImage,
           ingredients_image_url: ingredientsImage,
           servings: servings !== '' ? servings : null,
-          prep_time_minutes: prepTime !== '' ? prepTime : null,
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
           cuisine_type: cuisineType === 'other' && customCuisineType.trim() ? customCuisineType.trim() : cuisineType,
@@ -744,7 +741,7 @@ export default function NewRecipePage() {
             unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,
-            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
+            substitutes: i.substitutes ?? [],
           })),
           steps: validSteps.map(s => ({
             instruction: s.instruction.trim(),
@@ -839,7 +836,6 @@ export default function NewRecipePage() {
             title={title} setTitle={setTitle}
             description={description} setDescription={setDescription}
             servings={servings} setServings={setServings}
-            prepTime={prepTime} setPrepTime={setPrepTime}
             cookTime={cookTime} setCookTime={setCookTime}
             difficulty={difficulty} setDifficulty={setDifficulty}
             cuisineType={cuisineType} setCuisineType={setCuisineType}
@@ -855,11 +851,10 @@ export default function NewRecipePage() {
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">2</span>
             {tf.section2Ingredients}
           </h2>
-          <p className="text-sm text-text-muted">{tf.ingredientsHint}</p>
 
           {/* 통합된 재료 준비 영역 — _components/IngredientsSection.tsx 로 추출
               (Strangler Fig). 상태·로직·ref·getPlaceholder 는 page 소유, 컴포넌트는
-              값+콜백만 받는 순수 표현. 부모는 <section>·h2·hint 유지. */}
+              값+콜백만 받는 순수 표현. 부모는 <section>·h2 유지. */}
           <IngredientsSection
             t={t}
             tf={tf}

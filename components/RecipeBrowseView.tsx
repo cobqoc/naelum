@@ -32,7 +32,8 @@ interface RecipeIngredient {
   unit: string;
   notes?: string;
   is_optional?: boolean;
-  substitutes?: string[] | null;
+  // legacy DB rows: string[] / 신규: { name; note? }[] — normalize 후 후자로 사용.
+  substitutes?: (string | { name?: string; note?: string })[] | null;
 }
 
 interface RecipeStep {
@@ -151,11 +152,14 @@ export default function RecipeBrowseView({
 
   // 대체 — 보유는 아니지만 가진 재료로 바꿔 쓸 수 있음. via(가진 재료명) 반환.
   // ① 전역 INGREDIENT_SUBSTITUTES → ② recipe-specific(작성자가 적은 substitutes 배열) 순서.
-  const findSubstitute = (name: string, recipeSpecific?: string[] | null): string | null => {
+  // recipeSpecific: legacy string[] / 신규 {name,note?}[] 양형식 지원 (note 무시, name 만 매칭).
+  const findSubstitute = (name: string, recipeSpecific?: (string | { name?: string; note?: string })[] | null): string | null => {
     const globalVia = userIngredients.find(ui => isSubstituteFor(ui, name)) ?? null;
     if (globalVia) return globalVia;
     if (Array.isArray(recipeSpecific) && recipeSpecific.length > 0) {
-      const subsLC = recipeSpecific.map(s => s.toLowerCase().trim()).filter(Boolean);
+      const subsLC = recipeSpecific
+        .map(s => (typeof s === 'string' ? s : (s?.name ?? '')).toLowerCase().trim())
+        .filter(Boolean);
       return userIngredients.find(ui => {
         const u = ui.toLowerCase().trim();
         return subsLC.some(s => s === u || isSameIngredient(u, s));
@@ -178,10 +182,24 @@ export default function RecipeBrowseView({
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
   };
 
-  // is_optional 재료 목록 + substitutes — 단계 본문 자동 highlight 용
+  // is_optional 재료 목록 + substitutes — 단계 본문 자동 highlight 용.
+  // substitutes 는 display 용 string[] 로 평탄화 (note 있으면 "name · note" 합쳐서).
   const optionalIngredients = recipe.ingredients
     .filter(i => i.is_optional)
-    .map(i => ({ name: i.ingredient_name, substitutes: i.substitutes ?? undefined }));
+    .map(i => ({
+      name: i.ingredient_name,
+      substitutes: Array.isArray(i.substitutes)
+        ? i.substitutes
+            .map(s => {
+              if (typeof s === 'string') return s.trim();
+              const name = (s?.name ?? '').trim();
+              if (!name) return '';
+              const note = (s?.note ?? '').trim();
+              return note ? `${name} · ${note}` : name;
+            })
+            .filter(Boolean)
+        : undefined,
+    }));
 
   const getEffectiveTimers = (step: RecipeStep): number[] => {
     const fromText = parseAllTimers(step.instruction);
@@ -640,7 +658,9 @@ export default function RecipeBrowseView({
                 const owned = isIngredientOwned(ing.ingredient_name);
                 const subVia = owned ? null : findSubstitute(ing.ingredient_name, ing.substitutes);
                 const scaledQty = scaleQty(ing.quantity);
-                const converted = unitConv.convertIngredient(scaledQty, ing.unit);
+                // unit '선택' sentinel 방어 — 옛 DB 행이 누수해도 화면에 노출 X
+                const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
+                const converted = unitConv.convertIngredient(scaledQty, displayUnit);
                 const scaled = isScaling && scaledQty !== ing.quantity;
                 const isOptional = !!ing.is_optional;
                 // optional 재료는 부족 빨강이 아니라 회색 중성 (있어도 없어도 OK).
@@ -650,47 +670,57 @@ export default function RecipeBrowseView({
                 const nameColor = isOptional
                   ? 'text-text-secondary'
                   : owned ? 'text-text-primary' : subVia ? 'text-warning' : 'text-error';
-                const recipeSubsList = (ing.substitutes ?? []).map(s => s.trim()).filter(Boolean);
+                // legacy string[] / 신규 {name,note}[] 어느 형식이든 display 문자열 배열로:
+                // note 있으면 "멸치 다시다 · 1큰술", 없으면 "멸치 다시다".
+                const recipeSubsList = (ing.substitutes ?? [])
+                  .map(s => {
+                    if (typeof s === 'string') return s.trim();
+                    const name = (s?.name ?? '').trim();
+                    if (!name) return '';
+                    const note = (s?.note ?? '').trim();
+                    return note ? `${name} · ${note}` : name;
+                  })
+                  .filter(Boolean);
+                const hasSubs = recipeSubsList.length > 0;
                 return (
                   <div
                     key={idx}
                     className={`p-3 rounded-xl border-2 bg-background-tertiary ${borderClass}`}
                   >
-                    {/* 재료명 + 옵션 배지 + 대체 가능 pill 같은 줄(flex-wrap) — 폭 따라 자동 wrap */}
+                    {/* 재료명 + (substitute chip inline OR optional 부속어) — 행동 가능 정보 우선 */}
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className={`text-sm font-medium ${nameColor}`}>
                         {ing.ingredient_name}
                       </span>
-                      {isOptional && (
-                        <span className="inline-flex items-center rounded bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-bold text-text-muted">
-                          {t.recipe.ingredientOptional}
-                        </span>
-                      )}
-                      {subVia && (
+                      {hasSubs && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
                           <SubstituteIndicator />
-                          <span aria-hidden className="text-success font-bold">✓</span>
-                          <span className="font-medium text-success">{subVia}</span>
+                          <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
+                          <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
+                          {subVia && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
+                        </span>
+                      )}
+                      {/* substitute 없는 optional 재료 — 재료명 옆 자리에 회색 부속어 */}
+                      {isOptional && !hasSubs && (
+                        <span className="text-xs text-text-secondary font-medium">
+                          · {t.recipe.ingredientOptional}
                         </span>
                       )}
                     </div>
-                    {/* 작성자가 명시한 대체재 — 보유 여부와 무관하게 항상 노출 (정보 제공) */}
-                    {recipeSubsList.length > 0 && (
-                      <div className="text-xs text-text-muted mt-1">
-                        <span className="text-text-muted/70">{t.recipe.ingredientSubstituteOr}</span>{' '}
-                        <span className="text-text-secondary">{recipeSubsList.join(', ')}</span>
-                      </div>
-                    )}
                     <div className="text-xs text-text-muted mt-0.5">
                       {converted.isConverted ? (
                         <>
                           <span className="text-info font-medium">{converted.quantity} {converted.unit}</span>
-                          <span className="text-text-muted/60 ml-1">({ing.quantity} {ing.unit})</span>
+                          <span className="text-text-muted/60 ml-1">({ing.quantity} {displayUnit})</span>
                         </>
                       ) : scaled ? (
-                        <span className="text-accent-warm font-medium">{scaledQty} {ing.unit}</span>
+                        <span className="text-accent-warm font-medium">{scaledQty} {displayUnit}</span>
                       ) : (
-                        <>{ing.quantity} {ing.unit}</>
+                        <>{ing.quantity} {displayUnit}</>
+                      )}
+                      {/* substitute 있는 optional 재료 — 양 줄 끝 부속 (substitute chip이 prominent 자리 차지) */}
+                      {isOptional && hasSubs && (
+                        <span className="text-text-secondary font-medium ml-1">· {t.recipe.ingredientOptional}</span>
                       )}
                     </div>
                     {ing.notes && (

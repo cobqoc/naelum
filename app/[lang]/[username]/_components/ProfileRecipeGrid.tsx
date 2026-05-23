@@ -150,8 +150,8 @@ export default function ProfileRecipeGrid({
               <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary mb-2">
                 <span>⭐ {(recipe.average_rating ?? 0).toFixed(1)}</span>
                 <span>👁️ {recipe.views_count ?? 0}</span>
-                {recipe.prep_time_minutes && recipe.cook_time_minutes && (
-                  <span>⏱️ {recipe.prep_time_minutes + recipe.cook_time_minutes}{t.profile.minuteSuffix}</span>
+                {(recipe.prep_time_minutes || recipe.cook_time_minutes) && (
+                  <span>⏱️ {(recipe.prep_time_minutes ?? 0) + (recipe.cook_time_minutes ?? 0)}{t.profile.minuteSuffix}</span>
                 )}
                 {recipe.difficulty_level && (
                   <span>

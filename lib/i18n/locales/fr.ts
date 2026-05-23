@@ -581,7 +581,7 @@ export const fr = {
     vitaminC: 'Vitamine C',
     vitaminD: 'Vitamine D',
     niacin: 'Niacine',
-    section4Additional: 'Infos supplémentaires',
+    section4Additional: 'Régime et nutrition',
   },
   quickAdd: {
     placeholder: 'ex. roquette, truffe...',
@@ -1060,6 +1060,8 @@ export const fr = {
     ingNotesPlaceholder: 'Notes (ex. haché, coupé)',
     ingOptionalLabel: 'Facultatif',
     ingSubstitutePlaceholder: 'Ajouter un substitut...',
+    ingSubstituteNoteHint: '+ qté',
+    ingSubstituteNotePlaceholder: 'ex: 1 c. à s.',
     ingNamePlaceholder1: 'ex. Porc',
     ingQuantityPlaceholder1: 'ex. 200',
     ingNotesPlaceholder1: 'ex. pour ragoût',

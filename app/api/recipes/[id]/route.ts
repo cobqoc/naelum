@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/api/auth';
+import { normalizeSubstitutes } from '@/lib/recipes/substituteChips';
+
+// PUT boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
+function normalizeSubstitutesForStorage(raw: unknown): unknown[] | null {
+  const list = normalizeSubstitutes(raw);
+  return list.length > 0 ? list : null;
+}
 
 // GET /api/recipes/[id] - 레시피 상세 조회
 export async function GET(
@@ -108,7 +115,7 @@ export async function PUT(
       }
 
       if (ingredients.length > 0) {
-        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean; substitutes?: string[] | null }, index: number) => ({
+        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }, index: number) => ({
           recipe_id: recipeId,
           ingredient_name: ing.ingredient_name,
           ingredient_id: ing.ingredient_id || null,
@@ -116,7 +123,7 @@ export async function PUT(
           unit: ing.unit,
           notes: ing.notes,
           is_optional: ing.is_optional || false,
-          substitutes: Array.isArray(ing.substitutes) && ing.substitutes.length > 0 ? ing.substitutes : null,
+          substitutes: normalizeSubstitutesForStorage(ing.substitutes),
           display_order: index + 1
         }));
 

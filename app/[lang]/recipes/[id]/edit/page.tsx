@@ -16,6 +16,7 @@ import BasicInfoSection from './_components/BasicInfoSection';
 import NutritionFields from './_components/NutritionFields';
 import IngredientsSection from './_components/IngredientsSection';
 import StepsSection from './_components/StepsSection';
+import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -36,7 +37,6 @@ export default function EditRecipePage(props: PageProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [servings, setServings] = useState<number | ''>('');
-  const [prepTime, setPrepTime] = useState<number | ''>('');
   const [cookTime, setCookTime] = useState<number | ''>('');
   const [difficulty, setDifficulty] = useState('');
   const [cuisineType, setCuisineType] = useState('korean');
@@ -151,7 +151,6 @@ export default function EditRecipePage(props: PageProps) {
         setTitle(recipeData.title || '');
         setDescription(recipeData.description || '');
         setServings(recipeData.servings ?? '');
-        setPrepTime(recipeData.prep_time_minutes ?? '');
         setCookTime(recipeData.cook_time_minutes ?? '');
         setDifficulty(recipeData.difficulty_level || '');
         setCuisineType(recipeData.cuisine_type || 'korean');
@@ -182,7 +181,7 @@ export default function EditRecipePage(props: PageProps) {
             unit: ing.unit || '선택',
             notes: ing.notes || '',
             is_optional: ing.is_optional || false,
-            substitutes: Array.isArray(ing.substitutes) ? (ing.substitutes as string[]) : [],
+            substitutes: normalizeSubstitutes(ing.substitutes),
           }));
           setIngredients(loadedIngredients);
         }
@@ -237,7 +236,7 @@ export default function EditRecipePage(props: PageProps) {
     }
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | string[]) => {
+  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => {
     const updated = [...ingredients];
     updated[index] = { ...updated[index], [field]: value };
     setIngredients(updated);
@@ -571,7 +570,6 @@ export default function EditRecipePage(props: PageProps) {
           thumbnail_url: thumbnailImage,
           ingredients_image_url: ingredientsImage,
           servings: servings !== '' ? servings : null,
-          prep_time_minutes: prepTime !== '' ? prepTime : null,
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
           cuisine_type: cuisineType,
@@ -590,10 +588,10 @@ export default function EditRecipePage(props: PageProps) {
             ingredient_name: i.ingredient_name.trim(),
             ingredient_id: i.ingredient_id ?? null,
             quantity: parseFloat(i.quantity) || null,
-            unit: i.unit,
+            unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,
-            substitutes: (i.substitutes ?? []).map(s => s.trim()).filter(Boolean),
+            substitutes: i.substitutes ?? [],
           })),
           steps: validSteps.map(s => ({
             title: s.title?.trim() || null,
@@ -654,8 +652,6 @@ export default function EditRecipePage(props: PageProps) {
           setDescription={setDescription}
           servings={servings}
           setServings={setServings}
-          prepTime={prepTime}
-          setPrepTime={setPrepTime}
           cookTime={cookTime}
           setCookTime={setCookTime}
           difficulty={difficulty}
@@ -670,7 +666,6 @@ export default function EditRecipePage(props: PageProps) {
             <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">2</span>
             {tf.section2Ingredients}
           </h2>
-          <p className="text-sm text-text-muted">{tf.ingredientsHint}</p>
 
           {/* 통합된 재료 준비 영역 — _components/IngredientsSection.tsx 로 추출
               (edit 전용: 삭제 임계 <=1·focus ring 보존, JSX byte-identical) */}
