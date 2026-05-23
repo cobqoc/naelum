@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, type KeyboardEvent } from 'react';
 import { addSubstituteChip, removeSubstituteChipAt } from '@/lib/recipes/substituteChips';
+import InputBoxWrapper from '@/components/UI/InputBoxWrapper';
 
 interface SubstituteChipInputProps {
   value: string[];
@@ -83,12 +84,8 @@ export default function SubstituteChipInput({
   };
 
   return (
-    <div
-      // SearchBar 패턴 차용 — 자식 input 의 user-agent default border/outline 이
-      // 다크모드에서 visible 이라 박스 두 줄로 보이는 회귀. overflow-hidden + 자식
-      // 모두에 !border-0 강제 + ring 으로 단일 line 보장. focus-within 시 amber ring.
-      className="flex flex-wrap items-center gap-1.5 min-h-[34px] rounded-md bg-background-tertiary px-2 py-1.5 cursor-text overflow-hidden transition-all ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-accent-warm [&>*]:!border-0 [&>*]:!border-l-0 [&>*]:!border-r-0"
-      style={{ border: 'none' }}
+    <InputBoxWrapper
+      className="flex-wrap gap-1.5"
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-xs text-warning shrink-0" aria-hidden>
@@ -147,6 +144,6 @@ export default function SubstituteChipInput({
         aria-label={ariaLabel}
         className="flex-1 min-w-[80px] bg-transparent text-xs text-text-primary placeholder:text-text-muted/60 !outline-none !border-0 !border-none"
       />
-    </div>
+    </InputBoxWrapper>
   );
 }

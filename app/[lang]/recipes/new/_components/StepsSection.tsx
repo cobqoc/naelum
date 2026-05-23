@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { type RecipeStep as Step } from '@/lib/constants/recipe';
+import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/components/UI/InputBoxWrapper';
 
 /**
  * 레시피 작성 폼의 조리 단계 입력 블록 (presentational).
@@ -70,20 +71,26 @@ export default function StepsSection({
             )}
           </div>
 
-          <textarea
-            value={step.instruction}
-            onChange={(e) => onUpdateStep(index, 'instruction', e.target.value)}
-            className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm min-h-[120px] resize-none"
-            placeholder={tf.stepInstructionPlaceholder}
-          />
+          <InputBoxWrapper className="!min-h-[120px] !items-start !px-4 !py-3">
+            <textarea
+              value={step.instruction}
+              onChange={(e) => onUpdateStep(index, 'instruction', e.target.value)}
+              className={`${INPUT_INNER_CLASS} min-h-[100px] resize-none`}
+              style={INPUT_INNER_STYLE}
+              placeholder={tf.stepInstructionPlaceholder}
+            />
+          </InputBoxWrapper>
 
-          <input
-            type="text"
-            value={step.tip}
-            onChange={(e) => onUpdateStep(index, 'tip', e.target.value)}
-            className="w-full rounded-lg bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm text-sm"
-            placeholder={tf.stepTipPlaceholder}
-          />
+          <InputBoxWrapper className="!px-4 !py-3">
+            <input
+              type="text"
+              value={step.tip}
+              onChange={(e) => onUpdateStep(index, 'tip', e.target.value)}
+              className={INPUT_INNER_CLASS}
+              style={INPUT_INNER_STYLE}
+              placeholder={tf.stepTipPlaceholder}
+            />
+          </InputBoxWrapper>
 
           {/* 이미지 업로드 */}
           <div className="space-y-2">

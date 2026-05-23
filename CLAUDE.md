@@ -1149,6 +1149,16 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **레시피 폼 input 통일 — `InputBoxWrapper` 공통 컴포넌트** — 완료 (2026-05-24, develop 푸시)
+  - **사용자 요청**: 카드 안 메모·수량·단위 input들이 SubstituteChipInput와 시각이 달라 일관성 없음. SearchBar 패턴으로 통일
+  - **시도1·2·3·4 실패의 진단**: 같은 className 복붙해도 wrapper마다 `focus-within:ring-color` 갱신 결과 *다름*. DOM 검사로 *CSS variable 은 `#f96`로 갱신되지만 `box-shadow rule 자체*가 재평가 안 되는 wrapper 발견. 원인: Tailwind 4 의 JIT CSS 가 wrapper 마다 *다른 cascade order* 로 생성. className 동등성으론 부족
+  - **근본 해결 — `components/UI/InputBoxWrapper.tsx` 단일 진실 소스 신설**: SubstituteChipInput 와 *완전 동일한* className·style 을 한 컴포넌트에 고정. 모든 호출처가 이 wrapper 사용. cascade order 차이 차단
+  - **API**: `<InputBoxWrapper className="flex-1 ..." onClick={...}>{children}</InputBoxWrapper>` + 자식용 `INPUT_INNER_CLASS`·`INPUT_INNER_STYLE` 상수 export. 기존 호출은 `<input>` `<select>` `<textarea>` 를 wrapper 로 감싸기만 하면 됨
+  - **적용 범위**: new/edit `IngredientsSection` (재료명·수량·단위·메모) + new/edit `StepsSection` (단계제목·instruction·tip) + `SubstituteChipInput` refactor (자체 wrapper 제거 후 InputBoxWrapper 사용)
+  - **자동완성 input (`RecipeIngredientInput` → `Autocomplete`)은 의도적 미적용**: 이미 SearchBar 패턴 자체 사용 + autocomplete dropdown 동반의 *기능적 prominent* 디자인 의도. 통일하려면 prop chain 길어지고 다른 사용처(검색·홈·모달 등) 영향
+  - **e2e 회귀 0**: recipe-creation·recipe-edit·recipe-optional-substitutes 28/28 통과. vitest 235 통과
+  - **교훈 ([[feedback-tailwind-4-css-cascade-trap]])**: Tailwind 4 의 동일 className 가 *위치(파일/순서)에 따라* 다르게 cascade 됨. 패턴 복붙보다 *공통 컴포넌트로 추출*해서 단일 출처 만들기. SearchBar 패턴 같은 핵심 utility 조합은 *컴포넌트화*가 안전
+  - 검증: lint 0 errors · build · vitest 20 files **235 passed** · e2e 28/28 · claude-in-chrome 시각 캡쳐 (메모·수량·단위·instruction·tip 모두 focus 시 amber outline 단일 line)
 - **chip input SearchBar 패턴 적용 + 매칭 표시 한 줄 통합** — 완료 (2026-05-24, develop 푸시)
   - **문제 (사용자 직접 발견)**: 직전 PR #127 후 2가지 잔존
     - ① **chip input 박스 이중 여전** — `border` (1px) 로 바꿨는데도 박스 두 줄로 보임. 사용자 힌트: "예전에 홈페이지 검색바 만들 때도 비슷한 문제 있었음. 검색바 스타일 참고해봐"

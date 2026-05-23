@@ -6,6 +6,7 @@ import { UNITS, type RecipeIngredient as Ingredient } from '@/lib/constants/reci
 import RecipeIngredientInput from '@/components/Recipes/RecipeIngredientInput';
 import SubstituteChipInput from '@/components/Recipes/SubstituteChipInput';
 import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
+import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/components/UI/InputBoxWrapper';
 
 /**
  * 레시피 작성 폼의 재료 준비 블록 (presentational).
@@ -150,47 +151,54 @@ export default function IngredientsSection({
                   onSelect={(item) => onSelectIngredient(index, item)}
                   placeholder={getPlaceholder(index, 'name')}
                 />
-                <input
-                  type="text"
-                  value={ing.quantity}
-                  onChange={(e) => onUpdateIngredient(index, 'quantity', e.target.value)}
-                  className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                  placeholder={getPlaceholder(index, 'quantity')}
-                />
-                {isCustomUnit ? (
+                <InputBoxWrapper>
                   <input
-                    ref={(el) => { unitInputRefs.current[index] = el; }}
                     type="text"
-                    value={ing.unit}
-                    onChange={(e) => onUpdateIngredient(index, 'unit', e.target.value)}
-                    onBlur={(e) => {
-                      if (e.target.value === '') {
-                        onUpdateIngredient(index, 'unit', '선택');
-                      }
-                    }}
-                    className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                    placeholder={tf.ingUnitPlaceholder}
+                    value={ing.quantity}
+                    onChange={(e) => onUpdateIngredient(index, 'quantity', e.target.value)}
+                    className={INPUT_INNER_CLASS}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={getPlaceholder(index, 'quantity')}
                   />
-                ) : (
-                  <select
-                    value={ing.unit}
-                    onChange={(e) => {
-                      if (e.target.value === '기타') {
-                        onUpdateIngredient(index, 'unit', '');
-                        setTimeout(() => {
-                          unitInputRefs.current[index]?.focus();
-                        }, 0);
-                      } else {
-                        onUpdateIngredient(index, 'unit', e.target.value);
-                      }
-                    }}
-                    className="w-full rounded-lg bg-background-tertiary px-1 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                  >
-                    {UNITS.map(u => (
-                      <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
-                    ))}
-                  </select>
-                )}
+                </InputBoxWrapper>
+                <InputBoxWrapper>
+                  {isCustomUnit ? (
+                    <input
+                      ref={(el) => { unitInputRefs.current[index] = el; }}
+                      type="text"
+                      value={ing.unit}
+                      onChange={(e) => onUpdateIngredient(index, 'unit', e.target.value)}
+                      onBlur={(e) => {
+                        if (e.target.value === '') {
+                          onUpdateIngredient(index, 'unit', '선택');
+                        }
+                      }}
+                      className={INPUT_INNER_CLASS}
+                      style={INPUT_INNER_STYLE}
+                      placeholder={tf.ingUnitPlaceholder}
+                    />
+                  ) : (
+                    <select
+                      value={ing.unit}
+                      onChange={(e) => {
+                        if (e.target.value === '기타') {
+                          onUpdateIngredient(index, 'unit', '');
+                          setTimeout(() => {
+                            unitInputRefs.current[index]?.focus();
+                          }, 0);
+                        } else {
+                          onUpdateIngredient(index, 'unit', e.target.value);
+                        }
+                      }}
+                      className={INPUT_INNER_CLASS}
+                      style={INPUT_INNER_STYLE}
+                    >
+                      {UNITS.map(u => (
+                        <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
+                      ))}
+                    </select>
+                  )}
+                </InputBoxWrapper>
                 {/* "없어도 OK" 토글 — native checkbox 는 다크모드에서 unchecked/checked 시각
                     구분 약함. button + SVG check 으로 ON/OFF 상태 분명하게.
                     카드 amber 강조 제거 후 토글 자체가 is_optional 의 유일한 시각 신호.
@@ -248,13 +256,16 @@ export default function IngredientsSection({
                   이전 `sm:flex-row` 는 640px 미만에서 강제 stack 이라 ~520px 모바일에서도
                   사용자 기대(같은 줄) 위반. flex-wrap 으로 폭 따라 자동. */}
               <div className="flex flex-row flex-wrap gap-2">
-                <input
-                  type="text"
-                  value={ing.notes}
-                  onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
-                  className="flex-1 min-w-[160px] rounded-md bg-background-tertiary px-3 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
-                  placeholder={getPlaceholder(index, 'notes')}
-                />
+                <InputBoxWrapper className="flex-1 min-w-[160px]">
+                  <input
+                    type="text"
+                    value={ing.notes}
+                    onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
+                    className={`${INPUT_INNER_CLASS} text-xs`}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={getPlaceholder(index, 'notes')}
+                  />
+                </InputBoxWrapper>
                 <div className="flex-1 min-w-[160px]">
                   <SubstituteChipInput
                     value={ing.substitutes ?? []}
