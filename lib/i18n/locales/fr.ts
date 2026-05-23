@@ -309,7 +309,7 @@ export const fr = {
     timerDoneBody: "Passez à l'étape suivante.",
     ingredientOptional: 'Facultatif',
     ingredientSubstituteOr: 'ou',
-    optionalBadgeTooltip: '{name} est facultatif',
+    optionalBadgeTooltip: 'Vous pouvez le faire sans {name}',
     optionalBadgeOr: 'Ou:',
     optionalBadgeAria: 'Voir l\'info ingrédient facultatif',
     substituteBadgeTooltip: 'Vous pouvez substituer avec ce que vous avez',

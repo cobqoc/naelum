@@ -309,7 +309,7 @@ export const es = {
     timerDoneBody: 'Continúa con el siguiente paso.',
     ingredientOptional: 'Opcional',
     ingredientSubstituteOr: 'o',
-    optionalBadgeTooltip: '{name} es opcional',
+    optionalBadgeTooltip: 'Puedes hacerlo sin {name}',
     optionalBadgeOr: 'O:',
     optionalBadgeAria: 'Ver info de ingrediente opcional',
     substituteBadgeTooltip: 'Puedes sustituir con lo que tienes',
