@@ -779,12 +779,13 @@ export default function RecipeBrowseView({
                           tok.type === 'text' ? (
                             <span key={i}>{tok.value}</span>
                           ) : (
-                            // 재료명은 본문 흐름(본문색), (선택) 배지만 amber + hover/tap tooltip 으로 안내.
-                            // 모든 멘션에 배지 — "단계 1 먼저 봤을 것" 가정 fragile
-                            <span key={i}>
-                              {tok.matchedText}
-                              <OptionalIngredientBadge substitutes={tok.substitutes} />
-                            </span>
+                            // 재료명 자체를 underline + ⓘ 로 강조 (별도 배지 X) → 본문 흐름 자연.
+                            // hover/tap 시 tooltip 으로 "없어도 OK" + substitutes 안내.
+                            <OptionalIngredientBadge
+                              key={i}
+                              name={tok.matchedText}
+                              substitutes={tok.substitutes}
+                            />
                           )
                         )}
                       </p>

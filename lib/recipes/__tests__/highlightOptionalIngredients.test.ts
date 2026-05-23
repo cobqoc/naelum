@@ -62,10 +62,17 @@ describe('tokenizeStepText — 부분문자열 오매칭 차단', () => {
 });
 
 describe('tokenizeStepText — 동의어 매칭', () => {
-  it('"대파" optional → 본문 "파" 매칭', () => {
+  it('"대파" optional → 본문 "파" 단독은 매칭 안 됨 (1글자 동의어 합성어 false positive 차단)', () => {
+    // 2026-05-24 fix: "파" 같은 1글자 동의어는 합성어("파고명"·"파전" 등) 에서
+    // false positive 유발해 후보에서 제외. 작성자가 일관되게 "대파" 풀텍스트 적을 가능성 높음.
     const tokens = tokenizeStepText('파를 송송 썰어주세요.', [daepa], new Set());
+    expect(tokens.every(t => t.type === 'text')).toBe(true);
+  });
+
+  it('"대파" optional → 본문 "대파" 는 매칭 (원본 form 유지)', () => {
+    const tokens = tokenizeStepText('대파를 송송 썰어주세요.', [daepa], new Set());
     const optionalToken = tokens.find(t => t.type === 'optional');
-    expect(optionalToken).toMatchObject({ matchedText: '파', ingredientName: '대파' });
+    expect(optionalToken).toMatchObject({ matchedText: '대파', ingredientName: '대파' });
   });
 
   it('"마늘" optional → 본문 "다진마늘" 매칭 (alias)', () => {
