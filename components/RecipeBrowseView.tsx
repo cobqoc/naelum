@@ -666,12 +666,12 @@ export default function RecipeBrowseView({
                       )}
                     </div>
                     {subVia && (
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        <span className="inline-flex items-center gap-0.5 rounded bg-warning/20 px-1.5 py-0.5 text-[10px] font-bold text-warning">
-                          🔄 {t.recipe.fridgeModalSubstitute}
-                        </span>
-                        <span className="inline-flex items-center gap-0.5 text-xs font-medium text-success">
-                          <span aria-hidden>✓</span>{subVia}
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
+                          <span aria-hidden className="text-success font-bold">✓</span>
+                          <span className="font-medium text-success">{subVia}</span>
+                          <span className="text-warning/60">·</span>
+                          <span className="text-warning font-medium">{t.recipe.fridgeModalSubstitute}</span>
                         </span>
                       </div>
                     )}

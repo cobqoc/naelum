@@ -84,9 +84,11 @@ export default function SubstituteChipInput({
 
   return (
     <div
-      // border (1px) 항상 + 색만 변경 → 단일 line 보장. border-2 는 시각적으로 두 line 처럼 보임
-      // (실제 DOM 은 single border 지만 폭 2px + small rounded 가 box-in-box 시각 효과 유발).
-      className="flex flex-wrap items-center gap-1.5 min-h-[34px] rounded-md bg-background-tertiary px-2 py-1.5 border border-white/10 focus-within:border-accent-warm transition-colors cursor-text"
+      // SearchBar 패턴 차용 — 자식 input 의 user-agent default border/outline 이
+      // 다크모드에서 visible 이라 박스 두 줄로 보이는 회귀. overflow-hidden + 자식
+      // 모두에 !border-0 강제 + ring 으로 단일 line 보장. focus-within 시 amber ring.
+      className="flex flex-wrap items-center gap-1.5 min-h-[34px] rounded-md bg-background-tertiary px-2 py-1.5 cursor-text overflow-hidden transition-all ring-1 ring-white/10 focus-within:ring-2 focus-within:ring-accent-warm [&>*]:!border-0 [&>*]:!border-l-0 [&>*]:!border-r-0"
+      style={{ border: 'none' }}
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-xs text-warning shrink-0" aria-hidden>
@@ -115,6 +117,8 @@ export default function SubstituteChipInput({
         ref={inputRef}
         type="text"
         value={draft}
+        // SearchBar 패턴: outline/border 강제 0 (inline style + Tailwind important)
+        style={{ border: 'none', borderLeft: 'none', borderRight: 'none', outline: 'none' }}
         onCompositionStart={() => {
           composingRef.current = true;
         }}
@@ -141,7 +145,7 @@ export default function SubstituteChipInput({
         }}
         placeholder={value.length === 0 ? placeholder : ''}
         aria-label={ariaLabel}
-        className="flex-1 min-w-[80px] bg-transparent text-xs text-text-primary placeholder:text-text-muted/60 outline-none"
+        className="flex-1 min-w-[80px] bg-transparent text-xs text-text-primary placeholder:text-text-muted/60 !outline-none !border-0 !border-none"
       />
     </div>
   );
