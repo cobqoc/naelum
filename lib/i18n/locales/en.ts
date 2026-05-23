@@ -580,7 +580,7 @@ export const en = {
     vitaminC: 'Vitamin C',
     vitaminD: 'Vitamin D',
     niacin: 'Niacin',
-    section4Additional: 'Additional info',
+    section4Additional: 'Diet & Nutrition',
   },
   quickAdd: {
     placeholder: 'e.g. arugula, truffle...',
@@ -1059,6 +1059,8 @@ export const en = {
     ingNotesPlaceholder: 'Notes (e.g. chopped, diced)',
     ingOptionalLabel: 'Optional',
     ingSubstitutePlaceholder: 'Add substitute...',
+    ingSubstituteNoteHint: '+ qty',
+    ingSubstituteNotePlaceholder: 'e.g. 1 tbsp',
     ingNamePlaceholder1: 'e.g. Pork',
     ingQuantityPlaceholder1: 'e.g. 200',
     ingNotesPlaceholder1: 'e.g. for stew, bite-size',

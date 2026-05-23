@@ -34,14 +34,15 @@ export async function attachFridgeMatch<T extends { id: string }>(
     .select('recipe_id, ingredient_name, ingredient_id, is_optional, substitutes')
     .in('recipe_id', recipes.map(r => r.id))
 
-  const byRecipe = new Map<string, { ingredient_name: string; ingredient_id: string | null; is_optional?: boolean; substitutes?: string[] | null }[]>()
+  const byRecipe = new Map<string, { ingredient_name: string; ingredient_id: string | null; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }[]>()
   for (const row of riRows ?? []) {
     const arr = byRecipe.get(row.recipe_id) ?? []
     arr.push({
       ingredient_name: row.ingredient_name,
       ingredient_id: row.ingredient_id,
       is_optional: row.is_optional ?? false,
-      substitutes: Array.isArray(row.substitutes) ? (row.substitutes as string[]) : null,
+      // legacy string[] / 신규 객체[] — computeRecipeMatch 가 두 형식 모두 처리.
+      substitutes: Array.isArray(row.substitutes) ? (row.substitutes as (string | { name?: string; note?: string })[]) : null,
     })
     byRecipe.set(row.recipe_id, arr)
   }

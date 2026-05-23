@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { parsePagination } from '@/lib/api/pagination'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { normalizeSubstitutes } from '@/lib/recipes/substituteChips'
+
+// 저장 boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
+// 빈 배열은 NULL 로 (jsonb 행 깔끔 유지).
+function normalizeSubstitutesForStorage(raw: unknown): unknown[] | null {
+  const list = normalizeSubstitutes(raw)
+  return list.length > 0 ? list : null
+}
 
 // GET /api/recipes - 레시피 목록 조회
 export async function GET(request: NextRequest) {
@@ -122,7 +130,7 @@ export async function POST(request: NextRequest) {
 
   // 재료 추가
   if (ingredients && ingredients.length > 0) {
-    const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: number; unit: string; notes?: string; is_optional?: boolean; substitutes?: string[] | null }, index: number) => ({
+    const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: number; unit: string; notes?: string; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }, index: number) => ({
       recipe_id: recipe.id,
       ingredient_name: ing.ingredient_name,
       ingredient_id: ing.ingredient_id || null,
@@ -130,7 +138,7 @@ export async function POST(request: NextRequest) {
       unit: ing.unit,
       notes: ing.notes,
       is_optional: ing.is_optional || false,
-      substitutes: Array.isArray(ing.substitutes) && ing.substitutes.length > 0 ? ing.substitutes : null,
+      substitutes: normalizeSubstitutesForStorage(ing.substitutes),
       display_order: index + 1
     }))
 

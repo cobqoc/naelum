@@ -64,16 +64,18 @@ test.describe('레시피 선택 재료·대체 재료', () => {
       const getRes = await page.request.get(`/api/recipes/${recipe.id}`)
       expect(getRes.ok()).toBeTruthy()
       const body = await getRes.json()
+      // legacy string[] 입력 → DB 에서는 { name }[] 객체로 정규화돼 저장됨.
       const ingredients = body.recipe.ingredients as Array<{
         ingredient_name: string
         is_optional: boolean
-        substitutes: string[] | null
+        substitutes: { name: string; note?: string }[] | null
       }>
 
       const cheongyang = ingredients.find(i => i.ingredient_name === '청양고추')
       expect(cheongyang).toBeTruthy()
       expect(cheongyang!.is_optional).toBe(true)
-      expect(cheongyang!.substitutes).toEqual(expect.arrayContaining(['페페론치노', '풋고추']))
+      const subNames = (cheongyang!.substitutes ?? []).map(s => s.name)
+      expect(subNames).toEqual(expect.arrayContaining(['페페론치노', '풋고추']))
 
       const onion = ingredients.find(i => i.ingredient_name === '양파')
       expect(onion).toBeTruthy()

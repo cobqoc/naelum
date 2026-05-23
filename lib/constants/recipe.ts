@@ -72,6 +72,8 @@ export const DIETARY_DESCRIPTIONS: Record<string, string> = {
   glutenFree: '밀, 보리, 호밀 등 글루텐 함유 곡물을 제외한 식단입니다',
 };
 
+import type { SubstituteEntry } from '@/lib/recipes/substituteChips';
+
 export interface RecipeIngredient {
   ingredient_name: string;
   ingredient_id?: string;
@@ -79,7 +81,7 @@ export interface RecipeIngredient {
   unit: string;
   notes: string;
   is_optional: boolean;
-  substitutes?: string[];
+  substitutes?: SubstituteEntry[];
 }
 
 export interface RecipeStep {

@@ -62,7 +62,8 @@ export default function CookIngredientsSheet({
             {ingredients.map((ing, idx) => {
               const owned = isIngredientOwned(ing.ingredient_name);
               const prepared = preparedIngredients.has(idx);
-              const converted = unitConv.convertIngredient(ing.quantity, ing.unit);
+              const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
+              const converted = unitConv.convertIngredient(ing.quantity, displayUnit);
               return (
                 <div
                   key={idx}
@@ -85,9 +86,9 @@ export default function CookIngredientsSheet({
                   </div>
                   <div className="text-xs text-text-muted">
                     {converted.isConverted ? (
-                      <><span className="text-info">{converted.quantity} {converted.unit}</span> <span className="opacity-60">({ing.quantity}{ing.unit})</span></>
+                      <><span className="text-info">{converted.quantity} {converted.unit}</span> <span className="opacity-60">({ing.quantity}{displayUnit})</span></>
                     ) : (
-                      <>{ing.quantity} {ing.unit}</>
+                      <>{ing.quantity} {displayUnit}</>
                     )}
                   </div>
                 </div>

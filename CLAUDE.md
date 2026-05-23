@@ -1149,6 +1149,31 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **레시피 작성·표시 정리: prep_time 제거 + 섹션 라벨 + 재료 카드 재구성 + substitute note 도입** — 완료 (2026-05-24, develop 푸시)
+  - **prep_time 폼 입력 제거**: 한식 prep/cook 경계 모호 + 데이터 품질 낮음(대부분 빈값/부정확) + 카드·검색에 노출 안 됨. new/edit 폼 input 제거 + state·autosave·remix 로드·submit payload 정리. **DB 컬럼·기존 데이터 보존**(SEO schema.org `recipe:prep_time` 그대로), KMP·API 영향 0. 표시 측 `prep||0 + cook||0` 합산은 이미 NULL safe. ProfileRecipeGrid `&&` AND 조건 버그 발견·수정 — 새 레시피(prep=null)는 시간 미표시되던 회귀 차단
+  - **섹션 라벨 정리** (8 locale): "재료 준비" → **"재료"** (ko/ja/zh — 영어권은 이미 짧음), "추가 정보" → **"식단·영양"** (8 locale 전부). "추가 정보"가 vague → 작성자가 *스킵해도 되나?* 망설이고 안 채움. 안에 든 게 식단·영양·태그라 명시적이 더 좋음. 1·2·3·4 번호는 모바일 진행감 + amber 배지 시각 chunk 역할 유지
+  - **`unit '선택'` sentinel DB 누수 fix**: `edit/page.tsx:590` submit 필터 누락 (new 는 이미 필터). 화면에 `"선택"` 글자 그대로 노출되던 회귀. 표시 코드 4곳 방어 처리(`RecipeBrowseView`·`CookIngredientsSheet`·`cook/page.tsx`·`RecipeJsonLd`) + **DB cleanup** dev 255행 / **prod 4,526행** → `UPDATE recipe_ingredients SET unit=NULL WHERE unit='선택'`. 사용자 직접 발견 (스크린샷)
+  - **재료 카드 레이아웃 재구성** (`RecipeBrowseView`):
+    - amber `(선택)` chip → **회색 작은 `· 없어도 OK` 텍스트** 다운그레이드 (`text-text-secondary font-medium`). i18n `ingredientOptional` 값 `'선택'` → `'없어도 OK'`. 거슬림 해소 + 신호 유지 (재료명 색은 이미 `text-secondary`로 옅음)
+    - "또는 X" **별도 줄 → 재료명 옆 inline chip** 통합. 행동 가능 정보(substitute)가 prominent 자리. 사용자가 보유한 substitute는 chip 끝 `✓` 마커. 기존 별도 `subVia` chip + `recipeSubsList` 별도 줄 둘 다 한 chip 으로 통합
+    - **substitute 있는 optional 재료**: chip 이 prominent 자리, `· 없어도 OK` 는 양 줄 끝 부속. **substitute 없는 optional 재료**: 그 자리에 회색 `· 없어도 OK`. 두 컨텍스트 분리로 시각 빽빽함 해소
+  - **substitute 타입 `string[]` → `{name, note?}[]` (backward compat)** — *대체 수량* 입력 가능
+    - **사용자 제기 갭**: 코인 육수 1알 ↔ 멸치 다시다 1큰술 같이 대체 *수량/단위가 다른* 케이스 표현 불가
+    - **데이터 모델**: `lib/recipes/substituteChips.ts` 에 `SubstituteEntry = { name; note? }` + `normalizeSubstitutes` (DB jsonb 의 legacy string[] / 신규 객체[] 어느 형식이든 정규화). 저장 boundary 만 객체[]로, 읽기 boundary 에서 normalize → DB 마이그레이션 불필요. 빈 배열은 NULL 로 저장(jsonb 행 깔끔)
+    - **매칭 로직** (`computeRecipeMatch`·`isSubstituteFor`·`fridgeMatch`): legacy string[] / 신규 객체[] 양형식 수용, 매칭은 `.name` 만 본다(note 무시). 추천·전체·검색 페이지 매칭 단일 출처 보존
+    - **`SubstituteChipInput` + 양 affordance + inline note editor**:
+      - 빈 note chip: `[멸치 다시다  + 양  ✕]` — `+ 양` 회색 옅은 글씨(`text-warning/50`), 클릭 affordance
+      - chip 본문 클릭(✕ 영역 제외) → inline note input 펼침, 현재 note prefill·select
+      - Enter 또는 blur → `updateSubstituteNote` 저장 + 압축 표시 `[멸치 다시다 · 1큰술  ✕]`
+      - Escape → 저장 안 하고 닫음
+      - IME 가드(한글/일본어/중국어 조합 중 Enter·콤마 무시) — note input 도 동일 패턴 ([[feedback-verify-ime-in-browser]])
+      - 8 locale: `ingSubstituteNoteHint` (`+ 양`/`+ qty`/`+ 量`/`+ Menge`/...), `ingSubstituteNotePlaceholder` (`예: 1큰술`/`e.g. 1 tbsp`/...)
+    - **표시**: note 있으면 `🔄 또는 멸치 다시다 · 1큰술`, 없으면 `🔄 또는 멸치 다시다`. 대체재 여러 개도 `join(', ')` 그대로 작동
+  - **vitest 23 신규**: `addSubstituteChip`·`removeSubstituteChipAt`·`updateSubstituteNote`·`normalizeSubstitutes` (legacy/신규/혼합/말정형 입력·dedup·trim·note 갱신·삭제·인덱스 경계)
+  - **API**: POST/PUT `/api/recipes` `normalizeSubstitutesForStorage` boundary 함수 — 양형식 입력 받아 정규화된 객체[]로 저장. 빈 배열 NULL
+  - **표시 측 (선택) 텍스트 단계 본문 영향 0**: step body `OptionalIngredientBadge` 는 별도 i18n 키(`optionalBadgeAria`·`optionalBadgeTooltip`·`optionalBadgeOr`) 사용 — 단계 본문 amber 배지 유지(별도 신호 없으면 모름)
+  - **e2e 갱신**: `recipe-optional-substitutes.spec.ts:76` legacy string[] 입력 → DB 정규화 객체[] 출력 검증 (backward compat 확정)
+  - 검증: lint 0 errors · build · vitest **20 files 249 passed** · e2e recipe-creation/edit/optional-substitutes **28/28 통과**
 - **앱 전반 input 100+개 `InputBoxWrapper` 통일 — 13 PR 완료** — 완료 (2026-05-24, develop 푸시, PR #134~146 main 머지)
   - **배경**: 2026-05-24 초기 PR #134에서 레시피 폼만 InputBoxWrapper 적용 후 잔여 영역 단계적 통일 — 회원가입부터 사장님 onboarding 까지 *모든 input* amber outline + focus-within:ring 일관성. SearchBar 패턴(`overflow-hidden + [&>*]:!border-0`) 단일 출처 보장
   - **PR 분해 — 영역별 13 PR**:

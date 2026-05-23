@@ -5,6 +5,7 @@ import type { TranslationKeys } from '@/lib/i18n/translations';
 import { UNITS, type RecipeIngredient as Ingredient } from '@/lib/constants/recipe';
 import RecipeIngredientInput from '@/components/Recipes/RecipeIngredientInput';
 import SubstituteChipInput from '@/components/Recipes/SubstituteChipInput';
+import type { SubstituteEntry } from '@/lib/recipes/substituteChips';
 import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/components/UI/InputBoxWrapper';
 
@@ -31,7 +32,7 @@ interface IngredientsSectionProps {
   getPlaceholder: (index: number, field: 'name' | 'quantity' | 'notes') => string;
   onAddIngredients: () => void;
   onRemoveIngredient: (index: number) => void;
-  onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean | string[]) => void;
+  onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => void;
   onSelectIngredient: (index: number, item: IngredientItem) => void;
   onImageUpload: (file: File) => void;
   onImageRemove: () => void;
@@ -271,6 +272,8 @@ export default function IngredientsSection({
                     value={ing.substitutes ?? []}
                     onChange={(next) => onUpdateIngredient(index, 'substitutes', next)}
                     placeholder={tf.ingSubstitutePlaceholder}
+                    notePlaceholder={tf.ingSubstituteNotePlaceholder}
+                    noteHint={tf.ingSubstituteNoteHint}
                     ariaLabel={tf.ingSubstitutePlaceholder}
                   />
                 </div>

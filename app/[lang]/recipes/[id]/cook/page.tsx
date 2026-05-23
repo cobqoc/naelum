@@ -243,11 +243,14 @@ export default function CookingModePage(props: PageProps) {
           <div className="container mx-auto max-w-2xl px-6 py-4">
             <h3 className="font-bold mb-3">{t.cookMode.ingredientsTitle.replace('{servings}', String(recipe.servings))}</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {recipe.ingredients.map((ing, index) => (
-                <div key={index} className="text-text-secondary">
-                  {ing.ingredient_name} {ing.quantity}{ing.unit}
-                </div>
-              ))}
+              {recipe.ingredients.map((ing, index) => {
+                const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
+                return (
+                  <div key={index} className="text-text-secondary">
+                    {ing.ingredient_name} {ing.quantity}{displayUnit}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

@@ -581,7 +581,7 @@ export const de = {
     vitaminC: 'Vitamin C',
     vitaminD: 'Vitamin D',
     niacin: 'Niacin',
-    section4Additional: 'Zusatzinfos',
+    section4Additional: 'Ernährung',
   },
   quickAdd: {
     placeholder: 'z. B. Rucola, Trüffel...',
@@ -1060,6 +1060,8 @@ export const de = {
     ingNotesPlaceholder: 'Notizen (z.B. gehackt, gewürfelt)',
     ingOptionalLabel: 'Optional',
     ingSubstitutePlaceholder: 'Ersatz hinzufügen...',
+    ingSubstituteNoteHint: '+ Menge',
+    ingSubstituteNotePlaceholder: 'z.B. 1 EL',
     ingNamePlaceholder1: 'z.B. Schweinefleisch',
     ingQuantityPlaceholder1: 'z.B. 200',
     ingNotesPlaceholder1: 'z.B. für Eintopf',
