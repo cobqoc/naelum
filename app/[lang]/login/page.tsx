@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { getPasswordStrength } from '@/lib/utils/password';
 import FindIdModal from './_components/FindIdModal';
 import ResetPasswordModal from './_components/ResetPasswordModal';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 
 const STORAGE_KEYS = {
@@ -411,19 +412,20 @@ function LoginContent() {
           {/* Email Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.email}</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                validateEmail(e.target.value);
-              }}
-              className={`w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-2.5 md:py-3.5 text-base text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
-                emailError ? 'ring-error/50 focus:ring-error' : 'ring-white/10 focus:ring-accent-warm'
-              }`}
-              placeholder="example@email.com"
-              autoComplete="email"
-            />
+            <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-4 md:!px-5 !py-2.5 md:!py-3.5 ${emailError ? '!ring-error/50 focus-within:!ring-error' : ''}`}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  validateEmail(e.target.value);
+                }}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} text-base`}
+                style={INPUT_INNER_STYLE}
+                placeholder="example@email.com"
+                autoComplete="email"
+              />
+            </InputBoxWrapper>
             {emailError && <p className="text-xs text-error">{emailError}</p>}
           </div>
 
@@ -431,14 +433,17 @@ function LoginContent() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.password}</label>
             <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-background-tertiary px-4 md:px-5 py-2.5 md:py-3.5 text-base text-text-primary outline-none ring-1 ring-white/10 transition-all focus:ring-2 focus:ring-accent-warm"
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 md:!px-5 !py-2.5 md:!py-3.5">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} text-base pr-12`}
+                  style={INPUT_INNER_STYLE}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+              </InputBoxWrapper>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
