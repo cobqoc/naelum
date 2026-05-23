@@ -1,6 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS } from '@/lib/constants/recipe';
+import InputBoxWrapper, {
+  INPUT_INNER_STYLE,
+  INPUT_INNER_COMFORTABLE_CLASS,
+  INPUT_VARIANT_COMFORTABLE,
+  INPUT_VARIANT_COMFORTABLE_TEXTAREA,
+} from '@/components/UI/InputBoxWrapper';
 
 /**
  * 레시피 작성 폼 Section 1(기본 정보) 블록 (presentational).
@@ -60,71 +66,89 @@ export default function BasicInfoSection({
     <>
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{tf.title} *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              placeholder={tf.titlePlaceholder}
-            />
+            <InputBoxWrapper className={INPUT_VARIANT_COMFORTABLE}>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+                placeholder={tf.titlePlaceholder}
+              />
+            </InputBoxWrapper>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{tf.description}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl bg-background-secondary px-5 py-4 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm min-h-[100px] resize-none"
-              placeholder={tf.descriptionPlaceholder}
-            />
+            <InputBoxWrapper className={INPUT_VARIANT_COMFORTABLE_TEXTAREA}>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} min-h-[80px] resize-none`}
+                style={INPUT_INNER_STYLE}
+                placeholder={tf.descriptionPlaceholder}
+              />
+            </InputBoxWrapper>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{tf.servings} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={servings}
-                onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
-                min="1"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <input
+                  type="number"
+                  value={servings}
+                  onChange={(e) => setServings(e.target.value ? parseInt(e.target.value) : '')}
+                  min="1"
+                  placeholder={tf.optionalPlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{tf.prepTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={prepTime}
-                onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <input
+                  type="number"
+                  value={prepTime}
+                  onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : '')}
+                  min="0"
+                  placeholder={tf.optionalPlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{tf.cookTime} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <input
-                type="number"
-                value={cookTime}
-                onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : '')}
-                min="0"
-                placeholder={tf.optionalPlaceholder}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <input
+                  type="number"
+                  value={cookTime}
+                  onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : '')}
+                  min="0"
+                  placeholder={tf.optionalPlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{tf.difficulty} <span className="text-text-muted text-xs">{tf.optional}</span></label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full rounded-xl bg-background-secondary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              >
-                <option value="">{tf.selectNone}</option>
-                {DIFFICULTY_LEVELS.map(d => (
-                  <option key={d.value} value={d.value}>{t.difficulty[d.value]}</option>
-                ))}
-              </select>
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                >
+                  <option value="">{tf.selectNone}</option>
+                  {DIFFICULTY_LEVELS.map(d => (
+                    <option key={d.value} value={d.value}>{t.difficulty[d.value]}</option>
+                  ))}
+                </select>
+              </InputBoxWrapper>
             </div>
           </div>
 
@@ -148,13 +172,16 @@ export default function BasicInfoSection({
             </div>
             {/* 기타 선택 시 커스텀 입력 */}
             {cuisineType === 'other' && (
-              <input
-                type="text"
-                value={customCuisineType}
-                onChange={(e) => setCustomCuisineType(e.target.value)}
-                placeholder={tf.cuisinePlaceholder}
-                className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-              />
+              <InputBoxWrapper className="!rounded-xl !px-4 !py-3">
+                <input
+                  type="text"
+                  value={customCuisineType}
+                  onChange={(e) => setCustomCuisineType(e.target.value)}
+                  placeholder={tf.cuisinePlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             )}
           </div>
 
@@ -182,13 +209,16 @@ export default function BasicInfoSection({
               </div>
               {/* 기타 선택 시 커스텀 입력 */}
               {dishType === 'other' && (
-                <input
-                  type="text"
-                  value={customDishType}
-                  onChange={(e) => setCustomDishType(e.target.value)}
-                  placeholder={tf.dishTypePlaceholder}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-2 focus:ring-accent-warm"
-                />
+                <InputBoxWrapper className="!rounded-xl !px-4 !py-3">
+                  <input
+                    type="text"
+                    value={customDishType}
+                    onChange={(e) => setCustomDishType(e.target.value)}
+                    placeholder={tf.dishTypePlaceholder}
+                    className={INPUT_INNER_COMFORTABLE_CLASS}
+                    style={INPUT_INNER_STYLE}
+                  />
+                </InputBoxWrapper>
               )}
             </div>
           )}
