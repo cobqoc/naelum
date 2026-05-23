@@ -309,7 +309,7 @@ export const zh = {
     timerDoneBody: '请进行下一步。',
     ingredientOptional: '可选',
     ingredientSubstituteOr: '或',
-    optionalBadgeTooltip: '没有也可以做',
+    optionalBadgeTooltip: '{name} 没有也可以',
     optionalBadgeOr: '或者:',
     optionalBadgeAria: '查看可选食材说明',
     substituteBadgeTooltip: '可以用现有食材替代',

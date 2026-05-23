@@ -59,11 +59,14 @@ export default function OptionalIngredientBadge({ name, substitutes }: OptionalI
       {open && (
         <span
           role="tooltip"
-          className="absolute z-20 bottom-full left-0 mb-1 px-2.5 py-1.5 rounded-md bg-background-primary border border-warning/40 text-xs text-text-secondary whitespace-nowrap shadow-xl"
+          // amber 배경 + 어두운 텍스트로 contrast 강화 (이전 dark bg + 회색 text 는 가독성 약함)
+          className="absolute z-20 bottom-full left-0 mb-1 px-2.5 py-1.5 rounded-md bg-warning text-background-primary whitespace-nowrap shadow-xl"
         >
-          <span className="block">{t.recipe.optionalBadgeTooltip}</span>
+          <span className="block font-semibold">
+            {t.recipe.optionalBadgeTooltip.replace('{name}', name)}
+          </span>
           {hasSubs && (
-            <span className="block mt-1 text-warning">
+            <span className="block mt-1">
               <span className="opacity-70">{t.recipe.optionalBadgeOr}</span>{' '}
               <span className="font-medium">{substitutes!.join(', ')}</span>
             </span>

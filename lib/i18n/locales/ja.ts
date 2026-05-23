@@ -309,7 +309,7 @@ export const ja = {
     timerDoneBody: '次のステップに進んでください。',
     ingredientOptional: 'オプション',
     ingredientSubstituteOr: 'または',
-    optionalBadgeTooltip: 'なくても作れます',
+    optionalBadgeTooltip: '{name}はなくてもOK',
     optionalBadgeOr: 'または:',
     optionalBadgeAria: '任意食材の説明を見る',
     substituteBadgeTooltip: '手持ちの食材で代用できます',
