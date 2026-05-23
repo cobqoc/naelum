@@ -1149,6 +1149,20 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **앱 전반 input 100+개 `InputBoxWrapper` 통일 — 13 PR 완료** — 완료 (2026-05-24, develop 푸시, PR #134~146 main 머지)
+  - **배경**: 2026-05-24 초기 PR #134에서 레시피 폼만 InputBoxWrapper 적용 후 잔여 영역 단계적 통일 — 회원가입부터 사장님 onboarding 까지 *모든 input* amber outline + focus-within:ring 일관성. SearchBar 패턴(`overflow-hidden + [&>*]:!border-0`) 단일 출처 보장
+  - **PR 분해 — 영역별 13 PR**:
+    - **#134**: `InputBoxWrapper` 신설 + 레시피 new/edit IngredientsSection·StepsSection·SubstituteChipInput
+    - **#135-137**: 레시피 new BasicInfo·Nutrition·Tags + edit BasicInfo·Nutrition·자동완성 ingredient_id FK 복원
+    - **#138-139 — Group 1 (인증 7 파일)**: login·signup·set-password·auth/terms-agreement·auth/duplicate-email·auth/reset-password·이메일/비밀번호 찾기 모달. 비밀번호 show/hide 버튼은 wrapper *바깥* sibling(absolute, overflow-hidden 잘림 회피)
+    - **#140 — Group 2 (댓글·리뷰·팁 4 파일)**: RecipeComments·RecipeRatings·tip/new·tip/[id]/edit
+    - **#141 — Group 3 (Settings·프로필 4 파일)**: SettingsModal·ProfileEditModal·ChangePasswordModal·DeleteAccountConfirmModal
+    - **#142-143 — Group 4 (모달·헬퍼 3 파일)**: ContactModal·CopyrightModal(DMCA 신고)·재료 상세 모달
+    - **#144-146 — Group 5 (admin·delivery·merchant 11 파일)**: admin recipes/users·delivery checkout·merchant restaurant/menu/location/onboarding (22 input)
+  - **wrap 패턴 (단일 출처)**: `<InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2"><input className={INPUT_INNER_COMFORTABLE_CLASS} style={INPUT_INNER_STYLE} /></InputBoxWrapper>`. `!important` Tailwind 4 override 로 cascade 차단. 두 variant — `compact`(default) vs `comfortable`(prominent 폼)
+  - **의도적 미적용**: ① `RecipeIngredientInput`·`Autocomplete` — 자체 SearchBar 패턴 + dropdown 동반 *기능적 prominent* 디자인 의도 ② `DetailFields` stepper — 커스텀 디자인 의도 ③ Checkbox·radio — 별도 UI 패턴 ④ NotificationsTab — checkbox only ⑤ `IngredientPickerInline` — 0 usages
+  - **e2e 회귀 0**: PR별로 영향 영역 spec 회귀 — recipe-creation/edit/optional-substitutes (28) · auth (login·signup·auth-flow) · tip-creation · settings · contact · delivery (delivery·delivery-map·delivery-full-flow) · merchant-rider (16) 전부 통과. data-testid 는 inner input 에 보존
+  - **교훈** ([[feedback-tailwind-4-css-cascade-trap]]): Tailwind 4 의 동일 className 가 *파일 위치·CSS 순서에 따라* 다르게 cascade. 패턴 복붙보다 *공통 컴포넌트 추출* — 단일 출처 유지가 영구 해결. SearchBar 같은 핵심 utility 조합은 *컴포넌트화* 필수
 - **레시피 폼 input 통일 — `InputBoxWrapper` 공통 컴포넌트** — 완료 (2026-05-24, develop 푸시)
   - **사용자 요청**: 카드 안 메모·수량·단위 input들이 SubstituteChipInput와 시각이 달라 일관성 없음. SearchBar 패턴으로 통일
   - **시도1·2·3·4 실패의 진단**: 같은 className 복붙해도 wrapper마다 `focus-within:ring-color` 갱신 결과 *다름*. DOM 검사로 *CSS variable 은 `#f96`로 갱신되지만 `box-shadow rule 자체*가 재평가 안 되는 wrapper 발견. 원인: Tailwind 4 의 JIT CSS 가 wrapper 마다 *다른 cascade order* 로 생성. className 동등성으론 부족
