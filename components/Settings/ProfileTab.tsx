@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import Image from 'next/image';
 import { COUNTRIES } from '@/components/Onboarding/countries';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface ProfileTabProps {
   username: string;
@@ -124,26 +125,29 @@ export default function ProfileTab({
         <label className="text-sm font-medium text-text-secondary">{sp.usernameLabel} *</label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">@</span>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => {
-              const filtered = e.target.value
-                .split('')
-                .map(char => {
-                  if (/[A-Z]/.test(char)) return char.toLowerCase();
-                  if (/[a-z0-9_가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char)) return char;
-                  return '';
-                })
-                .join('');
-              setUsername(filtered);
-            }}
-            className={`w-full pl-8 pr-10 py-3 rounded-xl bg-background-secondary outline-none ring-1 transition-all ${
-              usernameError ? 'ring-error' : username && !usernameError && !checkingUsername ? 'ring-success' : 'ring-white/10 focus:ring-2 focus:ring-accent-warm'
-            }`}
-            placeholder={sp.usernameLabel}
-            maxLength={20}
-          />
+          <InputBoxWrapper className={`!bg-background-secondary !rounded-xl !pl-8 !pr-10 !py-3 ${
+            usernameError ? '!ring-error' : username && !usernameError && !checkingUsername ? '!ring-success' : ''
+          }`}>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => {
+                const filtered = e.target.value
+                  .split('')
+                  .map(char => {
+                    if (/[A-Z]/.test(char)) return char.toLowerCase();
+                    if (/[a-z0-9_가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char)) return char;
+                    return '';
+                  })
+                  .join('');
+                setUsername(filtered);
+              }}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+              placeholder={sp.usernameLabel}
+              maxLength={20}
+            />
+          </InputBoxWrapper>
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             {checkingUsername && (
               <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
@@ -163,26 +167,32 @@ export default function ProfileTab({
       {/* Bio */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">{sp.bioLabel}</label>
-        <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl bg-background-secondary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all resize-none"
-          placeholder={sp.bioLabel}
-          rows={3}
-          maxLength={200}
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3 !min-h-[80px] !items-start">
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+            style={INPUT_INNER_STYLE}
+            placeholder={sp.bioLabel}
+            rows={3}
+            maxLength={200}
+          />
+        </InputBoxWrapper>
         <p className="text-xs text-text-muted text-right">{bio.length}/200</p>
       </div>
 
       {/* Birth Date */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">{sp.birthDate}</label>
-        <input
-          type="date"
-          value={birthDate || ''}
-          onChange={(e) => setBirthDate(e.target.value || null)}
-          className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+          <input
+            type="date"
+            value={birthDate || ''}
+            onChange={(e) => setBirthDate(e.target.value || null)}
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
 
       {/* Gender */}
@@ -222,10 +232,12 @@ export default function ProfileTab({
       {/* Country */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">{sp.country}</label>
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
         <select
           value={country || ''}
           onChange={(e) => setCountry(e.target.value || null)}
-          className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
+          className={INPUT_INNER_COMFORTABLE_CLASS}
+          style={INPUT_INNER_STYLE}
         >
           <option value="">{sp.notSelected}</option>
           {COUNTRIES.map((c) => (
@@ -234,6 +246,7 @@ export default function ProfileTab({
             </option>
           ))}
         </select>
+        </InputBoxWrapper>
       </div>
 
       {/* Save Button */}

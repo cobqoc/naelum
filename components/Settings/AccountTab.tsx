@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { getPasswordStrength } from '@/lib/utils/password';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
@@ -310,13 +311,16 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
               <label className="text-sm font-medium text-text-secondary">
                 {sp.newEmail || '새 이메일'}
               </label>
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-                placeholder={sp.newEmailPlaceholder || '새 이메일 주소 입력'}
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={sp.newEmailPlaceholder || '새 이메일 주소 입력'}
+                />
+              </InputBoxWrapper>
               {emailError && <p className="text-sm text-error">{emailError}</p>}
               <div className="flex gap-3">
                 <button
@@ -371,13 +375,16 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{sp.currentPassword}</label>
               <div className="relative">
-                <input
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-                  placeholder={sp.currentPasswordPlaceholder}
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                  <input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-8`}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={sp.currentPasswordPlaceholder}
+                  />
+                </InputBoxWrapper>
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -392,13 +399,16 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{sp.newPassword}</label>
               <div className="relative">
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-                  placeholder={sp.passwordPlaceholder}
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-8`}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={sp.passwordPlaceholder}
+                  />
+                </InputBoxWrapper>
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
@@ -428,17 +438,18 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{sp.passwordConfirm}</label>
               <div className="relative">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 pr-12 rounded-xl bg-background-tertiary outline-none ring-1 transition-all ${
-                    confirmPassword && newPassword !== confirmPassword
-                      ? 'ring-error'
-                      : 'ring-white/10 focus:ring-2 focus:ring-accent-warm'
-                  }`}
-                  placeholder={sp.passwordConfirmPlaceholder}
-                />
+                <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-4 !py-3 ${
+                  confirmPassword && newPassword !== confirmPassword ? '!ring-error' : ''
+                }`}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-8`}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={sp.passwordConfirmPlaceholder}
+                  />
+                </InputBoxWrapper>
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -567,13 +578,16 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
               <span className="font-bold text-error font-mono">{sp.deleteConfirmPhrase}</span>
               {sp.deleteConfirmInputSuffix}
             </p>
-            <input
-              type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-error mb-4 font-mono"
-              placeholder={sp.deleteConfirmPhrase}
-            />
+            <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3 mb-4">
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} font-mono`}
+                style={INPUT_INNER_STYLE}
+                placeholder={sp.deleteConfirmPhrase}
+              />
+            </InputBoxWrapper>
             <div className="flex gap-3">
               <button
                 onClick={() => {
