@@ -1149,6 +1149,18 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **raw→processed 단방향 substitute + chip input 박스 이중 fix** — 완료 (2026-05-24, develop 푸시)
+  - **문제 1 (사용자 직접 질문)**: 쌀과 밥이 동의어 매칭이 안 됨. 사용자 직관: "쌀이 밥 되려면 시간만 필요한 거지 결국 같은 것"
+  - **분석**: 양방향 동의어로 묶으면 *역방향 거짓 매칭* — 밥만 보유한 사용자가 "쌀 1컵" 필요한 죽·식혜 레시피를 "보유"로 표시. 정답은 **단방향**: 쌀→밥 OK / 밥→쌀 X
+  - **신규 매핑** `INGREDIENT_PREPARABLE_TO` (lib/recommendations/match.ts): 보수적으로 5개만 — 쌀→밥류, 우유→요거트류, 토마토→소스·페이스트·주스, 사과→주스·즙, 오렌지→주스. 추가 시 신중 — 역방향이 *완전히 불가능*한 것만 (사용자 결정)
+  - **`isSubstituteFor` 단방향 lookup**: 기존 양방향 `INGREDIENT_SUBSTITUTES` 는 그대로(액젓끼리·간장끼리 등 서로 대체). 새로 `INGREDIENT_PREPARABLE_TO[userIng]` 한 방향만 추가 검사. recipeIng→userIng lookup 안 함
+  - **UI 효과**: 쌀 보유 + 레시피 "밥 2공기" → 카드에 🔄 amber (대체 가능 — 가공 필요). 밥 보유 + 레시피 "쌀 1컵" → 매칭 안 됨 (정확)
+  - **의도적으로 뺀 것**: 육류 부위(닭고기→가슴살 등) — 사용자가 보통 구체 부위로 적어 일반명 보유 케이스 드묾, 추가 시 오매칭 위험. 잼·복잡 가공 — 사용자가 잘 안 만듦. 운영하면서 *부족 매칭* 패턴 발견되면 1줄씩 추가
+  - **문제 2 (사용자 직접 발견)**: chip input focus 시 "네모 박스 안에 또 네모 박스" — 박스 이중. 이전 fix(`f2eb02d`) 가 카드 amber 강조만 제거하고 chip input *자체*의 outline 이중은 그대로였음
+  - **원인**: Tailwind 4 `ring-1` (base white/5) + `focus-within:ring-2` (amber) 가 *두 layer 로 둘 다 그려짐*. Tailwind 4 에서 ring 동작 변경
+  - **fix**: `ring-*` 클래스 전부 제거 → `border-2 border-white/5 focus-within:border-accent-warm transition-colors`. width 항상 동일(2px) + 색만 평소 회색 → focus 시 amber. **단일 layer 보장**
+  - **vitest**: match.test.ts 에 단방향 케이스 5+ 추가 (쌀→밥 / 밥→쌀 false / 우유→요거트 / 토마토 → 3종 / 사과·오렌지 → 주스 / isIngredientMatch 통합 / isSameIngredient 가공관계 false). 47/47 passed
+  - 검증: lint 0 errors · build · vitest 20 files **234 passed** (match 5 케이스 신규) · claude-in-chrome 시각 캡쳐 (focus 시 amber outline *한 줄만*, 박스 이중 해소)
 - **조리 단계 본문 — `is_optional` 재료 자동 highlight** — 완료 (2026-05-24, develop 푸시)
   - **문제**: 작성자가 재료 카드에서 "없어도 OK" 토글해도 *조리 단계 본문*엔 그 정보가 없음 → 따라하는 사람이 "청양고추를 더하시려면..." 같은 문장을 봐도 "선택"인지 모름. 재료 탭과 단계 탭을 오가며 머리로 cross-reference 필요. 작성자가 본문에 "(선택)" 매번 적게 만들면 빠뜨리기 쉽고 본문도 지저분
   - **자동 매칭·렌더**: `is_optional=true` 재료가 단계 본문에 등장하면 시스템이 자동으로 amber 색 + `(선택)` 배지 표시. 작성자는 토글 한 번만, 따라하는 사용자는 본문 읽는 동안 한눈에

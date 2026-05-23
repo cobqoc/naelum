@@ -170,6 +170,56 @@ describe('isSubstituteFor — 대체 가능 판정', () => {
     expect(isSubstituteFor('간장', '고추장')).toBe(false)
     expect(isSubstituteFor('쪽파', '대파')).toBe(false)
   })
+
+  // 가공으로 준비 가능한 단방향 매핑 (2026-05-24) — raw → processed
+  // 역방향(processed → raw)은 불가능해야 함 (밥으로 쌀 되돌리기 X)
+  describe('가공 단방향 — 쌀→밥, 우유→요거트, 토마토→소스, 사과/오렌지→주스', () => {
+    it('쌀 → 밥류 (역방향 X)', () => {
+      expect(isSubstituteFor('쌀', '밥')).toBe(true)
+      expect(isSubstituteFor('쌀', '쌀밥')).toBe(true)
+      expect(isSubstituteFor('쌀', '흰밥')).toBe(true)
+      // 역방향: 밥으로는 죽/식혜용 생쌀 못 만듦
+      expect(isSubstituteFor('밥', '쌀')).toBe(false)
+      expect(isSubstituteFor('쌀밥', '쌀')).toBe(false)
+    })
+
+    it('우유 → 요거트류 (역방향 X)', () => {
+      expect(isSubstituteFor('우유', '요거트')).toBe(true)
+      expect(isSubstituteFor('우유', '플레인요거트')).toBe(true)
+      expect(isSubstituteFor('우유', '그릭요거트')).toBe(true)
+      expect(isSubstituteFor('요거트', '우유')).toBe(false)
+    })
+
+    it('토마토 → 토마토소스/페이스트/주스 (역방향 X)', () => {
+      expect(isSubstituteFor('토마토', '토마토소스')).toBe(true)
+      expect(isSubstituteFor('토마토', '토마토페이스트')).toBe(true)
+      expect(isSubstituteFor('토마토', '토마토주스')).toBe(true)
+      expect(isSubstituteFor('토마토소스', '토마토')).toBe(false)
+      expect(isSubstituteFor('토마토페이스트', '토마토')).toBe(false)
+    })
+
+    it('사과/오렌지 → 주스 (역방향 X)', () => {
+      expect(isSubstituteFor('사과', '사과주스')).toBe(true)
+      expect(isSubstituteFor('사과', '사과즙')).toBe(true)
+      expect(isSubstituteFor('오렌지', '오렌지주스')).toBe(true)
+      expect(isSubstituteFor('사과주스', '사과')).toBe(false)
+      expect(isSubstituteFor('오렌지주스', '오렌지')).toBe(false)
+    })
+
+    it('isIngredientMatch — 단방향 substitute 도 매칭 (추천에 뜸)', () => {
+      expect(isIngredientMatch('쌀', '밥')).toBe(true)
+      expect(isIngredientMatch('우유', '요거트')).toBe(true)
+      // 역방향은 매칭 안 됨 — 밥 보유자가 쌀 필요한 죽 레시피에 잘못 들어가지 않음
+      expect(isIngredientMatch('밥', '쌀')).toBe(false)
+      expect(isIngredientMatch('요거트', '우유')).toBe(false)
+    })
+
+    it('isSameIngredient — 가공 관계는 *같은 재료 아님* (동의어 묶기 위험 차단)', () => {
+      // 같은 재료가 아닌 substitute 라야 보유 ✓ 가 아닌 🔄 대체 라벨로 표시됨
+      expect(isSameIngredient('쌀', '밥')).toBe(false)
+      expect(isSameIngredient('우유', '요거트')).toBe(false)
+    })
+  })
 })
 
 describe('isIngredientMatch — 동의어 OR 대체 (만들 수 있나)', () => {
