@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface User {
   id: string;
@@ -89,13 +90,16 @@ export default function AdminUsersPage() {
 
       {/* Search */}
       <div className="flex gap-4">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="사용자명 또는 이메일 검색..."
-          className="flex-1 px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-        />
+        <InputBoxWrapper className="flex-1 !bg-background-secondary !rounded-xl !px-4 !py-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="사용자명 또는 이메일 검색..."
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
 
       {/* Users Table */}
