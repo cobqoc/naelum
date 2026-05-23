@@ -655,6 +655,7 @@ export default function RecipeBrowseView({
                     key={idx}
                     className={`p-3 rounded-xl border-2 bg-background-tertiary ${borderClass}`}
                   >
+                    {/* 재료명 + 옵션 배지 + 대체 가능 pill 같은 줄(flex-wrap) — 폭 따라 자동 wrap */}
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className={`text-sm font-medium ${nameColor}`}>
                         {ing.ingredient_name}
@@ -664,17 +665,15 @@ export default function RecipeBrowseView({
                           {t.recipe.ingredientOptional}
                         </span>
                       )}
-                    </div>
-                    {subVia && (
-                      <div className="mt-1">
+                      {subVia && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
                           <span aria-hidden className="text-success font-bold">✓</span>
                           <span className="font-medium text-success">{subVia}</span>
                           <span className="text-warning/60">·</span>
                           <span className="text-warning font-medium">{t.recipe.fridgeModalSubstitute}</span>
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     {/* 작성자가 명시한 대체재 — 보유 여부와 무관하게 항상 노출 (정보 제공) */}
                     {recipeSubsList.length > 0 && (
                       <div className="text-xs text-text-muted mt-1">
