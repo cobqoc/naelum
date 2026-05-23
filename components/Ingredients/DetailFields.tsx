@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 /**
  * 재료 상세 설정 필드 (카테고리·유통기한·수량/단위·보관위치·메모) — 공통 표현.
@@ -194,22 +195,28 @@ export default function DetailFields({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block mb-1 text-[11px] text-text-muted">{t.quickAdd.purchaseDate}</label>
-              <input
-                type="date"
-                value={item.purchase_date}
-                onChange={(e) => onChange('purchase_date', e.target.value)}
-                className={fieldBase}
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-3 !py-2.5">
+                <input
+                  type="date"
+                  value={item.purchase_date}
+                  onChange={(e) => onChange('purchase_date', e.target.value)}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
             <div>
               <label className="block mb-1 text-[11px] text-text-muted">{t.quickAdd.expiryDate}</label>
-              <input
-                type="date"
-                value={item.expiry_date}
-                onChange={(e) => onChange('expiry_date', e.target.value)}
-                autoFocus
-                className={fieldBase}
-              />
+              <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-3 !py-2.5">
+                <input
+                  type="date"
+                  value={item.expiry_date}
+                  onChange={(e) => onChange('expiry_date', e.target.value)}
+                  autoFocus
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                />
+              </InputBoxWrapper>
             </div>
           </div>
         ) : (
@@ -346,13 +353,16 @@ export default function DetailFields({
       {/* 메모 */}
       <div>
         <label className="block mb-1.5 text-xs font-medium text-text-muted uppercase tracking-wide">{t.quickAdd.notes}</label>
-        <textarea
-          value={item.notes}
-          onChange={(e) => onChange('notes', e.target.value)}
-          placeholder={t.quickAdd.notesPlaceholder}
-          rows={2}
-          className={`${fieldBase} resize-none`}
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-3 !py-2.5 !min-h-[60px] !items-start">
+          <textarea
+            value={item.notes}
+            onChange={(e) => onChange('notes', e.target.value)}
+            placeholder={t.quickAdd.notesPlaceholder}
+            rows={2}
+            className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+            style={INPUT_INNER_STYLE}
+          />
+        </InputBoxWrapper>
       </div>
 
     </div>
