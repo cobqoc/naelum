@@ -1,4 +1,5 @@
 import type { TranslationKeys } from '@/lib/i18n/translations';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 /**
  * 비밀번호 재설정 모달 (4스텝: 이메일→발송완료→새비번→완료) — 순수 표현.
@@ -86,21 +87,22 @@ export default function ResetPasswordModal({
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{t.auth.email}</label>
-              <input
-                ref={resetEmailInputRef}
-                type="email"
-                value={resetEmail}
-                onChange={(e) => {
-                  setResetEmail(e.target.value);
-                  setResetEmailError('');
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && onResetPassword()}
-                className={`w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
-                  resetEmailError ? 'ring-error' : 'ring-white/10 focus:ring-accent-warm'
-                }`}
-                placeholder="example@email.com"
-                autoComplete="email"
-              />
+              <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-4 !py-3 ${resetEmailError ? '!ring-error' : ''}`}>
+                <input
+                  ref={resetEmailInputRef}
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => {
+                    setResetEmail(e.target.value);
+                    setResetEmailError('');
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && onResetPassword()}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  placeholder="example@email.com"
+                  autoComplete="email"
+                />
+              </InputBoxWrapper>
               {resetEmailError && <p className="text-xs text-error">{resetEmailError}</p>}
             </div>
 
@@ -156,13 +158,16 @@ export default function ResetPasswordModal({
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{t.auth.newPassword}</label>
               <div className="relative">
-                <input
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                  placeholder={t.auth.minChars}
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                    style={INPUT_INNER_STYLE}
+                    placeholder={t.auth.minChars}
+                  />
+                </InputBoxWrapper>
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
@@ -205,14 +210,15 @@ export default function ResetPasswordModal({
             <div className="space-y-2">
               <label className="text-sm font-medium text-text-secondary">{t.auth.confirmPassword}</label>
               <div className="relative">
-                <input
-                  type={showConfirmNewPassword ? 'text' : 'password'}
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className={`w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
-                    confirmNewPassword && newPassword !== confirmNewPassword ? 'ring-error' : 'ring-white/10 focus:ring-accent-warm'
-                  }`}
-                />
+                <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-4 !py-3 ${confirmNewPassword && newPassword !== confirmNewPassword ? '!ring-error' : ''}`}>
+                  <input
+                    type={showConfirmNewPassword ? 'text' : 'password'}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                    style={INPUT_INNER_STYLE}
+                  />
+                </InputBoxWrapper>
                 <button
                   type="button"
                   onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}

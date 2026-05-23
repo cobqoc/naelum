@@ -1,4 +1,5 @@
 import type { TranslationKeys } from '@/lib/i18n/translations';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 /**
  * 아이디(이메일) 찾기 모달 — 순수 표현.
@@ -56,16 +57,19 @@ export default function FindIdModal({
                 <label className="text-sm font-medium text-text-secondary">
                   {t.auth.findIdUsername}
                 </label>
-                <input
-                  ref={findIdInputRef}
-                  type="text"
-                  value={findIdUsername}
-                  onChange={(e) => setFindIdUsername(e.target.value)}
-                  placeholder={t.auth.findIdUsernamePlaceholder}
-                  autoComplete="username"
-                  onKeyDown={(e) => e.key === 'Enter' && onFindId()}
-                  className="w-full rounded-xl bg-background-tertiary px-4 py-3 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+                  <input
+                    ref={findIdInputRef}
+                    type="text"
+                    value={findIdUsername}
+                    onChange={(e) => setFindIdUsername(e.target.value)}
+                    placeholder={t.auth.findIdUsernamePlaceholder}
+                    autoComplete="username"
+                    onKeyDown={(e) => e.key === 'Enter' && onFindId()}
+                    className={INPUT_INNER_COMFORTABLE_CLASS}
+                    style={INPUT_INNER_STYLE}
+                  />
+                </InputBoxWrapper>
                 {findIdError && (
                   <p className="text-sm text-error mt-1">{findIdError}</p>
                 )}
