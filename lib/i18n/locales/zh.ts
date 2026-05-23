@@ -1054,7 +1054,6 @@ export const zh = {
     ingUnitPlaceholder: '单位',
     ingNotesPlaceholder: '备注 (例：切碎、切块)',
     ingOptionalLabel: '没有也可以',
-    ingOptionalShort: '可选',
     ingSubstitutePlaceholder: '添加替代食材...',
     ingNamePlaceholder1: '例：猪肉',
     ingQuantityPlaceholder1: '例：200',

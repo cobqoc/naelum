@@ -1054,7 +1054,6 @@ export const it = {
     ingUnitPlaceholder: 'Unità',
     ingNotesPlaceholder: 'Note (es. tritato, a cubetti)',
     ingOptionalLabel: 'Opzionale',
-    ingOptionalShort: 'Opzionale',
     ingSubstitutePlaceholder: 'Aggiungi sostituto...',
     ingNamePlaceholder1: 'es. Maiale',
     ingQuantityPlaceholder1: 'es. 200',

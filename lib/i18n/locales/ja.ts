@@ -1054,7 +1054,6 @@ export const ja = {
     ingUnitPlaceholder: '単位',
     ingNotesPlaceholder: 'メモ (例: 細かく切る)',
     ingOptionalLabel: 'なくてもOK',
-    ingOptionalShort: '任意',
     ingSubstitutePlaceholder: '代用食材を追加...',
     ingNamePlaceholder1: '例: 豚肉',
     ingQuantityPlaceholder1: '例: 200',

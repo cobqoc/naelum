@@ -1054,7 +1054,6 @@ export const fr = {
     ingUnitPlaceholder: 'Unité',
     ingNotesPlaceholder: 'Notes (ex. haché, coupé)',
     ingOptionalLabel: 'Facultatif',
-    ingOptionalShort: 'Facultatif',
     ingSubstitutePlaceholder: 'Ajouter un substitut...',
     ingNamePlaceholder1: 'ex. Porc',
     ingQuantityPlaceholder1: 'ex. 200',
