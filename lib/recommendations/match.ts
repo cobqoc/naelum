@@ -197,6 +197,27 @@ export const INGREDIENT_SUBSTITUTES: Record<string, string[]> = {
   '토마토소스': ['케첩'],
 }
 
+/**
+ * 단방향 "가공으로 준비 가능" 매핑 — raw → processed.
+ *
+ * `INGREDIENT_SUBSTITUTES` 는 양방향 (액젓끼리 서로 대체 가능 등). 하지만 쌀↔밥 같은
+ * raw↔processed 관계는 비대칭 — 쌀로 밥 만들 수 있지만(30분), 밥으로 죽·식혜용 생쌀
+ * 못 만듦. 양방향 substitute 에 넣으면 역방향 거짓 매칭 발생.
+ *
+ * 정책:
+ *  - key 는 raw, value 는 가공된 형태들
+ *  - `isSubstituteFor(userIng, recipeIng)` 가 prepA(userIng→recipeIng) 한 방향만 lookup
+ *  - 역방향(processed → raw) 은 매칭 안 됨 = 정확
+ *  - 추가 시 신중: 역방향이 *완전히 불가능* 한 것만 (사용자 결정 2026-05-24)
+ */
+export const INGREDIENT_PREPARABLE_TO: Record<string, string[]> = {
+  '쌀': ['밥', '쌀밥', '흰밥'],                        // 조리 30분
+  '우유': ['요거트', '플레인요거트', '그릭요거트'],     // 발효 12시간+
+  '토마토': ['토마토소스', '토마토페이스트', '토마토주스'],  // 가공·졸이기
+  '사과': ['사과주스', '사과즙'],                      // 착즙
+  '오렌지': ['오렌지주스'],                            // 착즙
+}
+
 // 보편 재료 — 수돗물처럼 누구나 항상 갖고 있는 것으로 가정.
 // 매칭에서 제외해서 ready/missing 계산을 왜곡하지 않도록 처리.
 export const FUNDAMENTAL_INGREDIENTS = new Set(['물', '생수', '식수', 'water'])
@@ -245,10 +266,15 @@ export function isSubstituteFor(userIng: string, recipeIng: string): boolean {
   const na = normalizeIngredientName(a)
   const nb = normalizeIngredientName(b)
 
+  // 양방향 substitute — 서로 대체 가능한 케이스 (액젓끼리, 간장끼리 등)
   const subA = INGREDIENT_SUBSTITUTES[a] ?? INGREDIENT_SUBSTITUTES[na]
   if (subA && subA.some(s => s === b || s === nb)) return true
   const subB = INGREDIENT_SUBSTITUTES[b] ?? INGREDIENT_SUBSTITUTES[nb]
   if (subB && subB.some(s => s === a || s === na)) return true
+
+  // 단방향 raw→processed (쌀→밥 등). 역방향은 lookup 안 함 = 매칭 안 됨.
+  const prepA = INGREDIENT_PREPARABLE_TO[a] ?? INGREDIENT_PREPARABLE_TO[na]
+  if (prepA && prepA.some(s => s === b || s === nb)) return true
 
   return false
 }

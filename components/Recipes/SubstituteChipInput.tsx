@@ -84,7 +84,8 @@ export default function SubstituteChipInput({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1.5 min-h-[34px] rounded-md bg-background-tertiary px-2 py-1.5 ring-1 ring-white/5 focus-within:ring-2 focus-within:ring-accent-warm cursor-text"
+      // border-2 항상 + 색만 변경 → 단일 layer 보장 (Tailwind 4 ring 이 두 layer 로 그려지는 박스 이중 회귀 방지)
+      className="flex flex-wrap items-center gap-1.5 min-h-[34px] rounded-md bg-background-tertiary px-2 py-1 border-2 border-white/5 focus-within:border-accent-warm transition-colors cursor-text"
       onClick={() => inputRef.current?.focus()}
     >
       <span className="text-xs text-warning shrink-0" aria-hidden>
