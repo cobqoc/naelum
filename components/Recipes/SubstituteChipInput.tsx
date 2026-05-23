@@ -188,7 +188,7 @@ export default function SubstituteChipInput({
                   e.stopPropagation();
                   startEditNote(i);
                 }}
-                className="inline-flex items-center gap-1 cursor-text"
+                className="inline-flex items-center gap-1 cursor-pointer"
               >
                 <span>{entry.name}</span>
                 {entry.note ? (
