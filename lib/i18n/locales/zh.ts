@@ -309,6 +309,9 @@ export const zh = {
     timerDoneBody: '请进行下一步。',
     ingredientOptional: '可选',
     ingredientSubstituteOr: '或',
+    optionalBadgeTooltip: '没有也可以做',
+    optionalBadgeOr: '或者:',
+    optionalBadgeAria: '查看可选食材说明',
   },
   profile: {
     recipes: '食谱',

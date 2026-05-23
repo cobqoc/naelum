@@ -309,6 +309,9 @@ export const en = {
     timerDoneBody: 'Proceed to the next step.',
     ingredientOptional: 'Optional',
     ingredientSubstituteOr: 'or',
+    optionalBadgeTooltip: 'You can skip this ingredient',
+    optionalBadgeOr: 'Or:',
+    optionalBadgeAria: 'Show optional ingredient info',
   },
   profile: {
     recipes: 'Recipes',

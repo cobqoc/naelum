@@ -1149,6 +1149,19 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **단계 본문 (선택) 배지 — 색상·정책·tooltip 개편 + chip input 박스 진짜 fix + SW v12** — 완료 (2026-05-24, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 PR #125·#126 후 4가지 회귀
+    - ① **재료명 amber 색상 혼란** — 본문 안 청양고추가 amber 텍스트 → 클릭 가능 링크처럼 보임. "뭔가 특별한 거 같기도 하고 혼란스러움"
+    - ② **첫 멘션만 배지 정책 fragile** — Step1에만 `(선택)` 배지, Step2는 색만. "단계 1 먼저 봤을 것" 가정이 fragile — 스크롤 건너뛰면 Step2부터 보는 사용자 정보 누락
+    - ③ **(선택) 의미 모호** — 사용자가 hover/tap 시도하지만 안내 없음. "이게 뭐야" 답답함
+    - ④ **chip input 박스 이중 잔존** — 이전 fix(border-2)가 *DOM 단일 border* 였지만 시각적으로 두 line. 사용자 large screenshot 으로 확실히 박스 두 개
+  - **fix① 재료명 본문색 통합**: 청양고추 amber 색 제거. 본문 흐름에 자연스럽게 통합. `(선택)` 배지만 amber 시각 강조. 클릭 가능 오해 해소
+  - **fix② 모든 멘션에 배지**: `tokenizeStepText` 의 `isFirstMention` 신호 UI 에서 안 씀(함수 자체는 보존). 각 멘션마다 일관된 `(선택)` 표시 — 어느 단계부터 봐도 정보 누락 없음
+  - **fix③ `OptionalIngredientBadge.tsx` 신설**: hover(데스크톱 mouseenter/leave) + tap(모바일 click toggle) → amber 풍선 tooltip. 메시지 "없어도 만들 수 있어요" + substitutes 있으면 "또는: 페페론치노, 풋고추" 두 번째 줄. ⓘ 아이콘으로 "탭 가능" 시각 힌트. outside mousedown 으로 close. aria-expanded·aria-label 접근성. i18n 8 locale: `optionalBadgeTooltip`·`optionalBadgeOr`·`optionalBadgeAria`. **재료 카드의 substitutes 정보가 단계 본문에서도 한 번에 보임** — 작성자 입력이 두 곳에 자동 노출
+  - **fix④ chip input 박스 진짜 단일 — border-2 → border**: claude-in-chrome zoom 으로 정밀 진단. DOM 검사: `border: 2px solid amber` 단일 line 이지만 폭 2px + small rounded 에서 *box-in-box 시각 효과* 유발. `border-2` → `border` (1px) 로 줄여 단일 line 확실히 보장. 사용자 zoom 캡쳐로 검증 완료
+  - **SW CACHE_VERSION v11 → v12**: naelum.app 사용자가 옛 JS 번들 캐시 잡혀 fix 안 보일 위험. SW 버전 올려 강제 갱신
+  - 검증: lint 0 errors · build · vitest **20 files 234 passed** (회귀 0) · claude-in-chrome 526px 시각 캡쳐 (박스 단일·(선택) 배지·tooltip 클릭 후 substitutes 표시)
+  - **교훈 ([[feedback-css-visual-vs-dom-truth]])**: CSS computed style 이 "single border 2px" 라도 *시각적으론 두 줄로 인식* 될 수 있음. zoom 캡쳐로 픽셀 단위 확인 필요. DOM 진단만 믿지 말 것
 - **raw→processed 단방향 substitute + chip input 박스 이중 fix** — 완료 (2026-05-24, develop 푸시)
   - **문제 1 (사용자 직접 질문)**: 쌀과 밥이 동의어 매칭이 안 됨. 사용자 직관: "쌀이 밥 되려면 시간만 필요한 거지 결국 같은 것"
   - **분석**: 양방향 동의어로 묶으면 *역방향 거짓 매칭* — 밥만 보유한 사용자가 "쌀 1컵" 필요한 죽·식혜 레시피를 "보유"로 표시. 정답은 **단방향**: 쌀→밥 OK / 밥→쌀 X

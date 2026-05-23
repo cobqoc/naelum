@@ -309,6 +309,9 @@ export const ko = {
     timerDoneBody: '다음 단계로 진행하세요.',
     ingredientOptional: '선택',
     ingredientSubstituteOr: '또는',
+    optionalBadgeTooltip: '없어도 만들 수 있어요',
+    optionalBadgeOr: '또는:',
+    optionalBadgeAria: '선택 재료 설명 보기',
   },
   profile: {
     recipes: '레시피',
