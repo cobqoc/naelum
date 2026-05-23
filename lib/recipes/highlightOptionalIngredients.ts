@@ -63,11 +63,16 @@ function isParticleStart(text: string, fromIndex: number): boolean {
 /**
  * optional 재료 1개 → 매칭 후보 문자열 목록 (재료명 + 동의어).
  * 길이 내림차순 — 긴 매칭 먼저 시도 (대파 우선, 파 나중).
+ *
+ * 1글자 *동의어*는 제외 — "파"(대파 동의어) 같은 1글자 form 이 합성어
+ * ("파고명", "파전" 등) 에서 false positive 유발. 작성자가 일관되게 동의어
+ * 풀텍스트 ("대파") 적을 가능성 높음. 1글자 *원본 재료명* (쌀·콩 등) 은 유지.
  */
 function buildCandidates(name: string): string[] {
   const lower = name.toLowerCase();
   const aliases = INGREDIENT_ALIASES[lower] ?? [];
-  const all = new Set<string>([name, ...aliases]);
+  const safeAliases = aliases.filter(a => a.length >= 2);
+  const all = new Set<string>([name, ...safeAliases]);
   return Array.from(all).sort((a, b) => b.length - a.length);
 }
 

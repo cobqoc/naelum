@@ -4,30 +4,30 @@ import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 
 interface OptionalIngredientBadgeProps {
-  /** 작성자가 명시한 대체재 (선택) — 있으면 tooltip 에 "또는: X, Y" 줄 추가 */
+  /** 본문에서 매칭된 재료명 (조사 제외, 원형 또는 동의어) */
+  name: string;
+  /** 작성자가 명시한 대체재 — 있으면 tooltip 에 "또는: X, Y" 줄 추가 */
   substitutes?: string[];
 }
 
 /**
- * 조리 단계 본문의 `(선택)` 인라인 배지 — hover/tap 시 안내 tooltip.
+ * 조리 단계 본문의 *재료명 자체*를 inline 강조하는 컴포넌트.
  *
- * UX 문제:
- *  - 사용자가 `(선택)` 만 봐선 "선택할 수 있다는 건지/빼도 된다는 건지" 모호
- *  - 자연스러운 첫 행동은 hover(데스크톱) 또는 tap(모바일) → 안내 없으면 답답
+ * 디자인 결정 (2026-05-24):
+ *  - 별도 `(선택)` 배지는 *시각적으로 무거워 문장 흐름을 끊음* + "어떤 재료가 선택?"
+ *    한 번 멈춰서 앞 단어 찾아야 함 (사용자 피드백 — 이질감 + 정보 모호)
+ *  - **재료명 자체에 dashed underline** + 작은 ⓘ 아이콘 → 본문 흐름 자연 유지,
+ *    재료명 자체가 강조 대상임이 즉시 인지됨
+ *  - hover/tap → tooltip "없어도 만들 수 있어요" + substitutes (기존 동작 유지)
  *
- * 설계:
- *  - `<button>` 으로 만들어 키보드 접근성 + 모바일 tap 모두 지원
- *  - 데스크톱 hover (mouseenter/leave) → 자동 표시
- *  - 모바일 tap (click) → toggle. 바깥 클릭 시 닫힘
- *  - 작은 ⓘ 아이콘으로 "탭 가능" 시각 힌트
- *  - tooltip 본문: 메인 메시지 + substitutes(있으면) — *재료 카드의 substitutes 와 정보 공유*
+ * 컴포넌트 이름 "Badge" 는 레거시 — 실제는 inline mention. 호출처가 한 곳뿐이라
+ * 동작·API 만 갱신, rename 은 후속 가능.
  */
-export default function OptionalIngredientBadge({ substitutes }: OptionalIngredientBadgeProps) {
+export default function OptionalIngredientBadge({ name, substitutes }: OptionalIngredientBadgeProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement | null>(null);
 
-  // 바깥 클릭 시 닫기 (모바일 tap 토글 후 다른 곳 누르면 닫힘)
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
@@ -40,7 +40,7 @@ export default function OptionalIngredientBadge({ substitutes }: OptionalIngredi
   const hasSubs = Array.isArray(substitutes) && substitutes.length > 0;
 
   return (
-    <span ref={ref} className="relative inline-block align-middle">
+    <span ref={ref} className="relative inline-block">
       <button
         type="button"
         onClick={(e) => {
@@ -49,12 +49,12 @@ export default function OptionalIngredientBadge({ substitutes }: OptionalIngredi
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className="ml-0.5 inline-flex items-center gap-0.5 rounded bg-warning/15 px-1 py-0 text-[10px] font-bold text-warning hover:bg-warning/25 transition-colors cursor-help"
+        className="text-text-secondary underline decoration-dashed decoration-warning/60 underline-offset-[3px] cursor-help hover:decoration-warning transition-colors"
         aria-label={t.recipe.optionalBadgeAria}
         aria-expanded={open}
       >
-        ({t.recipe.ingredientOptional})
-        <span aria-hidden className="text-[9px] opacity-70">ⓘ</span>
+        {name}
+        <span aria-hidden className="ml-0.5 text-[9px] text-warning/70 align-super">ⓘ</span>
       </button>
       {open && (
         <span
