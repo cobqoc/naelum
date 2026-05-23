@@ -1149,6 +1149,15 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **재료 작성 폼 fix — 체크박스 시각 피드백 + chip 박스 이중 해소** — 완료 (2026-05-23, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 fix `b789fe9` 후 2가지 시각 회귀
+    - ① **체크박스 클릭 후 시각 변화 부재** — 다크 모드 native checkbox 가 unchecked/checked 모두 거의 안 보임. 사용자가 클릭해도 토글됐는지 알 수 없음 (실제 state 는 업데이트됨 — 카드 amber 강조로 간접 확인 가능했으나 본인은 못 알아챔)
+    - ② **chip input focus 시 박스 이중** — `is_optional=true` 카드는 `border-warning/30 bg-warning/[0.04]` amber 강조 + chip input focus 시 `focus-within:ring-2 ring-accent-warm` amber ring → amber-on-amber 두 겹으로 보임 (시각 노이즈)
+  - **fix① native checkbox → 커스텀 토글 button**: `<input type=checkbox>` 제거하고 `<button type=button>` + `aria-pressed` + SVG check mark. ON 상태: `border-warning bg-warning` 풀 fill + 흰 체크 → 한눈에 보임. OFF 상태: `border-white/40 bg-transparent` 빈 박스. button onClick 으로 `!is_optional` 토글, 라벨도 amber 로 함께 전환
+  - **fix② 카드 amber 강조 제거**: `is_optional` 카드의 `border-warning/30 bg-warning/[0.04]` 삭제 → 모든 카드 일관 `border-white/5 bg-white/[0.02]`. 토글 button 자체가 is_optional 의 *유일한* 시각 신호로 충분 (row1 항상 보임). chip input ring amber 와 겹치는 시각 노이즈 자연 해소
+  - **edit 페이지 동일 패턴 적용**
+  - 검증: lint 0 errors · build · claude-in-chrome 526px 시각 확인 (토글 ON/OFF 상태 명확·chip focus amber 한 줄만)
+  - **교훈**: 다크 모드에서 native form 컨트롤(`<input type=checkbox>`·`<input type=radio>` 등)은 시각 피드백이 약함. 커스텀 button/svg 패턴 기본. *시각 신호는 한 곳에서만* — 같은 색을 여러 layer 에 겹치면 노이즈
 - **재료 작성 폼 fix — IME 가드 + "없어도 OK" 라벨 복원 + 메모/chip 진짜 한 줄** — 완료 (2026-05-23, develop 푸시)
   - **문제 (사용자 직접 발견)**: 직전 commit `18e35be` 카드 + chip 입력 도입 후 3가지 회귀
     - ① **chip "고추, 추, 간O, O" 식 fragmentation** — 한글 IME 조합 중 `,` onChange / `Enter` onKeyDown 핸들러가 발화해 조합 도중 chip 추가. e2e 414 통과했지만 한글 IME 입력은 자동화 테스트 못 잡음
