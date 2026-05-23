@@ -3,6 +3,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
 import { createClient } from '@/lib/supabase/client';
@@ -105,29 +106,35 @@ export default function CheckoutClient() {
                 <span className="text-xs text-text-muted mb-1 block">
                   {t.delivery.checkout.recipientName}
                 </span>
-                <input
-                  type="text"
-                  required
-                  value={address.recipientName}
-                  onChange={(e) => setAddress({ ...address, recipientName: e.target.value })}
-                  placeholder={t.delivery.checkout.recipientNamePlaceholder}
-                  className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none"
-                  data-testid="recipient-name"
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                  <input
+                    type="text"
+                    required
+                    value={address.recipientName}
+                    onChange={(e) => setAddress({ ...address, recipientName: e.target.value })}
+                    placeholder={t.delivery.checkout.recipientNamePlaceholder}
+                    className={INPUT_INNER_COMFORTABLE_CLASS}
+                    style={INPUT_INNER_STYLE}
+                    data-testid="recipient-name"
+                  />
+                </InputBoxWrapper>
               </label>
               <label className="block">
                 <span className="text-xs text-text-muted mb-1 block">
                   {t.delivery.checkout.recipientPhone}
                 </span>
-                <input
-                  type="tel"
-                  required
-                  value={address.recipientPhone}
-                  onChange={(e) => setAddress({ ...address, recipientPhone: e.target.value })}
-                  placeholder={t.delivery.checkout.recipientPhonePlaceholder}
-                  className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none"
-                  data-testid="recipient-phone"
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                  <input
+                    type="tel"
+                    required
+                    value={address.recipientPhone}
+                    onChange={(e) => setAddress({ ...address, recipientPhone: e.target.value })}
+                    placeholder={t.delivery.checkout.recipientPhonePlaceholder}
+                    className={INPUT_INNER_COMFORTABLE_CLASS}
+                    style={INPUT_INNER_STYLE}
+                    data-testid="recipient-phone"
+                  />
+                </InputBoxWrapper>
               </label>
             </div>
 
@@ -135,43 +142,52 @@ export default function CheckoutClient() {
               <span className="text-xs text-text-muted mb-1 block">
                 {t.delivery.checkout.zipcode}
               </span>
-              <input
-                type="text"
-                value={address.zipcode}
-                onChange={(e) => setAddress({ ...address, zipcode: e.target.value })}
-                placeholder={t.delivery.checkout.zipcodePlaceholder}
-                className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none"
-                data-testid="zipcode"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                <input
+                  type="text"
+                  value={address.zipcode}
+                  onChange={(e) => setAddress({ ...address, zipcode: e.target.value })}
+                  placeholder={t.delivery.checkout.zipcodePlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  data-testid="zipcode"
+                />
+              </InputBoxWrapper>
             </label>
 
             <label className="block">
               <span className="text-xs text-text-muted mb-1 block">
                 {t.delivery.checkout.roadAddress}
               </span>
-              <input
-                type="text"
-                required
-                value={address.roadAddress}
-                onChange={(e) => setAddress({ ...address, roadAddress: e.target.value })}
-                placeholder={t.delivery.checkout.roadAddressPlaceholder}
-                className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none"
-                data-testid="road-address"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                <input
+                  type="text"
+                  required
+                  value={address.roadAddress}
+                  onChange={(e) => setAddress({ ...address, roadAddress: e.target.value })}
+                  placeholder={t.delivery.checkout.roadAddressPlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  data-testid="road-address"
+                />
+              </InputBoxWrapper>
             </label>
 
             <label className="block">
               <span className="text-xs text-text-muted mb-1 block">
                 {t.delivery.checkout.addressDetail}
               </span>
-              <input
-                type="text"
-                value={address.detail}
-                onChange={(e) => setAddress({ ...address, detail: e.target.value })}
-                placeholder={t.delivery.checkout.addressDetailPlaceholder}
-                className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none"
-                data-testid="address-detail"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2">
+                <input
+                  type="text"
+                  value={address.detail}
+                  onChange={(e) => setAddress({ ...address, detail: e.target.value })}
+                  placeholder={t.delivery.checkout.addressDetailPlaceholder}
+                  className={INPUT_INNER_COMFORTABLE_CLASS}
+                  style={INPUT_INNER_STYLE}
+                  data-testid="address-detail"
+                />
+              </InputBoxWrapper>
             </label>
           </section>
 
@@ -179,14 +195,17 @@ export default function CheckoutClient() {
           <section className="rounded-xl bg-background-secondary border border-white/10 p-4">
             <label className="block">
               <span className="font-bold mb-2 block">{t.delivery.checkout.requestNote}</span>
-              <textarea
-                rows={2}
-                value={requestNote}
-                onChange={(e) => setRequestNote(e.target.value)}
-                placeholder={t.delivery.checkout.requestNotePlaceholder}
-                className="w-full px-3 py-2 rounded-lg bg-background-tertiary border border-white/10 focus:border-accent-warm focus:outline-none resize-none"
-                data-testid="request-note"
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-lg !px-3 !py-2 !min-h-[60px] !items-start">
+                <textarea
+                  rows={2}
+                  value={requestNote}
+                  onChange={(e) => setRequestNote(e.target.value)}
+                  placeholder={t.delivery.checkout.requestNotePlaceholder}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
+                  style={INPUT_INNER_STYLE}
+                  data-testid="request-note"
+                />
+              </InputBoxWrapper>
             </label>
           </section>
 
