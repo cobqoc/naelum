@@ -17,6 +17,7 @@ import FridgeIcon from '@/components/icons/FridgeIcon';
 import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
+import OptionalIngredientBadge from '@/components/Recipes/OptionalIngredientBadge';
 import { parseAllTimers } from '@/lib/cook/parseTimers';
 import { tokenizeStepText } from '@/lib/recipes/highlightOptionalIngredients';
 
@@ -779,13 +780,11 @@ export default function RecipeBrowseView({
                           tok.type === 'text' ? (
                             <span key={i}>{tok.value}</span>
                           ) : (
-                            <span key={i} className="text-warning font-medium">
+                            // 재료명은 본문 흐름(본문색), (선택) 배지만 amber + hover/tap tooltip 으로 안내.
+                            // 모든 멘션에 배지 — "단계 1 먼저 봤을 것" 가정 fragile
+                            <span key={i}>
                               {tok.matchedText}
-                              {tok.isFirstMention && (
-                                <span className="ml-0.5 inline-flex items-center rounded bg-warning/15 px-1 py-0 text-[10px] font-bold align-middle">
-                                  ({t.recipe.ingredientOptional})
-                                </span>
-                              )}
+                              <OptionalIngredientBadge substitutes={tok.substitutes} />
                             </span>
                           )
                         )}
