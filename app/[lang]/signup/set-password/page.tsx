@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
 import { createProfile, beginOnboarding } from '@/lib/auth/profile';
 import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
@@ -160,15 +161,18 @@ export default function SetPasswordPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.password} *</label>
             <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={t.auth.passwordPlaceholder}
-                autoComplete="new-password"
-                required
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={t.auth.passwordPlaceholder}
+                  autoComplete="new-password"
+                  required
+                />
+              </InputBoxWrapper>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -214,17 +218,18 @@ export default function SetPasswordPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.confirmPassword} *</label>
             <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
-                  confirmPassword && password !== confirmPassword ? 'ring-error' : 'ring-white/10 focus:ring-accent-warm'
-                }`}
-                placeholder={t.auth.confirmPassword}
-                autoComplete="new-password"
-                required
-              />
+              <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={t.auth.confirmPassword}
+                  autoComplete="new-password"
+                  required
+                />
+              </InputBoxWrapper>
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -255,14 +260,17 @@ export default function SetPasswordPage() {
             <label className="text-sm font-medium text-text-secondary">
               {t.auth.birthDateLabel || '생년월일'} <span className="text-error">*</span>
             </label>
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-              required
-            />
+            <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+              <input
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+                required
+              />
+            </InputBoxWrapper>
             <p className="text-[11px] text-text-muted">
               {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
             </p>

@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
 
 export default function ResetPasswordPage() {
@@ -166,15 +167,18 @@ export default function ResetPasswordPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.newPassword} *</label>
             <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                placeholder={t.auth.passwordPlaceholder}
-                autoComplete="new-password"
-                required
-              />
+              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                  style={INPUT_INNER_STYLE}
+                  placeholder={t.auth.passwordPlaceholder}
+                  autoComplete="new-password"
+                  required
+                />
+              </InputBoxWrapper>
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -220,16 +224,17 @@ export default function ResetPasswordPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-text-secondary">{t.auth.confirmPassword} *</label>
             <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 transition-all focus:ring-2 ${
-                  confirmPassword && password !== confirmPassword ? 'ring-error' : 'ring-white/10 focus:ring-2 focus:ring-accent-warm'
-                }`}
-                autoComplete="new-password"
-                required
-              />
+              <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
+                  style={INPUT_INNER_STYLE}
+                  autoComplete="new-password"
+                  required
+                />
+              </InputBoxWrapper>
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}

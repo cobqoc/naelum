@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { createProfile, beginOnboarding } from '@/lib/auth/profile';
 import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
@@ -216,14 +217,17 @@ export default function TermsAgreementPage() {
           <label className="text-sm font-medium text-text-secondary">
             {t.auth.birthDateLabel || '생년월일'} <span className="text-error">*</span>
           </label>
-          <input
-            type="date"
-            value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full px-4 py-3 rounded-xl bg-background-primary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-            required
-          />
+          <InputBoxWrapper className="!bg-background-primary !rounded-xl !px-4 !py-3">
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+              required
+            />
+          </InputBoxWrapper>
           <p className="text-[11px] text-text-muted">
             {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
           </p>

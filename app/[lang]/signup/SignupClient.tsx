@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 
 export default function SignupPage() {
@@ -241,15 +242,18 @@ export default function SignupPage() {
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-text-secondary">{t.auth.email} *</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMagicLink()}
-                  className="w-full rounded-xl bg-background-tertiary px-5 py-3.5 text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm"
-                  placeholder="example@email.com"
-                  autoComplete="email"
-                />
+                <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMagicLink()}
+                    className={INPUT_INNER_COMFORTABLE_CLASS}
+                    style={INPUT_INNER_STYLE}
+                    placeholder="example@email.com"
+                    autoComplete="email"
+                  />
+                </InputBoxWrapper>
               </div>
 
               {error && (
