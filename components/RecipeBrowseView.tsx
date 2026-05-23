@@ -18,6 +18,7 @@ import CookTimerPanel from '@/components/cook/CookTimerPanel';
 import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import OptionalIngredientBadge from '@/components/Recipes/OptionalIngredientBadge';
+import SubstituteIndicator from '@/components/Recipes/SubstituteIndicator';
 import { parseAllTimers } from '@/lib/cook/parseTimers';
 import { tokenizeStepText } from '@/lib/recipes/highlightOptionalIngredients';
 
@@ -667,10 +668,9 @@ export default function RecipeBrowseView({
                       )}
                       {subVia && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
+                          <SubstituteIndicator />
                           <span aria-hidden className="text-success font-bold">✓</span>
                           <span className="font-medium text-success">{subVia}</span>
-                          <span className="text-warning/60">·</span>
-                          <span className="text-warning font-medium">{t.recipe.fridgeModalSubstitute}</span>
                         </span>
                       )}
                     </div>
