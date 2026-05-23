@@ -4,22 +4,19 @@ import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { UNITS, type RecipeIngredient as Ingredient } from '@/lib/constants/recipe';
 import RecipeIngredientInput from '@/components/Recipes/RecipeIngredientInput';
+import SubstituteChipInput from '@/components/Recipes/SubstituteChipInput';
 import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 
 /**
  * 레시피 작성 폼의 재료 준비 블록 (presentational).
  *
- * god-file(NewRecipePage) 분해 마무리 down-payment — [[TagsField]]·
- * [[NutritionFields]]·[[StepsSection]] 규약 동일:
- *  1. 상태(ingredients·이미지·드래그)·로직(add/remove/update/이미지/DnD)·ref·
- *     getPlaceholder 헬퍼는 전부 부모(page.tsx)가 소유. 이 컴포넌트는 값+콜백만.
- *  2. JSX 는 원본과 byte-identical (마크업·className·핸들러 시그니처 동일) → 행위 변경 0
- *  3. 검증: npm run build(strict props) + e2e/recipe-creation.spec.ts
- *     ("UI 회귀: 단계/재료/태그 동적 추가" 가 재료 add/update 를 실제로 exercise)
+ * 2026-05-23 레이아웃 재구성:
+ *  - 각 재료 = 카드 (border + bg + padding) → 시각적 청크 단위 분명
+ *  - row1: [재료명][수량][단위][☐선택재료][×] (없어도 OK 토글이 row1 안으로)
+ *  - row2: [메모][🔄 chip 입력] flex-wrap (데스크톱 1줄·모바일 2줄)
+ *  - 이전 3줄(option 줄 별도) → 2줄(데스크톱)/3줄(모바일·메모+chip 스택)
  *
- * recipes/new 섹션 중 가장 결합도 높다(이미지 업로드+DnD+ref+가변 단위 input).
- * 로직은 일절 옮기지 않고 부모 클로저/ref 를 그대로 props 로 전달만 한다(위험 최소화).
- * 부모는 <section>·h2·hint 를 유지, 이 컴포넌트는 "통합 재료 준비 영역" div 만 책임.
+ * 상태·로직·ref·getPlaceholder 는 page.tsx 가 소유, 이 컴포넌트는 값+콜백만.
  */
 
 interface IngredientsSectionProps {
@@ -133,133 +130,125 @@ export default function IngredientsSection({
       {/* 구분선 */}
       <div className="border-t border-white/10"></div>
 
-      {/* 재료 입력 테이블 */}
-      <div className="space-y-2">
-        {/* Header */}
-        <div className="hidden sm:grid sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 text-xs text-text-muted pb-2 border-b border-white/10">
-        <span>{tf.ingName} *</span>
-        <span>{tf.ingQuantity}</span>
-        <span>{tf.ingUnit}</span>
-        <span>{tf.ingNotes}</span>
-        <span></span>
-      </div>
+      {/* 재료 입력 카드 리스트 */}
+      <div className="space-y-3">
+        {ingredients.map((ing, index) => {
+          const standardUnits = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
+          const isCustomUnit = ing.unit === '' || !standardUnits.includes(ing.unit);
 
-      {/* Ingredient Rows */}
-      {ingredients.map((ing, index) => {
-        const standardUnits = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
-        const isCustomUnit = ing.unit === '' || !standardUnits.includes(ing.unit);
-
-        return (
-          <div key={index} className="space-y-2">
-            {/* Row 1: Main ingredient info (always visible) */}
-            <div className="grid grid-cols-[1fr_80px_60px_32px] sm:grid-cols-[1fr_100px_70px_1fr_32px] gap-2 items-center">
-              {/* 재료명 입력 — 자동완성 */}
-              <RecipeIngredientInput
-                value={ing.ingredient_name}
-                onChange={(value) => onUpdateIngredient(index, 'ingredient_name', value)}
-                onSelect={(item) => onSelectIngredient(index, item)}
-                placeholder={getPlaceholder(index, 'name')}
-              />
-              <input
-                type="text"
-                value={ing.quantity}
-                onChange={(e) => onUpdateIngredient(index, 'quantity', e.target.value)}
-                className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                placeholder={getPlaceholder(index, 'quantity')}
-              />
-              {isCustomUnit ? (
+          return (
+            <div
+              key={index}
+              className={`rounded-lg border p-3 space-y-2 transition-colors ${
+                ing.is_optional
+                  ? 'border-warning/30 bg-warning/[0.04]'
+                  : 'border-white/5 bg-white/[0.02]'
+              }`}
+            >
+              {/* Row 1: 재료명·수량·단위·☐선택·× */}
+              <div className="grid grid-cols-[1fr_64px_60px_auto_28px] sm:grid-cols-[1fr_90px_72px_auto_32px] gap-2 items-center">
+                {/* 재료명 자동완성 */}
+                <RecipeIngredientInput
+                  value={ing.ingredient_name}
+                  onChange={(value) => onUpdateIngredient(index, 'ingredient_name', value)}
+                  onSelect={(item) => onSelectIngredient(index, item)}
+                  placeholder={getPlaceholder(index, 'name')}
+                />
                 <input
-                  ref={(el) => { unitInputRefs.current[index] = el; }}
                   type="text"
-                  value={ing.unit}
-                  onChange={(e) => onUpdateIngredient(index, 'unit', e.target.value)}
-                  onBlur={(e) => {
-                    if (e.target.value === '') {
-                      onUpdateIngredient(index, 'unit', '선택');
-                    }
-                  }}
+                  value={ing.quantity}
+                  onChange={(e) => onUpdateIngredient(index, 'quantity', e.target.value)}
                   className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                  placeholder={tf.ingUnitPlaceholder}
+                  placeholder={getPlaceholder(index, 'quantity')}
                 />
-              ) : (
-                <select
-                  value={ing.unit}
-                  onChange={(e) => {
-                    if (e.target.value === '기타') {
-                      onUpdateIngredient(index, 'unit', '');
-                      // 다음 렌더링 후 input에 자동 포커스
-                      setTimeout(() => {
-                        unitInputRefs.current[index]?.focus();
-                      }, 0);
-                    } else {
-                      onUpdateIngredient(index, 'unit', e.target.value);
-                    }
-                  }}
-                  className="w-full rounded-lg bg-background-tertiary px-1 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
+                {isCustomUnit ? (
+                  <input
+                    ref={(el) => { unitInputRefs.current[index] = el; }}
+                    type="text"
+                    value={ing.unit}
+                    onChange={(e) => onUpdateIngredient(index, 'unit', e.target.value)}
+                    onBlur={(e) => {
+                      if (e.target.value === '') {
+                        onUpdateIngredient(index, 'unit', '선택');
+                      }
+                    }}
+                    className="w-full rounded-lg bg-background-tertiary px-2 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
+                    placeholder={tf.ingUnitPlaceholder}
+                  />
+                ) : (
+                  <select
+                    value={ing.unit}
+                    onChange={(e) => {
+                      if (e.target.value === '기타') {
+                        onUpdateIngredient(index, 'unit', '');
+                        setTimeout(() => {
+                          unitInputRefs.current[index]?.focus();
+                        }, 0);
+                      } else {
+                        onUpdateIngredient(index, 'unit', e.target.value);
+                      }
+                    }}
+                    className="w-full rounded-lg bg-background-tertiary px-1 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
+                  >
+                    {UNITS.map(u => (
+                      <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
+                    ))}
+                  </select>
+                )}
+                {/* ☐ 선택 재료 토글 */}
+                <label
+                  className={`flex items-center gap-1.5 px-2 py-2 rounded-lg cursor-pointer select-none text-xs whitespace-nowrap transition-colors ${
+                    ing.is_optional
+                      ? 'text-warning bg-warning/10'
+                      : 'text-text-muted hover:bg-white/5'
+                  }`}
+                  title={tf.ingOptionalLabel}
                 >
-                  {UNITS.map(u => (
-                    <option key={u} value={u}>{t.quickAdd.unitLabels[u as keyof typeof t.quickAdd.unitLabels] ?? u}</option>
-                  ))}
-                </select>
-              )}
-              {/* Notes - Desktop only (in grid) */}
-              <input
-                type="text"
-                value={ing.notes}
-                onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
-                className="hidden sm:block w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                placeholder={getPlaceholder(index, 'notes')}
-              />
-              <button
-                onClick={() => onRemoveIngredient(index)}
-                disabled={ingredients.length <= 5}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                  ingredients.length <= 5
-                    ? 'text-text-muted opacity-30'
-                    : 'text-error hover:bg-error/10'
-                }`}
-              >
-                ×
-              </button>
-            </div>
+                  <input
+                    type="checkbox"
+                    checked={ing.is_optional}
+                    onChange={(e) => onUpdateIngredient(index, 'is_optional', e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border border-white/20 bg-background-tertiary accent-accent-warm"
+                  />
+                  <span>{tf.ingOptionalShort}</span>
+                </label>
+                <button
+                  onClick={() => onRemoveIngredient(index)}
+                  disabled={ingredients.length <= 5}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all ${
+                    ingredients.length <= 5
+                      ? 'text-text-muted opacity-30'
+                      : 'text-error hover:bg-error/10'
+                  }`}
+                >
+                  ×
+                </button>
+              </div>
 
-            {/* Row 2: Notes on mobile (full width below) */}
-            <div className="sm:hidden">
-              <input
-                type="text"
-                value={ing.notes}
-                onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
-                className="w-full rounded-lg bg-background-tertiary px-3 py-2 text-sm text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm"
-                placeholder={tf.ingNotesPlaceholder}
-              />
-            </div>
-
-            {/* Row 3: 옵션 줄 — "없어도 OK" 토글 + 대체 재료 입력 (행마다 항상 노출) */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs pl-0.5">
-              <label className="flex items-center gap-1.5 text-text-muted cursor-pointer select-none shrink-0">
+              {/* Row 2: 메모 + 🔄 대체 재료 chip (데스크톱 side-by-side / 모바일 stack) */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
-                  type="checkbox"
-                  checked={ing.is_optional}
-                  onChange={(e) => onUpdateIngredient(index, 'is_optional', e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border border-white/20 bg-background-tertiary accent-accent-warm"
+                  type="text"
+                  value={ing.notes}
+                  onChange={(e) => onUpdateIngredient(index, 'notes', e.target.value)}
+                  className="w-full sm:flex-1 sm:min-w-0 rounded-md bg-background-tertiary px-3 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
+                  placeholder={getPlaceholder(index, 'notes')}
                 />
-                <span>{tf.ingOptionalLabel}</span>
-              </label>
-              <span className="text-text-muted/40 shrink-0">·</span>
-              <input
-                type="text"
-                value={(ing.substitutes ?? []).join(', ')}
-                onChange={(e) => onUpdateIngredient(index, 'substitutes', e.target.value.split(',').map(s => s.trim()))}
-                placeholder={tf.ingSubstitutePlaceholder}
-                className="flex-1 min-w-0 rounded-md bg-background-tertiary px-2.5 py-1.5 text-xs text-text-primary outline-none ring-1 ring-white/5 focus:ring-2 focus:ring-accent-warm placeholder:text-text-muted/60"
-              />
+                <div className="w-full sm:flex-1 sm:min-w-0">
+                  <SubstituteChipInput
+                    value={ing.substitutes ?? []}
+                    onChange={(next) => onUpdateIngredient(index, 'substitutes', next)}
+                    placeholder={tf.ingSubstitutePlaceholder}
+                    ariaLabel={tf.ingSubstitutePlaceholder}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
 
-      {/* 재료 추가 버튼 — 1개씩 (빈 5행 압도감 줄임) */}
+      {/* 재료 추가 버튼 */}
       <button
         onClick={onAddIngredients}
         className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
