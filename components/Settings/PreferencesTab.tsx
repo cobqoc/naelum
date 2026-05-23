@@ -1,5 +1,7 @@
 'use client';
 
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+
 interface PreferencesTabProps {
   interests: string[];
   setInterests: (v: string[]) => void;
@@ -96,13 +98,16 @@ export default function PreferencesTab({
       {/* Allergies */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">{t.settingsPage.allergyLabel}</label>
-        <input
-          type="text"
-          value={allergies}
-          onChange={(e) => setAllergies(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl bg-background-secondary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
-          placeholder={t.settingsPage.allergyPlaceholder}
-        />
+        <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
+          <input
+            type="text"
+            value={allergies}
+            onChange={(e) => setAllergies(e.target.value)}
+            className={INPUT_INNER_COMFORTABLE_CLASS}
+            style={INPUT_INNER_STYLE}
+            placeholder={t.settingsPage.allergyPlaceholder}
+          />
+        </InputBoxWrapper>
         <p className="text-xs text-text-muted">{t.settingsPage.allergyHint}</p>
       </div>
 

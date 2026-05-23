@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface TwoFactorTabProps {
   userId: string;
@@ -244,15 +245,18 @@ export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
 
           <div className="space-y-3">
             <p className="text-sm text-text-secondary">{tf.enterCode}</p>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full px-4 py-3 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all text-center text-2xl font-mono tracking-widest"
-              placeholder="000000"
-            />
+            <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                className={`${INPUT_INNER_COMFORTABLE_CLASS} text-center text-2xl font-mono tracking-widest`}
+                style={INPUT_INNER_STYLE}
+                placeholder="000000"
+              />
+            </InputBoxWrapper>
           </div>
 
           <div className="flex gap-3">
@@ -311,15 +315,18 @@ export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
         <div className="p-4 rounded-xl bg-background-secondary space-y-4">
           <h3 className="font-bold text-error">{tf.disable} 2FA</h3>
           <p className="text-sm text-text-secondary">{tf.enterCode}</p>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            value={disableCode}
-            onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
-            className="w-full px-4 py-3 rounded-xl bg-background-tertiary outline-none ring-1 ring-white/10 focus:ring-error transition-all text-center text-2xl font-mono tracking-widest"
-            placeholder="000000"
-          />
+          <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
+              className={`${INPUT_INNER_COMFORTABLE_CLASS} text-center text-2xl font-mono tracking-widest`}
+              style={INPUT_INNER_STYLE}
+              placeholder="000000"
+            />
+          </InputBoxWrapper>
           <div className="flex gap-3">
             <button
               onClick={() => { setShowDisable(false); setDisableCode(''); setError(''); }}
