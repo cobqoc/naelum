@@ -1149,6 +1149,16 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **레시피 작성·수정 페이지 audit (팁 mid-priority 정리 후속)** — 완료 (2026-05-25, develop 푸시)
+  - **① IME 가드 누락 1곳**: `TagsField.tsx:45` 레시피 tag input `onKeyDown` Enter 핸들러에 IME 가드 없음 → 한글 조합 중 Enter 가로채서 fragmentation 가능. `composingRef` + `compositionstart/end` + `isComposing`/`keyCode 229` 가드 추가 (substitute chip·tip tag input 패턴 동일)
+  - **② i18n 한글 하드코딩 3건**:
+    - `AllRecipesClient.tsx:308, 382` — `aria-label="카테고리"`·`aria-label="이번 주 인기"` → `t.home.categoryTitle`·`t.home.sectionTrending` 재사용 (8 locale 추가 키 불필요, 기존 키 reuse)
+    - `RecipeIngredientInput.tsx:65` — default `placeholder = '재료 이름'` → 영문 `'Ingredient name'` (dead 코드지만 다국어 안전 폴백)
+    - skip: ShareButton 카카오 키 미설정 toast (개발용 에러, prod 미발생) · `'기타'`·`'선택'` unit sentinels (내부 magic string, 표시는 i18n localized — `quickAdd.unitLabels`)
+  - **③ 권한·인증 race**: image upload `!user` 처리 불일치 6곳 — submit 은 `router.push('/login')` 하는데 image upload 는 toast 만 띄우고 폼에 머묾 → 세션 만료 시 사용자가 무한 시도. **6곳 일관 패턴 적용** (toast + redirect)
+  - **⑤ 라벨 일관성**: ✅ PASS — `ingOptionalLabel`(form 토글)·`ingredientOptional`(표시) 모두 i18n 키 통해 "빼도 돼요" 통일
+  - **단계 reorder** 한계는 audit 범위 밖 (새 기능). 사용자 실수요 들어오면 별도 작업
+  - 검증: lint 0 errors · build 성공
 - **프로필·설정 탭 모바일 wrap 회귀 fix** — 완료 (2026-05-25, develop 푸시, PR #157)
   - 증상: 모바일 좁은 폭에서 탭 button 안 텍스트가 *세로로 wrap*. 프로필(6탭) 더 심함, 설정(4탭) 도 발생 가능
   - 이전 설정 페이지 패턴(`hidden sm:inline` 으로 모바일은 이모지만)을 ProfileTabs 에도 적용하려다 사용자 피드백상 부적합 — **시스템 이모지(📖·🎉·👅 등) 는 OS 별 렌더 다르고 브랜드 정체성 없어 인지 anchor 역할 못함**. 향후 낼름 *커스텀 아이콘 셋* (브랜드 SVG, 웜/테라코타/앰버 톤) 만들면 이모지 단독 노출 재검토

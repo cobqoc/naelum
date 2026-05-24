@@ -305,7 +305,7 @@ export default function AllRecipesPage() {
           </div>
 
           {/* 카테고리 칩 — 국가별/요리별 tab toggle + 가로 스크롤 */}
-          <section aria-label="카테고리" className="mb-6">
+          <section aria-label={t.home.categoryTitle} className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-text-secondary">{t.home.categoryTitle}</h2>
               <div className="flex gap-1 bg-background-secondary rounded-full p-0.5">
@@ -379,7 +379,7 @@ export default function AllRecipesPage() {
 
           {/* 이번 주 인기 — 필터 없을 때만 노출. 아래 전체 그리드와 구분하려 가로 스크롤 스트립 형식. */}
           {!hasFilter && trending.length > 0 && (
-            <section aria-label="이번 주 인기" className="mb-8">
+            <section aria-label={t.home.sectionTrending} className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold">{t.home.sectionTrending}</h2>
                 <button

@@ -1,3 +1,6 @@
+'use client';
+
+import { useRef } from 'react';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 /**
@@ -33,6 +36,10 @@ export default function TagsField({
   onAdd,
   onRemove,
 }: TagsFieldProps) {
+  // 한글/일본어/중국어 IME 가드 — Enter 키가 조합 확정용이라 가로채면 fragmentation.
+  // [[feedback-verify-ime-in-browser]] · tip tag input·substitute chip 패턴과 동일.
+  const composingRef = useRef(false);
+
   return (
     <div className="space-y-4">
       <label className="text-sm font-medium text-text-secondary">{label}</label>
@@ -42,7 +49,14 @@ export default function TagsField({
             type="text"
             value={tagInput}
             onChange={(e) => onTagInputChange(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onAdd())}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={() => { composingRef.current = false; }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              if (composingRef.current || e.nativeEvent.isComposing || e.keyCode === 229) return;
+              e.preventDefault();
+              onAdd();
+            }}
             className={INPUT_INNER_COMFORTABLE_CLASS}
             style={INPUT_INNER_STYLE}
             placeholder={placeholder}
