@@ -192,7 +192,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={screenshotPreview}
-                      alt="첨부 스크린샷"
+                      alt={t.contact.screenshotLabel}
                       className="max-h-40 rounded-xl border border-white/10 object-contain"
                     />
                     <button

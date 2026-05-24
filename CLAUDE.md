@@ -1149,6 +1149,11 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **앱 전체 i18n audit 마무리 — 분리 모달 마이그레이션 + CopyrightForm 의도 확인** — 완료 (2026-05-25, develop 푸시)
+  - **`RecipeReviewModal` 전체 i18n 마이그레이션** — 11 한글 string. 신규 키 13개 8 locale 추가 (`recipe.reviewModalTitleCreate`·`reviewModalTitleEdit`·`reviewRatingLabel`·`reviewRatingScoreSuffix`·`reviewLabel`·`reviewPlaceholder`·`reviewSubmitCreate`·`reviewSubmitEdit`·`reviewSaving`·`reviewSaveFailed`·`reviewSaveError`·`reviewLoginRequired`·`reviewLoginRequiredDesc`). 기존 키 reuse: `t.common.cancel`·`t.common.login`
+  - **`ContactModal` alt 1줄 fix** — `alt="첨부 스크린샷"` → `t.contact.screenshotLabel` (기존 키 reuse)
+  - **`CopyrightReportForm` 의도적 KR-only 확인** — 호스트 페이지 `/copyright` 자체가 100+ 줄 한국어 법무 문구(제1조~제5조). 한국 저작권법 + DMCA 명시 언급 — *Korean jurisdiction 법무 문서*. form만 i18n 하면 정책은 한국어인데 신고 form만 영어가 돼 사용자 혼란 가중 → **유지 결정**
+  - 검증: lint 0 errors · build 성공
 - **앱 전체 i18n 한글 하드코딩 정리 (recipe audit 후속, admin 제외)** — 완료 (2026-05-25, develop 푸시)
   - 레시피 영역 audit 후 *recipe domain 외* 잔존 한글 ~30건 grep 발견 → user-facing 12건 fix
   - **신규 키 8 locale**:
