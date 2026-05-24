@@ -10,7 +10,7 @@
 
 import Link from '@/components/Common/LocalizedLink';
 import dynamicImport from 'next/dynamic';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
@@ -21,17 +21,16 @@ import EmptyFridgeGuide from './_home/EmptyFridgeGuide';
 import MobileSearchOverlay from './_home/MobileSearchOverlay';
 import FridgeShelves from './_home/FridgeShelves';
 import { useFridgeInteractions } from './_home/useFridgeInteractions';
+import { useFridgeItems } from './_home/useFridgeItems';
 import { useFridgeRecommendations } from './_home/useFridgeRecommendations';
 import { useOnboardingState } from './_home/useOnboardingState';
 import { computeFridgeShelfDistribution } from '@/lib/home/fridgeShelfDistribution';
 import {
   TOAST_AUTO_HIDE_MS,
-  LS_KEY_DEMO_ITEMS,
   LS_KEY_ONBOARDING_BANNER,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, formatFreshLabel, urgencyScore, isDemoRecord } from './_home/helpers';
-import { DEMO } from './_home/demoItems';
 import { track } from '@/lib/analytics/track';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
@@ -73,9 +72,20 @@ export default function HomeClient({
 }: HomeClientProps) {
   const { user, profile, loading: authLoading } = useAuth();
   const { t } = useI18n();
-  // SSR prefetch된 items가 있으면 초기 렌더부터 반영, 없으면 빈 배열 + loading 상태 유지.
-  const [items, setItems] = useState<FridgeItem[]>(() => (initialItems as FridgeItem[] | null) ?? []);
-  const [loading, setLoading] = useState(initialItems === null);
+
+  // pendingDeleteIdsRef — useFridgeItems(필터링) + useFridgeInteractions(populate) 공유.
+  // HomeClient 가 ref 소유 = 양방향 의존성 해소. 두 hook 모두 외부 주입으로 받음 (2026-05-25).
+  const pendingDeleteIdsRef = useRef<Set<string>>(new Set());
+
+  // 냉장고 items state + fetch + 3 effects — _home/useFridgeItems hook 으로 추출 (2026-05-25).
+  // 비로그인 demo localStorage 동기화 + 초기 load + fridge-updated event listener + debounce.
+  const { items, setItems, loading } = useFridgeItems({
+    user,
+    authLoading,
+    initialItems,
+    pendingDeleteIdsRef,
+  });
+
   const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
@@ -171,96 +181,21 @@ export default function HomeClient({
 
   // chip 인터랙션 — 상태(actionItem/detailItem)·refs·타이머·삭제 핸들러를
   // _home/useFridgeInteractions hook 으로 추출(Step 3, 기계적 이동·동작 보존).
-  // pendingDeleteIdsRef 는 fetchItems 필터에 동일 ref 로 사용됨.
+  // pendingDeleteIdsRef 는 외부 주입 (HomeClient 가 ref 소유, useFridgeItems 와 공유).
   const {
     actionItem, setActionItem,
     detailItem, setDetailItem,
-    pendingDeleteIdsRef,
     handleCook,
     handleEditFromSheet,
     handleChipPressStart,
     handleChipPressEnd,
     handleChipClickWithLongPress,
     handleDeleteFromSheet,
-  } = useFridgeInteractions({ items, setItems, user, t });
+  } = useFridgeInteractions({ items, setItems, user, t, pendingDeleteIdsRef });
 
   // handleCookFromExpiring(임박 시트 "이걸로 만들기") 전용 — chip 인터랙션 hook 과
   // 별개 경로라 router 는 HomeClient 가 직접 보유(hook 내부 router 와 독립 인스턴스).
   const router = useRouter();
-
-  // DB/localStorage에서 raw items 반환 (filter는 호출부에서 적용)
-  const fetchItems = useCallback(async (): Promise<FridgeItem[]> => {
-    if (!user) {
-      // 비로그인 체험 모드: localStorage에 저장된 데모 재료가 있으면 복원, 없으면 DEMO 기본값
-      try {
-        const saved = localStorage.getItem(LS_KEY_DEMO_ITEMS);
-        if (saved) {
-          const parsed = JSON.parse(saved) as FridgeItem[];
-          if (Array.isArray(parsed)) {
-            // '물' 자동 정리 + 로그아웃 race로 오염된 DB 재료(UUID id) 제거
-            const filtered = parsed.filter(
-              item => item.ingredient_name !== '물' && isDemoRecord(item)
-            );
-            if (filtered.length > 0) return filtered;
-          }
-        }
-      } catch { /* localStorage 실패 시 DEMO fallback */ }
-      return DEMO;
-    }
-    const client = createClient();
-    const { data } = await client
-      .from('user_ingredients')
-      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert, ingredients_master!ingredient_id(emoji)')
-      .eq('user_id', user.id)
-      .order('expiry_date', { ascending: true, nullsFirst: false });
-    return (data ?? []).map((row) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const master = (row as any).ingredients_master;
-      return { ...row, emoji: master?.emoji ?? null, ingredients_master: undefined } as FridgeItem;
-    });
-  }, [user]);
-
-  // 비로그인 체험 모드 — items 변경 시 localStorage에 저장
-  useEffect(() => {
-    if (user || loading) return;
-    // 로그아웃 직후 race condition 방어: DB 재료(UUID id)가 섞여 있으면 저장 금지
-    if (items.some(item => !isDemoRecord(item))) return;
-    try { localStorage.setItem(LS_KEY_DEMO_ITEMS, JSON.stringify(items)); } catch { /* 용량 초과 등 무시 */ }
-  }, [user, loading, items]);
-
-  useEffect(() => {
-    if (authLoading) return;
-    let cancelled = false;
-    queueMicrotask(async () => {
-      const rows = await fetchItems();
-      if (cancelled) return;
-      // undo 창 중인 pending-delete는 제외 (DB에는 아직 있지만 UX상 삭제된 상태)
-      setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
-    // pendingDeleteIdsRef = hook 반환 안정 ref(identity 불변) → deps 추가해도 재실행 0.
-  }, [authLoading, fetchItems, pendingDeleteIdsRef]);
-
-  // 외부에서 냉장고 변경 이벤트 발생 시 재fetch
-  // (예: ShoppingCartDropdown에서 "냉장고에 추가" 후, 레시피 → 재료 추가 등).
-  // debounce 300ms: 배치 저장 시 이벤트가 연속 발생해도 마지막 한 번만 fetch
-  // (개별 dispatch가 race하여 stale 데이터로 items를 덮어쓰는 버그 방지).
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    const handler = () => {
-      clearTimeout(timer);
-      timer = setTimeout(async () => {
-        const rows = await fetchItems();
-        setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
-      }, 300);
-    };
-    window.addEventListener('fridge-updated', handler);
-    return () => {
-      window.removeEventListener('fridge-updated', handler);
-      clearTimeout(timer);
-    };
-  }, [fetchItems, pendingDeleteIdsRef]);
 
   // 임박 재료로 요리하기 — /recipes 재료 기반 탭으로 이동(임박 재료만 query).
   const handleCookFromExpiring = useCallback(() => {

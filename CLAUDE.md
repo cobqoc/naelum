@@ -1157,6 +1157,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **HomeClient `useFridgeItems` 추출 — god-file 분해 완전 마무리** — 완료 (2026-05-25, develop 푸시)
+  - 사용자 결정: "미래엔 더 복잡해진다" → 지금 분해 (지금 비용 < 미래 누적 비용). 양방향 의존성도 risk 감수하고 풀기
+  - **양방향 의존성 해소**: `useFridgeInteractions` 가 `pendingDeleteIdsRef` 를 *내부 생성* 했던 것 → HomeClient 가 ref 소유 + 두 hook 에 외부 주입. `useFridgeItems`(필터 사용) 와 `useFridgeInteractions`(populate) 가 같은 ref 공유. 식별성·동작 byte-identical
+  - **`useFridgeItems` 신설** (136줄) — items state + setItems + loading + fetchItems + 3 effects (localStorage demo 동기화·초기 load+filter·fridge-updated event listener+debounce). race 가드 보존 (cancelled 플래그·300ms debounce·pendingDeleteIdsRef 필터)
+  - **HomeClient 750 → 685줄** (-65 net, hook 외부화 -120줄 + import boilerplate). 분해 임계 700 *아래* 진입
+  - **안전망 audit + 변경 전후 동일 통과수 확인**: 11개 사용처 전수 mapped (`useFridgeInteractions` 내부 5·HomeClient 6) + 기존 e2e 강커버 (`fridge-chip-interactions`·`logged-in-home`·`cart-decomposition`·`cart-grouping`·`ingredient-auto-merge`) → 새 안전망 갭 없음. baseline 414 passed → 변경 후 동일 414 passed (fresh build 5.4분, 0 failed 0 flaky)
+  - **god-file phase 2 완전 종결**: 6 god-file 모두 분해 완료. HomeClient 도 추출 가능한 도메인 모두 분리됨 (chip 인터랙션·items state·추천·온보딩·표현 컴포넌트 5개·순수함수). 남은 685줄은 진짜 orchestration (props 합성·모달 conditional render·큰 JSX)
 - **HomeClient 추가 분해 + god-file 규칙 갱신** — 완료 (2026-05-25, develop 푸시)
   - Phase 2 god-file 분해 1차 완료 후 *HomeClient 813줄에 진짜 독립 도메인 3개가 섞여 있다*는 audit 결과 → 도메인별 hook 추출. *상태 부모 불변* 규칙은 race·async 가 교차할 때만 적용으로 갱신
   - **`useFridgeRecommendations` 신설** (111줄, race 가드 보존) — 매칭 카운트 (전체 items) + 만료 임박 추천 (시트 'expiring' 모드) 두 fetch state + 2 effects. 두 도메인 모두 `cancelled` 플래그·debounce 로 stale 응답 차단. items 기준 자동 reactivity
