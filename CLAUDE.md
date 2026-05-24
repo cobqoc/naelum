@@ -1149,6 +1149,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **프로필·설정 탭 모바일 wrap 회귀 fix** — 완료 (2026-05-25, develop 푸시, PR #157)
+  - 증상: 모바일 좁은 폭에서 탭 button 안 텍스트가 *세로로 wrap*. 프로필(6탭) 더 심함, 설정(4탭) 도 발생 가능
+  - 이전 설정 페이지 패턴(`hidden sm:inline` 으로 모바일은 이모지만)을 ProfileTabs 에도 적용하려다 사용자 피드백상 부적합 — **시스템 이모지(📖·🎉·👅 등) 는 OS 별 렌더 다르고 브랜드 정체성 없어 인지 anchor 역할 못함**. 향후 낼름 *커스텀 아이콘 셋* (브랜드 SVG, 웜/테라코타/앰버 톤) 만들면 이모지 단독 노출 재검토
+  - **이번 fix — 라벨 *항상* 표시 + 좁은 화면 가로 스크롤**:
+    - 컨테이너: `overflow-x-auto scrollbar-hide`
+    - 버튼: `whitespace-nowrap` + `shrink-0` (텍스트 wrap·flex 압축 차단)
+    - 활성 탭 ref + `useEffect scrollIntoView({ block: 'nearest', inline: 'center' })` — URL `?tab=X` 직접 접근·탭 전환 시 활성 탭 자동 viewport 안 (발견성 보존)
+  - `ProfileTabs.tsx`(scrollIntoView 신규) + `settings/page.tsx`(`hidden sm:inline` 제거 + scrollIntoView)
 - **팁 mid-priority 정리 5건 묶음** — 완료 (2026-05-25, develop 푸시)
   - **카테고리 i18n key-based 마이그레이션** — DB에 한글값 + legacy 영문(technique·ingredient·cooking_tip) 섞여 있어 UI에 raw 텍스트 노출되던 회귀 fix. **dev+prod DB UPDATE** (prod 11행, dev 1행) → locale-stable 영문 key (`prep`/`storage`/`cooking`/`tools`/`measuring`/`other`). `TIP_CATEGORY_ICONS`·`CATEGORIES` 영문 키 + `t.tipForm.categories[key]` 8 locale 키 rename. TipListClient·new·edit·detail·TipCard 모두 일관. `'전체'` sentinel → `'all'`
   - **조회수 inflation fix** — `GET /api/tip/[id]` 가 매 refresh +1 누적되던 회귀. ① 쿠키 `tip_v_{id}` 1시간 TTL → 같은 세션 refresh skip ② 작성자 본인 view 영구 skip (자기 팁 조회수 부풀림 차단). path-scoped cookie 라 다른 팁 영향 0
