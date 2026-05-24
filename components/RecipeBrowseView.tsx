@@ -687,33 +687,34 @@ export default function RecipeBrowseView({
                     key={idx}
                     className={`p-3 rounded-xl border-2 bg-background-tertiary ${borderClass}`}
                   >
-                    {/* 재료명 + (substitute chip inline OR optional 부속어) — 행동 가능 정보 우선.
-                        chip 표시 케이스: ① 작성자 명시(hasSubs) ② 전역 규칙으로 사용자가 대체재 보유(subVia, hasSubs=false).
-                        ②만 단독인 케이스(예: 쌀→밥 전역 매핑) 누락 회귀 fix. */}
+                    {/* 재료명 + 정책 부속어("빼도 돼요") + substitute chip.
+                        - "빼도 돼요" 는 정책 신호 — 항상 재료명 옆 (수량 줄에 붙으면 의미상 어색).
+                        - chip 표시: ① 작성자 명시(hasSubs) ② 전역 규칙 매칭(subVia 단독).
+                        - chip 내부 whitespace-nowrap — 긴 substitute(예: "멸치 다시다 · 1/2큰술")는
+                          chip 자체가 부모 flex-wrap 으로 다음 줄로 떨어짐 (chip 내부는 한 줄 유지). */}
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className={`text-sm font-medium ${nameColor}`}>
                         {ing.ingredient_name}
                       </span>
+                      {isOptional && (
+                        <span className="text-xs text-text-secondary font-medium">
+                          · {t.recipe.ingredientOptional}
+                        </span>
+                      )}
                       {hasSubs ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
-                          <SubstituteIndicator />
+                        <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
+                          <SubstituteIndicator owned={!!subVia} />
                           <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
                           <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
                           {subVia && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
                         </span>
                       ) : subVia ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs">
-                          <SubstituteIndicator />
+                        <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
+                          <SubstituteIndicator owned={true} />
                           <span aria-hidden className="text-success font-bold">✓</span>
                           <span className="font-medium text-success">{subVia}</span>
                         </span>
                       ) : null}
-                      {/* chip 안 뜬 경우만 (= 작성자 명시 X + 사용자 substitute X) 재료명 옆 자리에 부속어 */}
-                      {isOptional && !hasSubs && !subVia && (
-                        <span className="text-xs text-text-secondary font-medium">
-                          · {t.recipe.ingredientOptional}
-                        </span>
-                      )}
                     </div>
                     <div className="text-xs text-text-muted mt-0.5">
                       {converted.isConverted ? (
@@ -725,10 +726,6 @@ export default function RecipeBrowseView({
                         <span className="text-accent-warm font-medium">{scaledQty} {displayUnit}</span>
                       ) : (
                         <>{ing.quantity} {displayUnit}</>
-                      )}
-                      {/* chip(작성자 명시 또는 전역 매칭) 으로 prominent 자리 차지된 optional 재료 — 양 줄 끝 부속 */}
-                      {isOptional && (hasSubs || subVia) && (
-                        <span className="text-text-secondary font-medium ml-1">· {t.recipe.ingredientOptional}</span>
                       )}
                     </div>
                     {ing.notes && (

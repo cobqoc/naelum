@@ -313,6 +313,7 @@ export const zh = {
     optionalBadgeOr: '或者:',
     optionalBadgeAria: '查看可选食材说明',
     substituteBadgeTooltip: '可以用现有食材替代',
+    substituteAvailableTooltip: '这些食材也可以使用',
     substituteBadgeAria: '查看替代食材说明',
   },
   profile: {

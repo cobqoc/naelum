@@ -313,6 +313,7 @@ export const ko = {
     optionalBadgeOr: '또는:',
     optionalBadgeAria: '선택 재료 설명 보기',
     substituteBadgeTooltip: '가진 재료로 대체 가능해요',
+    substituteAvailableTooltip: '이 재료들로도 만들 수 있어요',
     substituteBadgeAria: '대체 가능 재료 설명 보기',
   },
   profile: {

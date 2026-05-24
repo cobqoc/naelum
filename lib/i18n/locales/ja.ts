@@ -313,6 +313,7 @@ export const ja = {
     optionalBadgeOr: 'または:',
     optionalBadgeAria: '任意食材の説明を見る',
     substituteBadgeTooltip: '手持ちの食材で代用できます',
+    substituteAvailableTooltip: 'これらでも作れます',
     substituteBadgeAria: '代用食材の説明を見る',
   },
   profile: {
