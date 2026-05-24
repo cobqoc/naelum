@@ -3,29 +3,12 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
+import { Toggle } from '@/components/UI/Toggle';
 
 interface NotificationsTabProps {
   userId: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: Record<string, any>;
-}
-
-function Toggle({ enabled, onToggle, disabled, label }: { enabled: boolean; onToggle: () => void; disabled?: boolean; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={disabled}
-      className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${enabled ? 'bg-accent-warm' : 'bg-white/20'}`}
-      aria-checked={enabled}
-      aria-label={label}
-      role="switch"
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`}
-      />
-    </button>
-  );
 }
 
 // 알림 설정 단일 진실 소스.
@@ -180,21 +163,14 @@ export default function NotificationsTab({ userId, t }: NotificationsTabProps) {
       </div>
 
       {/* 종류별 토글 */}
-      <div className="p-4 rounded-xl bg-background-secondary">
-        <div className="flex items-start gap-3">
-          <span className="text-xl mt-0.5" aria-hidden="true">⏰</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">{sp.expiryNotification}</p>
-            <p className="text-xs text-text-muted mt-0.5">{sp.expiryNotificationDesc}</p>
-          </div>
-          <Toggle
-            enabled={expiryEnabled}
-            onToggle={handleToggle}
-            disabled={saving}
-            label={sp.expiryNotification}
-          />
-        </div>
-      </div>
+      <Toggle
+        icon="⏰"
+        label={sp.expiryNotification}
+        description={sp.expiryNotificationDesc}
+        checked={expiryEnabled}
+        onChange={handleToggle}
+        disabled={saving}
+      />
     </div>
   );
 }

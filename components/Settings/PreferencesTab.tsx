@@ -1,6 +1,7 @@
 'use client';
 
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { Toggle } from '@/components/UI/Toggle';
 
 interface PreferencesTabProps {
   interests: string[];
@@ -11,10 +12,12 @@ interface PreferencesTabProps {
   setAllergies: (v: string) => void;
   cuisineOptions: { value: string; icon: string }[];
   dietaryOptions: string[];
+  // 프라이버시 토글 — 즉시 저장(NotificationsTab 패턴). 부모가 옵티미스틱+롤백 담당.
   showSavedToPublic: boolean;
-  setShowSavedToPublic: (v: boolean) => void;
   showCookedToPublic: boolean;
-  setShowCookedToPublic: (v: boolean) => void;
+  onTogglePrivacy: (field: 'show_saved_to_public' | 'show_cooked_to_public', value: boolean) => void;
+  privacySaving: boolean;
+  // 명시 폼(관심사/식단/알러지) — 하단 버튼으로 batched.
   saving: boolean;
   onSave: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,9 +42,9 @@ export default function PreferencesTab({
   cuisineOptions,
   dietaryOptions,
   showSavedToPublic,
-  setShowSavedToPublic,
   showCookedToPublic,
-  setShowCookedToPublic,
+  onTogglePrivacy,
+  privacySaving,
   saving,
   onSave,
   t,
@@ -120,42 +123,20 @@ export default function PreferencesTab({
           {sp.privacyDesc}
         </p>
         <div className="space-y-2">
-          {/* Show saved to public — row 전체가 토글 (a11y: role=switch + aria-checked).
-              Toggle 시각: NotificationsTab과 동일하게 translate-x-5 Tailwind 클래스 (inline left 제거). */}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showSavedToPublic}
-            aria-label={sp.privacySaved}
-            onClick={() => setShowSavedToPublic(!showSavedToPublic)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-background-secondary transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-lg" aria-hidden="true">👅</span>
-              <span className="text-sm">{sp.privacySaved}</span>
-            </div>
-            <div className={`w-11 h-6 rounded-full transition-all relative ${showSavedToPublic ? 'bg-accent-warm' : 'bg-white/20'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showSavedToPublic ? 'translate-x-5' : 'translate-x-0'}`} />
-            </div>
-          </button>
-
-          {/* Show cooked to public */}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showCookedToPublic}
-            aria-label={sp.privacyCooked}
-            onClick={() => setShowCookedToPublic(!showCookedToPublic)}
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-background-secondary transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-lg" aria-hidden="true">🎉</span>
-              <span className="text-sm">{sp.privacyCooked}</span>
-            </div>
-            <div className={`w-11 h-6 rounded-full transition-all relative ${showCookedToPublic ? 'bg-accent-warm' : 'bg-white/20'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCookedToPublic ? 'translate-x-5' : 'translate-x-0'}`} />
-            </div>
-          </button>
+          <Toggle
+            icon="👅"
+            label={sp.privacySaved}
+            checked={showSavedToPublic}
+            onChange={() => onTogglePrivacy('show_saved_to_public', !showSavedToPublic)}
+            disabled={privacySaving}
+          />
+          <Toggle
+            icon="🎉"
+            label={sp.privacyCooked}
+            checked={showCookedToPublic}
+            onChange={() => onTogglePrivacy('show_cooked_to_public', !showCookedToPublic)}
+            disabled={privacySaving}
+          />
         </div>
         <p className="text-xs text-text-muted">
           {sp.privacyHint}

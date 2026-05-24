@@ -1157,6 +1157,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **Settings 잔존 audit 후속 — i18n 폴백 0건·공용 Toggle 추출·프라이버시 즉시저장 통일** — 완료 (2026-05-25, develop 푸시)
+  - **i18n 잔존 폴백 1건 제거**: `TwoFactorTab.tsx:216` `t.common?.loading || '...'` → `t.common.loading` (직접 접근). 옵셔널 체이닝+폴백 패턴 *완전 0건* 도달. CLAUDE.md i18n 규칙("키 이미 있으면 폴백 두지 마라, 8 locale 누락 자동검증 시각 차단") 완전 준수
+  - **공용 `Toggle` 컴포넌트 추출** (`components/UI/Toggle.tsx` 신설): NotificationsTab 인라인 `<Toggle>`(18줄)과 PreferencesTab 인라인 button 토글 2개(36줄) 마크업 중복 제거 → 단일 진실 소스. props: `checked·onChange·label·description?·icon?·disabled?`. **row 전체 클릭 영역**(button + `role="switch"` + `aria-checked` + `aria-label`) — 알림 탭 박스만-클릭 → row 전체 클릭으로 hit target 개선. `translate-x-5/0` Tailwind 클래스 ([[feedback-tailwind-4-css-cascade-trap]] 안전 패턴 단일화)
+  - **PreferencesTab 프라이버시 토글 = 즉시 저장**: 이전엔 토글 변경 후 하단 [선호도 저장] 버튼 눌러야 DB 반영 → 헤더 종 푸시 토글·NotificationsTab 유통기한 토글과 *비일관*. `savePrivacyToggle(field, value)` 신설(profiles 단일 컬럼 PATCH, 옵티미스틱 + 실패 시 롤백). originals 동시 갱신으로 dirty 가드 차단(이미 DB 반영 = 변경분 아님). `privacySaving` state로 중복 클릭 락. **명시 폼(관심사/식단/알러지)은 batched [선호도 저장] 버튼 유지** — 토글=즉시·폼=버튼 정책 앱 전체 일관 확립
+  - **savePreferences 정리**: 함수에서 privacy 저장 블록·originalShow* 동기화 제거(이제 토글 핸들러가 단독 처리). 단일 진실 소스
+  - 검증: lint 0 errors · build 성공
 - **Settings 영역 대청소 + GDPR 데이터 export + 네이티브 confirm/alert 완전 청소** — 완료 (2026-05-25, develop 푸시)
   - **NotificationsTab 재작성 — push_notifications 단일 진실 소스**: comments/recipes 가짜 토글(localStorage-only) 제거 + 진짜 토글(`profiles.push_notifications`) + 기기 푸시 구독 UI(NotificationPanel 에서 이전). DB 즉시 저장(옵티미스틱 + 롤백). 가입 시 user에게 거짓 약속 차단
   - **NotificationPanel 다이어트**: ⚙️ 설정 패널 전체 제거 → 알림 *목록 보기·읽음 처리* 전담. 푸터에 "알림 설정 →" 링크로 책임 분리 (헤더=즉시 행동, 설정=환경 설정). `notifSettingsOpen`·`subscribeToPush`·`pushPermission` 등 ~70줄 제거

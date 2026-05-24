@@ -120,11 +120,13 @@ export default function SettingsPage() {
   const [originalDietary, setOriginalDietary] = useState<string[]>([]);
   const [originalAllergies, setOriginalAllergies] = useState('');
 
-  // Privacy
+  // Privacy — 토글 즉시 저장 (NotificationsTab·NotificationPanel 패턴 일관).
+  // 명시 폼(관심사/식단/알러지)은 하단 [선호도 저장] 버튼으로 batched.
   const [showSavedToPublic, setShowSavedToPublic] = useState(false);
   const [showCookedToPublic, setShowCookedToPublic] = useState(false);
   const [originalShowSaved, setOriginalShowSaved] = useState(false);
   const [originalShowCooked, setOriginalShowCooked] = useState(false);
+  const [privacySaving, setPrivacySaving] = useState(false);
 
   // Username validation
   const [usernameError, setUsernameError] = useState<string | null>(null);
@@ -387,6 +389,45 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
+  // 프라이버시 토글 즉시 저장 — 옵티미스틱 + 실패 시 롤백.
+  // originals 동시 갱신으로 dirty 가드가 잡지 않음 (이미 DB 반영 = 변경분 아님).
+  const savePrivacyToggle = async (
+    field: 'show_saved_to_public' | 'show_cooked_to_public',
+    value: boolean,
+  ) => {
+    if (!profile || privacySaving) return;
+    const isSaved = field === 'show_saved_to_public';
+
+    // 옵티미스틱
+    if (isSaved) {
+      setShowSavedToPublic(value);
+      setOriginalShowSaved(value);
+    } else {
+      setShowCookedToPublic(value);
+      setOriginalShowCooked(value);
+    }
+    setPrivacySaving(true);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [field]: value, updated_at: new Date().toISOString() })
+      .eq('id', profile.id);
+
+    setPrivacySaving(false);
+
+    if (error) {
+      // 롤백
+      if (isSaved) {
+        setShowSavedToPublic(!value);
+        setOriginalShowSaved(!value);
+      } else {
+        setShowCookedToPublic(!value);
+        setOriginalShowCooked(!value);
+      }
+      toast.error(t.common.error);
+    }
+  };
+
   const savePreferences = async () => {
     if (!profile) return;
 
@@ -431,22 +472,11 @@ export default function SettingsPage() {
         ));
       }
 
-      // Save privacy settings to profiles table
-      assertOk(await supabase
-        .from('profiles')
-        .update({
-          show_saved_to_public: showSavedToPublic,
-          show_cooked_to_public: showCookedToPublic,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', profile.id));
-
+      // 프라이버시는 토글 즉시 저장으로 처리 (savePrivacyToggle) — 여기선 폼만.
       // Sync originals
       setOriginalInterests([...interests]);
       setOriginalDietary([...dietary]);
       setOriginalAllergies(allergies);
-      setOriginalShowSaved(showSavedToPublic);
-      setOriginalShowCooked(showCookedToPublic);
 
       toast.success(sp.preferencesSaved);
     } catch (error) {
@@ -556,9 +586,9 @@ export default function SettingsPage() {
               cuisineOptions={cuisineOptions}
               dietaryOptions={dietaryOptions}
               showSavedToPublic={showSavedToPublic}
-              setShowSavedToPublic={setShowSavedToPublic}
               showCookedToPublic={showCookedToPublic}
-              setShowCookedToPublic={setShowCookedToPublic}
+              onTogglePrivacy={savePrivacyToggle}
+              privacySaving={privacySaving}
               saving={saving}
               onSave={savePreferences}
               t={t}

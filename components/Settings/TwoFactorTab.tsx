@@ -213,7 +213,7 @@ export default function TwoFactorTab() {
               {processing ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  {t.common?.loading || '...'}
+                  {t.common.loading}
                 </span>
               ) : `${tf.enable} 2FA`}
             </button>
