@@ -21,10 +21,10 @@ import EmptyFridgeGuide from './_home/EmptyFridgeGuide';
 import MobileSearchOverlay from './_home/MobileSearchOverlay';
 import FridgeShelves from './_home/FridgeShelves';
 import { useFridgeInteractions } from './_home/useFridgeInteractions';
+import { useFridgeRecommendations } from './_home/useFridgeRecommendations';
+import { useOnboardingState } from './_home/useOnboardingState';
 import { computeFridgeShelfDistribution } from '@/lib/home/fridgeShelfDistribution';
 import {
-  RECOMMENDATIONS_FETCH_DEBOUNCE_MS,
-  RECOMMENDATIONS_LIMIT,
   TOAST_AUTO_HIDE_MS,
   LS_KEY_DEMO_ITEMS,
   LS_KEY_ONBOARDING_BANNER,
@@ -128,11 +128,6 @@ export default function HomeClient({
   // 같은 이름 그룹 chip 클릭 시 미니 시트 (그룹 내 항목 선택)
   const [groupSheet, setGroupSheet] = useState<{ name: string; items: FridgeItem[] } | null>(null);
 
-  // 매직 모드: 서버가 auto 판단한 결과를 받아 버블 라벨에 반영.
-  // - resolvedMode: 'ready' | 'almost' | 'all' (서버가 최선 선택)
-  // - matchingCount: 해당 mode의 레시피 개수
-  const [matchingCount, setMatchingCount] = useState<number | null>(null);
-  const [resolvedMode, setResolvedMode] = useState<'ready' | 'almost' | 'all' | null>(null);
   const showRecipeBubble = items.length > 0;
 
   // 만료 임박 재료 — freshState.isDanger = D-3 이내 또는 expired.
@@ -140,33 +135,29 @@ export default function HomeClient({
   const expiringItems = useMemo(() => items.filter(i => freshState(i).isDanger), [items]);
   const expiringCount = expiringItems.length;
 
-  // 임박 재료 전용 추천 매칭 — 시트의 "🔥 N개" pill에 표시.
-  // 일반 추천(matchingCount)과 별도. 임박 재료만 query에 넣음.
-  const [expiringRecipeMatch, setExpiringRecipeMatch] = useState<{ count: number | null; mode: 'ready' | 'almost' | 'all' | null } | null>(null);
+  // 추천 매칭 fetch state — _home/useFridgeRecommendations hook 으로 추출 (2026-05-25).
+  //  - matchingCount/resolvedMode: 전체 items 기준 (홈 RecommendationPill)
+  //  - expiringRecipeMatch: 만료 임박 재료 전용 (FridgeAllSheet 'expiring' pill)
+  const { matchingCount, resolvedMode, expiringRecipeMatch } = useFridgeRecommendations({
+    items,
+    expiringItems,
+    expiringCount,
+    allSheetMode,
+    isAuthenticated,
+  });
 
-  // 온보딩 배너 (임시 username 사용 중인 유저용)
-  const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  // 클라이언트 hydration 후엔 useAuth의 profile을, SSR 초기 HTML에선 initialUsername을 사용.
-  const currentUsername = profile?.username ?? initialUsername;
-  const hasTempUsername = !!currentUsername && /^user_[a-f0-9]{12}$/.test(currentUsername);
-
-  // 온보딩 미완료 판정:
-  // - 임시 username(user_xxxxxxxxxxxx) 유저 → 임시 username 탈출 필요
-  // - 또는 onboarding_completed=false (명시적 미완료. skip한 유저는 true라 대상 아님)
-  const needsOnboarding = hasTempUsername || initialOnboardingCompleted === false;
-
-  useEffect(() => {
-    if (!user) return;
-    if (!needsOnboarding) return;
-    const dismissed = localStorage.getItem(LS_KEY_ONBOARDING_BANNER(user.id));
-    if (!dismissed) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage는 브라우저에서만 읽을 수 있어 render 단계에서 파생 불가
-      setShowOnboardingBanner(true);
-      // 자동 dismiss 제거 — X 버튼 또는 OnboardingWizard 완료 시에만 영구 dismiss.
-      // 유저가 배너를 읽을 시간 충분히 보장.
-    }
-  }, [user, needsOnboarding]);
+  // 온보딩 banner/modal 상태 — _home/useOnboardingState hook 으로 추출 (2026-05-25).
+  // 임시 username (user_xxxxxxxxxxxx) 또는 onboarding_completed=false 유저에게 배너 표시.
+  const {
+    showOnboardingBanner, setShowOnboardingBanner,
+    showOnboardingModal, setShowOnboardingModal,
+    currentUsername, hasTempUsername,
+  } = useOnboardingState({
+    user,
+    initialUsername,
+    profileUsername: profile?.username,
+    initialOnboardingCompleted,
+  });
 
   // 하단 네비의 검색 아이콘 → 인라인 검색바 토글
   useEffect(() => {
@@ -271,34 +262,6 @@ export default function HomeClient({
     };
   }, [fetchItems, pendingDeleteIdsRef]);
 
-  // 임박 재료 전용 매칭 fetch — 시트 열릴 때만 fetch (불필요한 호출 방지).
-  // 임박 재료 변경 시 invalidate. 시트 닫혀있어도 임박 카운트 변하면 다음 오픈 시 새로 fetch.
-  // 로딩/0개 케이스에서 effect body 내 setState 발생 — 비동기 fetch 결과를 React 상태와 연동해야 하는 외부 동기화이므로 합법.
-  useEffect(() => {
-    if (allSheetMode !== 'expiring') return;
-    if (expiringCount === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- expiringCount는 items 파생이지만 mode 전환과 결합된 외부 동기화
-      setExpiringRecipeMatch({ count: 0, mode: null });
-      return;
-    }
-    let cancelled = false;
-    // 새 fetch 시작 시 stale 결과 무효화 (UI 로딩 표시 필수)
-    setExpiringRecipeMatch({ count: null, mode: null });
-    const names = expiringItems.map(i => i.ingredient_name).join(',');
-    const url = `/api/recommendations?type=ingredients&limit=${RECOMMENDATIONS_LIMIT}&mode=auto&ingredients=${encodeURIComponent(names)}`;
-    fetch(url)
-      .then(r => r.ok ? r.json() : { recommendations: [], mode: null })
-      .then(data => {
-        if (cancelled) return;
-        setExpiringRecipeMatch({
-          count: Array.isArray(data.recommendations) ? data.recommendations.length : 0,
-          mode: data.mode ?? null,
-        });
-      })
-      .catch(() => { if (!cancelled) setExpiringRecipeMatch({ count: 0, mode: null }); });
-    return () => { cancelled = true; };
-  }, [allSheetMode, expiringCount, expiringItems]);
-
   // 임박 재료로 요리하기 — /recipes 재료 기반 탭으로 이동(임박 재료만 query).
   const handleCookFromExpiring = useCallback(() => {
     if (expiringCount === 0) { router.push('/recipes?tab=ingredient'); return; }
@@ -306,32 +269,6 @@ export default function HomeClient({
     router.push(`/recipes?tab=ingredient&ingredients=${encodeURIComponent(names)}`);
     setAllSheetMode(null);
   }, [expiringCount, expiringItems, router]);
-
-  // 매칭 레시피 fetch — mode=auto로 서버가 best mode 자동 선택.
-  // 응답의 mode 필드로 버블 라벨 결정 (🔥 바로 가능 / 🛒 거의 가능 / 📋 추천).
-  useEffect(() => {
-    if (items.length === 0) return;
-    let cancelled = false;
-    // 500ms debounce — items가 연속 변경되면 (예: 재료 여러 개 빠르게 추가) 마지막 변경만 fetch.
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      const base = `/api/recommendations?type=ingredients&limit=${RECOMMENDATIONS_LIMIT}&mode=auto`;
-      const url = isAuthenticated
-        ? base
-        : `${base}&ingredients=${encodeURIComponent(items.map(i => i.ingredient_name).join(','))}`;
-      fetch(url)
-        .then(r => r.ok ? r.json() : { recommendations: [], mode: null })
-        .then(data => {
-          if (cancelled) return;
-          setMatchingCount(Array.isArray(data.recommendations) ? data.recommendations.length : 0);
-          setResolvedMode(data.mode ?? null);
-        })
-        .catch(() => {
-          if (!cancelled) { setMatchingCount(0); setResolvedMode(null); }
-        });
-    }, RECOMMENDATIONS_FETCH_DEBOUNCE_MS);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [isAuthenticated, items]);
 
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 

@@ -134,11 +134,19 @@ feature/* → 기능 단위 브랜치 (선택)
 ### 1. god-file 예방 (분해 규약)
 - **파일이 god-file 되기 전에 막아라.** 로직 파일(컴포넌트/페이지)이 ~700줄
   넘어가면 분해 검토. ~900줄 이상은 분해 필수. (i18n locale·생성물·SVG 마크업 제외)
-- 추출은 **순수 표현 컴포넌트만** `_components/`(App Router) 또는
-  `components/<area>/` 로. **상태·ref·race 가드·async 핸들러·subscribe·hook 은
-  부모가 소유 불변**, 자식은 값+콜백만 받음(hook 반환은 `ReturnType<typeof useX>`).
+- **분해 ROI 우선 — 규칙은 지침**: *진짜 독립 도메인*(race·async 가 서로 안 만나는
+  도메인)이 한 파일에 섞여 있으면 **상태·effect·hook 도 도메인별 hook 으로 분해**
+  적극 권장. 분해 후 *단위 테스트 가능* + *새 기능 추가 시 bloat 차단* + *가독성*
+  이득이 누적된다. 2026-05-25 HomeClient 추가 분해(useFridgeRecommendations·
+  useFridgeItems·useOnboardingState)로 규칙 갱신 — 이전 "상태 부모 불변" 은
+  도메인이 *서로 얽혀 race* 일 때만 적용.
+- 추출은 **순수 표현 컴포넌트** `_components/`(App Router) 또는 `components/<area>/`,
+  **stateful hook** `_<area>/use*.ts` 또는 `lib/hooks/use*.ts` 로. 자식 컴포넌트는
+  값+콜백만(hook 반환은 `ReturnType<typeof useX>`). hook 은 *한 도메인* 만 책임.
 - **JSX byte-identical** (마크업·className·핸들러 시그니처 동일) → 행위 변경 0.
 - **순수 함수는 `lib/` + vitest** 로 분리(테스트 가능·표현과 분리).
+- **race/async 가 *여러 도메인 교차*** 하면 부모 불변 (옵티미스틱 갱신 race·
+  pendingDeleteIdsRef·notify subscribers 등 — 추출 시 한 hook 안에 가둠).
 - 진짜 동일할 때만 공유 재사용 — "쌍둥이 파일 재사용 가능" 가정은 **반드시
   코드 정독으로 검증**(new↔edit 폼 분기 사례). 공유 심볼은 단일 `types.ts`.
 
@@ -1149,6 +1157,14 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **HomeClient 추가 분해 + god-file 규칙 갱신** — 완료 (2026-05-25, develop 푸시)
+  - Phase 2 god-file 분해 1차 완료 후 *HomeClient 813줄에 진짜 독립 도메인 3개가 섞여 있다*는 audit 결과 → 도메인별 hook 추출. *상태 부모 불변* 규칙은 race·async 가 교차할 때만 적용으로 갱신
+  - **`useFridgeRecommendations` 신설** (111줄, race 가드 보존) — 매칭 카운트 (전체 items) + 만료 임박 추천 (시트 'expiring' 모드) 두 fetch state + 2 effects. 두 도메인 모두 `cancelled` 플래그·debounce 로 stale 응답 차단. items 기준 자동 reactivity
+  - **`useOnboardingState` 신설** (83줄) — banner/modal state + 임시 username 패턴 매칭 + needsOnboarding 판정 + localStorage dismiss effect. `useAuth.user` shape 그대로 수용(`{id, email}` minimal type)
+  - **`useFridgeItems` 추출은 스킵** — `useFridgeInteractions` 가 `pendingDeleteIdsRef` 내부 생성 + items/setItems 입력으로 받는 양방향 의존성. 두 hook API 둘 다 변경 필요 → risk vs reward 낮음. items state 는 부모(HomeClient) 유지
+  - **HomeClient 813 → 750줄 (-41 net, hook 외부화 효과 -120줄 + import boilerplate)**. 추출된 hook 2개는 단위 테스트 가능 + 새 추천/온보딩 기능 추가 시 hook 안에서만 작업
+  - **CLAUDE.md "1. god-file 예방" 규칙 갱신** — *"상태·ref·race 가드·async 핸들러·subscribe·hook 은 부모가 소유 불변"* → *"진짜 독립 도메인(race·async 가 서로 안 만나는 도메인)이면 도메인별 hook 분해 적극 권장"* + *"race/async 가 여러 도메인 교차할 때만 부모 불변"*. 분해 ROI 우선
+  - 검증: lint 0 errors · build 성공 · e2e 백그라운드 fresh build
 - **앱 전체 i18n audit 마무리 — 분리 모달 마이그레이션 + CopyrightForm 의도 확인** — 완료 (2026-05-25, develop 푸시)
   - **`RecipeReviewModal` 전체 i18n 마이그레이션** — 11 한글 string. 신규 키 13개 8 locale 추가 (`recipe.reviewModalTitleCreate`·`reviewModalTitleEdit`·`reviewRatingLabel`·`reviewRatingScoreSuffix`·`reviewLabel`·`reviewPlaceholder`·`reviewSubmitCreate`·`reviewSubmitEdit`·`reviewSaving`·`reviewSaveFailed`·`reviewSaveError`·`reviewLoginRequired`·`reviewLoginRequiredDesc`). 기존 키 reuse: `t.common.cancel`·`t.common.login`
   - **`ContactModal` alt 1줄 fix** — `alt="첨부 스크린샷"` → `t.contact.screenshotLabel` (기존 키 reuse)
