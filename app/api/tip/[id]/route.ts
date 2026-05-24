@@ -3,7 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 
 // GET /api/tip/[id]
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+//
+// 권한:
+//  - is_public=true AND is_draft=false → 누구나 GET 가능
+//  - 그 외 (비공개/임시저장) → 작성자 본인만 GET 가능 (다른 유저·비로그인 → 404)
+//
+// 조회수 dedup:
+//  - 쿠키 `tip_v_{id}` 1시간 TTL 기반 — 같은 세션 refresh 시 increment skip
+//  - 작성자 본인 view 는 항상 skip (자기 팁 조회수 inflation 방지)
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { id } = await params;
 
@@ -20,10 +28,30 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // 조회수 증가 — 비치명적(논블로킹). 실패해도 응답은 진행하되 .error 는 로깅.
-  const { error: viewError } = await supabase
-    .from('tip').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id);
-  if (viewError) console.error('tip views_count update failed:', viewError);
+  // 비공개/임시저장 팁은 작성자만 접근. RLS 가 차단하지 않더라도 defense-in-depth.
+  const isPublic = data.is_public === true && data.is_draft === false;
+  if (!isPublic) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== data.author_id) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+  }
+
+  // 조회수 dedup — 쿠키 또는 작성자 본인이면 skip.
+  // 같은 세션이 refresh 마다 +1 누적되던 회귀 차단.
+  const viewedCookie = `tip_v_${id}`;
+  const cookies = request.headers.get('cookie') || '';
+  const alreadyViewed = cookies.split(';').some(c => c.trim().startsWith(`${viewedCookie}=`));
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  const isOwnTip = currentUser?.id === data.author_id;
+  const shouldIncrement = !alreadyViewed && !isOwnTip;
+
+  if (shouldIncrement) {
+    // 조회수 증가 — 비치명적(논블로킹). 실패해도 응답은 진행하되 .error 는 로깅.
+    const { error: viewError } = await supabase
+      .from('tip').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id);
+    if (viewError) console.error('tip views_count update failed:', viewError);
+  }
 
   const result = {
     ...data,
@@ -32,7 +60,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     author: Array.isArray(data.author) ? data.author[0] : data.author,
   };
 
-  return NextResponse.json({ tip: result });
+  const response = NextResponse.json({ tip: result });
+  if (shouldIncrement) {
+    // 1시간 TTL — 같은 세션이 다시 와도 +1 안 됨. Path-scoped 라 다른 팁 영향 0.
+    response.cookies.set(viewedCookie, '1', {
+      maxAge: 60 * 60,
+      path: `/api/tip/${id}`,
+      httpOnly: true,
+      sameSite: 'lax',
+    });
+  }
+  return response;
 }
 
 // PUT /api/tip/[id] - 팁 수정

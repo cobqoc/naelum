@@ -12,10 +12,10 @@ import EmptyState from '@/components/Common/EmptyState';
 import { useI18n } from '@/lib/i18n/context';
 
 
-// 카테고리 — DB 저장 한글 값(고정 enum). '전체'는 필터 미적용 sentinel.
-const CATEGORIES = ['전체', '손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
-// 카테고리 탭 아이콘 — 6개 카테고리는 TipCard 와 단일 출처, '전체'(✨)만 추가.
-const CATEGORY_ICONS: Record<string, string> = { '전체': '✨', ...TIP_CATEGORY_ICONS };
+// 카테고리 — DB 저장 영문 key(locale-stable enum). 'all'은 필터 미적용 sentinel.
+// 2026-05-25 한글 → 영문 key 마이그레이션 (다국어 안정성). 표시는 t.tipForm.categories[key].
+const CATEGORIES = ['all', 'prep', 'storage', 'cooking', 'tools', 'measuring', 'other'];
+const CATEGORY_ICONS: Record<string, string> = { all: '✨', ...TIP_CATEGORY_ICONS };
 
 const LIMIT = 20;
 const CACHE_KEY = 'scroll_cache_tips';
@@ -44,12 +44,12 @@ export default function TipListPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
-  const [category, setCategory] = useState('전체');
+  const [category, setCategory] = useState('all');
   const [offset, setOffset] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { save, load, clear } = useScrollCache<TipsCache>(CACHE_KEY);
   const isRestoredRef = useRef(false);
-  const latestStateRef = useRef<TipsCache>({ tips: [], offset: 0, hasMore: false, category: '전체' });
+  const latestStateRef = useRef<TipsCache>({ tips: [], offset: 0, hasMore: false, category: 'all' });
   const scrollYRef = useRef(0);
   const isLeavingRef = useRef(false);
 
@@ -70,7 +70,7 @@ export default function TipListPage() {
     if (off === 0) setLoading(true); else setLoadingMore(true);
     try {
       const params = new URLSearchParams({ limit: String(LIMIT), offset: String(off) });
-      if (cat !== '전체') params.set('category', cat);
+      if (cat !== 'all') params.set('category', cat);
       const res = await fetch(`/api/tip?${params}`);
       const data = await res.json();
       const items: TipItem[] = data.tips || [];
@@ -95,7 +95,7 @@ export default function TipListPage() {
       setLoading(false);
       setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' }), 150);
     } else {
-      fetchTips('전체', 0);
+      fetchTips('all', 0);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -164,7 +164,7 @@ export default function TipListPage() {
                   : 'bg-background-secondary text-text-secondary hover:text-text-primary'
               }`}
             >
-              {CATEGORY_ICONS[cat]} {cat === '전체' ? t.tip.categoryAll : cat}
+              {CATEGORY_ICONS[cat]} {cat === 'all' ? t.tip.categoryAll : (t.tipForm.categories[cat as keyof typeof t.tipForm.categories] ?? cat)}
             </button>
           ))}
         </div>
