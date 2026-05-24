@@ -312,8 +312,8 @@ export const es = {
     optionalBadgeTooltip: 'Puedes hacerlo sin {name}',
     optionalBadgeOr: 'O:',
     optionalBadgeAria: 'Ver info de ingrediente opcional',
-    substituteBadgeTooltip: 'Puedes sustituir con lo que tienes',
-    substituteAvailableTooltip: 'También se pueden usar estos',
+    substituteBadgeTooltip: 'Puedes sustituir con {name}',
+    substituteAvailableTooltip: 'Puedes sustituir con {name}',
     substituteBadgeAria: 'Ver info de sustituto',
   },
   profile: {
