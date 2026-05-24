@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useToast } from '@/lib/toast/context';
 import { createClient } from '@/lib/supabase/client';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
@@ -22,18 +22,26 @@ import type { FridgeItem } from './types';
  * 가드: e2e/fridge-chip-interactions.spec.ts (Step 0 선안전망 3 불변식 —
  * long-press 삭제+undo→dbTimer 취소·window 경과→DB delete·그룹→미니시트→액션)
  * + logged-in-home:449. `items`/`setItems`/`user`/`t` 는 HomeClient 소유(주입).
- * 반환 `pendingDeleteIdsRef` 는 HomeClient `fetchItems` 가 동일 ref 로 필터링.
+ *
+ * 2026-05-25 — `pendingDeleteIdsRef` 외부 주입으로 변경:
+ *  - 이전: hook 내부 `useRef` 생성 → 반환 → HomeClient 가 받아서 fetchItems 필터에 사용
+ *  - 이후: HomeClient 가 ref 생성 → 두 hook(`useFridgeItems`·`useFridgeInteractions`)
+ *    에 동일 ref 주입 → 양방향 의존성 해소. `useFridgeItems` 추출 가능해짐.
+ *  - 동작 변경 0 (ref 식별성은 동일, .add/.delete 호출 동일).
  */
 export function useFridgeInteractions({
   items,
   setItems,
   user,
   t,
+  pendingDeleteIdsRef,
 }: {
   items: FridgeItem[];
   setItems: Dispatch<SetStateAction<FridgeItem[]>>;
   user: { id: string } | null;
   t: TranslationKeys;
+  /** 외부 주입 — useFridgeItems 가 fetchItems 필터에 동일 ref 로 사용. */
+  pendingDeleteIdsRef: MutableRefObject<Set<string>>;
 }) {
   // 재료 액션 시트 (chip 탭 시 1차로 열림: 만들기/수정/삭제)
   const [actionItem, setActionItem] = useState<FridgeItem | null>(null);
@@ -55,10 +63,11 @@ export function useFridgeInteractions({
     setDetailItem(item);
   };
 
-  // 삭제 pending id — 5.5초 undo 창 중 fetchItems가 외부에서 재실행돼도 삭제된 item이 state에 되살아나지 않도록 필터링.
-  const pendingDeleteIdsRef = useRef<Set<string>>(new Set());
+  // pendingDeleteIdsRef 는 외부(HomeClient)에서 주입 받음 — 2026-05-25 이전엔 hook 내부 생성.
+  // 5.5초 undo 창 중 fetchItems 가 외부에서 재실행돼도 삭제된 item 이 state 에 되살아나지 않도록 필터링.
 
   // 모바일 chip long-press 삭제 — hover 없는 모바일에서 빠른 삭제 단축.
+  // (longPress refs 는 인터랙션 내부 전용이라 여전히 hook 내부 생성)
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
   const handleChipPressStart = (item: FridgeItem) => {
@@ -176,7 +185,6 @@ export function useFridgeInteractions({
     setActionItem,
     detailItem,
     setDetailItem,
-    pendingDeleteIdsRef,
     handleCook,
     handleEditFromSheet,
     handleChipPressStart,
