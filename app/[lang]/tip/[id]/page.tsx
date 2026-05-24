@@ -45,7 +45,7 @@ export default function TipDetailPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [knowhow, setKnowhow] = useState<Knowhow | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export default function TipDetailPage() {
   }, [id, supabase]);
 
   const handleDelete = async () => {
-    if (!confirm('팁을 삭제하시겠습니까?')) return;
+    if (!confirm(t.tip.detailDeleteConfirm)) return;
     setDeleting(true);
     const res = await fetch(`/api/tip/${id}`, { method: 'DELETE' });
     if (res.ok) router.push('/');
@@ -85,8 +85,8 @@ export default function TipDetailPage() {
   if (!knowhow) {
     return (
       <div className="min-h-screen bg-background-primary flex flex-col items-center justify-center gap-4">
-        <p className="text-text-muted">팁을 찾을 수 없습니다.</p>
-        <Link href="/" className="text-accent-warm hover:underline">홈으로</Link>
+        <p className="text-text-muted">{t.tip.detailNotFound}</p>
+        <Link href="/" className="text-accent-warm hover:underline">{t.tip.detailGoHome}</Link>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function TipDetailPage() {
       <main className="container mx-auto max-w-2xl px-4 pt-24 pb-20">
         {/* 뒤로가기 */}
         <button onClick={() => router.back()} className="text-text-muted hover:text-text-primary transition-colors mb-6 flex items-center gap-2 text-sm">
-          ← 뒤로
+          ← {t.common.back}
         </button>
 
         {/* 썸네일 */}
@@ -113,11 +113,11 @@ export default function TipDetailPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="px-2.5 py-1 rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium">
-              {CATEGORY_ICONS[knowhow.category]} {knowhow.category}
+              {CATEGORY_ICONS[knowhow.category]} {t.tipForm.categories[knowhow.category as keyof typeof t.tipForm.categories] ?? knowhow.category}
             </span>
             {knowhow.duration_minutes && (
               <span className="px-2.5 py-1 rounded-full bg-white/5 text-text-muted text-xs">
-                ⏱ {knowhow.duration_minutes}분
+                ⏱ {knowhow.duration_minutes}{t.tip.detailMinuteSuffix}
               </span>
             )}
           </div>
@@ -128,18 +128,26 @@ export default function TipDetailPage() {
             <div className="flex items-center gap-2 text-sm text-text-muted">
               <span>@{knowhow.author?.username}</span>
               <span>·</span>
-              <span>{new Date(knowhow.created_at).toLocaleDateString('ko-KR')}</span>
+              <span>{new Date(knowhow.created_at).toLocaleDateString(language)}</span>
               <span>·</span>
               <span>👁 {knowhow.views_count}</span>
             </div>
             <div className="flex gap-3 items-center">
               {isAuthor ? (
-                <button
-                  onClick={handleDelete} disabled={deleting}
-                  className="text-xs text-error hover:underline disabled:opacity-50"
-                >
-                  {deleting ? '삭제 중...' : '삭제'}
-                </button>
+                <>
+                  <Link
+                    href={`/tip/${id}/edit`}
+                    className="text-xs text-text-muted hover:text-text-primary transition-colors"
+                  >
+                    {t.tip.detailEdit}
+                  </Link>
+                  <button
+                    onClick={handleDelete} disabled={deleting}
+                    className="text-xs text-error hover:underline disabled:opacity-50"
+                  >
+                    {deleting ? t.tip.detailDeleting : t.common.delete}
+                  </button>
+                </>
               ) : currentUserId ? (
                 <button
                   onClick={() => setReportOpen(true)}
@@ -160,7 +168,7 @@ export default function TipDetailPage() {
 
         {/* 단계 */}
         <div className="space-y-4 mb-8">
-          <h2 className="text-lg font-bold">단계별 가이드</h2>
+          <h2 className="text-lg font-bold">{t.tip.detailStepsTitle}</h2>
           {knowhow.steps.map((step) => (
             <div key={step.id} className="bg-background-secondary rounded-2xl p-5 border border-white/10">
               <div className="flex items-center gap-3 mb-3">
