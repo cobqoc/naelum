@@ -12,10 +12,11 @@ import { useToast } from '@/lib/toast/context';
 import { useAutosave, loadAutosave, clearAutosave } from '@/lib/hooks/useAutosave';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
-const CATEGORIES = ['손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
+// 카테고리 — DB 저장 영문 key (2026-05-25 한글 → 영문 마이그레이션, locale-stable).
+// 표시 라벨은 t.tipForm.categories[key] 통해 다국어 렌더.
+const CATEGORIES = ['prep', 'storage', 'cooking', 'tools', 'measuring', 'other'];
 const CATEGORY_ICONS: Record<string, string> = {
-  '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
+  prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
 };
 
 interface Step {
@@ -33,7 +34,7 @@ export default function TipNewPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('기타');
+  const [category, setCategory] = useState('other');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -80,7 +81,7 @@ export default function TipNewPage() {
     if (!s) return;
     setTitle(s.title || '');
     setDescription(s.description || '');
-    setCategory(s.category || '기타');
+    setCategory(s.category || 'other');
     setDurationMinutes(s.durationMinutes || '');
     if (s.thumbnail) setThumbnail(s.thumbnail);
     if (Array.isArray(s.steps) && s.steps.length > 0) {
@@ -106,7 +107,7 @@ export default function TipNewPage() {
     if (!user) return;
 
     const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/knowhow-thumb-${Date.now()}.${ext}`;
+    const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
     const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
     if (!error && path) {
       setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
@@ -124,7 +125,7 @@ export default function TipNewPage() {
     if (!user) return;
 
     const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/knowhow-step-${Date.now()}-${idx}.${ext}`;
+    const fileName = `${user.id}/tip-step-${Date.now()}-${idx}.${ext}`;
     const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
     if (!error && path) {
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));

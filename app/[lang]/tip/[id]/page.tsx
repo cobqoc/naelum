@@ -11,13 +11,14 @@ import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 
 const ReportModal = dynamic(() => import('@/components/Common/ReportModal'), { ssr: false });
+const ConfirmDialog = dynamic(() => import('@/components/Common/ConfirmDialog'), { ssr: false });
 
+// 2026-05-25 한글 → 영문 key 마이그레이션. 표시는 t.tipForm.categories[key].
 const CATEGORY_ICONS: Record<string, string> = {
-  '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
+  prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
 };
 
-interface KnowhowStep {
+interface TipStep {
   id: string;
   step_number: number;
   instruction: string;
@@ -25,7 +26,7 @@ interface KnowhowStep {
   image_url?: string | null;
 }
 
-interface Knowhow {
+interface Tip {
   id: string;
   title: string;
   description?: string | null;
@@ -35,7 +36,7 @@ interface Knowhow {
   views_count: number;
   created_at: string;
   author: { username: string; avatar_url?: string | null };
-  steps: KnowhowStep[];
+  steps: TipStep[];
   tags: string[];
   author_id: string;
 }
@@ -46,11 +47,12 @@ export default function TipDetailPage() {
   const supabase = createClient();
 
   const { t, language } = useI18n();
-  const [knowhow, setKnowhow] = useState<Knowhow | null>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +61,7 @@ export default function TipDetailPage() {
         supabase.auth.getUser(),
       ]);
       const data = await res.json();
-      if (res.ok) setKnowhow(data.tip);
+      if (res.ok) setTip(data.tip);
       if (user) setCurrentUserId(user.id);
       setLoading(false);
     };
@@ -67,7 +69,7 @@ export default function TipDetailPage() {
   }, [id, supabase]);
 
   const handleDelete = async () => {
-    if (!confirm(t.tip.detailDeleteConfirm)) return;
+    setDeleteConfirmOpen(false);
     setDeleting(true);
     const res = await fetch(`/api/tip/${id}`, { method: 'DELETE' });
     if (res.ok) router.push('/');
@@ -82,7 +84,7 @@ export default function TipDetailPage() {
     );
   }
 
-  if (!knowhow) {
+  if (!tip) {
     return (
       <div className="min-h-screen bg-background-primary flex flex-col items-center justify-center gap-4">
         <p className="text-text-muted">{t.tip.detailNotFound}</p>
@@ -91,7 +93,7 @@ export default function TipDetailPage() {
     );
   }
 
-  const isAuthor = currentUserId === knowhow.author_id;
+  const isAuthor = currentUserId === tip.author_id;
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
@@ -103,9 +105,9 @@ export default function TipDetailPage() {
         </button>
 
         {/* 썸네일 */}
-        {knowhow.thumbnail_url && (
+        {tip.thumbnail_url && (
           <div className="relative w-full h-56 rounded-2xl overflow-hidden mb-6">
-            <SafeImage src={knowhow.thumbnail_url} alt={knowhow.title} fill className="object-cover" />
+            <SafeImage src={tip.thumbnail_url} alt={tip.title} fill className="object-cover" />
           </div>
         )}
 
@@ -113,24 +115,24 @@ export default function TipDetailPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="px-2.5 py-1 rounded-full bg-accent-warm/10 text-accent-warm text-xs font-medium">
-              {CATEGORY_ICONS[knowhow.category]} {t.tipForm.categories[knowhow.category as keyof typeof t.tipForm.categories] ?? knowhow.category}
+              {CATEGORY_ICONS[tip.category]} {t.tipForm.categories[tip.category as keyof typeof t.tipForm.categories] ?? tip.category}
             </span>
-            {knowhow.duration_minutes && (
+            {tip.duration_minutes && (
               <span className="px-2.5 py-1 rounded-full bg-white/5 text-text-muted text-xs">
-                ⏱ {knowhow.duration_minutes}{t.tip.detailMinuteSuffix}
+                ⏱ {tip.duration_minutes}{t.tip.detailMinuteSuffix}
               </span>
             )}
           </div>
 
-          <h1 className="text-2xl font-bold mb-3">{knowhow.title}</h1>
+          <h1 className="text-2xl font-bold mb-3">{tip.title}</h1>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-text-muted">
-              <span>@{knowhow.author?.username}</span>
+              <span>@{tip.author?.username}</span>
               <span>·</span>
-              <span>{new Date(knowhow.created_at).toLocaleDateString(language)}</span>
+              <span>{new Date(tip.created_at).toLocaleDateString(language)}</span>
               <span>·</span>
-              <span>👁 {knowhow.views_count}</span>
+              <span>👁 {tip.views_count}</span>
             </div>
             <div className="flex gap-3 items-center">
               {isAuthor ? (
@@ -142,7 +144,7 @@ export default function TipDetailPage() {
                     {t.tip.detailEdit}
                   </Link>
                   <button
-                    onClick={handleDelete} disabled={deleting}
+                    onClick={() => setDeleteConfirmOpen(true)} disabled={deleting}
                     className="text-xs text-error hover:underline disabled:opacity-50"
                   >
                     {deleting ? t.tip.detailDeleting : t.common.delete}
@@ -161,15 +163,15 @@ export default function TipDetailPage() {
             </div>
           </div>
 
-          {knowhow.description && (
-            <p className="mt-4 text-text-secondary text-sm leading-relaxed">{knowhow.description}</p>
+          {tip.description && (
+            <p className="mt-4 text-text-secondary text-sm leading-relaxed">{tip.description}</p>
           )}
         </div>
 
         {/* 단계 */}
         <div className="space-y-4 mb-8">
           <h2 className="text-lg font-bold">{t.tip.detailStepsTitle}</h2>
-          {knowhow.steps.map((step) => (
+          {tip.steps.map((step) => (
             <div key={step.id} className="bg-background-secondary rounded-2xl p-5 border border-white/10">
               <div className="flex items-center gap-3 mb-3">
                 <span className="w-7 h-7 rounded-full bg-accent-warm text-background-primary text-sm font-bold flex items-center justify-center flex-shrink-0">
@@ -196,9 +198,9 @@ export default function TipDetailPage() {
         </div>
 
         {/* 태그 */}
-        {knowhow.tags.length > 0 && (
+        {tip.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {knowhow.tags.map(tag => (
+            {tip.tags.map(tag => (
               <span key={tag} className="px-3 py-1 rounded-full bg-white/5 text-text-muted text-sm">#{tag}</span>
             ))}
           </div>
@@ -209,7 +211,18 @@ export default function TipDetailPage() {
         isOpen={reportOpen}
         onClose={() => setReportOpen(false)}
         contentType="tip"
-        contentId={knowhow.id}
+        contentId={tip.id}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        title={t.tip.detailDeleteConfirm}
+        confirmLabel={t.common.delete}
+        destructive
+        loading={deleting}
+        loadingLabel={t.tip.detailDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirmOpen(false)}
       />
     </div>
   );

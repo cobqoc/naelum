@@ -5,10 +5,11 @@ import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import { useI18n } from '@/lib/i18n/context';
 
-// 팁 카테고리 → 아이콘. category 는 DB 저장 한글 값(고정 enum) — locale key 아님.
+// 팁 카테고리 → 아이콘. category 는 DB 저장 영문 key(고정 enum, locale-agnostic).
+// 2026-05-25 이전엔 한글 값이었으나 *locale-stable key* 로 마이그레이션.
+// 표시 라벨은 t.tipForm.categories[key] 통해서 다국어 렌더.
 export const TIP_CATEGORY_ICONS: Record<string, string> = {
-  '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
+  prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
 };
 
 interface TipCardTip {
@@ -36,6 +37,7 @@ interface TipCardProps {
 export default memo(function TipCard({ tip, showAuthor = false, priority = false }: TipCardProps) {
   const { t } = useI18n();
   const icon = TIP_CATEGORY_ICONS[tip.category] ?? '💡';
+  const categoryLabel = t.tipForm.categories[tip.category as keyof typeof t.tipForm.categories] ?? tip.category;
 
   return (
     <Link href={`/tip/${tip.id}`} className="block group">
@@ -58,7 +60,7 @@ export default memo(function TipCard({ tip, showAuthor = false, priority = false
           )}
           {/* 카테고리 배지 */}
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/55 backdrop-blur-sm text-white text-xs">
-            {icon} {tip.category}
+            {icon} {categoryLabel}
           </div>
           {/* 비공개 배지 (프로필 비공개 팁) */}
           {tip.is_public === false && (

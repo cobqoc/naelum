@@ -1149,6 +1149,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **팁 mid-priority 정리 5건 묶음** — 완료 (2026-05-25, develop 푸시)
+  - **카테고리 i18n key-based 마이그레이션** — DB에 한글값 + legacy 영문(technique·ingredient·cooking_tip) 섞여 있어 UI에 raw 텍스트 노출되던 회귀 fix. **dev+prod DB UPDATE** (prod 11행, dev 1행) → locale-stable 영문 key (`prep`/`storage`/`cooking`/`tools`/`measuring`/`other`). `TIP_CATEGORY_ICONS`·`CATEGORIES` 영문 키 + `t.tipForm.categories[key]` 8 locale 키 rename. TipListClient·new·edit·detail·TipCard 모두 일관. `'전체'` sentinel → `'all'`
+  - **조회수 inflation fix** — `GET /api/tip/[id]` 가 매 refresh +1 누적되던 회귀. ① 쿠키 `tip_v_{id}` 1시간 TTL → 같은 세션 refresh skip ② 작성자 본인 view 영구 skip (자기 팁 조회수 부풀림 차단). path-scoped cookie 라 다른 팁 영향 0
+  - **비공개·임시저장 팁 권한 체크** — `GET /api/tip/[id]` 가 `is_public=false`/`is_draft=true` 팁을 누구나 GET 가능했음 (RLS 의존). defense-in-depth: 작성자 본인 외 GET 시 404 명시 차단
+  - **frontend `knowhow` → `tip` rename** — DB·API 는 `tip` 인데 frontend interface·변수·storage 파일명 (`knowhow-thumb-`·`knowhow-step-`)·`Knowhow` interface 등이 혼용. grep·디버깅 시 혼란. tip 상세 page (`knowhow` state → `tip`, `Knowhow` → `Tip`, `KnowhowStep` → `TipStep`) + 신규 업로드 파일명 prefix `tip-thumb-`/`tip-step-`. 기존 storage 파일은 prefix 그대로 보존 (URL 유효)
+  - **native `confirm()` → `ConfirmDialog`** — `components/Common/ConfirmDialog.tsx` 재사용 컴포넌트 신설 (`destructive`·`loading` prop, ESC=cancel·Enter=confirm focus, backdrop 클릭=cancel, aria-modal). tip 상세 페이지 삭제 confirm 적용. 디자인 일관성 + claude-in-chrome·Playwright 자동화 호환
+  - 검증: lint 0 errors · build · vitest **20 files 249 passed**
 - **레시피 작성·표시 정리: prep_time 제거 + 섹션 라벨 + 재료 카드 재구성 + substitute note 도입** — 완료 (2026-05-24, develop 푸시)
   - **prep_time 폼 입력 제거**: 한식 prep/cook 경계 모호 + 데이터 품질 낮음(대부분 빈값/부정확) + 카드·검색에 노출 안 됨. new/edit 폼 input 제거 + state·autosave·remix 로드·submit payload 정리. **DB 컬럼·기존 데이터 보존**(SEO schema.org `recipe:prep_time` 그대로), KMP·API 영향 0. 표시 측 `prep||0 + cook||0` 합산은 이미 NULL safe. ProfileRecipeGrid `&&` AND 조건 버그 발견·수정 — 새 레시피(prep=null)는 시간 미표시되던 회귀 차단
   - **섹션 라벨 정리** (8 locale): "재료 준비" → **"재료"** (ko/ja/zh — 영어권은 이미 짧음), "추가 정보" → **"식단·영양"** (8 locale 전부). "추가 정보"가 vague → 작성자가 *스킵해도 되나?* 망설이고 안 채움. 안에 든 게 식단·영양·태그라 명시적이 더 좋음. 1·2·3·4 번호는 모바일 진행감 + amber 배지 시각 chunk 역할 유지

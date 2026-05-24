@@ -25,10 +25,10 @@ import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } fro
  * 한글/일본어/중국어 IME 가드 — tag input Enter 핸들러 (tip/new 와 동일).
  */
 
-const CATEGORIES = ['손질법', '보관법', '조리법', '도구 사용법', '계량법', '기타'];
+// 카테고리 — DB 저장 영문 key (2026-05-25 한글 → 영문 마이그레이션, locale-stable).
+const CATEGORIES = ['prep', 'storage', 'cooking', 'tools', 'measuring', 'other'];
 const CATEGORY_ICONS: Record<string, string> = {
-  '손질법': '🔪', '보관법': '🧊', '조리법': '🍳',
-  '도구 사용법': '🥄', '계량법': '⚖️', '기타': '💡',
+  prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
 };
 
 interface Step {
@@ -64,7 +64,7 @@ export default function TipEditPage() {
   // 폼 state — 초기값은 load 후 채움.
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('기타');
+  const [category, setCategory] = useState('other');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -98,7 +98,7 @@ export default function TipEditPage() {
         }
         setTitle(tip.title || '');
         setDescription(tip.description || '');
-        setCategory(tip.category || '기타');
+        setCategory(tip.category || 'other');
         setDurationMinutes(tip.duration_minutes != null ? String(tip.duration_minutes) : '');
         setThumbnail(tip.thumbnail_url || null);
         isPublicRef.current = tip.is_public;
@@ -131,7 +131,7 @@ export default function TipEditPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setThumbnailUploading(false); return; }
     const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/knowhow-thumb-${Date.now()}.${ext}`;
+    const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
     const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
     if (!upErr && path) {
       setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
@@ -151,7 +151,7 @@ export default function TipEditPage() {
       return;
     }
     const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/knowhow-step-${Date.now()}-${idx}.${ext}`;
+    const fileName = `${user.id}/tip-step-${Date.now()}-${idx}.${ext}`;
     const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
     if (!upErr && path) {
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
