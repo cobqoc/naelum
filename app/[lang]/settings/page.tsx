@@ -73,6 +73,14 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  // 활성 탭 자동 스크롤 — 모바일에서 가로 스크롤 탭 중 *활성 탭이 항상 viewport 안에 보이게*.
+  // hidden sm:inline 제거(2026-05-25 라벨 항상 표시 결정 — 시스템 이모지 인지 부족)
+  // 후 좁은 모바일에서 탭이 가로 스크롤되는데, URL ?tab=X 직접 접근 시 활성 탭이
+  // 화면 밖이면 사용자가 못 찾음. scrollIntoView 로 자동 정렬.
+  const activeTabBtnRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeTabBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [activeTab]);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   // Profile form state
@@ -466,26 +474,31 @@ export default function SettingsPage() {
             <h1 className="text-xl md:text-2xl font-bold">{sp.title}</h1>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b border-white/10 mb-6 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => handleTabClick(tab.key)}
-                className={`relative shrink-0 flex-1 py-3 text-sm font-medium border-b-2 transition-all min-w-0 ${
-                  activeTab === tab.key
-                    ? 'border-accent-warm text-accent-warm'
-                    : 'border-transparent text-text-muted hover:text-text-primary'
-                }`}
-              >
-                <span className="mr-1">{tab.icon}</span>
-                <span className="hidden sm:inline">{tab.label}</span>
-                {/* Dirty indicator */}
-                {((tab.key === 'profile' && isDirtyProfile) || (tab.key === 'preferences' && isDirtyPreferences)) && (
-                  <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" />
-                )}
-              </button>
-            ))}
+          {/* Tabs — 라벨 항상 표시 (이모지 단독은 시스템 폰트 의존·브랜드 정체성 없어 인지 부족, 2026-05-25 결정).
+              좁은 모바일에선 가로 스크롤(scrollbar-hide), 활성 탭 자동 정렬(activeTabBtnRef + scrollIntoView). */}
+          <div className="flex border-b border-white/10 mb-6 overflow-x-auto scrollbar-hide">
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  ref={isActive ? activeTabBtnRef : null}
+                  onClick={() => handleTabClick(tab.key)}
+                  className={`relative shrink-0 flex-1 px-3 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'border-accent-warm text-accent-warm'
+                      : 'border-transparent text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  <span className="mr-1">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {/* Dirty indicator */}
+                  {((tab.key === 'profile' && isDirtyProfile) || (tab.key === 'preferences' && isDirtyPreferences)) && (
+                    <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {activeTab === 'profile' && (
