@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { createClient } from '@/lib/supabase/client';
 
@@ -25,6 +26,7 @@ export default function RecipeReviewModal({
 }: RecipeReviewModalProps) {
   const toast = useToast();
   const router = useRouter();
+  const { t } = useI18n();
   const [rating, setRating] = useState(initialRating);
   const [review, setReview] = useState(initialReview);
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +63,7 @@ export default function RecipeReviewModal({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || '리뷰 저장에 실패했습니다');
+        throw new Error(data.error || t.recipe.reviewSaveFailed);
       }
 
       const data = await response.json();
@@ -77,7 +79,7 @@ export default function RecipeReviewModal({
       }
     } catch (error) {
       console.error('Submit review error:', error);
-      toast.error(error instanceof Error ? error.message : '저장 중 오류가 발생했습니다.');
+      toast.error(error instanceof Error ? error.message : t.recipe.reviewSaveError);
     } finally {
       setSubmitting(false);
     }
@@ -91,20 +93,20 @@ export default function RecipeReviewModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div className="bg-background-secondary rounded-2xl p-6 max-w-sm w-full border border-white/10 text-center">
           <div className="text-4xl mb-4">⭐</div>
-          <h3 className="text-lg font-bold text-text-primary mb-2">로그인이 필요합니다</h3>
-          <p className="text-sm text-text-muted mb-6">리뷰를 작성하려면 로그인해주세요.</p>
+          <h3 className="text-lg font-bold text-text-primary mb-2">{t.recipe.reviewLoginRequired}</h3>
+          <p className="text-sm text-text-muted mb-6">{t.recipe.reviewLoginRequiredDesc}</p>
           <div className="flex gap-3">
             <button
               onClick={onClose}
               className="flex-1 py-2.5 rounded-xl bg-background-tertiary text-text-secondary text-sm font-medium hover:bg-background-tertiary/80 transition-colors"
             >
-              취소
+              {t.common.cancel}
             </button>
             <button
               onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
               className="flex-1 py-2.5 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors"
             >
-              로그인
+              {t.common.login}
             </button>
           </div>
         </div>
@@ -118,7 +120,7 @@ export default function RecipeReviewModal({
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-text-primary">
-            {initialRating || initialReview ? '리뷰 수정' : '리뷰 작성'}
+            {initialRating || initialReview ? t.recipe.reviewModalTitleEdit : t.recipe.reviewModalTitleCreate}
           </h3>
           <button
             onClick={onClose}
@@ -132,7 +134,7 @@ export default function RecipeReviewModal({
         {/* 평점 선택 */}
         <div className="mb-6">
           <label className="block text-sm font-bold text-text-primary mb-3">
-            평점을 선택해주세요
+            {t.recipe.reviewRatingLabel}
           </label>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -147,21 +149,21 @@ export default function RecipeReviewModal({
             ))}
           </div>
           <p className="text-center text-text-muted text-sm mt-2">
-            {rating}점
+            {rating}{t.recipe.reviewRatingScoreSuffix}
           </p>
         </div>
 
         {/* 리뷰 텍스트 */}
         <div className="mb-6">
           <label className="block text-sm font-bold text-text-primary mb-2">
-            리뷰 (선택사항)
+            {t.recipe.reviewLabel}
           </label>
           <InputBoxWrapper className="!rounded-xl !px-4 !py-3 !min-h-[100px] !items-start">
             <textarea
               value={review}
               onChange={(e) => setReview(e.target.value)}
               disabled={submitting}
-              placeholder="이 레시피에 대한 경험을 공유해주세요..."
+              placeholder={t.recipe.reviewPlaceholder}
               className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none disabled:opacity-50`}
               style={INPUT_INNER_STYLE}
               rows={4}
@@ -182,10 +184,10 @@ export default function RecipeReviewModal({
           {submitting ? (
             <>
               <div className="w-5 h-5 border-2 border-background-primary/30 border-t-background-primary rounded-full animate-spin" />
-              <span>저장 중...</span>
+              <span>{t.recipe.reviewSaving}</span>
             </>
           ) : (
-            <span>리뷰 {initialRating || initialReview ? '수정' : '제출'}</span>
+            <span>{initialRating || initialReview ? t.recipe.reviewSubmitEdit : t.recipe.reviewSubmitCreate}</span>
           )}
         </button>
       </div>
