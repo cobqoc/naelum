@@ -139,9 +139,9 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'recipe': return t.autocomplete?.recipes || '레시피';
-      case 'ingredient': return t.autocomplete?.ingredients || '재료';
-      case 'user': return t.autocomplete?.users || '사용자';
+      case 'recipe': return t.autocomplete.recipes;
+      case 'ingredient': return t.autocomplete.ingredients;
+      case 'user': return t.autocomplete.users;
       default: return '';
     }
   };

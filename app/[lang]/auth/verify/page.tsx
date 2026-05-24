@@ -100,7 +100,7 @@ export default function VerifyPage() {
     };
 
     handleVerification();
-  }, [router, supabase.auth]);
+  }, [router, supabase.auth, t.auth.verifyError, t.auth.verifyNotFound]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background-primary px-4">

@@ -114,46 +114,51 @@ export default function PreferencesTab({
       {/* Privacy Settings */}
       <div className="space-y-3">
         <label className="text-sm font-medium text-text-secondary">
-          {sp.privacyTitle || '프라이버시'}
+          {sp.privacyTitle}
         </label>
         <p className="text-xs text-text-muted">
-          {sp.privacyDesc || '다른 사용자가 내 프로필에서 볼 수 있는 정보를 설정합니다.'}
+          {sp.privacyDesc}
         </p>
         <div className="space-y-2">
-          {/* Show saved to public */}
+          {/* Show saved to public — row 전체가 토글 (a11y: role=switch + aria-checked).
+              Toggle 시각: NotificationsTab과 동일하게 translate-x-5 Tailwind 클래스 (inline left 제거). */}
           <button
             type="button"
+            role="switch"
+            aria-checked={showSavedToPublic}
+            aria-label={sp.privacySaved}
             onClick={() => setShowSavedToPublic(!showSavedToPublic)}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-background-secondary transition-all"
           >
             <div className="flex items-center gap-3">
-              <span className="text-lg">👅</span>
-              <span className="text-sm">{sp.privacySaved || '낼름함 공개'}</span>
+              <span className="text-lg" aria-hidden="true">👅</span>
+              <span className="text-sm">{sp.privacySaved}</span>
             </div>
             <div className={`w-11 h-6 rounded-full transition-all relative ${showSavedToPublic ? 'bg-accent-warm' : 'bg-white/20'}`}>
-              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showSavedToPublic ? 'left-5.5' : 'left-0.5'}`}
-                style={{ left: showSavedToPublic ? '22px' : '2px' }} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showSavedToPublic ? 'translate-x-5' : 'translate-x-0'}`} />
             </div>
           </button>
 
           {/* Show cooked to public */}
           <button
             type="button"
+            role="switch"
+            aria-checked={showCookedToPublic}
+            aria-label={sp.privacyCooked}
             onClick={() => setShowCookedToPublic(!showCookedToPublic)}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-background-secondary transition-all"
           >
             <div className="flex items-center gap-3">
-              <span className="text-lg">🎉</span>
-              <span className="text-sm">{sp.privacyCooked || '만들어봤어요 공개'}</span>
+              <span className="text-lg" aria-hidden="true">🎉</span>
+              <span className="text-sm">{sp.privacyCooked}</span>
             </div>
             <div className={`w-11 h-6 rounded-full transition-all relative ${showCookedToPublic ? 'bg-accent-warm' : 'bg-white/20'}`}>
-              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${showCookedToPublic ? 'left-5.5' : 'left-0.5'}`}
-                style={{ left: showCookedToPublic ? '22px' : '2px' }} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCookedToPublic ? 'translate-x-5' : 'translate-x-0'}`} />
             </div>
           </button>
         </div>
         <p className="text-xs text-text-muted">
-          {sp.privacyHint || '비활성화하면 다른 사용자가 내 프로필에서 해당 탭을 볼 수 없습니다.'}
+          {sp.privacyHint}
         </p>
       </div>
 

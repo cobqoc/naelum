@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface AdminRecipe {
   id: string;
@@ -35,6 +37,7 @@ const STATUS_TABS: { key: string; label: string }[] = [
 
 export default function AdminRecipesPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -46,6 +49,13 @@ export default function AdminRecipesPage() {
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  // 삭제 확인 — 단일·bulk 통합 pending state
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: 'single'; recipe: AdminRecipe }
+    | { kind: 'bulk'; ids: string[] }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadRecipes = useCallback(async () => {
     setLoading(true);
@@ -118,8 +128,11 @@ export default function AdminRecipesPage() {
     }
   };
 
-  const handleDelete = async (recipe: AdminRecipe) => {
-    if (!confirm(`"${recipe.title}" 레시피를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+  const handleDelete = (recipe: AdminRecipe) => {
+    setPendingDelete({ kind: 'single', recipe });
+  };
+
+  const performSingleDelete = async (recipe: AdminRecipe) => {
     const res = await fetch(`/api/admin/recipes/${recipe.id}`, { method: 'DELETE' });
     if (res.ok) {
       toast.success('레시피가 삭제되었습니다');
@@ -132,7 +145,11 @@ export default function AdminRecipesPage() {
   const handleBulk = async (action: 'publish' | 'unpublish' | 'delete') => {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (action === 'delete' && !confirm(`선택한 ${ids.length}개 레시피를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    if (action === 'delete') {
+      // 삭제는 ConfirmDialog 거치게 — pending에 ids 보관
+      setPendingDelete({ kind: 'bulk', ids });
+      return;
+    }
     setBulkBusy(true);
     try {
       const res = await fetch('/api/admin/recipes/bulk', {
@@ -141,15 +158,46 @@ export default function AdminRecipesPage() {
         body: JSON.stringify({ ids, action }),
       });
       if (res.ok) {
-        const label = action === 'publish' ? '공개' : action === 'unpublish' ? '비공개' : '삭제';
+        const label = action === 'publish' ? '공개' : '비공개';
         toast.success(`${ids.length}개 레시피를 ${label} 처리했습니다`);
         loadRecipes();
       } else {
         const d = await res.json().catch(() => ({}));
-        toast.error(d.error || '처리 중 오류가 발생했습니다');
+        toast.error(d.error || t.common.error);
       }
     } finally {
       setBulkBusy(false);
+    }
+  };
+
+  const performBulkDelete = async (ids: string[]) => {
+    const res = await fetch('/api/admin/recipes/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, action: 'delete' }),
+    });
+    if (res.ok) {
+      toast.success(`${ids.length}개 레시피를 삭제 처리했습니다`);
+      setSelected(new Set());
+      loadRecipes();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      toast.error(d.error || t.common.error);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      if (pendingDelete.kind === 'single') {
+        await performSingleDelete(pendingDelete.recipe);
+      } else {
+        await performBulkDelete(pendingDelete.ids);
+      }
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
@@ -347,6 +395,21 @@ export default function AdminRecipesPage() {
           다음
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={
+          pendingDelete?.kind === 'single'
+            ? `"${pendingDelete.recipe.title}" 레시피를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+            : pendingDelete?.kind === 'bulk'
+              ? `선택한 ${pendingDelete.ids.length}개 레시피를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+              : ''
+        }
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setPendingDelete(null); }}
+      />
     </div>
   );
 }

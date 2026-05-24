@@ -258,7 +258,7 @@ export default function SetPasswordPage() {
           {/* 생년월일 — 연령 gate (글로벌 safe 16세 기준) */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-text-secondary">
-              {t.auth.birthDateLabel || '생년월일'} <span className="text-error">*</span>
+              {t.auth.birthDateLabel} <span className="text-error">*</span>
             </label>
             <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
               <input

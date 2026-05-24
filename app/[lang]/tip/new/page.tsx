@@ -19,6 +19,10 @@ const CATEGORY_ICONS: Record<string, string> = {
   prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
 };
 
+// 자동저장 상수 — 모듈 레벨 (매 렌더마다 새 reference 회피 → useEffect deps 안정)
+const AUTOSAVE_KEY = 'naelum_tip_new_autosave_v1';
+const AUTOSAVE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
 interface Step {
   instruction: string;
   tip: string;
@@ -49,9 +53,7 @@ export default function TipNewPage() {
   const [pending, setPending] = useState<'draft' | 'private' | 'public' | null>(null);
   const [error, setError] = useState('');
 
-  // 자동저장 — localStorage 백업 (게시·임시저장 시 clear)
-  const AUTOSAVE_KEY = 'naelum_tip_new_autosave_v1';
-  const AUTOSAVE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+  // 자동저장 — localStorage 백업 (게시·임시저장 시 clear). 상수는 모듈 레벨.
   const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
   type AutosaveSnapshot = {
     title: string; description: string; category: string;

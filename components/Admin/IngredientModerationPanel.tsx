@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/lib/toast/context';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 import { getCategoryName } from '../Ingredients/IngredientAutocompleteTypes';
 
 interface IngredientForModeration {
@@ -38,6 +39,14 @@ export default function IngredientModerationPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
+  // 승인·거부·삭제 confirm 통합 — pending 객체로 action·id·name 보관
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: 'approve'; id: string }
+    | { kind: 'reject'; id: string }
+    | { kind: 'delete'; id: string; name: string }
+    | null
+  >(null);
+  const [processing, setProcessing] = useState(false);
 
   /**
    * 재료 목록 로드
@@ -77,24 +86,19 @@ export default function IngredientModerationPanel() {
     fetchIngredients(statusFilter);
   }, [statusFilter]);
 
-  /**
-   * 재료 승인
-   */
-  const handleApprove = async (id: string) => {
-    if (!confirm('이 재료를 승인하시겠습니까?')) return;
+  // 사용자 클릭 → ConfirmDialog 트리거. 실행은 confirmPending() 에서.
+  const handleApprove = (id: string) => setPendingAction({ kind: 'approve', id });
+  const handleReject = (id: string) => setPendingAction({ kind: 'reject', id });
+  const handleDelete = (id: string, name: string) => setPendingAction({ kind: 'delete', id, name });
 
+  const performApprove = async (id: string) => {
     try {
       const response = await fetch(`/api/ingredients/${id}/approve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'approve' }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to approve ingredient');
-      }
-
-      // 목록 새로고침
+      if (!response.ok) throw new Error('Failed to approve ingredient');
       await fetchIngredients(statusFilter);
       toast.success('재료가 승인되었습니다');
     } catch (err) {
@@ -103,24 +107,14 @@ export default function IngredientModerationPanel() {
     }
   };
 
-  /**
-   * 재료 거부
-   */
-  const handleReject = async (id: string) => {
-    if (!confirm('이 재료를 거부하시겠습니까?')) return;
-
+  const performReject = async (id: string) => {
     try {
       const response = await fetch(`/api/ingredients/${id}/approve`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reject' }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to reject ingredient');
-      }
-
-      // 목록 새로고침
+      if (!response.ok) throw new Error('Failed to reject ingredient');
       await fetchIngredients(statusFilter);
       toast.success('재료가 거부되었습니다');
     } catch (err) {
@@ -130,10 +124,9 @@ export default function IngredientModerationPanel() {
   };
 
   /**
-   * 재료 삭제
+   * 재료 삭제 — 기존 흐름 보존, confirm은 ConfirmDialog 로 통합
    */
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`"${name}" 재료를 영구 삭제하시겠습니까?`)) return;
+  const performDelete = async (id: string) => {
 
     try {
       const response = await fetch(`/api/ingredients/${id}/approve`, {
@@ -152,6 +145,25 @@ export default function IngredientModerationPanel() {
       toast.error('삭제 중 오류가 발생했습니다: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
+
+  const confirmPending = async () => {
+    if (!pendingAction) return;
+    setProcessing(true);
+    try {
+      if (pendingAction.kind === 'approve') await performApprove(pendingAction.id);
+      else if (pendingAction.kind === 'reject') await performReject(pendingAction.id);
+      else await performDelete(pendingAction.id);
+    } finally {
+      setProcessing(false);
+      setPendingAction(null);
+    }
+  };
+
+  const pendingActionTitle =
+    pendingAction?.kind === 'approve' ? '이 재료를 승인하시겠습니까?' :
+    pendingAction?.kind === 'reject' ? '이 재료를 거부하시겠습니까?' :
+    pendingAction?.kind === 'delete' ? `"${pendingAction.name}" 재료를 영구 삭제하시겠습니까?` :
+    '';
 
   /**
    * 날짜 포맷팅
@@ -385,6 +397,15 @@ export default function IngredientModerationPanel() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingAction !== null}
+        title={pendingActionTitle}
+        destructive={pendingAction?.kind === 'reject' || pendingAction?.kind === 'delete'}
+        loading={processing}
+        onConfirm={confirmPending}
+        onCancel={() => { if (!processing) setPendingAction(null); }}
+      />
     </div>
   );
 }

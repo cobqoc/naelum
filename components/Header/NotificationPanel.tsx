@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
+import LocalizedLink from '@/components/Common/LocalizedLink';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
+import { useToast } from '@/lib/toast/context';
 
 interface NotificationItem {
   id: string;
@@ -22,36 +24,19 @@ interface NotificationPanelProps {
   onClose: () => void;
 }
 
+// 알림 목록 전담 — 종류 토글·푸시 구독 UI는 설정 페이지 알림 탭으로 이전 (2026-05-25).
+// 헤더는 "최근 알림 보기·읽음 처리" 즉시 행동만, 환경 설정은 설정 페이지에서.
 export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: NotificationPanelProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const toast = useToast();
   const supabase = createClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
-  const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
-  const [notifSettings, setNotifSettings] = useState({ expiry: true });
-  const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setPushPermission(Notification.permission);
-    }
-  }, []);
-
-  // 알림 설정 패널 열릴 때 DB에서 최신값 로드
-  useEffect(() => {
-    if (!notifSettingsOpen || !userId) return;
-    supabase
-      .from('profiles')
-      .select('push_notifications')
-      .eq('id', userId)
-      .single()
-      .then(({ data }) => {
-        if (data) setNotifSettings({ expiry: data.push_notifications ?? true });
-      });
-  }, [notifSettingsOpen, userId, supabase]);
-
+  // 백그라운드 폴링 (30초) — 실패 시 silent. 매 30초마다 토스트 띄우면 노이즈.
+  // 네트워크 일시 장애도 다음 폴링에서 자동 복구되므로 사용자 인지 불필요.
   const fetchUnreadCount = useCallback(async () => {
     try {
       const { count } = await supabase
@@ -59,9 +44,10 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
         .select('id', { count: 'exact', head: true })
         .eq('is_read', false);
       setUnreadCount(count || 0);
-    } catch { /* ignore */ }
+    } catch { /* silent — 백그라운드 폴링, 다음 30초 후 자동 재시도 */ }
   }, [supabase]);
 
+  // 사용자가 종 아이콘 클릭해 패널 열 때 호출 — 실패 시 빈 상태 표시되므로 표면화 필요.
   const fetchNotifications = async () => {
     setNotifLoading(true);
     try {
@@ -70,9 +56,12 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
       if (res.ok) {
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
+      } else {
+        toast.error(t.common.error);
       }
-    } catch { /* ignore */ }
-    finally { setNotifLoading(false); }
+    } catch {
+      toast.error(t.common.error);
+    } finally { setNotifLoading(false); }
   };
 
   // 폴링 (30초)
@@ -107,63 +96,20 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     }
   };
 
-  const toggleNotifSetting = async (key: 'expiry') => {
-    const next = { ...notifSettings, [key]: !notifSettings[key] };
-    setNotifSettings(next);
-    if (userId) {
-      await supabase
-        .from('profiles')
-        .update({ push_notifications: next.expiry })
-        .eq('id', userId);
-    }
-  };
-
   const formatNotifTime = (dateString: string) => {
     const diff = Date.now() - new Date(dateString).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    if (minutes < 60) return `${minutes}분 전`;
-    if (hours < 24) return `${hours}시간 전`;
-    return `${days}일 전`;
+    if (minutes < 60) return `${minutes}${t.notifications.minutesAgo}`;
+    if (hours < 24) return `${hours}${t.notifications.hoursAgo}`;
+    return `${days}${t.notifications.daysAgo}`;
   };
 
   const getNotifIcon = (type: string) => {
     if (type === 'expiry') return '⏰';
     if (type === 'meal_time') return '🍽️';
     return '🔔';
-  };
-
-  const subscribeToPush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const permission = await Notification.requestPermission();
-    setPushPermission(permission);
-    if (permission !== 'granted') return;
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    });
-    const sub = subscription.toJSON();
-    await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.keys }),
-    });
-  };
-
-  const unsubscribeFromPush = async () => {
-    if (!('serviceWorker' in navigator)) return;
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) return;
-    await fetch('/api/push/subscribe', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: subscription.endpoint }),
-    });
-    await subscription.unsubscribe();
-    setPushPermission('default');
   };
 
   return (
@@ -174,7 +120,6 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
             onClose();
           } else {
             onOpen();
-            setNotifSettingsOpen(false);
             fetchNotifications();
           }
         }}
@@ -195,130 +140,66 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
           <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden">
             {/* 헤더 */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              {notifSettingsOpen ? (
-                <button
-                  onClick={() => setNotifSettingsOpen(false)}
-                  className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
-                >
-                  ← {t.common.notificationSettingsAria}
-                </button>
+              <span className="font-bold text-sm">🔔 {t.common.notifications}</span>
+            </div>
+
+            {/* 알림 목록 */}
+            <div className="max-h-80 overflow-y-auto">
+              {notifLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="text-center py-10">
+                  <div className="text-3xl mb-2">🔕</div>
+                  <p className="text-sm text-text-muted">{t.notifications.empty}</p>
+                </div>
               ) : (
-                <>
-                  <span className="font-bold text-sm">🔔 {t.common.notifications}</span>
+                notifications.map(n => (
                   <button
-                    onClick={() => setNotifSettingsOpen(true)}
-                    className="text-text-muted hover:text-text-primary transition-colors text-base"
-                    aria-label={t.common.notificationSettingsAria}
+                    key={n.id}
+                    type="button"
+                    onClick={() => {
+                      if (!n.is_read) markAsRead(n.id);
+                      onClose();
+                      if (n.action_url) router.push(n.action_url);
+                    }}
+                    className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors hover:bg-white/5 ${
+                      !n.is_read ? 'bg-accent-warm/5' : ''
+                    }`}
                   >
-                    ⚙️
+                    <span className="text-xl flex-shrink-0 mt-0.5">{getNotifIcon(n.notification_type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary truncate">{n.title}</p>
+                      <p className="text-xs text-text-muted truncate">{n.message}</p>
+                      <p className="text-xs text-text-muted mt-0.5">{formatNotifTime(n.created_at)}</p>
+                    </div>
+                    {!n.is_read && (
+                      <span className="w-2 h-2 rounded-full bg-accent-warm flex-shrink-0 mt-1.5" />
+                    )}
                   </button>
-                </>
+                ))
               )}
             </div>
 
-            {/* 설정 패널 */}
-            {notifSettingsOpen ? (
-              <div className="p-4 space-y-4">
-                <div className="pb-3 border-b border-white/10">
-                  {pushPermission === 'granted' ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm flex items-center gap-2">
-                        <span>📲</span>
-                        <span>기기 알림</span>
-                        <span className="text-xs text-success">허용됨</span>
-                      </span>
-                      <button
-                        onClick={unsubscribeFromPush}
-                        className="text-xs text-text-muted hover:text-error transition-colors"
-                      >
-                        해제
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={subscribeToPush}
-                      className="w-full py-2 px-3 rounded-lg bg-accent-warm/10 border border-accent-warm/30 text-accent-warm text-sm font-medium hover:bg-accent-warm/20 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <span>📲</span>
-                      앱을 닫아도 알림 받기
-                    </button>
-                  )}
-                </div>
-
-                {([
-                  { key: 'expiry' as const, icon: '⏰', label: '유통기한 알림' },
-                ]).map(({ key, icon, label }) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-sm flex items-center gap-2">
-                      <span>{icon}</span>
-                      {label}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleNotifSetting(key)}
-                      className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                        notifSettings[key] ? 'bg-accent-warm' : 'bg-background-tertiary'
-                      }`}
-                      role="switch"
-                      aria-checked={notifSettings[key]}
-                    >
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                        notifSettings[key] ? 'translate-x-4' : 'translate-x-0.5'
-                      }`} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="max-h-80 overflow-y-auto">
-                {notifLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
-                  </div>
-                ) : notifications.length === 0 ? (
-                  <div className="text-center py-10">
-                    <div className="text-3xl mb-2">🔕</div>
-                    <p className="text-sm text-text-muted">알림이 없습니다</p>
-                  </div>
-                ) : (
-                  notifications.map(n => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      onClick={() => {
-                        if (!n.is_read) markAsRead(n.id);
-                        onClose();
-                        if (n.action_url) router.push(n.action_url);
-                      }}
-                      className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors hover:bg-white/5 ${
-                        !n.is_read ? 'bg-accent-warm/5' : ''
-                      }`}
-                    >
-                      <span className="text-xl flex-shrink-0 mt-0.5">{getNotifIcon(n.notification_type)}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">{n.title}</p>
-                        <p className="text-xs text-text-muted truncate">{n.message}</p>
-                        <p className="text-xs text-text-muted mt-0.5">{formatNotifTime(n.created_at)}</p>
-                      </div>
-                      {!n.is_read && (
-                        <span className="w-2 h-2 rounded-full bg-accent-warm flex-shrink-0 mt-1.5" />
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-
-            {!notifSettingsOpen && unreadCount > 0 && (
-              <div className="border-t border-white/10 px-4 py-2.5">
+            {/* Footer: 전체 읽음 + 알림 설정 진입로 */}
+            <div className="border-t border-white/10 px-4 py-2.5 flex items-center justify-between gap-2">
+              {unreadCount > 0 ? (
                 <button
                   onClick={markAllAsRead}
-                  className="w-full text-center text-xs text-accent-warm hover:text-accent-hover transition-colors"
+                  className="text-xs text-accent-warm hover:text-accent-hover transition-colors"
                 >
-                  전체 읽음
+                  {t.notifications.markAllRead}
                 </button>
-              </div>
-            )}
+              ) : <span />}
+              <LocalizedLink
+                href="/settings?tab=notifications"
+                onClick={onClose}
+                className="text-xs text-text-muted hover:text-text-primary transition-colors"
+              >
+                {t.settingsPage.notificationSettingsLink}
+              </LocalizedLink>
+            </div>
           </div>
         </>
       )}

@@ -10,6 +10,7 @@ import { fetchOrder, cancelOrder } from '@/lib/delivery/api';
 import { inferStatus } from '@/lib/delivery/orders';
 import type { Order, OrderStatus } from '@/lib/delivery/types';
 import DeliveryFloatingNav from '../../DeliveryFloatingNav';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface Props {
   orderId: string;
@@ -71,6 +72,8 @@ export default function OrderDetailClient({ orderId }: Props) {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const now = useSyncExternalStore(subscribeNow, getNowSnapshot, getNowServerSnapshot);
 
   // 비로그인 시 로그인 페이지로
@@ -132,15 +135,22 @@ export default function OrderDetailClient({ orderId }: Props) {
   const currentIdx = STATUS_FLOW.indexOf(currentStatus);
   const isCancelled = order.status === 'cancelled' || currentStatus === 'cancelled';
 
-  async function handleCancel() {
+  function requestCancel() {
     if (!order) return;
-    // eslint-disable-next-line no-alert
-    if (!confirm(t.delivery.order.cancelConfirm)) return;
+    setCancelOpen(true);
+  }
+
+  async function confirmCancel() {
+    if (!order) return;
+    setCancelling(true);
     try {
       await cancelOrder(createClient(), order.id);
       setOrder({ ...order, status: 'cancelled' });
+      setCancelOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Cancel failed');
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -257,7 +267,7 @@ export default function OrderDetailClient({ orderId }: Props) {
         {!isCancelled && (currentStatus === 'paid' || currentStatus === 'accepted' || currentStatus === 'preparing') && (
           <button
             type="button"
-            onClick={handleCancel}
+            onClick={requestCancel}
             className="w-full px-6 py-3 rounded-xl bg-error/10 text-error font-bold hover:bg-error/20 transition-colors"
             data-testid="cancel-order"
           >
@@ -274,6 +284,16 @@ export default function OrderDetailClient({ orderId }: Props) {
           </Link>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={cancelOpen}
+        title={t.delivery.order.cancelOrder}
+        description={t.delivery.order.cancelConfirm}
+        destructive
+        loading={cancelling}
+        onConfirm={confirmCancel}
+        onCancel={() => { if (!cancelling) setCancelOpen(false); }}
+      />
     </div>
   );
 }

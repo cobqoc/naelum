@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import { createClient } from '@/lib/supabase/client';
@@ -73,6 +74,17 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+
+  // ?tab=X 딥링크 — 헤더 NotificationPanel의 "알림 설정 →" 진입 등.
+  // SSR/hydration 안전을 위해 useState 초기값은 'profile' 고정, mount 후 한 번만 적용.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'profile' || tabParam === 'preferences' || tabParam === 'notifications' || tabParam === 'account') {
+      setActiveTab(tabParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount 시 1회 — 이후 사용자 클릭이 진실 소스
   // 활성 탭 자동 스크롤 — 모바일에서 가로 스크롤 탭 중 *활성 탭이 항상 viewport 안에 보이게*.
   // hidden sm:inline 제거(2026-05-25 라벨 항상 표시 결정 — 시스템 이모지 인지 부족)
   // 후 좁은 모바일에서 탭이 가로 스크롤되는데, URL ?tab=X 직접 접근 시 활성 탭이
@@ -476,13 +488,18 @@ export default function SettingsPage() {
 
           {/* Tabs — 라벨 항상 표시 (이모지 단독은 시스템 폰트 의존·브랜드 정체성 없어 인지 부족, 2026-05-25 결정).
               좁은 모바일에선 가로 스크롤(scrollbar-hide), 활성 탭 자동 정렬(activeTabBtnRef + scrollIntoView). */}
-          <div className="flex border-b border-white/10 mb-6 overflow-x-auto scrollbar-hide">
+          <div role="tablist" aria-label={sp.title} className="flex border-b border-white/10 mb-6 overflow-x-auto scrollbar-hide">
             {tabs.map(tab => {
               const isActive = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
                   ref={isActive ? activeTabBtnRef : null}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`settings-panel-${tab.key}`}
+                  id={`settings-tab-${tab.key}`}
+                  tabIndex={isActive ? 0 : -1}
                   onClick={() => handleTabClick(tab.key)}
                   className={`relative shrink-0 flex-1 px-3 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
                     isActive
@@ -490,11 +507,11 @@ export default function SettingsPage() {
                       : 'border-transparent text-text-muted hover:text-text-primary'
                   }`}
                 >
-                  <span className="mr-1">{tab.icon}</span>
+                  <span className="mr-1" aria-hidden="true">{tab.icon}</span>
                   <span>{tab.label}</span>
                   {/* Dirty indicator */}
                   {((tab.key === 'profile' && isDirtyProfile) || (tab.key === 'preferences' && isDirtyPreferences)) && (
-                    <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" />
+                    <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" aria-label="저장하지 않은 변경사항" />
                   )}
                 </button>
               );
@@ -502,36 +519,33 @@ export default function SettingsPage() {
           </div>
 
           {activeTab === 'profile' && (
+            <div role="tabpanel" id="settings-panel-profile" aria-labelledby="settings-tab-profile">
             <ProfileTab
               username={username}
-              originalUsername={originalUsername}
               setUsername={setUsername}
               usernameError={usernameError}
               checkingUsername={checkingUsername}
               bio={bio}
-              originalBio={originalBio}
               setBio={setBio}
               avatarUrl={avatarUrl}
-              originalAvatarUrl={originalAvatarUrl}
-              avatarFile={avatarFile}
               onAvatarChange={handleAvatarChange}
               onAvatarRemove={handleAvatarRemove}
               birthDate={birthDate}
-              originalBirthDate={originalBirthDate}
               setBirthDate={setBirthDate}
               gender={gender}
-              originalGender={originalGender}
               setGender={setGender}
               country={country}
-              originalCountry={originalCountry}
               setCountry={setCountry}
               saving={saving}
+              isDirty={isDirtyProfile}
               onSave={saveProfile}
               t={t}
             />
+            </div>
           )}
 
           {activeTab === 'preferences' && (
+            <div role="tabpanel" id="settings-panel-preferences" aria-labelledby="settings-tab-preferences">
             <PreferencesTab
               interests={interests}
               setInterests={setInterests}
@@ -549,19 +563,24 @@ export default function SettingsPage() {
               onSave={savePreferences}
               t={t}
             />
+            </div>
           )}
 
-          {activeTab === 'notifications' && (
-            <NotificationsTab t={t} />
+          {activeTab === 'notifications' && profile && (
+            <div role="tabpanel" id="settings-panel-notifications" aria-labelledby="settings-tab-notifications">
+              <NotificationsTab userId={profile.id} t={t} />
+            </div>
           )}
 
           {activeTab === 'account' && (
+            <div role="tabpanel" id="settings-panel-account" aria-labelledby="settings-tab-account">
             <AccountTab
               profile={profile}
               supabase={supabase}
               router={router}
               t={t}
             />
+            </div>
           )}
         </div>
       </main>

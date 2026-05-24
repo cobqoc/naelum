@@ -7,28 +7,23 @@ import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } fro
 
 interface ProfileTabProps {
   username: string;
-  originalUsername: string;
   setUsername: (v: string) => void;
   usernameError: string | null;
   checkingUsername: boolean;
   bio: string;
-  originalBio: string;
   setBio: (v: string) => void;
   avatarUrl: string | null;
-  originalAvatarUrl: string | null;
-  avatarFile: File | null;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAvatarRemove: () => void;
   birthDate: string | null;
-  originalBirthDate: string | null;
   setBirthDate: (v: string | null) => void;
   gender: string | null;
-  originalGender: string | null;
   setGender: (v: string | null) => void;
   country: string | null;
-  originalCountry: string | null;
   setCountry: (v: string | null) => void;
   saving: boolean;
+  /** 부모(settings/page.tsx)가 단일 출처로 계산해 전달 — 중복 계산 회피 */
+  isDirty: boolean;
   onSave: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: Record<string, any>;
@@ -36,42 +31,27 @@ interface ProfileTabProps {
 
 export default function ProfileTab({
   username,
-  originalUsername,
   setUsername,
   usernameError,
   checkingUsername,
   bio,
-  originalBio,
   setBio,
   avatarUrl,
-  originalAvatarUrl,
-  avatarFile,
   onAvatarChange,
   onAvatarRemove,
   birthDate,
-  originalBirthDate,
   setBirthDate,
   gender,
-  originalGender,
   setGender,
   country,
-  originalCountry,
   setCountry,
   saving,
+  isDirty,
   onSave,
   t,
 }: ProfileTabProps) {
   const sp = t.settingsPage;
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const isDirty =
-    username !== originalUsername ||
-    bio !== originalBio ||
-    avatarFile !== null ||
-    avatarUrl !== originalAvatarUrl ||
-    birthDate !== originalBirthDate ||
-    gender !== originalGender ||
-    country !== originalCountry;
 
   return (
     <div className="space-y-6">
@@ -85,15 +65,17 @@ export default function ProfileTab({
           className="hidden"
         />
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
+          aria-label={sp.changePhoto}
           className="relative w-24 h-24 rounded-full bg-background-secondary overflow-hidden ring-2 ring-white/10 hover:ring-accent-warm transition-all"
         >
           {avatarUrl ? (
-            <Image src={avatarUrl} alt="Profile" fill className="object-cover" />
+            <Image src={avatarUrl} alt="" fill className="object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl">👤</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl" aria-hidden="true">👤</div>
           )}
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" aria-hidden="true">
             <span className="text-white text-xs">{sp.changePhoto}</span>
           </div>
         </button>
@@ -132,6 +114,12 @@ export default function ProfileTab({
               type="text"
               value={username}
               onChange={(e) => {
+                // 한글·일본어·중국어 IME 조합 중에는 filter 보류 — 조합이 끝나면 마지막 onChange 가 다시 발화되므로 그때 처리.
+                // 조합 중 filter 하면 대소문자 변환 등으로 시각 흔들림·문자 fragmentation 가능.
+                if ((e.nativeEvent as InputEvent).isComposing) {
+                  setUsername(e.target.value);
+                  return;
+                }
                 const filtered = e.target.value
                   .split('')
                   .map(char => {
@@ -181,13 +169,14 @@ export default function ProfileTab({
         <p className="text-xs text-text-muted text-right">{bio.length}/200</p>
       </div>
 
-      {/* Birth Date */}
+      {/* Birth Date — max=오늘 (미래 날짜 입력 차단) */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-text-secondary">{sp.birthDate}</label>
         <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
           <input
             type="date"
             value={birthDate || ''}
+            max={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setBirthDate(e.target.value || null)}
             className={INPUT_INNER_COMFORTABLE_CLASS}
             style={INPUT_INNER_STYLE}
