@@ -312,8 +312,8 @@ export const ja = {
     optionalBadgeTooltip: '{name}を抜いて作ってもOK',
     optionalBadgeOr: 'または:',
     optionalBadgeAria: '任意食材の説明を見る',
-    substituteBadgeTooltip: '手持ちの食材で代用できます',
-    substituteAvailableTooltip: 'これらでも作れます',
+    substituteBadgeTooltip: '{name}で代用できます',
+    substituteAvailableTooltip: '{name}で代用できます',
     substituteBadgeAria: '代用食材の説明を見る',
   },
   profile: {
