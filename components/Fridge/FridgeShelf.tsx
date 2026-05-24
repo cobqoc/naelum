@@ -1,6 +1,7 @@
 'use client';
 
 import Link from '@/components/Common/LocalizedLink';
+import { useI18n } from '@/lib/i18n/context';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ export function IngredientPill({
   pillCls: string;
   onDelete?: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const icon = CATEGORY_ICONS[item.category] || '📦';
   const expiry = getExpiryInfo(item.expiry_date);
 
@@ -96,7 +98,7 @@ export function IngredientPill({
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
           className="opacity-0 group-hover:opacity-100 -mr-1 ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-black/20 hover:bg-red-500/80 text-[9px] text-white transition-all flex-shrink-0"
-          aria-label="삭제"
+          aria-label={t.common.delete}
         >
           ✕
         </button>

@@ -5,6 +5,7 @@ import { IngredientItem } from './IngredientAutocompleteTypes';
 import IngredientCategoryFilter from './IngredientCategoryFilter';
 import IngredientPickerGrid from './IngredientPickerGrid';
 import { useIngredientPicker } from '@/lib/hooks/useIngredientPicker';
+import { useI18n } from '@/lib/i18n/context';
 
 interface IngredientPickerModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export default function IngredientPickerModal({
   allowAddNew = false,
   onAddNew,
 }: IngredientPickerModalProps) {
+  const { t } = useI18n();
   const {
     searchQuery,
     setSearchQuery,
@@ -74,7 +76,7 @@ export default function IngredientPickerModal({
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted transition-colors"
-            aria-label="닫기"
+            aria-label={t.common.close}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -102,7 +104,7 @@ export default function IngredientPickerModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="재료 검색..."
+              placeholder={t.quickAdd.searchPlaceholder}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-background-secondary border border-white/10 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-2 focus:ring-accent-warm/20 transition-all"
               autoFocus
             />

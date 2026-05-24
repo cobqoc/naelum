@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
+import { useI18n } from '@/lib/i18n/context';
 
 interface ExpiringIngredient {
   id: string;
@@ -15,6 +16,7 @@ interface ExpiringIngredient {
 }
 
 export default function ExpiringIngredientsAlert() {
+  const { t } = useI18n();
   const [expiringIngredients, setExpiringIngredients] = useState<ExpiringIngredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -86,7 +88,7 @@ export default function ExpiringIngredientsAlert() {
                   setDismissed(true);
                 }}
                 className="text-text-muted hover:text-error transition-colors p-2"
-                title="알림 닫기"
+                title={t.common.close}
               >
                 ✕
               </button>

@@ -212,7 +212,7 @@ export default function AddIngredientDialog({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="예: 새송이버섯"
+              placeholder={t.ingredient.nameKorPlaceholder}
               maxLength={50}
               className="w-full px-4 py-2 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-2 focus:ring-accent-warm/20 transition-all"
               required
@@ -233,7 +233,7 @@ export default function AddIngredientDialog({
               type="text"
               value={nameEn}
               onChange={(e) => setNameEn(e.target.value)}
-              placeholder="예: King Oyster Mushroom"
+              placeholder={t.ingredient.nameEnPlaceholder}
               className="w-full px-4 py-2 rounded-xl bg-background-secondary border border-white/10 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-2 focus:ring-accent-warm/20 transition-all"
             />
           </div>

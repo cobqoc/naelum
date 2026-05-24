@@ -68,10 +68,10 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6 pointer-events-none">
-        <nav className="container mx-auto flex items-center justify-between px-4 md:px-6" aria-label="메인 네비게이션">
+        <nav className="container mx-auto flex items-center justify-between px-4 md:px-6" aria-label={t.common.mainNavAria}>
           {/* Logo + 정책 메뉴 — 로그인/비로그인 동일 위치. 우측 핵심 CTA(언어·로그인·프로필) 분리. */}
           <div className="flex items-center gap-1 md:gap-2 pointer-events-auto">
-            <Link href="/" className="flex items-center gap-2" aria-label="낼름 홈으로 이동">
+            <Link href="/" className="flex items-center gap-2" aria-label={t.common.logoHomeAria}>
               <span className="text-xl md:text-2xl font-bold tracking-tighter text-accent-warm">낼름</span>
             </Link>
             {/* 정책 메뉴 — 약관·개인정보·저작권·문의 진입점 */}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useToast, ToastType } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
 
 /** SVG 아이콘 — 이모지 대신 고정된 크기/컬러 */
 const Icon = ({ type }: { type: ToastType }) => {
@@ -52,6 +53,7 @@ const STYLES: Record<ToastType, { stripe: string; iconBg: string }> = {
 
 export default function ToastContainer() {
   const { toasts, dismiss } = useToast();
+  const { t: i18n } = useI18n();
 
   if (toasts.length === 0) return null;
 
@@ -107,7 +109,7 @@ export default function ToastContainer() {
               </div>
               <button
                 onClick={() => dismiss(t.id)}
-                aria-label="닫기"
+                aria-label={i18n.common.close}
                 className="flex-shrink-0 w-6 h-6 -mr-1 flex items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
