@@ -313,6 +313,7 @@ export const en = {
     optionalBadgeOr: 'Or:',
     optionalBadgeAria: 'Show optional ingredient info',
     substituteBadgeTooltip: 'You can substitute with what you have',
+    substituteAvailableTooltip: 'These can also be used',
     substituteBadgeAria: 'Show substitute info',
   },
   profile: {
