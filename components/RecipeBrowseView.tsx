@@ -686,7 +686,9 @@ export default function RecipeBrowseView({
                 // 그렇지 않으면 사용자는 author 명시한 *다른 재료* 가 아닌 전역 매핑상 substitute 를
                 // 보유한 것 — chip 의 author 이름 옆 ✓ 는 거짓 신호가 됨 (예: author=돼지고기,
                 // user=삼겹살 (베이컨↔삼겹살 전역 매핑) → "또는 돼지고기 ✓" 잘못).
-                const authorSubNames = recipeSubsList.map(s => s.split(' · ')[0].toLowerCase().trim());
+                // tooltip 인터폴레이션 용 — 원본 케이스 + note 제외 한 author 이름들.
+                const authorSubNamesClean = recipeSubsList.map(s => s.split(' · ')[0].trim()).filter(Boolean);
+                const authorSubNames = authorSubNamesClean.map(n => n.toLowerCase());
                 const subViaInAuthorList = !!(subVia && authorSubNames.some(n =>
                   n === subVia.toLowerCase().trim() || isSameIngredient(n, subVia.toLowerCase().trim())
                 ));
@@ -711,7 +713,10 @@ export default function RecipeBrowseView({
                       )}
                       {hasSubs && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
-                          <SubstituteIndicator owned={subViaInAuthorList} />
+                          <SubstituteIndicator
+                            owned={subViaInAuthorList}
+                            names={subViaInAuthorList && subVia ? [subVia] : authorSubNamesClean}
+                          />
                           <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
                           <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
                           {subViaInAuthorList && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
@@ -721,7 +726,7 @@ export default function RecipeBrowseView({
                           (hasSubs && !subViaInAuthorList) = author 가 명시한 것과 *다른* substitute 를 사용자가 보유. */}
                       {subVia && !subViaInAuthorList && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
-                          <SubstituteIndicator owned={true} />
+                          <SubstituteIndicator owned={true} names={[subVia]} />
                           <span aria-hidden className="text-success font-bold">✓</span>
                           <span className="font-medium text-success">{subVia}</span>
                         </span>
