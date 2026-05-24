@@ -18,6 +18,13 @@ import type { TabType } from './types';
  *    없어 인지 anchor 역할 못함. 향후 낼름 커스텀 아이콘 셋 만들면 이모지 단독 노출 검토.
  *  - activeTab 변경 시 자동 scrollIntoView — 사용자가 *어디 탭에 있는지* + 인접 탭이
  *    뭐 있는지 자연 발견. URL `?tab=cooked` 직접 접근 시 해당 탭 즉시 보임.
+ *
+ * 우측 fade gradient (2026-05-25):
+ *  - 6탭이 모바일 폭 초과해 가로 스크롤 발생 — 사용자가 *오른쪽 끝 탭 너머 더 있다*는
+ *    걸 알기 어려움 (임시저장 탭 옆이 비어있는 듯 보이던 사용자 피드백).
+ *  - 우측 끝 fade-to-bg overlay 추가 — Twitter·Slack 등 익숙한 패턴.
+ *  - `pointer-events-none` 으로 fade 아래 탭 클릭 차단 X. `bottom-px` 로 border 보존.
+ *  - 좌측 fade 는 첫 탭부터 자연 시작이라 생략 (A1 안).
  */
 
 interface ProfileTabsProps {
@@ -35,24 +42,32 @@ export default function ProfileTabs({ tabs, activeTab, onSelectTab }: ProfileTab
   }, [activeTab]);
 
   return (
-    <div className="mt-8 flex gap-2 border-b border-white/10 overflow-x-auto scrollbar-hide">
-      {tabs.map(tab => {
-        const isActive = activeTab === tab.key;
-        return (
-          <button
-            key={tab.key}
-            ref={isActive ? activeBtnRef : null}
-            onClick={() => onSelectTab(tab.key)}
-            className={`shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold rounded-t-xl transition-all ${
-              isActive
-                ? 'bg-background-secondary text-accent-warm border-b-2 border-accent-warm'
-                : 'text-text-muted hover:text-text-primary hover:bg-background-secondary/50'
-            }`}
-          >
-            {tab.icon} {tab.label}
-          </button>
-        );
-      })}
+    <div className="relative mt-8">
+      <div className="flex gap-2 border-b border-white/10 overflow-x-auto scrollbar-hide">
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
+            <button
+              key={tab.key}
+              ref={isActive ? activeBtnRef : null}
+              onClick={() => onSelectTab(tab.key)}
+              className={`shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold rounded-t-xl transition-all ${
+                isActive
+                  ? 'bg-background-secondary text-accent-warm border-b-2 border-accent-warm'
+                  : 'text-text-muted hover:text-text-primary hover:bg-background-secondary/50'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          );
+        })}
+      </div>
+      {/* 우측 fade — 가로 스크롤 콘텐츠가 더 있다는 시각 신호.
+          pointer-events-none 으로 fade 아래 탭 클릭 가능. bottom-px 로 border 1px 보존. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute right-0 top-0 bottom-px w-12 bg-gradient-to-l from-background-primary to-transparent"
+      />
     </div>
   );
 }
