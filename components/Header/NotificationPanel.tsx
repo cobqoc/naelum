@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
+import { useI18n } from '@/lib/i18n/context';
 
 interface NotificationItem {
   id: string;
@@ -23,6 +24,7 @@ interface NotificationPanelProps {
 
 export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: NotificationPanelProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const supabase = createClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -177,7 +179,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
           }
         }}
         className="relative p-2.5 rounded-full hover:bg-white/10 transition-colors"
-        aria-label="알림"
+        aria-label={t.common.notifications}
       >
         <span className="text-xl">🔔</span>
         {unreadCount > 0 && (
@@ -198,15 +200,15 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
                   onClick={() => setNotifSettingsOpen(false)}
                   className="flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
                 >
-                  ← 알림 설정
+                  ← {t.common.notificationSettingsAria}
                 </button>
               ) : (
                 <>
-                  <span className="font-bold text-sm">🔔 알림</span>
+                  <span className="font-bold text-sm">🔔 {t.common.notifications}</span>
                   <button
                     onClick={() => setNotifSettingsOpen(true)}
                     className="text-text-muted hover:text-text-primary transition-colors text-base"
-                    aria-label="알림 설정"
+                    aria-label={t.common.notificationSettingsAria}
                   >
                     ⚙️
                   </button>

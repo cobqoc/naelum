@@ -60,7 +60,7 @@ export default function UserDropdown({
           onClick={isOpen ? handleClose : handleOpen}
           aria-expanded={isOpen}
           aria-haspopup="true"
-          aria-label="프로필 메뉴"
+          aria-label={t.common.profileMenuAria}
           className={`relative flex flex-col items-center justify-center min-w-[4rem] py-2 px-3 rounded-xl transition-all ${
             isOpen || isActive ? 'text-accent-warm' : 'text-text-muted hover:text-text-secondary'
           }`}
@@ -193,7 +193,7 @@ export default function UserDropdown({
         onClick={isOpen ? handleClose : handleOpen}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-label="프로필 메뉴"
+        aria-label={t.common.profileMenuAria}
         className="flex items-center gap-2 p-1 rounded-full hover:bg-white/10 transition-colors"
       >
         <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-background-tertiary overflow-hidden">

@@ -194,7 +194,7 @@ export default function BottomNav() {
     </nav>
 
     {showSearch && (
-      <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-label="검색">
+      <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-label={t.common.search}>
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowSearch(false)} />
         <div className="absolute top-0 left-0 right-0 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 bg-background-secondary/95 backdrop-blur-xl border-b border-white/10 shadow-2xl space-y-3">
           {/* 페이지 빠른 이동 — 홈 레이아웃 해치지 않고 다른 페이지 접근 경로 제공. */}

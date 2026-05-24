@@ -410,7 +410,7 @@ export default function RecipeBrowseView({
               <textarea
                 value={memoText}
                 onChange={(e) => setMemoText(e.target.value)}
-                placeholder="예: 다음엔 소금 줄이기, 엄마가 좋아함, 주말 브런치용..."
+                placeholder={t.recipe.memoPlaceholder}
                 className="w-full bg-background-tertiary rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder-text-muted outline-none resize-none min-h-[80px] focus:ring-1 focus:ring-2 focus:ring-accent-warm/50"
                 maxLength={500}
                 autoFocus

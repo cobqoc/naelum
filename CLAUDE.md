@@ -1149,6 +1149,26 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **앱 전체 i18n 한글 하드코딩 정리 (recipe audit 후속, admin 제외)** — 완료 (2026-05-25, develop 푸시)
+  - 레시피 영역 audit 후 *recipe domain 외* 잔존 한글 ~30건 grep 발견 → user-facing 12건 fix
+  - **신규 키 8 locale**:
+    - `common.mainNavAria`·`logoHomeAria`·`profileMenuAria`·`notifications`·`notificationSettingsAria` (header·navigation aria-labels)
+    - `ingredient.nameKorPlaceholder`·`nameEnPlaceholder` (재료 추가 dialog)
+    - `recipe.memoPlaceholder` (저장 메모)
+  - **기존 키 reuse**:
+    - `t.common.close` → `ToastContainer`·`IngredientPickerModal`·`ExpiringIngredientsAlert` close 버튼
+    - `t.common.delete` → `CartItemList`·`FridgeShelf` delete aria-label
+    - `t.common.search` → `BottomNav` 검색 다이얼로그 aria
+    - `t.common.notifications` → `NotificationPanel` 종 아이콘
+    - `t.quickAdd.searchPlaceholder` → IngredientPickerModal search
+    - `t.tipForm.thumbnailLabel` → tip/new alt
+  - **추가 useI18n 통합** (4 파일): `ToastContainer`(loop var `t` → `i18n` 분리), `FridgeShelf`, `IngredientPickerModal`, `NotificationPanel`, `ExpiringIngredientsAlert`
+  - **분리 작업으로 남김** (전체 한글 모달, 부분 fix 시 일관성 깨짐):
+    - `RecipeReviewModal` (21줄 한글) — 평점·리뷰 모달 전체 i18n 마이그레이션 필요
+    - `ContactModal` (7줄) — 문의 모달
+    - `CopyrightReportForm` (11줄) — DMCA 법무 폼 (의도적 한국어 일 가능성, 결정 필요)
+  - **skip**: `ShareButton.tsx:145` 카카오 키 미설정 toast (dev-only) · `'기타'`·`'선택'` unit sentinels (내부 magic string, 표시는 i18n localized) · admin 페이지 (내부 도구)
+  - 검증: lint 0 errors · build 성공
 - **레시피 작성·수정 페이지 audit (팁 mid-priority 정리 후속)** — 완료 (2026-05-25, develop 푸시)
   - **① IME 가드 누락 1곳**: `TagsField.tsx:45` 레시피 tag input `onKeyDown` Enter 핸들러에 IME 가드 없음 → 한글 조합 중 Enter 가로채서 fragmentation 가능. `composingRef` + `compositionstart/end` + `isComposing`/`keyCode 229` 가드 추가 (substitute chip·tip tag input 패턴 동일)
   - **② i18n 한글 하드코딩 3건**:

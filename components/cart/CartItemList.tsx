@@ -174,7 +174,7 @@ export default function CartItemList({
                   <button
                     onClick={e => { e.stopPropagation(); deleteItem(item.id); }}
                     className="flex-shrink-0 text-text-muted hover:text-error transition-colors opacity-0 group-hover:opacity-100 text-sm p-0.5"
-                    aria-label="삭제"
+                    aria-label={t.common.delete}
                   >
                     🗑
                   </button>

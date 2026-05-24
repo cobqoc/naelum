@@ -268,7 +268,7 @@ export default function TipNewPage() {
               <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleThumbnailUpload(e.target.files[0])} />
               <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-background-secondary border border-white/10 flex items-center justify-center hover:border-accent-warm/40 transition-colors">
                 {thumbnail ? (
-                  <Image src={thumbnail} alt="썸네일" fill className="object-cover" />
+                  <Image src={thumbnail} alt={t.tipForm.thumbnailLabel} fill className="object-cover" />
                 ) : thumbnailUploading ? (
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
                 ) : (
