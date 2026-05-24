@@ -349,7 +349,10 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
+        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
+        router.push('/login');
         return;
       }
 
@@ -403,7 +406,10 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
+        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
+        router.push('/login');
         return;
       }
 
@@ -456,7 +462,10 @@ export default function NewRecipePage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
+        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
+        router.push('/login');
         return;
       }
 
