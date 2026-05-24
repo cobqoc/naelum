@@ -38,13 +38,13 @@ CREATE TABLE banned_users (
 
 CREATE INDEX idx_banned_users_user_id ON banned_users(user_id);
 
--- 4. 레시피 소프트 삭제 필드
-ALTER TABLE recipes
-ADD COLUMN deleted_at TIMESTAMPTZ,
-ADD COLUMN deleted_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
-ADD COLUMN deletion_reason TEXT;
-
-CREATE INDEX idx_recipes_deleted ON recipes(deleted_at) WHERE deleted_at IS NOT NULL;
+-- 4. (제거됨) 레시피 소프트 삭제 필드 — 2026-05-25
+-- 원래 계획: deleted_at·deleted_by·deletion_reason 컬럼 + 인덱스로 휴지통 시스템.
+-- 미적용 사유: 3개월간 dev·prod 어디에도 적용 안 됨 → 자연스럽게 폐기.
+-- 결정: 레시피 앱에 휴지통 UX 표준 아님(만개의레시피·Cookpad 등 모두 hard-delete),
+-- GDPR 삭제권은 hard-delete 가 더 단순, 현재 사용자 0명 단계라 복구 사례 없음.
+-- 미래에 진짜 필요해지면 새 마이그레이션으로 깔끔하게 재시작.
+-- 코드(API export 라우트 등)와 DB 불일치로 혼란 도입했던 함정 차단 목적.
 
 -- 5. 신고 테이블에 처리 정보 추가
 ALTER TABLE reports
