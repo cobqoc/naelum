@@ -47,7 +47,6 @@ export default function DispatchMonitorClient({ riders, activeOrders }: Props) {
 
   const online = riders.filter((r) => r.status === 'online').length;
   const busy = riders.filter((r) => r.status === 'busy').length;
-  const offline = riders.filter((r) => r.status === 'offline').length;
 
   return (
     <div className="space-y-6 max-w-6xl">

@@ -17,6 +17,7 @@ const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal')
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -55,6 +56,13 @@ export default function ProfilePage(props: PageProps) {
   const [recipeTotalPages, setRecipeTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // 삭제 확인 (만들어봤어요·레시피 통합)
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: 'cooked'; recipeId: string }
+    | { kind: 'recipe'; recipeId: string }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   // URL에서 tab 파라미터 읽기
   useEffect(() => {
@@ -188,13 +196,12 @@ export default function ProfilePage(props: PageProps) {
     return () => observer.disconnect();
   }, [loading, loadMore]);
 
-  const handleDeleteCooked = async (recipeId: string, e: React.MouseEvent) => {
+  const handleDeleteCooked = (recipeId: string, e: React.MouseEvent) => {
     e.preventDefault(); // Link 클릭 방지
+    setPendingDelete({ kind: 'cooked', recipeId });
+  };
 
-    if (!confirm(t.profile.deleteCookedConfirm)) {
-      return;
-    }
-
+  const performDeleteCooked = async (recipeId: string) => {
     try {
       const res = await fetch(`/api/recipes/${recipeId}/cooked`, {
         method: 'DELETE',
@@ -226,11 +233,11 @@ export default function ProfilePage(props: PageProps) {
     fetchRecipes(activeTab);
   };
 
-  const handleDeleteRecipe = async (recipeId: string) => {
-    if (!confirm(t.recipe.deleteConfirm)) {
-      return;
-    }
+  const handleDeleteRecipe = (recipeId: string) => {
+    setPendingDelete({ kind: 'recipe', recipeId });
+  };
 
+  const performDeleteRecipe = async (recipeId: string) => {
     try {
       const res = await fetch(`/api/recipes/${recipeId}`, {
         method: 'DELETE'
@@ -257,6 +264,21 @@ export default function ProfilePage(props: PageProps) {
       toast.error(error instanceof Error ? error.message : t.errors.recipeDeleteFailed);
     }
     setMenuOpenRecipeId(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      if (pendingDelete.kind === 'cooked') {
+        await performDeleteCooked(pendingDelete.recipeId);
+      } else {
+        await performDeleteRecipe(pendingDelete.recipeId);
+      }
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
+    }
   };
 
   const handleToggleVisibility = async (recipeId: string, currentStatus: string) => {
@@ -418,6 +440,20 @@ export default function ProfilePage(props: PageProps) {
           initialReview={selectedRecipe.user_review || ''}
         />
       )}
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={
+          pendingDelete?.kind === 'cooked'
+            ? t.profile.deleteCookedConfirm
+            : pendingDelete?.kind === 'recipe'
+              ? t.recipe.deleteConfirm
+              : ''
+        }
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setPendingDelete(null); }}
+      />
       <Footer />
       <BottomNav />
     </div>

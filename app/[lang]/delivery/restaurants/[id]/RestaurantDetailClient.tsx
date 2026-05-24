@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { addToCart } from '@/lib/delivery/cart';
 import type { Restaurant, MenuCategory, MenuItem } from '@/lib/delivery/types';
 import DeliveryFloatingNav from '../../DeliveryFloatingNav';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface Props {
   restaurantId: string;
@@ -27,6 +28,9 @@ export default function RestaurantDetailClient({ restaurantId }: Props) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // 다른 식당 카트 교체 확인 — handleAddToCart 흐름이 사용자 확인 후 force=true로 재시도해야 함.
+  // pendingReplace 에 메뉴 항목 + 기존 식당명 보관하고 ConfirmDialog 로 분기.
+  const [pendingReplace, setPendingReplace] = useState<{ menuItem: MenuItem; existingRestaurantName: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,20 +84,27 @@ export default function RestaurantDetailClient({ restaurantId }: Props) {
     return groups;
   }, [categories, items]);
 
+  function showAddedToast() {
+    setToast(t.delivery.cart.addedToCart);
+    window.setTimeout(() => setToast(null), 1500);
+  }
+
   function handleAddToCart(menuItem: MenuItem) {
     if (!restaurant) return;
     const result = addToCart(restaurant, menuItem, 1, false);
     if (!result.ok && result.reason === 'different_restaurant') {
-      const msg = t.delivery.cart.differentRestaurantConfirm.replace(
-        '{name}',
-        result.existingRestaurantName ?? ''
-      );
-      // eslint-disable-next-line no-alert
-      if (!confirm(msg)) return;
-      addToCart(restaurant, menuItem, 1, true);
+      // 사용자 확인이 필요 — ConfirmDialog 띄우고, onConfirm 에서 force=true 로 재시도.
+      setPendingReplace({ menuItem, existingRestaurantName: result.existingRestaurantName ?? '' });
+      return;
     }
-    setToast(t.delivery.cart.addedToCart);
-    window.setTimeout(() => setToast(null), 1500);
+    showAddedToast();
+  }
+
+  function confirmReplace() {
+    if (!restaurant || !pendingReplace) return;
+    addToCart(restaurant, pendingReplace.menuItem, 1, true);
+    setPendingReplace(null);
+    showAddedToast();
   }
 
   if (loading) {
@@ -244,6 +255,14 @@ export default function RestaurantDetailClient({ restaurantId }: Props) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingReplace !== null}
+        title={t.delivery.cart.differentRestaurantConfirm.replace('{name}', pendingReplace?.existingRestaurantName ?? '')}
+        destructive
+        onConfirm={confirmReplace}
+        onCancel={() => setPendingReplace(null)}
+      />
     </div>
   );
 }

@@ -127,7 +127,7 @@ export default function CookingModePage(props: PageProps) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerActive, timerSeconds]);
+  }, [timerActive, timerSeconds, t.cookMode.timerDoneBody, t.cookMode.timerDoneTitle]);
 
   const completeCookingSession = useCallback(async () => {
     if (!sessionId) return;

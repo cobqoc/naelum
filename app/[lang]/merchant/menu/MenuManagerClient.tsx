@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { createClient } from '@/lib/supabase/client';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface Category {
   id: string;
@@ -36,6 +37,9 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
   const [loading, setLoading] = useState(true);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // 카테고리·아이템 삭제 confirm 통합 — 단일 ConfirmDialog로 양쪽 처리.
+  const [pendingDelete, setPendingDelete] = useState<{ type: 'category' | 'item'; id: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -73,12 +77,8 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
     }
   }
 
-  async function deleteCategory(id: string) {
-    // eslint-disable-next-line no-alert
-    if (!confirm(t.merchant.deleteConfirm)) return;
-    const { error: err } = await supabase.from('delivery_menu_categories').delete().eq('id', id);
-    if (err) setError(err.message);
-    else load();
+  function deleteCategory(id: string) {
+    setPendingDelete({ type: 'category', id });
   }
 
   async function addItem(categoryId: string | null, name: string, price: number, description: string) {
@@ -104,12 +104,22 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
     else load();
   }
 
-  async function deleteItem(id: string) {
-    // eslint-disable-next-line no-alert
-    if (!confirm(t.merchant.deleteConfirm)) return;
-    const { error: err } = await supabase.from('delivery_menu_items').delete().eq('id', id);
-    if (err) setError(err.message);
-    else load();
+  function deleteItem(id: string) {
+    setPendingDelete({ type: 'item', id });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    const table = pendingDelete.type === 'category' ? 'delivery_menu_categories' : 'delivery_menu_items';
+    const { error: err } = await supabase.from(table).delete().eq('id', pendingDelete.id);
+    setDeleting(false);
+    if (err) {
+      setError(err.message);
+    } else {
+      load();
+    }
+    setPendingDelete(null);
   }
 
   return (
@@ -170,6 +180,15 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingDelete !== null}
+        title={t.merchant.deleteConfirm}
+        destructive
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setPendingDelete(null); }}
+      />
     </div>
   );
 }

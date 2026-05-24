@@ -103,8 +103,6 @@ export default function DetailFields({
     ? t.quickAdd.quantityOrVolume
     : VOLUME_UNITS.has(item.unit) ? t.quickAdd.volume : t.quickAdd.quantity;
 
-  const fieldBase = "w-full rounded-xl bg-background-secondary/80 px-3 py-2.5 text-sm text-text-primary outline-none border border-white/8 focus:border-accent-warm/60 focus:ring-1 focus:ring-accent-warm/40 transition-all";
-
   return (
     <div className="space-y-4">
       {/* 카테고리 */}

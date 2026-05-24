@@ -1157,6 +1157,33 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **Settings 영역 대청소 + GDPR 데이터 export + 네이티브 confirm/alert 완전 청소** — 완료 (2026-05-25, develop 푸시)
+  - **NotificationsTab 재작성 — push_notifications 단일 진실 소스**: comments/recipes 가짜 토글(localStorage-only) 제거 + 진짜 토글(`profiles.push_notifications`) + 기기 푸시 구독 UI(NotificationPanel 에서 이전). DB 즉시 저장(옵티미스틱 + 롤백). 가입 시 user에게 거짓 약속 차단
+  - **NotificationPanel 다이어트**: ⚙️ 설정 패널 전체 제거 → 알림 *목록 보기·읽음 처리* 전담. 푸터에 "알림 설정 →" 링크로 책임 분리 (헤더=즉시 행동, 설정=환경 설정). `notifSettingsOpen`·`subscribeToPush`·`pushPermission` 등 ~70줄 제거
+  - **설정 페이지 `?tab=X` 딥링크 지원**: `useSearchParams` mount 시 1회 — 헤더 "알림 설정 →" 직접 진입
+  - **완전 GDPR/PIPA 데이터 export** (`/api/users/export` 신설): 본인 식별 컬럼 있는 30+ 테이블 전수 인벤토리 (`information_schema.columns` 조회) + service-role client(RLS 우회) + user.id 명시 필터 + 2-stage 병렬 조회(부모/자식 FK 분리). 응답 JSON 12개 카테고리 (profile/preferences/fridge/shopping/meal_plans/content/activity/social/notifications/support/delivery/ingredients_data/admin_contributions/analytics_events). 다른 사용자 데이터(나를 차단한 사람·내 레시피에 그들의 댓글) 의도적 제외. Right to Data Portability (Art. 20) 의무 완전 충족
+  - **선존 버그 발견·정리** — `recipes.deleted_at` 컬럼 부재: `20260209_add_admin_role.sql` 마이그레이션 미적용 (dev+prod). `.is('deleted_at', null)` fix가 오히려 PostgREST 에러 도입 — 필터 자체 제거 (soft-delete 시스템 미구현 명시)
+  - **prod recipes status 발견 → 의도 명시**: published 7 / private 1,459. 2026-05-20 일괄 비공개 *의도적*. CLAUDE.md 기재 갱신 (이전 기재 1,408 published와 정반대) — 미래 세션에서 "회귀!" 오판 차단 안내 추가
+  - **alert() → Toast 통일 10건**: AccountTab 4건(delete·export 실패) + admin/substitute-suggestions 6건. native 모달 0건
+  - **silent catch → toast.error 표면화 5건**: AccountTab fetchBlockedUsers/handleUnblock + TwoFactorTab fetchStatus + NotificationPanel fetchNotifications. NotificationPanel fetchUnreadCount(30초 폴링)은 의도적 silent 명시
+  - **i18n 폴백 일괄 제거 41건 + 신규 키 7종 8 locale**: AccountTab/PreferencesTab/TwoFactorTab 24건 + CookieConsent 14건 + StaticAnonymousFridge 3건. `auth.wrongPassword`·`expiryNotification`·`expiryNotificationDesc`·`pushDeviceTitle`·`pushGranted`·`pushSubscribeBtn`·`pushUnsubscribe`·`notificationSettingsLink`·`notifications.empty`·`notifications.markAllRead` 신설. `t.cookieConsent?.message || ...` 패턴은 `const labels = t.cookieConsent` alias 1줄로 압축 (14줄 → 1줄). 옵셔널 체이닝 동시 제거
+  - **ConfirmDialog 마이그레이션 13건** (CLAUDE.md "네이티브 다이얼로그 금지" 완전 준수):
+    - 배달·머천트 5건: CartClient·OrderDetailClient·RestaurantDetailClient·MenuManagerClient(2)
+    - admin 4건: admin/recipes(2 — 단일·bulk 통합)·admin/substitute-suggestions
+    - 사용자 영역 4건: profile([username]).page(2 — cooked·recipe 통합)·CommentItem·IngredientModerationPanel(3 — approve/reject/delete 통합)
+    - **통합 pending 패턴**: 한 다이얼로그 재사용·destructive·loading 표시. claude-in-chrome/Playwright dialog hang 위험 0
+  - **NotificationPanel 한글 5건 i18n**: 시간 포맷 3건(분/시간/일 전 — `t.notifications.{minutesAgo,hoursAgo,daysAgo}` 기존 키 reuse) + `empty`·`markAllRead` 신설 8 locale
+  - **접근성 5개 + 코드정리 2개**:
+    - 프라이버시 토글 a11y: `role="switch"`·`aria-checked`·`aria-label` + inline left style → Tailwind translate-x (cascade trap 해소)
+    - 사용자명 한글 IME 가드: `e.nativeEvent.isComposing` 체크로 조합 중 filter 보류
+    - 탭 시멘틱: `role="tablist"`·`role="tab"`·`aria-selected`·`aria-controls`·`tabIndex`·`role="tabpanel"`
+    - 생년월일 max=오늘 (미래 날짜 차단)
+    - 아바타 `aria-label`·alt="" + 장식 요소 `aria-hidden`
+    - TwoFactorTab `userId` prop 제거 (dead prop·eslint-disable 동시 제거)
+    - ProfileTab dirty 계산 중복 정리: 24 prop → 17 prop (-29%), 부모(`isDirtyProfile`)가 단일 진실 소스
+  - **계정 탭 dirty 가드 의도적 skip**: 이메일/비밀번호 입력 폼은 *임시 입력값*이라 손실 작음 + 자식→부모 통로 추가 복잡도 vs 가치 불균형. 명시적 결정 (사용자 승인)
+  - **lint warnings 14건 정리**: 죽은 변수 4(HomeClient·DispatchMonitor·DetailFields) + 죽은 `// eslint-disable-next-line no-alert` 5건 + i18n exhaustive-deps 3건 + `AUTOSAVE_MAX_AGE` 모듈 레벨 이동 2건. 0 warnings 도달
+  - **검증**: lint 0 errors · build 성공 · vitest 20 files **249 passed** · e2e 배달·머천트·풀플로우·지도 52 passed + profile·recipe-creation 34 passed (모두 fresh build, 0 failed 0 flaky)
 - **HomeClient `useFridgeItems` 추출 — god-file 분해 완전 마무리** — 완료 (2026-05-25, develop 푸시)
   - 사용자 결정: "미래엔 더 복잡해진다" → 지금 분해 (지금 비용 < 미래 누적 비용). 양방향 의존성도 risk 감수하고 풀기
   - **양방향 의존성 해소**: `useFridgeInteractions` 가 `pendingDeleteIdsRef` 를 *내부 생성* 했던 것 → HomeClient 가 ref 소유 + 두 hook 에 외부 주입. `useFridgeItems`(필터 사용) 와 `useFridgeInteractions`(populate) 가 같은 ref 공유. 식별성·동작 byte-identical
@@ -2089,8 +2116,14 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 - **cart는 DB 아님** — localStorage 유지 (구매 전 의도, 비로그인 OK). orders/addresses만 DB
 
 ### 레시피 DB
-- **prod: 1,443개** (published 1,408 + private 35) / **dev: 100개** (published)
-- 최종 수정일: 2026-05-13 (MAFF 일본 향토요리 2,050개 dev+prod 전량 삭제)
+- **prod: 1,466개** (**published 7** + **private 1,459**) / **dev: 103개** (published)
+- **최종 수정일: 2026-05-20 — prod 1,371개를 일괄 private로 비공개 (의도적)**
+  - 사용자 노출: `.eq('status', 'published')` 필터 거치는 검색·추천·전체·자동완성·sitemap 모두 **published 7개만** 보임
+  - published 7개 전부 admin 계정(`Naelum(낼름)`) 소유 — 사용자가 직접 작성한 YouTube 출처 레시피
+  - private 1,459개 = 공공데이터 임포트(식약처·농림·한식진흥원) — 운영자가 의도적으로 비공개 유지 중
+  - 일반 사용자 신규 작성 레시피는 `recipes/route.ts` POST의 `body.status || 'published'` 기본값으로 자동 published → 정상 노출 흐름
+  - **status 분포 보고 "회귀" 오판 금지** — 의도된 상태임
+- 이전 수정일: 2026-05-13 (MAFF 일본 향토요리 2,050개 dev+prod 전량 삭제)
 
 #### 출처별 구성 (2026-05-13 기준)
 | 출처 | 건수 | 상태 | 라이선스 | 임포트 스크립트 | 조건 |

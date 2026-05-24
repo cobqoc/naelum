@@ -8,6 +8,7 @@ import { getPasswordStrength } from '@/lib/utils/password';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useCookieConsent } from '@/lib/cookieConsent/context';
+import { useToast } from '@/lib/toast/context';
 
 const TwoFactorTab = dynamic(() => import('@/components/Settings/TwoFactorTab'), { ssr: false });
 
@@ -41,6 +42,7 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function AccountTab({ profile, supabase, router, t }: AccountTabProps) {
   const sp = t.settingsPage;
+  const toast = useToast();
 
   // Auth provider detection
   const [isSocialAccount, setIsSocialAccount] = useState(false);
@@ -95,13 +97,15 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       if (res.ok) {
         const data = await res.json();
         setBlockedUsers(data.blockedUsers || []);
+      } else {
+        toast.error(t.common.error);
       }
     } catch {
-      // ignore
+      toast.error(t.common.error);
     } finally {
       setBlockedLoading(false);
     }
-  }, []);
+  }, [toast, t.common.error]);
 
   useEffect(() => {
     fetchBlockedUsers();
@@ -118,12 +122,12 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      setEmailError(sp.emailInvalid || '올바른 이메일 형식이 아닙니다');
+      setEmailError(sp.emailInvalid);
       return;
     }
 
     if (newEmail === profile?.email) {
-      setEmailError(sp.emailSame || '현재 이메일과 동일합니다');
+      setEmailError(sp.emailSame);
       return;
     }
 
@@ -173,7 +177,7 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       });
 
       if (signInError) {
-        setPasswordError(t.auth?.wrongPassword || '현재 비밀번호가 올바르지 않습니다');
+        setPasswordError(t.auth.wrongPassword);
         setPasswordSaving(false);
         return;
       }
@@ -212,11 +216,11 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       } else {
         const data = await res.json();
         setDeleting(false);
-        alert(data.error || t.common.error);
+        toast.error(data.error || t.common.error);
       }
     } catch {
       setDeleting(false);
-      alert(t.common.error);
+      toast.error(t.common.error);
     }
   };
 
@@ -226,33 +230,27 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       const res = await fetch(`/api/users/${username}/block`, { method: 'DELETE' });
       if (res.ok) {
         setBlockedUsers(prev => prev.filter(u => u.id !== userId));
+      } else {
+        toast.error(t.common.error);
       }
     } catch {
-      // ignore
+      toast.error(t.common.error);
     } finally {
       setUnblockingId(null);
     }
   };
 
   const handleExportData = async () => {
+    // GDPR Art. 20 / 개인정보보호법 제35조 — 본인 데이터 일괄 다운로드.
+    // 서버가 RLS 우회(service-role) + user.id 명시 필터로 30+개 테이블 통합 export.
     setExporting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const [recipesRes, savedRes] = await Promise.all([
-        supabase.from('recipes').select('id, title, description, cuisine_type, dish_type, prep_time_minutes, cook_time_minutes, difficulty_level, servings, created_at').eq('author_id', user.id).eq('deleted_at', null as unknown as string),
-        supabase.from('recipe_saves').select('recipe_id, created_at').eq('user_id', user.id),
-      ]);
-
-      const exportData = {
-        exported_at: new Date().toISOString(),
-        profile: { email: profile?.email, joined: profile?.created_at },
-        recipes: recipesRes.data || [],
-        saved_recipes: savedRes.data || [],
-      };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const res = await fetch('/api/users/export');
+      if (!res.ok) {
+        toast.error(t.common.error);
+        return;
+      }
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -260,7 +258,7 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      // ignore
+      toast.error(t.common.error);
     } finally {
       setExporting(false);
     }
@@ -282,7 +280,7 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
                     onClick={() => { setShowEmailChange(!showEmailChange); setEmailError(''); setEmailSuccess(false); }}
                     className="text-accent-warm text-xs hover:underline"
                   >
-                    {sp.emailChange || '변경'}
+                    {sp.emailChange}
                   </button>
                 )}
               </div>
@@ -302,14 +300,14 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
           {emailSuccess && (
             <div className="p-3 rounded-lg bg-success/20 text-success text-sm flex items-center gap-2">
               <span>✓</span>
-              {sp.emailChangeSuccess || '인증 메일이 발송되었습니다. 새 이메일에서 확인해주세요.'}
+              {sp.emailChangeSuccess}
             </div>
           )}
 
           {showEmailChange && (
             <div className="space-y-3 pt-2 border-t border-white/10">
               <label className="text-sm font-medium text-text-secondary">
-                {sp.newEmail || '새 이메일'}
+                {sp.newEmail}
               </label>
               <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-4 !py-3">
                 <input
@@ -318,7 +316,7 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
                   onChange={(e) => setNewEmail(e.target.value)}
                   className={INPUT_INNER_COMFORTABLE_CLASS}
                   style={INPUT_INNER_STYLE}
-                  placeholder={sp.newEmailPlaceholder || '새 이메일 주소 입력'}
+                  placeholder={sp.newEmailPlaceholder}
                 />
               </InputBoxWrapper>
               {emailError && <p className="text-sm text-error">{emailError}</p>}
@@ -338,11 +336,11 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     </span>
-                  ) : (sp.emailChangeSend || '인증 메일 발송')}
+                  ) : sp.emailChangeSend}
                 </button>
               </div>
               <p className="text-xs text-text-muted">
-                {sp.emailChangeHint || '변경 요청 후 새 이메일로 인증 메일이 발송됩니다.'}
+                {sp.emailChangeHint}
               </p>
             </div>
           )}
@@ -483,8 +481,8 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
           </div>
         )}
 
-        {/* Two-Factor Authentication */}
-        {profile && <TwoFactorTab userId={profile.id} />}
+        {/* Two-Factor Authentication — API는 쿠키 인증, profile 존재 확인만 게이트 */}
+        {profile && <TwoFactorTab />}
 
         {/* Blocked Users */}
         <div className="p-4 rounded-xl bg-background-secondary space-y-3">
@@ -618,28 +616,28 @@ function CookieConsentSettings({ t }: { t: AccountTabProps['t'] }) {
   const sp = t.settingsPage;
 
   const status = !consent
-    ? (sp.cookieConsentStatusUnset || '아직 선택 안 함')
+    ? sp.cookieConsentStatusUnset
     : consent.analytics && consent.marketing
-      ? (sp.cookieConsentStatusAll || '모두 수락')
+      ? sp.cookieConsentStatusAll
       : !consent.analytics && !consent.marketing
-        ? (sp.cookieConsentStatusNecessary || '필수만')
-        : (sp.cookieConsentStatusCustom || '사용자 지정');
+        ? sp.cookieConsentStatusNecessary
+        : sp.cookieConsentStatusCustom;
 
   return (
     <div className="p-4 rounded-xl bg-background-secondary space-y-3">
-      <h3 className="font-bold">{sp.cookieConsentTitle || '쿠키 및 추적 설정'}</h3>
+      <h3 className="font-bold">{sp.cookieConsentTitle}</h3>
       <p className="text-sm text-text-muted">
-        {sp.cookieConsentDesc || '쿠키 사용에 대한 동의를 변경하거나 철회할 수 있어요. GDPR 등 개인정보 보호법에 따른 권리입니다.'}
+        {sp.cookieConsentDesc}
       </p>
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-secondary">
-          {sp.cookieConsentCurrent || '현재 상태'}: <span className="text-accent-warm font-medium">{status}</span>
+          {sp.cookieConsentCurrent}: <span className="text-accent-warm font-medium">{status}</span>
         </span>
         <button
           onClick={reopenBanner}
           className="px-3 py-1.5 rounded-lg bg-accent-warm/15 border border-accent-warm/30 text-accent-warm text-xs font-medium hover:bg-accent-warm/25 transition-colors"
         >
-          {sp.cookieConsentChange || '변경'}
+          {sp.cookieConsentChange}
         </button>
       </div>
     </div>

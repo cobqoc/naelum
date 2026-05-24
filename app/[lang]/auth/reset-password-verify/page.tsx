@@ -120,7 +120,7 @@ export default function ResetPasswordVerifyPage() {
     };
 
     handleVerification();
-  }, [router, supabase.auth]);
+  }, [router, supabase.auth, t.auth.resetLinkInvalid, t.auth.verifyError]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background-primary px-4">

@@ -56,7 +56,7 @@ export default function StaticAnonymousFridge() {
 
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <p className="mx-5 px-4 py-3 rounded-xl bg-background-primary/80 backdrop-blur-sm text-sm text-text-secondary text-center leading-relaxed border border-white/10">
-            {t.fridge?.authMessage || '회원가입하면 나만의 냉장고에 재료를 관리하고 맞춤 레시피를 추천받을 수 있어요'}
+            {t.fridge.authMessage}
           </p>
         </div>
 
@@ -66,13 +66,13 @@ export default function StaticAnonymousFridge() {
               href="/signup"
               className="flex-1 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold text-xs text-center hover:bg-accent-hover transition-colors"
             >
-              {t.fridge?.signup || '회원가입'}
+              {t.fridge.signup}
             </Link>
             <Link
               href="/login"
               className="flex-1 py-2.5 rounded-xl bg-background-tertiary text-text-primary font-bold text-xs text-center hover:bg-white/10 transition-colors border border-white/15"
             >
-              {t.fridge?.login || '로그인'}
+              {t.fridge.login}
             </Link>
           </div>
         </div>

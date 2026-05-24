@@ -45,22 +45,7 @@ export default function CookieConsent() {
 
   if (!bannerVisible) return null;
 
-  const labels = {
-    message: t.cookieConsent?.message || '이 웹사이트는 더 나은 경험을 위해 쿠키를 사용합니다.',
-    acceptAll: t.cookieConsent?.acceptAll || '모두 수락',
-    necessaryOnly: t.cookieConsent?.necessaryOnly || '필수만',
-    learnMore: t.cookieConsent?.learnMore || '자세히',
-    customize: t.cookieConsent?.customize || '상세 설정',
-    essential: t.cookieConsent?.essential || '필수',
-    essentialDesc: t.cookieConsent?.essentialDesc || '로그인·세션 등 서비스 작동에 꼭 필요함 (거부 불가)',
-    analytics: t.cookieConsent?.analytics || '분석·에러 추적',
-    analyticsDesc: t.cookieConsent?.analyticsDesc || '서비스 개선 목적 오류 리포트 (Sentry)',
-    marketing: t.cookieConsent?.marketing || '마케팅',
-    marketingDesc: t.cookieConsent?.marketingDesc || '맞춤형 광고·리마케팅 (현재 미사용)',
-    saveChoices: t.cookieConsent?.saveChoices || '선택 저장',
-    cancel: t.cookieConsent?.cancel || '취소',
-    cookiePolicy: t.cookieConsent?.cookiePolicy || '쿠키 정책',
-  };
+  const labels = t.cookieConsent;
 
   return (
     <div

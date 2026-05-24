@@ -2,11 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import { useToast } from '@/lib/toast/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
-
-interface TwoFactorTabProps {
-  userId: string;
-}
 
 interface SetupResponse {
   secret: string;
@@ -14,9 +11,11 @@ interface SetupResponse {
   backupCodes: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
+// 모든 API 호출이 쿠키 인증 기반이라 클라이언트가 userId 가질 필요 없음.
+// 호출자도 인자 없이 <TwoFactorTab /> 으로 사용.
+export default function TwoFactorTab() {
   const { t } = useI18n();
+  const toast = useToast();
   const tf = (t as unknown as Record<string, Record<string, string>>).twoFactor || {};
 
   const [isEnabled, setIsEnabled] = useState(false);
@@ -39,13 +38,15 @@ export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
       if (res.ok) {
         const data = await res.json();
         setIsEnabled(data.isEnabled);
+      } else {
+        toast.error(t.common.error);
       }
     } catch {
-      // Ignore fetch errors on status check
+      toast.error(t.common.error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast, t.common.error]);
 
   useEffect(() => {
     fetchStatus();
@@ -237,7 +238,7 @@ export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
                   onClick={() => copyToClipboard(setupData.secret)}
                   className="shrink-0 px-2 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-all"
                 >
-                  {copied ? '✓' : tf.copy || '복사'}
+                  {copied ? '✓' : tf.copy}
                 </button>
               </div>
             </div>
@@ -298,7 +299,7 @@ export default function TwoFactorTab({ userId }: TwoFactorTabProps) {
               onClick={() => copyToClipboard(backupCodes.join('\n'))}
               className="flex-1 py-3 rounded-xl bg-white/10 font-bold hover:bg-white/20 transition-all"
             >
-              {tf.copy || '복사'}
+              {tf.copy}
             </button>
             <button
               onClick={() => { setShowBackupCodes(false); setBackupCodes([]); }}

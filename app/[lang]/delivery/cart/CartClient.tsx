@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/context';
 import { clearCart } from '@/lib/delivery/storage';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 import {
   updateQuantity,
   removeFromCart,
@@ -22,6 +24,7 @@ export default function CartClient() {
   const router = useRouter();
   const { t, language } = useI18n();
   const cart = useCart();
+  const [clearOpen, setClearOpen] = useState(false);
   // useSyncExternalStore가 SSR-safe. 빈 카트로 SSR 후 hydration 시 localStorage 값 자동 반영.
 
   const isEmpty = cart.items.length === 0;
@@ -52,10 +55,7 @@ export default function CartClient() {
           {!isEmpty && (
             <button
               type="button"
-              onClick={() => {
-                // eslint-disable-next-line no-alert
-                if (confirm(t.delivery.cart.clearCartConfirm)) clearCart();
-              }}
+              onClick={() => setClearOpen(true)}
               className="text-sm text-text-muted hover:text-error transition-colors"
               data-testid="clear-cart"
             >
@@ -63,6 +63,15 @@ export default function CartClient() {
             </button>
           )}
         </header>
+
+        <ConfirmDialog
+          isOpen={clearOpen}
+          title={t.delivery.cart.clearCart}
+          description={t.delivery.cart.clearCartConfirm}
+          destructive
+          onConfirm={() => { clearCart(); setClearOpen(false); }}
+          onCancel={() => setClearOpen(false)}
+        />
 
         {isEmpty ? (
           <div className="text-center py-16">

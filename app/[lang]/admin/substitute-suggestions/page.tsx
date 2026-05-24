@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { useToast } from '@/lib/toast/context';
+import { useI18n } from '@/lib/i18n/context';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 
 interface SuggestionRow {
   from_name: string;
@@ -30,6 +33,8 @@ const STATUS_COLORS: Record<SuggestionRow['status'], string> = {
 };
 
 export default function AdminSubstituteSuggestionsPage() {
+  const toast = useToast();
+  const { t } = useI18n();
   const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
   const [promoted, setPromoted] = useState<PromotedRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +42,8 @@ export default function AdminSubstituteSuggestionsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [manualFrom, setManualFrom] = useState('');
   const [manualTo, setManualTo] = useState('');
+  // 매핑 제거 확인 — 동적 from→to 메시지 표시 위해 pending 객체로 보관
+  const [pendingRevoke, setPendingRevoke] = useState<{ from: string; to: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,14 +54,14 @@ export default function AdminSubstituteSuggestionsPage() {
         setSuggestions(data.suggestions ?? []);
         setPromoted(data.promoted ?? []);
       } else {
-        alert(data.error || '불러오기 실패');
+        toast.error(data.error || t.common.error);
       }
     } catch (e) {
-      alert(e instanceof Error ? e.message : '오류');
+      toast.error(e instanceof Error ? e.message : t.common.error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast, t.common.error]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -74,16 +81,21 @@ export default function AdminSubstituteSuggestionsPage() {
         await load();
       } else {
         const data = await res.json();
-        alert(data.error || '승인 실패');
+        toast.error(data.error || t.common.error);
       }
     } finally {
       setBusy(null);
     }
   };
 
-  const revoke = async (from: string, to: string) => {
+  const revoke = (from: string, to: string) => {
+    setPendingRevoke({ from, to });
+  };
+
+  const confirmRevoke = async () => {
+    if (!pendingRevoke) return;
+    const { from, to } = pendingRevoke;
     const key = `${from}→${to}`;
-    if (!confirm(`"${from} → ${to}" 매핑을 제거하시겠습니까?`)) return;
     setBusy(key);
     try {
       const res = await fetch(`/api/admin/substitute-suggestions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
@@ -93,23 +105,25 @@ export default function AdminSubstituteSuggestionsPage() {
         await load();
       } else {
         const data = await res.json();
-        alert(data.error || '제거 실패');
+        toast.error(data.error || t.common.error);
       }
     } finally {
       setBusy(null);
+      setPendingRevoke(null);
     }
   };
 
   const addManual = async () => {
-    const f = manualFrom.trim();
-    const t = manualTo.trim();
-    if (!f || !t) { alert('재료명 두 개 입력'); return; }
+    // 외부 i18n `t` 객체와 변수명 충돌 회피 — 입력값은 `to`로.
+    const from = manualFrom.trim();
+    const to = manualTo.trim();
+    if (!from || !to) { toast.error('재료명 두 개 입력'); return; }
     setBusy('manual');
     try {
       const res = await fetch('/api/admin/substitute-suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_name: f, to_name: t, source: 'admin' }),
+        body: JSON.stringify({ from_name: from, to_name: to, source: 'admin' }),
       });
       if (res.ok) {
         setManualFrom('');
@@ -117,7 +131,7 @@ export default function AdminSubstituteSuggestionsPage() {
         await load();
       } else {
         const data = await res.json();
-        alert(data.error || '추가 실패');
+        toast.error(data.error || t.common.error);
       }
     } finally {
       setBusy(null);
@@ -282,6 +296,15 @@ export default function AdminSubstituteSuggestionsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={pendingRevoke !== null}
+        title={pendingRevoke ? `"${pendingRevoke.from} → ${pendingRevoke.to}" 매핑을 제거하시겠습니까?` : ''}
+        destructive
+        loading={busy !== null && pendingRevoke !== null && busy === `${pendingRevoke.from}→${pendingRevoke.to}`}
+        onConfirm={confirmRevoke}
+        onCancel={() => { if (busy === null) setPendingRevoke(null); }}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Link from '@/components/Common/LocalizedLink';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import ConfirmDialog from '@/components/Common/ConfirmDialog';
 import { CommentItemProps } from './types';
 import CommentForm from './CommentForm';
 import RepliesList from './RepliesList';
@@ -59,6 +60,7 @@ export default function CommentItem({
   const [isReplying, setIsReplying] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(comment.is_liked || false);
   const [likesCount, setLikesCount] = useState(comment.likes_count);
   const [isLiking, setIsLiking] = useState(false);
@@ -107,11 +109,11 @@ export default function CommentItem({
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm(tc.confirmDelete)) {
-      return;
-    }
+  const handleDelete = () => {
+    setDeleteOpen(true);
+  };
 
+  const confirmDelete = async () => {
     setIsDeleting(true);
 
     try {
@@ -125,8 +127,10 @@ export default function CommentItem({
       }
 
       onCommentDelete(comment.id);
+      setDeleteOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : tc.errorDeleteFailed);
+    } finally {
       setIsDeleting(false);
     }
   };
@@ -345,6 +349,15 @@ export default function CommentItem({
           />
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteOpen}
+        title={tc.confirmDelete}
+        destructive
+        loading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!isDeleting) setDeleteOpen(false); }}
+      />
     </div>
   );
 }

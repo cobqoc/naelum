@@ -161,7 +161,6 @@ export default function HomeClient({
   const {
     showOnboardingBanner, setShowOnboardingBanner,
     showOnboardingModal, setShowOnboardingModal,
-    currentUsername, hasTempUsername,
   } = useOnboardingState({
     user,
     initialUsername,
