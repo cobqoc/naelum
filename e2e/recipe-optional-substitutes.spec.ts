@@ -14,14 +14,14 @@ import { deleteTestRecipe } from './helpers/auth'
  * vitest match.test.ts 가 매칭 로직, 본 spec 은 API 라운드트립만 가드.
  */
 test.describe('레시피 선택 재료·대체 재료', () => {
-  test('인증 유저: 작성 폼에 "없어도 OK" 토글 + 대체 재료 입력 노출', async ({ authenticatedPage: page }) => {
+  test('인증 유저: 작성 폼에 "빼도 돼요" 토글 + 대체 재료 입력 노출', async ({ authenticatedPage: page }) => {
     await page.goto('/recipes/new', { waitUntil: 'domcontentloaded' })
     await page
       .waitForFunction(() => !document.querySelector('.animate-bounce'), { timeout: 30000 })
       .catch(() => {})
 
-    // "없어도 OK" visible 라벨 (사용자 피드백: "선택 재료" 줄임말은 동사로 오해됨 → 풀라벨 복원)
-    const optionalLabel = page.getByText(/없어도 OK/).first()
+    // "빼도 돼요" visible 라벨 (2026-05-24 사용자 피드백: "없어도 OK" 영어 섞임 어색 → 자연 한국어)
+    const optionalLabel = page.getByText(/빼도 돼요/).first()
     await expect(optionalLabel).toBeVisible({ timeout: 10000 })
 
     // 대체 재료 입력 placeholder (chip UI 빈 상태 placeholder = "대체 재료 추가...")
