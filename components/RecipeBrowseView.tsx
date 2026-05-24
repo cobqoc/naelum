@@ -682,6 +682,14 @@ export default function RecipeBrowseView({
                   })
                   .filter(Boolean);
                 const hasSubs = recipeSubsList.length > 0;
+                // ✓ 마커 정확성 — subVia 가 author list 의 *이름과 매칭* 될 때만 ✓ 부착.
+                // 그렇지 않으면 사용자는 author 명시한 *다른 재료* 가 아닌 전역 매핑상 substitute 를
+                // 보유한 것 — chip 의 author 이름 옆 ✓ 는 거짓 신호가 됨 (예: author=돼지고기,
+                // user=삼겹살 (베이컨↔삼겹살 전역 매핑) → "또는 돼지고기 ✓" 잘못).
+                const authorSubNames = recipeSubsList.map(s => s.split(' · ')[0].toLowerCase().trim());
+                const subViaInAuthorList = !!(subVia && authorSubNames.some(n =>
+                  n === subVia.toLowerCase().trim() || isSameIngredient(n, subVia.toLowerCase().trim())
+                ));
                 return (
                   <div
                     key={idx}
@@ -701,20 +709,23 @@ export default function RecipeBrowseView({
                           · {t.recipe.ingredientOptional}
                         </span>
                       )}
-                      {hasSubs ? (
+                      {hasSubs && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
-                          <SubstituteIndicator owned={!!subVia} />
+                          <SubstituteIndicator owned={subViaInAuthorList} />
                           <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
                           <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
-                          {subVia && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
+                          {subViaInAuthorList && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
                         </span>
-                      ) : subVia ? (
+                      )}
+                      {/* subVia 가 author list 밖이거나 hasSubs 없는 경우 — 사용자 보유 대체재를 별도 chip 으로 분리.
+                          (hasSubs && !subViaInAuthorList) = author 가 명시한 것과 *다른* substitute 를 사용자가 보유. */}
+                      {subVia && !subViaInAuthorList && (
                         <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
                           <SubstituteIndicator owned={true} />
                           <span aria-hidden className="text-success font-bold">✓</span>
                           <span className="font-medium text-success">{subVia}</span>
                         </span>
-                      ) : null}
+                      )}
                     </div>
                     <div className="text-xs text-text-muted mt-0.5">
                       {converted.isConverted ? (
