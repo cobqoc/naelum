@@ -17,16 +17,25 @@ import { useEffect, RefObject } from 'react';
  * @param isOpen      listener 활성 조건 (false 면 등록 안 함)
  * @param panelRef    panel ref — 순환 대상 영역
  * @param triggerRef  trigger ref — 닫힐 때 focus 복원 대상 (optional, 있으면 복원)
+ * @param options.autoRestorePreviousFocus  trigger 명시 안 됐어도 *모달 열리기 직전
+ *  활성 element* 자동 기록 → 닫힐 때 거기로 복원. trigger 가 외부 컴포넌트에 있거나
+ *  키보드 사용자가 다양한 element 에서 모달 열 때 유용 (FridgeAllSheet 패턴).
  */
 export function useFocusTrap(
   isOpen: boolean,
   panelRef: RefObject<HTMLElement | null>,
   triggerRef?: RefObject<HTMLElement | null>,
+  options?: { autoRestorePreviousFocus?: boolean },
 ): void {
   useEffect(() => {
     if (!isOpen) return;
     const panel = panelRef.current;
     if (!panel) return;
+
+    // 자동 이전 focus 기록 — trigger 가 명시 안 됐어도 외부 element 복원 가능.
+    const previousFocus = options?.autoRestorePreviousFocus
+      ? (document.activeElement as HTMLElement | null)
+      : null;
 
     // panel 안에 focus 가 한 번이라도 들어왔는지 추적 — cleanup 시점에
     // panel 이 이미 unmount 됐을 수 있어 `panel.contains(activeElement)`
@@ -70,13 +79,18 @@ export function useFocusTrap(
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocusIn);
       // 닫힐 때 — panel 안에 focus 가 한 번이라도 있었고 + cleanup 시점에
-      // active 가 body 면 (ESC → panel unmount → focus lost 패턴) → trigger 복원.
+      // active 가 body 면 (ESC → panel unmount → focus lost 패턴) → 복원.
       // 외부 클릭으로 닫혔으면 active 가 클릭된 element 라 body 아님 → 복원 안 함.
-      if (hadFocusInPanel && document.activeElement === document.body && triggerRef?.current) {
-        triggerRef.current.focus();
+      // 우선순위: triggerRef > previousFocus (둘 중 있는 것).
+      if (hadFocusInPanel && document.activeElement === document.body) {
+        if (triggerRef?.current) {
+          triggerRef.current.focus();
+        } else if (previousFocus && previousFocus !== document.body) {
+          previousFocus.focus?.();
+        }
       }
     };
-  }, [isOpen, panelRef, triggerRef]);
+  }, [isOpen, panelRef, triggerRef, options?.autoRestorePreviousFocus]);
 }
 
 /**

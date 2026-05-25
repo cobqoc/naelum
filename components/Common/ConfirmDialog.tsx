@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -49,6 +51,7 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { t } = useI18n();
   const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // 열릴 때 confirm 버튼에 focus (Enter 즉시 확정 가능).
   useEffect(() => {
@@ -56,18 +59,11 @@ export default function ConfirmDialog({
     confirmBtnRef.current?.focus();
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (loading) return;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onCancel();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, loading, onCancel]);
+  // ESC → cancel (loading 중엔 차단). useEscapeKey 로 통일.
+  useEscapeKey(onCancel, isOpen && !loading);
+  // Tab focus trap. autoRestorePreviousFocus — confirm modal 은 trigger 가
+  // 다양한 위치 (delete 버튼·toast 등) — 모달 열기 직전 활성 element 자동 복원.
+  useFocusTrap(isOpen, panelRef, undefined, { autoRestorePreviousFocus: true });
 
   if (!isOpen) return null;
 
@@ -86,7 +82,7 @@ export default function ConfirmDialog({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
       {/* dialog */}
-      <div className="relative w-full max-w-sm rounded-2xl bg-background-secondary border border-white/10 shadow-2xl p-6 space-y-4">
+      <div ref={panelRef} className="relative w-full max-w-sm rounded-2xl bg-background-secondary border border-white/10 shadow-2xl p-6 space-y-4">
         <h2 id="confirm-dialog-title" className="text-lg font-bold text-text-primary">
           {title}
         </h2>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
 import { formatFreshLabel, type FreshLabelKind } from '@/app/[lang]/_home/helpers';
 
@@ -58,20 +59,18 @@ export default function FridgeAllSheet({
   ];
   useEscapeKey(onClose, isOpen);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Tab focus trap + 자동 이전 focus 복원 (trigger 명시 안 받음 — 외부 element 자동 기억).
+  // 기존 previousFocusRef + cleanup focus 로직을 hook 으로 통합.
+  useFocusTrap(isOpen, panelRef, undefined, { autoRestorePreviousFocus: true });
 
   // 같은 이름 그룹 클릭 시 미니 시트로 그룹 내 항목 목록 표시
   const [groupSheet, setGroupSheet] = useState<{ name: string; items: FridgeItem[] } | null>(null);
 
+  // 열릴 때 닫기 버튼에 포커스 (Enter 즉시 닫기 가능). 이전 focus 복원은 useFocusTrap 담당.
   useEffect(() => {
     if (!isOpen) return;
-    // 열릴 때 이전 포커스 기억 + 닫기 버튼에 포커스 이동
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
     closeBtnRef.current?.focus();
-    return () => {
-      // 닫힐 때 이전 포커스 복원 (연결 해제 시에만 수행)
-      previousFocusRef.current?.focus?.();
-    };
   }, [isOpen]);
 
   // 시트 닫힐 때 groupSheet도 닫음 — queueMicrotask로 cascading render 회피
@@ -98,7 +97,7 @@ export default function FridgeAllSheet({
   return (
     <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full md:max-w-lg bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85dvh]">
+      <div ref={panelRef} className="relative w-full md:max-w-lg bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85dvh]">
         {/* 핸들 (모바일) */}
         <div className="md:hidden flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />
