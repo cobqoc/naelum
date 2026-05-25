@@ -200,6 +200,11 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
           onChange={(e) => handleInputChange(e.target.value)}
           placeholder={isSmall ? t.search.searchPlaceholderSmall : t.search.searchPlaceholderFull}
           aria-label={t.search.searchPlaceholderFull}
+          role="combobox"
+          aria-expanded={showSuggestionsList}
+          aria-autocomplete="list"
+          aria-controls="search-suggestions-listbox"
+          aria-activedescendant={selectedIndex >= 0 ? `search-suggestion-${selectedIndex}` : undefined}
           autoComplete="off"
           autoFocus={autoFocus}
           suppressHydrationWarning
@@ -281,10 +286,13 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
 
           {/* Suggestions */}
           {!loading && suggestions.length > 0 && (
-            <div>
+            <div id="search-suggestions-listbox" role="listbox">
               {suggestions.map((item, idx) => (
                 <button
                   key={`${item.type}-${item.value}`}
+                  id={`search-suggestion-${idx}`}
+                  role="option"
+                  aria-selected={selectedIndex === idx}
                   onMouseDown={(e) => { e.preventDefault(); handleSearch(item.value.replace(/^@/, '')); }}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-white/5 transition-colors ${
                     selectedIndex === idx ? 'bg-white/10' : ''

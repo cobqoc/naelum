@@ -227,6 +227,8 @@ export const ja = {
     recentSearches: '最近の検索',
     deleteAll: 'すべて削除',
     noResults: '検索結果がありません',
+    noResultsHelp: '別のキーワードを試すか、カテゴリーを見てください',
+    browseAll: 'すべてのレシピを見る',
     noResultsIngredients: 'この食材で作れるレシピがありません',
     allDifficulties: 'すべての難易度',
     allTimes: 'すべての時間',

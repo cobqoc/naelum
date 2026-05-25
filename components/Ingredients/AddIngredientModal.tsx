@@ -88,6 +88,9 @@ export default function AddIngredientModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-ingredient-modal-title"
         className="w-full sm:max-w-lg bg-background-primary sm:rounded-2xl sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[88dvh]"
         onClick={e => e.stopPropagation()}
       >
@@ -99,7 +102,7 @@ export default function AddIngredientModal({
           {/* 상단 라인: 자동 분류 라벨 + 경고(항상 노출) + ⓘ(how-to 팝오버) + 닫기 */}
           <div className="flex items-center justify-between px-5 pt-1 pb-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs font-bold text-accent-warm whitespace-nowrap">{t.ingredient.modalStorageAuto}</span>
+              <span id="add-ingredient-modal-title" className="text-xs font-bold text-accent-warm whitespace-nowrap">{t.ingredient.modalStorageAuto}</span>
               <span className="text-[11px] text-text-muted whitespace-nowrap">{t.ingredient.modalStorageNote}</span>
               {/* ⓘ 버튼 + 팝오버 — group-hover로 데스크탑 hover 지원, onClick으로 모바일 탭 지원 */}
               <div className="relative group">
