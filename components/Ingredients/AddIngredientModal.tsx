@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
@@ -44,9 +45,12 @@ export default function AddIngredientModal({
   const [showHint, setShowHint] = useState(false);
   const hintButtonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // 모달 자체 ESC로 닫기 — 힌트가 열려있지 않을 때만 (힌트가 우선)
   useEscapeKey(onClose, isOpen && !showHint);
+  // Tab focus trap — hint 열림 중엔 hint popover 가 focus 받게 trap 해제.
+  useFocusTrap(isOpen && !showHint, panelRef);
 
   // 힌트 팝오버 외부 클릭 / ESC 키 → 힌트만 닫기
   useEscapeKey(() => setShowHint(false), showHint);
@@ -88,6 +92,7 @@ export default function AddIngredientModal({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-ingredient-modal-title"
