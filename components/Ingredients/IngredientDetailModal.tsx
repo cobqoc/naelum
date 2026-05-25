@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
 
 interface Ingredient {
@@ -48,7 +49,9 @@ export default function IngredientDetailModal({
   onDelete,
 }: IngredientDetailModalProps) {
   const { t } = useI18n();
+  const panelRef = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   const initialData = useMemo<Partial<IngredientFormData>>(() => {
     if (!isOpen || !ingredient) return {};
@@ -96,6 +99,7 @@ export default function IngredientDetailModal({
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="relative w-full sm:max-w-2xl bg-background-secondary sm:rounded-2xl border-x-0 sm:border border-white/10 shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >

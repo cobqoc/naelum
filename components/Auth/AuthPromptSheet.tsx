@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from '@/components/Common/LocalizedLink';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface AuthPromptSheetProps {
   isOpen: boolean;
@@ -14,7 +15,9 @@ interface AuthPromptSheetProps {
 export default function AuthPromptSheet({ isOpen, onClose }: AuthPromptSheetProps) {
   const { t } = useI18n();
   const [loading, setLoading] = useState<'google' | 'kakao' | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   const handleGoogle = async () => {
     setLoading('google');
@@ -49,6 +52,7 @@ export default function AuthPromptSheet({ isOpen, onClose }: AuthPromptSheetProp
       onClick={onClose}
     >
       <div
+        ref={panelRef}
         className="w-full sm:max-w-sm bg-background-primary rounded-t-3xl sm:rounded-2xl border border-white/10 shadow-2xl p-6"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}

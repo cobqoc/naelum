@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 interface ContactModalProps {
@@ -31,6 +33,9 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [screenshotUploading, setScreenshotUploading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   // 모달 열릴 때 로그인 상태 확인
   useEffect(() => {
@@ -104,8 +109,11 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
       onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
+        ref={panelRef}
         className="bg-background-secondary rounded-2xl p-6 max-w-lg w-full border border-white/10 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
