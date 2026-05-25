@@ -1157,6 +1157,31 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **UX 백로그 5건 (URL sync·a11y·검색 fallback)** — 완료 (2026-05-26, PR #171 main 머지, prod 라이브 검증 완료)
+  - **#14 설정 탭 URL `?tab=` 동기**: handleTabClick·handleConfirmLeave 에서 `history.replaceState` 로 `?tab=X` 즉시 갱신. 공유·새로고침 시 활성 탭 유지 (이전엔 클릭해도 URL `?tab=profile` 그대로였음)
+  - **#6 /recipes 정렬 URL `?sort=` 동기**: 초기값 `?sort=` 우선 + 변경 시 `history.replaceState`. `latest` 는 default 라 query 제거 (cleaner URL). "이번 주 인기 → 전체 보기" 버튼도 sync
+  - **#13 회원가입 이메일 a11y**: invalid email 시 input `aria-invalid="true"` + `aria-describedby="signup-email-error"` / error div `role="alert"` + matching id. WCAG 준수
+  - **#10 재료 추가 모달 `role="dialog"` + `aria-modal` + `aria-labelledby`**: `AddIngredientModal` 컨테이너에 추가. 헤더 title 에 id 매칭
+  - **#11 SearchBar combobox/listbox/option ARIA**: input `role="combobox"` + `aria-expanded` + `aria-controls` + `aria-activedescendant` / suggestions wrapper `role="listbox"` + id / 각 option `role="option"` + id + `aria-selected`. (Common/Autocomplete 는 이미 패턴 완비 — SearchBar 만 누락 보강)
+  - **#7 검색 빈 결과 fallback CTA**: "검색 결과가 없습니다" 단일 텍스트 → 🔍 5xl + 보조 안내 + "전체 레시피 보기 →" amber CTA. 새 i18n 키 `noResultsHelp`·`browseAll` 8 locale 추가. dead-end UX 해소
+  - 검증: lint 0 errors · build · vitest 20 files 249 passed · prod 라이브 (URL sync 양방향·모달 role·검색 fallback·정렬 sync) 모두 직접 검증
+- **UX 개선 5건 — overlay first-click·신고·테마wrap·카테고리i18n·autosave** — 완료 (2026-05-26, PR #170 main 머지, prod 라이브 검증 완료)
+  - **#1 dropdown overlay first-click 소비 해소 — 가장 자주 마주치던 friction** (라이브 7곳+ 일관 발생): `<div className="fixed inset-0 z-40" onClick={onClose} />` 투명 overlay 패턴이 첫 클릭을 *소비* 해 다른 버튼으로 전파 안 됨 → 사용자가 "어 안 눌리네" 하고 두 번 클릭해야 다른 dropdown 열림
+    - **`lib/hooks/useOutsideClick.ts` 신설**: document-level mousedown/touchstart listener. `(isOpen, panelRef, onClose, triggerRef?)` 받아 panel/trigger 외부 클릭 시 close. 클릭 이벤트는 *그대로* 다음 element 에 도달 → 한 번 클릭에 dropdown 전환
+    - **5곳 마이그레이션**: NotificationPanel·ShoppingCartDropdown·UserDropdown(fromBottom+desktop 2 인스턴스)·Header More menu·LangSelector — 모두 overlay 제거 + panel/trigger ref 부착 + `useOutsideClick(isOpen, panelRef, onClose, triggerRef)` 호출
+    - **새 dropdown 작성 규칙**: `<div className="fixed inset-0" onClick={onClose} />` overlay 패턴 *금지* (재발 방지). 항상 `useOutsideClick` hook 사용 ([[feedback-no-overlay-pattern]])
+  - **#3 본인 콘텐츠 🚨 신고 버튼 숨김**: `RecipeBrowseView` 에 `isAuthor` prop 추가, `RecipeDetailClient` 에서 `currentUserId === recipe.author_id` 시 true 전달. 자기 자기 신고 UX 부자연스러움 해소
+  - **#9 프로필 메뉴 테마 박스 wrap**: "라이트 모드"·"다크 모드"·"시스템 설정" 박스에 `whitespace-nowrap` 추가. 두 줄로 깨지던 시각 해소 (UserDropdown 2 인스턴스)
+  - **#5 카테고리 필터 영문 라벨 한글화**: `AllRecipesClient`의 `${cuisineFilter}` (e.g., "korean") 직접 출력 → `CUISINE_TYPES.find()?.label` 매핑 (e.g., "한식"). `dish_type` 동일
+  - **#12 자동저장 "버리기" 후 빈 데이터 재저장 race**: `recipes/new` + `tip/new` `useAutosave` enabled 조건에 `title.trim().length > 0` 추가. banner 표시 조건(`title?.trim()`)과 일관 + clearAutosave 후 빈 폼이 1.5초 후 재저장되던 race 차단
+  - 검증: lint 0 errors · build · vitest 249 passed · prod 라이브 (ESC + 첫 클릭·dropdown 전환·카테고리 한글·테마 nowrap·재료모달 dialog) 모두 직접 재현 확인
+- **React #418 hydration mismatch 해소 — SSR-stable 날짜 계산** — 완료 (2026-05-26, PR #168 main 머지, prod 라이브 검증 완료)
+  - **증상**: 로그인 상태 `/ko` 첫 진입 시 콘솔 React #418 EXCEPTION 1건. 다른 페이지·비로그인은 0건
+  - **원인**: `app/[lang]/_home/helpers.ts` 의 `daysUntilExpiry`·`daysSincePurchase` 가 `today.setHours(0,0,0,0)` (local midnight) 와 `new Date('2026-05-23')` (ISO date-only 는 UTC midnight 파싱) 를 섞어 diff 계산. 서버(UTC) 와 브라우저(KST) 의 timezone 차이로 ±1 일 어긋남 → `freshState` labelN 어긋남 → chip 라벨 텍스트 mismatch → React #418
+  - **SSR 트리거 경로**: `page.tsx` (Server Component) 가 로그인 시 `initialItems` prefetch 해 `HomeClient` → `FridgeShelves` → `freshState(repr)` 호출 → SSR/CSR 다른 결과 → hydration mismatch
+  - **수정**: `dateOnlyToUTC`·`todayUTC` 헬퍼 추가, 양쪽 모두 UTC 일관 산수. `addDaysISO` 도 동일 패턴. integer ms 차분 → 부동소수 race 0. KST 자정 근처 사용자가 'today' 를 UTC 기준으로 보는 미세한 ±1 trade-off 는 SSR 일관성과 교환
+  - 검증: 위험 윈도우 시뮬레이션(KST 06:00 = UTC 전날 21:00) 에서 OLD 어긋남(server 2 vs browser 3) / NEW 일치(2/2). prod 로그인 홈 새로고침 + 다른 페이지 왕복 후 콘솔 #418 **0건** 직접 재현 확인
+  - 새 코드 작성 규칙: `Date.UTC()` + `getUTCFullYear/Month/Date()` 사용. `setHours(0,0,0,0)` + `new Date('YYYY-MM-DD')` 혼용 *금지* (timezone 의존 → SSR mismatch 위험)
 - **Settings 잔존 audit 후속 — i18n 폴백 0건·공용 Toggle 추출·프라이버시 즉시저장 통일** — 완료 (2026-05-25, develop 푸시)
   - **i18n 잔존 폴백 1건 제거**: `TwoFactorTab.tsx:216` `t.common?.loading || '...'` → `t.common.loading` (직접 접근). 옵셔널 체이닝+폴백 패턴 *완전 0건* 도달. CLAUDE.md i18n 규칙("키 이미 있으면 폴백 두지 마라, 8 locale 누락 자동검증 시각 차단") 완전 준수
   - **공용 `Toggle` 컴포넌트 추출** (`components/UI/Toggle.tsx` 신설): NotificationsTab 인라인 `<Toggle>`(18줄)과 PreferencesTab 인라인 button 토글 2개(36줄) 마크업 중복 제거 → 단일 진실 소스. props: `checked·onChange·label·description?·icon?·disabled?`. **row 전체 클릭 영역**(button + `role="switch"` + `aria-checked` + `aria-label`) — 알림 탭 박스만-클릭 → row 전체 클릭으로 hit target 개선. `translate-x-5/0` Tailwind 클래스 ([[feedback-tailwind-4-css-cascade-trap]] 안전 패턴 단일화)
