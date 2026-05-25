@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface NotificationItem {
   id: string;
@@ -43,6 +44,8 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   useOutsideClick(isOpen, panelRef, onClose, triggerRef);
   // ESC 키로 닫기 — a11y baseline (WCAG 2.1 keyboard accessibility).
   useEscapeKey(onClose, isOpen);
+  // Tab focus trap — panel 안에서 순환·닫힐 때 trigger 복원.
+  useFocusTrap(isOpen, panelRef, triggerRef);
 
   // 백그라운드 폴링 (30초) — 실패 시 silent. 매 30초마다 토스트 띄우면 노이즈.
   // 네트워크 일시 장애도 다음 폴링에서 자동 복구되므로 사용자 인지 불필요.

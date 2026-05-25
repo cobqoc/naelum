@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
@@ -29,9 +30,11 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   fromBottom?: boolean;
+  /** trigger ref — focus trap 이 닫힐 때 focus 복원 대상. Header 가 보유한 trigger button. */
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
-export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = false }: Props) {
+export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = false, triggerRef }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
@@ -65,6 +68,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   useOutsideClick(isOpen, panelRef, onClose);
   // ESC 키로 닫기 — a11y baseline.
   useEscapeKey(onClose, isOpen);
+  // Tab focus trap — 닫힐 때 trigger 복원 (Header 가 trigger 보유 → prop 으로 받음).
+  useFocusTrap(isOpen, panelRef, triggerRef);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
   // 메모 PATCH 진행 중인 item id — 냉장고 pendingDeleteIdsRef 와 동일 패턴.

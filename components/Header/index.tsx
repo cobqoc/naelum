@@ -13,6 +13,7 @@ import UserDropdown from './UserDropdown';
 import { useAuth } from '@/lib/auth/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { ssr: false });
 const ContactModal = dynamic(() => import('../ContactModal'), { ssr: false });
@@ -71,6 +72,7 @@ export default function Header() {
   const moreMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const langPanelRef = useRef<HTMLDivElement | null>(null);
   const langTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const cartTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // 외부 클릭 시 닫기 (이슈 #1 — overlay div 대신 document-level listener)
   useOutsideClick(showMoreMenu, moreMenuPanelRef, () => setShowMoreMenu(false), moreMenuTriggerRef);
@@ -78,6 +80,9 @@ export default function Header() {
   // ESC 키로 닫기 — a11y baseline.
   useEscapeKey(() => setShowMoreMenu(false), showMoreMenu);
   useEscapeKey(() => setShowLangSelector(false), showLangSelector);
+  // Tab focus trap — panel 안 순환·닫힐 때 trigger 복원.
+  useFocusTrap(showMoreMenu, moreMenuPanelRef, moreMenuTriggerRef);
+  useFocusTrap(showLangSelector, langPanelRef, langTriggerRef);
 
   return (
     <>
@@ -179,6 +184,7 @@ export default function Header() {
                 {/* Shopping Cart */}
                 <div className="relative hidden md:block">
                   <button
+                    ref={cartTriggerRef}
                     onClick={() => {
                       const next = !showCart;
                       closeAll();
@@ -197,7 +203,7 @@ export default function Header() {
                     )}
                   </button>
 
-                  <ShoppingCartDropdown isOpen={showCart} onClose={() => setShowCart(false)} />
+                  <ShoppingCartDropdown isOpen={showCart} onClose={() => setShowCart(false)} triggerRef={cartTriggerRef} />
                 </div>
 
                 {/* Notifications */}
