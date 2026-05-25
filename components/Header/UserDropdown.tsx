@@ -8,6 +8,7 @@ import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 const LANGUAGES = [
   { code: 'ko' as Language, label: '한국어', flagClass: 'fi fi-kr' },
@@ -61,6 +62,8 @@ export default function UserDropdown({
   useOutsideClick(isOpen, panelRef, handleClose, triggerRef);
   // ESC 키로 닫기 — a11y baseline.
   useEscapeKey(handleClose, isOpen);
+  // Tab focus trap.
+  useFocusTrap(isOpen, panelRef, triggerRef);
 
   if (fromBottom) {
     return (
