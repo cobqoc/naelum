@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
@@ -62,6 +63,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 외부 클릭 시 닫기 — overlay div 대신 document-level listener.
   // trigger 는 Header 외부에 있으나 Header onClick 의 toggle 로 race 없음 (이슈 #1).
   useOutsideClick(isOpen, panelRef, onClose);
+  // ESC 키로 닫기 — a11y baseline.
+  useEscapeKey(onClose, isOpen);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
   // 메모 PATCH 진행 중인 item id — 냉장고 pendingDeleteIdsRef 와 동일 패턴.

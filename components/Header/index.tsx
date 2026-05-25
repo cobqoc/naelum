@@ -12,6 +12,7 @@ import NotificationPanel from './NotificationPanel';
 import UserDropdown from './UserDropdown';
 import { useAuth } from '@/lib/auth/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { ssr: false });
 const ContactModal = dynamic(() => import('../ContactModal'), { ssr: false });
@@ -74,6 +75,9 @@ export default function Header() {
   // 외부 클릭 시 닫기 (이슈 #1 — overlay div 대신 document-level listener)
   useOutsideClick(showMoreMenu, moreMenuPanelRef, () => setShowMoreMenu(false), moreMenuTriggerRef);
   useOutsideClick(showLangSelector, langPanelRef, () => setShowLangSelector(false), langTriggerRef);
+  // ESC 키로 닫기 — a11y baseline.
+  useEscapeKey(() => setShowMoreMenu(false), showMoreMenu);
+  useEscapeKey(() => setShowLangSelector(false), showLangSelector);
 
   return (
     <>
@@ -182,6 +186,8 @@ export default function Header() {
                     }}
                     className="relative min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
                     aria-label={t.bottomNav.cart}
+                    aria-expanded={showCart}
+                    aria-haspopup="true"
                   >
                     <CartIcon size={24} active={showCart} />
                     {cartCount > 0 && (
@@ -222,6 +228,8 @@ export default function Header() {
                     onClick={() => setShowLangSelector(!showLangSelector)}
                     className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-2 min-h-[44px] rounded-full hover:bg-white/10 transition-colors"
                     aria-label={t.common.languageSelect}
+                    aria-expanded={showLangSelector}
+                    aria-haspopup="true"
                   >
                     <span className="text-base">{LANG_OPTIONS.find(l => l.code === language)?.flag ?? '🇰🇷'}</span>
                     <span className="hidden md:inline text-xs text-text-secondary">{LANG_OPTIONS.find(l => l.code === language)?.label ?? '한국어'}</span>

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 interface NotificationItem {
   id: string;
@@ -40,6 +41,8 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
 
   // 외부 클릭 시 닫기 — overlay div 대신 document-level listener 로 first-click consume 해소 (이슈 #1).
   useOutsideClick(isOpen, panelRef, onClose, triggerRef);
+  // ESC 키로 닫기 — a11y baseline (WCAG 2.1 keyboard accessibility).
+  useEscapeKey(onClose, isOpen);
 
   // 백그라운드 폴링 (30초) — 실패 시 silent. 매 30초마다 토스트 띄우면 노이즈.
   // 네트워크 일시 장애도 다음 폴링에서 자동 복구되므로 사용자 인지 불필요.
@@ -132,6 +135,8 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
         }}
         className="relative p-2.5 rounded-full hover:bg-white/10 transition-colors"
         aria-label={t.common.notifications}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <span className="text-xl">🔔</span>
         {unreadCount > 0 && (
