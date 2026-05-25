@@ -227,6 +227,8 @@ export const zh = {
     recentSearches: '最近搜索',
     deleteAll: '全部删除',
     noResults: '没有搜索结果',
+    noResultsHelp: '尝试其他关键词或浏览分类',
+    browseAll: '浏览所有食谱',
     noResultsIngredients: '没有找到可用这些食材的食谱',
     allDifficulties: '所有难度',
     allTimes: '所有时间',

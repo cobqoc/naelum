@@ -227,6 +227,8 @@ export const es = {
     recentSearches: 'Búsquedas recientes',
     deleteAll: 'Eliminar todo',
     noResults: 'Sin resultados',
+    noResultsHelp: 'Prueba otras palabras clave o explora categorías',
+    browseAll: 'Ver todas las recetas',
     noResultsIngredients: 'No se encontraron recetas con estos ingredientes',
     allDifficulties: 'Todas las dificultades',
     allTimes: 'Todos los tiempos',

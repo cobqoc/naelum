@@ -241,9 +241,10 @@ export default function SignupPage() {
             {/* 이메일 입력 */}
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-text-secondary">{t.auth.email} *</label>
+                <label htmlFor="signup-email" className="text-sm font-medium text-text-secondary">{t.auth.email} *</label>
                 <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
                   <input
+                    id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -252,12 +253,14 @@ export default function SignupPage() {
                     style={INPUT_INNER_STYLE}
                     placeholder="example@email.com"
                     autoComplete="email"
+                    aria-invalid={!!error}
+                    aria-describedby={error ? 'signup-email-error' : undefined}
                   />
                 </InputBoxWrapper>
               </div>
 
               {error && (
-                <div className="text-center text-sm text-error">
+                <div id="signup-email-error" className="text-center text-sm text-error" role="alert">
                   <p>{error}</p>
                   {error.includes(t.auth.alreadyRegisteredLogin) && (
                     <Link href="/login" className="mt-2 inline-block font-medium text-accent-warm hover:underline">

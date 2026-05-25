@@ -254,6 +254,15 @@ export default function SettingsPage() {
     return () => clearTimeout(timer);
   }, [username, profile?.username, t.common.error]);
 
+  // 탭 변경 시 URL `?tab=X` 동기 — 공유·새로고침 후 활성 탭 유지 (이슈 #14).
+  // history.replaceState 로 React state 영향 없이 주소창만 갱신.
+  const syncTabUrl = (tab: TabType) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState(null, '', url.toString());
+  };
+
   const handleTabClick = (tab: TabType) => {
     if (tab === activeTab) return;
     if (isCurrentTabDirty) {
@@ -261,6 +270,7 @@ export default function SettingsPage() {
       setShowUnsavedModal(true);
     } else {
       setActiveTab(tab);
+      syncTabUrl(tab);
     }
   };
 
@@ -286,6 +296,7 @@ export default function SettingsPage() {
     setShowUnsavedModal(false);
     pendingTabRef.current = null;
     setActiveTab(target);
+    syncTabUrl(target);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

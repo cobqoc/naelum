@@ -535,7 +535,17 @@ function SearchContent() {
                       <RecipeCard key={recipe.id} recipe={recipe} showAuthor fridgeRowMode="positive" />
                     ))}
                     {mergedRecipes.length === 0 && (
-                      <p className="col-span-2 sm:col-span-3 md:col-span-4 text-center text-text-muted py-10">{t.search.noResults}</p>
+                      <div className="col-span-2 sm:col-span-3 md:col-span-4 text-center py-12">
+                        <div className="text-5xl mb-3">🔍</div>
+                        <p className="text-text-muted mb-2">{t.search.noResults}</p>
+                        <p className="text-sm text-text-muted mb-4">{t.search.noResultsHelp}</p>
+                        <Link
+                          href="/recipes"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent-warm text-background-primary text-sm font-medium hover:bg-accent-hover transition-colors"
+                        >
+                          {t.search.browseAll} →
+                        </Link>
+                      </div>
                     )}
                   </div>
                   </>
@@ -575,7 +585,11 @@ function SearchContent() {
                       </Link>
                     ))}
                     {results.users?.data.length === 0 && (
-                      <p className="text-center text-text-muted py-10">{t.search.noResults}</p>
+                      <div className="text-center py-12">
+                        <div className="text-5xl mb-3">🔍</div>
+                        <p className="text-text-muted mb-2">{t.search.noResults}</p>
+                        <p className="text-sm text-text-muted">{t.search.noResultsHelp}</p>
+                      </div>
                     )}
                   </div>
                   </>

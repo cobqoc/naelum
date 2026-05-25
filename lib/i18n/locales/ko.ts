@@ -228,6 +228,8 @@ export const ko = {
     recentSearches: '최근 검색어',
     deleteAll: '전체 삭제',
     noResults: '검색 결과가 없습니다',
+    noResultsHelp: '다른 키워드를 시도하거나 카테고리를 둘러보세요',
+    browseAll: '전체 레시피 보기',
     noResultsIngredients: '해당 재료로 만들 수 있는 레시피가 없습니다',
     allDifficulties: '모든 난이도',
     allTimes: '모든 시간',

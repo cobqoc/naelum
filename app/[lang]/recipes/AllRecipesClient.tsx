@@ -69,7 +69,19 @@ export default function AllRecipesPage() {
   const [loading, setLoading] = useState(!initialCache);
   const [hasMore, setHasMore] = useState(initialCache?.data.hasMore ?? true);
   const [page, setPage] = useState(initialCache?.data.page ?? 0);
-  const [sortBy, setSortBy] = useState<'latest' | 'rating' | 'views'>(initialCache?.data.sortBy ?? 'latest');
+  // 정렬 — URL `?sort=` 우선, 없으면 캐시, 없으면 latest. 변경 시 URL 동기 (이슈 #6 공유 시 컨텍스트 유지).
+  const sortParam = searchParams.get('sort');
+  const isValidSort = (s: string | null): s is 'latest' | 'rating' | 'views' =>
+    s === 'latest' || s === 'rating' || s === 'views';
+  const [sortBy, setSortBy] = useState<'latest' | 'rating' | 'views'>(
+    isValidSort(sortParam) ? sortParam : (initialCache?.data.sortBy ?? 'latest')
+  );
+  const updateSortUrl = (s: 'latest' | 'rating' | 'views') => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (s === 'latest') url.searchParams.delete('sort'); else url.searchParams.set('sort', s);
+    window.history.replaceState(null, '', url.toString());
+  };
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -295,7 +307,13 @@ export default function AllRecipesPage() {
             </div>
             <select
               value={sortBy}
-              onChange={(e) => { setLoading(true); setPage(0); setSortBy(e.target.value as 'latest' | 'rating' | 'views'); }}
+              onChange={(e) => {
+                const next = e.target.value as 'latest' | 'rating' | 'views';
+                setLoading(true);
+                setPage(0);
+                setSortBy(next);
+                updateSortUrl(next);
+              }}
               className="bg-background-secondary border border-white/10 rounded-lg px-3 py-1.5 text-sm outline-none cursor-pointer"
             >
               <option value="latest">{t.recipe.sortLatest}</option>
@@ -383,7 +401,7 @@ export default function AllRecipesPage() {
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-bold">{t.home.sectionTrending}</h2>
                 <button
-                  onClick={() => { setLoading(true); setPage(0); setSortBy('views'); }}
+                  onClick={() => { setLoading(true); setPage(0); setSortBy('views'); updateSortUrl('views'); }}
                   className="text-xs text-accent-warm hover:underline"
                 >
                   {t.common.viewAll} →
