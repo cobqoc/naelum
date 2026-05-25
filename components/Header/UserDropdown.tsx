@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/context';
+import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 
 const LANGUAGES = [
   { code: 'ko' as Language, label: '한국어', flagClass: 'fi fi-kr' },
@@ -42,6 +43,8 @@ export default function UserDropdown({
   const { t, language, setLanguage } = useI18n();
   const { theme, setTheme } = useTheme();
   const [showLangPanel, setShowLangPanel] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const handleOpen = () => {
     setShowLangPanel(false);
@@ -53,10 +56,14 @@ export default function UserDropdown({
     onClose();
   };
 
+  // 외부 클릭 시 닫기 — overlay div 대신 document-level listener (이슈 #1).
+  useOutsideClick(isOpen, panelRef, handleClose, triggerRef);
+
   if (fromBottom) {
     return (
       <div className="relative">
         <button
+          ref={triggerRef}
           onClick={isOpen ? handleClose : handleOpen}
           aria-expanded={isOpen}
           aria-haspopup="true"
@@ -78,8 +85,7 @@ export default function UserDropdown({
 
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-[60]" onClick={handleClose} />
-            <div className="fixed inset-x-4 bottom-20 z-[70] rounded-xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden max-w-sm mx-auto">
+            <div ref={panelRef} className="fixed inset-x-4 bottom-20 z-[70] rounded-xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden max-w-sm mx-auto">
               {profile && (
                 <Link
                   href={`/@${profile.username}`}
@@ -160,7 +166,7 @@ export default function UserDropdown({
                         key={value}
                         onClick={() => setTheme(value)}
                         title={label}
-                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-xs font-medium transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                           theme === value
                             ? 'bg-background-secondary text-text-primary shadow-sm'
                             : 'text-text-muted hover:text-text-secondary'
@@ -190,6 +196,7 @@ export default function UserDropdown({
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         onClick={isOpen ? handleClose : handleOpen}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -215,8 +222,7 @@ export default function UserDropdown({
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[60]" onClick={handleClose} />
-          <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-[70] overflow-hidden">
+          <div ref={panelRef} className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-[70] overflow-hidden">
             {profile && (
               <Link
                 href={`/@${profile.username}`}
@@ -311,7 +317,7 @@ export default function UserDropdown({
                       key={value}
                       onClick={() => setTheme(value)}
                       title={label}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                         theme === value
                           ? 'bg-background-secondary text-text-primary shadow-sm'
                           : 'text-text-muted hover:text-text-secondary'

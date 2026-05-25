@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import LocalizedLink from '@/components/Common/LocalizedLink';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
+import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 
 interface NotificationItem {
   id: string;
@@ -34,6 +35,11 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // 외부 클릭 시 닫기 — overlay div 대신 document-level listener 로 first-click consume 해소 (이슈 #1).
+  useOutsideClick(isOpen, panelRef, onClose, triggerRef);
 
   // 백그라운드 폴링 (30초) — 실패 시 silent. 매 30초마다 토스트 띄우면 노이즈.
   // 네트워크 일시 장애도 다음 폴링에서 자동 복구되므로 사용자 인지 불필요.
@@ -115,6 +121,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         onClick={() => {
           if (isOpen) {
             onClose();
@@ -135,9 +142,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
       </button>
 
       {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={onClose} />
-          <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden">
+          <div ref={panelRef} className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden">
             {/* 헤더 */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <span className="font-bold text-sm">🔔 {t.common.notifications}</span>
@@ -201,7 +206,6 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
               </LocalizedLink>
             </div>
           </div>
-        </>
       )}
     </div>
   );

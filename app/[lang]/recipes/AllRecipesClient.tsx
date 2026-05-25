@@ -285,8 +285,8 @@ export default function AllRecipesPage() {
             <div>
               {hasFilter && (
                 <p className="text-sm text-text-muted mt-0.5">
-                  {cuisineFilter && `${t.home.filterCuisineLabel}: ${cuisineFilter}`}
-                  {dishFilter && `${t.home.filterDishLabel}: ${dishFilter}`}
+                  {cuisineFilter && `${t.home.filterCuisineLabel}: ${CUISINE_TYPES.find(c => c.value === cuisineFilter)?.label ?? cuisineFilter}`}
+                  {dishFilter && `${t.home.filterDishLabel}: ${DISH_TYPES.find(d => d.value === dishFilter)?.label ?? dishFilter}`}
                   <Link href="/recipes" className="ml-2 text-accent-warm text-xs hover:underline">
                     {t.home.clearFilter}
                   </Link>

@@ -350,6 +350,7 @@ export default function RecipeDetailClient({
         likesCount={likesCount}
         onToggleLike={handleLike}
         likeLoading={likeLoading}
+        isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
       />
 
       {/* 리뷰 섹션 */}

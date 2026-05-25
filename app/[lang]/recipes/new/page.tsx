@@ -134,8 +134,12 @@ export default function NewRecipePage() {
     thumbnailImage, ingredientsImage,
   ]);
 
-  // remix 모드에선 자동저장 비활성 (원본 데이터 덮어쓸 위험)
-  useAutosave(AUTOSAVE_KEY, autosaveData, { enabled: !remixId && !autosaveRestoreVisible });
+  // remix 모드에선 자동저장 비활성 (원본 데이터 덮어쓸 위험).
+  // title 빈 폼은 자동저장 skip — banner 표시 조건(`title?.trim()`)과 일관 + "버리기" 후
+  // useAutosave 가 빈 폼을 다시 저장하던 race 차단 (localStorage 깔끔).
+  useAutosave(AUTOSAVE_KEY, autosaveData, {
+    enabled: !remixId && !autosaveRestoreVisible && title.trim().length > 0,
+  });
 
   // mount 시 이전 스냅샷 발견하면 banner 표시
   useEffect(() => {

@@ -90,6 +90,8 @@ interface RecipeBrowseViewProps {
   likesCount?: number;
   onToggleLike?: () => void;
   likeLoading?: boolean;
+  /** 본인 콘텐츠 여부 — true 시 🚨 신고 버튼 숨김 (자기 자기 신고 UX 부자연스러움 해소) */
+  isAuthor?: boolean;
 }
 
 export default function RecipeBrowseView({
@@ -106,6 +108,7 @@ export default function RecipeBrowseView({
   likesCount = 0,
   onToggleLike,
   likeLoading = false,
+  isAuthor = false,
 }: RecipeBrowseViewProps) {
   const toast = useToast();
   const unitConv = useUnitConversion();
@@ -365,14 +368,16 @@ export default function RecipeBrowseView({
             title={recipe.title}
             description={recipe.description}
           />
-          <button
-            onClick={() => setReportOpen(true)}
-            aria-label={t.report.menuLabel}
-            title={t.report.menuLabel}
-            className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-tertiary transition"
-          >
-            🚨
-          </button>
+          {!isAuthor && (
+            <button
+              onClick={() => setReportOpen(true)}
+              aria-label={t.report.menuLabel}
+              title={t.report.menuLabel}
+              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-background-tertiary transition"
+            >
+              🚨
+            </button>
+          )}
           <button
             onClick={onToggleLike}
             disabled={likeLoading || !onToggleLike}
