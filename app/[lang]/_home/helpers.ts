@@ -1,25 +1,34 @@
 import type { FridgeItem } from './types';
 
+// SSR-stable 날짜 산수 — local-midnight vs UTC-parsing 혼용이 timezone 별로 ±1일 어긋나
+// React #418 (hydration text mismatch)을 일으켰던 원인. 양쪽 모두 UTC 기준으로 일관 처리.
+// 'YYYY-MM-DD' 문자열을 UTC 자정 epoch ms 로 변환.
+function dateOnlyToUTC(d: string): number {
+  const [y, m, day] = d.slice(0, 10).split('-').map(Number);
+  return Date.UTC(y, m - 1, day);
+}
+
+// 오늘(UTC) 자정 epoch ms — 서버/브라우저 동일.
+function todayUTC(): number {
+  const n = new Date();
+  return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+}
+
 /** 오늘 기준 만료일까지 남은 일수. expiry_date 없으면 99(만료 아님). */
 export function daysUntilExpiry(d: string | null): number {
   if (!d) return 99;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const exp = new Date(d); exp.setHours(0, 0, 0, 0);
-  return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((dateOnlyToUTC(d) - todayUTC()) / 86400000);
 }
 
 /** 구매 후 경과일. purchase_date 없으면 음수(미확인) 반환. */
 export function daysSincePurchase(d: string | null | undefined): number {
   if (!d) return -1;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const pur = new Date(d); pur.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - pur.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.floor((todayUTC() - dateOnlyToUTC(d)) / 86400000);
 }
 
-/** 오늘+d일을 ISO(YYYY-MM-DD) 문자열로. DEMO 데이터 생성용. */
+/** 오늘+d일을 ISO(YYYY-MM-DD) 문자열로. DEMO 데이터 생성용. UTC 기준 (SSR-stable). */
 export function addDaysISO(d: number): string {
-  const date = new Date(); date.setDate(date.getDate() + d);
-  return date.toISOString().slice(0, 10);
+  return new Date(todayUTC() + d * 86400000).toISOString().slice(0, 10);
 }
 
 /**
