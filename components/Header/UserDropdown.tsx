@@ -9,6 +9,7 @@ import { useTheme } from '@/lib/theme/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { useListKeyboardNav } from '@/lib/hooks/useListKeyboardNav';
 
 const LANGUAGES = [
   { code: 'ko' as Language, label: '한국어', flagClass: 'fi fi-kr' },
@@ -64,6 +65,8 @@ export default function UserDropdown({
   useEscapeKey(handleClose, isOpen);
   // Tab focus trap.
   useFocusTrap(isOpen, panelRef, triggerRef);
+  // 화살표 키 list navigation.
+  useListKeyboardNav(isOpen, panelRef);
 
   if (fromBottom) {
     return (

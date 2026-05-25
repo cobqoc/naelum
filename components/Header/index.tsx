@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { useListKeyboardNav } from '@/lib/hooks/useListKeyboardNav';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { ssr: false });
 const ContactModal = dynamic(() => import('../ContactModal'), { ssr: false });
@@ -83,6 +84,9 @@ export default function Header() {
   // Tab focus trap — panel 안 순환·닫힐 때 trigger 복원.
   useFocusTrap(showMoreMenu, moreMenuPanelRef, moreMenuTriggerRef);
   useFocusTrap(showLangSelector, langPanelRef, langTriggerRef);
+  // 화살표 키 list navigation — ↓↑/Home/End 로 항목 이동.
+  useListKeyboardNav(showMoreMenu, moreMenuPanelRef);
+  useListKeyboardNav(showLangSelector, langPanelRef);
 
   return (
     <>
