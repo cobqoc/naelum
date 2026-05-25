@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
 const LANGUAGES = [
   { code: 'ko' as Language, label: '한국어', flagClass: 'fi fi-kr' },
@@ -58,6 +59,8 @@ export default function UserDropdown({
 
   // 외부 클릭 시 닫기 — overlay div 대신 document-level listener (이슈 #1).
   useOutsideClick(isOpen, panelRef, handleClose, triggerRef);
+  // ESC 키로 닫기 — a11y baseline.
+  useEscapeKey(handleClose, isOpen);
 
   if (fromBottom) {
     return (
