@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface ActionItem {
   id: string;
@@ -27,7 +29,9 @@ interface Props {
  *  - 🗑 삭제하기: 확인 후 삭제
  */
 export default function IngredientActionSheet({ item, onClose, onCook, onEdit, onDelete }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose, !!item);
+  useFocusTrap(!!item, panelRef);
 
   if (!item) return null;
 
@@ -49,7 +53,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
       />
 
       {/* Sheet */}
-      <div className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden animate-[slideUp_0.2s_ease-out] md:animate-[fadeIn_0.15s_ease-out]">
+      <div ref={panelRef} className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden animate-[slideUp_0.2s_ease-out] md:animate-[fadeIn_0.15s_ease-out]">
         {/* 핸들 (모바일) */}
         <div className="md:hidden flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />

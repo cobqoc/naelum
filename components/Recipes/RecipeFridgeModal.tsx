@@ -1,6 +1,9 @@
 'use client';
 
+import { useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface RecipeFridgeModalProps {
   onClose: () => void;
@@ -61,13 +64,20 @@ export default function RecipeFridgeModal({
   fridgeEmpty,
 }: RecipeFridgeModalProps) {
   const { t } = useI18n();
+  // 호출처가 조건부 마운트 — 마운트 자체가 open 상태이므로 isOpen=true 고정.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, true);
+  useFocusTrap(true, panelRef);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={(e) => { e.stopPropagation(); onClose(); }}
+      role="dialog"
+      aria-modal="true"
     >
       <div
+        ref={panelRef}
         className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
