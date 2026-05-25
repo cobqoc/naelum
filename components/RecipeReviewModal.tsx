@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { createClient } from '@/lib/supabase/client';
 
@@ -31,6 +33,9 @@ export default function RecipeReviewModal({
   const [review, setReview] = useState(initialReview);
   const [submitting, setSubmitting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen && !submitting);
+  useFocusTrap(isOpen, panelRef);
 
   // Props 변경 시 state 업데이트
   useEffect(() => {
@@ -115,8 +120,8 @@ export default function RecipeReviewModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4">
-      <div className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4" role="dialog" aria-modal="true">
+      <div ref={panelRef} className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-text-primary">

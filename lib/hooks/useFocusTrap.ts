@@ -75,16 +75,21 @@ export function useFocusTrap(
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('focusin', handleFocusIn);
 
+    // trigger 를 effect 진입 시점에 복사 — cleanup 시 stale closure 경고 회피
+    // (react-hooks/exhaustive-deps). trigger 는 보통 모달 외부 컴포넌트 소유라
+    // 모달 unmount 와 무관하게 안정.
+    const triggerEl = triggerRef?.current ?? null;
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocusIn);
       // 닫힐 때 — panel 안에 focus 가 한 번이라도 있었고 + cleanup 시점에
       // active 가 body 면 (ESC → panel unmount → focus lost 패턴) → 복원.
       // 외부 클릭으로 닫혔으면 active 가 클릭된 element 라 body 아님 → 복원 안 함.
-      // 우선순위: triggerRef > previousFocus (둘 중 있는 것).
+      // 우선순위: triggerEl > previousFocus (둘 중 있는 것).
       if (hadFocusInPanel && document.activeElement === document.body) {
-        if (triggerRef?.current) {
-          triggerRef.current.focus();
+        if (triggerEl) {
+          triggerEl.focus();
         } else if (previousFocus && previousFocus !== document.body) {
           previousFocus.focus?.();
         }

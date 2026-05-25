@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { INGREDIENT_CATEGORIES } from './IngredientAutocompleteTypes';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface AddIngredientDialogProps {
   /** 다이얼로그 열림 상태 */
@@ -58,6 +60,9 @@ export default function AddIngredientDialog({
   const [error, setError] = useState('');
   const [duplicateError, setDuplicateError] = useState('');
   const [similarIngredient, setSimilarIngredient] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen && !submitting);
+  useFocusTrap(isOpen, panelRef);
 
   /**
    * 초기값 설정
@@ -184,7 +189,7 @@ export default function AddIngredientDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center" role="dialog" aria-modal="true">
       {/* 오버레이 */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -192,7 +197,7 @@ export default function AddIngredientDialog({
       />
 
       {/* 다이얼로그 */}
-      <div className="relative w-full max-w-md mx-4 rounded-2xl bg-background-primary border border-white/10 shadow-2xl">
+      <div ref={panelRef} className="relative w-full max-w-md mx-4 rounded-2xl bg-background-primary border border-white/10 shadow-2xl">
         {/* 헤더 */}
         <div className="p-6 border-b border-white/10">
           <h2 className="text-xl font-bold text-text-primary">{t.ingredient.dialogTitle}</h2>

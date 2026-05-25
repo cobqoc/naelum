@@ -1,7 +1,10 @@
 'use client';
 
+import { useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface WriteModalProps {
   isOpen: boolean;
@@ -11,6 +14,9 @@ interface WriteModalProps {
 export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   if (!isOpen) return null;
 
@@ -20,9 +26,9 @@ export default function WriteModal({ isOpen, onClose }: WriteModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden">
+      <div ref={panelRef} className="relative w-full max-w-sm rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden">
         <div className="px-6 py-5 border-b border-white/10">
           <h2 className="text-base font-bold text-center">{t.writeModal.title}</h2>
         </div>
