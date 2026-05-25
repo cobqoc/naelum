@@ -68,7 +68,11 @@ export default function TipNewPage() {
     steps, tags,
   }), [title, description, category, durationMinutes, thumbnail, steps, tags]);
 
-  useAutosave(AUTOSAVE_KEY, autosaveData, { enabled: !autosaveRestoreVisible });
+  // title 빈 폼은 자동저장 skip — banner 표시 조건(`title?.trim()`)과 일관 + "버리기" 후
+  // useAutosave 가 빈 폼을 다시 저장하던 race 차단.
+  useAutosave(AUTOSAVE_KEY, autosaveData, {
+    enabled: !autosaveRestoreVisible && title.trim().length > 0,
+  });
 
   useEffect(() => {
     const saved = loadAutosave<AutosaveSnapshot>(AUTOSAVE_KEY, AUTOSAVE_MAX_AGE);

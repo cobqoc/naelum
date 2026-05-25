@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
@@ -11,6 +11,7 @@ import SearchIcon from '../icons/SearchIcon';
 import NotificationPanel from './NotificationPanel';
 import UserDropdown from './UserDropdown';
 import { useAuth } from '@/lib/auth/context';
+import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { ssr: false });
 const ContactModal = dynamic(() => import('../ContactModal'), { ssr: false });
@@ -65,6 +66,15 @@ export default function Header() {
     setShowMoreMenu(false);
   };
 
+  const moreMenuPanelRef = useRef<HTMLDivElement | null>(null);
+  const moreMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const langPanelRef = useRef<HTMLDivElement | null>(null);
+  const langTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // 외부 클릭 시 닫기 (이슈 #1 — overlay div 대신 document-level listener)
+  useOutsideClick(showMoreMenu, moreMenuPanelRef, () => setShowMoreMenu(false), moreMenuTriggerRef);
+  useOutsideClick(showLangSelector, langPanelRef, () => setShowLangSelector(false), langTriggerRef);
+
   return (
     <>
       <header className="fixed top-0 z-50 w-full bg-transparent py-3 md:py-6 pointer-events-none">
@@ -77,6 +87,7 @@ export default function Header() {
             {/* 정책 메뉴 — 약관·개인정보·저작권·문의 진입점 */}
             <div className="relative">
               <button
+                ref={moreMenuTriggerRef}
                 onClick={() => {
                   const next = !showMoreMenu;
                   closeAll();
@@ -94,9 +105,7 @@ export default function Header() {
                 </svg>
               </button>
               {showMoreMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
-                  <div className="absolute left-0 top-full mt-2 w-52 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-1.5">
+                  <div ref={moreMenuPanelRef} className="absolute left-0 top-full mt-2 w-52 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-1.5">
                     <Link
                       href="/terms"
                       onClick={() => setShowMoreMenu(false)}
@@ -131,7 +140,6 @@ export default function Header() {
                       <span>{t.contact.title.replace(/^✉️\s*/, '')}</span>
                     </button>
                   </div>
-                </>
               )}
             </div>
           </div>
@@ -210,6 +218,7 @@ export default function Header() {
                 {/* 언어 선택 (비로그인) */}
                 <div className="relative">
                   <button
+                    ref={langTriggerRef}
                     onClick={() => setShowLangSelector(!showLangSelector)}
                     className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-2 min-h-[44px] rounded-full hover:bg-white/10 transition-colors"
                     aria-label={t.common.languageSelect}
@@ -221,9 +230,7 @@ export default function Header() {
                     </svg>
                   </button>
                   {showLangSelector && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setShowLangSelector(false)} />
-                      <div className="absolute right-0 top-full mt-2 w-44 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-2">
+                      <div ref={langPanelRef} className="absolute right-0 top-full mt-2 w-44 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden py-2">
                         <div className="grid grid-cols-2 gap-1 px-2">
                           {LANG_OPTIONS.map(({ code, label, flag }) => (
                             <button
@@ -241,7 +248,6 @@ export default function Header() {
                           ))}
                         </div>
                       </div>
-                    </>
                   )}
                 </div>
                 {/* 로그인/가입 버튼 — PC/모바일 모두 헤더에 노출. 회원가입 진입점도 명시. */}

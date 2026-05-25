@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
@@ -57,6 +58,10 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const [inputFocused, setInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  // 외부 클릭 시 닫기 — overlay div 대신 document-level listener.
+  // trigger 는 Header 외부에 있으나 Header onClick 의 toggle 로 race 없음 (이슈 #1).
+  useOutsideClick(isOpen, panelRef, onClose);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteValue, setEditingNoteValue] = useState('');
   // 메모 PATCH 진행 중인 item id — 냉장고 pendingDeleteIdsRef 와 동일 패턴.
@@ -405,8 +410,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
+      <div ref={panelRef} className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${fromBottom ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm' : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'}`} style={{ maxHeight: '32rem' }}>
         {/* 헤더 — components/cart/CartHeader.tsx 로 추출 (Phase 2, 순수 표현) */}
         <CartHeader
           t={t}
