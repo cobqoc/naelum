@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 type ReportContentType = 'recipe' | 'tip';
 
@@ -34,6 +36,9 @@ export default function ReportModal({ isOpen, onClose, contentType, contentId }:
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen && !submitting);
+  useFocusTrap(isOpen, panelRef);
 
   if (!isOpen) return null;
 
@@ -72,8 +77,11 @@ export default function ReportModal({ isOpen, onClose, contentType, contentId }:
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
+        ref={panelRef}
         className="w-full max-w-md rounded-2xl bg-background-secondary p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

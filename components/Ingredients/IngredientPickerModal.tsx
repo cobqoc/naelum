@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { IngredientItem } from './IngredientAutocompleteTypes';
 import IngredientCategoryFilter from './IngredientCategoryFilter';
 import IngredientPickerGrid from './IngredientPickerGrid';
 import { useIngredientPicker } from '@/lib/hooks/useIngredientPicker';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface IngredientPickerModalProps {
   isOpen: boolean;
@@ -36,14 +38,10 @@ export default function IngredientPickerModal({
     showAddNewButton,
   } = useIngredientPicker({ enabled: isOpen });
 
-  // ESC key to close
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  // a11y — ESC + focus trap (자체 keydown 통일).
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -63,13 +61,13 @@ export default function IngredientPickerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full h-dvh md:h-[90vh] md:max-w-4xl md:rounded-2xl bg-background-primary border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+      <div ref={panelRef} className="relative w-full h-dvh md:h-[90vh] md:max-w-4xl md:rounded-2xl bg-background-primary border border-white/10 shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="text-2xl font-bold text-text-primary">재료 선택</h2>

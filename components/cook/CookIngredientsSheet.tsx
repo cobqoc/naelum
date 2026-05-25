@@ -1,5 +1,10 @@
+'use client';
+
+import { useRef } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import type { useUnitConversion } from '@/lib/hooks/useUnitConversion';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 /**
  * 쿠킹 모드 재료 하단 시트 (순수 표현).
@@ -35,13 +40,20 @@ export default function CookIngredientsSheet({
   unitConv: UnitConv;
   onClose: () => void;
 }) {
+  // a11y: 호출처 조건부 마운트.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onClose, true);
+  useFocusTrap(true, panelRef);
+
   return (
     <>
       <div
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
       />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-h-[70vh] bg-background-secondary rounded-t-2xl border-t border-white/10 overflow-hidden animate-slide-up">
+      <div ref={panelRef} className="fixed bottom-0 left-0 right-0 z-50 max-h-[70vh] bg-background-secondary rounded-t-2xl border-t border-white/10 overflow-hidden animate-slide-up">
         {/* 드래그 핸들 */}
         <div className="flex justify-center py-3">
           <div className="w-10 h-1 rounded-full bg-white/20" />

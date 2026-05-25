@@ -1,4 +1,9 @@
+'use client';
+
+import { useRef } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 /**
  * 쿠킹 모드 완성 후 선택 모달 (사진 첨부 + 리뷰/스킵) (순수 표현).
@@ -25,9 +30,14 @@ export default function CookCompletionModal({
   onSkip: () => void;
   completing: boolean;
 }) {
+  // a11y: 호출처 조건부 마운트 → isOpen=true 고정. ESC=skip (사진 미첨부 + 나가기).
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEscapeKey(onSkip, !completing);
+  useFocusTrap(true, panelRef);
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4">
-      <div className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto p-4" role="dialog" aria-modal="true">
+      <div ref={panelRef} className="bg-background-secondary rounded-2xl p-6 max-w-md w-full my-8 border border-white/10">
         <div className="text-center mb-6">
           <div className="text-6xl mb-4">🎉</div>
           <h3 className="text-2xl font-bold mb-2">{t.cookMode.recipeDone}</h3>

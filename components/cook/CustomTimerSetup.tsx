@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 interface CheckpointRow {
   /** React key 전용 (입력값 아님) */
@@ -35,6 +37,10 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
   const [rows, setRows] = useState<CheckpointRow[]>(
     prefill ? prefill.checkpointMinutes.map(m => newRow(String(m))) : [],
   );
+  const panelRef = useRef<HTMLDivElement>(null);
+  // a11y: 호출처 조건부 마운트 — isOpen=true 고정.
+  useEscapeKey(onClose, true);
+  useFocusTrap(true, panelRef);
 
   const totalNum = Number(total);
   const totalValid = Number.isFinite(totalNum) && totalNum >= 1 && totalNum <= 120;
@@ -56,8 +62,11 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
+        ref={panelRef}
         className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
