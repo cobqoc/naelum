@@ -86,13 +86,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!title?.trim()) {
     return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
   }
+  if (title.length > 200) {
+    return NextResponse.json({ error: '제목은 200자 이내로 입력해주세요.' }, { status: 400 });
+  }
+  if (description && description.length > 500) {
+    return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 });
+  }
 
   const { error: updateError } = await supabase
     .from('tip')
     .update({
       title,
       description,
-      category,
+      category: category || null,
       duration_minutes,
       thumbnail_url,
       is_public: is_public !== false,

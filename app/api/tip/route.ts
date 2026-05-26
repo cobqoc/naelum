@@ -60,6 +60,12 @@ export async function POST(request: NextRequest) {
   if (!title?.trim()) {
     return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
   }
+  if (title.length > 200) {
+    return NextResponse.json({ error: '제목은 200자 이내로 입력해주세요.' }, { status: 400 });
+  }
+  if (description && description.length > 500) {
+    return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 });
+  }
   if (!is_draft && (!steps || steps.length === 0)) {
     return NextResponse.json({ error: '단계를 최소 1개 입력해주세요.' }, { status: 400 });
   }
@@ -71,7 +77,7 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       description: description?.trim() || null,
       thumbnail_url: thumbnail_url || null,
-      category: category || '기타',
+      category: category || null,
       duration_minutes: duration_minutes || null,
       is_public: is_draft ? false : (is_public !== false),
       is_draft: is_draft === true,

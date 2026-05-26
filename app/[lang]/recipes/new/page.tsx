@@ -616,6 +616,14 @@ export default function NewRecipePage() {
       toast.warning(tf.warnTitle);
       return;
     }
+    if (title.length > 200) {
+      toast.warning(t.common.errorTitleTooLong);
+      return;
+    }
+    if (description.length > 500) {
+      toast.warning(t.common.errorDescriptionTooLong);
+      return;
+    }
 
     if (cuisineType === 'other' && !customCuisineType.trim()) {
       toast.warning(tf.warnCustomCuisine);
@@ -716,6 +724,14 @@ export default function NewRecipePage() {
   const handleDraft = async () => {
     if (!title.trim()) {
       toast.warning(tf.warnDraftTitle);
+      return;
+    }
+    if (title.length > 200) {
+      toast.warning(t.common.errorTitleTooLong);
+      return;
+    }
+    if (description.length > 500) {
+      toast.warning(t.common.errorDescriptionTooLong);
       return;
     }
     setDraftLoading(true);

@@ -547,6 +547,14 @@ export default function EditRecipePage(props: PageProps) {
       toast.warning(tf.warnTitle);
       return;
     }
+    if (title.length > 200) {
+      toast.warning(t.common.errorTitleTooLong);
+      return;
+    }
+    if (description.length > 500) {
+      toast.warning(t.common.errorDescriptionTooLong);
+      return;
+    }
 
     const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
     if (validIngredients.length === 0) {

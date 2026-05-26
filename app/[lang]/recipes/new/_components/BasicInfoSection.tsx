@@ -68,6 +68,7 @@ export default function BasicInfoSection({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
                 className={INPUT_INNER_COMFORTABLE_CLASS}
                 style={INPUT_INNER_STYLE}
                 placeholder={tf.titlePlaceholder}
@@ -81,6 +82,7 @@ export default function BasicInfoSection({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                maxLength={500}
                 className={`${INPUT_INNER_COMFORTABLE_CLASS} min-h-[80px] resize-none`}
                 style={INPUT_INNER_STYLE}
                 placeholder={tf.descriptionPlaceholder}

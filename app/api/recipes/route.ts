@@ -110,6 +110,16 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { title, description, ingredients, steps, tags, ...recipeData } = body
 
+  if (!title || typeof title !== 'string' || !title.trim()) {
+    return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 })
+  }
+  if (title.length > 200) {
+    return NextResponse.json({ error: '제목은 200자 이내로 입력해주세요.' }, { status: 400 })
+  }
+  if (description && typeof description === 'string' && description.length > 500) {
+    return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 })
+  }
+
   // 레시피 생성 (total_time_minutes는 DB에서 자동 계산되는 Generated Column)
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')

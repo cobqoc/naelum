@@ -64,7 +64,7 @@ export default function TipEditPage() {
   // 폼 state — 초기값은 load 후 채움.
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -98,7 +98,7 @@ export default function TipEditPage() {
         }
         setTitle(tip.title || '');
         setDescription(tip.description || '');
-        setCategory(tip.category || 'other');
+        setCategory(tip.category || '');
         setDurationMinutes(tip.duration_minutes != null ? String(tip.duration_minutes) : '');
         setThumbnail(tip.thumbnail_url || null);
         isPublicRef.current = tip.is_public;
@@ -125,40 +125,42 @@ export default function TipEditPage() {
   }, [id, router, supabase, t.tipForm.editLoadError]);
 
   const handleThumbnailUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
     setThumbnailUploading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setThumbnailUploading(false); return; }
+    if (!user) { setThumbnailUploading(false); router.push('/signin'); return; }
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
     const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!upErr && path) {
-      setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
-    } else {
-      toast.error(t.tipForm.errorGeneric);
+    if (upErr || !path) {
+      toast.error(t.tipForm.errorImageUpload);
+      setThumbnailUploading(false);
+      return;
     }
+    setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
     setThumbnailUploading(false);
   };
 
   const handleStepImageUpload = async (idx: number, file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: true } : s));
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
+      router.push('/signin');
       return;
     }
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/tip-step-${Date.now()}-${idx}.${ext}`;
     const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!upErr && path) {
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
-    } else {
+    if (upErr || !path) {
+      toast.error(t.tipForm.errorImageUpload);
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
-      toast.error(t.tipForm.errorGeneric);
+      return;
     }
+    setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
   };
 
   const addStep = () => setSteps(prev => [...prev, { instruction: '', tip: '', image_url: null, uploading: false }]);
@@ -181,6 +183,8 @@ export default function TipEditPage() {
   const handleSave = async () => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
+    if (title.length > 200) { setError(t.common.errorTitleTooLong); return; }
+    if (description.length > 500) { setError(t.common.errorDescriptionTooLong); return; }
     if (steps.some(s => !s.instruction.trim())) { setError(t.tipForm.errorStepRequired); return; }
 
     setSaving(true);
@@ -283,6 +287,7 @@ export default function TipEditPage() {
                   className={`${INPUT_INNER_COMFORTABLE_CLASS} cursor-pointer`}
                   style={INPUT_INNER_STYLE}
                 >
+                  <option value="" disabled>{t.tipForm.categoryPlaceholder}</option>
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>{CATEGORY_ICONS[c]} {t.tipForm.categories[c as keyof typeof t.tipForm.categories]}</option>
                   ))}
@@ -311,6 +316,7 @@ export default function TipEditPage() {
                 value={description} onChange={e => setDescription(e.target.value)}
                 placeholder={t.tipForm.descriptionPlaceholder}
                 rows={3}
+                maxLength={500}
                 className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
                 style={INPUT_INNER_STYLE}
               />

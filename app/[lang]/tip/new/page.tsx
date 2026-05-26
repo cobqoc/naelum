@@ -38,7 +38,8 @@ export default function TipNewPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('other');
+  // 카테고리 default '' — 미선택 신호. API 가 빈값을 null 로 저장해 "사용자 능동 선택 vs 자동" 구분.
+  const [category, setCategory] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -87,7 +88,7 @@ export default function TipNewPage() {
     if (!s) return;
     setTitle(s.title || '');
     setDescription(s.description || '');
-    setCategory(s.category || 'other');
+    setCategory(s.category || '');
     setDurationMinutes(s.durationMinutes || '');
     if (s.thumbnail) setThumbnail(s.thumbnail);
     if (Array.isArray(s.steps) && s.steps.length > 0) {
@@ -105,39 +106,47 @@ export default function TipNewPage() {
 
   // 썸네일 업로드
   const handleThumbnailUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
 
     setThumbnailUploading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setThumbnailUploading(false); router.push('/signin'); return; }
 
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
     const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!error && path) {
-      setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
+    if (error || !path) {
+      toast.error(t.tipForm.errorImageUpload);
+      setThumbnailUploading(false);
+      return;
     }
+    setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
     setThumbnailUploading(false);
   };
 
   // 단계 이미지 업로드
   const handleStepImageUpload = async (idx: number, file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
 
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: true } : s));
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
+      router.push('/signin');
+      return;
+    }
 
     const ext = file.name.split('.').pop();
     const fileName = `${user.id}/tip-step-${Date.now()}-${idx}.${ext}`;
     const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!error && path) {
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
-    } else {
+    if (error || !path) {
+      toast.error(t.tipForm.errorImageUpload);
       setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
+      return;
     }
+    setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
   };
 
   const addStep = () => setSteps(prev => [...prev, { instruction: '', tip: '', image_url: null, uploading: false }]);
@@ -161,6 +170,8 @@ export default function TipNewPage() {
   const handleSubmit = async (isPublic: boolean) => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
+    if (title.length > 200) { setError(t.common.errorTitleTooLong); return; }
+    if (description.length > 500) { setError(t.common.errorDescriptionTooLong); return; }
     if (steps.some(s => !s.instruction.trim())) { setError(t.tipForm.errorStepRequired); return; }
 
     setPending(isPublic ? 'public' : 'private');
@@ -183,6 +194,8 @@ export default function TipNewPage() {
         router.push(`/tip/${data.tip.id}`);
       } else {
         // 비공개 팁은 공개 목록에 안 뜨므로 프로필 비공개 탭으로 이동
+        // 토스트는 profile fallback 무관하게 항상 노출 — 사용자에게 저장 확인 신호
+        toast.success(t.tipForm.toastSavedPrivate);
         const { data: { user } } = await supabase.auth.getUser();
         const { data: profile } = user
           ? await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
@@ -199,6 +212,8 @@ export default function TipNewPage() {
   const handleDraft = async () => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
+    if (title.length > 200) { setError(t.common.errorTitleTooLong); return; }
+    if (description.length > 500) { setError(t.common.errorDescriptionTooLong); return; }
     setPending('draft');
     try {
       const res = await fetch('/api/tip', {
@@ -218,11 +233,11 @@ export default function TipNewPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || t.tipForm.errorGeneric); return; }
 
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/signin'); return; }
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
       clearAutosave(AUTOSAVE_KEY);
+      toast.success(t.tipForm.toastSavedDraft);
       router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
     } catch {
       setError(t.tipForm.errorGeneric);
@@ -314,6 +329,7 @@ export default function TipNewPage() {
                   className={`${INPUT_INNER_COMFORTABLE_CLASS} cursor-pointer`}
                   style={INPUT_INNER_STYLE}
                 >
+                  <option value="" disabled>{t.tipForm.categoryPlaceholder}</option>
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>{CATEGORY_ICONS[c]} {t.tipForm.categories[c as keyof typeof t.tipForm.categories]}</option>
                   ))}
@@ -342,6 +358,7 @@ export default function TipNewPage() {
                 value={description} onChange={e => setDescription(e.target.value)}
                 placeholder={t.tipForm.descriptionPlaceholder}
                 rows={3}
+                maxLength={500}
                 className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
                 style={INPUT_INNER_STYLE}
               />
