@@ -1157,6 +1157,33 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **알레르기 필터 음식 안전 critical 버그 수정** — 완료 (2026-05-26, develop 푸시)
+  - **선존 silent bug 적발**: `filterByDietaryPreferences` (`app/api/recommendations/route.ts:22`) 가 `user_preferences` 테이블 읽으려 하지만 **prod/dev DB 모두 해당 테이블 미존재** (`relation does not exist`). 실제 알레르기 저장은 `user_allergies.ingredient_name` 자유 텍스트. 호출처 3곳(settings·preferences API·OnboardingWizard) 모두 `user_allergies` 로 INSERT 하는데 read 만 다른 테이블 — *single-source-of-truth 불일치로 알레르기 필터링이 0% 작동*. 사용자가 안전 위해 등록한 알레르기 정보가 무시당함. **false negative (위험 레시피 통과) 위험**
+  - **수정 1 — 테이블 fix**: `filterByDietaryPreferences` → `filterByAllergies` rename + `user_allergies` 테이블 직접 read. 식단 필터(`user_dietary_preferences`) 는 별도 Phase 2 (vegan/halal/gluten_free 등 type 별 금지 재료군 매핑 필요, vegan 사용자 100명+ 데이터 확보 후 결정). DB read error 시 *보수적 통과 + `console.error` 표면화* — DB 일시 장애로 모든 추천 막히는 것보다 사용자 영향 작음, observability 확보
+  - **수정 2 — 매칭 알고리즘 (`lib/recommendations/allergyFilter.ts` 신설)**:
+    - `collectAllergyTokens`: alias 양방향 lookup (forward + reverse). '땅콩' 입력 → ['peanut', '피넛'] 자동 포함. 'peanut' 입력 → ['땅콩'] reverse lookup 으로 자동 포함. `normalizeIngredientName` (조리 접두사 제거) 적용
+    - `isRecipeBlockedByAllergies`: 양방향 substring (재료⊃토큰 또는 토큰⊃재료). 음식 안전 보수적 — *false positive >> false negative*. "땅콩" 알레르기 + "땅콩버터" 든 레시피 차단
+    - 1글자 핵심 알레르겐(밀·콩·게·굴·잣) 허용 (식약처 8대 알레르겐). min length 필터 없음
+  - **`INGREDIENT_ALIASES` 8대 알레르겐 한↔영 양방향 매핑 보강**:
+    - **신규**: 땅콩↔peanut, 메밀↔buckwheat, 콩/대두↔soy/soybean, 복숭아↔peach, 아몬드↔almond, 캐슈넛↔cashew, 잣↔pine nut, 오징어↔squid, 조개↔shellfish/clam, 굴↔oyster, 고등어↔mackerel, 연어↔salmon
+    - **기존 보강**: 우유↔milk, 새우↔shrimp/prawn, 게↔crab, 호두↔walnut, 토마토↔tomato, 소고기↔beef, 돼지고기↔pork, 닭고기↔chicken, 밀↔wheat
+  - **회귀 가드**: vitest 21 신규 (`lib/recommendations/__tests__/allergyFilter.test.ts`) — `collectAllergyTokens` 12 케이스 (forward/reverse alias·normalize·1글자 알레르겐·대소문자·여러 알레르기) + `isRecipeBlockedByAllergies` 9 케이스 (직접/한↔영/영↔한/substring/계란 동의어/normalize 매칭)
+  - 검증: lint 0 errors · build · vitest **21 files 270 passed** (신규 21 포함) · 풀 e2e fresh build **436 passed · 0 failed · 0 flaky · 2 skipped**
+  - **Phase 2 식단 필터 (보류)**: `user_dietary_preferences` 같은 테이블 미스 버그지만 *type 별 금지 재료군 매핑* 필요. vegan→우유/계란/육류/생선/꿀, vegetarian→육류/생선, halal→돼지/술, gluten_free→밀/보리. 사용자 100명+ 데이터 확보 + 제품 결정 (vegan 한국 사용자에게 꿀 막을지, halal 맛술 OK 인지) 후 진행
+  - 메모리 [[project-allergy-filter-fix]]
+- **a11y 보강 — 탭 시멘틱 + radio group + 아바타 클릭 중복 해소** — 완료 (2026-05-26, develop 푸시)
+  - **탭 시멘틱 ARIA (`a13dc9e`)**: settings 페이지만 적용돼 있던 WAI-ARIA Tabs Pattern 을 프로필 페이지(6탭) + 전체 레시피 페이지(2탭) 에도 확장. 스크린리더가 *일반 버튼 목록 → 탭 그룹* 으로 정확 인식
+    - `ProfileTabs.tsx`(프로필 6탭: 레시피·낼름함·만들어봤어요·팁·임시저장·비공개): `<div role="tablist">` + 각 button `role="tab"`·`id`·`aria-selected`·`aria-controls`·`tabIndex` (활성 0 / 비활성 -1)
+    - `[username]/page.tsx`: 활성 탭 콘텐츠 wrap `<div role="tabpanel" id="profile-panel-{activeTab}" aria-labelledby="profile-tab-{activeTab}">` — 단일 panel 의 id 가 활성 탭에 따라 동적 변경 (settings 의 panel 6개 별도 패턴과 다르지만 의미 동일)
+    - `AllRecipesClient.tsx` (전체·재료 기반 2탭): 동일 패턴 (tablist + tab + tabpanel)
+    - e2e `profile-decomposition.spec.ts:77` selector `getByRole('button')` → `getByRole('tab')` 갱신
+  - **ProfileTab 성별 → WAI-ARIA radio group (`67e6470`)**: NotificationsTab·PreferencesTab 토글은 공용 `<Toggle role="switch">` 통해 일관됐지만 ProfileTab 성별 3-선택 버튼만 일반 `<button>` 으로 남아 *상호 배타 의미* 부재. 백로그가 `aria-pressed` 제안했지만 *radio group 패턴* 이 의미상 더 정확 (셋 중 정확히 하나 선택)
+    - `<label>` → `<div id="gender-label">` + 컨테이너 `role="radiogroup"` + `aria-labelledby="gender-label"`
+    - 각 button `role="radio"` + `aria-checked={gender === option.value}`
+  - **ProfileTab 아바타 클릭 영역 중복 해소 (`7a7dc65`)**: 아바타 자체(hover overlay button) + "프로필 사진 변경" 텍스트 버튼이 같은 `onClick` 으로 중복. 데스크톱 시각 노이즈 / 모바일 hover 부재로 텍스트 버튼만 affordance. 모바일 우선 정합성: 아바타 `<button>` → `<div aria-hidden="true">` (미리보기 전용) + hover overlay 제거. 텍스트 버튼이 유일한 affordance, tab order 1개 감소
+  - **FileReader data URL — native `<img>` (`a721379`)**: ProfileTab·OnboardingStep1Profile 의 아바타 미리보기가 `FileReader.readAsDataURL` 결과(base64 data:image/...)를 next/image `<Image>` 에 src 로 넣어 Next.js 워닝(unoptimized 필요) + 최적화 불가. **분기 처리**: avatar 가 `data:` prefix → native `<img>` (eslint-disable 1줄), 그 외 (서버 저장 http URL) → `<Image>` 그대로 (최적화 유지). 올바른 패턴 이미 사용 중인 곳 (CookCompletionModal·ContactModal) 확인됨, 변경 없음
+  - **`interest_type 'cuisine'` 상수 추출 (`7ab2484`)**: `user_interests.interest_type` 가 7곳 코드에 `'cuisine'` literal 하드코딩. 다른 값 사용처 0건 + DB prod/dev 0행 = dead literal noise. `lib/constants/userPreferences.ts` 신설 + 7곳 import. DB 컬럼 보존 — 미래 `diet`·`meal_type`·`technique` 확장 옵션 살림. 행위 보존 (string value 동일)
+  - 검증: lint 0 errors · build · 풀 e2e fresh build **436 passed · 0 failed · 0 flaky** (탭 시멘틱 PR 시점)
 - **인증 URL 컨벤션 통일 — `login` → `signin` (옵션 B)** — 완료 (2026-05-26, develop 푸시)
   - **배경**: `/signup`·`/api/auth/signout`·`/api/auth/signup` 은 모던 `signin/signup/signout` 컨벤션이었는데 `/login`·`/api/auth/login` 만 외톨이로 옛 컨벤션. Supabase SDK 메서드(`signInWithPassword`·`signUp`·`signOut`) 와도 머릿속 매핑 비일관
   - **rename**: `app/[lang]/login/` → `app/[lang]/signin/`, `app/api/auth/login/` → `app/api/auth/signin/` (git mv, 내부 파일 모두 보존)
