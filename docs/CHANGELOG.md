@@ -1,0 +1,936 @@
+# 낼름 작업 로그 (Changelog)
+
+> CLAUDE.md `📌 데이터 현황` 섹션에서 2026-05-27 분리. 매 세션 자동 로드되지 않고 *맥락 필요 시 참조*.
+>
+> **형식**: 최신 작업이 위 (시간순 역배열 — 원본 CLAUDE.md 순서 그대로 보존).
+> **역할**: 핵심 교훈은 [`memory/MEMORY.md`](../memory/MEMORY.md) 의 `[[...]]` 메모리에 응축돼 있어 이 파일은 *백업/맥락* 역할. 미래 회귀 판단·옛 작업 의도 추적용.
+>
+> **재성장 정책**: CLAUDE.md `📌 데이터 현황` 에 새 작업 bullet 누적되면 주기적으로 (월 1회 또는 ~30 작업 시) 이 파일로 다시 이관.
+
+---
+
+## 2026-05 작업 로그
+
+- **알레르기 필터 음식 안전 critical 버그 수정** — 완료 (2026-05-26, develop 푸시)
+  - **선존 silent bug 적발**: `filterByDietaryPreferences` (`app/api/recommendations/route.ts:22`) 가 `user_preferences` 테이블 읽으려 하지만 **prod/dev DB 모두 해당 테이블 미존재** (`relation does not exist`). 실제 알레르기 저장은 `user_allergies.ingredient_name` 자유 텍스트. 호출처 3곳(settings·preferences API·OnboardingWizard) 모두 `user_allergies` 로 INSERT 하는데 read 만 다른 테이블 — *single-source-of-truth 불일치로 알레르기 필터링이 0% 작동*. 사용자가 안전 위해 등록한 알레르기 정보가 무시당함. **false negative (위험 레시피 통과) 위험**
+  - **수정 1 — 테이블 fix**: `filterByDietaryPreferences` → `filterByAllergies` rename + `user_allergies` 테이블 직접 read. 식단 필터(`user_dietary_preferences`) 는 별도 Phase 2 (vegan/halal/gluten_free 등 type 별 금지 재료군 매핑 필요, vegan 사용자 100명+ 데이터 확보 후 결정). DB read error 시 *보수적 통과 + `console.error` 표면화* — DB 일시 장애로 모든 추천 막히는 것보다 사용자 영향 작음, observability 확보
+  - **수정 2 — 매칭 알고리즘 (`lib/recommendations/allergyFilter.ts` 신설)**:
+    - `collectAllergyTokens`: alias 양방향 lookup (forward + reverse). '땅콩' 입력 → ['peanut', '피넛'] 자동 포함. 'peanut' 입력 → ['땅콩'] reverse lookup 으로 자동 포함. `normalizeIngredientName` (조리 접두사 제거) 적용
+    - `isRecipeBlockedByAllergies`: 양방향 substring (재료⊃토큰 또는 토큰⊃재료). 음식 안전 보수적 — *false positive >> false negative*. "땅콩" 알레르기 + "땅콩버터" 든 레시피 차단
+    - 1글자 핵심 알레르겐(밀·콩·게·굴·잣) 허용 (식약처 8대 알레르겐). min length 필터 없음
+  - **`INGREDIENT_ALIASES` 8대 알레르겐 한↔영 양방향 매핑 보강**:
+    - **신규**: 땅콩↔peanut, 메밀↔buckwheat, 콩/대두↔soy/soybean, 복숭아↔peach, 아몬드↔almond, 캐슈넛↔cashew, 잣↔pine nut, 오징어↔squid, 조개↔shellfish/clam, 굴↔oyster, 고등어↔mackerel, 연어↔salmon
+    - **기존 보강**: 우유↔milk, 새우↔shrimp/prawn, 게↔crab, 호두↔walnut, 토마토↔tomato, 소고기↔beef, 돼지고기↔pork, 닭고기↔chicken, 밀↔wheat
+  - **회귀 가드**: vitest 21 신규 (`lib/recommendations/__tests__/allergyFilter.test.ts`) — `collectAllergyTokens` 12 케이스 (forward/reverse alias·normalize·1글자 알레르겐·대소문자·여러 알레르기) + `isRecipeBlockedByAllergies` 9 케이스 (직접/한↔영/영↔한/substring/계란 동의어/normalize 매칭)
+  - 검증: lint 0 errors · build · vitest **21 files 270 passed** (신규 21 포함) · 풀 e2e fresh build **436 passed · 0 failed · 0 flaky · 2 skipped**
+  - **Phase 2 식단 필터 (보류)**: `user_dietary_preferences` 같은 테이블 미스 버그지만 *type 별 금지 재료군 매핑* 필요. vegan→우유/계란/육류/생선/꿀, vegetarian→육류/생선, halal→돼지/술, gluten_free→밀/보리. 사용자 100명+ 데이터 확보 + 제품 결정 (vegan 한국 사용자에게 꿀 막을지, halal 맛술 OK 인지) 후 진행
+  - 메모리 [[project-allergy-filter-fix]]
+- **a11y 보강 — 탭 시멘틱 + radio group + 아바타 클릭 중복 해소** — 완료 (2026-05-26, develop 푸시)
+  - **탭 시멘틱 ARIA (`a13dc9e`)**: settings 페이지만 적용돼 있던 WAI-ARIA Tabs Pattern 을 프로필 페이지(6탭) + 전체 레시피 페이지(2탭) 에도 확장. 스크린리더가 *일반 버튼 목록 → 탭 그룹* 으로 정확 인식
+    - `ProfileTabs.tsx`(프로필 6탭: 레시피·낼름함·만들어봤어요·팁·임시저장·비공개): `<div role="tablist">` + 각 button `role="tab"`·`id`·`aria-selected`·`aria-controls`·`tabIndex` (활성 0 / 비활성 -1)
+    - `[username]/page.tsx`: 활성 탭 콘텐츠 wrap `<div role="tabpanel" id="profile-panel-{activeTab}" aria-labelledby="profile-tab-{activeTab}">` — 단일 panel 의 id 가 활성 탭에 따라 동적 변경 (settings 의 panel 6개 별도 패턴과 다르지만 의미 동일)
+    - `AllRecipesClient.tsx` (전체·재료 기반 2탭): 동일 패턴 (tablist + tab + tabpanel)
+    - e2e `profile-decomposition.spec.ts:77` selector `getByRole('button')` → `getByRole('tab')` 갱신
+  - **ProfileTab 성별 → WAI-ARIA radio group (`67e6470`)**: NotificationsTab·PreferencesTab 토글은 공용 `<Toggle role="switch">` 통해 일관됐지만 ProfileTab 성별 3-선택 버튼만 일반 `<button>` 으로 남아 *상호 배타 의미* 부재. 백로그가 `aria-pressed` 제안했지만 *radio group 패턴* 이 의미상 더 정확 (셋 중 정확히 하나 선택)
+    - `<label>` → `<div id="gender-label">` + 컨테이너 `role="radiogroup"` + `aria-labelledby="gender-label"`
+    - 각 button `role="radio"` + `aria-checked={gender === option.value}`
+  - **ProfileTab 아바타 클릭 영역 중복 해소 (`7a7dc65`)**: 아바타 자체(hover overlay button) + "프로필 사진 변경" 텍스트 버튼이 같은 `onClick` 으로 중복. 데스크톱 시각 노이즈 / 모바일 hover 부재로 텍스트 버튼만 affordance. 모바일 우선 정합성: 아바타 `<button>` → `<div aria-hidden="true">` (미리보기 전용) + hover overlay 제거. 텍스트 버튼이 유일한 affordance, tab order 1개 감소
+  - **FileReader data URL — native `<img>` (`a721379`)**: ProfileTab·OnboardingStep1Profile 의 아바타 미리보기가 `FileReader.readAsDataURL` 결과(base64 data:image/...)를 next/image `<Image>` 에 src 로 넣어 Next.js 워닝(unoptimized 필요) + 최적화 불가. **분기 처리**: avatar 가 `data:` prefix → native `<img>` (eslint-disable 1줄), 그 외 (서버 저장 http URL) → `<Image>` 그대로 (최적화 유지). 올바른 패턴 이미 사용 중인 곳 (CookCompletionModal·ContactModal) 확인됨, 변경 없음
+  - **`interest_type 'cuisine'` 상수 추출 (`7ab2484`)**: `user_interests.interest_type` 가 7곳 코드에 `'cuisine'` literal 하드코딩. 다른 값 사용처 0건 + DB prod/dev 0행 = dead literal noise. `lib/constants/userPreferences.ts` 신설 + 7곳 import. DB 컬럼 보존 — 미래 `diet`·`meal_type`·`technique` 확장 옵션 살림. 행위 보존 (string value 동일)
+  - 검증: lint 0 errors · build · 풀 e2e fresh build **436 passed · 0 failed · 0 flaky** (탭 시멘틱 PR 시점)
+- **인증 URL 컨벤션 통일 — `login` → `signin` (옵션 B)** — 완료 (2026-05-26, develop 푸시)
+  - **배경**: `/signup`·`/api/auth/signout`·`/api/auth/signup` 은 모던 `signin/signup/signout` 컨벤션이었는데 `/login`·`/api/auth/login` 만 외톨이로 옛 컨벤션. Supabase SDK 메서드(`signInWithPassword`·`signUp`·`signOut`) 와도 머릿속 매핑 비일관
+  - **rename**: `app/[lang]/login/` → `app/[lang]/signin/`, `app/api/auth/login/` → `app/api/auth/signin/` (git mv, 내부 파일 모두 보존)
+  - **호출처 일괄 치환 53 파일**: `href="/login"`·`router.push('/login')`·`redirect('/login')`·`new URL(...login)` 등 모든 `/login\b` 패턴 → `/signin`. perl word-boundary regex 로 내부 `loginLimiter`·`checkLoginAttempt` 등 lib 함수명은 의도적 보존 (URL 아님)
+  - **proxy.ts 갱신**: `AUTH_ONLY_ROUTES`·`applyNoStore` bare 매칭·미인증 redirect 모두 `/signin` 으로. **외부 북마크 호환 308 redirect 추가**: `bare === '/login' || bare.startsWith('/login/')` → `/signin` 동일 query 보존. `langPrefix` 유지
+  - **로그 prefix**: `console.error('[auth/login]')` → `[auth/signin]` (route 파일 위치와 일관)
+  - **SW CACHE_VERSION v12 → v13**: URL 구조 변경이라 재방문 사용자 캐시 갱신 강제
+  - **의도적 보존**: ① i18n locale 라벨(`"로그인"`·`"Sign in"` 등) — UX 단어는 그대로 ② `loginUrl` 변수명·`loginLimiter`·`checkLoginAttempt`·`recordFailedAttempt`·`clearLoginAttempts` lib 함수명 — 내부 표현, URL 컨벤션과 별개 ③ `/api/test/signin`(이미 signin 컨벤션) ④ scratch `e2e/_mobile-login.spec.ts`(prefix `_` 시각검수 전용)
+  - **Supabase OAuth 대시보드 수동 작업 필요**: Site URL·Redirect URLs 에 `/login` 명시 등록돼 있으면 `/signin` 으로 교체. 현재 코드는 `/auth/callback` 으로 redirect 라 영향 없을 가능성 큼 (선검증 후 작업)
+  - **e2e**: `waitForURL('/login')`·`'/login'` 셀렉터 일괄 치환. `auth.spec.ts`·`navigation.spec.ts`·`merchant-rider.spec.ts`·`recipe-detail-ssr.spec.ts` 등
+  - 검증: lint 0 errors · build · vitest · 풀 e2e (fresh build, :3000 kill) 회귀 0
+- **a11y 라운드 완전 종결 (Phase A·B·C + CartAddInput)** — 완료 (2026-05-26, PR #173~#179 main 머지, prod 라이브 native key 검증)
+  - Header dropdown 5곳: ESC + aria-expanded/haspopup + focus trap + 화살표 키 nav
+  - 본격 modal 16곳: ESC + focus trap + role/aria-modal (CookieConsent 의도적 skip)
+  - 자동완성 5곳: WAI-ARIA combobox 패턴 일관 (SearchBar·Common/Autocomplete·IngredientAutocompleteV2·RecipeIngredientInput·CartAddInput)
+  - 4 hook (`useOutsideClick`·`useEscapeKey`·`useFocusTrap`·`useListKeyboardNav`). `useFocusTrap.autoRestorePreviousFocus` 옵션 (trigger 명시 어려운 경우)
+  - 잔여 백로그 (modal aria-labelledby 14곳·Footer landmark·BottomNav aria-current): 사용자 100명+ 또는 글로벌 출시 trigger 까지 미룸. 상세는 메모리 [[pattern-a11y-dropdown-modal]]·[[a11y-remaining-backlog]]
+  - 부수 사례 — `scaleQuantity` 분수 fix 시도 후 *DB numeric 타입* 발견하고 rollback. *task report 받으면 라이브 재현 *먼저** 워크플로 규칙 메모리 확립 ([[feedback-verify-task-report-live-first]])
+- **UX 백로그 5건 (URL sync·a11y·검색 fallback)** — 완료 (2026-05-26, PR #171 main 머지, prod 라이브 검증 완료)
+  - **#14 설정 탭 URL `?tab=` 동기**: handleTabClick·handleConfirmLeave 에서 `history.replaceState` 로 `?tab=X` 즉시 갱신. 공유·새로고침 시 활성 탭 유지 (이전엔 클릭해도 URL `?tab=profile` 그대로였음)
+  - **#6 /recipes 정렬 URL `?sort=` 동기**: 초기값 `?sort=` 우선 + 변경 시 `history.replaceState`. `latest` 는 default 라 query 제거 (cleaner URL). "이번 주 인기 → 전체 보기" 버튼도 sync
+  - **#13 회원가입 이메일 a11y**: invalid email 시 input `aria-invalid="true"` + `aria-describedby="signup-email-error"` / error div `role="alert"` + matching id. WCAG 준수
+  - **#10 재료 추가 모달 `role="dialog"` + `aria-modal` + `aria-labelledby`**: `AddIngredientModal` 컨테이너에 추가. 헤더 title 에 id 매칭
+  - **#11 SearchBar combobox/listbox/option ARIA**: input `role="combobox"` + `aria-expanded` + `aria-controls` + `aria-activedescendant` / suggestions wrapper `role="listbox"` + id / 각 option `role="option"` + id + `aria-selected`. (Common/Autocomplete 는 이미 패턴 완비 — SearchBar 만 누락 보강)
+  - **#7 검색 빈 결과 fallback CTA**: "검색 결과가 없습니다" 단일 텍스트 → 🔍 5xl + 보조 안내 + "전체 레시피 보기 →" amber CTA. 새 i18n 키 `noResultsHelp`·`browseAll` 8 locale 추가. dead-end UX 해소
+  - 검증: lint 0 errors · build · vitest 20 files 249 passed · prod 라이브 (URL sync 양방향·모달 role·검색 fallback·정렬 sync) 모두 직접 검증
+- **UX 개선 5건 — overlay first-click·신고·테마wrap·카테고리i18n·autosave** — 완료 (2026-05-26, PR #170 main 머지, prod 라이브 검증 완료)
+  - **#1 dropdown overlay first-click 소비 해소 — 가장 자주 마주치던 friction** (라이브 7곳+ 일관 발생): `<div className="fixed inset-0 z-40" onClick={onClose} />` 투명 overlay 패턴이 첫 클릭을 *소비* 해 다른 버튼으로 전파 안 됨 → 사용자가 "어 안 눌리네" 하고 두 번 클릭해야 다른 dropdown 열림
+    - **`lib/hooks/useOutsideClick.ts` 신설**: document-level mousedown/touchstart listener. `(isOpen, panelRef, onClose, triggerRef?)` 받아 panel/trigger 외부 클릭 시 close. 클릭 이벤트는 *그대로* 다음 element 에 도달 → 한 번 클릭에 dropdown 전환
+    - **5곳 마이그레이션**: NotificationPanel·ShoppingCartDropdown·UserDropdown(fromBottom+desktop 2 인스턴스)·Header More menu·LangSelector — 모두 overlay 제거 + panel/trigger ref 부착 + `useOutsideClick(isOpen, panelRef, onClose, triggerRef)` 호출
+    - **새 dropdown 작성 규칙**: `<div className="fixed inset-0" onClick={onClose} />` overlay 패턴 *금지* (재발 방지). 항상 `useOutsideClick` hook 사용 ([[feedback-no-overlay-pattern]])
+  - **#3 본인 콘텐츠 🚨 신고 버튼 숨김**: `RecipeBrowseView` 에 `isAuthor` prop 추가, `RecipeDetailClient` 에서 `currentUserId === recipe.author_id` 시 true 전달. 자기 자기 신고 UX 부자연스러움 해소
+  - **#9 프로필 메뉴 테마 박스 wrap**: "라이트 모드"·"다크 모드"·"시스템 설정" 박스에 `whitespace-nowrap` 추가. 두 줄로 깨지던 시각 해소 (UserDropdown 2 인스턴스)
+  - **#5 카테고리 필터 영문 라벨 한글화**: `AllRecipesClient`의 `${cuisineFilter}` (e.g., "korean") 직접 출력 → `CUISINE_TYPES.find()?.label` 매핑 (e.g., "한식"). `dish_type` 동일
+  - **#12 자동저장 "버리기" 후 빈 데이터 재저장 race**: `recipes/new` + `tip/new` `useAutosave` enabled 조건에 `title.trim().length > 0` 추가. banner 표시 조건(`title?.trim()`)과 일관 + clearAutosave 후 빈 폼이 1.5초 후 재저장되던 race 차단
+  - 검증: lint 0 errors · build · vitest 249 passed · prod 라이브 (ESC + 첫 클릭·dropdown 전환·카테고리 한글·테마 nowrap·재료모달 dialog) 모두 직접 재현 확인
+- **React #418 hydration mismatch 해소 — SSR-stable 날짜 계산** — 완료 (2026-05-26, PR #168 main 머지, prod 라이브 검증 완료)
+  - **증상**: 로그인 상태 `/ko` 첫 진입 시 콘솔 React #418 EXCEPTION 1건. 다른 페이지·비로그인은 0건
+  - **원인**: `app/[lang]/_home/helpers.ts` 의 `daysUntilExpiry`·`daysSincePurchase` 가 `today.setHours(0,0,0,0)` (local midnight) 와 `new Date('2026-05-23')` (ISO date-only 는 UTC midnight 파싱) 를 섞어 diff 계산. 서버(UTC) 와 브라우저(KST) 의 timezone 차이로 ±1 일 어긋남 → `freshState` labelN 어긋남 → chip 라벨 텍스트 mismatch → React #418
+  - **SSR 트리거 경로**: `page.tsx` (Server Component) 가 로그인 시 `initialItems` prefetch 해 `HomeClient` → `FridgeShelves` → `freshState(repr)` 호출 → SSR/CSR 다른 결과 → hydration mismatch
+  - **수정**: `dateOnlyToUTC`·`todayUTC` 헬퍼 추가, 양쪽 모두 UTC 일관 산수. `addDaysISO` 도 동일 패턴. integer ms 차분 → 부동소수 race 0. KST 자정 근처 사용자가 'today' 를 UTC 기준으로 보는 미세한 ±1 trade-off 는 SSR 일관성과 교환
+  - 검증: 위험 윈도우 시뮬레이션(KST 06:00 = UTC 전날 21:00) 에서 OLD 어긋남(server 2 vs browser 3) / NEW 일치(2/2). prod 로그인 홈 새로고침 + 다른 페이지 왕복 후 콘솔 #418 **0건** 직접 재현 확인
+  - 새 코드 작성 규칙: `Date.UTC()` + `getUTCFullYear/Month/Date()` 사용. `setHours(0,0,0,0)` + `new Date('YYYY-MM-DD')` 혼용 *금지* (timezone 의존 → SSR mismatch 위험)
+- **Settings 잔존 audit 후속 — i18n 폴백 0건·공용 Toggle 추출·프라이버시 즉시저장 통일** — 완료 (2026-05-25, develop 푸시)
+  - **i18n 잔존 폴백 1건 제거**: `TwoFactorTab.tsx:216` `t.common?.loading || '...'` → `t.common.loading` (직접 접근). 옵셔널 체이닝+폴백 패턴 *완전 0건* 도달. CLAUDE.md i18n 규칙("키 이미 있으면 폴백 두지 마라, 8 locale 누락 자동검증 시각 차단") 완전 준수
+  - **공용 `Toggle` 컴포넌트 추출** (`components/UI/Toggle.tsx` 신설): NotificationsTab 인라인 `<Toggle>`(18줄)과 PreferencesTab 인라인 button 토글 2개(36줄) 마크업 중복 제거 → 단일 진실 소스. props: `checked·onChange·label·description?·icon?·disabled?`. **row 전체 클릭 영역**(button + `role="switch"` + `aria-checked` + `aria-label`) — 알림 탭 박스만-클릭 → row 전체 클릭으로 hit target 개선. `translate-x-5/0` Tailwind 클래스 ([[feedback-tailwind-4-css-cascade-trap]] 안전 패턴 단일화)
+  - **PreferencesTab 프라이버시 토글 = 즉시 저장**: 이전엔 토글 변경 후 하단 [선호도 저장] 버튼 눌러야 DB 반영 → 헤더 종 푸시 토글·NotificationsTab 유통기한 토글과 *비일관*. `savePrivacyToggle(field, value)` 신설(profiles 단일 컬럼 PATCH, 옵티미스틱 + 실패 시 롤백). originals 동시 갱신으로 dirty 가드 차단(이미 DB 반영 = 변경분 아님). `privacySaving` state로 중복 클릭 락. **명시 폼(관심사/식단/알러지)은 batched [선호도 저장] 버튼 유지** — 토글=즉시·폼=버튼 정책 앱 전체 일관 확립
+  - **savePreferences 정리**: 함수에서 privacy 저장 블록·originalShow* 동기화 제거(이제 토글 핸들러가 단독 처리). 단일 진실 소스
+  - 검증: lint 0 errors · build 성공
+- **Settings 영역 대청소 + GDPR 데이터 export + 네이티브 confirm/alert 완전 청소** — 완료 (2026-05-25, develop 푸시)
+  - **NotificationsTab 재작성 — push_notifications 단일 진실 소스**: comments/recipes 가짜 토글(localStorage-only) 제거 + 진짜 토글(`profiles.push_notifications`) + 기기 푸시 구독 UI(NotificationPanel 에서 이전). DB 즉시 저장(옵티미스틱 + 롤백). 가입 시 user에게 거짓 약속 차단
+  - **NotificationPanel 다이어트**: ⚙️ 설정 패널 전체 제거 → 알림 *목록 보기·읽음 처리* 전담. 푸터에 "알림 설정 →" 링크로 책임 분리 (헤더=즉시 행동, 설정=환경 설정). `notifSettingsOpen`·`subscribeToPush`·`pushPermission` 등 ~70줄 제거
+  - **설정 페이지 `?tab=X` 딥링크 지원**: `useSearchParams` mount 시 1회 — 헤더 "알림 설정 →" 직접 진입
+  - **완전 GDPR/PIPA 데이터 export** (`/api/users/export` 신설): 본인 식별 컬럼 있는 30+ 테이블 전수 인벤토리 (`information_schema.columns` 조회) + service-role client(RLS 우회) + user.id 명시 필터 + 2-stage 병렬 조회(부모/자식 FK 분리). 응답 JSON 12개 카테고리 (profile/preferences/fridge/shopping/meal_plans/content/activity/social/notifications/support/delivery/ingredients_data/admin_contributions/analytics_events). 다른 사용자 데이터(나를 차단한 사람·내 레시피에 그들의 댓글) 의도적 제외. Right to Data Portability (Art. 20) 의무 완전 충족
+  - **선존 버그 발견·정리** — `recipes.deleted_at` 컬럼 부재: `20260209_add_admin_role.sql` 마이그레이션 미적용 (dev+prod). `.is('deleted_at', null)` fix가 오히려 PostgREST 에러 도입 — 필터 자체 제거 (soft-delete 시스템 미구현 명시)
+  - **prod recipes status 발견 → 의도 명시**: published 7 / private 1,459. 2026-05-20 일괄 비공개 *의도적*. CLAUDE.md 기재 갱신 (이전 기재 1,408 published와 정반대) — 미래 세션에서 "회귀!" 오판 차단 안내 추가
+  - **alert() → Toast 통일 10건**: AccountTab 4건(delete·export 실패) + admin/substitute-suggestions 6건. native 모달 0건
+  - **silent catch → toast.error 표면화 5건**: AccountTab fetchBlockedUsers/handleUnblock + TwoFactorTab fetchStatus + NotificationPanel fetchNotifications. NotificationPanel fetchUnreadCount(30초 폴링)은 의도적 silent 명시
+  - **i18n 폴백 일괄 제거 41건 + 신규 키 7종 8 locale**: AccountTab/PreferencesTab/TwoFactorTab 24건 + CookieConsent 14건 + StaticAnonymousFridge 3건. `auth.wrongPassword`·`expiryNotification`·`expiryNotificationDesc`·`pushDeviceTitle`·`pushGranted`·`pushSubscribeBtn`·`pushUnsubscribe`·`notificationSettingsLink`·`notifications.empty`·`notifications.markAllRead` 신설. `t.cookieConsent?.message || ...` 패턴은 `const labels = t.cookieConsent` alias 1줄로 압축 (14줄 → 1줄). 옵셔널 체이닝 동시 제거
+  - **ConfirmDialog 마이그레이션 13건** (CLAUDE.md "네이티브 다이얼로그 금지" 완전 준수):
+    - 배달·머천트 5건: CartClient·OrderDetailClient·RestaurantDetailClient·MenuManagerClient(2)
+    - admin 4건: admin/recipes(2 — 단일·bulk 통합)·admin/substitute-suggestions
+    - 사용자 영역 4건: profile([username]).page(2 — cooked·recipe 통합)·CommentItem·IngredientModerationPanel(3 — approve/reject/delete 통합)
+    - **통합 pending 패턴**: 한 다이얼로그 재사용·destructive·loading 표시. claude-in-chrome/Playwright dialog hang 위험 0
+  - **NotificationPanel 한글 5건 i18n**: 시간 포맷 3건(분/시간/일 전 — `t.notifications.{minutesAgo,hoursAgo,daysAgo}` 기존 키 reuse) + `empty`·`markAllRead` 신설 8 locale
+  - **접근성 5개 + 코드정리 2개**:
+    - 프라이버시 토글 a11y: `role="switch"`·`aria-checked`·`aria-label` + inline left style → Tailwind translate-x (cascade trap 해소)
+    - 사용자명 한글 IME 가드: `e.nativeEvent.isComposing` 체크로 조합 중 filter 보류
+    - 탭 시멘틱: `role="tablist"`·`role="tab"`·`aria-selected`·`aria-controls`·`tabIndex`·`role="tabpanel"`
+    - 생년월일 max=오늘 (미래 날짜 차단)
+    - 아바타 `aria-label`·alt="" + 장식 요소 `aria-hidden`
+    - TwoFactorTab `userId` prop 제거 (dead prop·eslint-disable 동시 제거)
+    - ProfileTab dirty 계산 중복 정리: 24 prop → 17 prop (-29%), 부모(`isDirtyProfile`)가 단일 진실 소스
+  - **계정 탭 dirty 가드 의도적 skip**: 이메일/비밀번호 입력 폼은 *임시 입력값*이라 손실 작음 + 자식→부모 통로 추가 복잡도 vs 가치 불균형. 명시적 결정 (사용자 승인)
+  - **lint warnings 14건 정리**: 죽은 변수 4(HomeClient·DispatchMonitor·DetailFields) + 죽은 `// eslint-disable-next-line no-alert` 5건 + i18n exhaustive-deps 3건 + `AUTOSAVE_MAX_AGE` 모듈 레벨 이동 2건. 0 warnings 도달
+  - **검증**: lint 0 errors · build 성공 · vitest 20 files **249 passed** · e2e 배달·머천트·풀플로우·지도 52 passed + profile·recipe-creation 34 passed (모두 fresh build, 0 failed 0 flaky)
+- **HomeClient `useFridgeItems` 추출 — god-file 분해 완전 마무리** — 완료 (2026-05-25, develop 푸시)
+  - 사용자 결정: "미래엔 더 복잡해진다" → 지금 분해 (지금 비용 < 미래 누적 비용). 양방향 의존성도 risk 감수하고 풀기
+  - **양방향 의존성 해소**: `useFridgeInteractions` 가 `pendingDeleteIdsRef` 를 *내부 생성* 했던 것 → HomeClient 가 ref 소유 + 두 hook 에 외부 주입. `useFridgeItems`(필터 사용) 와 `useFridgeInteractions`(populate) 가 같은 ref 공유. 식별성·동작 byte-identical
+  - **`useFridgeItems` 신설** (136줄) — items state + setItems + loading + fetchItems + 3 effects (localStorage demo 동기화·초기 load+filter·fridge-updated event listener+debounce). race 가드 보존 (cancelled 플래그·300ms debounce·pendingDeleteIdsRef 필터)
+  - **HomeClient 750 → 685줄** (-65 net, hook 외부화 -120줄 + import boilerplate). 분해 임계 700 *아래* 진입
+  - **안전망 audit + 변경 전후 동일 통과수 확인**: 11개 사용처 전수 mapped (`useFridgeInteractions` 내부 5·HomeClient 6) + 기존 e2e 강커버 (`fridge-chip-interactions`·`logged-in-home`·`cart-decomposition`·`cart-grouping`·`ingredient-auto-merge`) → 새 안전망 갭 없음. baseline 414 passed → 변경 후 동일 414 passed (fresh build 5.4분, 0 failed 0 flaky)
+  - **god-file phase 2 완전 종결**: 6 god-file 모두 분해 완료. HomeClient 도 추출 가능한 도메인 모두 분리됨 (chip 인터랙션·items state·추천·온보딩·표현 컴포넌트 5개·순수함수). 남은 685줄은 진짜 orchestration (props 합성·모달 conditional render·큰 JSX)
+- **HomeClient 추가 분해 + god-file 규칙 갱신** — 완료 (2026-05-25, develop 푸시)
+  - Phase 2 god-file 분해 1차 완료 후 *HomeClient 813줄에 진짜 독립 도메인 3개가 섞여 있다*는 audit 결과 → 도메인별 hook 추출. *상태 부모 불변* 규칙은 race·async 가 교차할 때만 적용으로 갱신
+  - **`useFridgeRecommendations` 신설** (111줄, race 가드 보존) — 매칭 카운트 (전체 items) + 만료 임박 추천 (시트 'expiring' 모드) 두 fetch state + 2 effects. 두 도메인 모두 `cancelled` 플래그·debounce 로 stale 응답 차단. items 기준 자동 reactivity
+  - **`useOnboardingState` 신설** (83줄) — banner/modal state + 임시 username 패턴 매칭 + needsOnboarding 판정 + localStorage dismiss effect. `useAuth.user` shape 그대로 수용(`{id, email}` minimal type)
+  - **`useFridgeItems` 추출은 스킵** — `useFridgeInteractions` 가 `pendingDeleteIdsRef` 내부 생성 + items/setItems 입력으로 받는 양방향 의존성. 두 hook API 둘 다 변경 필요 → risk vs reward 낮음. items state 는 부모(HomeClient) 유지
+  - **HomeClient 813 → 750줄 (-41 net, hook 외부화 효과 -120줄 + import boilerplate)**. 추출된 hook 2개는 단위 테스트 가능 + 새 추천/온보딩 기능 추가 시 hook 안에서만 작업
+  - **CLAUDE.md "1. god-file 예방" 규칙 갱신** — *"상태·ref·race 가드·async 핸들러·subscribe·hook 은 부모가 소유 불변"* → *"진짜 독립 도메인(race·async 가 서로 안 만나는 도메인)이면 도메인별 hook 분해 적극 권장"* + *"race/async 가 여러 도메인 교차할 때만 부모 불변"*. 분해 ROI 우선
+  - 검증: lint 0 errors · build 성공 · e2e 백그라운드 fresh build
+- **앱 전체 i18n audit 마무리 — 분리 모달 마이그레이션 + CopyrightForm 의도 확인** — 완료 (2026-05-25, develop 푸시)
+  - **`RecipeReviewModal` 전체 i18n 마이그레이션** — 11 한글 string. 신규 키 13개 8 locale 추가 (`recipe.reviewModalTitleCreate`·`reviewModalTitleEdit`·`reviewRatingLabel`·`reviewRatingScoreSuffix`·`reviewLabel`·`reviewPlaceholder`·`reviewSubmitCreate`·`reviewSubmitEdit`·`reviewSaving`·`reviewSaveFailed`·`reviewSaveError`·`reviewLoginRequired`·`reviewLoginRequiredDesc`). 기존 키 reuse: `t.common.cancel`·`t.common.login`
+  - **`ContactModal` alt 1줄 fix** — `alt="첨부 스크린샷"` → `t.contact.screenshotLabel` (기존 키 reuse)
+  - **`CopyrightReportForm` 의도적 KR-only 확인** — 호스트 페이지 `/copyright` 자체가 100+ 줄 한국어 법무 문구(제1조~제5조). 한국 저작권법 + DMCA 명시 언급 — *Korean jurisdiction 법무 문서*. form만 i18n 하면 정책은 한국어인데 신고 form만 영어가 돼 사용자 혼란 가중 → **유지 결정**
+  - 검증: lint 0 errors · build 성공
+- **앱 전체 i18n 한글 하드코딩 정리 (recipe audit 후속, admin 제외)** — 완료 (2026-05-25, develop 푸시)
+  - 레시피 영역 audit 후 *recipe domain 외* 잔존 한글 ~30건 grep 발견 → user-facing 12건 fix
+  - **신규 키 8 locale**:
+    - `common.mainNavAria`·`logoHomeAria`·`profileMenuAria`·`notifications`·`notificationSettingsAria` (header·navigation aria-labels)
+    - `ingredient.nameKorPlaceholder`·`nameEnPlaceholder` (재료 추가 dialog)
+    - `recipe.memoPlaceholder` (저장 메모)
+  - **기존 키 reuse**:
+    - `t.common.close` → `ToastContainer`·`IngredientPickerModal`·`ExpiringIngredientsAlert` close 버튼
+    - `t.common.delete` → `CartItemList`·`FridgeShelf` delete aria-label
+    - `t.common.search` → `BottomNav` 검색 다이얼로그 aria
+    - `t.common.notifications` → `NotificationPanel` 종 아이콘
+    - `t.quickAdd.searchPlaceholder` → IngredientPickerModal search
+    - `t.tipForm.thumbnailLabel` → tip/new alt
+  - **추가 useI18n 통합** (4 파일): `ToastContainer`(loop var `t` → `i18n` 분리), `FridgeShelf`, `IngredientPickerModal`, `NotificationPanel`, `ExpiringIngredientsAlert`
+  - **분리 작업으로 남김** (전체 한글 모달, 부분 fix 시 일관성 깨짐):
+    - `RecipeReviewModal` (21줄 한글) — 평점·리뷰 모달 전체 i18n 마이그레이션 필요
+    - `ContactModal` (7줄) — 문의 모달
+    - `CopyrightReportForm` (11줄) — DMCA 법무 폼 (의도적 한국어 일 가능성, 결정 필요)
+  - **skip**: `ShareButton.tsx:145` 카카오 키 미설정 toast (dev-only) · `'기타'`·`'선택'` unit sentinels (내부 magic string, 표시는 i18n localized) · admin 페이지 (내부 도구)
+  - 검증: lint 0 errors · build 성공
+- **레시피 작성·수정 페이지 audit (팁 mid-priority 정리 후속)** — 완료 (2026-05-25, develop 푸시)
+  - **① IME 가드 누락 1곳**: `TagsField.tsx:45` 레시피 tag input `onKeyDown` Enter 핸들러에 IME 가드 없음 → 한글 조합 중 Enter 가로채서 fragmentation 가능. `composingRef` + `compositionstart/end` + `isComposing`/`keyCode 229` 가드 추가 (substitute chip·tip tag input 패턴 동일)
+  - **② i18n 한글 하드코딩 3건**:
+    - `AllRecipesClient.tsx:308, 382` — `aria-label="카테고리"`·`aria-label="이번 주 인기"` → `t.home.categoryTitle`·`t.home.sectionTrending` 재사용 (8 locale 추가 키 불필요, 기존 키 reuse)
+    - `RecipeIngredientInput.tsx:65` — default `placeholder = '재료 이름'` → 영문 `'Ingredient name'` (dead 코드지만 다국어 안전 폴백)
+    - skip: ShareButton 카카오 키 미설정 toast (개발용 에러, prod 미발생) · `'기타'`·`'선택'` unit sentinels (내부 magic string, 표시는 i18n localized — `quickAdd.unitLabels`)
+  - **③ 권한·인증 race**: image upload `!user` 처리 불일치 6곳 — submit 은 `router.push('/login')` 하는데 image upload 는 toast 만 띄우고 폼에 머묾 → 세션 만료 시 사용자가 무한 시도. **6곳 일관 패턴 적용** (toast + redirect)
+  - **⑤ 라벨 일관성**: ✅ PASS — `ingOptionalLabel`(form 토글)·`ingredientOptional`(표시) 모두 i18n 키 통해 "빼도 돼요" 통일
+  - **단계 reorder** 한계는 audit 범위 밖 (새 기능). 사용자 실수요 들어오면 별도 작업
+  - 검증: lint 0 errors · build 성공
+- **프로필·설정 탭 모바일 wrap 회귀 fix** — 완료 (2026-05-25, develop 푸시, PR #157)
+  - 증상: 모바일 좁은 폭에서 탭 button 안 텍스트가 *세로로 wrap*. 프로필(6탭) 더 심함, 설정(4탭) 도 발생 가능
+  - 이전 설정 페이지 패턴(`hidden sm:inline` 으로 모바일은 이모지만)을 ProfileTabs 에도 적용하려다 사용자 피드백상 부적합 — **시스템 이모지(📖·🎉·👅 등) 는 OS 별 렌더 다르고 브랜드 정체성 없어 인지 anchor 역할 못함**. 향후 낼름 *커스텀 아이콘 셋* (브랜드 SVG, 웜/테라코타/앰버 톤) 만들면 이모지 단독 노출 재검토
+  - **이번 fix — 라벨 *항상* 표시 + 좁은 화면 가로 스크롤**:
+    - 컨테이너: `overflow-x-auto scrollbar-hide`
+    - 버튼: `whitespace-nowrap` + `shrink-0` (텍스트 wrap·flex 압축 차단)
+    - 활성 탭 ref + `useEffect scrollIntoView({ block: 'nearest', inline: 'center' })` — URL `?tab=X` 직접 접근·탭 전환 시 활성 탭 자동 viewport 안 (발견성 보존)
+  - `ProfileTabs.tsx`(scrollIntoView 신규) + `settings/page.tsx`(`hidden sm:inline` 제거 + scrollIntoView)
+- **팁 mid-priority 정리 5건 묶음** — 완료 (2026-05-25, develop 푸시)
+  - **카테고리 i18n key-based 마이그레이션** — DB에 한글값 + legacy 영문(technique·ingredient·cooking_tip) 섞여 있어 UI에 raw 텍스트 노출되던 회귀 fix. **dev+prod DB UPDATE** (prod 11행, dev 1행) → locale-stable 영문 key (`prep`/`storage`/`cooking`/`tools`/`measuring`/`other`). `TIP_CATEGORY_ICONS`·`CATEGORIES` 영문 키 + `t.tipForm.categories[key]` 8 locale 키 rename. TipListClient·new·edit·detail·TipCard 모두 일관. `'전체'` sentinel → `'all'`
+  - **조회수 inflation fix** — `GET /api/tip/[id]` 가 매 refresh +1 누적되던 회귀. ① 쿠키 `tip_v_{id}` 1시간 TTL → 같은 세션 refresh skip ② 작성자 본인 view 영구 skip (자기 팁 조회수 부풀림 차단). path-scoped cookie 라 다른 팁 영향 0
+  - **비공개·임시저장 팁 권한 체크** — `GET /api/tip/[id]` 가 `is_public=false`/`is_draft=true` 팁을 누구나 GET 가능했음 (RLS 의존). defense-in-depth: 작성자 본인 외 GET 시 404 명시 차단
+  - **frontend `knowhow` → `tip` rename** — DB·API 는 `tip` 인데 frontend interface·변수·storage 파일명 (`knowhow-thumb-`·`knowhow-step-`)·`Knowhow` interface 등이 혼용. grep·디버깅 시 혼란. tip 상세 page (`knowhow` state → `tip`, `Knowhow` → `Tip`, `KnowhowStep` → `TipStep`) + 신규 업로드 파일명 prefix `tip-thumb-`/`tip-step-`. 기존 storage 파일은 prefix 그대로 보존 (URL 유효)
+  - **native `confirm()` → `ConfirmDialog`** — `components/Common/ConfirmDialog.tsx` 재사용 컴포넌트 신설 (`destructive`·`loading` prop, ESC=cancel·Enter=confirm focus, backdrop 클릭=cancel, aria-modal). tip 상세 페이지 삭제 confirm 적용. 디자인 일관성 + claude-in-chrome·Playwright 자동화 호환
+  - 검증: lint 0 errors · build · vitest **20 files 249 passed**
+- **레시피 작성·표시 정리: prep_time 제거 + 섹션 라벨 + 재료 카드 재구성 + substitute note 도입** — 완료 (2026-05-24, develop 푸시)
+  - **prep_time 폼 입력 제거**: 한식 prep/cook 경계 모호 + 데이터 품질 낮음(대부분 빈값/부정확) + 카드·검색에 노출 안 됨. new/edit 폼 input 제거 + state·autosave·remix 로드·submit payload 정리. **DB 컬럼·기존 데이터 보존**(SEO schema.org `recipe:prep_time` 그대로), KMP·API 영향 0. 표시 측 `prep||0 + cook||0` 합산은 이미 NULL safe. ProfileRecipeGrid `&&` AND 조건 버그 발견·수정 — 새 레시피(prep=null)는 시간 미표시되던 회귀 차단
+  - **섹션 라벨 정리** (8 locale): "재료 준비" → **"재료"** (ko/ja/zh — 영어권은 이미 짧음), "추가 정보" → **"식단·영양"** (8 locale 전부). "추가 정보"가 vague → 작성자가 *스킵해도 되나?* 망설이고 안 채움. 안에 든 게 식단·영양·태그라 명시적이 더 좋음. 1·2·3·4 번호는 모바일 진행감 + amber 배지 시각 chunk 역할 유지
+  - **`unit '선택'` sentinel DB 누수 fix**: `edit/page.tsx:590` submit 필터 누락 (new 는 이미 필터). 화면에 `"선택"` 글자 그대로 노출되던 회귀. 표시 코드 4곳 방어 처리(`RecipeBrowseView`·`CookIngredientsSheet`·`cook/page.tsx`·`RecipeJsonLd`) + **DB cleanup** dev 255행 / **prod 4,526행** → `UPDATE recipe_ingredients SET unit=NULL WHERE unit='선택'`. 사용자 직접 발견 (스크린샷)
+  - **재료 카드 레이아웃 재구성** (`RecipeBrowseView`):
+    - amber `(선택)` chip → **회색 작은 `· 없어도 OK` 텍스트** 다운그레이드 (`text-text-secondary font-medium`). i18n `ingredientOptional` 값 `'선택'` → `'없어도 OK'`. 거슬림 해소 + 신호 유지 (재료명 색은 이미 `text-secondary`로 옅음)
+    - "또는 X" **별도 줄 → 재료명 옆 inline chip** 통합. 행동 가능 정보(substitute)가 prominent 자리. 사용자가 보유한 substitute는 chip 끝 `✓` 마커. 기존 별도 `subVia` chip + `recipeSubsList` 별도 줄 둘 다 한 chip 으로 통합
+    - **substitute 있는 optional 재료**: chip 이 prominent 자리, `· 없어도 OK` 는 양 줄 끝 부속. **substitute 없는 optional 재료**: 그 자리에 회색 `· 없어도 OK`. 두 컨텍스트 분리로 시각 빽빽함 해소
+  - **substitute 타입 `string[]` → `{name, note?}[]` (backward compat)** — *대체 수량* 입력 가능
+    - **사용자 제기 갭**: 코인 육수 1알 ↔ 멸치 다시다 1큰술 같이 대체 *수량/단위가 다른* 케이스 표현 불가
+    - **데이터 모델**: `lib/recipes/substituteChips.ts` 에 `SubstituteEntry = { name; note? }` + `normalizeSubstitutes` (DB jsonb 의 legacy string[] / 신규 객체[] 어느 형식이든 정규화). 저장 boundary 만 객체[]로, 읽기 boundary 에서 normalize → DB 마이그레이션 불필요. 빈 배열은 NULL 로 저장(jsonb 행 깔끔)
+    - **매칭 로직** (`computeRecipeMatch`·`isSubstituteFor`·`fridgeMatch`): legacy string[] / 신규 객체[] 양형식 수용, 매칭은 `.name` 만 본다(note 무시). 추천·전체·검색 페이지 매칭 단일 출처 보존
+    - **`SubstituteChipInput` + 양 affordance + inline note editor**:
+      - 빈 note chip: `[멸치 다시다  + 양  ✕]` — `+ 양` 회색 옅은 글씨(`text-warning/50`), 클릭 affordance
+      - chip 본문 클릭(✕ 영역 제외) → inline note input 펼침, 현재 note prefill·select
+      - Enter 또는 blur → `updateSubstituteNote` 저장 + 압축 표시 `[멸치 다시다 · 1큰술  ✕]`
+      - Escape → 저장 안 하고 닫음
+      - IME 가드(한글/일본어/중국어 조합 중 Enter·콤마 무시) — note input 도 동일 패턴 ([[feedback-verify-ime-in-browser]])
+      - 8 locale: `ingSubstituteNoteHint` (`+ 양`/`+ qty`/`+ 量`/`+ Menge`/...), `ingSubstituteNotePlaceholder` (`예: 1큰술`/`e.g. 1 tbsp`/...)
+    - **표시**: note 있으면 `🔄 또는 멸치 다시다 · 1큰술`, 없으면 `🔄 또는 멸치 다시다`. 대체재 여러 개도 `join(', ')` 그대로 작동
+  - **vitest 23 신규**: `addSubstituteChip`·`removeSubstituteChipAt`·`updateSubstituteNote`·`normalizeSubstitutes` (legacy/신규/혼합/말정형 입력·dedup·trim·note 갱신·삭제·인덱스 경계)
+  - **API**: POST/PUT `/api/recipes` `normalizeSubstitutesForStorage` boundary 함수 — 양형식 입력 받아 정규화된 객체[]로 저장. 빈 배열 NULL
+  - **표시 측 (선택) 텍스트 단계 본문 영향 0**: step body `OptionalIngredientBadge` 는 별도 i18n 키(`optionalBadgeAria`·`optionalBadgeTooltip`·`optionalBadgeOr`) 사용 — 단계 본문 amber 배지 유지(별도 신호 없으면 모름)
+  - **e2e 갱신**: `recipe-optional-substitutes.spec.ts:76` legacy string[] 입력 → DB 정규화 객체[] 출력 검증 (backward compat 확정)
+  - 검증: lint 0 errors · build · vitest **20 files 249 passed** · e2e recipe-creation/edit/optional-substitutes **28/28 통과**
+- **앱 전반 input 100+개 `InputBoxWrapper` 통일 — 13 PR 완료** — 완료 (2026-05-24, develop 푸시, PR #134~146 main 머지)
+  - **배경**: 2026-05-24 초기 PR #134에서 레시피 폼만 InputBoxWrapper 적용 후 잔여 영역 단계적 통일 — 회원가입부터 사장님 onboarding 까지 *모든 input* amber outline + focus-within:ring 일관성. SearchBar 패턴(`overflow-hidden + [&>*]:!border-0`) 단일 출처 보장
+  - **PR 분해 — 영역별 13 PR**:
+    - **#134**: `InputBoxWrapper` 신설 + 레시피 new/edit IngredientsSection·StepsSection·SubstituteChipInput
+    - **#135-137**: 레시피 new BasicInfo·Nutrition·Tags + edit BasicInfo·Nutrition·자동완성 ingredient_id FK 복원
+    - **#138-139 — Group 1 (인증 7 파일)**: login·signup·set-password·auth/terms-agreement·auth/duplicate-email·auth/reset-password·이메일/비밀번호 찾기 모달. 비밀번호 show/hide 버튼은 wrapper *바깥* sibling(absolute, overflow-hidden 잘림 회피)
+    - **#140 — Group 2 (댓글·리뷰·팁 4 파일)**: RecipeComments·RecipeRatings·tip/new·tip/[id]/edit
+    - **#141 — Group 3 (Settings·프로필 4 파일)**: SettingsModal·ProfileEditModal·ChangePasswordModal·DeleteAccountConfirmModal
+    - **#142-143 — Group 4 (모달·헬퍼 3 파일)**: ContactModal·CopyrightModal(DMCA 신고)·재료 상세 모달
+    - **#144-146 — Group 5 (admin·delivery·merchant 11 파일)**: admin recipes/users·delivery checkout·merchant restaurant/menu/location/onboarding (22 input)
+  - **wrap 패턴 (단일 출처)**: `<InputBoxWrapper className="!bg-background-secondary !rounded-lg !px-3 !py-2"><input className={INPUT_INNER_COMFORTABLE_CLASS} style={INPUT_INNER_STYLE} /></InputBoxWrapper>`. `!important` Tailwind 4 override 로 cascade 차단. 두 variant — `compact`(default) vs `comfortable`(prominent 폼)
+  - **의도적 미적용**: ① `RecipeIngredientInput`·`Autocomplete` — 자체 SearchBar 패턴 + dropdown 동반 *기능적 prominent* 디자인 의도 ② `DetailFields` stepper — 커스텀 디자인 의도 ③ Checkbox·radio — 별도 UI 패턴 ④ NotificationsTab — checkbox only ⑤ `IngredientPickerInline` — 0 usages
+  - **e2e 회귀 0**: PR별로 영향 영역 spec 회귀 — recipe-creation/edit/optional-substitutes (28) · auth (login·signup·auth-flow) · tip-creation · settings · contact · delivery (delivery·delivery-map·delivery-full-flow) · merchant-rider (16) 전부 통과. data-testid 는 inner input 에 보존
+  - **교훈** ([[feedback-tailwind-4-css-cascade-trap]]): Tailwind 4 의 동일 className 가 *파일 위치·CSS 순서에 따라* 다르게 cascade. 패턴 복붙보다 *공통 컴포넌트 추출* — 단일 출처 유지가 영구 해결. SearchBar 같은 핵심 utility 조합은 *컴포넌트화* 필수
+- **레시피 폼 input 통일 — `InputBoxWrapper` 공통 컴포넌트** — 완료 (2026-05-24, develop 푸시)
+  - **사용자 요청**: 카드 안 메모·수량·단위 input들이 SubstituteChipInput와 시각이 달라 일관성 없음. SearchBar 패턴으로 통일
+  - **시도1·2·3·4 실패의 진단**: 같은 className 복붙해도 wrapper마다 `focus-within:ring-color` 갱신 결과 *다름*. DOM 검사로 *CSS variable 은 `#f96`로 갱신되지만 `box-shadow rule 자체*가 재평가 안 되는 wrapper 발견. 원인: Tailwind 4 의 JIT CSS 가 wrapper 마다 *다른 cascade order* 로 생성. className 동등성으론 부족
+  - **근본 해결 — `components/UI/InputBoxWrapper.tsx` 단일 진실 소스 신설**: SubstituteChipInput 와 *완전 동일한* className·style 을 한 컴포넌트에 고정. 모든 호출처가 이 wrapper 사용. cascade order 차이 차단
+  - **API**: `<InputBoxWrapper className="flex-1 ..." onClick={...}>{children}</InputBoxWrapper>` + 자식용 `INPUT_INNER_CLASS`·`INPUT_INNER_STYLE` 상수 export. 기존 호출은 `<input>` `<select>` `<textarea>` 를 wrapper 로 감싸기만 하면 됨
+  - **적용 범위**: new/edit `IngredientsSection` (재료명·수량·단위·메모) + new/edit `StepsSection` (단계제목·instruction·tip) + `SubstituteChipInput` refactor (자체 wrapper 제거 후 InputBoxWrapper 사용)
+  - **자동완성 input (`RecipeIngredientInput` → `Autocomplete`)은 의도적 미적용**: 이미 SearchBar 패턴 자체 사용 + autocomplete dropdown 동반의 *기능적 prominent* 디자인 의도. 통일하려면 prop chain 길어지고 다른 사용처(검색·홈·모달 등) 영향
+  - **e2e 회귀 0**: recipe-creation·recipe-edit·recipe-optional-substitutes 28/28 통과. vitest 235 통과
+  - **교훈 ([[feedback-tailwind-4-css-cascade-trap]])**: Tailwind 4 의 동일 className 가 *위치(파일/순서)에 따라* 다르게 cascade 됨. 패턴 복붙보다 *공통 컴포넌트로 추출*해서 단일 출처 만들기. SearchBar 패턴 같은 핵심 utility 조합은 *컴포넌트화*가 안전
+  - 검증: lint 0 errors · build · vitest 20 files **235 passed** · e2e 28/28 · claude-in-chrome 시각 캡쳐 (메모·수량·단위·instruction·tip 모두 focus 시 amber outline 단일 line)
+- **chip input SearchBar 패턴 적용 + 매칭 표시 한 줄 통합** — 완료 (2026-05-24, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 PR #127 후 2가지 잔존
+    - ① **chip input 박스 이중 여전** — `border` (1px) 로 바꿨는데도 박스 두 줄로 보임. 사용자 힌트: "예전에 홈페이지 검색바 만들 때도 비슷한 문제 있었음. 검색바 스타일 참고해봐"
+    - ② **매칭 표시 두 줄 awkward** — 재료 탭에 `밥` / 다음 줄에 `🔄 대체 가능 ✓ 쌀` 두 줄로 표시. 사용자 제안: `밥` 옆에 `✓쌀로 대체 가능` 한 줄 통합
+  - **fix① SearchBar 패턴 차용**: 진단 = **user-agent default input border/outline 이 다크모드에서 visible**. Tailwind `outline-none` 만으론 부족. SearchBar 가 이미 입증한 패턴: ① container `overflow-hidden` ② 자식 모두 `[&>*]:!border-0 !border-l-0 !border-r-0` Tailwind important ③ container `style={{ border: 'none' }}` inline ④ input `style={{ border: 'none', outline: 'none' }}` inline + class `!outline-none !border-0 !border-none`. claude-in-chrome zoom 검증 — amber outline **단일 line** 만 보임
+  - **fix② 매칭 라벨 한 줄**: `RecipeBrowseView` 재료 탭 substitute 표시를 `🔄 대체 가능 / ✓ 쌀` 두 line → `✓ 쌀 · 대체 가능` 단일 inline pill 로 통합. 정보 동일 + 시각 정렬·여백 절약. 기존 `t.recipe.fridgeModalSubstitute` ("대체 가능") 키 재사용 → 새 i18n 불필요. 8 locale 자동 적용
+  - **교훈 ([[feedback-search-bar-input-pattern]])**: dark theme 에서 native `<input>` border/outline 이 visible 잔존. Tailwind class 만으론 강제 못함 — `overflow-hidden` + `[&>*]:!border-0` + inline `style={{ border:'none', outline:'none' }}` 세 가지 동시 필요. *이미 SearchBar 에서 입증된 패턴*이 있으면 그것부터 참고
+  - 검증: lint 0 errors · build · claude-in-chrome 526px 시각 캡쳐 (chip input focus 시 amber outline 단일 · "밥" 카드의 `✓ 쌀 · 대체 가능` 단일 line)
+- **단계 본문 (선택) 배지 — 색상·정책·tooltip 개편 + chip input 박스 진짜 fix + SW v12** — 완료 (2026-05-24, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 PR #125·#126 후 4가지 회귀
+    - ① **재료명 amber 색상 혼란** — 본문 안 청양고추가 amber 텍스트 → 클릭 가능 링크처럼 보임. "뭔가 특별한 거 같기도 하고 혼란스러움"
+    - ② **첫 멘션만 배지 정책 fragile** — Step1에만 `(선택)` 배지, Step2는 색만. "단계 1 먼저 봤을 것" 가정이 fragile — 스크롤 건너뛰면 Step2부터 보는 사용자 정보 누락
+    - ③ **(선택) 의미 모호** — 사용자가 hover/tap 시도하지만 안내 없음. "이게 뭐야" 답답함
+    - ④ **chip input 박스 이중 잔존** — 이전 fix(border-2)가 *DOM 단일 border* 였지만 시각적으로 두 line. 사용자 large screenshot 으로 확실히 박스 두 개
+  - **fix① 재료명 본문색 통합**: 청양고추 amber 색 제거. 본문 흐름에 자연스럽게 통합. `(선택)` 배지만 amber 시각 강조. 클릭 가능 오해 해소
+  - **fix② 모든 멘션에 배지**: `tokenizeStepText` 의 `isFirstMention` 신호 UI 에서 안 씀(함수 자체는 보존). 각 멘션마다 일관된 `(선택)` 표시 — 어느 단계부터 봐도 정보 누락 없음
+  - **fix③ `OptionalIngredientBadge.tsx` 신설**: hover(데스크톱 mouseenter/leave) + tap(모바일 click toggle) → amber 풍선 tooltip. 메시지 "없어도 만들 수 있어요" + substitutes 있으면 "또는: 페페론치노, 풋고추" 두 번째 줄. ⓘ 아이콘으로 "탭 가능" 시각 힌트. outside mousedown 으로 close. aria-expanded·aria-label 접근성. i18n 8 locale: `optionalBadgeTooltip`·`optionalBadgeOr`·`optionalBadgeAria`. **재료 카드의 substitutes 정보가 단계 본문에서도 한 번에 보임** — 작성자 입력이 두 곳에 자동 노출
+  - **fix④ chip input 박스 진짜 단일 — border-2 → border**: claude-in-chrome zoom 으로 정밀 진단. DOM 검사: `border: 2px solid amber` 단일 line 이지만 폭 2px + small rounded 에서 *box-in-box 시각 효과* 유발. `border-2` → `border` (1px) 로 줄여 단일 line 확실히 보장. 사용자 zoom 캡쳐로 검증 완료
+  - **SW CACHE_VERSION v11 → v12**: naelum.app 사용자가 옛 JS 번들 캐시 잡혀 fix 안 보일 위험. SW 버전 올려 강제 갱신
+  - 검증: lint 0 errors · build · vitest **20 files 234 passed** (회귀 0) · claude-in-chrome 526px 시각 캡쳐 (박스 단일·(선택) 배지·tooltip 클릭 후 substitutes 표시)
+  - **교훈 ([[feedback-css-visual-vs-dom-truth]])**: CSS computed style 이 "single border 2px" 라도 *시각적으론 두 줄로 인식* 될 수 있음. zoom 캡쳐로 픽셀 단위 확인 필요. DOM 진단만 믿지 말 것
+- **raw→processed 단방향 substitute + chip input 박스 이중 fix** — 완료 (2026-05-24, develop 푸시)
+  - **문제 1 (사용자 직접 질문)**: 쌀과 밥이 동의어 매칭이 안 됨. 사용자 직관: "쌀이 밥 되려면 시간만 필요한 거지 결국 같은 것"
+  - **분석**: 양방향 동의어로 묶으면 *역방향 거짓 매칭* — 밥만 보유한 사용자가 "쌀 1컵" 필요한 죽·식혜 레시피를 "보유"로 표시. 정답은 **단방향**: 쌀→밥 OK / 밥→쌀 X
+  - **신규 매핑** `INGREDIENT_PREPARABLE_TO` (lib/recommendations/match.ts): 보수적으로 5개만 — 쌀→밥류, 우유→요거트류, 토마토→소스·페이스트·주스, 사과→주스·즙, 오렌지→주스. 추가 시 신중 — 역방향이 *완전히 불가능*한 것만 (사용자 결정)
+  - **`isSubstituteFor` 단방향 lookup**: 기존 양방향 `INGREDIENT_SUBSTITUTES` 는 그대로(액젓끼리·간장끼리 등 서로 대체). 새로 `INGREDIENT_PREPARABLE_TO[userIng]` 한 방향만 추가 검사. recipeIng→userIng lookup 안 함
+  - **UI 효과**: 쌀 보유 + 레시피 "밥 2공기" → 카드에 🔄 amber (대체 가능 — 가공 필요). 밥 보유 + 레시피 "쌀 1컵" → 매칭 안 됨 (정확)
+  - **의도적으로 뺀 것**: 육류 부위(닭고기→가슴살 등) — 사용자가 보통 구체 부위로 적어 일반명 보유 케이스 드묾, 추가 시 오매칭 위험. 잼·복잡 가공 — 사용자가 잘 안 만듦. 운영하면서 *부족 매칭* 패턴 발견되면 1줄씩 추가
+  - **문제 2 (사용자 직접 발견)**: chip input focus 시 "네모 박스 안에 또 네모 박스" — 박스 이중. 이전 fix(`f2eb02d`) 가 카드 amber 강조만 제거하고 chip input *자체*의 outline 이중은 그대로였음
+  - **원인**: Tailwind 4 `ring-1` (base white/5) + `focus-within:ring-2` (amber) 가 *두 layer 로 둘 다 그려짐*. Tailwind 4 에서 ring 동작 변경
+  - **fix**: `ring-*` 클래스 전부 제거 → `border-2 border-white/5 focus-within:border-accent-warm transition-colors`. width 항상 동일(2px) + 색만 평소 회색 → focus 시 amber. **단일 layer 보장**
+  - **vitest**: match.test.ts 에 단방향 케이스 5+ 추가 (쌀→밥 / 밥→쌀 false / 우유→요거트 / 토마토 → 3종 / 사과·오렌지 → 주스 / isIngredientMatch 통합 / isSameIngredient 가공관계 false). 47/47 passed
+  - 검증: lint 0 errors · build · vitest 20 files **234 passed** (match 5 케이스 신규) · claude-in-chrome 시각 캡쳐 (focus 시 amber outline *한 줄만*, 박스 이중 해소)
+- **조리 단계 본문 — `is_optional` 재료 자동 highlight** — 완료 (2026-05-24, develop 푸시)
+  - **문제**: 작성자가 재료 카드에서 "없어도 OK" 토글해도 *조리 단계 본문*엔 그 정보가 없음 → 따라하는 사람이 "청양고추를 더하시려면..." 같은 문장을 봐도 "선택"인지 모름. 재료 탭과 단계 탭을 오가며 머리로 cross-reference 필요. 작성자가 본문에 "(선택)" 매번 적게 만들면 빠뜨리기 쉽고 본문도 지저분
+  - **자동 매칭·렌더**: `is_optional=true` 재료가 단계 본문에 등장하면 시스템이 자동으로 amber 색 + `(선택)` 배지 표시. 작성자는 토글 한 번만, 따라하는 사용자는 본문 읽는 동안 한눈에
+  - **순수 함수 분리** (`lib/recipes/highlightOptionalIngredients.ts`): `tokenizeStepText(text, optionalIngredients, alreadyMentioned)` → `HighlightToken[]`. text 토큰 + optional 토큰(matchedText·ingredientName·isFirstMention·substitutes) 배열. **첫 멘션만 (선택) 배지**, 이후 멘션은 amber 색만. alreadyMentioned Set 을 호출자가 단계 간 공유 (step1 "청양고추(선택)" → step2 "청양고추")
+  - **매칭 정책**:
+    - `INGREDIENT_ALIASES` 동의어 모두 후보 (대파 optional → 본문 "파" 도 매칭)
+    - 길이 내림차순 — 긴 매칭 우선 ("대파"·"파" 둘 다 후보 시 "대파" 우선)
+    - Word boundary 차단: 매칭 직전 한글 또는 매칭 직후 한글이 조사 아니면 skip → "고추" optional + 본문 "고추장" *매칭 안 됨* (false positive 차단)
+    - 한국어 조사 set: `은/는/이/가/을/를/에/도/만/와/과/의/로` + `으로/에서/에는/까지` 등 1~3글자
+  - **`RecipeBrowseView` 적용**: `optionalIngredients = recipe.ingredients.filter(i => i.is_optional)` 한 번 계산. 조리순서 패널 `sortedSteps.map()` 을 IIFE 로 감싸 `alreadyMentioned = new Set()` 단계 간 공유. `step.instruction` 렌더를 `tokenizeStepText` 결과 매핑으로 교체 — text 는 plain span, optional 은 `text-warning font-medium` + `isFirstMention` 시 `(t.recipe.ingredientOptional)` amber 배지
+  - **시각 검증** (claude-in-chrome): 청양고추 `is_optional=true` + substitutes `['페페론치노','풋고추']` 시드. Step 1 "...청양고추(선택)를 더하시려면..." amber + 배지 ✓ / Step 2 "...청양고추도 함께 볶아주세요" amber 색만 (배지 없음) ✓ / "양배추·대파·마늘" highlight 안 됨 ✓
+  - **부가 확인**: `INGREDIENT_ALIASES` 검토 중 사용자 발견 — 양파와 파는 *동의어 아님* (제가 임시 예시로 잘못 적었던 매핑). 실제: `'파':['대파']`, `'대파':['파']`, `'양파':['어니언']` 별개. 정확함
+  - 검증: lint 0 errors · build · vitest **20 files 228 passed** (highlightOptionalIngredients 19 신규) · claude-in-chrome 시각 캡쳐 (모바일 526px)
+- **재료 작성 폼 fix — 체크박스 시각 피드백 + chip 박스 이중 해소** — 완료 (2026-05-23, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 fix `b789fe9` 후 2가지 시각 회귀
+    - ① **체크박스 클릭 후 시각 변화 부재** — 다크 모드 native checkbox 가 unchecked/checked 모두 거의 안 보임. 사용자가 클릭해도 토글됐는지 알 수 없음 (실제 state 는 업데이트됨 — 카드 amber 강조로 간접 확인 가능했으나 본인은 못 알아챔)
+    - ② **chip input focus 시 박스 이중** — `is_optional=true` 카드는 `border-warning/30 bg-warning/[0.04]` amber 강조 + chip input focus 시 `focus-within:ring-2 ring-accent-warm` amber ring → amber-on-amber 두 겹으로 보임 (시각 노이즈)
+  - **fix① native checkbox → 커스텀 토글 button**: `<input type=checkbox>` 제거하고 `<button type=button>` + `aria-pressed` + SVG check mark. ON 상태: `border-warning bg-warning` 풀 fill + 흰 체크 → 한눈에 보임. OFF 상태: `border-white/40 bg-transparent` 빈 박스. button onClick 으로 `!is_optional` 토글, 라벨도 amber 로 함께 전환
+  - **fix② 카드 amber 강조 제거**: `is_optional` 카드의 `border-warning/30 bg-warning/[0.04]` 삭제 → 모든 카드 일관 `border-white/5 bg-white/[0.02]`. 토글 button 자체가 is_optional 의 *유일한* 시각 신호로 충분 (row1 항상 보임). chip input ring amber 와 겹치는 시각 노이즈 자연 해소
+  - **edit 페이지 동일 패턴 적용**
+  - 검증: lint 0 errors · build · claude-in-chrome 526px 시각 확인 (토글 ON/OFF 상태 명확·chip focus amber 한 줄만)
+  - **교훈**: 다크 모드에서 native form 컨트롤(`<input type=checkbox>`·`<input type=radio>` 등)은 시각 피드백이 약함. 커스텀 button/svg 패턴 기본. *시각 신호는 한 곳에서만* — 같은 색을 여러 layer 에 겹치면 노이즈
+- **재료 작성 폼 fix — IME 가드 + "없어도 OK" 라벨 복원 + 메모/chip 진짜 한 줄** — 완료 (2026-05-23, develop 푸시)
+  - **문제 (사용자 직접 발견)**: 직전 commit `18e35be` 카드 + chip 입력 도입 후 3가지 회귀
+    - ① **chip "고추, 추, 간O, O" 식 fragmentation** — 한글 IME 조합 중 `,` onChange / `Enter` onKeyDown 핸들러가 발화해 조합 도중 chip 추가. e2e 414 통과했지만 한글 IME 입력은 자동화 테스트 못 잡음
+    - ② **"선택 재료" 라벨 동사로 오해** — `ingOptionalShort` 짧은 alias 가 "이 재료를 선택해라" 동작처럼 읽힘 (의도: "이 재료는 선택사항=없어도 OK")
+    - ③ **메모+chip 같은 줄 약속 위반** — `flex-col sm:flex-row` 가 640px 미만에서 강제 stack → 526px 모바일 폭에서도 사용자 기대(같은 줄) 어긋남
+  - **fix① IME 가드 (`SubstituteChipInput`)**: `composingRef` ref + `onCompositionStart`/`onCompositionEnd` 추적. `handleKeyDown` early return: `composingRef.current || e.nativeEvent.isComposing || e.keyCode === 229` 셋 다 체크(브라우저별 isComposing 누락 대비). `onChange` 도 composing 중엔 draft 만 갱신·`,` split 안 함. `onBlur` 도 composing 중엔 commit skip. paste(쉼표 포함 문자열)는 `commitWithCommas` 헬퍼로 모든 segment commit. **claude-in-chrome 으로 native CompositionEvent dispatch → `{ duringComposition: 0, afterCommit: 1 }` 검증 완료** (조합 중 comma 무시·종료 후 commit 정상)
+  - **fix② 라벨 복원**: `ingOptionalShort` 키 8 locale 전부 제거, visible 라벨을 풀텍스트 `ingOptionalLabel`("없어도 OK"/"Optional"/"なくてもOK"/등)로. 가로 폭 ~95px 차지하지만 의미 명확성 우선
+  - **fix③ 진짜 같은 줄**: `flex flex-col sm:flex-row` → `flex flex-row flex-wrap`. 양쪽 children `flex-1 min-w-[160px]` 으로 좁으면 자연 wrap, 충분하면 같은 줄. 526px 폭에서 같은 줄 시각 확인됨
+  - **검증 방식 교정**: e2e 414 통과만 보고 녹색 단정한 게 원인 — 한글 IME 입력은 Playwright 가 simulate 못함. claude-in-chrome 으로 `prod build` (`npm run start`) 띄우고 실제 native CompositionEvent dispatch + 시각 캡쳐(526px·1227px 폭)로 직접 확인. 이번 fix 후 같은 방식으로 회귀 확인
+  - **부산물**: edit IngredientsSection 도 같은 패턴 동시 적용. `recipe-optional-substitutes.spec.ts` visible 라벨 검증 `선택 재료` → `없어도 OK` 복원
+  - **교훈 ([[feedback-verify-ime-in-browser]])**: 한국어/일본어/중국어 chip 입력·검색·입력 UI 신규 작성 시 IME compositionstart/end 가드는 *기본*. unit/e2e 모두 IME 시뮬레이션 못하므로 claude-in-chrome 으로 직접 native CompositionEvent dispatch 검증 필수
+  - 검증: lint 0 errors · build · vitest **19 files 209 passed** (선존 substituteChips 11 유지) · 회귀 e2e `recipe-optional-substitutes.spec.ts` 6/6 · claude-in-chrome IME native dispatch 검증
+- **재료 작성 폼 UX 재구성 — 카드 + row1 통합 토글 + chip 입력** — 완료 (2026-05-23, develop 푸시)
+  - **문제**: 재료당 3줄(메인+메모+옵션) × 6개 = 18 회색 박스가 벽처럼 붙어있어 시각적 청크 단위 부재 — 어느 메모가 어느 재료 거인지, 옵션 줄이 위/아래 어느 재료 시작인지 매번 머리로 파싱. 옵션 줄도 `"없어도 OK"` verbose 라벨 + `"대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추"` 긴 instructional placeholder 가 가로 노이즈 (placeholder 가 형식 보여주는데 라벨이 또 설명 = 중복)
+  - **카드 wrap**: 각 재료를 `rounded-lg border border-white/5 bg-white/[0.02] p-3 space-y-2` 카드로 — 시각 청크 분명, "재료 1개 = 카드 1개" 멘탈 모델 명확, 향후 드래그 reorder 시 "잡을 거리" 형성. **선택 재료 토글 ON 시 카드 border·bg가 amber 톤(`border-warning/30 bg-warning/[0.04]`)으로 전환** — 일별 가능한 추가 시각 신호
+  - **Row1 통합**: `[재료명 자동완성][수량][단위][☐선택재료 pill][×]` — 별도 옵션 줄에 있던 `없어도 OK` 토글이 메인 그리드 안으로. 라벨 = `ingOptionalShort` 짧은 표현 (`선택 재료`/`Optional`/`任意` 등 8 locale). 풀라벨 `없어도 OK` 는 `title` attribute 로만 보존 (접근성)
+  - **Row2 메모+chip 통합**: 메모 input 과 `🔄` 대체재료 chip 입력을 한 줄로 (`flex-col sm:flex-row gap-2` — 데스크톱 side-by-side·모바일 stack). 이전 별도 옵션 줄 + 모바일 메모 줄 제거. **재료당 3줄(데스크톱) → 2줄, 모바일은 카드 묶음으로 시각적 청크 해결**
+  - **`SubstituteChipInput.tsx` 신설** (`components/Recipes/`): 쉼표/Enter로 chip 추가, Backspace(빈 입력)로 마지막 chip 제거, ✕ 클릭으로 개별 chip 제거, blur 시 잔여 입력 commit. amber 톤 (`bg-warning/15 text-warning`) — `RecipeBrowseView` substitute 표시(`bg-warning/20 text-warning 🔄`)와 시각 언어 통일. 입력 검증(빈 값·중복) 즉시 시각화
+  - **순수 로직 분리** (`lib/recipes/substituteChips.ts`): `addSubstituteChip`(trim·dedup case-insensitive·empty skip·불변 새 배열) + `removeSubstituteChipAt`(out-of-range 무변경·동일 reference 반환). 컴포넌트=React state 책임, lib=비즈니스 규칙. vitest 11 케이스(추가/제거/dedup/대소문자/공백/out-of-range/불변성)
+  - **i18n 8 locale**: `recipeForm.ingOptionalShort` 신규 (`선택 재료`/`Optional`/`任意`/`可选`/`Opcional`/`Facultatif`/`Optional`/`Opzionale`) + `ingSubstitutePlaceholder` 짧은 표현으로 변경 (`대체 재료 추가...`/`Add substitute...` 등) — chip UI 가 쉼표 구분을 시각적으로 처리하므로 long instructional text 불필요
+  - **edit 페이지 동일 패턴 적용**: 차이점 보존 (`<=1` 삭제 임계·`addFiveIngredients` 라벨·plain input — 자동완성 적용은 별개 작업 영역)
+  - **e2e 갱신**: `recipe-optional-substitutes.spec.ts` visible 라벨 검증을 `없어도 OK` → `선택 재료`로 (풀라벨이 title-only attribute 라 visible 텍스트 키 변경 필요). API round-trip·비-admin 차단 테스트는 무수정
+  - 검증: lint 0 errors · build · vitest **19 files 209 passed** (substituteChips 11 신규) · e2e fresh build **414 passed · 2 skipped · 0 failed**
+- **선택 재료 토글 + 대체 재료 입력 + 어드민 승격 페이지** — 완료 (2026-05-23, develop 푸시 / dev+prod DB)
+  - **문제**: "있어도 되고 없어도 되는" 재료(예: 청양고추)·"다른 재료로 대체 가능"한 경우가 자주 있는데 작성 폼에 표현 방법 없음. 단계 본문·description 자연어로 적으면 냉장고 매칭(`computeRecipeMatch`)이 "필수"로 읽어 "N개 부족" 오표시. 또 동의어/대체재 표(`INGREDIENT_ALIASES`·`INGREDIENT_SUBSTITUTES`)는 영원히 다 못 채우는데 사용자가 직접 적은 데이터가 시스템에 안 흘러들어옴
+  - **작성 폼 — 행마다 옵션 줄 1개씩 항상 노출**: `IngredientsSection`(new·edit 둘 다) 각 재료 행 아래 작은 보조 줄 — `[☐ 없어도 OK]` 토글 + `대체 재료 (쉼표로 구분): 예) 페페론치노, 풋고추` 텍스트 입력. 펼침 UI 안 씀(발견성 우선). DB는 이미 `recipe_ingredients.is_optional boolean`·`substitutes jsonb` 컬럼 존재(미연결 상태였음). 타입 `RecipeIngredient.substitutes?: string[]` 추가, POST/PUT `/api/recipes` payload·GET 응답에 포함. 빈 배열은 NULL로 정규화 저장
+  - **매칭 (`computeRecipeMatch`)**: ① `is_optional=true` 재료는 `total/missing/matched` 전부에서 제외 — "선택" = 부족 아님. 보유해도 매칭 카운트에 안 더해짐(평점에 영향 X). ② recipe-specific substitutes는 전역 `INGREDIENT_SUBSTITUTES`와 동등 우선순위로 인정 — 사용자가 그 이름 가지면 `substitutableIngredients`에 포함. ③ 새 옵셔널 4번째 인자 `extraGlobalSubstitutes: Map<string, Set<string>>` — server-side에서 어드민 승격 매핑(아래) 머지용. 호출처(추천 API·`attachFridgeMatch`) 갱신
+  - **표시 (RecipeBrowseView 재료 탭)**: ① `is_optional=true` 재료 — 회색 중성 박스(부족 빨강 아님) + `[선택]` 배지. ② `substitutes` 작성자 명시 — "또는 페페론치노, 풋고추" 인라인 텍스트(보유 여부 무관 항상 노출, 정보 제공). ③ 사용자가 substitutes 중 하나 보유 시 기존 amber `[🔄 대체 가능] ✓ {내재료}` 줄도 함께. RecipeFridgeModal: optional 재료는 모달 매칭 제외(재료 탭 카운트와 일관). i18n 8 locale: `recipe.ingredientOptional`·`ingredientSubstituteOr`, `recipeForm.ingOptionalLabel`·`ingSubstitutePlaceholder`
+  - **어드민 승격 페이지 `/admin/substitute-suggestions`**: ① 사용자 제출 `substitutes` 누적 쌍별 카운트 집계(GET API에서 JSONB unnest 후 in-memory 카운트). ② 각 row 상태 — `new`(미검토)·`in_code`(이미 코드 상수 `INGREDIENT_SUBSTITUTES`/`INGREDIENT_ALIASES`에 있음)·`promoted`(승격 완료). ③ `[승격]` 클릭 시 새 `ingredient_substitutes_global` 테이블 INSERT — `source ∈ {admin, pattern_promoted}`, `approved_by`/`approved_at`, UNIQUE(from,to)+CHECK(from≠to). ④ 어드민 직접 추가 폼(상단). ⑤ `admin_actions` 로그 기록. ⑥ 추천 API server-side에서 이 테이블 fetch → `extraGlobalSubstitutes` Map 양방향 풀어 `computeRecipeMatch`에 전달 → 승격 즉시 매칭에 반영
+  - **DB 마이그레이션** `20260523_ingredient_substitutes_global.sql` (dev+prod 적용 완료): public SELECT(매칭에 필요), admin role INSERT/DELETE. 클라이언트 매칭(`attachFridgeMatch`)은 정적 — 승격 매핑은 server-side 추천 API에서만 머지(데이터 누적 후 영향, 초기에는 빈 테이블)
+  - 검증: lint 0 errors · build · vitest **18 files 198 passed** (match.test.ts에 is_optional·recipe-specific·extraGlobalSubstitutes 8 케이스 추가) · e2e fresh build **414 passed · 2 skipped · 0 failed** (recipe-optional-substitutes.spec.ts 6 신규 — 토글·대체 입력 노출, API round-trip, 비-admin 차단)
+- **냉장고 매칭 표시 재설계 — 모달 통합 목록 + 카드 판정 배지** — 완료 (2026-05-23, develop 푸시)
+  - **문제**: ① `RecipeFridgeModal`이 보유/대체/없음 **3섹션** — "있다/없다" 2분류 직관과 어긋나 "내가 가진 까나리액젓이 왜 보유에 없지"식 혼란. 대체 줄의 `↔ via`가 화면 양끝으로 벌어져 관계가 안 읽힘 ② 카드 "8/12 보유" 분수는 머릿속 계산 필요 + 좋다/나쁘다 느낌이 없음
+  - **모달 → 통합 상태 목록**: 섹션 헤더 제거 → 재료마다 색·아이콘으로 상태(있음 ✓ / 대체 🔄 / 없음 ✗) 표시한 단일 목록. 상단 요약 줄(아이콘 범례 + 개수)이 섹션 카운트를 대신 → "섹션이 곧 분류" 오해 제거. 대체 줄 = `🔄 레시피재료(amber) · [대체 가능] · ✓ 내재료(green)` 한 줄 — via 가 재료 바로 옆, green ✓ 로 "내 것" 명시. 레시피 상세 재료 탭과 같은 시각 언어
+  - **카드 → 썸네일 좌상단 오버레이 배지**: 냉장고 매칭을 텍스트 블록 줄 → 썸네일 좌상단 오버레이 배지로 이동. 텍스트 블록은 `제목·시간난이도·작성자`로 깔끔해짐. 분수 "8/12 보유" → 판정어 `바로 가능`(초록)/`N개 부족`(주황 1~3·빨강 4+) — 색=글랜스, 글자=답. `만들어봤어요` 배지도 좌상단 세로 스택(냉장고 위)으로 이동 → 좁은 모바일 카드 가로 충돌 방지. `🔄` 카드 마커 제거(모달에 있음). full(추천)/positive(전체·검색) 모드 = 같은 배지(positive 는 바로 가능일 때만 노출, 빨간 벽 방지)
+  - **레시피 상세 재료 탭**: 대체 재료 via amber → green ✓ — 모달과 시각 언어 통일
+  - **i18n**: `fridgeModalOwned` "보유 중"→"있는 재료"(ko). `canMakeNow` 제거(orphan) → `fridgeBadgeReady`·`fridgeBadgeMissing` 추가 (8 locale). 데이터·매칭 로직(`computeRecipeMatch`) 무수정 — 순수 표현 변경
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 407 passed · 2 skipped · 0 failed
+- **전체 레시피 페이지 제목 정리 + 푸터 쿠키 링크** — 완료 (2026-05-23, develop 푸시)
+  - **상단 제목 정리**: 보이는 h1 "전체 레시피"가 탭 "전체 레시피"와 중복 — 화면에 "전체"가 제목·탭·모드 pill 3중복이었음. h1은 `sr-only`(화면 숨김, SEO·스크린리더용 유지), 탭 "전체" 라벨 → "전체 레시피". 미사용된 `t.recipe.tabAll` 키 8 locale 제거
+  - **푸터 쿠키 정책 링크**: 푸터가 법무 4페이지 중 3개(이용약관·개인정보·저작권)만 링크 — `/cookies` 페이지 있는데 누락 → 쿠키 정책 링크 추가
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 0 failed
+- **데스크톱 헤더 검색 아이콘 + 검색바 디자인 통일** — 완료 (2026-05-23, develop 푸시)
+  - **헤더 검색 아이콘**: 데스크톱 비-홈 페이지엔 검색 진입로가 없던 문제(BottomNav는 모바일 전용, 헤더엔 검색 없음) → Header에 검색 아이콘 추가(`hidden md:flex` → `/search`). 모바일은 기존 BottomNav 검색 유지
+  - **`SearchIcon` 공용화**: BottomNav 인라인 정의 → `components/icons/SearchIcon.tsx` 추출. BottomNav·Header가 같은 아이콘 공유
+  - **`/search` 검색바 디자인 통일**: `SearchClient` 자체 검색바가 홈 `SearchBar`와 갈라져 있던 것(제출 버튼 텍스트 "검색" vs 아이콘, 좌측 🔍 유무) → `SearchBar` 디자인에 맞춤(아이콘 제출 버튼·좌측 🔍 제거·입력 패딩 통일)
+  - **e2e fix**: 헤더 검색 링크(`<a aria-label="검색">`) 추가로 느슨한 셀렉터 `nav [aria-label="검색"]`이 BottomNav 검색(`<button>`)과 중복 매칭 → `nav button[aria-label="검색"]`으로 특정. `navigation.spec` 검색탭 테스트가 vacuous(셀렉터가 아무것도 매칭 못 함)였던 것도 실제 검증으로 교체
+  - 검증: lint 0 errors · build · e2e fresh build 407 passed · 0 failed
+- **추천 페이지를 전체 레시피에 탭으로 병합** — 완료 (2026-05-23, develop 푸시)
+  - **2탭 통합**: `/recommendations` 페이지 제거 → `/recipes`에 `전체 | 재료 기반` 탭. 둘 다 "레시피 찾기"고 재료 기반 = 전체를 냉장고로 거른 것이라 한 페이지가 자연스러움. 기본 탭=전체, 홈 냉장고 pill은 `?tab=ingredient` deep-link
+  - **추천 4탭 → 1개**: 재료 기반만 유지. 트렌딩·맞춤추천·식사시간별은 초기 앱에 데이터(요리활동·평점·meal_type 태그)가 없어 hollow(평점순 fallback으로 수렴) → UI 제거. `/api/recommendations`의 type 케이스 코드는 보존 — 데이터 쌓이면 탭이 아니라 전체 탭의 섹션 스트립으로 부활
+  - **`IngredientRecsView` 추출**: 재료 기반 콘텐츠(모드 pill 바로/거의/전체·결과 그리드·빈 상태)를 `recipes/_components/`로. `AllRecipesClient`가 탭 호스트
+  - **`/recommendations` 완전 삭제**: 사용자 없어 redirect 불필요. 홈 pill·냉장고 footer 등 링크 전부 `/recipes?tab=ingredient`로 수정
+  - **`public/sw.js` CACHE_VERSION v10→v11**: /recipes 페이지 구조 변경(탭 추가)
+  - 검증: lint 0 errors · build · e2e fresh build 408 passed · 0 failed
+- **관리자 레시피 페이지 개선 — 일괄 작업·상태 탭·정렬** — 완료 (2026-05-23, develop 푸시)
+  - **난이도 라벨 fix**: `admin/recipes` 페이지가 로컬 하드코딩 맵(`초급/중급/고급`)을 써서 통일된 앱(`쉬움/보통/어려움`)과 불일치 → 공유 `DIFFICULTY_LABELS` 사용
+  - **일괄 작업**: 행 체크박스 + 페이지 전체 선택 + 일괄 공개/비공개/삭제. `POST /api/admin/recipes/bulk` 신설 (ids[]+action, 최대 200개)
+  - **상태 탭**: 드롭다운 → `전체·공개·비공개·임시저장` 탭 + 각 개수 배지. 기존 필터 버그 수정 — 드롭다운 "비공개"가 `draft`를 거르고 `private` 상태는 필터 불가였음
+  - **정렬**: 조회수·평점·작성일 컬럼 헤더 클릭 정렬. GET API에 `sort`·`order` 파라미터 + 동률 시 `id` tiebreak (페이지네이션 행 누락/중복 방지)
+  - **헤더 개수 분해 + 수정 링크**: "총 N개" → "공개 N·비공개 N·임시저장 N". 작업 칸에 `수정`(→`/edit`) 링크 추가
+  - **unpublish 의미 수정**: PATCH·bulk의 unpublish가 `draft`(임시저장)로 보내던 것 → `private`(비공개). "비공개" 버튼 누르면 "임시저장"이 되던 혼란 해소
+  - 검증: lint 0 errors · build · e2e fresh build 406 passed · 0 failed
+- **프로필·법무 페이지 헤더 통일 + SW 캐시 v10** — 완료 (2026-05-23, develop 푸시)
+  - **프로필 `/[username]`**: 커스텀 `← 낼름 ⚙️` 헤더 → 표준 `Header`+`Footer`. ⚙️ 설정 접근은 `ProfileCard` 우상단 버튼으로 이전(본인 프로필만)
+  - **법무 4페이지**: copyright·privacy·terms 커스텀 `← 홈으로` 헤더 → 표준 `Header`+`Footer`. cookies(이미 표준 Header)에도 `Footer` 추가 → 법무 페이지 4개 전부 일관
+  - **`public/sw.js` CACHE_VERSION v9→v10**: 헤더 구조가 5개 페이지에서 변경 — 재방문 사용자 캐시 갱신
+  - 데스크톱·모바일 동일 반응형 `Header`라 모바일도 자동 통일 (모바일 스크린샷 확인 완료)
+  - 검증: lint 0 errors · build · e2e fresh build 408 passed · 0 failed
+- **추천 페이지 chrome 통일 + SW 캐시 버전 bump** — 완료 (2026-05-22, develop 푸시)
+  - **추천 페이지 chrome 통일**: 추천 페이지가 커스텀 "홈으로 돌아가기" 바를 쓰던 것 → 전체·팁과 동일한 표준 `Header`+`Footer`로 교체. 탭 4개짜리 본격 페이지가 표준 헤더 없어 네비게이션 막다른 길이던 문제 해소. 추천 종류 탭은 본문으로 이동(비-sticky, 다른 페이지와 일관)
+  - **`public/sw.js` CACHE_VERSION v8→v9**: 카드 구조 변경(전체·추천·검색·팁)이 페이지 구조 변경이라 SW 캐시 버전 갱신 필요 — 재방문 사용자가 옛 JS 번들로 옛 카드를 보던 문제 해소
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 0 failed
+- **레시피·팁 카드 통합 + 전체·검색 냉장고 줄 확장** — 완료 (2026-05-22, develop 푸시)
+  - **레시피 카드 단일화**: 전체·추천·검색 3페이지가 제각각 카드를 쓰던 것 → 단일 `RecipeCard`. 구 `FridgeRecipeCard` 병합·삭제. 메타 줄 = `시간·난이도·평점` (조회수·좋아요·만든수 의도적 제외 — 초기 앱 소셜 지표 빈약). fallback 그라데이션 통일·작성자 하단
+  - **난이도 라벨 불일치 버그 fix**: `t.recipe.easy/medium/hard`(쉬움/보통/어려움)와 `t.difficulty.*`(초급/중급/고급)가 갈려 같은 레시피가 화면마다 다르게 표시되던 버그 → 둘 다 `쉬움/보통/어려움`으로 통일 (8 locale + `DIFFICULTY_LABELS` 상수)
+  - **팁 카드 단일화**: `TipCard` 신설 — `/tip` 목록·프로필 팁탭 공용. `TipListClient` 하드코딩 한글 제거 → `tip` 네임스페이스 8 locale 추가. `TIP_CATEGORY_ICONS` 단일 출처화. 프로필 레시피·드래프트 카드는 관리 chrome(편집메뉴·공개토글·hover오버레이) 때문에 의도적 분리
+  - **전체·검색 냉장고 줄**: 추천 페이지에만 있던 냉장고 매칭 줄을 전체·검색 카드에도 확장. `computeRecipeMatch` 순수함수를 추천 라우트에서 추출 (추천·전체·검색 카운트 단일 출처) + `attachFridgeMatch` 클라이언트 헬퍼 (ISR 캐시 유지·setState 전 await로 CLS 방지)
+  - **green-only 모드**: `RecipeCard.fridgeRowMode` — `full`(추천: `N/N 보유` 3색 + 대체로 메워지면 `🔄 N` 마커) / `positive`(전체·검색: 바로 만들 수 있을 때만 초록 `✓ 바로 만들 수 있어요` 라벨, 못 만드는 건 줄 숨김 → 둘러보기 "빨간 벽" 방지). i18n `recipe.canMakeNow` 8 locale
+  - 검증: lint 0 errors · build · vitest 190 passed · e2e fresh build 408 passed · 2 skipped · 0 failed
+- **핵심 루프(냉장고→추천) 전수 검사 + 수정 3건** — 완료 (2026-05-22, develop 푸시)
+  - **검사 방법**: 매칭(`match.ts`)·추천 API·표시(카드·모달·재료탭·홈 pill) 코드 audit + 추천 API 케이스 9종 직접 실행(빈/단일/다수/동의어/대체재/정규화/fundamental/mode별) + 로그인 흐름(signin→재료 추가→추천) 직접 실행. 매칭 엔진 전 동작 정상 확인
+  - **수정① 중복 카운트**: 추천 API가 같은 이름 재료를 2줄로 적은 레시피를 중복 카운트("후추" 2번 → total·missing 부풀림). `recipeIngredientsList` 이름 기준 dedup
+  - **수정② 상세탭 FK 매칭**: 레시피 상세 재료탭이 FK 매칭 불가(이름 배열만 받음) → 추천 API는 `FK||isSameIngredient`인데 상세탭은 이름만 → 불일치 가능. `page.tsx`가 user `ingredient_id`도 전달, `RecipeBrowseView`가 `fkOwnedNames`로 FK 매칭
+  - **수정③ add 경로 FK**: `POST /api/user-ingredients`(모바일 앱 경로)가 `ingredient_id` 미해석 → FK-blind. `resolveIngredientId` 추가 (HomeClient·add-to-ingredients 와 통일). 직접 테스트로 검증(마늘·달걀·양파 FK resolve)
+  - **보류**: 기본 양념(소금·간장 등)이 보유로 안 잡혀 "바로 가능" 추천이 거의 안 뜸 — pantry staples 자동가정은 정직성 문제로 추가 검토 필요(사용자 결정)
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 408 passed · 0 failed
+- **재료 매칭 표시 가독성 — 대체 라벨 + 카드 보유 텍스트 색** — 완료 (2026-05-22, develop 푸시)
+  - 레시피 상세 재료 탭: 대체 가능 재료가 `🔄 {재료}` 이모지만이라 의미 불명확 → `[🔄 대체 가능]` 라벨 칩 + 재료명
+  - 추천 카드: `N/N 보유` 텍스트를 회색 → 상태별 색(초록/주황/빨강 — 냉장고 아이콘 원과 동색). 레시피 상세 페이지 보유 텍스트와 통일
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e 408 passed · 0 failed
+- **e2e 병렬부하 flakiness 안정화 — 워커 2 + DB-readback 폴링화** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: 병렬 부하(로컬 3워커)에서 단일 dev DB·Next 서버 경합 → `tip-creation`·`cart` 등이 retry-pass flaky (매 1~2회 실행마다)
+  - **워커 3→2** (`playwright.config`): 경합 자체 감소 — config 문서화 처방(워커 상한)의 연장. 5→3 으로도 부족했음
+  - **`waitForTimeout → DB read` 안티패턴 제거**: `cart.spec`(4곳)·`logged-in-home`(1곳)의 "고정 sleep 후 즉시 DB 단언"을 `expect.poll`(end-state 폴링)로 교체 — CLAUDE.md e2e 규칙대로
+  - **tip-creation**: `waitForURL`(무거운 프로필 페이지 로딩에 race 걸림)을 버리고 `expect.poll(readTipState)`로 DB 직접 폴링. 스위트 최중량 쓰기라 describe per-test 예산 `test.setTimeout(120s)` + poll 60s
+  - 검증: 전체 e2e fresh build **2회 연속 408 passed · 0 flaky · 0 failed**
+- **추천 카드 냉장고 아이콘 통일 + 매칭 정보 1줄 정리** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: 추천 카드 냉장고 아이콘이 손그림 outline — 레시피 상세 페이지의 테라코타 디테일 아이콘과 전혀 다름. 매칭 신호도 3개(배지·본문 텍스트·아이콘)가 겹쳐 잡다
+  - **`FridgeIcon` 공용 컴포넌트 신설** (`components/icons/FridgeIcon.tsx`): 상세 페이지 테라코타 냉장고 SVG 추출 → 상세·카드 둘 다 사용 → 구조상 영구 동일
+  - **카드 매칭 정보 1줄로 통합**: "재료 N개 부족" 배지 + "부족한 재료: 대파, 감자 +1" 본문 텍스트 모두 제거 → `[색 아이콘] N/N 보유` 한 줄. 줄 전체 탭 → `RecipeFridgeModal`(보유·대체·없는 전부). 아이콘 원 색 = 상태(초록 0개·주황 1~3·빨강 4+)
+  - **근거**: 부족 재료 *이름* 텍스트는 잘림(`+1`)·2줄 위험 = 반쪽짜리. "N/N 보유"는 항상 짧고 완전한 카운트. **색=글랜스 / 카운트=정밀 / 모달=완전한 이름목록** 3단. 카드엔 pulse 미적용(그리드 다중 pulse는 노이즈 — 상세 페이지만 pulse)
+  - i18n: `recipeCard.missingCountBadge`·`missingLabel`·`allHeldLabel` 제거. `recipe.ownedSuffix`는 상세 페이지와 공유
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 406 passed · 0 failed
+- **타이머 입력란 제거 + 파서 시간단위 보강 + timestamp 보정** — 완료 (2026-05-22, develop 푸시)
+  - **레시피 작성 폼 타이머 입력란 제거**: 단계별 `timer_minutes` 입력은 본문 텍스트 파싱과 중복 (스텝은 거의 항상 "4분간 삶기"처럼 본문에 시간 명시). 작성/수정 폼 `StepsSection`에서 입력란만 제거 — DB 컬럼·`getEffectiveTimers`의 dbVal 읽기는 유지 → 기존 `timer_minutes` 레시피는 그대로 표시. i18n `stepTimerPlaceholder` 제거
+  - **`parseAllTimers` → `lib/cook/parseTimers.ts` 추출 + 보강** (vitest 11): ① 시간 단위 — `N시간 M분`/`N시간` → 총 분, 매칭 구간 제거로 "1시간 30분→30분" 오파싱 수정 ② 오탐 — `N분의 M`(분수) 제외(`분(?!의)`). 3시간+ 는 120분 상한 초과로 제외. **한글 숫자는 미지원** — `오이`(=오5·이2) 등 일반 단어와 충돌해 가짜 타이머 생김
+  - **타이머 timestamp 보정** (`useMultiTimer`): 남은 시간을 1초씩 깎던 방식 → `endsAt`(종료 예정 시각) 기준 재계산. 백그라운드에서 `setInterval`이 throttle/정지돼도 탭 복귀 시 정확. `visibilitychange` 재계산 + 순수 `computeTimerState` 분리(vitest 6). pause/resume은 endsAt 재설정. (폰 잠긴 채 알람 울리는 건 웹 한계상 불가 — OS 타이머 영역)
+  - 검증: lint 0 errors · build · vitest 182 passed · e2e fresh build 407 passed · 0 failed
+- **조리 단계 타이머 UX 정리 + 장보기 버튼 라벨** — 완료 (2026-05-22, develop 푸시)
+  - **타이머 위치**: 단계별 `N분` 퀵버튼·`단계 타이머`·상단 전역 버튼 모두 제거. **본문에 시간이 있는 단계**에만 `⏱ 타이머` 1개 — 그 단계 시간으로 prefill(콩나물 "4분, 2분 뒤집기" 류). 시간 없는 단계엔 버튼 없음. 단계에서 시작한 타이머는 패널에 "N단계"로 표시(stepNumber 전달)
+  - **하단 바엔 타이머 안 둠**: 하단 고정 바는 핵심 액션(장보기) 자리 — 곁들이 기능인 타이머가 차지하지 않게. 즉흥 타이머는 OS 타이머로 충분 (타이머의 차별점은 체크포인트뿐 — 더 투자 안 함)
+  - **장보기 버튼 라벨**: `장보기` → `장보기에 재료 담기` (8 locale). "장보기"만으론 행동이 애매 — "담기"로 리스트 추가가 분명해짐. `cartButton` 키는 이 버튼 전용
+  - i18n: `customTimerStepButton` 제거, `customTimerOpen` → "타이머"
+  - 검증: lint 0 errors · build · vitest 165 passed · e2e fresh build 407 passed · 0 failed
+- **재료 매칭 동의어/대체재 분리 — "보유" vs "대체 가능"** — 완료 (2026-05-22, develop 푸시)
+  - **문제**: `INGREDIENT_SYNONYMS` 한 표가 *같은 재료*(달걀=계란)와 *대체재*(까나리액젓~멸치액젓)를 섞어 담아, 까나리액젓을 가졌으면 멸치액젓을 "보유 ✓"로 표시 — 다른 재료인데 가졌다고 거짓말. (substring 매칭 `'멸치액젓'.includes('액젓')`이 원인)
+  - **분리**: `INGREDIENT_ALIASES`(동의어·일반명↔특정명) + `INGREDIENT_SUBSTITUTES`(대체재). `isSameIngredient`(동의어만 — "보유" 판정), `isSubstituteFor`(대체재), `isIngredientMatch = same || substitute`(추천 "만들 수 있나"). 매칭은 양방향 *정확 일치*만 — substring 비교 제거
+  - **3분류**: 보유 ✓ / 대체 가능 🔄 / 없음 ✗. 추천 API가 `ownedIngredientNames`·`substitutableIngredients`(레시피재료→via)·`missingIngredientNames` 반환. `missingCount`=진짜 없는 것만(대체 가능은 부족 아님), `matchedCount`=보유+대체
+  - **UI**: `RecipeFridgeModal` 3섹션, 레시피 상세 재료 탭 3색(보유 회색·대체 amber+🔄via·없음 빨강)
+  - **i18n**: `recipe.fridgeModalSubstitute` 8 locale. vitest match.test.ts 신규 함수·까나리액젓 케이스 추가
+  - 검증: lint 0 errors · build · vitest 165 passed · e2e fresh build 408 passed · 0 failed
+- **냉장고 모달 보유 판정 단일화 — 중복 로직 제거** — 완료 (2026-05-22, develop 푸시)
+  - **버그**: 레시피 상세 페이지가 "재료 보유 여부"를 두 곳에서 따로 계산 — `RecipeBrowseView.isIngredientOwned`(재료 탭·"N/N 보유")는 `isIngredientMatch`(동의어·정규화·Levenshtein), `RecipeDetailClient` 냉장고 모달 `isOwned`는 단순 substring. 같은 재료(멸치액젓)를 한 화면은 보유·다른 화면은 없음으로 표시
+  - **근본 원인**: `isFundamental(name) || userIngredients.some(isIngredientMatch)` 식이 두 파일에 복붙 → 드리프트. (까나리액젓↔멸치액젓 매칭 자체는 `액젓` 동의어로 정상 — 둘 다 액젓)
+  - **수정**: `showFridgeModal` 상태 + `<RecipeFridgeModal>` 렌더를 `RecipeBrowseView`로 이동 → 재료 탭·"N/N 보유"·냉장고 모달이 물리적으로 같은 `isIngredientOwned` 한 개 공유 → 영구히 못 갈라짐. `RecipeDetailClient`에서 모달 블록·`showFridgeModal` 상태·`onShowFridge` prop 제거
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
+- **레시피 조리 단계 직접 타이머 — 중간 알림(체크포인트)** — 완료 (2026-05-22, develop 푸시)
+  - **배경**: 한 조리 단계에 시간 점이 여럿인 경우("총 4분, 절반(2분)쯤 뒤집기")를 작성자 설정 단계 타이머·본문 자동감지(`getEffectiveTimers`)로는 못 풀음 — 별개 타이머 2개로 떠서 "동시에 켜라"가 비직관적. 타이머 1개 안의 중간 체크포인트로 모델링
+  - **`useMultiTimer` 확장**: `Timer`에 `checkpoints: TimerCheckpoint[]`(경과초·라벨·fired) + `checkpointAlert: string|null` 추가. `startTimer` 4번째 인자 `checkpointInput` — 범위(0<t<총시간) 필터·정렬. 틱마다 경과시간이 체크포인트 도달 시 `playTimerSound()` + `checkpointAlert` 세팅. `clearCheckpointAlert(id)` 추가. 기존 3-인자 호출은 `checkpoints=[]` → 행위 변경 0
+  - **`CustomTimerSetup.tsx` 신설**: 직접 타이머 설정 모달 — 총 시간 + 중간 알림(분·라벨) 행 추가/삭제. `prefill`은 *제안*일 뿐 자동 실행 안 함(잘못된 파싱이 조리 지시 되는 것 방지 — 사용자 확인 후 시작)
+  - **`CookTimerPanel`**: 발화된 체크포인트 알림 배너(🔔 라벨 + 확인) + 다음 체크포인트 미리보기(🔔 라벨 · 남은시간)
+  - **`RecipeBrowseView` 진입점 2개**: 조리순서 상단 "직접 타이머"(빈 모달) + 단계에 시간 점 2개+ 시 "단계 타이머"(최댓값=총시간, 나머지=중간알림으로 prefill)
+  - **i18n 8 locale**: `cookMode.{customTimerOpen,customTimerStepButton,customTimerTitle,timerTotalLabel,timerCheckpointsLabel,timerCheckpointAdd,timerCheckpointPlaceholder,timerStartButton}`
+  - **e2e**: `cook-mode-and-review.spec.ts` — 단계 타이머 셀렉터를 `⏱️`+`분`으로 특정(직접 타이머 버튼과 구분) + 직접 타이머 모달 회귀 테스트 추가
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
+- **추천 카드 냉장고 아이콘 + RecipeFridgeModal 공용화** — 완료 (2026-05-22, develop 푸시)
+  - **`RecipeFridgeModal.tsx` 신설**: 레시피↔냉장고 재료 대조 모달(보유 ✓ / 없는 ✗)을 순수 표현 공용 컴포넌트로 — 레시피 상세·추천 카드 공용
+  - **`RecipeDetailClient`**: 인라인 냉장고 모달 → 공용 컴포넌트로 교체. 거기 `isOwned`가 아직 단순 substring이던 것 → `isFundamental`+`isIngredientMatch`로 수정 (계란↔달걀 매칭·물엿↔물 오매칭 해소, RecipeBrowseView와 동일 기준)
+  - **추천 API**: 응답에 `ownedIngredientNames` 추가 (기존 `missingIngredientNames`만 내려주던 것 — 카드 모달이 보유도 표시하려면 필요). 이미 계산하던 `matchedIngredients`에서 이름만 추출
+  - **`FridgeRecipeCard`**: 카드 제목 옆 냉장고 SVG 아이콘 → 탭 시 보유/없는 둘 다 모달. `e.preventDefault()`+`e.stopPropagation()`로 카드 navigate 차단, 모달은 `<Link>` 형제로 렌더해 모달 클릭 누수 방지
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build 408 passed · 0 failed
+- **전 카테고리 재분류 웹 검색 기반 정밀 감사 (2차)** — 완료 (2026-05-19, prod+dev DB 직접)
+  - **핵심 규칙 확립**: ① 이름에 "소스" 붙은 재료 → seasoning(양념&소스). ② 육수류 전부 → seasoning. ③ 건조 분말·허브 → spice. ④ 소금·설탕·식초·마요네즈·케첩 등 → condiment(조미료)
+  - **condiment → seasoning**: 겨자·연겨자(한국 요리 냉채 양념), 돈까스소스·바베큐소스·칠리소스·토마토소스·핫소스 (이름에 "소스"), 토마토페이스트
+  - **meat/seafood → seasoning**: 닭육수·쇠고기육수·다시마육수·멸치육수 (육수류 통일)
+  - **condiment → spice**: 와사비 (spice의 고추냉이와 일관성)
+  - **beverage → grain**: 코코아파우더 (grain에 카카오·코코아 이미 있음)
+  - **snack → grain**: 너구리 (grain의 라면과 같은 계열)
+  - **veggie → seafood**: 김 (다시마·미역·파래와 해조류 일관성)
+  - **pending 처리**: 가루녹차(spice의 녹차가루와 중복), 단단한두부(두부와 중복), 요구르트(요거트와 중복), 플레인요구르트(플레인요거트와 중복)
+  - **1차 감사 교정 포함** (veggie→spice: 마늘가루·파슬리·고추냉이, fruit→grain: 치아씨드·깐밤·깐호두, veggie→grain: 팥·붉은팥·녹두, snack→bakery: 카스텔라)
+  - **prod 최종 분포**: grain 146·veggie 135·seafood 117·fruit 79·meat 70·seasoning 53·dairy 39·spice 24·condiment 24·bakery 21·beverage 20·snack 13 = **741 approved**
+- **카테고리 웹 검색 기반 추가 감사 (3차)** — 완료 (2026-05-19, prod+dev DB 직접)
+  - **규칙 수정**: ④ condiment = 단순 조미료(소금류·설탕류·식초류·꿀·물엿류)만. 소스/스프레드/절임/완성품 → 각 기원 카테고리
+  - **spice → seasoning**: 카레·카레가루 (20~30종 향신료 혼합물 = 단일 향신료 아님, 양념 블렌드)
+  - **spice → pending**: 시나몬 (계피와 동일 재료 — 중복)
+  - **condiment → veggie**: 단무지·피클 (절임 채소)
+  - **condiment → fruit**: 올리브 (올리브 열매)
+  - **condiment → grain**: 땅콩버터
+  - **condiment → seasoning**: 마요네즈·머스터드·케첩·허니머스터드·딸기잼·잼 (소스/스프레드류)
+  - **설탕 관련 emoji = NULL**: 설탕·황설탕·흑설탕·흰설탕·설탕시럽 (🍬 사탕 이모지 제거, 텍스트만)
+  - **condiment 확정 14개**: 굵은소금·꿀·물엿·미원·발사믹식초·설탕·소금·시럽·식초·조청·천일염·치킨파우더·황설탕·흑설탕
+  - **prod 최종 분포**: grain 147·veggie 137·seafood 117·fruit 80·meat 70·seasoning 61·dairy 39·spice 21·condiment 14·bakery 21·beverage 20·snack 13 = **740 approved**
+- **향신료(spice) 카테고리 신설** — 완료 (2026-05-19, develop 푸시)
+  - **목표**: 건조 분말·허브류를 `seasoning`(양념&소스)에서 분리해 독립 카테고리 신설
+  - **이동 재료 20개** (seasoning → spice): 고춧가루·후추·후춧가루·강황·강황가루·계피·계피가루·카레·카레가루·파프리카가루·바질·로즈마리·시나몬·월계수잎·생강가루·겨자가루·녹차가루·바닐라빈·바닐라에센스·칠리
+  - **코드**: `INGREDIENT_CATEGORIES`에 `spice(🌶️)` 추가, `create API validCategories` 동기화, 8개 locale `ingredient.categoryLabels`+`cart.categoryLabels` 추가
+  - **prod 최종 분포**: veggie 142·grain 139·seafood 118·fruit 82·meat 72·**seasoning 45**·dairy 41·**condiment 29**·beverage 22·**spice 20**·bakery 20·snack 15 = **745 approved**
+- **요리 도감 pending 포함 전체 표시 + 총 재료 수** — 완료 (2026-05-19, develop 푸시)
+  - **browse API** `includePending=true` 파라미터 추가 — Cook's Guide에서만 사용, 재료 추가 모달은 approved만
+  - **총 재료 수 표시**: 요리 도감 페이지 타이틀 옆에 `N개` 표시 (Supabase `count: 'exact'` 활용)
+  - **pending 재료 정리**: recipe 참조 0건인 pending 209개 삭제 (FK 보존 필요 없는 항목만)
+- **재료 카테고리 2차 전수 감사 — other 완전 소진** — 완료 (2026-05-19, prod DB 직접)
+  - **목표**: 1차 감사 후 남은 `other` 61개 전수 재분류 + 각 카테고리 추가 오분류 교정
+  - **other → 완전 소진(0개)**: meat(천엽(책갑)·돈육·소뼈·쇠뼈 등), seafood(게살냉동·꽁치통조림·동태살 등 12개), veggie(고수·시래기·트러플·할라피뇨 등 6개), grain(누룩·메주·우무묵·팥앙금·페투치네·한천·젤라틴·템페 등 19개), condiment(김치류 7개·육수류 3개·소스류 등), seasoning(가시오가피·구기자·치자·황기·뽕잎가루 등 14개), snack·fruit·bakery·beverage 소량. 오타/완제품 → pending
+  - **카테고리 간 추가 교정**: grain(노두유→seasoning, 청국장가루→seasoning, 랩→pending), seasoning(배추김치·XO소스·호이신소스·우스터소스·발사믹소스·크림소스·바질페스토 등→condiment), veggie·grain·fruit·meat 오타·오분류 다수
+  - **설탕 이모지 수정**: 설탕·황설탕·흑설탕·흰설탕·설탕시럽 emoji = NULL (🍬 사탕 이모지 제거)
+  - **prod 최종 분포**: veggie 343·grain 231·seafood 225·seasoning 209·meat 142·condiment 130·fruit 108·dairy 63·snack 34·beverage 31·bakery 25·**other 0** = **1,541 approved**
+- **ingredients_master 희귀·중복 재료 대규모 pending 처리** — 완료 (2026-05-19, prod DB 직접)
+  - **목표**: 재료 추가 모달·요리 도감에서 자주 쓰지 않는 지역 방언·특수 부위·중복 표기·완성품 등 정리. status = 'pending'으로 변경 (DB FK 유지, UI에서 숨김)
+  - **veggie (~130개)**: 지역 방언명(단배추·조선무·조선부추·포항초·백오이·흰팥·흰콩 등), 특수품종(황금팽이버섯·고들빼기·세발나물 등), 중복 오타(브로컬리·루꼴라·셀러리·표고·팽이 등), 세부 준비형(깐대파·깐마늘·저민마늘 등), 중복 파프리카명 등
+  - **fruit (~26개)**: 지역 특산(청양토마토·방울토마토콩카세 등), 가공품(파인애플통조림·복숭아통조림 등), 중복
+  - **seafood (~61개)**: 건조/염장형 중복(건멸치·건새우 등 세부), 특수 부위·희귀 어종, 중복 표기
+  - **meat (~70개)**: 부산물(돼지간/귀/기름/껍질/머리/밸/염통/위/콩팥/피/허파·쇠힘줄·쇠비계·천엽 등), 희귀(꿩·토끼·도가니 등), 중복(돈육=돼지고기·쏘세지=소시지·쇠뼈=소뼈 등), 세부 부위(소고기 목등심/목심/채끝살 등), 조리품(순대·육회·장조림·찜갈비 등)
+  - **dairy (~22개)**: 중복 표기(모짜렐라/모차렐라치즈·파마산/파마르산치즈 등), 저염/무가당 변형(저염버터·저지방우유·무가당휘핑크림 등), 희귀(그라나 빠다노·에벤탈치즈 오타)
+  - **bakery (~5개)**: 중복(바게트빵·바케트·바케트빵=바게트), 조리품(프렌치토스트·버거빵)
+  - **beverage (~9개)**: 중복(검은콩두유=두유·포도술=포도주·흰포도술=화이트와인), 희귀(머루술·옥수수막걸리), 조리품(스무디·라떼·카푸치노)
+  - **snack (~19개)**: 완성품(피자·햄버거·부리또·타코·스프링롤·샌드위치), 중복(냉동만두=만두·콘프레이크=콘플레이크·쌀뻥튀기=쌀튀밥), 조리품(티라미수·푸딩)
+  - **grain (~78개)**: 중복(백미=쌀·우동면=우동·파스타면=파스타·메밀면=메밀국수 등), 세부 변형(강황쌀·박력 쌀가루·유기농 밀가루 등), 특수 제빵재료(르뱅 발효종·제빵개량제·파트 페레멘테 등), 지역명(올방개묵·증편·백년초국수 등)
+  - **seasoning (~67개)**: 중복 표기(고추가루=고춧가루·머스타드=머스터드·피쉬소스=피시소스·카엔패퍼·카엔페퍼·키엔페퍼 등), 약재/건강식품(감초·구기자·가시오가피·클로렐라가루·함초가루 등), 조리 준비형(다진생강·닦은 참깨 등)
+  - **prod 1차 정리 분포**: veggie 204·seafood 164·grain 139·seasoning 137·condiment 130·fruit 82·meat 72·dairy 41·beverage 22·bakery 20·snack 15 = **1,026 approved** (pending 870개)
+- **ingredients_master 2차 적극 정리 — 비기본 재료 대폭 축소** — 완료 (2026-05-19, prod DB 직접)
+  - **목표**: 1차 정리 후에도 남아있는 비일반 재료 추가 정리. "기본적인 재료만 남기고 잘 안 쓰는 것 제거" 원칙 강화
+  - **seasoning 137→67**: 흰후추·백후추·건타임·타임·쿠민·카다몸 등 특수 향신료, 홀그레인머스터드·커리가루 등 희귀 소스류, 노두유·대두유·땅콩기름 등 특수 식용유, 약재·건강식품류(황기·건타임 등) 추가 정리
+  - **condiment 130→39**: 특수 소스류(굴소스·테리야키소스·우스터소스·발사믹소스 등), 희귀 식초류, 나라별 특수 장류, 가공 양념 완제품 대폭 정리
+  - **veggie 204→142**: 희귀 채소(여주·비트·루타바가·콜라비·차조기·셀러리악 등), 서양 허브(로즈마리·타임·바질·세이지 등 생허브), 특수 나물류, 이국 채소 정리
+  - **seafood 164→118**: 중복 표기(가재미·생태·동태포·마른명태·국멸치·참치살 등), 희귀 어종(민어·뱀장어·산천어·성게알·청어알·피조개 등), 세부 손질형(오징어몸통·슬라이스연어 등) 정리
+  - **prod 최종 분포**: veggie 142·grain 139·seafood 118·fruit 82·meat 72·seasoning 67·dairy 41·condiment 39·beverage 22·bakery 20·snack 15 = **757 approved** (pending 1,139개)
+- **재료 추가 모달 탭 정리** — 완료 (2026-05-19, develop 푸시 / PR #72 main 머지)
+  - **bakery 카테고리 신설**: 빵·케이크·도넛류 prod DB 23개를 grain/snack/other에서 bakery로 재분류. 8개 locale i18n `ingredient.categoryLabels`+`cart.categoryLabels` 동시 추가 (`베이커리`/`Bakery`/`ベーカリー`/`烘焙`/`Panadería`/`Boulangerie`/`Bäckerei`/`Panetteria`). `create API validCategories` bakery 추가. prod 최종 분포: grain 189·snack 27·bakery 23
+  - **재료 추가 모달 탭 필터링**: `MODAL_INGREDIENT_CATEGORIES` 상수 신설 — `INGREDIENT_CATEGORIES`에서 bakery·snack·beverage·other 4개 제거. `IngredientBrowser`가 이 상수 사용. 완성품(빵·과자·음료)은 탭 브라우징 대신 검색으로 추가. 요리 도감(`/ingredients`)은 `INGREDIENT_CATEGORIES` 전체 유지
+  - **달걀/계란 동의어 양방향 매칭 보강**: `isIngredientMatch`에 recipe 기준 역방향 조회 추가(`synonymsB` — exact 일치만, substring 제외: `쪽파⊃파 → 대파` 오매칭 방지). `INGREDIENT_SYNONYMS`에 `달걀노른자↔계란노른자`, `달걀흰자↔계란흰자`, `참깨/통깨↔깨` 추가. vitest match.test.ts 4케이스 추가
+  - **i18n dairy 레이블 수정**: `유제품·계란` → `유제품` (8개 locale)
+  - 검증: lint 0 errors · build 성공
+- **동의어 매칭 양방향 보강** — 완료 (2026-05-19, develop 푸시)
+  - **문제**: `isIngredientMatch`가 user 기준 동의어만 단방향 조회 → `참깨`(user) + `깨`(레시피) 미스매칭. `달걀노른자↔계란노른자`·`달걀흰자↔계란흰자` Levenshtein 0.6 < 0.7 임계값으로 미스매칭
+  - **수정①**: `isIngredientMatch`에 recipe 기준 역방향 조회 추가(`synonymsB` — 정확 일치만, substring 포함 제외: `쪽파⊃파 → 대파` 오매칭 방지)
+  - **수정②**: `INGREDIENT_SYNONYMS`에 `참깨/통깨` 역방향 항목, `달걀노른자↔계란노른자`, `달걀흰자↔계란흰자` 추가
+  - **이미 작동하던 것**: `달걀↔계란`, `파↔대파`, `소고기↔쇠고기`, `깨→참깨` — 동의어 맵 + 텍스트 fallback으로 이미 처리됨. DB 통합 불필요
+  - **vitest**: match.test.ts에 양방향 4케이스 추가. 전체 158 passed
+- **i18n dairy 카테고리 레이블 수정** — 완료 (2026-05-19, develop 푸시)
+  - `유제품·계란` → `유제품` (8개 locale, ingredient.categoryLabels + cart.categoryLabels 각 2곳)
+  - 계란은 dairy 카테고리에 포함되나 레이블에 명시할 필요 없음 (과도한 세분화)
+- **요리 도감 재료 카테고리 전수 감사 및 수정** — 완료 (2026-05-19, prod DB 직접)
+  - **목표**: 전 카테고리(11개) 오분류 재료 전수 교정. `소배살`(fruit→meat), `이면수`(grain→seafood), `겨잣가루`(fruit→seasoning), `해파리`/`미더덕`(veggie→seafood), `돼지호박`(meat→veggie) 등 명백 오류 포함 총 **약 200개** 항목 교정
+  - **veggie 교정**: 허브·향신료 분말(가람마살라·건바질·건타임·커민파우더 등 11개)→seasoning, 면류·전분(감자국수·먹물파스타·녹두묵 등 7개)→grain, 소스·피클(토마토소스·마요네스·초고추장 등 12개)→condiment, 해산물(미더덕·해파리)→seafood, 기타
+  - **condiment 교정**: 전분류(감자전분·녹말가루·옥수수전분)·이스트→grain
+  - **grain 교정**: 이면수→seafood, 두유·검은콩두유→beverage, 대두유·현미유·보리된장→seasoning, 머핀·피자·타코·와플 등→snack, 땅콩버터→condiment
+  - **dairy 교정**: 크림소스·피넷버터→condiment, 아이스크림→snack, 크림수프→other
+  - **fruit 교정**: 소배살(!)→meat, 배춧잎→veggie, 겨잣가루→seasoning, 코코넛오일·포도씨유→seasoning, 포도술·흰포도술→beverage, 포도식초·2배식초→condiment, 잣가루→grain
+  - **meat 교정**: 간수→other, 콩고기→grain, 돼지호박→veggie
+  - **other → 재분류(대량)**: seafood 38개(가재미·골뱅이·장어·주꾸미 등), veggie 34개(고들빼기·래디쉬·로메인·아욱 등), grain 33개(렌틸콩·병아리콩·오트밀·청포묵 등), meat 11개(순대·사골·스팸 등), seasoning 20개(피쉬소스·오레가노·칠리 등), condiment 21개(단무지·와사비·살사 등), beverage 8개, dairy 6개, fruit 8개, snack 7개
+  - **prod 최종 분포**: veggie 344·seafood 212·grain 199·other 198·seasoning 178·meat 128·fruit 114·condiment 71·dairy 62·snack 36·beverage 28 = **1,570 approved** *(bakery 신설 후 grain 189·snack 27·bakery 23으로 재분류 — 총계 동일)*
+- **재료 카테고리 전면 정리 + 장보기 헤더 SVG 교체** — 완료 (2026-05-19, develop 푸시)
+  - **재료칩 garbage 3단계 정리**: `recipe_extract` 방언/복합/브랜드/패턴 → pending (1차), 조미료 탭 채우기(36개) + 각/각각·고명·물 종류 pending (2차), `recipe_extract + description IS NULL` 전수 → pending (3차, 188개). prod approved **1,882 → 1,576개**
+  - **browse API 정렬 개선**: `search_count` 동률(전수 0) 시 `description IS NOT NULL` 항목 우선, 이후 이름 가나다순
+  - **고립 카테고리 통합**: `egg(6)→dairy`, `nut(11)+bakery(11)+soy(13)→grain`, `dessert(12)→snack`, `asian` 중 요리 6개→pending·나머지 재료화, `null(8 prod)` 개별 분류. UI 탭 없는 카테고리 DB에서 완전 제거
+  - **i18n 업데이트**: `ingredient.categoryLabels.grain → 곡물류`, `dairy → 유제품·계란` (8 locale). dead key `dessert/asian` 제거. `cart.titleText` 추가 *(dairy 레이블은 2026-05-19 `유제품`으로 재수정)*
+  - **create API validCategories 동기화**: `dessert/asian` 제거, `condiment` 추가
+  - **장보기 모달 헤더**: 🛒 이모지 → CartIcon(우드 바구니) SVG
+  - **prod DB 최종 현황**: approved 1,576개, 카테고리 탭 누락 항목 0, `null` 카테고리 0
+- **카테고리 시스템 통합 + 인기 재료 DB 단일 소스** — 완료 (2026-05-19, develop 푸시)
+  - **핵심 목표**: `POPULAR_ITEMS`(하드코딩 name+category+icon) 제거 → `POPULAR_ITEM_NAMES`(이름만) + `usePopularIngredients()` 훅(DB에서 category+emoji 런타임 조회). 요리 도감 = 카테고리·이모지 단일 소스 원칙 완성
+  - **카테고리 키 통일**: `vegetable→veggie`, `sauce→seasoning`, `condiment` 신규 추가 — 재료 추가 모달(`INGREDIENT_CATEGORIES`)과 장보기 카트(`CATEGORY_LABELS`) 키 일치. 기존 `POPULAR_CATEGORY_TO_CART` 매핑 테이블 삭제
+  - **`beverage`·`snack` 카테고리 신규 추가**: `INGREDIENT_CATEGORIES`에 음료(🥤)·간식(🍪) 추가 (ingredients_master DB에 이미 존재하던 카테고리, UI만 누락이었음)
+  - **`lib/ingredients/usePopularIngredients.ts` 신설**: 모듈 캐시 기반 훅 — 첫 사용 시 `/api/ingredients/browse?names=...`로 DB 조회, 이후 캐시 재사용. `IngredientForm`·`ShoppingCartDropdown` 양쪽 적용
+  - **`/api/ingredients/browse` `names` 파라미터 추가**: 이름 목록으로 직접 조회 (카테고리/검색어 필터 우회) — usePopularIngredients 훅용
+  - **i18n 8개 locale**: `ingredient.categoryLabels`에 beverage/snack 추가, `cart.categoryLabels` 키를 ingredients_master 표준으로 통일
+  - 검증: lint 0 errors · build · vitest **16 files 154 passed** · e2e fresh build **400 passed·2 skipped·0 failed**
+- **ingredients_master 데이터 품질 정리** — 완료 (2026-05-18, prod DB 직접)
+  - **규모**: 1,990개 → **1,896개** (94개 삭제: 쓰레기 72 + 중복 통합 19 + 오분류 3)
+  - **삭제 기준**: 0회 사용 + description 없음 + 명백한 쓰레기 (파싱 잔재 이름, 양념 복합체, 방언/식별불가, 조리법 설명)
+  - **중복 통합**: 번호 붙은 항목(설탕①②, 소금①②, 알룰로스①②③ 등 19개) → 올바른 항목으로 recipe_ingredients 재라우팅 후 삭제
+  - **카테고리 수정 10건**: 마늘·고추·생강(seasoning→veggie), 배추김치(seafood→asian), 전분(seasoning→grain), 스파게티면·파스타면(veggie→grain), 파마산치즈가루(veggie→dairy), 파인애플주스·파인애플청(veggie→fruit)
+  - **핵심 제약 보존**: 다진마늘(414), 다진파(141) 유지 — normalizeIngredientName 매칭 정상 동작
+  - **커버리지 개선**: recipe_ingredients 96.7% → **98.3%**, description 82.3% → **86.0%**
+- **요리 도감 재료 정보 일괄 입력 완료** — 완료 (2026-05-18, prod DB 직접)
+  - **목표**: `ingredients_master.description`(설명), `storage_tips`(보관법), `seasons`(제철), `tastes`(맛 프로파일), `pairs_well_with`(잘 어울리는 재료) 5개 필드를 정확한 정보로 채워 요리 도감, 재료 추가, 장보기 UX 개선
+  - **커버리지**: 마스터 테이블 **1,631 / 1,896 = 86.0%** / 레시피 사용 기준 **15,858 / 16,140 = 98.3%** (2026-05-18 품질 정리 후)
+  - **채워진 재료 범주**: 채소·과일·육류·해산물·유제품·곡류·조미료·향신료·견과류·가공식품·전통 식재료 전 카테고리
+  - **남은 17.7%(~353개) 미채움 사유**: 조리 상태 표현(달걀지단, 당근채썬것), 복합 재료 토막(버섯마늘소금), 브랜드명(청정원맛선생), 번호 변형(설탕①②), 잘린 항목(버터(), 색상·형태 용어(노랑, 정사각형), 조리도구(꼬치, 무명실), OR 항목(부추 또는 실파) — DB 구조 문제로 원칙상 채울 수 없는 항목들
+  - **데이터 무결성 원칙 준수**: 불확실한 재료는 건너뜀. 지역명이 포함된 희귀 재료는 괄호 속 확인명(예: `행베리(피라미)`)으로 실체 확인 후 입력. AI 생성 데이터 미사용
+- **레시피 상세 페이지 UX 개선** — 완료 (2026-05-18, develop 푸시)
+  - **i18n 일괄 수정**: `RecipeBrowseView`·`RecipeRatings`·`RecipeDetailClient` 하드코딩 한글 전수 제거 → `t.recipe.*` 키 24개 신규 추가 (8 locale)
+  - **`hasCooked` CTA 구현**: `RecipeRatings` — 요리 완료 후 리뷰 미작성 시 상단 CTA 카드 표시 → 리뷰 모달 연결. `ratingCookedCta` 키 8 locale 추가. `eslint-disable-next-line @typescript-eslint/no-unused-vars` 제거
+  - **냉장고 모달 교체**: `InteractiveFridge` (홈 전체 냉장고 컴포넌트) → 이 레시피 기준 보유/없는 재료 목록으로 교체. 추가 쿼리 없이 기존 `userIngredients` 재사용. `fridgeModalTitle/Owned/Missing/Empty` 키 8 locale 추가
+  - **냉장고 SVG 통일**: `RecipeBrowseView` 냉장고 버튼 SVG를 `BottomNav`와 동일한 테라코타 디자인으로 교체 (기존 청록색 → terracotta #e85a3a)
+  - **재료/조리순서 탭 구조**: 기존 접기/펼치기 → 모바일: 탭 전환, PC(md+): 2컬럼 나란히 배치. `ingredientsExpanded` 상태 → `activeTab` 상태로 교체
+  - **"요리 시작하기" 버튼 고정**: `sticky bottom-0` → `fixed bottom-0` 으로 변경. 스크롤 위치 무관하게 항상 하단 노출
+  - **dead code 정리**: `reviewModalOpen`·`initialUserRating`·`initialUserReview` 상태·prop·DB 쿼리 전체 제거. `InteractiveFridge` dynamic import 제거
+  - 검증: lint 0 errors · build · e2e fresh build **404 passed · 2 skipped · 0 failed · 0 flaky**
+- **쿠킹 모드 레시피 상세 페이지 인라인 통합** — 완료 (2026-05-20, develop 푸시)
+  - **목표**: 별도 오버레이(`RecipeCookMode`) 없이 레시피 상세 페이지에서 직접 단계 완료·타이머·음성 안내를 사용할 수 있도록 통합
+  - **`RecipeBrowseView.tsx` 통합**: `useMultiTimer()`, `useVoiceGuide()`, `useUnitConversion()` 훅 직접 탑재. 조리순서 단계 번호 원형 버튼(title="완료") 클릭 → ✓ 완료 토글. 단계별 `timer_minutes` 있으면 ⏱️ 인라인 타이머 버튼 표시 → 클릭 시 타이머 시작 토스트. 음성 안내 버튼은 `voice.isSupported`(브라우저 지원) 시에만 노출
+  - **`RecipeDetailClient.tsx` 정리**: `RecipeCookMode` dynamic import 제거. `isCookMode`·`completedSteps`·`timerActive` 등 상태 전부 제거. `onStartCooking` prop 제거. 574줄 → 446줄 (-128줄)
+  - **"요리 시작하기" 버튼 제거**: 별도 쿠킹 모드 진입 버튼 삭제. 레시피 상세 페이지 자체가 곧 쿠킹 모드
+  - **hydration mismatch 수정** (`useVoiceGuide.ts`): `useState(() => 'speechSynthesis' in window)` lazy initializer → `useState(false)` + `useEffect` 패턴 (SSR/클라이언트 초기값 불일치 해소). `eslint-disable-next-line react-hooks/set-state-in-effect` 위치를 `useEffect()` 선언 앞 → effect 본문 내 `setIsSupported()` 바로 위로 이동 (정확한 줄 억제)
+  - **i18n**: `t.common.reset` 키 8 locale 추가 (`초기화`/`Reset`/`リセット`/`重置`/`Restablecer`/`Réinitialiser`/`Zurücksetzen`/`Ripristina`)
+  - **e2e 갱신**: `cook-completion.spec.ts`·`cook-mode-and-review.spec.ts` — "요리 시작하기" 진입 흐름 → 인라인 단계 완료 토글·⏱️ 타이머 버튼 기준으로 재작성. `recipe-cart-toggle.spec.ts` — `/🛒\s*장보기/` → `/장보기/` (CartIcon SVG 반영)
+  - 검증: lint 0 errors · build · e2e fresh build **400 passed · 2 skipped · 0 failed**
+- **추천 시스템 전수 검증 + recipe_ingredients FK 백필** — 완료 (2026-05-21, prod+dev DB)
+  - **전수 검증 영역**: 매칭 알고리즘(FK+normalize+synonym+Levenshtein), 모드 분류(ready/almost/all), 동의어 매핑(라면·간장·치즈·달걀·통조림햄), 정규화·prefix 제거, 알레르기 필터링, 인덱싱, FK 커버리지
+  - **검증 결과**: 모든 영역 정상 작동. 2026-05-17 fix(prefix 오매칭 제거·almost 70% 임계값) 안정 유지
+  - **자동 백필 70개** (prod+dev): `recipe_ingredients.ingredient_id IS NULL` 중 `ingredients_master.name` 정확 매칭되는 항목 자동 백필. 양파·진간장·다진마늘·대파·식초·식용유·당근·설탕·감자·소금·마늘·다시마·참기름 등. **FK 커버리지 98.2% → 98.6%**
+  - **잔여 226개 null** (98.6%): 대부분 garbage 이름(`소금적당량`(54), `후추적당량`(13) 등) 또는 정규화 필요(`불린쌀`·`불린미역`). 텍스트 매칭(`ilike` + 동의어)으로 정상 커버
+  - **발견된 개선 여지** (버그 아님, 부가 개선): 평균 레시피 재료 11.2개 중 기본 양념(소금·물·설탕·간장·식용유·참기름·식초·후춧가루·고춧가루·깨소금) 7~8개 명시 추가 없으면 "거의 가능(70%+)" 매칭 어려움. 사용자가 양념 안 넣었을 때 산술적으로 자연스러운 결과. pantry_staples 자동 가정 옵션 향후 검토
+  - 코드 변경 없음. DB 자동 백필만
+- **콘텐츠 신고 시스템 — tip 신고 API + 인라인 ReportModal** — 완료 (2026-05-21, develop 푸시)
+  - **기존 시스템 활용**: prod DB에 이미 `reports` 테이블, 레시피·사용자 신고 API, 관리자 페이지, DMCA `/copyright` 페이지·폼·API, 푸터·헤더 ⋯ 메뉴 링크, 이용약관 §5③ SLA + §8 3-Strike Rule 다 완비. 새로 만든 `content_reports` 테이블·API는 중복이라 롤백
+  - **신규 추가 2개**:
+    - `/api/tip/[id]/report` — 팁 신고 API (레시피 패턴 복사, `reports.reported_type='tip'`)
+    - `components/Common/ReportModal.tsx` — 인라인 신고 모달 (사유 선택·설명·24~48시간 SLA 안내·저작권 선택 시 `/copyright` 정식 양식 안내)
+  - **레시피·팁 페이지 통합**: `RecipeBrowseView`·`tip/[id]/page.tsx` 헤더에 🚨 신고 버튼 추가 (자기 콘텐츠 아닐 때만 노출)
+  - **POPULAR_ITEM_NAMES 표준명**: `계란` → `달걀` (모달 표준명과 일관)
+  - **i18n 8 locale**: `report.{title,subtitle,reasonSpam,reasonInappropriate,reasonCopyright,reasonFalseInfo,reasonOther,copyrightNotice,copyrightLink,descLabel,descPlaceholder,optional,sla,submit,submitting,successSubmit,errorSubmit,warnReason,menuLabel}` 19개 키
+  - **e2e fix**: `logged-in-home.spec.ts:371` 양파·마늘·계란 → 양파·마늘·달걀 (계란 pending 후 모달 표준명 따라감)
+  - 검증: lint 0 errors · build · vitest 158 passed · **e2e fresh build 400 passed · 0 failed** (3.7분)
+- **곡물류 카테고리 145개 정리** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
+  - **pending 11개**:
+    - 중복/방언 4개: 농마(=녹말 방언)·길금가루(=엿기름)·흰떡(=가래떡)·깐호두(=호두)
+    - 일반명사 5개: 면·견과류·잡곡·떡·홀그레인
+    - 희귀/중복 2개: 분탕·비지(=콩비지)
+  - **카테고리 이동 9개**:
+    - grain → **fermented** 5개: 이스트·드라이이스트·생이스트·효모·누룩 (발효 미생물)
+    - grain → **condiment** 2개: 베이킹소다·베이킹파우더 (팽창제)
+    - grain → **bakery** 1개: 빵가루
+    - grain → **meat** 1개: 콩고기 (대체육)
+  - **동의어 매핑** (`INGREDIENT_SYNONYMS`): 농마↔녹말, 길금가루↔엿기름, 흰떡↔가래떡, 깐호두↔호두, 비지↔콩비지 (양방향)
+  - **결과**: grain 150 → 130개 (모달 깔끔). 모든 변동은 도감에 includePending=true로 보임
+- **통조림 햄 제품 통일 — 라면 패턴 적용** — 완료 (2026-05-21, develop 푸시 / prod+dev DB)
+  - **웹 검증**: "통조림 햄" 일반명사. 구체 제품명은 스팸·리챔·로스팜·앙코르햄. "슬라이스햄"은 청정원·진주햄에서 정식 제품명으로 판매 → 유지
+  - **신규 추가 3개** (prod+dev): 리챔·로스팜·앙코르햄 (`category=meat, is_processed=true, emoji=🥫`)
+  - **"통조림 햄" pending** (일반명사 숨김)
+  - **동의어 매핑** (`INGREDIENT_SYNONYMS` + `SEARCH_EXPANSIONS`): `통조림 햄` ↔ 스팸·리챔·로스팜·앙코르햄 양방향
+- **달걀류 통합 — 모달엔 "달걀" 1개만** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **문제**: 유제품 탭에 계란·달걀·노른자·계란노른자·달걀노른자·계란흰자·달걀흰자 7개가 다 같은 것 (계란=달걀 동의어, 노른자·흰자 중복)
+  - **해결**: `달걀` 메인(표준국어대사전 표준어·식약처 표기) 1개만 approved. 나머지 6개 pending → 모달 숨김, 도감 노출
+  - **동의어 매핑 통합** (`INGREDIENT_SYNONYMS`): `달걀` ↔ `계란`·`노른자`·`달걀노른자`·`계란노른자`·`달걀흰자`·`계란흰자` 양방향. 노른자/흰자 입력해도 달걀 매칭
+  - **`SEARCH_EXPANSIONS`**: `계란`·`노른자`·`흰자` 검색 시 `달걀` 자동 노출
+  - 모달이 7개 → 1개로 깔끔. 동의어로 어느 호칭이든 매칭됨
+- **일반명사 pending + 자주 안 쓰는 치즈 정리 + 동의어 매핑 확장** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **일반명사 pending** (모달 숨김, 도감 노출): 간장·액젓·치즈·메주·템페·메주가루
+  - **자주 안 쓰는 치즈 10개 pending**: 고다·생모짜렐라·브리·까망베르·페타·에멘탈·슈레드·치즈가루·리코타·마스카르포네 → 모달에서 숨김 (도감엔 보임)
+  - **모달에 남는 치즈 6개**: 모짜렐라·체다·슬라이스·크림·파르메산·피자치즈 (한국 가정 가장 자주 사용)
+  - **`INGREDIENT_SYNONYMS` 확장** (`lib/recommendations/match.ts`):
+    - `'간장'` → 진간장·국간장·맛간장·어간장·양조간장 (역방향 양방향)
+    - `'액젓'` → 멸치젓·까나리액젓·멸치액젓
+    - `'치즈'` → 모짜렐라·체다·슬라이스·피자·크림·파르메산·파마산 (역방향 양방향)
+  - **`SEARCH_EXPANSIONS`** (`/api/ingredients/autocomplete`): `간장`·`액젓`·`치즈` 검색 시 구체 제품 자동 노출 (라면 패턴과 동일)
+  - **간장 vs 진간장 차이**: 간장=양조간장(콩+밀+누룩 6개월~1년), 진간장=양조간장 추가 숙성(1년+, 단맛 풍부, 조림용)
+- **요리 도감 전수 검사 — 카테고리 오분류 25개 + 부산물 2개 pending** — 완료 (2026-05-20, prod+dev DB)
+  - **전수 검사 대상**: prod approved 721개 13개 카테고리. 식약처 식품유형 기준 + 사용자 직관 + 한국 마트 분류 패턴
+  - **이동 25개:**
+    - bakery → condiment: 바닐라에센스 (베이킹 향료, 빵 아님)
+    - fruit → grain: 밤·생밤·물밤·은행 (식약처 유지종실류, 깐밤과 통일)
+    - fruit → beverage: 감주·코코넛밀크·코코넛우유·코코넛워터·사과주스·오렌지주스·라임주스·레몬주스·포도주스·파인애플주스
+    - grain → condiment: 땅콩버터·젤라틴 (스프레드·응고제)
+    - grain → seafood: 우무·한천·한천가루 (우뭇가사리 = 해조류 응고제)
+    - grain → fermented: 템페 (인도네시아 발효 콩)
+    - seafood → fermented: 까나리액젓·멸치젓·새우젓·명란젓·액젓 (식약처 "젓갈류" = 발효식품)
+  - **pending 2개**: 녹말물·쌀뜨물 (조리 부산물, 재료 아님)
+  - **검증 OK**: 한식 발효 14개, 김치류 12개, 발효치즈 14개, 발효 유제품 4개, 양조식초 3개, 가공육·통조림류, 채소·과일·곡물 대부분 정확
+  - **유지 (의도)**: 와인·맥주·청주는 beverage (음료 직관), 즙류(배즙·사과즙·석류즙·레몬즙)는 fruit (조리용 vs 음료 모호), 즉석식품(콩물 등) 비통합
+- **발효식품 카테고리 자체 검증 + 비발효 치즈 2개 환원** — 완료 (2026-05-20, prod+dev DB)
+  - **검증 결과**: prod fermented 49개 중 47개는 정확. 2개는 식품학상 발효 아님
+  - **리코타치즈 → dairy**: 유청 가열 응고 (whey cheese). 발효 아닌 단백질 응고
+  - **마스카르포네치즈 → dairy**: 크림에 산(시트르산·아세트산) 첨가해 응고. 발효 아님
+  - **근거**: 위키피디아 식품학 — Ricotta "recooked whey", Mascarpone "curdled with citric acid"
+- **양념&소스 탭 오분류 12개 정리** — 완료 (2026-05-20, prod+dev DB)
+  - **잼·딸기잼·요리당 → condiment** (스프레드·시럽. 식약처 "절임식품>잼류" 또는 "당류". 양념·소스 아님)
+  - **통깨·검은깨·들깨 → grain** (식약처 "유지종실류". 다른 견과·씨앗과 일관)
+  - **들깨가루 → grain** (종실 가공품)
+  - **김가루 → seafood** (김 = 해조류. 김 자체가 seafood라 일관)
+  - **식용유·카놀라유·올리브유 → condiment** (식약처 "식용유지류". 풍미 기름인 참기름·들기름·고추기름은 한식 양념 성격 강해 seasoning 유지)
+  - **사골육수 → pending** (다른 육수류[닭육수·쇠고기·다시마·멸치 등] 이미 pending 처리됨. 일관성)
+  - 너구리라면 emoji 누락 보강 (🍜)
+- **가공식품 정의 재정립 + 라면 제품 통일 + 중복/희소 항목 정리** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **중복 통합**: `캔참치` → `참치캔` 통합 (recipe_ingredients 재라우팅 + 마스터 DELETE)
+  - **이름 정확화**: `너구리` → `너구리라면` rename (ingredient_name + recipe_ingredients 동시)
+  - **희소 항목 7개 pending**: 판체타·홀토마토·프로슈토·살라미·초리조·후루츠칵테일·크래미 (한국 가정 사용 빈도 낮음)
+  - **가공식품 정의 재정립**: 진짜 가공식품 = "즉시 먹는 보존식품"(라면·통조림·만두·콘플레이크·가공육). 양념·소스류 13개(마요네즈·맛간장·케첩·핫소스·우스터·돈까스·바베큐·칠리·머스터드·허니머스터드·두반장·쌈장·초고추장) `is_processed=false` → 가공식품 탭에서 제외. 식약처 식품유형 기준 일관
+  - **인기 라면 7개 추가** (prod+dev): 신라면·진라면·안성탕면·짜파게티·삼양라면·비빔면·불닭볶음면 (+ 기존 너구리라면). 모두 `category=grain, is_processed=true, emoji=🍜`
+  - **"라면" → pending**: 일반명사 마스터 숨김. 사용자 검색은 SEARCH_EXPANSIONS로 라면 제품들 자동 노출
+  - **동의어 매핑 확장** (`INGREDIENT_SYNONYMS`): `'라면'` → 8개 제품. 역방향 `'신라면'/'진라면' 등` → `['라면']` 양방향. 추천 매칭에서 "라면 보유" ↔ "신라면 보유" 상호 인정
+  - **`SEARCH_EXPANSIONS`** (`/api/ingredients/autocomplete`): `'라면'` 검색 시 라면 제품 8개 결과 노출 (라면 자체 pending이라 검색 결과 빈약했던 문제 해소)
+  - **prod 결과**: 가공식품 approved 39 → 19개 (양념·소스 13개 제외 + 7개 pending) + 라면 제품 7개 추가
+  - 검증: lint 0 errors · build · vitest 158 passed
+- **발효식품(fermented) 카테고리 신설** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **문제**: 김치류·장류·치즈류·식초류·낫토가 veggie/seasoning/dairy/condiment/grain에 흩어져 있어 사용자 직관과 불일치 ("김치 = 채소" 어색)
+  - **신설**: `INGREDIENT_CATEGORIES`·`MODAL_INGREDIENT_CATEGORIES`에 `fermented (🫙 발효식품)` 추가. 도감·모달 둘 다 노출
+  - **이동 50개 (prod)**:
+    - 한식 발효 14개: 간장·국간장·진간장·맛간장·어간장·된장·고추장·초고추장·쌈장·두반장·청국장·메주·메주가루·낫토
+    - 김치류 12개: 김치·배추김치·백김치·열무김치·신김치·김장김치·명이김치·동치미·동치미물·김치국물·김치잎·잘 익은 김치
+    - 유제품 발효 19개: 요거트·플레인요거트·그릭요거트·사워크림·치즈류 16개 (체다·고다·모짜렐라·파마산·파르메산·페타·브리·까망베르·리코타·크림치즈·코티지·마스카르포네·피자치즈·슈레드·슬라이스·에멘탈)
+    - 양조식초 5개: 식초·사과식초·발사믹식초·쌀식초·2배식초
+  - **유지 (의도)**: 와인·맥주·청주·소주·막걸리 = beverage (음료 탭이 직관), 빵류 = bakery, 단무지·피클 = veggie (양조식초 절임, 사실상 비발효)
+  - **i18n 8 locale**: `ingredient.categoryLabels.fermented` + `cart.categoryLabels.fermented`
+  - 검증: lint 0 errors · build · vitest 158 passed · e2e fresh build **400 passed · 0 failed** (3.7분)
+- **김치류 분류 통일 — seasoning/condiment → veggie** — 완료 (2026-05-20, prod+dev DB)
+  - **문제**: 김치 분류 일관성 없음 — `김치(approved)`는 seasoning, 배추김치·백김치 등 7개(pending)는 condiment. 반면 단무지·피클·깻잎장아찌(절임 채소)는 이미 veggie로 통일됨
+  - **정답**: 김치 = 발효 채소 = **veggie** (식품학적 + 한국 마트 분류 패턴 + 낼름 내 일관성)
+  - **prod+dev UPDATE**: `김치·배추김치·백김치·열무김치·신김치·김장김치·명이김치·동치미·동치미물·김치국물·김치잎·잘 익은 김치` → category='veggie'
+  - **장류는 seasoning 유지**: 된장·간장·고추장·쌈장·청국장 등 액체/페이스트 발효 양념은 카테고리 의미 맞음
+- **가공식품 탭 신설 — 이중 카테고리 시스템** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **컨셉**: 도감(`/ingredients`)은 정확한 세분화 유지(스팸=meat, 라면=grain), 재료 추가 모달은 "가공식품" 1개 탭으로 광범위 묶음. 사용자 멘탈 모델("스팸 어디 있지?") vs 데이터 정확성 양쪽 만족
+  - **DB 마이그레이션** `20260520_is_processed_column.sql`: `ingredients_master.is_processed BOOLEAN NOT NULL DEFAULT false`. dev+prod 적용
+  - **가공식품 39개 마킹 (prod)**: 라면·너구리·콘플레이크·만두 / 스팸·햄·통조림햄·슬라이스햄·소시지·비엔나·베이컨·살라미·초리조·프로슈토·판체타·페퍼로니 / 참치캔·꽁치통조림·골뱅이통조림·맛살·게맛살·크래미·칵테일새우 / 캔옥수수·홀토마토·후루츠칵테일 / 돈까스소스·바베큐소스·칠리소스·핫소스·케첩·마요네즈·머스터드·허니머스터드·우스터소스·두반장·쌈장·초고추장·맛간장
+  - **`MODAL_INGREDIENT_CATEGORIES`**: 기존 9개 + `{ id: 'processed', name: '가공식품', icon: '🥫' }` → 10개. `INGREDIENT_CATEGORIES`(도감)는 그대로
+  - **browse API**: `categories=processed` → `is_processed=true` 필터. 일반 카테고리 + 모달 컨텍스트(`includePending=false`) 시 `is_processed=false` 추가 필터 → 가공식품 중복 노출 차단 (스팸은 가공식품 탭에서만, 육류 탭에는 정육만)
+  - **도감(`includePending=true`)은 영향 없음** — 스팸은 육류 카테고리에 그대로 표시 (정확한 분류 유지)
+  - **i18n 8 locale**: `ingredient.categoryLabels.processed` + `cart.categoryLabels.processed` 양쪽
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed · e2e fresh build **400 passed · 2 skipped · 0 failed** (3.7분)
+- **자주 탭 limit 20→40 + 양념장 완전 삭제** — 완료 (2026-05-20, develop 푸시 / prod+dev DB)
+  - **자주 탭 확장**: `IngredientForm.tsx` `favorites.slice(0, 20)` → `40`, `IngredientBrowser.tsx` `frequentItems.slice(0, 20)` → `40`. API `useFavorites(50)` 그대로. 자주 쓰는 재료 30~40개 사용자도 chip에서 직접 발견 가능
+  - **양념장 완전 삭제 (prod+dev)**: garbage 패턴 — description NULL, 단일 재료 아닌 혼합물(간장+마늘+참기름+등), 2개 레시피만 참조. **pending은 도감(`includePending=true`)에서 보이므로 부족 → DELETE**. FK `ON DELETE SET NULL`로 recipe_ingredients 2건의 ingredient_id만 NULL 됨, 텍스트 "양념장"은 레시피 본문 보존
+  - **patten 일반화**: 향후 garbage 정리 시 0건 또는 본문 보존 가능하면 DELETE 우선, FK 보존이 진짜 필요한 경우만 pending
+- **재료 추가 모달 '전체' 탭 제거** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: '전체' 탭이 사실상 "인기 60개" 탭. 페이지네이션 없어 prod approved 725개 중 ~8%만 보임. 사용자 "전체 다 못 본다" 피드백
+  - **해결**: IngredientBrowser에서 ALL_CATEGORY 제거. 디폴트 탭: 자주 있으면 자주(20개), 없으면 첫 카테고리(채소)
+  - **남는 탭**: 자주(20개 + popular 보충) · 채소·과일·육류·해산물·곡물·유제품·양념&소스·조미료·향신료·베이커리 (10개) · 검색
+  - **i18n `categoryAll` 키 유지**: 요리 도감(`/ingredients/IngredientBrowseClient.tsx`)에서 "전체" 옵션 의미 있어 유지. 재료 추가 모달만 제거
+  - 검증: lint 0 errors · build · vitest 158 passed
+- **저작권 동의 가입 페이지로 통합** — 완료 (2026-05-20, develop 푸시 / prod+dev DB 적용)
+  - **이전 구현**: 레시피 작성 화면마다 저작권 동의 체크박스 (`RecipeFormFooter.tsx`). 매번 마찰 + "이용약관 제8조" 법률 용어 노출
+  - **변경**: 글로벌 표준(Medium·Substack·WordPress 패턴) 따라 **가입 페이지 약관 동의로 통합**. 매 게시마다 받지 않음. 한국 약관규제법 제3조 "중요한 내용 별도 명시" 요건은 별도 체크박스로 충족
+  - **DB 마이그레이션** `20260520_copyright_agreement.sql`: `profiles.copyright_agreed_at TIMESTAMPTZ` 컬럼 추가 (audit trail). **dev+prod 적용 완료**
+  - **`lib/auth/profile.ts`**: `ProfileInsertData.copyrightAgreed?: boolean` 추가. `createProfile`·`beginOnboarding` 에서 `copyright_agreed_at = now` 기록
+  - **가입 페이지 양쪽 적용**:
+    - `signup/set-password/page.tsx` (이메일 가입): `agreedToCopyright` state·체크박스·validation 추가. master "전체 동의" 토글 포함
+    - `auth/terms-agreement/page.tsx` (OAuth 가입): 동일 패턴
+  - **레시피 작성 화면 정리**: `RecipeFormFooter.tsx` 저작권 박스·`copyrightAgreed` prop·게이트 로직 제거 (76→43줄). `recipes/new/page.tsx` state 제거
+  - **i18n 8 locale**: `auth.termsCopyrightLabel`·`termsCopyrightDesc` 추가
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
+- **레시피·팁 작성 UX 1차 개선 (자동저장·sentinel·재료행)** — 완료 (2026-05-20, develop 푸시)
+  - **`lib/hooks/useAutosave.ts` 신설**: localStorage debounce 자동저장(1.5초). `useAutosave(key, data, {enabled})` + `loadAutosave<T>(key, maxAgeMs)` + `clearAutosave(key)`. 게시·임시저장 성공 시 clear 호출 필수. 7일 만료
+  - **레시피 작성 (`recipes/new/page.tsx`)**: AUTOSAVE_KEY `naelum_recipe_new_autosave_v1`. 27개 state 전수 스냅샷. remix 모드는 비활성. mount 시 이전 스냅샷+title 있으면 복원 banner 표시 → 복원/버리기 선택. 게시(`692`)·임시저장(`762`) 성공 시 clear
+  - **팁 작성 (`tip/new/page.tsx`)**: AUTOSAVE_KEY `naelum_tip_new_autosave_v1`. 동일 패턴. **부가 수정**: `alert()` 2건 → `useToast`로 통일, `placeholder="예: 10"` 하드코딩 → `t.tipForm.durationPlaceholder` 8 locale, `user!.id` non-null assertion → null 체크 후 `/login` 리다이렉트
+  - **sentinel `'선택'` DB 누수 차단**: 레시피 unit이 `'선택'` (placeholder)인 채로 제출되면 DB에 한글 `'선택'` 저장되던 문제 → submit 두 곳(`568`·`654`) `(i.unit && i.unit !== '선택') ? i.unit : null`로 필터. 화면 표시는 이미 `t.quickAdd.unitLabels['선택']`로 localized (en="Select" 등)
+  - **재료 빈 행 5→2 + 1개씩 추가**: 초기 `Array(5)` → `Array(2)` (빈 폼 압도감 감소). `addIngredients` 5개씩 → 1개씩. `removeIngredient` 최소 5행 유지 → 최소 1행. 버튼 라벨 `t.recipeForm.addFiveIngredients` → `addIngredient` ("+ 재료 추가") 8 locale
+  - **i18n 키 8 locale 추가**: `recipeForm.{addIngredient, autosaveSaved, autosaveRestoreBanner, autosaveRestore, autosaveDiscard, unitPlaceholder}`, `tipForm.durationPlaceholder`
+  - 검증: lint 0 errors · build · vitest 16 files 158 passed
+- **레시피 작성 재료 자동완성 연결 + compact 모드 + dev DB 동기화** — 완료 (2026-05-20, develop 푸시)
+  - **문제**: `RecipeIngredientInput`·`IngredientAutocompleteV2`·`/api/ingredients/autocomplete` 모두 구현돼 있었으나 `IngredientsSection.tsx` 재료명 입력이 plain `<input type="text">`로 미연결 상태
+  - **`lib/constants/recipe.ts`**: `RecipeIngredient.ingredient_id?: string` 필드 추가
+  - **`IngredientsSection.tsx`**: `'use client'` 추가, `RecipeIngredientInput` 임포트, `onSelectIngredient` prop 추가, plain input → `RecipeIngredientInput` 교체
+  - **`recipes/new/page.tsx`**: `selectIngredient` 핸들러 추가 (ingredient_id + common_units 단위 자동추천), 두 API 페이로드(제출·임시저장) 모두 `ingredient_id` 포함
+  - **`app/api/recipes/route.ts` + `[id]/route.ts`**: `ingredient_id` DB insert 추가
+  - **compact 모드 신설** (좁은 grid cell 대응): `IngredientItemRenderer`·`IngredientAutocompleteV2Props`·`RecipeIngredientInputProps`에 `compact?: boolean` prop 추가. compact=true 시 이모지(text-2xl)·카테고리 배지·영문명 숨겨 단어 truncate 방지. `RecipeIngredientInput` 기본값 true (레시피 작성 폼은 1fr 좁은 grid). cart·홈 등 넓은 모달은 미지정으로 기존 디스플레이 유지
+  - **dev DB 동기화 (2026-05-20)**: dev approved 907 → 334. prod approved 725개 기준으로 매칭 안 되는 dev approved 573개(recipe extraction garbage: `튀김용기름파`·`체에 친 엿기름` 등) 일괄 pending. UI 자동완성에 garbage 노출 차단. 자유 텍스트 입력은 그대로 가능 (`allowCustomIngredient = true`)
+  - **검색어 확장 (SEARCH_EXPANSIONS)**: `/api/ingredients/autocomplete`에 의도-이름 갭 보완용 확장 맵 추가. `기름` 검색 시 `식용유`도 결과에 포함 (식용유는 이름에 "기름" 없음). `오일` → `식용유·기름`. 정확 일치(trim 후)일 때만 트리거. **동의어 매핑(name-level)이 아니므로 안전** — 검색 결과에 추가될 뿐 식용유=기름으로 conflate되지 않음
+  - 검증: lint 0 errors · build 성공
+- **ingredients_master 재료 정리 (2026-05-20)** — 완료 (prod+dev DB 직접)
+  - **pending 처리 15개**: 미소된장·정종·피시소스·젓국·라면스프·멸치육수·닭육수·다시마육수·쇠고기육수·육수·초간장·깨소스·기름·깨·참깨 → status='pending' (UI에서 숨김, DB FK 보존)
+  - **기름 → 식용유 교정**: recipe_ingredients 3건 (감자튀김·불고기찹쌀구이·효도강정) ingredient_name='식용유' + 식용유 ingredient_id로 직접 교정. 동의어 매핑 없음 — "기름"은 참기름·올리브유·식용유 모두 지칭 가능해 매핑 불가
+  - **깨 계열 정리**: 깨·참깨 pending, 통깨 approved 유지 (canonical). 깨소금은 별도 품목으로 유지
+  - **바닐라에센스**: spice → bakery 교정 (2026-05-19, prod+dev)
+  - **prod 현황**: approved **725개** / pending 962개
+- **피드백 버튼 레시피 하단 바 통합** — 완료 (2026-05-20, develop 푸시)
+  - **`RecipeBrowseView.tsx`**: 장보기 버튼 우측에 💬 피드백 버튼 통합. 모바일은 아이콘만, `sm:` 이상에서 "피드백" 텍스트 추가 노출. `ContactModal` dynamic import + `feedbackOpen` 상태 추가
+  - **`FloatingFeedbackButton.tsx`**: `shouldHide`에 `/recipes/*` 패턴 추가 → 레시피 상세에서 전역 플로팅 버튼 숨김 (중복 방지)
+  - 검증: lint 0 errors · build 성공
+- **KMP API Slices — /api/users/me 확장 (Slice 4.19·4.21·5.07)** — 완료 (2026-05-18, develop 푸시)
+  - **Slice 4.19 — username 편집**: PUT /api/users/me에 `username` 필드 추가. 형식 검증(2~20자 영소문자·숫자·_) + 중복 확인(409 반환). KMP 앱에서 닉네임 변경 지원
+  - **Slice 4.21 — avatar_url 편집**: PUT /api/users/me에 `avatar_url` 필드 추가. KMP 앱 프로필 사진 URL 저장 지원
+  - **Slice 5.07 — 개인정보 공개 토글**: GET+PUT /api/users/me에 `show_saved_to_public`·`show_cooked_to_public` 필드 추가. 모바일 앱 프로필 개인정보 공개 설정 읽기/쓰기
+- **재료명 정규화 (normalizeIngredientName) 신설** — 완료 (2026-05-18, develop 푸시)
+  - **`lib/ingredients/normalizeIngredientName.ts` 신설**: 조리법 접두사 제거(13개: 다진/채썬/볶은/구운/삶은/데친/말린/으깬/냉동 등) + 별칭 통일(파→대파, 무우→무). 남은 부분 1자 이상일 때만 제거("간장"의 "간" 오박리 방지)
+  - **`isIngredientMatch` 정규화 적용**: exact → normalize 비교 → synonym → Levenshtein. "다진파 보유 + 대파 레시피" 이제 매칭. 쪽파↔대파 잘못된 동의어 제거
+  - **`resolveIngredientId` 정규화 적용**: "다진마늘" 자유 입력 시 `마늘` ingredient_id 자동 연결
+  - **`GET /api/favorites` 정규화 그룹핑**: "다진마늘"+"마늘" 칩 통합 표시 (중복 칩 제거)
+  - **vitest 추가**: normalizeIngredientName 19케이스, match 정규화 7케이스
+- **자주 탭 Stage 2 + 재료 칩 UX 개선** — 완료 (2026-05-18, develop 푸시)
+  - **자주 탭 Stage 2 (score 기반 정렬)**: `GET /api/favorites` — `user_favorites_ingredients` 뷰 대신 `user_ingredients` 직접 집계. `score = recent_30day_count × 2 + total_count`(최근 추가 2배 가중). JS 집계라 DB 함수 불필요
+  - **별표 기능 전체 제거**: `PATCH /api/favorites`(별표 토글 API) 제거. IngredientBrowser·IngredientForm·CartQuickAdd·ShoppingCartDropdown에서 starredNames·toggleStar·isStarred 관련 코드·UI 전부 삭제. `QuickItem.isStarred` 필드 제거
+  - **재료 칩 토글 UX 개선**: IngredientBrowser — 선택된 칩 재클릭 시 제거(토글). hover 시 ✓→✕ 전환으로 "클릭하면 제거" 암시. IngredientForm — 중복 토스트+무시 → findIndex 토글(있으면 제거, 없으면 추가)
+  - **minRecipeHint 박스 제거**: 숫자 기반 기대치(재료 3개 이상)가 실제 품질과 불일치 → 오해 유발. 홈 냉장고 pill이 자연스러운 피드백 역할 담당
+  - **i18n `minRecipeHint` 정정** (8 locale): "재료 3개 이상" → "재료를 추가하면"
+  - **e2e favorites.spec.ts 갱신**: 별표 테스트 → Stage 2 score 정렬 검증으로 교체(score A:9 > C:5 > B:2 순서)
+  - 검증: lint 0 errors · build · e2e 399 passed · 2 skipped · 0 failed
+- **재료 브라우저 칩 냉장고 보유 표시 + fridge 배치 저장 race condition fix** — 완료 (2026-05-18, develop 푸시)
+  - **냉장고 보유 표시**: 재료 브라우저 칩에 이미 냉장고에 있는 재료는 emerald ring + 초록 ✓ 표시. `HomeClient.items → AddIngredientModal → IngredientForm → IngredientBrowser` ownedNames prop 전달 체인. 선택(pending)=orange 배경+✓ vs 보유(owned)=green ring+✓ 시각 구분
+  - **fridge 배치 저장 race condition fix**: `Promise.all` 배치 저장 시 각 insert/merge가 `fridge-updated` 개별 dispatch → concurrent `fetchItems()` 중 stale 결과가 items 덮어써 일부 재료 사라지는 버그. `fridge-updated` 핸들러에 300ms debounce 적용 → 배치 내 모든 이벤트를 단일 fetch로 병합. `performIngredientInsert`·`mergeIngredientQuantity`에서 중복 side effect(setAddModalLocation·showToast) 제거
+- **재료 이모지 DB 단일 소스 전환 완료** — 완료 (2026-05-18, develop 푸시 / PR #64 main 머지)
+  - **핵심 목표**: 정적 사전 파일(`ingredientEmoji.ts`) 완전 제거 → `ingredients_master.emoji` DB 단일 소스
+  - **이모지 소스 확정**: DB emoji 있으면 표시, 없으면 **텍스트만** (정확하지 않은 카테고리 폴백 🥬·🥩·📦 등 전면 제거)
+  - **`lib/ingredients/resolveIngredientId.ts` 신설**: "엄마표 간장" 자유 입력 → 공백 분리 → "간장" 단어 매칭 → `ingredient_id` 자동 연결. 단일(`resolveIngredientId`) + 배치(`resolveIngredientIds`) 두 함수. `HomeClient` 재료 추가 + `add-to-ingredients` API 양쪽 적용
+  - **autocomplete API `emoji` 추가**: `/api/ingredients/autocomplete` SELECT에 `emoji` 추가 → 검색 드롭다운도 DB 이모지 표시
+  - **카테고리 폴백 전면 제거**: `getCategoryIcon` 호출 6개 파일(HomeClient·IngredientBrowseClient·ShoppingCartDropdown·IngredientBrowser·IngredientDetailModal·IngredientForm) 전부 제거. `IngredientAutocompleteV2`·`IngredientAutocompleteTypes` 독립 구현도 제거
+  - **삭제된 파일**: `lib/utils/ingredientEmoji.ts`(정적 사전)·`lib/utils/categoryIcons.ts`(카테고리 폴백)·`lib/utils/__tests__/ingredientEmoji.test.ts`·`scripts/audit-emoji-coverage.ts`·`scripts/populate-ingredient-emoji.ts`
+  - **유지 파일**: `lib/constants/categoryIcons.ts` — 레시피 필터 UI용 국가·요리종류 아이콘(재료 이모지와 무관, 삭제 불필요). `scripts/backfill-ingredient-id.ts` — 기존 NULL 행 백필용(신규 저장은 resolveIngredientId 자동 처리)
+  - **prod DB 마이그레이션 적용 완료** (2026-05-18): `ingredients_master.emoji`(1,256/2,126 = 59.1% 보유) + `shopping_list_items.ingredient_id` — 코드 배포 전 선적용으로 무중단
+  - 검증: lint 0 errors · build · vitest 15 files 138 passed · e2e fresh build **404 passed·2 skipped·0 failed·0 flaky** (ingredient-emoji.spec.ts 포함) · Vercel Preview 라이브 스모크(홈·요리도감·레시피·콘솔 0)
+- **추천 매칭 정확도 fix + 이모지 게이트 + DB write 안전성 + recipes/new god-file 분해 5패스** — 완료 (2026-05-17, develop 푸시 / PR #58·59·60·61·62 main 머지)
+  - **추천 매칭 버그 2건** (사용자 제보, 보유=설탕/고추장/간장): ① `app/api/recommendations/route.ts` prefix 부분일치가 `고추장↔고추`·`간장↔간장게장`·`김↔김치` 등 의미정반대 오매칭 → 규칙 삭제(매칭=exact+synonym+FK+Levenshtein). ② `isAlmost` 절대기준(부족 1~2개)이 3재료 33%도 "거의 가능" 오분류 → `부족 1~2 AND matchRate ≥ 70%`(사용자 결정, 60→70). 순수로직 `lib/recommendations/match.ts` 추출(refactor)+vitest 후 fix. 메모리 [[project-ingredient-match-prefix-bug]]
+  - **재료 칩 이모지 fallback 게이트**: 카테고리 일반 폴백(채소 전부 🥬)이 스캔 방해 → `getPreciseIngredientEmoji`(EXACT/KEYWORD만, 폴백자리 null) 추출. KEYWORD_MAP 11개 보강(고춧가루·단호박·호박·무우 등) 커버리지 57.4→60.2%. **→ 2026-05-18 DB 단일 소스 전환으로 완전 대체됨** — 정적 사전(`ingredientEmoji.ts`)·EXACT/KEYWORD map·`getPreciseIngredientEmoji`·`getIngredientEmoji` 모두 삭제, `audit-emoji-coverage.ts` 목적 달성 후 삭제
+  - **DB write `.error` 미체크 9사이트 보강** (전수 감사, CLAUDE.md "DB 쓰기/RLS" 규칙·과거 데이터유실 버그 2건과 동일 계열): copyright/report·tip create tags·tip/[id] PUT children×4·tip 조회수·search history·settings savePreferences×7·OnboardingWizard·cookieConsent·useFridgeInteractions·delivery 롤백. **RLS 정책 dev 전수 확인 → 대상 테이블 write 정책 전부 존재(마이그레이션 불필요)**, 본 변경은 규칙준수+비-RLS 실패 표면화. delivery_orders 유저 DELETE 정책 부재(휴면)는 출시 시 조치 주석
+  - **i18n 단위 드롭다운 한글 누수**: 검증으로 보고서 위치 정정(recipes/new·DetailFields는 이미 `unitLabels` 번역, '선택'은 비표시 센티넬 = 거짓양성) → 진짜 누수 `CartItemList`·`CartAddInput`·`IngredientPickerInline` 3곳 `<option>{u}</option>` raw → `t.quickAdd.unitLabels[u] ?? u`
+  - **recipes/new 분해 5패스** (god-file, 4-스텝 규율: 안전망 선작성→baseline green→byte-identical 추출→동일 green→refactor 단독 커밋): `page.tsx 1160→873줄 (-287, -25%)` — 900선(분해 필수선) 돌파. 추출: `BasicInfoSection`·`RecipeFormFooter`·`ThumbnailUploadField`·`DietaryOptionsField`(`_components/`) + 순수로직 `lib/recipes/autoTags`(detectKoreanAndTranslate·computeAutoTags)+vitest 9. 상태·effect·async·이미지/드래그 핸들러는 부모 소유 불변. 안전망 보강: recipe-creation.spec.ts 5→8(Section1 바인딩·임시저장·썸네일·**자동태그 체인 :271 최고위험 wiring**). 남은 873줄은 진짜 오케스트레이션 — 더 분해하면 규칙 위반(종착점)
+  - 검증: 매 단계 lint 0 errors·build·vitest(최종 15 files 142)·격리 e2e + 전체 e2e fresh build **378 passed·2 skipped·0 failed·0 flaky**(잔여 flaky=ingredient-auto-merge 선존 병렬부하, 고립 재실행 클린으로 회귀 아님 입증). Vercel Preview(develop) 라이브 스모크 — 핵심 페이지 콘솔 0·렌더 정상
+- **선존 데이터유실 버그 적발·수정 — `isDemoRecord` UUID 오판 (수정·삭제 침묵 유실)** — 완료 (2026-05-17, develop 푸시)
+  - **근본 원인**: `app/[lang]/_home/helpers.ts:isDemoRecord` 가 데모 판정을 `id.startsWith('d')` 로 → `gen_random_uuid()` UUID 중 첫 hex 글자가 `d`인 **약 1/16(~6%) 실제 `user_ingredients` 행을 데모로 오판**. `updateIngredient`(HomeClient:345 `isDemoRecord({ id })`) · 삭제(`useFridgeInteractions:101`)가 Supabase PATCH/DELETE 없이 로컬 `setItems`만 하고 return → **DB 침묵 유실**(모달은 정상 닫혀 사용자는 성공 착각). 인증 유저 전원의 냉장고 재료 ~1/16이 수정·삭제 시 미반영. 선존 버그(데모 id 스킴 `d1`..`d21` 가정의 부작용)
+  - **발견 경로**: naelum.app 스모크 → 풀 검증(lint/build/vitest/e2e) → `e2e/logged-in-home.spec.ts:310` ~6% flaky 추적 → 실패 trace **네트워크 PATCH 0건**(느린 write 아닌 미발생) 확정 → 5개 호출처 정독으로 근본 원인 격리. flaky 빈도(≈6%)가 1/16과 정확히 일치
+  - **수정**: 판정식을 `/^d\d+$/`(데모 id = `d`+숫자 전체일치) + `demo*` 로 좁혀 UUID와 분리. 진짜 데모 id(`d1`~`d21`)·`isDemoItem` 플래그 판정 그대로. fix(동작 변경)이라 e2e 결정적-대기 개선(test refactor)과 **별도 커밋**
+  - **회귀 가드**: `lib/home/__tests__/isDemoRecord.test.ts` 신규 vitest — UUID-`d` 오판을 결정적으로 차단(e2e ~6% 확률 의존 제거). `lib/**/*.test.ts` 수집 규칙상 `lib/home/__tests__/` 위치 + `@/app/...` alias import
+  - **부차 수정**: `e2e/logged-in-home.spec.ts:310` 모달/입력 고정 `waitForTimeout` → 가시성 결정적 대기(`toBeVisible`/`toHaveValue('')`). 행위보존 test refactor (2차 UI-렌더 race 제거)
+  - 검증: lint **0 errors** · build · vitest **12 files 117 passed**(신규 가드 포함) · 고친 e2e 격리 **50/50**(retries=0·fresh build) · 풀 e2e fresh build(:3000 kill) **373 passed**. 잔여 flaky 1 = `ingredient-auto-merge:202`(CLAUDE.md 기재 선존 병렬부하·무관·회귀 아님)
+  - 메모리: `project_is_demo_record_uuid_bug` 신설. 교훈: **id-prefix 휴리스틱으로 데모/실데이터 분기 금지**(UUID 충돌) — 명시 플래그(`isDemoItem`) 또는 충돌 불가 스킴만. silent-write 패턴은 [[project-recipe-children-rls-fix]] 와 동류(DB 쓰기 미발생·미표면화)
+- **god-file 분해 Phase 2 전체 완료 + 선존 RLS 데이터유실 버그 2건 적발·수정 + Storage 격리 + 유지 규칙 명문화** — 완료 (2026-05-17, develop 푸시)
+  - **god-file 분해 6개** (영상 「2차 소프트웨어 위기」 처방, 행위보존·JSX byte-identical·상태/race/async/hook 부모 불변·안전망 선작성): `recipes/[id]/edit` 1365→864(`973bf16`) · `ShoppingCartDropdown` 1087→549(`5282cc4`) · `[username]/page` 928→426(`18c9a59`) · `IngredientForm` 899→480(`8126d33`) · `RecipeCookMode` 753→494(`df6ae43`) · `login/page` 877→601(`cee8ea1`). 순수함수 4개 `lib/`+vitest(groupItems·timeAgo·sanitizeOutgoingPayload·formatTime). **남은 god-file 분해 대상 0** (FridgeSVG·i18n locale·생성물 제외). 상세 표: `docs/ARCHITECTURE.md` "Phase 2" 절
+  - **선존 버그①** recipe_ingredients/steps/tags RLS write 정책 부재(`20260413` 이래 잠복, dev+prod) → 유저 레시피 생성·수정 시 재료·단계·태그 조용히 유실. 분해 안전망 `e2e/recipe-edit.spec.ts` 가 적발. 수정: `supabase/migrations/20260517_recipe_children_owner_write_rls.sql`(owner-scoped INSERT/UPDATE/DELETE, idempotent) **dev+prod 적용·검증 완료** + `POST·PUT /api/recipes` `.error`→500 보강 (`4bfabe4`)
+  - **선존 버그②** `notifications` RLS INSERT 정책 부재 → 댓글·평점·낼름 알림 + `send-expiry` cron 조용히 무작동. 행위자≠수신자라 owner 정책 부적합 → **service-role 코드 픽스**(`lib/notifications/create.ts` 내부 admin client+`.error` 체크, `send-expiry` 라우트 service-role; DB 마이그레이션 불필요) (`232f0ab`). RLS 전수 감사로 그 외 테이블 무해 확인
+  - **Storage API 격리** `lib/storage`(uploadToBucket·getPublicUrl) — 직접 `supabase.storage.from()` 6곳 전부 경유, AWS 이전 대비 (`882f6be`)
+  - **유지 규칙 명문화** CLAUDE.md "🧱 코드 유지 체계" 블록 신설(검증·금지 규칙 직후, OVERRIDE 우선) — 분해·안전망·RLS·Storage·커밋 규율을 강제 규칙으로 (`5ac4b5e`)
+  - 검증: lint **0 errors** · vitest **112 passed** · build · 풀 e2e fresh build **0 failed** (잔여 flaky=ingredient-auto-merge 선존 병렬부하, 고립 재실행 10/10 클린으로 회귀 아님 입증). 신규 Step-0 안전망 spec: recipe-edit·cart-decomposition·profile-decomposition·login-decomposition
+  - 메모리: `project_god_file_phase2`·`project_recipe_children_rls_fix` 갱신
+- **FloatingFeedbackButton 연결 + cart 메모 race 근본 fix + e2e suite flakiness 제거** — 완료 (2026-05-17)
+  - **FloatingFeedbackButton 연결**: 레포 어디에도 마운트 안 되던 orphan("Day 3 런칭 준비물" 초기 유저 피드백 창구)을 `app/[lang]/layout.tsx` providers 안 마운트 → 동작 시작. 하드코딩 한글 → `t.contact.feedbackAria/feedbackButton`(8 locale). 자체 hide 로직(`useLocalizedPathname`): `/auth·/signup·/login·/admin·/(홈)·cook·/delivery·/merchant·/rider`. **회귀 주의**: 전역 마운트 시 `fixed z-40` 버튼이 `/delivery`(앱 chrome 격리 플로우, CLAUDE.md)에서 결제 버튼 클릭 가로채 e2e 60s timeout → hide 목록에 배달 3 prefix 추가로 해결. 회귀 가드 `e2e/floating-feedback-button.spec.ts`
+  - **cart 메모 optimistic clobber 근본 fix** (`ShoppingCartDropdown`): cart-open 시 발행된 백그라운드 force-refresh(`loadShoppingList(true)`)가 사용자 메모 편집 *후* pre-PATCH 서버 데이터로 늦게 resolve → `notifySubscribers`/`fetchItems` 의 `setItems` 가 optimistic 메모를 stale 값으로 덮어씀(실패 DOM 스냅샷서 옛 메모 잔존 확인). **냉장고 `pendingDeleteIdsRef` 와 동일 검증 패턴**: `pendingNoteEditIdsRef` + `applyServerItems`(서버/캐시 적용 시 PATCH 진행중 id 의 로컬 메모 보존, 정착 후 해제). cart-note `cart-note.spec.ts:117` 등 장기 flaky 의 진짜 원인 — patchPromise-first/timeout 땜질로 안 잡히던 게 소거됨
+  - **e2e suite 병렬부하 flakiness 근본 제거 (0 flaky)**: 다수 spec의 `UI write → 고정 waitForTimeout → 즉시 DB read-back → 단언` anti-pattern이 async DB 커밋과 race(부하 시 flake 가 spec 회전). `ingredient-auto-merge`(4)·`logged-in-home:310`·`favorites:146`·`cart-note`(3) DB-readback 을 **`expect.poll`(end-state 결정적 대기)**로 교체(불변식·커버리지 보존·은폐 아님). `playwright.config` `workers: CI?1:3`(경합류 감소; 비단조 실측 2<3 이 "잔여=경합 아닌 race" 역증명; CI 이미 1워커 불변). `cart.spec` 은 toast 완료신호 후 read 라 race 아님 → 무수정(작동 코드 churn 회피). **검증: full-suite fresh build 연속 2회 356 passed·0 failed·0 flaky** + `ingredient-auto-merge` repeat-each=5 50/50
+  - **재발 방지 규칙**: e2e 에서 UI 액션 후 DB 상태 단언 시 **고정 `waitForTimeout` 금지 → `expect.poll`(end-state)** 또는 완료신호(toast/response) 대기. fixed sleep 은 부하 시 write 미커밋 race
+  - Vercel Preview 라이브 검증 완료(`/delivery` 피드백 숨김·식당 클릭 navigate·홈 surface·콘솔 0). PR 머지 시 prod 반영
+- **god-file(HomeClient) 분해 주요 완료 + i18n 근본 버그 수정** — 완료 (2026-05-17)
+  - **HomeClient `~1197→791줄 (-34%)`** — Strangler Fig, 전 단계 행위보존·독립 검증·독립 커밋
+  - **표현 컴포넌트 5개 `_home/` 추출**: `OnboardingBanner`·`RecommendationPill`·`EmptyFridgeGuide`·`MobileSearchOverlay`·`FridgeShelves`. 순수 표현 — 상태·가드·track·핸들러는 HomeClient 소유, 자식은 값+콜백만, JSX byte-identical. `FridgeShelves`(선반 overlay: renderGroup chip+본체4단+대롱대롱 만료배너/펜던트, ~177줄)는 props 명=원 변수명으로 IIFE 본문 verbatim 이동
+  - **순수 알고리즘 분리**: `lib/home/fridgeShelfDistribution.ts` — 선반 그룹분배 useMemo 본문(알고리즘 byte-identical). 비순수 그래프 의존 `urgencyScore`(helpers→quickAddList/emoji)는 **주입**해 lib 순수 유지 → vitest node 단독 7케이스
+  - **stateful hook 추출 (Step 3·고위험)**: `app/[lang]/_home/useFridgeInteractions.ts` — actionItem/detailItem 상태·longPress/pendingDelete refs·DELETE_UNDO dbTimer·옵티미스틱+rollback·long-press 분기를 **재설계 0·핸들러 byte-identical 기계적 이동**. hook 내부 useToast/useLocalizedRouter 보유, items/setItems/user/t 주입. `pendingDeleteIdsRef` 반환→fetchItems 동일 ref 필터(useEffect deps 추가, 안정 ref라 재실행 0). **cleanup useEffect 신규 추가/제거 안 함 = 동작 보존**. `router` 는 handleCookFromExpiring(미이동) 위해 HomeClient 유지
+  - **분해 중 발견·수정한 i18n 시스템 버그**: `lib/i18n/useLocalizedPathname.ts` 신설(`proxy.ts:stripLang` client 미러). raw `usePathname()`(i18n redirect 후 항상 `/{lang}…`)을 bare 경로(`/`,`/login`…)와 직접 비교하던 다증상 버그. `BottomNav.tsx`(홈탭 active 안 됨 + 홈 검색 시 HomeClient 오버레이 대신 BottomNav 범용 다이얼로그 = MobileSearchOverlay dead) + `FloatingFeedbackButton.tsx`(orphan 컴포넌트라 라이브 no-op이나 잠재 로직 교정) 수정. pathname 소스만 locale-aware 훅으로 교체(비교 로직 0줄 변경 = 최소 diff). **behavior 수정이라 refactor와 커밋 분리**
+  - **aria-hidden 계측 교훈**: MobileSearchOverlay 도달성 확인 시 `isVisible()`가 opacity-0+DOM상주로 false-positive. `aria-hidden={!open}` 속성 계측 e2e로 dead 실측 확정 — "한계/도달가능" 섣부른 결론 금지, 올바른 계측 도구 재검증이 정답
+  - **안전망 선작성 전략**(분해 전 통과 확인 후 추출, OnboardingBanner `1108745` 전략): `e2e/mobile-search-overlay.spec.ts`(i18n fix 검증) + `e2e/fridge-chip-interactions.spec.ts`(**Step 0 — Step 3 hook 추출의 가드**: long-press 삭제+undo→dbTimer 취소·DELETE_UNDO 경과→DB delete·그룹→미니시트→액션 3 불변식. 추출 후 6/6 green = 동작 보존 확정)
+  - 검증: lint 0 errors·build·unit **85**·e2e **0 fail**(잔여 flaky=`cart-note`·`ingredient-auto-merge`, 미변경 경로·고립 재실행 통과·무관 timing). 전 단계 fresh build(:3000 kill) 결정적 회귀
+  - **Vercel Preview 배포 검증 완료** (`/ko` 라이브): fridgeShelfDistribution(데모 칩 분배)·RecommendationPill(추천 pill)·i18n fix(BottomNav 홈탭 `aria-current=page`)·MobileSearchOverlay(BottomNav 검색→aria-hidden true→false→닫기 개폐)·`/recipes` 회귀 전부 정상. resize_window 가 이 환경서 렌더 뷰포트 미반영 → 모바일 동작은 viewport 아닌 pathname-로직이라 DOM/JS 계측으로 검증(시각보다 신뢰 높음)
+  - 분해 테이블·규약: `docs/ARCHITECTURE.md` god-file 분해 절 참조 (HomeClient 이제 ✅ 주요 분해 완료, 남은 god-file 아님)
+- **코드 건전성 정비 (회귀 안전망·lint·god-file 분해)** — 완료 (2026-05-16, `bfe582b`)
+  - 영상 「2차 소프트웨어 위기」 처방 적용. 전부 lint 0 errors / unit 78 / build / e2e **338 passed·2 skipped·0 failed·0 flaky** 검증
+  - **테스트·CI 인프라**: vitest 도입 + 순수함수 단위테스트 49개(levenshtein·unitConversion·badWordsFilter·password·sanitize). i18n 8-locale shape 런타임 테스트(`as TranslationKeys` 캐스트가 삼키는 구조 drift 차단). `.github/workflows/ci.yml`(quality=무-secret 항상, e2e=secret-gated graceful skip). `playwright.config` testIgnore로 `e2e/_*.spec.ts`(시각검수 스크래치) 정식 스위트 분리, `npm run test:visual` 옵트인
+  - **lint 위생 62→10 (0 errors)**: `eslint.config`에 `^_` 관례 honor + `scripts/**` 사유명시 스코핑. 안정 제품코드 죽은 import·directive·var 정리(behavior 0). 잔여 10 = 사용자 배달코드(이미 커밋) + react-hooks 의식적 신호
+  - **cart e2e stale 테스트 root-cause**: "11 failed=샌드박스 flakiness" 오진 정정 — 실제는 2026-05-16 cart 개편 vs 옛 셀렉터. `ShoppingCartDropdown`에 `cart-list`/`cart-quick-add` testid 추가, 의도보존 재스코프. ([[project-cart-e2e-stale-not-flaky]])
+  - **god-file 분해 (Strangler Fig)**: `recipes/new/page.tsx`에서 `_components/`로 `TagsField`·`NutritionFields`·`StepsSection` 추출(순수 표현, 상태·로직은 page 소유, JSX byte-identical). 잔여: `IngredientsSection`, `HomeClient.tsx`(1199줄 미착수) — `docs/ARCHITECTURE.md` 분해계획 참조
+  - **IngredientForm 죽은 uncontrolled location 모드 제거**: 구 pill UI가 모달 헤더로 이관된 잔재(유일 호출자 AddIngredientModal은 controlled만 사용). 냉장/냉동/상온 기능 동작 무변화
+  - **i18n orphan 키 제거**: `quickAddTitle` 8 locale 삭제(2026-05-16 cart 개편으로 헤딩 제거됨). locale-shape 테스트가 균일성 자동 검증
+- **장보기(cart) UX 개선 + 공유 cart + 가격 인프라** — 완료 (2026-05-16)
+  - cart 모달 PC width `26rem → 30rem`, recipe chip `max-w 10rem → 15rem` (잘림 해소)
+  - 레시피 chip 클릭 → 레시피 페이지 navigate + `sessionStorage` `naelum_cart_restore` 플래그 → 뒤로가기 시 Header·BottomNav 양쪽에서 cart 자동 재오픈
+  - 항목 스테퍼+단위 통합 `[−|수량|단위 ▾|+]` (DetailFields 패턴 일관), 입력창 단위 select도 동일 패턴 (`▾` 명시, placeholder "단위")
+  - quick-add chip 컴팩트화 + starred yellow tint + 긴 이름 `max-w`·truncate
+  - **공유 cart Phase 1 (read-only)**: `shopping_list_shares` 테이블(token PK, owner, expires/revoked, 사용자당 활성 1개 partial unique idx). `POST/DELETE /api/cart/share`(토큰 재사용·revoke), `GET /api/cart/share/[token]`(비로그인, admin client RLS 우회, 만료/취소 404). `/[lang]/cart/share/[token]` Server Component read-only 페이지(noindex). cart 모달 🔗 공유 버튼. **dev+prod 적용 완료**. read-write 협업은 사용자 100명+ 이후 Phase 2
+  - **재료 다 먹음 → 장보기 제안**: 냉장고 삭제 확정 시 한 토스트에 `[실행 취소][장보기에 추가]` 동시 노출. `useToast`에 `actions?: ToastAction[]` + `variant`(primary/secondary) 추가(백워드 컴팩트, 기존 `action` 단일 그대로). 비로그인/데모 skip
+  - **가격 파싱·저장 인프라 Phase 1**: `match-receipt`가 가격 버리던 것(route.ts:33) 수정 → `RawProduct[]`(name+price/quantity/unit). `stores`+`ingredient_price_reports` 테이블(price_per_unit 정규화: g/kg→100g, ml/l→100ml, 개수→개당). `POST /api/ingredients/price-report`(인증·price>0). **dev+prod 적용 완료**. 영수증 OCR UI 미연결 상태라 endpoint까지 사전 빌드(연결만 하면 가격 축적 시작)
+  - **트래킹 추가**: `cart_add_via_{chip,autocomplete,manual}`(카테고리 탭 추가 결정용), `cart_share_created`, `used_up_toast_shown`/`used_up_to_cart`(전환율 분모/분자)
+  - e2e: `cart-share.spec.ts`(6) + `price-report.spec.ts`(8) 전부 통과
+  - PR #48·#50·#52 (develop→main) 머지 완료
+- **배달 시스템 (음식 완제품 배달)** — 구현 완료 (2026-05-16), prod DB 미적용
+  - **진입 통제**: `/admin` 사이드바·quick actions에서만 진입. Header/홈/BottomNav/Footer 노출 X. 직접 URL은 인증만 거치면 접근 (RLS로 데이터 보안). 검색엔진 `robots: noindex`
+  - **소비자** (`app/[lang]/delivery/*`): 식당 리스트(검색·카테고리 필터) → 식당 상세·메뉴 → 카트 → 주문 확정(주소·mock 결제) → 주문 상세·상태 추적 → 주문 내역. cart는 localStorage(비로그인 OK), checkout부터 인증 필요(미인증 시 `/login` redirect)
+  - **사장님 어드민** (`app/[lang]/merchant/*`): 대시보드(오늘 주문·매출·영업토글) / onboarding(식당 등록) / 가게 정보 수정 / 메뉴 CRUD(카테고리·항목·품절) / 주문 칸반(결제완료→접수→조리→픽업대기, 30초 polling)
+  - **라이더** (`app/[lang]/rider`): 차량 선택 → online/offline → 배차 대기 주문(`ready`+미배차) 수락 → 픽업 → 배달 완료. PWA·네이티브 앱 아님 (prototype/MVP·운영 모니터링 용도). 실 라이더 앱은 향후 KMP 모바일
+  - **배차 모니터링** (`app/[lang]/admin/dispatch`): 운영팀용. 라이더 현황(온라인/배달중/오프라인)·활성 주문 테이블
+  - **상태 머신**: `delivery_order_status` enum 9개. 전환 검증 트리거(`delivery_validate_status_transition`)로 잘못된 전이 차단. 소비자 추적은 `inferStatus` 시간 기반 가상 진행 + 사장님 명시 status가 더 진행됐으면 우선
+  - **lib**: `lib/delivery/{api,cart,hooks,orders,storage,types}.ts`. `useSyncExternalStore` snapshot은 모듈 캐시로 안정 reference 유지(React error #185 회피 — [[feedback-use-sync-external-store-snapshot]])
+  - **`app/[lang]/error.tsx` 추가**: `app/error.tsx`가 I18nProvider 바깥이라 useI18n throw → 진짜 에러 가림. `[lang]/error.tsx`가 우선 적용돼 raw error 노출
+  - **i18n**: 8 locale에 `delivery`(cart/checkout/order/status 서브네임스페이스 포함)·`merchant`·`rider`. merchant/rider는 admin 전용이라 비-ko/en은 영어 폴백
+  - **e2e**: `e2e/delivery.spec.ts`(8) + `e2e/merchant-rider.spec.ts`(8) + `e2e/delivery-full-flow.spec.ts`(1, 한 유저 3역할 주문→조리→배달). 17개 전부 통과
+  - **미구현 (출시 전 필요)**: 메뉴 옵션(사이즈·맵기) / 결제 PG(현재 mock 즉시 paid) / 카카오 우편번호 / 메뉴 이미지 업로드 / 영업시간 UI / 푸시 알림(현재 polling) / 식당명·메뉴명 다국어
+  - **미구현 (출시 후)**: 실시간 위치 추적 / 리뷰 / 쿠폰 / 배차 매칭 알고리즘(현재 전체 노출) / 라이더 정산 / 주문 환불 UI / 다중 식당 / 카카오 지도
+  - PR #49 (develop→main) 머지 완료
+- **배달 지도 / 푸드트럭 위치공개 Phase 1** — 구현·검증 완료 (2026-05-16), prod DB 미적용
+  - **식당 좌표 입력**: `components/Merchant/PlaceLocationPicker.tsx`(지도 핀 드래그 + 주소·장소 검색 + 클릭 좌표) → merchant onboarding·가게정보 수정에서 `delivery_restaurants.lat/lng` 저장. 기존엔 푸드트럭만 지도에 뜰 수 있던 갭 해소
+  - **소비자 지도** (`app/[lang]/delivery/map`): `GET /api/delivery/nearby`(bbox/place_type/open 필터, ±5° 검증, 비활성 제외), `robots: noindex`. admin 사이드바에서만 진입
+  - **사장님 위치공개** (`app/[lang]/merchant/location`): 푸드트럭 live 위치 공개/재공개(항상 1개만 live)/영업종료. place_type 토글은 가게정보 수정에 통합
+  - **map 인프라**: `components/map/*` MapLibre 래퍼(WebGL 미지원 시 fallback 박스 — 폼 등 나머지 UI 생존), `lib/delivery/places.ts` VWorld(국토지리정보원) 검색. 카카오 미사용
+  - **i18n**: 8 locale에 `merchant`(place_type·location 공개) + map UI 키 추가
+  - **next.config CSP**: VWorld/Carto/OSM/OSRM 타일 `connect-src` 허용
+  - **e2e**: `e2e/delivery-map.spec.ts` 18개(API 검증·place_type DB반영·live row 1개유지·anon RLS·noindex). `describe` serial + `seedRestaurant` 단일왕복 self-verify로 격리 flaky 수정 — fresh-build 18×2 전부 통과·0 flaky
+  - **flaky 조사 부산물**: cart/favorites e2e 빨강은 flaky 아니라 2026-05-16 cart 개편 vs 옛 셀렉터(별도 수정됨). reuseExistingServer가 stale 빌드 재사용 → 결정적 회귀는 :3000 죽이고 fresh build로
+  - PR #54 (develop→main). prod DB(`20260516→17→18`) 미적용이라 머지해도 배달은 prod 휴면(admin 전용·noindex라 일반 사용자 무영향), 점등은 prod 마이그레이션 시점
+- **인증 페이지 UX 개선 및 버그 수정** — 완료 (2026-05-15)
+  - `login/page.tsx`: 아이디 찾기·비밀번호 찾기 모달 열릴 때 input 자동 포커스, ESC 키 닫기
+  - `login/page.tsx`: 아이디 찾기 성공 화면에 "비밀번호 찾기" 바로가기 버튼 추가
+  - `login/page.tsx`: 비밀번호 재설정 Step 3에 비밀번호 강도 텍스트 표시
+  - `signup/SignupClient.tsx`: Google 버튼 공식 브랜드 컬러 적용 (로그인 페이지와 통일)
+  - `signup/set-password/page.tsx`: "전체 동의" 마스터 체크박스 추가, 비밀번호 강도 텍스트, confirm placeholder
+  - `auth/terms-agreement/page.tsx`: "전체 동의" 마스터 체크박스 추가, provider 아이콘 범용화
+  - `auth/duplicate-email/content.tsx`: 하드코딩 한글 3곳 → i18n 키 교체
+  - `auth/reset-password/page.tsx`: 중복 CSS 클래스 제거, 비밀번호 강도 텍스트 표시
+  - i18n: 8개 locale에 `dupEmailRegistered`, `dupEmailCheckMethod`, `dupEmailMethodDesc`, `authVerifiedColon`, `agreeAll`, `passwordStrengthWeak/Fair/Strong/VeryStrong` 키 추가
+- **유통기한 알림 토글 서버 연동** — 완료 (2026-05-15)
+  - `NotificationPanel`: localStorage 제거 → 설정 패널 열릴 때 `profiles.push_notifications` DB에서 로드
+  - 토글 변경 시 `supabase.from('profiles').update({ push_notifications })` 즉시 저장
+  - `send-expiry` 크론: 발송 전 `push_notifications = true` 유저만 필터링 → 토글 off 시 실제 미발송
+  - 미구현 "식사 추천 알림" 토글 제거 (알림 설정 UI에서)
+- **E2E 테스트 6개 수정** — 완료 (2026-05-15)
+  - `logged-in-home.spec.ts` 시나리오 E·F: `purchase_date` 기대값 `null` → 오늘 날짜 (구매일 자동입력 기능 반영)
+  - `logged-in-home.spec.ts` 시나리오 G: 만료일 수정 전 "직접 입력" 버튼 클릭 추가 (유통기한 프리셋 UI 전환 반영)
+  - 결과: **288 passed, 2 skipped, 0 failed** 유지
+- **재료 상세 설정(DetailFields) UX 전면 개선** — 완료 (2026-05-15)
+  - 수량 입력 스핀 화살표 제거 (`[appearance:textfield]` Tailwind arbitrary CSS)
+  - 스테퍼 + 단위 드롭다운 통합: `[−][수량 | 단위 ▾][+]` 한 덩어리 레이아웃
+  - 수량/용량 동적 레이블: `VOLUME_UNITS` Set 기반 — 단위 미선택 시 "수량 또는 용량", g/ml 등 → "용량", 개/장 등 → "수량"
+  - 카테고리 양방향 `<` `>` 화살표 + 마우스 휠 수평 스크롤 (non-passive wheel handler)
+  - 구매일 오늘 자동 채우기: `createPendingItem`에서 `new Date().toISOString().slice(0, 10)`
+  - 유통기한 프리셋 버튼: 상대 레이블(오늘/3일 후 등) + 실제 날짜(M/D) 표시
+  - 유통기한 ↔ 직접 입력 인플레이스 전환: 프리셋 모드 ↔ 구매일+유통기한 양옆 2열 입력
+  - "직접 입력" 버튼: 오렌지 아웃라인 pill 스타일 (시인성 개선)
+  - "빠른 선택"(backToPresets) 용어 정립: 직접 입력 모드에서 프리셋으로 복귀 버튼
+  - `directInputDate` / `backToPresets` i18n 키 8개 locale 추가
+  - PR #45 (develop → main) 머지 완료
+- **재료 모달 UX 전면 개선** — 완료 (2026-05-15)
+  - 비로그인 + 버튼: 데모 추가 → `AuthPromptSheet` (Google/Kakao/이메일 가입 유도 시트)
+  - `IngredientForm`: `isSubmitting` 상태 추가 → ghost state 버그 수정, `Promise.all` 병렬 저장
+  - `IngredientBrowser` 탭 이름 i18n: 전체·자주·카테고리명 8개 locale 적용
+  - `Autocomplete` 검색창: 홈 SearchBar와 동일한 오렌지 글로우 디자인
+  - `isSelected` 칩: 연한 테두리+작은✓ → 오렌지 솔리드 배경+SVG 체크 (가시성 향상)
+  - 데스크톱 자동 포커스: `pointer: fine` 환경에서만 모달 열릴 때 검색창 자동 포커스
+- **데모 재료 글로벌화** — 완료 (2026-05-15)
+  - `demoItems.ts` v4: 김치·콩나물·부침가루·간장·참기름 등 한식 특화 → 토마토·버섯·밀가루·파스타·올리브유 등 글로벌 공통 재료
+  - `quickAddList.ts`: 두부🟦→🫘, 식용유🛢️→🧴, 후추⚫→🌶️
+  - `helpers.ts`: `getEmoji` fallback을 `getIngredientEmoji`로 교체 (정확한 이모지 반환) **→ 2026-05-18 DB 단일 소스 전환 시 `getIngredientEmoji` 삭제, DB emoji 직접 null-through로 동작**
+  - `POPULAR_ITEMS`: 한국 특화 20개 → 전 세계 공통 16개 (마늘·양파·계란·토마토 등)
+- **saves_count 음수 버그 수정** — 완료 (2026-05-14)
+  - 트리거(`update_recipe_saves_count`)를 `COUNT(*)` 방식으로 교체 → 정확한 집계
+  - `increment_saves_count` / `decrement_saves_count` RPC를 no-op으로 변환 (트리거와 이중 적용 방지)
+  - 마이그레이션: `20260514_fix_saves_count_negative.sql` + `20260514_fix_saves_count_rpc.sql` dev+prod 적용 완료
+- **레시피 편집 페이지 수정** — 완료 (2026-05-14)
+  - `app/[lang]/recipes/[id]/edit/page.tsx`: 하드코딩 한글 7곳 → i18n 키 교체
+  - `PUT /api/recipes/[id]`: 태그·재료·단계 전부 삭제 시 빈 배열(`[]`) 미처리 버그 수정 (`Array.isArray()` 패턴)
+- **SEO / 퍼포먼스 최적화** — 완료 (2026-05-14)
+  - `app/[lang]/recipes/page.tsx`: `export const revalidate = 3600` (ISR 정적 셸 캐시)
+  - `AllRecipesClient`: 첫 4장 `priority={index < 4}` (LCP 최적화)
+  - `app/[lang]/[username]/layout.tsx` 신규 생성: 프로필 페이지 Server Component `generateMetadata` (OG/Twitter 메타 서버사이드)
+  - `app/[lang]/recipes/[id]/page.tsx`: `title.absolute`로 `"레시피명 | 낼름"` 명시
+    (`[lang]/layout.tsx`의 `title.absolute`가 root template을 자식에게 전달하지 않는 Next.js 동작 우회)
+- **E2E 테스트 전면 정비** — 완료 (2026-05-14)
+  - 결과: 48 skipped → **2 skipped**, **288 passed** / 0 failed
+  - `auth-fixtures.ts`: `res.status()` → `res.status` 타입 오류 수정
+  - `ingredient-autocomplete.spec.ts` / `ingredient-picker-modal.spec.ts`: `auth-fixtures` 사용, 실제 UI(plain text input)에 맞게 재작성
+  - `recipe-detail-ssr.spec.ts`: `getPublicRecipeId` href 패턴 `a[href^="/recipes/"]` → `a[href*="/recipes/"]` (i18n `/ko/recipes/` 경로 대응)
+  - 전체 E2E spec: i18n lang prefix 경로 호환
+  - 잔여 2 skipped: 요리 팁 스크롤 복원 — dev DB에 팁 데이터 없음 (코드 정상, 데이터 환경 문제)
+- **자체 행동 분석(Analytics)** — 구현 완료 (2026-05-14)
+  - `events` 테이블 dev+prod 적용 (id, user_id?, session_id, event_type, payload jsonb, page, viewport_w/h, ua, created_at + 인덱스 4)
+  - RLS: `anon, authenticated` insert / `admin role` select
+  - 클라이언트: `lib/analytics/track.ts` — `navigator.sendBeacon` 우선(networkidle 영향 0), `fetch keepalive` fallback
+  - **GDPR 게이트**: `CookieConsent.analytics` 동의한 사용자만 트래킹 (미동의 시 `track()` no-op)
+  - 자동 페이지뷰: `components/Analytics/PageViewTracker.tsx`가 layout에서 mount, pathname 변경 시 `page_view` 전송
+  - 핵심 클릭 트래킹: 펜던트, 만료 배너, FAB(+), 빈 가이드 CTA, 추천 pill, BottomNav 검색, 검색 오버레이 pill, 재료 추가/삭제
+  - 수집 API: `POST /api/events` — rate limit 60/분 (user.id 또는 IP), payload 2KB 제한, `event_type` snake_case 검증, user_id 사칭 차단
+  - 대시보드 API: `GET /api/admin/analytics/events?days=N` — admin role 확인 후 raw events 반환 (최대 10000행)
+  - 대시보드 UI: `/[lang]/admin/analytics/events` — recharts 기반 페이지뷰 추이·Top events·Top pages·디바이스 분포·홈 인터랙션 카운트
+  - 기존 `search_history`·`recommendation_history`와 별개 유지 (충돌 없음)
+  - 2026-05-16 추가 이벤트: `cart_add_via_{chip,autocomplete,manual}`(cart 카테고리 탭 추가 결정용 — chip vs 검색 비율), `cart_share_created`(공유 실사용), `used_up_toast_shown`/`used_up_to_cart`(다 먹음 토스트 전환율 = 분자/분모). 1~2주 데이터 보고 결정할 보류 이슈용
+- **낼름함 (레시피 저장)** — 구현 완료
+  - 레시피 카드의 👅 낼름 버튼으로 저장
+  - 저장된 레시피는 `/@username` 프로필의 낼름함 탭에서 확인
+- **재료 기반 레시피 추천** — 구현 완료 (2026-05-10)
+  - `ingredient_id` FK 매칭(정확도 최우선) + 텍스트 매칭 fallback 하이브리드
+  - `/recommendations?type=ingredients&mode=ready|almost|all` — 3가지 모드
+  - 홈 냉장고 → "🔥 바로 만들 수 있는 레시피 N개" pill → `/recommendations` 연결
+- **냉장고 재료 등록 → 추천 플로우** — 구현 완료 (2026-05-10)
+  - 재료 추가 시 `ingredient_id` (ingredients_master FK) DB 저장
+  - 쇼핑 리스트 → 냉장고 추가 시도 ingredient_id 자동 조회 저장
+  - `user_ingredients.ingredient_id` 컬럼 활용으로 추천 정확도 향상
+- **다국어 지원 (i18n)** — 전 페이지·컴포넌트 완료 (2026-05-10)
+  - 8개 언어 (ko/en/ja/zh/es/fr/de/it) — `lib/i18n/locales/` 각 파일
+  - `useI18n()` 훅 패턴으로 전 UI 처리. 하드코딩 문자열 없음
+- **비로그인 홈 UX 정비** — 완료 (2026-05-13)
+  - 헤더 구조 재정렬: ⋯ 메뉴 좌측(로고 옆), 우측은 [언어][로그인/가입]만 (`t.common.loginOrSignup`)
+  - 데모 영역 한 줄 pill 통합 — outlined orange + 펄스, `t.home.demoBadge`/`demoCta`로 정체성("예시 재료로 체험 중") + 가입 CTA 동시 노출
+  - 모바일 pill을 fridge container 안 absolute로 → fridge 크기 영향 없음 (모든 viewport overflow 0)
+  - 비로그인 시 펜던트(전체 재료 목록) hide → pill과 시각적 겹침 자체 제거
+  - 펜던트 cream/wood 톤 (`#f4d8a0` + dark brown) — 빈티지 명패, 노끈/썸택과 색감 통일
+  - 데모 칩 신선도 시각화 — 위험(빨강 tint+펄스) / 주의(노랑 tint) / 신선(흰)
+  - 데모 시드 v3: `LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v3'` — 냉동 칩에 닭고기 추가(20→21개)
+  - AddIngredientModal 비로그인 안내 배너 (`t.ingredient.signupBanner`) — 재료 추가 시 가입 후 저장 가능함을 모달 상단에 명시
+  - BottomNav 비로그인 프로필 슬롯 hide — 헤더 [로그인/가입]이 대체, 향후 아이콘 2개 슬롯 확보
+  - SearchBar 좌측 돋보기 제거 + placeholder("재료, 요리 검색...") 노출
+  - Footer i18n 적용 (`t.footer.copyright`) — 8개 locale
+  - 첫 방문 풍선 제거 — pill 자체로 인지 가능 (`firstVisitTip` 키·상수·코드 모두 정리)
+  - 키보드 접근성 — chip X 버튼에 `group-focus-within:opacity-100` 추가 (WCAG 2.1)
+  - 신규 컴포넌트 작성 시 반드시 `useI18n()` 사용, 한글 하드코딩 금지
+  - 네임스페이스: `common`, `auth`, `recipe`, `ingredient`, `comments`, `writeModal`, `tipForm`, `settings`, `nutrition`, `cart`, `cookMode`, `contact` 등
