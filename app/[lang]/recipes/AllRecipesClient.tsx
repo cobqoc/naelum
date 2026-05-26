@@ -265,8 +265,13 @@ export default function AllRecipesPage() {
           <h1 className="sr-only">{t.recipe.allRecipes}</h1>
 
           {/* 전체 레시피 | 재료 기반 탭 */}
-          <div className="flex gap-2 mb-6">
+          <div role="tablist" aria-label={t.recipe.allRecipes} className="flex gap-2 mb-6">
             <button
+              role="tab"
+              id="recipes-tab-all"
+              aria-selected={activeTab === 'all'}
+              aria-controls="recipes-panel-all"
+              tabIndex={activeTab === 'all' ? 0 : -1}
               onClick={() => setActiveTab('all')}
               className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 activeTab === 'all'
@@ -277,6 +282,11 @@ export default function AllRecipesPage() {
               {t.recipe.allRecipes}
             </button>
             <button
+              role="tab"
+              id="recipes-tab-ingredient"
+              aria-selected={activeTab === 'ingredient'}
+              aria-controls="recipes-panel-ingredient"
+              tabIndex={activeTab === 'ingredient' ? 0 : -1}
               onClick={() => setActiveTab('ingredient')}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 activeTab === 'ingredient'
@@ -290,9 +300,11 @@ export default function AllRecipesPage() {
           </div>
 
           {activeTab === 'ingredient' ? (
-            <IngredientRecsView />
+            <div role="tabpanel" id="recipes-panel-ingredient" aria-labelledby="recipes-tab-ingredient">
+              <IngredientRecsView />
+            </div>
           ) : (
-          <>
+          <div role="tabpanel" id="recipes-panel-all" aria-labelledby="recipes-tab-all">
           <div className="flex items-center justify-between mb-6">
             <div>
               {hasFilter && (
@@ -454,7 +466,7 @@ export default function AllRecipesPage() {
               </div>
             </>
           )}
-          </>
+          </div>
           )}
         </div>
       </main>

@@ -378,52 +378,59 @@ export default function ProfilePage(props: PageProps) {
         {/* Tabs — _components/ProfileTabs.tsx 로 추출 (Phase 2) */}
         <ProfileTabs tabs={tabs} activeTab={activeTab} onSelectTab={handleSelectTab} />
 
-        {/* 팁 탭 — _components/TipsGrid.tsx 로 추출 (Phase 2) */}
-        {activeTab === 'tips' && (
-          <TipsGrid t={t} tips={tips} tipsLoading={tipsLoading} isOwnProfile={isOwnProfile} />
-        )}
+        {/* tabpanel — 활성 탭 콘텐츠를 하나의 panel 로 wrap. id 는 활성 탭에 따라 동적 (tab 의 aria-controls 와 매칭). */}
+        <div
+          role="tabpanel"
+          id={`profile-panel-${activeTab}`}
+          aria-labelledby={`profile-tab-${activeTab}`}
+        >
+          {/* 팁 탭 — _components/TipsGrid.tsx 로 추출 (Phase 2) */}
+          {activeTab === 'tips' && (
+            <TipsGrid t={t} tips={tips} tipsLoading={tipsLoading} isOwnProfile={isOwnProfile} />
+          )}
 
-        {/* 임시저장 / 비공개 탭 — _components/DraftsPrivateView.tsx 로 추출 (Phase 2) */}
-        {(activeTab === 'drafts' || activeTab === 'private') && (
-          <DraftsPrivateView
+          {/* 임시저장 / 비공개 탭 — _components/DraftsPrivateView.tsx 로 추출 (Phase 2) */}
+          {(activeTab === 'drafts' || activeTab === 'private') && (
+            <DraftsPrivateView
+              t={t}
+              activeTab={activeTab}
+              recipes={recipes}
+              tips={tips}
+              tipsLoading={tipsLoading}
+              recipePage={recipePage}
+              recipeTotalPages={recipeTotalPages}
+              loadMore={loadMore}
+              loadingMore={loadingMore}
+            />
+          )}
+
+          {/* Content Grid — _components/ProfileRecipeGrid.tsx 로 추출 (Phase 2 최대 블록).
+              상태·async 핸들러는 부모 소유 그대로 — 콜백만 전달. JSX byte-identical */}
+          <ProfileRecipeGrid
             t={t}
-            activeTab={activeTab}
             recipes={recipes}
-            tips={tips}
-            tipsLoading={tipsLoading}
-            recipePage={recipePage}
-            recipeTotalPages={recipeTotalPages}
-            loadMore={loadMore}
+            activeTab={activeTab}
+            isOwnProfile={isOwnProfile}
+            menuOpenRecipeId={menuOpenRecipeId}
+            setMenuOpenRecipeId={setMenuOpenRecipeId}
+            onDeleteCooked={handleDeleteCooked}
+            onOpenReview={handleOpenReview}
+            onDeleteRecipe={handleDeleteRecipe}
+            onToggleVisibility={handleToggleVisibility}
+            sentinelRef={sentinelRef}
             loadingMore={loadingMore}
           />
-        )}
 
-        {/* Content Grid — _components/ProfileRecipeGrid.tsx 로 추출 (Phase 2 최대 블록).
-            상태·async 핸들러는 부모 소유 그대로 — 콜백만 전달. JSX byte-identical */}
-        <ProfileRecipeGrid
-          t={t}
-          recipes={recipes}
-          activeTab={activeTab}
-          isOwnProfile={isOwnProfile}
-          menuOpenRecipeId={menuOpenRecipeId}
-          setMenuOpenRecipeId={setMenuOpenRecipeId}
-          onDeleteCooked={handleDeleteCooked}
-          onOpenReview={handleOpenReview}
-          onDeleteRecipe={handleDeleteRecipe}
-          onToggleVisibility={handleToggleVisibility}
-          sentinelRef={sentinelRef}
-          loadingMore={loadingMore}
-        />
-
-        {recipes.length === 0 && ['saved', 'cooked'].includes(activeTab) && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📭</div>
-            <p className="text-text-muted text-lg">
-              {activeTab === 'saved' && t.profile.noSavedRecipes}
-              {activeTab === 'cooked' && t.profile.noCookedRecipes}
-            </p>
-          </div>
-        )}
+          {recipes.length === 0 && ['saved', 'cooked'].includes(activeTab) && (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">📭</div>
+              <p className="text-text-muted text-lg">
+                {activeTab === 'saved' && t.profile.noSavedRecipes}
+                {activeTab === 'cooked' && t.profile.noCookedRecipes}
+              </p>
+            </div>
+          )}
+        </div>
       </main>
 
       {/* 리뷰 모달 */}
