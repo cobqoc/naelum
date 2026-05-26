@@ -1157,6 +1157,13 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **a11y 라운드 완전 종결 (Phase A·B·C + CartAddInput)** — 완료 (2026-05-26, PR #173~#179 main 머지, prod 라이브 native key 검증)
+  - Header dropdown 5곳: ESC + aria-expanded/haspopup + focus trap + 화살표 키 nav
+  - 본격 modal 16곳: ESC + focus trap + role/aria-modal (CookieConsent 의도적 skip)
+  - 자동완성 5곳: WAI-ARIA combobox 패턴 일관 (SearchBar·Common/Autocomplete·IngredientAutocompleteV2·RecipeIngredientInput·CartAddInput)
+  - 4 hook (`useOutsideClick`·`useEscapeKey`·`useFocusTrap`·`useListKeyboardNav`). `useFocusTrap.autoRestorePreviousFocus` 옵션 (trigger 명시 어려운 경우)
+  - 잔여 백로그 (modal aria-labelledby 14곳·Footer landmark·BottomNav aria-current): 사용자 100명+ 또는 글로벌 출시 trigger 까지 미룸. 상세는 메모리 [[pattern-a11y-dropdown-modal]]·[[a11y-remaining-backlog]]
+  - 부수 사례 — `scaleQuantity` 분수 fix 시도 후 *DB numeric 타입* 발견하고 rollback. *task report 받으면 라이브 재현 *먼저** 워크플로 규칙 메모리 확립 ([[feedback-verify-task-report-live-first]])
 - **UX 백로그 5건 (URL sync·a11y·검색 fallback)** — 완료 (2026-05-26, PR #171 main 머지, prod 라이브 검증 완료)
   - **#14 설정 탭 URL `?tab=` 동기**: handleTabClick·handleConfirmLeave 에서 `history.replaceState` 로 `?tab=X` 즉시 갱신. 공유·새로고침 시 활성 탭 유지 (이전엔 클릭해도 URL `?tab=profile` 그대로였음)
   - **#6 /recipes 정렬 URL `?sort=` 동기**: 초기값 `?sort=` 우선 + 변경 시 `history.replaceState`. `latest` 는 default 라 query 제거 (cleaner URL). "이번 주 인기 → 전체 보기" 버튼도 sync
