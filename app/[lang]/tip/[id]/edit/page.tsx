@@ -6,11 +6,12 @@ import { useParams } from 'next/navigation';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
-import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import Header from '@/components/Header';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import ImageCropModal from '@/components/Common/ImageCropModal';
+import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
 
 /**
  * 팁 수정 페이지 — /tip/[id]/edit
@@ -64,10 +65,21 @@ export default function TipEditPage() {
   // 폼 state — 초기값은 load 후 채움.
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('other');
+  const [category, setCategory] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  // 자르기 모달 — 파일 선택 후 16:9 영역 잡을 때까지 보류. tip/new 와 동일 패턴.
+  const [pendingCropFile, setPendingCropFile] = useState<File | null>(null);
+  // 썸네일 업로드 공용 hook — tip/new 와 일관 (loginRequired 토스트 생략).
+  const thumbUpload = useFileUpload(supabase, router, toast, {
+    bucket: 'recipe-images',
+    prefix: 'tip-thumb',
+    onSuccess: setThumbnail,
+    errors: {
+      imageType: t.tipForm.errorImageType, imageSize: t.tipForm.errorImageSize,
+      upload: t.tipForm.errorImageUpload,
+    },
+  });
   const [steps, setSteps] = useState<Step[]>([{ instruction: '', tip: '', image_url: null, uploading: false }]);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -98,7 +110,7 @@ export default function TipEditPage() {
         }
         setTitle(tip.title || '');
         setDescription(tip.description || '');
-        setCategory(tip.category || 'other');
+        setCategory(tip.category || '');
         setDurationMinutes(tip.duration_minutes != null ? String(tip.duration_minutes) : '');
         setThumbnail(tip.thumbnail_url || null);
         isPublicRef.current = tip.is_public;
@@ -124,41 +136,35 @@ export default function TipEditPage() {
     load();
   }, [id, router, supabase, t.tipForm.editLoadError]);
 
-  const handleThumbnailUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+  // 썸네일 — 파일 선택 → 검증 → 자르기 모달 띄움 → cropped File 업로드. tip/new 와 동일.
+  const handleThumbnailPick = (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
-    setThumbnailUploading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setThumbnailUploading(false); return; }
-    const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
-    const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!upErr && path) {
-      setThumbnail(getPublicUrl(supabase, 'recipe-images', path));
-    } else {
-      toast.error(t.tipForm.errorGeneric);
-    }
-    setThumbnailUploading(false);
+    setPendingCropFile(file);
   };
 
+  // 자르기 모달 onCropComplete — modal 닫기 + 공용 hook 으로 업로드.
+  const handleCroppedThumbnailUpload = (cropped: File) => {
+    setPendingCropFile(null);
+    thumbUpload.upload(cropped);
+  };
+
+  // 단계 이미지 업로드 — tip/new 와 동일 패턴 (per-index step.uploading 상태).
   const handleStepImageUpload = async (idx: number, file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
-    setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: true } : s));
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
-      return;
-    }
-    const ext = file.name.split('.').pop();
-    const fileName = `${user.id}/tip-step-${Date.now()}-${idx}.${ext}`;
-    const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
-    if (!upErr && path) {
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: getPublicUrl(supabase, 'recipe-images', path), uploading: false } : s));
-    } else {
-      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading: false } : s));
-      toast.error(t.tipForm.errorGeneric);
-    }
+    const setStepUploading = (uploading: boolean) =>
+      setSteps(prev => prev.map((s, i) => i === idx ? { ...s, uploading } : s));
+    await runImageUpload(supabase, router, toast, file, {
+      bucket: 'recipe-images',
+      prefix: `tip-step-${idx}`,
+      onStart: () => setStepUploading(true),
+      onFinally: () => setStepUploading(false),
+      onSuccess: (url) =>
+        setSteps(prev => prev.map((s, i) => i === idx ? { ...s, image_url: url } : s)),
+      errors: {
+        imageType: t.tipForm.errorImageType, imageSize: t.tipForm.errorImageSize,
+        upload: t.tipForm.errorImageUpload,
+      },
+    });
   };
 
   const addStep = () => setSteps(prev => [...prev, { instruction: '', tip: '', image_url: null, uploading: false }]);
@@ -181,6 +187,8 @@ export default function TipEditPage() {
   const handleSave = async () => {
     setError('');
     if (!title.trim()) { setError(t.tipForm.errorTitleRequired); return; }
+    if (title.length > 200) { setError(t.common.errorTitleTooLong); return; }
+    if (description.length > 500) { setError(t.common.errorDescriptionTooLong); return; }
     if (steps.some(s => !s.instruction.trim())) { setError(t.tipForm.errorStepRequired); return; }
 
     setSaving(true);
@@ -240,11 +248,21 @@ export default function TipEditPage() {
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.thumbnailLabel}</label>
             <label className="block cursor-pointer">
-              <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleThumbnailUpload(e.target.files[0])} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                data-testid="thumbnail-file-input"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleThumbnailPick(file);
+                  e.target.value = '';
+                }}
+              />
               <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-background-secondary border border-white/10 flex items-center justify-center hover:border-accent-warm/40 transition-colors">
                 {thumbnail ? (
                   <Image src={thumbnail} alt="thumbnail" fill className="object-cover" />
-                ) : thumbnailUploading ? (
+                ) : thumbUpload.uploading ? (
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />
                 ) : (
                   <div className="text-center text-text-muted">
@@ -283,6 +301,7 @@ export default function TipEditPage() {
                   className={`${INPUT_INNER_COMFORTABLE_CLASS} cursor-pointer`}
                   style={INPUT_INNER_STYLE}
                 >
+                  <option value="" disabled>{t.tipForm.categoryPlaceholder}</option>
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>{CATEGORY_ICONS[c]} {t.tipForm.categories[c as keyof typeof t.tipForm.categories]}</option>
                   ))}
@@ -311,6 +330,7 @@ export default function TipEditPage() {
                 value={description} onChange={e => setDescription(e.target.value)}
                 placeholder={t.tipForm.descriptionPlaceholder}
                 rows={3}
+                maxLength={500}
                 className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
                 style={INPUT_INNER_STYLE}
               />
@@ -422,6 +442,11 @@ export default function TipEditPage() {
           </button>
         </div>
       </main>
+      <ImageCropModal
+        file={pendingCropFile}
+        onCropComplete={handleCroppedThumbnailUpload}
+        onCancel={() => setPendingCropFile(null)}
+      />
     </div>
   );
 }

@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "test:visual": "PLAYWRIGHT_INCLUDE_VISUAL=1 playwright test e2e/_*.spec.ts"
+    "test:visual": "PLAYWRIGHT_INCLUDE_VISUAL=1 playwright test e2e/_*.spec.ts",
+    "scan:line-counts": "node scripts/scan-line-counts.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.47.0",
@@ -26,6 +27,7 @@
     "next": "^16.2.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-image-crop": "^11.0.10",
     "recharts": "^3.8.1",
     "resend": "^6.10.0",
     "web-push": "^3.6.7"

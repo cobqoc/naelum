@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import RecipeJsonLd from '@/components/RecipeJsonLd';
 import RecipeDetailClient, { type Recipe } from './RecipeDetailClient';
+import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://naelum.app';
 
 // 로그인 유저에 따라 개인화 데이터가 달라지므로 정적 캐싱 불가
 export const dynamic = 'force-dynamic';
@@ -119,13 +122,29 @@ async function fetchRecipePageData(id: string) {
   };
 }
 
+/**
+ * 단일 generateMetadata — 이전엔 layout.tsx 와 함께 *DB 쿼리 2번* 발생 (옛 audit 지적).
+ * 2026-05-27 통합: layout.tsx 의 generateMetadata 흡수 후 layout.tsx 삭제. 단일 출처.
+ *
+ * page.tsx 정책 (유지):
+ *  - status='published' 가드 + 미발견 시 절대 title 처리
+ *  - title.absolute 로 "레시피명 | 낼름" format ([lang]/layout 의 title.absolute 부모 template 미전달 우회)
+ *  - http→https 강제 변환 (legacy foodsafetykorea.go.kr 등 SNS 미리보기 차단 회피)
+ *
+ * 흡수 (layout.tsx → page.tsx):
+ *  - SELECT: prep/cook_time·difficulty·rating·servings·author username
+ *  - description fallback: "title - X분 - 난이도 - X인분" descParts (recipe.description NULL 시)
+ *  - originalAuthor: attributed_chef 우선, fallback author.username
+ *  - `other.recipe:*` OG meta (recipe vertical 비표준이지만 일부 SNS 활용)
+ *  - DIFFICULTY_LABELS 공유 상수 (옛 layout 하드코딩 '초급/중급/고급' → 통일 '쉬움/보통/어려움')
+ */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createClient();
 
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('title, description, thumbnail_url, status, show_source, attributed_chef, source_channel')
+    .select('title, description, thumbnail_url, status, show_source, attributed_chef, source_channel, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, servings, author:profiles!recipes_author_id_fkey(username)')
     .eq('id', id)
     .maybeSingle();
 
@@ -135,19 +154,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  // [lang]/layout.tsx가 title.absolute를 사용해 root template이 자식에게 전달되지 않음
-  // absolute로 직접 "레시피명 | 낼름" 형태를 설정한다
   const fullTitleForOG = `${recipe.title} | 낼름`;
   const title = { absolute: fullTitleForOG };
-  const description = recipe.description?.slice(0, 150) || `${recipe.title} 레시피`;
 
-  // 일부 레거시 레시피의 thumbnail_url이 http://로 시작 (foodsafetykorea.go.kr 등).
-  // HTTPS-only 환경의 SNS 미리보기에서 차단되므로 https로 강제 변환하거나 폴백 사용.
+  // description fallback (layout 흡수): description NULL 시 시간·난이도·인분으로 채움
+  const totalTime = (recipe.prep_time_minutes != null || recipe.cook_time_minutes != null)
+    ? (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)
+    : null;
+  const difficulty = recipe.difficulty_level
+    ? (DIFFICULTY_LABELS[recipe.difficulty_level] || recipe.difficulty_level)
+    : null;
+  const descParts = [
+    recipe.title,
+    totalTime != null ? `${totalTime}분` : null,
+    difficulty,
+    recipe.servings ? `${recipe.servings}인분` : null,
+  ].filter(Boolean).join(' - ');
+  const description = recipe.description?.slice(0, 150) || descParts;
+
   const ogImage = recipe.thumbnail_url
     ? recipe.thumbnail_url.replace(/^http:\/\//, 'https://')
     : '/icons/icon-512.png';
 
-  const originalAuthor = recipe.attributed_chef ?? null;
+  const author = Array.isArray(recipe.author) ? recipe.author[0] : recipe.author;
+  const originalAuthor = recipe.attributed_chef ?? author?.username ?? null;
 
   return {
     title,
@@ -158,6 +188,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       images: [ogImage],
       type: 'article',
+      url: `${BASE_URL}/recipes/${id}`,
       ...(originalAuthor && { authors: [originalAuthor] }),
     },
     twitter: {
@@ -166,6 +197,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       images: [ogImage],
     },
+    ...(totalTime != null && {
+      other: {
+        ...(recipe.prep_time_minutes != null && { 'recipe:prep_time': `PT${recipe.prep_time_minutes}M` }),
+        ...(recipe.cook_time_minutes != null && { 'recipe:cook_time': `PT${recipe.cook_time_minutes}M` }),
+        'recipe:total_time': `PT${totalTime}M`,
+      },
+    }),
   };
 }
 

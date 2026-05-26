@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, use } from 'react';
+import { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
-import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import {
@@ -17,6 +16,9 @@ import NutritionFields from './_components/NutritionFields';
 import IngredientsSection from './_components/IngredientsSection';
 import StepsSection from './_components/StepsSection';
 import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
+import ImageCropModal from '@/components/Common/ImageCropModal';
+import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
+import { useImageDropZone } from '@/lib/hooks/useImageDropZone';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -64,13 +66,32 @@ export default function EditRecipePage(props: PageProps) {
 
   // 완성된 요리 이미지 (썸네일)
   const [thumbnailImage, setThumbnailImage] = useState<string | null>(null);
-  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
-  const [isDraggingThumbnail, setIsDraggingThumbnail] = useState(false);
+  // 자르기 모달 — 파일 선택/드롭 후 16:9 영역 잡을 때까지 보류.
+  // recipes/new 와 동일 패턴 ([[project-thumbnail-crop-next-session]] 옵션 3).
+  const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
+  // 썸네일 업로드 공용 hook — recipes/new 와 일관 패턴.
+  const thumbUpload = useFileUpload(supabase, router, toast, {
+    bucket: 'recipe-images',
+    prefix: 'thumbnail',
+    onSuccess: setThumbnailImage,
+    errors: {
+      imageType: tf.errorImageType, imageSize: tf.errorImageSize,
+      upload: tf.errorImageUpload, loginRequired: tf.errorLoginRequired,
+    },
+  });
 
   // 재료 준비 이미지
   const [ingredientsImage, setIngredientsImage] = useState<string | null>(null);
-  const [uploadingIngredientsImage, setUploadingIngredientsImage] = useState(false);
-  const [isDraggingIngredients, setIsDraggingIngredients] = useState(false);
+  // 재료 준비 이미지 업로드 공용 hook — 썸네일과 동일 패턴.
+  const ingredientsUpload = useFileUpload(supabase, router, toast, {
+    bucket: 'recipe-images',
+    prefix: 'ingredients',
+    onSuccess: setIngredientsImage,
+    errors: {
+      imageType: tf.errorImageType, imageSize: tf.errorImageSize,
+      upload: tf.errorImageUpload, loginRequired: tf.errorLoginRequired,
+    },
+  });
 
   // 조리 단계
   const [steps, setSteps] = useState<Step[]>([
@@ -272,50 +293,19 @@ export default function EditRecipePage(props: PageProps) {
   };
 
   // 이미지 업로드 함수
+  // 단계 이미지 업로드 — recipes/new 와 동일 패턴 (per-index 상태 → runImageUpload).
   const handleImageUpload = async (index: number, file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error(tf.errorImageType);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(tf.errorImageSize);
-      return;
-    }
-
-    setUploadingImage(index);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
-        toast.error(tf.errorLoginRequired);
-        router.push('/signin');
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
-
-      updateStep(index, 'image_url', publicUrl);
-
-    } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error(tf.errorImageUpload);
-    } finally {
-      setUploadingImage(null);
-    }
+    await runImageUpload(supabase, router, toast, file, {
+      bucket: 'recipe-images',
+      prefix: 'step',
+      onStart: () => setUploadingImage(index),
+      onFinally: () => setUploadingImage(null),
+      onSuccess: (url) => updateStep(index, 'image_url', url),
+      errors: {
+        imageType: tf.errorImageType, imageSize: tf.errorImageSize,
+        upload: tf.errorImageUpload, loginRequired: tf.errorLoginRequired,
+      },
+    });
   };
 
   // 이미지 제거 함수
@@ -324,102 +314,35 @@ export default function EditRecipePage(props: PageProps) {
   };
 
   // 재료 준비 이미지 업로드 함수
-  const handleIngredientsImageUpload = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error(tf.errorImageType);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(tf.errorImageSize);
-      return;
-    }
-
-    setUploadingIngredientsImage(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
-        toast.error(tf.errorLoginRequired);
-        router.push('/signin');
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `ingredients-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
-
-      setIngredientsImage(publicUrl);
-
-    } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error(tf.errorImageUpload);
-    } finally {
-      setUploadingIngredientsImage(false);
-    }
-  };
+  // 재료 준비 이미지 업로드 — useFileUpload 가 boilerplate 일임.
+  const handleIngredientsImageUpload = useCallback((file: File) => {
+    ingredientsUpload.upload(file);
+  }, [ingredientsUpload]);
 
   // 재료 준비 이미지 제거 함수
   const handleIngredientsImageRemove = () => {
     setIngredientsImage(null);
   };
 
-  // 썸네일(완성 요리) 이미지 업로드 함수
-  const handleThumbnailUpload = async (file: File) => {
+  // 썸네일 — 파일 선택/드롭 → 검증 → 자르기 모달 띄움 → cropped File 업로드.
+  // recipes/new 와 일관 ([[project-thumbnail-crop-next-session]] 옵션 3 — 16:9 고정).
+  const handleThumbnailPick = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error(tf.errorImageType);
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error(tf.errorImageSize);
       return;
     }
+    setPendingThumbnailFile(file);
+  }, [toast, tf.errorImageType, tf.errorImageSize]);
 
-    setUploadingThumbnail(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
-        toast.error(tf.errorLoginRequired);
-        router.push('/signin');
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await uploadToBucket(supabase, 'recipe-images', filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getPublicUrl(supabase, 'recipe-images', filePath);
-
-      setThumbnailImage(publicUrl);
-
-    } catch (error) {
-      console.error('Image upload error:', error);
-      toast.error(tf.errorImageUpload);
-    } finally {
-      setUploadingThumbnail(false);
-    }
+  // 자르기 모달 onCropComplete — modal 닫기 + 공용 hook 으로 업로드.
+  // boilerplate(검증·인증·경로·업로드·에러·uploading state) 는 useFileUpload 내부.
+  const handleCroppedThumbnailUpload = (cropped: File) => {
+    setPendingThumbnailFile(null);
+    thumbUpload.upload(cropped);
   };
 
   // 썸네일 이미지 제거 함수
@@ -427,63 +350,9 @@ export default function EditRecipePage(props: PageProps) {
     setThumbnailImage(null);
   };
 
-  // 드래그 앤 드롭 핸들러 - 썸네일
-  const handleThumbnailDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleThumbnailDragIn = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingThumbnail(true);
-  };
-
-  const handleThumbnailDragOut = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingThumbnail(false);
-  };
-
-  const handleThumbnailDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingThumbnail(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleThumbnailUpload(files[0]);
-    }
-  };
-
-  // 드래그 앤 드롭 핸들러 - 재료 준비 이미지
-  const handleIngredientsDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleIngredientsDragIn = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingIngredients(true);
-  };
-
-  const handleIngredientsDragOut = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingIngredients(false);
-  };
-
-  const handleIngredientsDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDraggingIngredients(false);
-
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      handleIngredientsImageUpload(files[0]);
-    }
-  };
+  // 드래그 앤 드롭 — 8 핸들러를 useImageDropZone 2 줄로 압축. recipes/new 와 일관.
+  const thumbnailDropZone = useImageDropZone(handleThumbnailPick);
+  const ingredientsDropZone = useImageDropZone(handleIngredientsImageUpload);
 
   // 드래그 앤 드롭 핸들러 - 조리 단계 이미지
   const handleStepDrag = (e: React.DragEvent) => {
@@ -545,6 +414,14 @@ export default function EditRecipePage(props: PageProps) {
     // 유효성 검사
     if (!title.trim()) {
       toast.warning(tf.warnTitle);
+      return;
+    }
+    if (title.length > 200) {
+      toast.warning(t.common.errorTitleTooLong);
+      return;
+    }
+    if (description.length > 500) {
+      toast.warning(t.common.errorDescriptionTooLong);
       return;
     }
 
@@ -683,8 +560,8 @@ export default function EditRecipePage(props: PageProps) {
             tf={tf}
             ingredients={ingredients}
             ingredientsImage={ingredientsImage}
-            uploadingIngredientsImage={uploadingIngredientsImage}
-            isDraggingIngredients={isDraggingIngredients}
+            uploadingIngredientsImage={ingredientsUpload.uploading}
+            isDraggingIngredients={ingredientsDropZone.isDragging}
             unitInputRefs={unitInputRefs}
             getPlaceholder={getPlaceholder}
             onAddIngredients={addIngredients}
@@ -693,10 +570,10 @@ export default function EditRecipePage(props: PageProps) {
             onSelectIngredient={selectIngredient}
             onImageUpload={handleIngredientsImageUpload}
             onImageRemove={handleIngredientsImageRemove}
-            onDrag={handleIngredientsDrag}
-            onDragIn={handleIngredientsDragIn}
-            onDragOut={handleIngredientsDragOut}
-            onDrop={handleIngredientsDrop}
+            onDrag={ingredientsDropZone.dropZoneProps.onDragOver}
+            onDragIn={ingredientsDropZone.dropZoneProps.onDragEnter}
+            onDragOut={ingredientsDropZone.dropZoneProps.onDragLeave}
+            onDrop={ingredientsDropZone.dropZoneProps.onDrop}
           />
         </section>
 
@@ -751,28 +628,29 @@ export default function EditRecipePage(props: PageProps) {
                 <input
                   type="file"
                   accept="image/*"
+                  data-testid="thumbnail-file-input"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      handleThumbnailUpload(file);
+                      handleThumbnailPick(file);
                     }
                     e.target.value = '';
                   }}
                   className="hidden"
-                  disabled={uploadingThumbnail}
+                  disabled={thumbUpload.uploading}
                 />
                 <div
                   className={`w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                    isDraggingThumbnail
+                    thumbnailDropZone.isDragging
                       ? 'border-accent-warm bg-accent-warm/10'
                       : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
                   }`}
-                  onDragOver={handleThumbnailDrag}
-                  onDragEnter={handleThumbnailDragIn}
-                  onDragLeave={handleThumbnailDragOut}
-                  onDrop={handleThumbnailDrop}
+                  onDragOver={thumbnailDropZone.dropZoneProps.onDragOver}
+                  onDragEnter={thumbnailDropZone.dropZoneProps.onDragEnter}
+                  onDragLeave={thumbnailDropZone.dropZoneProps.onDragLeave}
+                  onDrop={thumbnailDropZone.dropZoneProps.onDrop}
                 >
-                  {uploadingThumbnail ? (
+                  {thumbUpload.uploading ? (
                     <>
                       <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
                       <span className="text-sm text-text-muted">{tf.uploading}</span>
@@ -871,6 +749,11 @@ export default function EditRecipePage(props: PageProps) {
           </button>
         </div>
       </div>
+      <ImageCropModal
+        file={pendingThumbnailFile}
+        onCropComplete={handleCroppedThumbnailUpload}
+        onCancel={() => setPendingThumbnailFile(null)}
+      />
     </div>
   );
 }
