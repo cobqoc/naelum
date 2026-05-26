@@ -90,7 +90,7 @@ const nextConfig: NextConfig = {
       // Cloudflare Web Analytics beacon은 static.cloudflareinsights.com에서 로드됨.
       // 'wasm-unsafe-eval': WebAssembly 컴파일 허용 (unsafe-eval보다 범위 좁음, WASM 전용)
       // dev 모드: Turbopack HMR이 eval() 필요 → 'unsafe-eval' 추가 (prod에선 빠짐)
-      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://static.cloudflareinsights.com`,
+      `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://static.cloudflareinsights.com https://developers.kakao.com https://t1.kakaocdn.net`,
       "style-src 'self' 'unsafe-inline'",
       // 이미지: Supabase Storage, Unsplash, Google 프로필 사진
       "img-src 'self' data: blob: https:",
@@ -100,7 +100,7 @@ const nextConfig: NextConfig = {
         // Supabase Realtime은 shim으로 대체되어 wss:// 연결 없음
         supabaseHost ? `https://${supabaseHost}` : '',
         'https://accounts.google.com',
-        'https://kauth.kakao.com https://kapi.kakao.com',
+        'https://kauth.kakao.com https://kapi.kakao.com https://developers.kakao.com https://t1.kakaocdn.net',
         'https://cloudflareinsights.com https://static.cloudflareinsights.com',
         'https://*.sentry.io https://*.ingest.sentry.io',
         // Tesseract.js: WASM 코어(jsdelivr) + 한국어 언어팩(tessdata)
@@ -113,7 +113,7 @@ const nextConfig: NextConfig = {
       "frame-src 'none'",     // iframe 삽입 차단
       "object-src 'none'",    // Flash/Plugin 차단
       "base-uri 'self'",      // <base> 태그 인젝션 차단
-      "form-action 'self'",   // 폼 외부 전송 차단
+      "form-action 'self' https://sharer.kakao.com",   // 폼 외부 전송 차단 (kakao 공유 picker 예외)
       // Sentry 세션 리플레이는 worker 사용
       "worker-src 'self' blob:",
     ].join('; ')

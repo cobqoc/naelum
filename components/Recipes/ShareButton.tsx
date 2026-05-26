@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Script from 'next/script';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -105,8 +106,10 @@ export default function ShareButton({ recipeId, title, description }: ShareButto
   const { t } = useI18n();
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const params = useParams();
+  const lang = (params?.lang as string) || 'ko';
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const recipeUrl = `${baseUrl}/recipes/${recipeId}`;
+  const recipeUrl = `${baseUrl}/${lang}/recipes/${recipeId}`;
   const encodedTitle = encodeURIComponent(title);
   const encodedUrl = encodeURIComponent(recipeUrl);
 
