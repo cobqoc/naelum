@@ -11,6 +11,44 @@
 
 ## 2026-05 작업 로그
 
+- **레시피 상세 generateMetadata 통합 — DB 쿼리 2→1번, layout.tsx 삭제** — 완료 (2026-05-27, commit `a9aab41`)
+  - **문제**: `app/[lang]/recipes/[id]/` 가 `layout.tsx` + `page.tsx` 양쪽에 `generateMetadata` 보유 → 같은 ID 로 **DB 쿼리 2번**. 옛 audit 지적 항목 + Next.js Metadata 병합 규칙상 page.tsx 가 충돌 필드 *override* 하지만 layout.tsx 의 고유 `other.recipe:*` OG meta 만 살아남는 *동기화 위험* + DB 자원 낭비
+  - **분석**: layout.tsx 는 *풍부한 SELECT* (prep/cook_time·difficulty·rating·servings·author) 와 `recipe:prep_time` OG meta 보유. page.tsx 는 *완전 처리* (title.absolute "X | 낼름"·http→https 변환·status='published' 가드). 두 metadata 가 *서로 보완*하지만 출처 분산
+  - **fix (옵션 C — page.tsx 통합 후 layout.tsx 삭제)**: SELECT 확장(prep/cook_time·difficulty·rating·servings·author) + description fallback "title - X분 - 난이도 - X인분" 흡수 + originalAuthor 폴백 강화(attributed_chef ?? author.username) + `other.recipe:prep_time/cook_time/total_time` OG meta 흡수 + `DIFFICULTY_LABELS` 공유 상수 사용 (옛 layout 하드코딩 '초급/중급/고급' → 통일 '쉬움/보통/어려움', CHANGELOG `난이도 라벨 fix` 와 일관) + `BASE_URL` openGraph.url canonical
+  - **layout.tsx 파일 삭제** — children 반환만이라 불필요 (Next.js 가 부모 layout 자동 사용). page.tsx 가 단일 출처
+  - **SEO 무손실**: `RecipeJsonLd`(Schema.org Recipe JSON-LD) 가 prep/cook/totalTime/servings/rating 주력 신호 제공. OG `recipe:*` 는 비표준 보조 — 흡수로 보존
+  - **메모리 [[pattern-single-generate-metadata-per-segment]]** — 같은 segment 양쪽 generateMetadata 금지 패턴 확립
+  - 검증: lint 0 errors · build success · 라이브 (Vercel preview meta tag 직접 조회)
+
+- **fridge 배지 'all' 상태 animate-pulse 제거** — 완료 (2026-05-27, commit `8321a6b`)
+  - **문제**: 레시피 상세 페이지 재료 탭 냉장고 매칭 배지가 none/partial/all 세 상태 *모두 항상* `animate-pulse`. 재료를 다 가진 상태(all)에서도 깜빡거려 시각 노이즈
+  - **위치**: `RecipeBrowseView` 분해(PR #184) 후 → `components/Recipes/_browse/IngredientsTab.tsx:100`
+  - **fix**: `ingredientStatus !== 'all'` 일 때만 `animate-pulse` 적용. none/partial(빨강/주황) = 행동 유도 신호 유지, all(초록) = 준비 완료 신호로 깜빡임 불필요
+  - **라이브 검증**: Vercel preview 'none' 상태(0/13 보유) → `animate-pulse bg-error` 직접 확인. 조건문 시뮬레이션으로 none/partial pulse 유지·all 제거 확정
+
+- **iOS Safari 자동 줌 fix — INPUT_INNER_CLASS 모바일 16px** — 완료 (2026-05-27, commit `733729b`)
+  - **문제**: 모바일 iOS Safari 에서 input/select 포커스 시 페이지 자동 줌 발동. 매 input 포커스마다 사용자 짜증
+  - **원인** (Apple 공식 알고리즘): input/select font-size < 16px 일 때 자동 줌 트리거. viewport `maximumScale=1` 또는 `userScalable=no` 없으면 줌 차단 불가. 코드 현황: `INPUT_INNER_CLASS=text-sm`(14px) + viewport `maximumScale=5, userScalable=true` → 두 조건 모두 충족 → 줌 100% 발생
+  - **fix**: `text-sm` → `text-base md:text-sm` (모바일 16px·iOS 줌 차단·가독성↑, 데스크톱 14px·시각 변화 0)
+  - **영향 범위**: `InputBoxWrapper` 통일(2026-05-24 PR #134~146, 100+ input 13 PR) 후 전 앱 input 단일 진실 소스 → 한 줄 fix 로 모두 적용. `INPUT_INNER_COMFORTABLE_CLASS` 는 text 클래스 없음(부모 상속 text-base 16px) → 이미 줌 트리거 안 함
+  - **라이브 검증**: Vercel preview `/signin` 모바일 viewport(606px<768) email·password input `fontSize: 16px` 직접 측정. 데스크톱 14px 유지는 Tailwind 4 표준 `md:text-sm` 검증
+  - **한계**: iOS Safari *시스템 동작* 이라 Playwright webkit·Chrome emulation·claude-in-chrome 모두 재현 불가. 실기기/Xcode iOS Simulator만 정확. 단 font-size 16px 적용은 확정 → Apple 임계 충족 = 줌 차단 조건
+  - 메모리 [[backlog-recipe-form-mobile]] 갱신
+
+- **CLAUDE.md 작업 로그 분리 — docs/CHANGELOG.md (2526→1603줄, -72% bytes)** — 완료 (2026-05-27, commit `28e9937`)
+  - **문제**: CLAUDE.md 247 KB 매 세션 풀 로드 → 컨텍스트 ~7만 토큰. `📌 데이터 현황 > ### 기능 구현 현황` 작업 로그 1016줄(40%)이 주범
+  - **분리**: `### 기능 구현 현황` 925줄 (2026-05-19~05-27 작업 bullet ~80개) → `docs/CHANGELOG.md` 신설. 헤더(분리 배경·역할·재성장 정책) + 작업 로그 byte-identical 보존
+  - **유지**: 영구 메타 — 이메일·관리자·봇 차단·농사로 API 폐기·배달 DB·레시피 DB(폐기 MAFF 등)·재료 DB·요리 팁 (재임포트 금지·미래 회귀 가드)
+  - **효과**: 매 세션 컨텍스트 ~5만 토큰 절감. 핵심 교훈은 메모리 `[[...]]` 에 응축돼 있어 CHANGELOG 는 *백업/맥락* 역할
+  - **재성장 정책**: CLAUDE.md 에 새 작업 누적 시 월 1회 또는 ~30 작업 단위로 CHANGELOG 이관
+
+- **recipes/new payload 중복 추출 — buildRecipePayload (891→826줄, -65)** — 완료 (2026-05-27, commit `cc36af1`)
+  - **문제**: god-file 재성장. [[project-god-file-phase2]] 시점 1160→873줄 분해됐다가 다시 891줄. handleSubmit·handleDraft 의 POST /api/recipes payload 가 byte-identical 중복(~75줄 × 2). 차이는 `status: 'draft'` 한 줄
+  - **fix**: `lib/recipes/buildRecipePayload.ts` 신설 (102줄, 순수 함수, boundary). 폼 상태 → API body 정규화(trim·빈값 null·'선택' 센티넬·숫자 파싱·cuisine custom 치환·재료/단계 filter·remix tracking). `options.status === 'draft'` 일 때만 status 필드 추가 (handleSubmit 은 server-side default `published` 사용)
+  - **page.tsx 두 호출처를 10줄 호출로 압축** — handleSubmit 옛 43줄→10줄, handleDraft 옛 41줄+validIngredients/validSteps 사전 계산→10줄
+  - **vitest 10 케이스** — byte-identical 출력 가드: status 분기·숫자 파싱·cuisine other 치환·재료/단계 trim+filter·remix tracking·식단 옵션·이미지 url
+  - 검증: lint 0 errors · build · vitest 신규 10/10 · e2e recipe-creation fresh build (:3000 kill, retries=0) **16/16 passed**
+
 - **알레르기 필터 음식 안전 critical 버그 수정** — 완료 (2026-05-26, develop 푸시)
   - **선존 silent bug 적발**: `filterByDietaryPreferences` (`app/api/recommendations/route.ts:22`) 가 `user_preferences` 테이블 읽으려 하지만 **prod/dev DB 모두 해당 테이블 미존재** (`relation does not exist`). 실제 알레르기 저장은 `user_allergies.ingredient_name` 자유 텍스트. 호출처 3곳(settings·preferences API·OnboardingWizard) 모두 `user_allergies` 로 INSERT 하는데 read 만 다른 테이블 — *single-source-of-truth 불일치로 알레르기 필터링이 0% 작동*. 사용자가 안전 위해 등록한 알레르기 정보가 무시당함. **false negative (위험 레시피 통과) 위험**
   - **수정 1 — 테이블 fix**: `filterByDietaryPreferences` → `filterByAllergies` rename + `user_allergies` 테이블 직접 read. 식단 필터(`user_dietary_preferences`) 는 별도 Phase 2 (vegan/halal/gluten_free 등 type 별 금지 재료군 매핑 필요, vegan 사용자 100명+ 데이터 확보 후 결정). DB read error 시 *보수적 통과 + `console.error` 표면화* — DB 일시 장애로 모든 추천 막히는 것보다 사용자 영향 작음, observability 확보
