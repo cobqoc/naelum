@@ -64,21 +64,16 @@ export default function ProfileTab({
           accept="image/*"
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label={sp.changePhoto}
-          className="relative w-24 h-24 rounded-full bg-background-secondary overflow-hidden ring-2 ring-white/10 hover:ring-accent-warm transition-all"
+        <div
+          className="relative w-24 h-24 rounded-full bg-background-secondary overflow-hidden ring-2 ring-white/10"
+          aria-hidden="true"
         >
           {avatarUrl ? (
             <Image src={avatarUrl} alt="" fill className="object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl" aria-hidden="true">👤</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl">👤</div>
           )}
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" aria-hidden="true">
-            <span className="text-white text-xs">{sp.changePhoto}</span>
-          </div>
-        </button>
+        </div>
         <div className="flex gap-3">
           <button
             type="button"
