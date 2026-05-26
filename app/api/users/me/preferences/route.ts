@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 
 // PUT /api/users/me/preferences — 관심사·식단·알레르기 저장
 export async function PUT(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function PUT(request: NextRequest) {
     await supabase.from('user_interests').delete().eq('user_id', uid)
     if (interests.length > 0) {
       await supabase.from('user_interests').insert(
-        interests.map((v: string) => ({ user_id: uid, interest_type: 'cuisine', interest_value: v }))
+        interests.map((v: string) => ({ user_id: uid, interest_type: INTEREST_TYPE_CUISINE, interest_value: v }))
       )
     }
 

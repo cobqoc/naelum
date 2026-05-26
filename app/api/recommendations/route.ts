@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import {
   INGREDIENT_ALIASES,
   INGREDIENT_SUBSTITUTES,
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
             .from('user_interests')
             .select('interest_value')
             .eq('user_id', user.id)
-            .eq('interest_type', 'cuisine')
+            .eq('interest_type', INTEREST_TYPE_CUISINE)
 
           const cuisineTypes = interests?.map(i => i.interest_value) || []
 

@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadToBucket, getPublicUrl } from '@/lib/storage';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences';
 
 export default function OnboardingWizard({
   isOpen,
@@ -130,14 +131,14 @@ export default function OnboardingWizard({
         const { error: delInterestsError } = await supabase.from('user_interests')
           .delete()
           .eq('user_id', user.id)
-          .eq('interest_type', 'cuisine');
+          .eq('interest_type', INTEREST_TYPE_CUISINE);
         if (delInterestsError) console.error('Interests cleanup error:', delInterestsError);
 
         // 새 관심사 추가
         const { error: interestsError } = await supabase.from('user_interests').insert(
           formData.interests.map((interest) => ({
             user_id: user.id,
-            interest_type: 'cuisine',
+            interest_type: INTEREST_TYPE_CUISINE,
             interest_value: interest,
           }))
         );

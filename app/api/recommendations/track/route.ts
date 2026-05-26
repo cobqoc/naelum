@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 
 // POST /api/recommendations/track - Track user interactions for personalization learning
 export async function POST(request: NextRequest) {
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
           .from('user_interests')
           .select('id')
           .eq('user_id', user.id)
-          .eq('interest_type', 'cuisine')
+          .eq('interest_type', INTEREST_TYPE_CUISINE)
           .eq('interest_value', recipe.cuisine_type)
           .maybeSingle()
 
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
               .from('user_interests')
               .insert({
                 user_id: user.id,
-                interest_type: 'cuisine',
+                interest_type: INTEREST_TYPE_CUISINE,
                 interest_value: recipe.cuisine_type,
               })
               .select()
