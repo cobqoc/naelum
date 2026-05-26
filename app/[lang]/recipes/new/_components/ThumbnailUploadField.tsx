@@ -66,6 +66,7 @@ export default function ThumbnailUploadField({
                 <input
                   type="file"
                   accept="image/*"
+                  data-testid="thumbnail-file-input"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {

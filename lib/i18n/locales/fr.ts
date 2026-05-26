@@ -41,6 +41,9 @@ export const fr = {
     searching: 'Recherche...',
     moreMenu: 'Plus',
     reset: 'Réinitialiser',
+    cropTitle: "Recadrer l'image",
+    cropHint: "Sélectionnez la zone 16:9 affichée sur les cartes et aperçus",
+    cropConfirm: 'Appliquer',
   },
   nav: {
     recipes: 'Recettes',

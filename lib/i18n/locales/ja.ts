@@ -41,6 +41,9 @@ export const ja = {
     searching: '検索中...',
     moreMenu: 'その他',
     reset: 'リセット',
+    cropTitle: '画像をトリミング',
+    cropHint: 'カードとプレビューに表示される16:9の領域を選択してください',
+    cropConfirm: '適用',
   },
   nav: {
     recipes: 'レシピ',

@@ -11,6 +11,7 @@ import Header from '@/components/Header';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import ImageCropModal from '@/components/Common/ImageCropModal';
 
 /**
  * 팁 수정 페이지 — /tip/[id]/edit
@@ -68,6 +69,8 @@ export default function TipEditPage() {
   const [durationMinutes, setDurationMinutes] = useState('');
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  // 자르기 모달 — 파일 선택 후 16:9 영역 잡을 때까지 보류. tip/new 와 동일 패턴.
+  const [pendingCropFile, setPendingCropFile] = useState<File | null>(null);
   const [steps, setSteps] = useState<Step[]>([{ instruction: '', tip: '', image_url: null, uploading: false }]);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -124,15 +127,21 @@ export default function TipEditPage() {
     load();
   }, [id, router, supabase, t.tipForm.editLoadError]);
 
-  const handleThumbnailUpload = async (file: File) => {
+  // 썸네일 — 파일 선택/드롭 → 검증 → 자르기 모달 띄움 → cropped File 업로드. tip/new 와 동일.
+  const handleThumbnailPick = (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
+    setPendingCropFile(file);
+  };
+
+  const handleCroppedThumbnailUpload = async (cropped: File) => {
+    setPendingCropFile(null);
     setThumbnailUploading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setThumbnailUploading(false); router.push('/signin'); return; }
-    const ext = file.name.split('.').pop();
+    const ext = cropped.name.split('.').pop();
     const fileName = `${user.id}/tip-thumb-${Date.now()}.${ext}`;
-    const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, file, { cacheControl: '3600', upsert: false });
+    const { path, error: upErr } = await uploadToBucket(supabase, 'recipe-images', fileName, cropped, { cacheControl: '3600', upsert: false });
     if (upErr || !path) {
       toast.error(t.tipForm.errorImageUpload);
       setThumbnailUploading(false);
@@ -244,7 +253,17 @@ export default function TipEditPage() {
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">{t.tipForm.thumbnailLabel}</label>
             <label className="block cursor-pointer">
-              <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleThumbnailUpload(e.target.files[0])} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                data-testid="thumbnail-file-input"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleThumbnailPick(file);
+                  e.target.value = '';
+                }}
+              />
               <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-background-secondary border border-white/10 flex items-center justify-center hover:border-accent-warm/40 transition-colors">
                 {thumbnail ? (
                   <Image src={thumbnail} alt="thumbnail" fill className="object-cover" />
@@ -428,6 +447,11 @@ export default function TipEditPage() {
           </button>
         </div>
       </main>
+      <ImageCropModal
+        file={pendingCropFile}
+        onCropComplete={handleCroppedThumbnailUpload}
+        onCancel={() => setPendingCropFile(null)}
+      />
     </div>
   );
 }

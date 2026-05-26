@@ -41,6 +41,9 @@ export const en = {
     searching: 'Searching...',
     moreMenu: 'More',
     reset: 'Reset',
+    cropTitle: 'Crop image',
+    cropHint: 'Select the 16:9 area shown on cards and previews',
+    cropConfirm: 'Apply',
   },
   nav: {
     recipes: 'Recipes',

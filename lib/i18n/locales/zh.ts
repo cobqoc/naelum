@@ -41,6 +41,9 @@ export const zh = {
     searching: '搜索中...',
     moreMenu: '更多',
     reset: '重置',
+    cropTitle: '裁剪图片',
+    cropHint: '选择将在卡片和预览中显示的16:9区域',
+    cropConfirm: '应用',
   },
   nav: {
     recipes: '食谱',

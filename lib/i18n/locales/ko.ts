@@ -42,6 +42,9 @@ export const ko = {
     searching: '검색 중...',
     moreMenu: '더보기',
     reset: '초기화',
+    cropTitle: '이미지 자르기',
+    cropHint: '카드와 미리보기에 보일 16:9 영역을 선택하세요',
+    cropConfirm: '적용',
   },
   nav: {
     recipes: '레시피',
