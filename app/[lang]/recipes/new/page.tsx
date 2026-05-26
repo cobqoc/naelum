@@ -356,9 +356,9 @@ export default function NewRecipePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
+        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
-        router.push('/login');
+        router.push('/signin');
         return;
       }
 
@@ -413,9 +413,9 @@ export default function NewRecipePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
+        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
-        router.push('/login');
+        router.push('/signin');
         return;
       }
 
@@ -469,9 +469,9 @@ export default function NewRecipePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         // 세션 만료 — toast 만 띄우고 폼에 머물면 사용자가 무한 시도하게 됨.
-        // submit 패턴과 일관: /login 으로 redirect 해 즉시 복구 동선 안내.
+        // submit 패턴과 일관: /signin 으로 redirect 해 즉시 복구 동선 안내.
         toast.error(tf.errorLoginRequired);
-        router.push('/login');
+        router.push('/signin');
         return;
       }
 
@@ -647,7 +647,7 @@ export default function NewRecipePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error(tf.errorLoginRequired);
-        router.push('/login');
+        router.push('/signin');
         return;
       }
 
@@ -721,7 +721,7 @@ export default function NewRecipePage() {
     setDraftLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error(tf.errorLoginRequired); router.push('/login'); return; }
+      if (!user) { toast.error(tf.errorLoginRequired); router.push('/signin'); return; }
 
       const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
       const validSteps = steps.filter(s => s.instruction.trim());

@@ -57,7 +57,7 @@ export function DuplicateEmailContent({ email }: Props) {
 
         <div className="space-y-3">
           <Link
-            href="/login"
+            href="/signin"
             className="block w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary text-center transition-all hover:bg-accent-hover hover:shadow-[0_0_20px_rgba(255,153,102,0.4)] active:scale-[0.98]"
           >
             {t.auth.goToLoginPage}
@@ -73,7 +73,7 @@ export function DuplicateEmailContent({ email }: Props) {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-text-muted mb-2">{t.auth.accountIssue}</p>
-          <Link href="/login?action=reset-password" className="text-sm font-medium text-accent-warm hover:underline">
+          <Link href="/signin?action=reset-password" className="text-sm font-medium text-accent-warm hover:underline">
             {t.auth.findPassword}
           </Link>
         </div>

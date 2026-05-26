@@ -67,7 +67,7 @@ export default async function LangLayout({
                   <PageViewTracker />
                   {/* 로그인 사용자 첫 진입 시 자주 사용 재료 localStorage → DB 1회 이전 */}
                   <FavoritesSyncBoot />
-                  {/* 초기 유저 피드백 수집 — 자체 hide 로직(/auth·/login·/admin·/·cook
+                  {/* 초기 유저 피드백 수집 — 자체 hide 로직(/auth·/signin·/admin·/·cook
                       + i18n useLocalizedPathname)으로 노출 페이지 한정. 홈은 미니멀 유지 위해 숨김 */}
                   <FloatingFeedbackButton />
                 </AccessibilityProvider>

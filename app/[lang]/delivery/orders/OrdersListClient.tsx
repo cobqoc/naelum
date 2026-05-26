@@ -40,7 +40,7 @@ export default function OrdersListClient() {
   useEffect(() => {
     if (!authLoading && !user) {
       const redirect = encodeURIComponent(`/${language}/delivery/orders`);
-      router.replace(`/${language}/login?redirect=${redirect}`);
+      router.replace(`/${language}/signin?redirect=${redirect}`);
     }
   }, [authLoading, user, router, language]);
 

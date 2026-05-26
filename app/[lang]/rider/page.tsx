@@ -8,7 +8,7 @@ export default async function RiderHomePage({ params }: { params: Promise<{ lang
   const { lang } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${lang}/login?redirect=/${lang}/rider`);
+  if (!user) redirect(`/${lang}/signin?redirect=/${lang}/rider`);
 
   // 라이더 프로필 조회 (없으면 setup 화면 표시)
   const { data: profile } = await supabase

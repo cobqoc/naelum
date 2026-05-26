@@ -7,7 +7,7 @@ export default async function DuplicateEmailPage() {
   const hint = cookieStore.get('_naelum_dup')
 
   if (!hint?.value) {
-    redirect('/login')
+    redirect('/signin')
   }
 
   let email = ''
@@ -16,10 +16,10 @@ export default async function DuplicateEmailPage() {
     const data = JSON.parse(hint.value)
     email = typeof data.e === 'string' ? data.e : ''
   } catch {
-    redirect('/login')
+    redirect('/signin')
   }
 
-  if (!email) redirect('/login')
+  if (!email) redirect('/signin')
 
   return <DuplicateEmailContent email={email} />
 }

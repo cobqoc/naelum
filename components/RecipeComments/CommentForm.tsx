@@ -48,7 +48,7 @@ export default function CommentForm({
 
       if (!user) {
         toast.warning(tc.errorLoginRequired);
-        router.push('/login');
+        router.push('/signin');
         return;
       }
 

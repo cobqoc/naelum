@@ -42,13 +42,13 @@ test.describe('홈페이지 기능 테스트', () => {
     await page.waitForLoadState('networkidle');
 
     // 헤더의 로그인 링크 찾기 (data-testid 우선, 없으면 href 기반)
-    const loginLink = page.locator('a[href="/login"]').first();
+    const loginLink = page.locator('a[href="/signin"]').first();
 
     if (await loginLink.count() > 0) {
       // dev overlay 우회를 위해 직접 네비게이션 실행 (실제 사용자 동작과 동일한 결과)
       const href = await loginLink.getAttribute('href');
-      await page.goto(href || '/login');
-      await expect(page).toHaveURL(/.*login/);
+      await page.goto(href || '/signin');
+      await expect(page).toHaveURL(/.*signin/);
     }
   });
 

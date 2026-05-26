@@ -7,7 +7,7 @@ import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } fro
  * god-file(login/page) 분해 Phase 2 후속. 상태·ref·async(handleFindId)는
  * 부모(LoginContent) 소유 — 값+콜백만. JSX·className 원본과 byte-identical →
  * 행위 변경 0. onClose=원본 4-state 리셋, onGoToReset=리셋+비번찾기 모달 열기
- * (부모가 동일 본문 보존). 회귀 가드: e2e/login-decomposition.spec.ts.
+ * (부모가 동일 본문 보존). 회귀 가드: e2e/signin-decomposition.spec.ts.
  */
 
 interface FindIdModalProps {

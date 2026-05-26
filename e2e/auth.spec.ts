@@ -2,10 +2,10 @@ import { test, expect } from './fixtures';
 
 test.describe('인증 페이지 테스트', () => {
   test('로그인 페이지 UI 요소 확인', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
 
-    await expect(page).toHaveURL(/.*login/);
+    await expect(page).toHaveURL(/.*signin/);
 
     // 이메일/비밀번호 폼
     const form = page.locator('form');
@@ -17,7 +17,7 @@ test.describe('인증 페이지 테스트', () => {
   });
 
   test('로그인 폼 - 빈 값 제출 시 유효성 검사', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
 
     const form = page.locator('form');
@@ -32,7 +32,7 @@ test.describe('인증 페이지 테스트', () => {
   });
 
   test('로그인 폼 - 잘못된 이메일 형식 거부', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
 
     const form = page.locator('form');
@@ -46,7 +46,7 @@ test.describe('인증 페이지 테스트', () => {
   });
 
   test('비밀번호 보이기/숨기기 토글', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
 
     // 비밀번호 placeholder로 안정적으로 잡기 (type 속성이 토글되어도 유지됨)
@@ -80,7 +80,7 @@ test.describe('인증 페이지 테스트', () => {
   });
 
   test('로그인 페이지 → 회원가입 페이지 링크', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
 
     const signupLink = page.locator('a[href*="signup"]').or(page.locator('a:has-text("회원가입")'));
@@ -97,7 +97,7 @@ test.describe('인증 페이지 테스트', () => {
     await page.waitForLoadState('networkidle');
 
     // 로그인 페이지로 리다이렉트되거나 로그인 안내가 표시되어야 함
-    const isRedirected = page.url().includes('/login');
+    const isRedirected = page.url().includes('/signin');
     const hasLoginPrompt = await page.locator('text=로그인').count() > 0;
 
     expect(isRedirected || hasLoginPrompt).toBeTruthy();

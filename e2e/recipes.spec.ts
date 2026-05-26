@@ -129,7 +129,7 @@ test.describe('레시피 페이지 테스트', () => {
 
           // 로그인 모달 또는 리다이렉트
           const hasLoginModal = await page.locator('text=로그인').count() > 0;
-          const isRedirected = page.url().includes('/login');
+          const isRedirected = page.url().includes('/signin');
 
           expect(hasLoginModal || isRedirected).toBeTruthy();
         }

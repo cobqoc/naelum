@@ -263,7 +263,7 @@ export default function SignupPage() {
                 <div id="signup-email-error" className="text-center text-sm text-error" role="alert">
                   <p>{error}</p>
                   {error.includes(t.auth.alreadyRegisteredLogin) && (
-                    <Link href="/login" className="mt-2 inline-block font-medium text-accent-warm hover:underline">
+                    <Link href="/signin" className="mt-2 inline-block font-medium text-accent-warm hover:underline">
                       {t.auth.goToLoginPage}
                     </Link>
                   )}
@@ -337,7 +337,7 @@ export default function SignupPage() {
 
         <p className="mt-6 md:mt-8 text-center text-sm text-text-muted">
           {t.auth.hasAccount}{' '}
-          <Link href="/login" className="font-medium text-accent-warm hover:underline">
+          <Link href="/signin" className="font-medium text-accent-warm hover:underline">
             {t.common.login}
           </Link>
         </p>

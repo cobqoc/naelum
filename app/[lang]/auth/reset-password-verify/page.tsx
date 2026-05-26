@@ -110,7 +110,7 @@ export default function ResetPasswordVerifyPage() {
         setStatus('error');
         setErrorMessage(t.auth.resetLinkInvalid);
         setTimeout(() => {
-          router.push('/login');
+          router.push('/signin');
         }, 2000);
       } catch (err) {
         console.error('Verification error:', err);
@@ -174,7 +174,7 @@ export default function ResetPasswordVerifyPage() {
               {errorMessage || t.auth.linkInvalid}
             </p>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/signin')}
               className="w-full rounded-xl bg-accent-warm py-3 font-bold text-background-primary transition-all hover:bg-accent-hover"
             >
               {t.auth.backToLogin}

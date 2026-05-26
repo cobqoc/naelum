@@ -118,7 +118,7 @@ function AnonymousFridge() {
             {t.fridge.signup}
           </Link>
           <Link
-            href="/login"
+            href="/signin"
             className="flex-1 py-2.5 rounded-xl bg-background-tertiary text-text-primary font-bold text-xs text-center hover:bg-white/10 transition-colors border border-white/15"
           >
             {t.fridge.login}

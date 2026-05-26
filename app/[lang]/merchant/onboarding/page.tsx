@@ -8,7 +8,7 @@ export default async function MerchantOnboardingPage({ params }: { params: Promi
   const { lang } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${lang}/login?redirect=/${lang}/merchant/onboarding`);
+  if (!user) redirect(`/${lang}/signin?redirect=/${lang}/merchant/onboarding`);
 
   // 이미 식당 있으면 dashboard로
   const { data: existing } = await supabase

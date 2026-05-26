@@ -126,7 +126,7 @@ test.describe('레시피 상세 SSR 검증', () => {
       await page.waitForTimeout(800);
       // 실제 토스트 텍스트: '로그인하면 레시피를 낼름(저장)할 수 있어요'
       const hasLoginToast = await page.getByText(/로그인|login/i).count();
-      const redirectedToLogin = page.url().includes('/login');
+      const redirectedToLogin = page.url().includes('/signin');
       expect(hasLoginToast > 0 || redirectedToLogin).toBeTruthy();
     }
   });

@@ -108,7 +108,7 @@ const PROTECTED_PATTERNS = [
 const ADMIN_ROUTES = ['/admin']
 
 // 이미 로그인된 사용자를 홈으로 리다이렉트할 경로
-const AUTH_ONLY_ROUTES = ['/login', '/signup', '/signup/set-password']
+const AUTH_ONLY_ROUTES = ['/signin', '/signup', '/signup/set-password']
 
 function createSupabaseClient(request: NextRequest) {
   return createServerClient(
@@ -126,16 +126,16 @@ function createSupabaseClient(request: NextRequest) {
 }
 
 // bfcache 차단: 뒤로가기로 인증 플로우를 우회하지 못하도록
-// /signup, /login, /auth/* 및 세션 쿠키가 있는 모든 응답에서 브라우저 캐시 비활성화.
+// /signup, /signin, /auth/* 및 세션 쿠키가 있는 모든 응답에서 브라우저 캐시 비활성화.
 // no-store가 있으면 bfcache도 무효화되어 네비게이션 시 항상 미들웨어가 재실행된다.
 function applyNoStore(res: NextResponse, pathname: string, hasSession: boolean) {
-  // lang prefix 제거 후 매칭 — /ko/login, /en/signup 모두 인식.
+  // lang prefix 제거 후 매칭 — /ko/signin, /en/signup 모두 인식.
   const m = /^\/([a-z]{2})(?=\/|$)(.*)$/.exec(pathname)
   const bare = m && SUPPORTED_LANGUAGES.includes(m[1] as Language) ? (m[2] || '/') : pathname
   const needsNoStore =
     hasSession ||
     bare.startsWith('/signup') ||
-    bare.startsWith('/login') ||
+    bare.startsWith('/signin') ||
     bare.startsWith('/auth/')
   if (needsNoStore) {
     res.headers.set('Cache-Control', 'no-store, must-revalidate')
@@ -164,7 +164,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirected, 307)
   }
 
-  // 보호된 경로 매칭은 lang prefix를 제거한 상태로 — /ko/login, /en/login 모두 /login 패턴에 매칭.
+  // 보호된 경로 매칭은 lang prefix를 제거한 상태로 — /ko/signin, /en/signin 모두 /signin 패턴에 매칭.
   const bare = stripLang(pathname)
   const isProtected =
     PROTECTED_ROUTES.some((r) => bare === r || bare.startsWith(r + '/')) ||
@@ -174,6 +174,16 @@ export async function proxy(request: NextRequest) {
   // 현재 요청의 lang prefix — 리다이렉트 시 같은 lang 유지.
   const langPrefix = hasLangPrefix(pathname) ? `/${hasLangPrefix(pathname)}` : ''
 
+  // /login → /signin 호환 redirect (2026-05-26 rename, 외부 북마크 대비)
+  // /api/auth/login 은 i18n 면제라 여기 안 옴. KMP 앱은 /api/auth/signin 직접 호출.
+  if (bare === '/login' || bare.startsWith('/login/')) {
+    const newPath = bare.replace(/^\/login/, '/signin')
+    return NextResponse.redirect(
+      new URL(`${langPrefix}${newPath}${request.nextUrl.search}`, request.url),
+      308
+    )
+  }
+
   // 세션 쿠키 없으면 user는 반드시 null → Supabase API 호출 생략
   const hasSessionCookie = request.cookies.getAll().some(
     c => c.name.startsWith('sb-') && c.name.includes('-auth-token')
@@ -181,7 +191,7 @@ export async function proxy(request: NextRequest) {
 
   if (!hasSessionCookie) {
     if (isProtected || isAdmin) {
-      const loginUrl = new URL(`${langPrefix}/login`, request.url)
+      const loginUrl = new URL(`${langPrefix}/signin`, request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return applyNoStore(NextResponse.redirect(loginUrl), pathname, false)
     }
@@ -192,14 +202,14 @@ export async function proxy(request: NextRequest) {
   // 세션 쿠키 있음: 토큰 갱신 + user 반환
   const { response, user } = await updateSession(request)
 
-  // 이미 로그인된 사용자가 /login, /signup 접근 시 홈으로 리다이렉트
+  // 이미 로그인된 사용자가 /signin, /signup 접근 시 홈으로 리다이렉트
   if (isAuthOnly && user) {
     return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
   }
 
   // 미인증 사용자가 보호된 경로 접근 시 로그인으로 리다이렉트
   if (!user && (isProtected || isAdmin)) {
-    const loginUrl = new URL(`${langPrefix}/login`, request.url)
+    const loginUrl = new URL(`${langPrefix}/signin`, request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return applyNoStore(NextResponse.redirect(loginUrl), pathname, !!user)
   }

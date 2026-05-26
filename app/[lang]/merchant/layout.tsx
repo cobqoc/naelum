@@ -17,7 +17,7 @@ export default async function MerchantLayout({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/${lang}/login?redirect=/${lang}/merchant`);
+    redirect(`/${lang}/signin?redirect=/${lang}/merchant`);
   }
 
   // 본인 소유 식당 조회 (없으면 onboarding으로)

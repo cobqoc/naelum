@@ -193,7 +193,7 @@ export default function RecipeDetailClient({
         toast.warning(t.recipe.toastSaveLogin, {
           action: {
             label: t.recipe.toastLoginCta,
-            onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
+            onClick: () => router.push(`/signin?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
           }
         });
       }
@@ -231,7 +231,7 @@ export default function RecipeDetailClient({
         toast.warning(t.recipe.toastLikeLogin, {
           action: {
             label: t.recipe.toastLoginCta,
-            onClick: () => router.push(`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
+            onClick: () => router.push(`/signin?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
           }
         });
       } else {
@@ -325,7 +325,7 @@ export default function RecipeDetailClient({
               </Link>
             ) : (
               <Link
-                href="/login"
+                href="/signin"
                 className="flex h-11 w-11 items-center justify-center text-2xl hover:opacity-70 transition-all"
                 title={t.common.login}
               >

@@ -48,7 +48,7 @@ export default function CheckoutClient() {
   useEffect(() => {
     if (!authLoading && !user) {
       const redirect = encodeURIComponent(`/${language}/delivery/checkout`);
-      router.replace(`/${language}/login?redirect=${redirect}`);
+      router.replace(`/${language}/signin?redirect=${redirect}`);
     }
   }, [authLoading, user, router, language]);
 

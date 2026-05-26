@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 
 /**
- * login/page.tsx (~877줄 god-file) 분해(Phase 2 후속) 회귀 안전망 — Step 0.
+ * signin/page.tsx (~877줄 god-file) 분해(Phase 2 후속) 회귀 안전망 — Step 0.
  *
  * auth.spec.ts 가 로그인 메인 카드(폼·이메일검증·show-password·회원가입 링크)는
  * 강커버. 미커버 = 아이디찾기/비밀번호찾기 *모달*(open/close/ESC/렌더) —
@@ -12,7 +12,7 @@ import { test, expect } from './fixtures';
  */
 test.describe('로그인 모달 — god-file 분해 회귀 안전망', () => {
   test('아이디 찾기 모달: 열기 → 콘텐츠 렌더 → X 닫기 → ESC 닫기', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('form button[type="submit"]')).toBeVisible();
 
@@ -37,7 +37,7 @@ test.describe('로그인 모달 — god-file 분해 회귀 안전망', () => {
   });
 
   test('비밀번호 찾기 모달: 열기 → step1 렌더 → X 닫기 → ESC 닫기', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/signin');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('form button[type="submit"]')).toBeVisible();
 

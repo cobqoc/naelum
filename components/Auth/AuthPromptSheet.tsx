@@ -105,7 +105,7 @@ export default function AuthPromptSheet({ isOpen, onClose }: AuthPromptSheetProp
 
         <p className="text-center text-xs text-text-muted mt-4">
           {t.home.authPromptHasAccount}{' '}
-          <Link href="/login" className="text-accent-warm font-semibold hover:underline">
+          <Link href="/signin" className="text-accent-warm font-semibold hover:underline">
             {t.home.authPromptLoginLink}
           </Link>
         </p>

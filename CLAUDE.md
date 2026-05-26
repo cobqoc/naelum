@@ -991,9 +991,9 @@ NLP (검색 개선):
 
 ### 인증
 ```
-POST   /api/auth/register          # 회원가입
-POST   /api/auth/login             # 로그인
-POST   /api/auth/logout            # 로그아웃
+POST   /api/auth/signup            # 회원가입
+POST   /api/auth/signin            # 로그인
+POST   /api/auth/signout           # 로그아웃
 POST   /api/auth/refresh           # 토큰 갱신
 POST   /api/auth/forgot-password   # 비밀번호 찾기
 POST   /api/auth/reset-password    # 비밀번호 재설정
@@ -1157,6 +1157,17 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ## 📌 데이터 현황 (2026-05-19 기준)
 
 ### 기능 구현 현황
+- **인증 URL 컨벤션 통일 — `login` → `signin` (옵션 B)** — 완료 (2026-05-26, develop 푸시)
+  - **배경**: `/signup`·`/api/auth/signout`·`/api/auth/signup` 은 모던 `signin/signup/signout` 컨벤션이었는데 `/login`·`/api/auth/login` 만 외톨이로 옛 컨벤션. Supabase SDK 메서드(`signInWithPassword`·`signUp`·`signOut`) 와도 머릿속 매핑 비일관
+  - **rename**: `app/[lang]/login/` → `app/[lang]/signin/`, `app/api/auth/login/` → `app/api/auth/signin/` (git mv, 내부 파일 모두 보존)
+  - **호출처 일괄 치환 53 파일**: `href="/login"`·`router.push('/login')`·`redirect('/login')`·`new URL(...login)` 등 모든 `/login\b` 패턴 → `/signin`. perl word-boundary regex 로 내부 `loginLimiter`·`checkLoginAttempt` 등 lib 함수명은 의도적 보존 (URL 아님)
+  - **proxy.ts 갱신**: `AUTH_ONLY_ROUTES`·`applyNoStore` bare 매칭·미인증 redirect 모두 `/signin` 으로. **외부 북마크 호환 308 redirect 추가**: `bare === '/login' || bare.startsWith('/login/')` → `/signin` 동일 query 보존. `langPrefix` 유지
+  - **로그 prefix**: `console.error('[auth/login]')` → `[auth/signin]` (route 파일 위치와 일관)
+  - **SW CACHE_VERSION v12 → v13**: URL 구조 변경이라 재방문 사용자 캐시 갱신 강제
+  - **의도적 보존**: ① i18n locale 라벨(`"로그인"`·`"Sign in"` 등) — UX 단어는 그대로 ② `loginUrl` 변수명·`loginLimiter`·`checkLoginAttempt`·`recordFailedAttempt`·`clearLoginAttempts` lib 함수명 — 내부 표현, URL 컨벤션과 별개 ③ `/api/test/signin`(이미 signin 컨벤션) ④ scratch `e2e/_mobile-login.spec.ts`(prefix `_` 시각검수 전용)
+  - **Supabase OAuth 대시보드 수동 작업 필요**: Site URL·Redirect URLs 에 `/login` 명시 등록돼 있으면 `/signin` 으로 교체. 현재 코드는 `/auth/callback` 으로 redirect 라 영향 없을 가능성 큼 (선검증 후 작업)
+  - **e2e**: `waitForURL('/login')`·`'/login'` 셀렉터 일괄 치환. `auth.spec.ts`·`navigation.spec.ts`·`merchant-rider.spec.ts`·`recipe-detail-ssr.spec.ts` 등
+  - 검증: lint 0 errors · build · vitest · 풀 e2e (fresh build, :3000 kill) 회귀 0
 - **a11y 라운드 완전 종결 (Phase A·B·C + CartAddInput)** — 완료 (2026-05-26, PR #173~#179 main 머지, prod 라이브 native key 검증)
   - Header dropdown 5곳: ESC + aria-expanded/haspopup + focus trap + 화살표 키 nav
   - 본격 modal 16곳: ESC + focus trap + role/aria-modal (CookieConsent 의도적 skip)

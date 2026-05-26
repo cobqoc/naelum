@@ -75,7 +75,7 @@ test.describe('네비게이션 흐름 테스트', () => {
     await page.waitForLoadState('networkidle');
 
     // 로그인 페이지 리다이렉트 또는 권한 없음 표시
-    const isLoginPage = page.url().includes('/login');
+    const isLoginPage = page.url().includes('/signin');
     const hasAuthMsg = await page.locator('text=로그인').count() > 0;
 
     expect(isLoginPage || hasAuthMsg).toBeTruthy();

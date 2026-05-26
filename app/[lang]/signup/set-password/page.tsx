@@ -473,7 +473,7 @@ export default function SetPasswordPage() {
 
         <p className="mt-6 md:mt-8 text-center text-sm text-text-muted">
           {t.auth.hasAccount}{' '}
-          <Link href="/login" className="font-medium text-accent-warm hover:underline">
+          <Link href="/signin" className="font-medium text-accent-warm hover:underline">
             {t.common.login}
           </Link>
         </p>
