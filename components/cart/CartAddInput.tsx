@@ -71,6 +71,11 @@ export default function CartAddInput({
             placeholder={t.cart.inputPlaceholder}
             className="w-full bg-transparent text-text-primary placeholder-text-muted !outline-none !border-0 !border-none pl-3 pr-2 py-2 text-sm"
             style={{ border: 'none', outline: 'none' }}
+            role="combobox"
+            aria-expanded={showSuggestions && !!inputText.trim()}
+            aria-controls="cart-add-suggestions"
+            aria-haspopup="listbox"
+            aria-autocomplete="list"
           />
         {/* 단위 select — DetailFields 패턴 (appearance-none + ▾) */}
         <div className="relative flex-shrink-0 flex items-center mr-1.5">
@@ -103,12 +108,19 @@ export default function CartAddInput({
         )}
       </div>
 
-      {/* 자동완성 목록 */}
+      {/* 자동완성 목록 — WAI-ARIA combobox 패턴 (Common/Autocomplete 와 일관). */}
       {showSuggestions && inputText.trim() && (
-        <div className="absolute left-3 right-3 top-full mt-1 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-10 overflow-hidden">
-          {suggestions.map(s => (
+        <div
+          id="cart-add-suggestions"
+          role="listbox"
+          className="absolute left-3 right-3 top-full mt-1 rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-10 overflow-hidden"
+        >
+          {suggestions.map((s, idx) => (
             <button
               key={s.id}
+              id={`cart-add-option-${idx}`}
+              role="option"
+              aria-selected={false}
               onMouseDown={() => addItem(s.name, s.category, undefined, 'autocomplete')}
               className="w-full text-left px-4 py-2.5 text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
             >
@@ -118,6 +130,9 @@ export default function CartAddInput({
             </button>
           ))}
           <button
+            id={`cart-add-option-${suggestions.length}`}
+            role="option"
+            aria-selected={false}
             onMouseDown={() => addItem(inputText, '', undefined, 'manual')}
             className="w-full text-left px-4 py-2.5 text-xs hover:bg-accent-warm/10 transition-colors flex items-center gap-2 border-t border-white/5"
           >
