@@ -18,6 +18,7 @@ import BasicInfoSection from './_components/BasicInfoSection';
 import RecipeFormFooter from './_components/RecipeFormFooter';
 import ThumbnailUploadField from './_components/ThumbnailUploadField';
 import DietaryOptionsField from './_components/DietaryOptionsField';
+import ImageCropModal from '@/components/Common/ImageCropModal';
 import { computeAutoTags } from '@/lib/recipes/autoTags';
 import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
 import {
@@ -75,6 +76,9 @@ export default function NewRecipePage() {
   const [thumbnailImage, setThumbnailImage] = useState<string | null>(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [isDraggingThumbnail, setIsDraggingThumbnail] = useState(false);
+  // 자르기 모달 — 파일 선택/드롭 후 16:9 영역 잡을 때까지 보류.
+  // [[project-thumbnail-crop-next-session]] — 카드·미리보기 일관성 위해 모든 파일이 crop 거침.
+  const [pendingThumbnailFile, setPendingThumbnailFile] = useState<File | null>(null);
 
   // 재료 준비 이미지
   const [ingredientsImage, setIngredientsImage] = useState<string | null>(null);
@@ -451,20 +455,25 @@ export default function NewRecipePage() {
     setIngredientsImage(null);
   };
 
-  // 썸네일(완성 요리) 이미지 업로드 함수
-  const handleThumbnailUpload = async (file: File) => {
+  // 썸네일 — 파일 선택/드롭 → 검증 → 자르기 모달 띄움 → cropped File 업로드.
+  // 모든 진입(input change·drag drop) 이 picker 거치고, 자르기는 16:9 고정
+  // ([[project-thumbnail-crop-next-session]] 옵션 3 — 카드·OG 일관성).
+  const handleThumbnailPick = (file: File) => {
     if (!file.type.startsWith('image/')) {
       toast.error(tf.errorImageType);
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error(tf.errorImageSize);
       return;
     }
+    setPendingThumbnailFile(file);
+  };
 
+  // 자르기 모달 onCropComplete — 검증 통과한 cropped File 업로드.
+  const handleCroppedThumbnailUpload = async (cropped: File) => {
+    setPendingThumbnailFile(null);
     setUploadingThumbnail(true);
-    // ingredientsImage는 변경하지 않도록 명시적으로 보호
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -476,11 +485,11 @@ export default function NewRecipePage() {
       }
 
       // 파일명 생성 (thumbnail- 접두사 추가로 명확히 구분)
-      const fileExt = file.name.split('.').pop();
+      const fileExt = cropped.name.split('.').pop();
       const fileName = `${user.id}/thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       // Supabase Storage에 업로드
-      const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, file, {
+      const { path, error } = await uploadToBucket(supabase, 'recipe-images', fileName, cropped, {
         cacheControl: '3600',
         upsert: false
       });
@@ -532,7 +541,7 @@ export default function NewRecipePage() {
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      handleThumbnailUpload(files[0]);
+      handleThumbnailPick(files[0]);
     }
   };
 
@@ -941,7 +950,7 @@ export default function NewRecipePage() {
             thumbnailImage={thumbnailImage}
             uploadingThumbnail={uploadingThumbnail}
             isDraggingThumbnail={isDraggingThumbnail}
-            onUpload={handleThumbnailUpload}
+            onUpload={handleThumbnailPick}
             onRemove={handleThumbnailRemove}
             onDrag={handleThumbnailDrag}
             onDragIn={handleThumbnailDragIn}
@@ -1022,6 +1031,11 @@ export default function NewRecipePage() {
           toast.success(tf.successIngredientAdded);
         }}
         initialName={addIngredientSearchQuery}
+      />
+      <ImageCropModal
+        file={pendingThumbnailFile}
+        onCropComplete={handleCroppedThumbnailUpload}
+        onCancel={() => setPendingThumbnailFile(null)}
       />
     </div>
   );

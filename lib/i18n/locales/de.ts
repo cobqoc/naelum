@@ -41,6 +41,9 @@ export const de = {
     searching: 'Suche läuft...',
     moreMenu: 'Mehr',
     reset: 'Zurücksetzen',
+    cropTitle: 'Bild zuschneiden',
+    cropHint: 'Wähle den 16:9-Bereich, der auf Karten und Vorschauen erscheint',
+    cropConfirm: 'Anwenden',
   },
   nav: {
     recipes: 'Rezepte',

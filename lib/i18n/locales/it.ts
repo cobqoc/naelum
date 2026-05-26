@@ -41,6 +41,9 @@ export const it = {
     searching: 'Ricerca...',
     moreMenu: 'Altro',
     reset: 'Ripristina',
+    cropTitle: "Ritaglia l'immagine",
+    cropHint: "Seleziona l'area 16:9 mostrata sulle schede e anteprime",
+    cropConfirm: 'Applica',
   },
   nav: {
     recipes: 'Ricette',
