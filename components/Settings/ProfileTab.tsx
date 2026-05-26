@@ -184,10 +184,10 @@ export default function ProfileTab({
         </InputBoxWrapper>
       </div>
 
-      {/* Gender */}
+      {/* Gender — WAI-ARIA radio group 패턴 (상호 배타 셋 중 하나). */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">{sp.gender}</label>
-        <div className="flex gap-3">
+        <div id="gender-label" className="text-sm font-medium text-text-secondary">{sp.gender}</div>
+        <div role="radiogroup" aria-labelledby="gender-label" className="flex gap-3">
           {[
             { value: 'male', label: sp.male },
             { value: 'female', label: sp.female },
@@ -196,6 +196,8 @@ export default function ProfileTab({
             <button
               key={option.value}
               type="button"
+              role="radio"
+              aria-checked={gender === option.value}
               onClick={() => setGender(option.value)}
               className={`flex-1 py-3 rounded-xl font-medium transition-all ${
                 gender === option.value
