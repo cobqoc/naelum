@@ -21,6 +21,7 @@ import ImageCropModal from '@/components/Common/ImageCropModal';
 import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
 import { useImageDropZone } from '@/lib/hooks/useImageDropZone';
 import { computeAutoTags } from '@/lib/recipes/autoTags';
+import { buildRecipePayload } from '@/lib/recipes/buildRecipePayload';
 import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
@@ -520,47 +521,15 @@ export default function NewRecipePage() {
       const response = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          thumbnail_url: thumbnailImage,
-          ingredients_image_url: ingredientsImage,
-          servings: servings !== '' ? servings : null,
-          cook_time_minutes: cookTime !== '' ? cookTime : null,
-          difficulty_level: difficulty || null,
-          cuisine_type: cuisineType === 'other' && customCuisineType.trim() ? customCuisineType.trim() : cuisineType,
-          dish_type: dishType === 'other' && customDishType.trim() ? customDishType.trim() : dishType,
-          meal_type: 'lunch',
-          is_vegetarian: isVegetarian,
-          is_vegan: isVegan,
-          is_gluten_free: isGlutenFree,
-          // 영양 정보 (선택사항)
-          calories: calories ? parseInt(calories) : null,
-          protein_grams: protein ? parseFloat(protein) : null,
-          carbs_grams: carbs ? parseFloat(carbs) : null,
-          fat_grams: fat ? parseFloat(fat) : null,
-          fiber_grams: fiber ? parseFloat(fiber) : null,
-          sodium_mg: sodium ? parseInt(sodium) : null,
-          ingredients: validIngredients.map(i => ({
-            ingredient_name: i.ingredient_name.trim(),
-            ingredient_id: i.ingredient_id ?? null,
-            quantity: parseFloat(i.quantity) || null,
-            unit: (i.unit && i.unit !== '선택') ? i.unit : null,
-            notes: i.notes.trim() || null,
-            is_optional: i.is_optional,
-            substitutes: i.substitutes ?? [],
-          })),
-          steps: validSteps.map(s => ({
-            instruction: s.instruction.trim(),
-            timer_minutes: s.timer_minutes,
-            tip: s.tip.trim() || null,
-            image_url: s.image_url
-          })),
-          tags,
-          // Remix tracking
-          original_recipe_id: remixSource?.id || null,
-          is_remix: !!remixSource,
-        })
+        body: JSON.stringify(buildRecipePayload({
+          title, description, thumbnailImage, ingredientsImage,
+          servings, cookTime, difficulty,
+          cuisineType, customCuisineType, dishType, customDishType,
+          isVegetarian, isVegan, isGlutenFree,
+          calories, protein, carbs, fat, fiber, sodium,
+          ingredients, steps, tags,
+          remixSourceId: remixSource?.id ?? null,
+        })),
       });
 
       const data = await response.json();
@@ -597,52 +566,18 @@ export default function NewRecipePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error(tf.errorLoginRequired); router.push('/signin'); return; }
 
-      const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
-      const validSteps = steps.filter(s => s.instruction.trim());
-
       const response = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          thumbnail_url: thumbnailImage,
-          ingredients_image_url: ingredientsImage,
-          servings: servings !== '' ? servings : null,
-          cook_time_minutes: cookTime !== '' ? cookTime : null,
-          difficulty_level: difficulty || null,
-          cuisine_type: cuisineType === 'other' && customCuisineType.trim() ? customCuisineType.trim() : cuisineType,
-          dish_type: dishType === 'other' && customDishType.trim() ? customDishType.trim() : dishType,
-          meal_type: 'lunch',
-          is_vegetarian: isVegetarian,
-          is_vegan: isVegan,
-          is_gluten_free: isGlutenFree,
-          calories: calories ? parseInt(calories) : null,
-          protein_grams: protein ? parseFloat(protein) : null,
-          carbs_grams: carbs ? parseFloat(carbs) : null,
-          fat_grams: fat ? parseFloat(fat) : null,
-          fiber_grams: fiber ? parseFloat(fiber) : null,
-          sodium_mg: sodium ? parseInt(sodium) : null,
-          ingredients: validIngredients.map(i => ({
-            ingredient_name: i.ingredient_name.trim(),
-            ingredient_id: i.ingredient_id ?? null,
-            quantity: parseFloat(i.quantity) || null,
-            unit: (i.unit && i.unit !== '선택') ? i.unit : null,
-            notes: i.notes.trim() || null,
-            is_optional: i.is_optional,
-            substitutes: i.substitutes ?? [],
-          })),
-          steps: validSteps.map(s => ({
-            instruction: s.instruction.trim(),
-            timer_minutes: s.timer_minutes,
-            tip: s.tip.trim() || null,
-            image_url: s.image_url,
-          })),
-          tags,
-          original_recipe_id: remixSource?.id || null,
-          is_remix: !!remixSource,
-          status: 'draft' as const,
-        }),
+        body: JSON.stringify(buildRecipePayload({
+          title, description, thumbnailImage, ingredientsImage,
+          servings, cookTime, difficulty,
+          cuisineType, customCuisineType, dishType, customDishType,
+          isVegetarian, isVegan, isGlutenFree,
+          calories, protein, carbs, fat, fiber, sodium,
+          ingredients, steps, tags,
+          remixSourceId: remixSource?.id ?? null,
+        }, { status: 'draft' })),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || tf.errorDraft);
