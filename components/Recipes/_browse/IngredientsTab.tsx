@@ -97,7 +97,11 @@ export default function IngredientsTab({
               {unitConv.isImperial ? t.recipe.imperialLabel : t.recipe.metricLabel}
             </button>
             <button onClick={onShowFridgeModal} className="flex flex-col items-center gap-1">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all animate-pulse ${
+              {/* pulse 는 *행동 유도* 신호 (마트 가기·재료 모으기) — 'all' = 준비 완료 상태에선
+                  깜빡거림이 시각 노이즈가 됨. none/partial 만 pulse 유지. */}
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                ingredientStatus !== 'all' ? 'animate-pulse ' : ''
+              }${
                 ingredientStatus === 'none'
                   ? 'bg-error text-white shadow-[0_0_12px_rgba(244,67,54,0.5)]'
                   : ingredientStatus === 'all'
