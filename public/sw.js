@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v13';
+const CACHE_VERSION = 'v14';
 const CACHE_NAME = `naelum-${CACHE_VERSION}`;
 const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
 const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
@@ -50,6 +50,10 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests
   if (request.method !== 'GET') return;
+
+  // Skip cross-origin requests — 브라우저 기본 처리에 맡김 (CSP script-src/img-src만 적용,
+  // SW가 fetch()로 가로채면 connect-src까지 적용돼서 외부 SDK script 등이 차단됨)
+  if (url.origin !== self.location.origin) return;
 
   // Skip API, auth, 페이지 탐색 요청 (Next.js SSR 페이지는 항상 네트워크에서)
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
