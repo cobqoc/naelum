@@ -47,9 +47,16 @@ export default function InputBoxWrapper({ children, className = '', onClick }: I
 
 const INPUT_BOX_STYLE: CSSProperties = { border: 'none' };
 
-/** 자식 input/select/textarea 에 적용할 표준 className/style — wrapper 와 짝. */
+/** 자식 input/select/textarea 에 적용할 표준 className/style — wrapper 와 짝.
+ *
+ * 모바일 16px / 데스크톱 14px:
+ *  - iOS Safari 는 input/select font-size < 16px 일 때 포커스 시 *자동 줌* 발동
+ *    (Apple Safari Web Content Guide 공식 동작). viewport 의 maximumScale=5,
+ *    userScalable=true 라 줌 차단 불가능 — font-size 16px 강제만이 유일 해법.
+ *  - 데스크톱은 자동 줌 동작 없음 → text-sm(14px) 시각 유지.
+ *  - text-base md:text-sm: 모바일 우선 16px, md(768px)+ 에서 14px. */
 export const INPUT_INNER_CLASS =
-  'w-full bg-transparent text-sm text-text-primary !outline-none !border-0 !border-none placeholder:text-text-muted/60';
+  'w-full bg-transparent text-base md:text-sm text-text-primary !outline-none !border-0 !border-none placeholder:text-text-muted/60';
 export const INPUT_INNER_STYLE: CSSProperties = {
   border: 'none',
   borderLeft: 'none',
