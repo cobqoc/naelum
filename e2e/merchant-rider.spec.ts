@@ -21,9 +21,9 @@ test.describe('식당 사장님 어드민', () => {
     await admin().from('delivery_rider_profiles').delete().eq('user_id', testUser.userId);
   });
 
-  test('비로그인 사용자 /merchant 접근 시 login redirect', async ({ page }) => {
+  test('비로그인 사용자 /merchant 접근 시 signin redirect', async ({ page }) => {
     await page.goto('/ko/merchant');
-    await expect(page).toHaveURL(/login/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/signin/, { timeout: 10_000 });
   });
 
   test('식당 없는 사용자 /merchant → /merchant/onboarding redirect', async ({ authenticatedPage }) => {
@@ -89,9 +89,9 @@ test.describe('라이더 페이지', () => {
     await admin().from('delivery_rider_profiles').delete().eq('user_id', testUser.userId);
   });
 
-  test('비로그인 사용자 /rider 접근 시 login redirect', async ({ page }) => {
+  test('비로그인 사용자 /rider 접근 시 signin redirect', async ({ page }) => {
     await page.goto('/ko/rider');
-    await expect(page).toHaveURL(/login/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/signin/, { timeout: 10_000 });
   });
 
   test('라이더 프로필 없는 사용자 → setup 화면', async ({ authenticatedPage }) => {
@@ -116,8 +116,8 @@ test.describe('라이더 페이지', () => {
 });
 
 test.describe('admin 페이지에서 진입 링크', () => {
-  test('비로그인 사용자 /admin/dispatch 접근 시 login redirect', async ({ page }) => {
+  test('비로그인 사용자 /admin/dispatch 접근 시 signin redirect', async ({ page }) => {
     await page.goto('/ko/admin/dispatch');
-    await expect(page).toHaveURL(/(login|admin)/);
+    await expect(page).toHaveURL(/(signin|admin)/);
   });
 });

@@ -65,7 +65,7 @@ export default function CartLoginPrompt({ t, onClose, fromBottom }: CartLoginPro
           </ul>
 
           <Link
-            href="/login"
+            href="/signin"
             onClick={onClose}
             className="inline-flex w-full items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover active:scale-[0.98] transition-all"
           >

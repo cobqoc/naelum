@@ -220,7 +220,7 @@ export default function TipNewPage() {
 
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
+      if (!user) { router.push('/signin'); return; }
       const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
       clearAutosave(AUTOSAVE_KEY);
       router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');

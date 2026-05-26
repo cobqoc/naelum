@@ -15,7 +15,7 @@ export default async function AdminIngredientsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login?redirect=/admin/ingredients');
+    redirect('/signin?redirect=/admin/ingredients');
   }
 
   // 2. 관리자 권한 확인

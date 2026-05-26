@@ -108,7 +108,7 @@ export default function RecipeReviewModal({
               {t.common.cancel}
             </button>
             <button
-              onClick={() => router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
+              onClick={() => router.push(`/signin?redirect=${encodeURIComponent(window.location.pathname)}`)}
               className="flex-1 py-2.5 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors"
             >
               {t.common.login}

@@ -18,7 +18,7 @@ async function gotoRecipeNew(page: Page) {
  *
  * 1564줄 폼의 모든 필드를 채우는 건 비현실적이라, 다음에 집중한다:
  * - 로그인 유저가 /recipes/new 페이지에 접근 가능 + 핵심 필드 렌더
- * - 미인증 유저는 /login으로 리다이렉트
+ * - 미인증 유저는 /signin으로 리다이렉트
  * - POST /api/recipes 최소 payload로 호출 → 201 + DB 반영 + 홈 피드에 노출
  *
  * UI 폼 세부 인터랙션은 수동 QA / 사용자 피드백에 맡긴다.
@@ -28,8 +28,8 @@ test.describe('레시피 작성', () => {
   test('미인증 유저: /recipes/new 접근 시 로그인 페이지로 리다이렉트', async ({ page }) => {
     await page.goto('/recipes/new', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(1000)
-    // 미들웨어가 /login으로 리다이렉트
-    expect(page.url()).toContain('/login')
+    // 미들웨어가 /signin으로 리다이렉트
+    expect(page.url()).toContain('/signin')
   })
 
   test('인증 유저: /recipes/new 폼 렌더 (핵심 필드 visible)', async ({ authenticatedPage: page }) => {

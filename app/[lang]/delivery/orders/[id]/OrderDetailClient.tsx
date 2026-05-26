@@ -80,7 +80,7 @@ export default function OrderDetailClient({ orderId }: Props) {
   useEffect(() => {
     if (!authLoading && !user) {
       const redirect = encodeURIComponent(`/${language}/delivery/orders/${orderId}`);
-      router.replace(`/${language}/login?redirect=${redirect}`);
+      router.replace(`/${language}/signin?redirect=${redirect}`);
     }
   }, [authLoading, user, router, language, orderId]);
 

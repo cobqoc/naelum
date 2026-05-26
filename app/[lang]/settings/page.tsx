@@ -14,6 +14,7 @@ import ProfileTab from '@/components/Settings/ProfileTab';
 import PreferencesTab from '@/components/Settings/PreferencesTab';
 import AccountTab from '@/components/Settings/AccountTab';
 import NotificationsTab from '@/components/Settings/NotificationsTab';
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences';
 
 interface Profile {
   id: string;
@@ -160,7 +161,7 @@ export default function SettingsPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push('/login');
+      router.push('/signin');
       return;
     }
 
@@ -454,7 +455,7 @@ export default function SettingsPage() {
         assertOk(await supabase.from('user_interests').insert(
           interests.map(interest => ({
             user_id: profile.id,
-            interest_type: 'cuisine',
+            interest_type: INTEREST_TYPE_CUISINE,
             interest_value: interest,
           }))
         ));

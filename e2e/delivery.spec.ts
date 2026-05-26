@@ -98,14 +98,14 @@ test.describe('배달 주문 전체 플로우', () => {
     await expect(page.locator('[data-testid^="order-item-"]')).toHaveCount(1);
   });
 
-  test('비로그인 사용자가 /delivery/checkout 접근 시 login으로 redirect', async ({ page }) => {
+  test('비로그인 사용자가 /delivery/checkout 접근 시 signin으로 redirect', async ({ page }) => {
     await page.goto('/ko/delivery/checkout');
-    await expect(page).toHaveURL(/login/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/signin/, { timeout: 10_000 });
   });
 
-  test('비로그인 사용자가 /delivery/orders 접근 시 login으로 redirect', async ({ page }) => {
+  test('비로그인 사용자가 /delivery/orders 접근 시 signin으로 redirect', async ({ page }) => {
     await page.goto('/ko/delivery/orders');
-    await expect(page).toHaveURL(/login/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/signin/, { timeout: 10_000 });
   });
 
   test('빈 카트 페이지에 empty state 표시', async ({ page }) => {
@@ -129,8 +129,8 @@ test.describe('배달 주문 전체 플로우', () => {
     await expect(page.getByTestId('goto-checkout')).toBeDisabled();
   });
 
-  test('admin 페이지 미인증 접근 시 login redirect', async ({ page }) => {
+  test('admin 페이지 미인증 접근 시 signin redirect', async ({ page }) => {
     await page.goto('/ko/admin');
-    await expect(page).toHaveURL(/(login|admin)/);
+    await expect(page).toHaveURL(/(signin|admin)/);
   });
 });

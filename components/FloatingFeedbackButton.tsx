@@ -15,7 +15,7 @@ const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
  *
  * 숨김 조건:
  * - /auth/* — 인증 플로우 중엔 UI 방해
- * - /signup, /login — 가입/로그인 중엔 숨김
+ * - /signup, /signin — 가입/로그인 중엔 숨김
  * - /recipes/[id]/cook — 쿠킹 모드 풀스크린
  * - 관리자 페이지 — 별도 도구 사용
  * - /delivery·/merchant·/rider — 배달 시스템은 앱 chrome 격리 플로우
@@ -26,14 +26,14 @@ const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false })
 export default function FloatingFeedbackButton() {
   const [open, setOpen] = useState(false)
   const { t } = useI18n()
-  // i18n: /[lang] 제거된 bare 경로 — 숨김 조건이 /login·/admin·/ 등
+  // i18n: /[lang] 제거된 bare 경로 — 숨김 조건이 /signin·/admin·/ 등
   // bare 경로 기준이라 raw usePathname()(=/ko…)이면 전부 매칭 실패(근본 원인 fix).
   const pathname = useLocalizedPathname()
 
   const shouldHide =
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/signup') ||
-    pathname.startsWith('/login') ||
+    pathname.startsWith('/signin') ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/delivery') ||
     pathname.startsWith('/merchant') ||

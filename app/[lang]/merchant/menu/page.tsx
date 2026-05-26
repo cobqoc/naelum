@@ -8,7 +8,7 @@ export default async function MerchantMenuPage({ params }: { params: Promise<{ l
   const { lang } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${lang}/login?redirect=/${lang}/merchant/menu`);
+  if (!user) redirect(`/${lang}/signin?redirect=/${lang}/merchant/menu`);
 
   const { data: restaurant } = await supabase
     .from('delivery_restaurants')

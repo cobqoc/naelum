@@ -74,7 +74,7 @@ test.describe('프로필 페이지 — god-file 분해 회귀 안전망', () => 
     ).toBeVisible({ timeout: 15000 });
 
     // 낼름함(saved) 탭 클릭 → URL tab=saved + 빈 상태 텍스트
-    await page.getByRole('button', { name: /낼름함/ }).click();
+    await page.getByRole('tab', { name: /낼름함/ }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('tab')).toBe('saved');
     await expect(page.getByText('저장한 레시피가 없습니다')).toBeVisible({ timeout: 10000 });
   });

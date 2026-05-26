@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import {
   INGREDIENT_ALIASES,
   INGREDIENT_SUBSTITUTES,
@@ -9,35 +10,44 @@ import {
   isAlmost,
   isAny,
 } from '@/lib/recommendations/match'
+import { collectAllergyTokens, isRecipeBlockedByAllergies } from '@/lib/recommendations/allergyFilter'
 
-// 사용자 식단/알레르기 필터 적용
-async function filterByDietaryPreferences<T extends { ingredients?: { ingredient_name: string }[] }>(
+// 알레르기 필터 — 음식 안전 critical.
+// user_allergies 테이블에서 직접 읽음 (이전 user_preferences 는 prod DB 에 부재 — 필터링 미작동 버그였음).
+// 매칭 알고리즘은 lib/recommendations/allergyFilter.ts (alias 양방향 + normalize + substring).
+// 식단 필터(user_dietary_preferences) 는 별도 Phase 2 — vegan/halal 등 type 별 금지 재료군 매핑 필요.
+async function filterByAllergies<T extends { ingredients?: { ingredient_name: string }[] }>(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   recipes: T[]
 ): Promise<T[]> {
-  // 사용자 식단 선호도 조회
-  const { data: preferences } = await supabase
-    .from('user_preferences')
-    .select('preference_type, preference_value')
+  const { data: allergies, error } = await supabase
+    .from('user_allergies')
+    .select('ingredient_name')
     .eq('user_id', userId)
 
-  if (!preferences || preferences.length === 0) return recipes
+  // 음식 안전 critical — read 실패 시 *전부 차단*(보수적) 대신 그대로 통과 (현재 동작 보존).
+  // DB 일시 장애로 모든 추천이 막히는 것보다 알레르기 미적용 통과가 사용자 영향 작음.
+  // 단 error 는 console 로 표면화해 옵저버빌리티 확보.
+  if (error) {
+    console.error('[filterByAllergies] user_allergies read failed:', error)
+    return recipes
+  }
 
-  const allergies = preferences
-    .filter(p => p.preference_type === 'allergy')
-    .map(p => p.preference_value.toLowerCase())
+  if (!allergies || allergies.length === 0) return recipes
 
-  if (allergies.length === 0) return recipes
+  const allergyNames = allergies
+    .map(a => a.ingredient_name)
+    .filter((n): n is string => !!n)
 
-  // 알레르기 재료가 포함된 레시피 필터링
+  const tokens = collectAllergyTokens(allergyNames)
+  if (tokens.size === 0) return recipes
+
   return recipes.filter(recipe => {
-    const recipeIngredients = (recipe.ingredients || []).map(
-      (i: { ingredient_name: string }) => i.ingredient_name.toLowerCase()
+    const recipeIngredientNames = (recipe.ingredients || []).map(
+      (i: { ingredient_name: string }) => i.ingredient_name
     )
-    return !recipeIngredients.some((ri: string) =>
-      allergies.some(allergy => ri.includes(allergy) || allergy.includes(ri))
-    )
+    return !isRecipeBlockedByAllergies(recipeIngredientNames, tokens)
   })
 }
 
@@ -155,7 +165,7 @@ export async function GET(request: NextRequest) {
 
         // 알레르기 필터링 적용 (로그인 사용자만)
         const filteredRecipes = user
-          ? await filterByDietaryPreferences(supabase, user.id, recipes)
+          ? await filterByAllergies(supabase, user.id, recipes)
           : recipes
 
         // 어드민 승격된 대체재 매핑 fetch — 양방향 Map 구성.
@@ -229,7 +239,7 @@ export async function GET(request: NextRequest) {
             .from('user_interests')
             .select('interest_value')
             .eq('user_id', user.id)
-            .eq('interest_type', 'cuisine')
+            .eq('interest_type', INTEREST_TYPE_CUISINE)
 
           const cuisineTypes = interests?.map(i => i.interest_value) || []
 
@@ -255,7 +265,7 @@ export async function GET(request: NextRequest) {
           let results = data || []
 
           // 알레르기 필터링
-          results = await filterByDietaryPreferences(supabase, user.id, results)
+          results = await filterByAllergies(supabase, user.id, results)
 
           recommendations = results.slice(0, limit)
         }

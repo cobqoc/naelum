@@ -31,9 +31,10 @@ interface ProfileTabsProps {
   tabs: { key: TabType; label: string; icon: string }[];
   activeTab: TabType;
   onSelectTab: (key: TabType) => void;
+  ariaLabel?: string;
 }
 
-export default function ProfileTabs({ tabs, activeTab, onSelectTab }: ProfileTabsProps) {
+export default function ProfileTabs({ tabs, activeTab, onSelectTab, ariaLabel }: ProfileTabsProps) {
   const activeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -43,13 +44,18 @@ export default function ProfileTabs({ tabs, activeTab, onSelectTab }: ProfileTab
 
   return (
     <div className="relative mt-8">
-      <div className="flex gap-2 border-b border-white/10 overflow-x-auto scrollbar-hide">
+      <div role="tablist" aria-label={ariaLabel} className="flex gap-2 border-b border-white/10 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => {
           const isActive = activeTab === tab.key;
           return (
             <button
               key={tab.key}
               ref={isActive ? activeBtnRef : null}
+              role="tab"
+              id={`profile-tab-${tab.key}`}
+              aria-selected={isActive}
+              aria-controls={`profile-panel-${tab.key}`}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onSelectTab(tab.key)}
               className={`shrink-0 whitespace-nowrap px-6 py-3 text-sm font-bold rounded-t-xl transition-all ${
                 isActive

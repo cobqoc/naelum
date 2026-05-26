@@ -270,7 +270,7 @@ export default function Header() {
                 </div>
                 {/* 로그인/가입 버튼 — PC/모바일 모두 헤더에 노출. 회원가입 진입점도 명시. */}
                 <Link
-                  href="/login"
+                  href="/signin"
                   className="inline-flex px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-accent-warm text-background-primary text-xs md:text-sm font-medium hover:bg-accent-hover transition-colors whitespace-nowrap"
                 >
                   {t.common.loginOrSignup}

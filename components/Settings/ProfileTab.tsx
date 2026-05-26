@@ -64,21 +64,21 @@ export default function ProfileTab({
           accept="image/*"
           className="hidden"
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          aria-label={sp.changePhoto}
-          className="relative w-24 h-24 rounded-full bg-background-secondary overflow-hidden ring-2 ring-white/10 hover:ring-accent-warm transition-all"
+        <div
+          className="relative w-24 h-24 rounded-full bg-background-secondary overflow-hidden ring-2 ring-white/10"
+          aria-hidden="true"
         >
           {avatarUrl ? (
-            <Image src={avatarUrl} alt="" fill className="object-cover" />
+            avatarUrl.startsWith('data:') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <Image src={avatarUrl} alt="" fill className="object-cover" />
+            )
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl" aria-hidden="true">👤</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl">👤</div>
           )}
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" aria-hidden="true">
-            <span className="text-white text-xs">{sp.changePhoto}</span>
-          </div>
-        </button>
+        </div>
         <div className="flex gap-3">
           <button
             type="button"
@@ -184,10 +184,10 @@ export default function ProfileTab({
         </InputBoxWrapper>
       </div>
 
-      {/* Gender */}
+      {/* Gender — WAI-ARIA radio group 패턴 (상호 배타 셋 중 하나). */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-text-secondary">{sp.gender}</label>
-        <div className="flex gap-3">
+        <div id="gender-label" className="text-sm font-medium text-text-secondary">{sp.gender}</div>
+        <div role="radiogroup" aria-labelledby="gender-label" className="flex gap-3">
           {[
             { value: 'male', label: sp.male },
             { value: 'female', label: sp.female },
@@ -196,6 +196,8 @@ export default function ProfileTab({
             <button
               key={option.value}
               type="button"
+              role="radio"
+              aria-checked={gender === option.value}
               onClick={() => setGender(option.value)}
               className={`flex-1 py-3 rounded-xl font-medium transition-all ${
                 gender === option.value

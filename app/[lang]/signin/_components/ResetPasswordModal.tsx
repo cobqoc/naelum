@@ -7,7 +7,7 @@ import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } fro
  * god-file(login/page) 분해 Phase 2 후속. 모든 상태·ref·async(handleReset
  * Password·handleUpdatePassword)·BroadcastChannel 리스너·passwordStrength
  * 계산은 부모(LoginContent) 소유 — 값+콜백만. JSX·className·스텝 분기 원본과
- * byte-identical → 행위 변경 0. 회귀 가드: e2e/login-decomposition.spec.ts.
+ * byte-identical → 행위 변경 0. 회귀 가드: e2e/signin-decomposition.spec.ts.
  */
 
 interface ResetPasswordModalProps {

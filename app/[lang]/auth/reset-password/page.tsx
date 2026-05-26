@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
 
     // 3초 후 로그인 페이지로 이동
     setTimeout(() => {
-      router.push('/login');
+      router.push('/signin');
     }, 3000);
   };
 
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
             {t.auth.linkExpiredDesc}
           </p>
           <Link
-            href="/login"
+            href="/signin"
             className="inline-block w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary transition-all hover:bg-accent-hover"
           >
             {t.auth.goToLoginPage}
@@ -144,7 +144,7 @@ export default function ResetPasswordPage() {
             {t.auth.autoMoveNext}...
           </p>
           <Link
-            href="/login"
+            href="/signin"
             className="inline-block w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary transition-all hover:bg-accent-hover"
           >
             {t.auth.goToLoginPage}
@@ -277,7 +277,7 @@ export default function ResetPasswordPage() {
         </form>
 
         <p className="mt-6 md:mt-8 text-center text-sm text-text-muted">
-          <Link href="/login" className="font-medium text-accent-warm hover:underline">
+          <Link href="/signin" className="font-medium text-accent-warm hover:underline">
             {t.auth.backToLogin}
           </Link>
         </p>

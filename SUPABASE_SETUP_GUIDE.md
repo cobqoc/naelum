@@ -426,7 +426,7 @@ export async function GET(request: Request) {
 }
 ```
 
-### 📁 `app/auth/login/page.tsx` (로그인 페이지 예시)
+### 📁 `app/auth/signin/page.tsx` (로그인 페이지 예시)
 
 ```typescript
 'use client'

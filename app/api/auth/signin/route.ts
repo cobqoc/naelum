@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       remainingAttempts: 5
     })
   } catch (error) {
-    console.error('[auth/login] POST error:', error)
+    console.error('[auth/signin] POST error:', error)
     return NextResponse.json({ error: '서버 오류가 발생했습니다' }, { status: 500 })
   }
 }

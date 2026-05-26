@@ -198,7 +198,7 @@ export default function RecipeCookMode({
         toast.warning(t.cookMode.toastLoginCooked, {
           action: {
             label: t.common.login,
-            onClick: () => { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`; }
+            onClick: () => { window.location.href = `/signin?redirect=${encodeURIComponent(window.location.pathname)}`; }
           }
         });
       } else {

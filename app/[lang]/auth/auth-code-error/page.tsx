@@ -39,7 +39,7 @@ export default function AuthCodeErrorPage() {
 
         <div className="space-y-3">
           <Link
-            href="/login"
+            href="/signin"
             className="block w-full rounded-xl bg-accent-warm py-3.5 font-bold text-background-primary transition-all hover:bg-accent-hover hover:shadow-[0_0_20px_rgba(255,153,102,0.4)]"
           >
             {t.auth.retryLogin}
