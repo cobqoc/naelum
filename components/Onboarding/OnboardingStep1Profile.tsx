@@ -94,13 +94,22 @@ export default function OnboardingStep1Profile({
         <div className="relative">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-background-tertiary border-2 border-white/10">
             {avatarPreview || formData.avatar_url ? (
-              <Image
-                src={avatarPreview || formData.avatar_url!}
-                alt={tp.avatarAlt}
-                width={96}
-                height={96}
-                className="object-cover"
-              />
+              avatarPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarPreview}
+                  alt={tp.avatarAlt}
+                  className="w-24 h-24 object-cover"
+                />
+              ) : (
+                <Image
+                  src={formData.avatar_url!}
+                  alt={tp.avatarAlt}
+                  width={96}
+                  height={96}
+                  className="object-cover"
+                />
+              )
             ) : (
               <div className="w-full h-full flex items-center justify-center text-4xl text-text-muted">
                 👤

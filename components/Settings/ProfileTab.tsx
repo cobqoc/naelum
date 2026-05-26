@@ -69,7 +69,12 @@ export default function ProfileTab({
           aria-hidden="true"
         >
           {avatarUrl ? (
-            <Image src={avatarUrl} alt="" fill className="object-cover" />
+            avatarUrl.startsWith('data:') ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <Image src={avatarUrl} alt="" fill className="object-cover" />
+            )
           ) : (
             <div className="w-full h-full flex items-center justify-center text-4xl">👤</div>
           )}
