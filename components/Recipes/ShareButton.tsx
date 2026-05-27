@@ -12,7 +12,15 @@ declare global {
       init: (key: string) => void;
       isInitialized: () => boolean;
       Share: {
-        sendScrap: (settings: { requestUrl: string }) => void;
+        sendDefault: (settings: {
+          objectType: 'feed';
+          content: {
+            title: string;
+            description?: string;
+            imageUrl: string;
+            link: { mobileWebUrl: string; webUrl: string };
+          };
+        }) => void;
       };
     };
   }
@@ -22,6 +30,7 @@ interface ShareButtonProps {
   recipeId: string;
   title: string;
   description?: string;
+  imageUrl?: string | null;
 }
 
 function KakaoIcon() {
@@ -100,7 +109,7 @@ function CopyLinkIcon() {
 
 const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
 
-export default function ShareButton({ recipeId, title, description }: ShareButtonProps) {
+export default function ShareButton({ recipeId, title, description, imageUrl }: ShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const toast = useToast();
   const { t } = useI18n();
@@ -148,7 +157,15 @@ export default function ShareButton({ recipeId, title, description }: ShareButto
       toast.error('카카오 앱 키가 설정되지 않았습니다.');
       return;
     }
-    window.Kakao.Share.sendScrap({ requestUrl: recipeUrl });
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title,
+        description,
+        imageUrl: imageUrl || `${baseUrl}/icon-512.png`,
+        link: { mobileWebUrl: recipeUrl, webUrl: recipeUrl },
+      },
+    });
     setIsOpen(false);
   };
 
