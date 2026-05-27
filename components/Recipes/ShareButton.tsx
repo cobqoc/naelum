@@ -109,6 +109,11 @@ function CopyLinkIcon() {
 
 const KAKAO_KEY = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
 
+// 외부 플랫폼(왓츠앱·X·Facebook·LINE) sharer URL은 코드상 작동하지만 각 플랫폼이
+// 자체 crawler로 og 메타를 fetch해서 preview를 생성함 — Cloudflare Bot Fight Mode가
+// 그 crawler들을 어떻게 처리하는지 미검증. 검증 후 true로 전환.
+const ENABLE_EXTERNAL_SHARERS = false;
+
 export default function ShareButton({ recipeId, title, description, imageUrl }: ShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const toast = useToast();
@@ -251,8 +256,8 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
               </button>
             )}
 
-            {/* 외부 링크 공유 */}
-            {linkItems.map((item) => (
+            {/* 외부 링크 공유 — og preview 작동 미검증으로 일단 숨김 */}
+            {ENABLE_EXTERNAL_SHARERS && linkItems.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
