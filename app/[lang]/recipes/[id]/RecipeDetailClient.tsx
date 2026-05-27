@@ -10,9 +10,11 @@ import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import RecipeBrowseView from '@/components/RecipeBrowseView';
 
-// 무거운 하위 뷰 / 인터랙티브 모달류는 기존대로 lazy import 유지
-const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { ssr: false });
-const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { ssr: false });
+// Next 16 / React 19: dynamic({ ssr: false })가 BAILOUT_TO_CLIENT_SIDE_RENDERING
+// digest를 남겨 hydration mismatch(#418) 유발. loading fallback만 쓰고 SSR은 허용
+// (server에서 빈 마크업 render → client hydrate 시 동일 마크업이라 mismatch 없음).
+const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { loading: () => null });
+const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { loading: () => null });
 
 interface RecipeIngredient {
   ingredient_name: string;
