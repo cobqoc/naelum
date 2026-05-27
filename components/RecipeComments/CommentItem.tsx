@@ -235,7 +235,7 @@ export default function CommentItem({
                 <span className="text-xs text-text-muted">{tc.edited}</span>
               )}
             </div>
-            <span className="text-xs text-text-muted">{formatRelativeTime(comment.created_at, tc)}</span>
+            <span className="text-xs text-text-muted" suppressHydrationWarning>{formatRelativeTime(comment.created_at, tc)}</span>
           </div>
         </div>
 

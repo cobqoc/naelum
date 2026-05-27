@@ -185,7 +185,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-text-primary truncate">{n.title}</p>
                       <p className="text-xs text-text-muted truncate">{n.message}</p>
-                      <p className="text-xs text-text-muted mt-0.5">{formatNotifTime(n.created_at)}</p>
+                      <p className="text-xs text-text-muted mt-0.5" suppressHydrationWarning>{formatNotifTime(n.created_at)}</p>
                     </div>
                     {!n.is_read && (
                       <span className="w-2 h-2 rounded-full bg-accent-warm flex-shrink-0 mt-1.5" />
