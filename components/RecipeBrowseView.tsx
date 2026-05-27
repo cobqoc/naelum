@@ -263,6 +263,7 @@ export default function RecipeBrowseView({
             recipeId={recipe.id}
             title={recipe.title}
             description={recipe.description}
+            imageUrl={recipe.thumbnail_url}
           />
           {!isAuthor && (
             <button
