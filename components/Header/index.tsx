@@ -16,8 +16,8 @@ import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useListKeyboardNav } from '@/lib/hooks/useListKeyboardNav';
 
-const WriteModal = dynamic(() => import('../WriteModal'), { ssr: false });
-const ContactModal = dynamic(() => import('../ContactModal'), { ssr: false });
+const WriteModal = dynamic(() => import('../WriteModal'), { loading: () => null });
+const ContactModal = dynamic(() => import('../ContactModal'), { loading: () => null });
 
 const LANG_OPTIONS = [
   { code: 'ko' as Language, label: '한국어', flag: '🇰🇷' },
