@@ -19,8 +19,8 @@ import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import IngredientsTab from '@/components/Recipes/_browse/IngredientsTab';
 import StepsTab from '@/components/Recipes/_browse/StepsTab';
 
-const ContactModal = dynamic(() => import('./ContactModal'), { ssr: false });
-const ReportModal = dynamic(() => import('./Common/ReportModal'), { ssr: false });
+const ContactModal = dynamic(() => import('./ContactModal'), { loading: () => null });
+const ReportModal = dynamic(() => import('./Common/ReportModal'), { loading: () => null });
 
 interface RecipeIngredient {
   ingredient_name: string;

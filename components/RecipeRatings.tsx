@@ -6,7 +6,7 @@ import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 
-const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { ssr: false });
+const RecipeReviewModal = dynamic(() => import('./RecipeReviewModal'), { loading: () => null });
 
 interface Rating {
   rating: number | null;
