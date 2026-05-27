@@ -160,13 +160,15 @@ export default function RecipeDetailClient({
 
     incrementViews();
 
-    // Track for personalization learning
-    fetch('/api/recommendations/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipe_id: id, action: 'view', recommendation_type: 'personalized' }),
-    }).catch(() => {});
-  }, [id]);
+    // Track for personalization learning — 로그인 사용자만 (API가 401 반환)
+    if (currentUserId) {
+      fetch('/api/recommendations/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipe_id: id, action: 'view', recommendation_type: 'personalized' }),
+      }).catch(() => {});
+    }
+  }, [id, currentUserId]);
 
   const handleSave = async () => {
     if (actionLoading) return;
