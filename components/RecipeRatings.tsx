@@ -284,7 +284,7 @@ export default function RecipeRatings({ recipeId, averageRating, ratingsCount, c
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-text-muted">{formatDate(rating.completed_at || rating.created_at)}</div>
+                          <div className="text-xs text-text-muted" suppressHydrationWarning>{formatDate(rating.completed_at || rating.created_at)}</div>
                         </div>
                       </Link>
 
