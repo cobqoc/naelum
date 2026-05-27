@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Script from 'next/script';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -137,6 +136,24 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  // 카카오 SDK 수동 로드 — next/script <Script>는 turbopack build에서
+  // emit 안 되는 보조 chunk를 preload manifest에 추가해 404 발생시킴.
+  useEffect(() => {
+    if (!KAKAO_KEY) return;
+    if (window.Kakao?.isInitialized?.()) return;
+    if (document.querySelector('script[data-naelum-kakao-sdk]')) return;
+    const s = document.createElement('script');
+    s.src = 'https://t1.kakaocdn.net/kakao_js_sdk/v1/kakao.js';
+    s.async = true;
+    s.dataset.naelumKakaoSdk = '1';
+    s.onload = () => {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init(KAKAO_KEY);
+      }
+    };
+    document.head.appendChild(s);
+  }, []);
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(recipeUrl);
@@ -222,17 +239,6 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
 
   return (
     <>
-      {KAKAO_KEY && (
-        <Script
-          src="https://developers.kakao.com/sdk/js/kakao.js"
-          onLoad={() => {
-            if (window.Kakao && !window.Kakao.isInitialized()) {
-              window.Kakao.init(KAKAO_KEY);
-            }
-          }}
-        />
-      )}
-
       <div className="relative" ref={menuRef}>
         <button
           onClick={handleShare}
