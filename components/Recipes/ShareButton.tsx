@@ -20,10 +20,6 @@ declare global {
             imageUrl: string;
             link: { mobileWebUrl: string; webUrl: string };
           };
-          buttons?: {
-            title: string;
-            link: { mobileWebUrl: string; webUrl: string };
-          }[];
         }) => void;
       };
     };
@@ -161,16 +157,14 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
       toast.error('카카오 앱 키가 설정되지 않았습니다.');
       return;
     }
-    const link = { mobileWebUrl: recipeUrl, webUrl: recipeUrl };
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
         title,
         description,
         imageUrl: imageUrl || `${baseUrl}/icon-512.png`,
-        link,
+        link: { mobileWebUrl: recipeUrl, webUrl: recipeUrl },
       },
-      buttons: [{ title: '레시피 보기', link }],
     });
     setIsOpen(false);
   };
