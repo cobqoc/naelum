@@ -11,6 +11,14 @@
 
 ## 2026-05 작업 로그
 
+- **카카오톡 공유 wire-up + 부수 React #418 · preload 404 · track 401 동시 해결** — 완료 (2026-05-27, PR #187~#195)
+  - **카카오톡 공유** (PR #187·#188): JS SDK 키 발급(카카오 개발자 콘솔 앱 ID `1468686`, 카테고리 식음료) + CSP 3 directive에 카카오 도메인 추가(`script-src`/`connect-src`/`form-action` ← `developers.kakao.com`·`t1.kakaocdn.net`·`sharer.kakao.com`) + Service Worker cross-origin fetch skip(CACHE_VERSION v14 — SW가 fetch로 가로채면 connect-src까지 적용돼 외부 SDK 차단됨) + Vercel env `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` prod/preview(develop)/development 3환경 등록 + 카카오 콘솔 JS SDK 도메인(`naelum.app`·preview) + **제품 링크 관리 웹 도메인**(`naelum.app`) 별도 등록 — 둘 다 필요(JS SDK 도메인=SDK 로드/init용, 제품 링크 도메인=메시지 카드 link 이동 허용). `sendScrap` → `sendDefault` 전환 — `sendScrap`은 카카오 서버가 requestUrl을 자체 crawler로 fetch해서 og 메타 추출하는데 Cloudflare Bot Fight Mode 차단 → "잘못된 요청". `sendDefault`는 title/description/imageUrl/link inline 직접 전달 → crawler 의존성 제거. lang prefix 추가(`/${lang}/recipes/${id}`). 외부 sharer 4종(왓츠앱·X·Facebook·LINE)은 og preview 미검증으로 `ENABLE_EXTERNAL_SHARERS=false` flag로 일단 숨김
+  - **next/script 우회**(PR #195): `<Script src=external/>` 가 turbopack build에서 emit 안 되는 보조 chunk를 preload manifest에 등록해 404 발생 + 그 preload가 hydration 시 카드 link tap 영향. `useEffect`로 직접 `<script>` tag inject + `t1.kakaocdn.net` 직접 사용(developers.kakao.com 301 redirect 한 단계 절약)
+  - **React #418 hydration mismatch** (PR #192·#193·#194): SSR HTML 검사 → `<template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING">` 발견. **Next 16 / React 19 streaming SSR이 `dynamic({ ssr: false })` 를 client-side render bailout으로 마킹** → hydration mismatch 유발. RecipeComments·RecipeRatings·Header WriteModal/ContactModal·RecipeBrowseView ContactModal/ReportModal·FloatingFeedbackButton ContactModal·RecipeReviewModal 등 **6곳** `{ ssr: false }` → `{ loading: () => null }` 일괄 전환 → BAILOUT digest 0건 확인. 시간 표시(`new Date()`) suppressHydrationWarning 추가는 별 효과 없었음(원인 아님, 부수적 안전망)
+  - **/api/recommendations/track 401** (PR #195): 비로그인 사용자가 페이지 진입 시 무조건 호출 → 401. `currentUserId` 가드 추가 — 로그인 사용자만 호출
+  - **잔여 1건**: `0u7i3_58pv1~e.js` preload 404 — Next.js 16.2.6 turbopack의 chunk preload manifest와 실제 emit 사이 mismatch (local build엔 그 패턴 없음, Vercel build에서만 발생). **기능 영향 없음** — preload hint만이고 실제 require 없음. Next 16.3 stable 출시 시 자연 해소 기대
+  - 메모리 [[pattern_next_dynamic_ssr_false_bailout]]·[[pattern_kakao_share_setup]]·[[feedback_next_script_external_preload_404]] 등록
+
 - **레시피 상세 generateMetadata 통합 — DB 쿼리 2→1번, layout.tsx 삭제** — 완료 (2026-05-27, commit `a9aab41`)
   - **문제**: `app/[lang]/recipes/[id]/` 가 `layout.tsx` + `page.tsx` 양쪽에 `generateMetadata` 보유 → 같은 ID 로 **DB 쿼리 2번**. 옛 audit 지적 항목 + Next.js Metadata 병합 규칙상 page.tsx 가 충돌 필드 *override* 하지만 layout.tsx 의 고유 `other.recipe:*` OG meta 만 살아남는 *동기화 위험* + DB 자원 낭비
   - **분석**: layout.tsx 는 *풍부한 SELECT* (prep/cook_time·difficulty·rating·servings·author) 와 `recipe:prep_time` OG meta 보유. page.tsx 는 *완전 처리* (title.absolute "X | 낼름"·http→https 변환·status='published' 가드). 두 metadata 가 *서로 보완*하지만 출처 분산
