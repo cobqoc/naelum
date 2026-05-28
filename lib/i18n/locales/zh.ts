@@ -341,7 +341,9 @@ export const zh = {
     optionalBadgeAria: '查看可选食材说明',
     substituteBadgeTooltip: '可以用{name}替代',
     substituteAvailableTooltip: '可以用{name}替代',
+    preparableBadgeTooltip: '可以用{name}制作',
     substituteBadgeAria: '查看替代食材说明',
+    preparableBadgeAria: '查看可制作食材说明',
   },
   profile: {
     recipes: '食谱',
@@ -1177,7 +1179,6 @@ export const zh = {
     linkCopied: '链接已复制',
     copyFailed: '复制失败',
     kakao: 'KakaoTalk',
-    instagram: 'Instagram',
     whatsapp: 'WhatsApp',
   },
   autocomplete: {

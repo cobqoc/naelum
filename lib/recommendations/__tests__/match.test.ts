@@ -45,7 +45,7 @@ describe('isIngredientMatch — exact / synonym', () => {
     expect(isIngredientMatch('다진마늘', '마늘')).toBe(true) // 정규화: 다진마늘→마늘
     expect(isIngredientMatch('대파', '파')).toBe(true) // 정규화: 파→대파
     expect(isIngredientMatch('닭고기', '닭')).toBe(true) // synonym 목록에 '닭'
-    expect(isIngredientMatch('설탕', '올리고당')).toBe(true) // synonym (C 미적용)
+    expect(isIngredientMatch('설탕', '백설탕')).toBe(true) // ALIAS 동의어 — 정직 매칭
   })
 })
 
@@ -139,7 +139,7 @@ describe('isSameIngredient — 보유 판정 (동의어만)', () => {
     expect(isSameIngredient('다진마늘', '마늘')).toBe(true) // 정규화
   })
 
-  it('대체재는 같은 재료가 아님 — 보유로 인정 안 함 (핵심)', () => {
+  it('다른 재료는 같은 재료가 아님 — 보유로 인정 안 함 (핵심)', () => {
     expect(isSameIngredient('까나리액젓', '멸치액젓')).toBe(false)
     expect(isSameIngredient('멸치액젓', '까나리액젓')).toBe(false)
     expect(isSameIngredient('진간장', '국간장')).toBe(false)
@@ -154,11 +154,14 @@ describe('isSameIngredient — 보유 판정 (동의어만)', () => {
 })
 
 describe('isSubstituteFor — 대체 가능 판정', () => {
-  it('대체재끼리는 대체 가능', () => {
-    expect(isSubstituteFor('까나리액젓', '멸치액젓')).toBe(true)
-    expect(isSubstituteFor('멸치액젓', '까나리액젓')).toBe(true)
-    expect(isSubstituteFor('버터', '마가린')).toBe(true)
-    expect(isSubstituteFor('진간장', '국간장')).toBe(true)
+  // 정직성 정책 (2026-05-29): SUBSTITUTES 비움. 양방향 대체는 전역에 없고 오로지
+  // recipe-specific(작성자 명시) 또는 ingredient_substitutes_global(어드민 승격)에서만.
+  it('SUBSTITUTES 비어 있음 — 전역 양방향 대체 매핑 없음 (정직성 정책)', () => {
+    expect(isSubstituteFor('까나리액젓', '멸치액젓')).toBe(false)
+    expect(isSubstituteFor('멸치액젓', '까나리액젓')).toBe(false)
+    expect(isSubstituteFor('버터', '마가린')).toBe(false)
+    expect(isSubstituteFor('진간장', '국간장')).toBe(false)
+    expect(isSubstituteFor('파프리카', '피망')).toBe(false)
   })
 
   it('같은 재료는 대체가 아님', () => {
@@ -171,9 +174,10 @@ describe('isSubstituteFor — 대체 가능 판정', () => {
     expect(isSubstituteFor('쪽파', '대파')).toBe(false)
   })
 
-  // 가공으로 준비 가능한 단방향 매핑 (2026-05-24) — raw → processed
-  // 역방향(processed → raw)은 불가능해야 함 (밥으로 쌀 되돌리기 X)
-  describe('가공 단방향 — 쌀→밥, 우유→요거트, 토마토→소스, 사과/오렌지→주스', () => {
+  // PREPARABLE_TO 단방향 — raw → processed.
+  // 정직성 기준 (2026-05-29): "알맹이가 같은 재료의 단순 형태 변형"만 인정.
+  // 발효·졸이기·착즙 등 풍미·텍스처 크게 변하면 *새 재료*로 보고 제외.
+  describe('가공 단방향 — 쌀→밥, 마늘→다진마늘, 생강→다진생강', () => {
     it('쌀 → 밥류 (역방향 X)', () => {
       expect(isSubstituteFor('쌀', '밥')).toBe(true)
       expect(isSubstituteFor('쌀', '쌀밥')).toBe(true)
@@ -183,49 +187,52 @@ describe('isSubstituteFor — 대체 가능 판정', () => {
       expect(isSubstituteFor('쌀밥', '쌀')).toBe(false)
     })
 
-    it('우유 → 요거트류 (역방향 X)', () => {
-      expect(isSubstituteFor('우유', '요거트')).toBe(true)
-      expect(isSubstituteFor('우유', '플레인요거트')).toBe(true)
-      expect(isSubstituteFor('우유', '그릭요거트')).toBe(true)
-      expect(isSubstituteFor('요거트', '우유')).toBe(false)
+    it('마늘 → 다진마늘/편마늘 (즙 제외, 역방향 X)', () => {
+      expect(isSubstituteFor('마늘', '다진마늘')).toBe(true)
+      expect(isSubstituteFor('마늘', '편마늘')).toBe(true)
+      // 즙은 추가 가공이라 제외
+      expect(isSubstituteFor('마늘', '마늘즙')).toBe(false)
     })
 
-    it('토마토 → 토마토소스/페이스트/주스 (역방향 X)', () => {
-      expect(isSubstituteFor('토마토', '토마토소스')).toBe(true)
-      expect(isSubstituteFor('토마토', '토마토페이스트')).toBe(true)
-      expect(isSubstituteFor('토마토', '토마토주스')).toBe(true)
-      expect(isSubstituteFor('토마토소스', '토마토')).toBe(false)
-      expect(isSubstituteFor('토마토페이스트', '토마토')).toBe(false)
+    it('생강 → 다진생강 (즙 제외, 역방향 X)', () => {
+      expect(isSubstituteFor('생강', '다진생강')).toBe(true)
+      expect(isSubstituteFor('생강', '생강즙')).toBe(false)
     })
 
-    it('사과/오렌지 → 주스 (역방향 X)', () => {
-      expect(isSubstituteFor('사과', '사과주스')).toBe(true)
-      expect(isSubstituteFor('사과', '사과즙')).toBe(true)
-      expect(isSubstituteFor('오렌지', '오렌지주스')).toBe(true)
-      expect(isSubstituteFor('사과주스', '사과')).toBe(false)
-      expect(isSubstituteFor('오렌지주스', '오렌지')).toBe(false)
+    it('제거된 가공 매핑 — 우유→요거트·토마토→소스·사과/오렌지→주스 (새 재료라 false)', () => {
+      // 발효(우유→요거트)·졸이기(토마토→소스)·착즙(사과→주스)은 풍미·텍스처
+      // 완전히 달라져 *새 재료*로 분류. 2026-05-29 정직성 기준 적용.
+      expect(isSubstituteFor('우유', '요거트')).toBe(false)
+      expect(isSubstituteFor('토마토', '토마토소스')).toBe(false)
+      expect(isSubstituteFor('사과', '사과주스')).toBe(false)
+      expect(isSubstituteFor('오렌지', '오렌지주스')).toBe(false)
     })
 
-    it('isIngredientMatch — 단방향 substitute 도 매칭 (추천에 뜸)', () => {
+    it('isIngredientMatch — 단방향 PREPARABLE 도 매칭 (추천에 뜸)', () => {
       expect(isIngredientMatch('쌀', '밥')).toBe(true)
-      expect(isIngredientMatch('우유', '요거트')).toBe(true)
+      expect(isIngredientMatch('마늘', '편마늘')).toBe(true)
       // 역방향은 매칭 안 됨 — 밥 보유자가 쌀 필요한 죽 레시피에 잘못 들어가지 않음
       expect(isIngredientMatch('밥', '쌀')).toBe(false)
-      expect(isIngredientMatch('요거트', '우유')).toBe(false)
     })
 
-    it('isSameIngredient — 가공 관계는 *같은 재료 아님* (동의어 묶기 위험 차단)', () => {
-      // 같은 재료가 아닌 substitute 라야 보유 ✓ 가 아닌 🔄 대체 라벨로 표시됨
+    it('isSameIngredient — 가공 관계는 *같은 재료 아님* (쌀↔밥 분리 검증)', () => {
+      // 같은 재료가 아닌 substitute 라야 보유 ✓ 가 아닌 🍳 가공 라벨로 표시됨.
+      // 마늘↔다진마늘 케이스는 normalizeIngredientName 이 "다진" 접두사 제거해
+      // 정규화 후 같은 재료로 처리됨 (정규화 책임 — 매핑 책임 X). 쌀↔밥만 검증.
       expect(isSameIngredient('쌀', '밥')).toBe(false)
-      expect(isSameIngredient('우유', '요거트')).toBe(false)
     })
   })
 })
 
-describe('isIngredientMatch — 동의어 OR 대체 (만들 수 있나)', () => {
-  it('대체재도 매칭 — 추천엔 계속 뜸', () => {
-    expect(isIngredientMatch('까나리액젓', '멸치액젓')).toBe(true)
-    expect(isIngredientMatch('설탕', '올리고당')).toBe(true)
+describe('isIngredientMatch — 동의어 OR 가공 (만들 수 있나)', () => {
+  it('PREPARABLE 매칭 — 쌀 보유 → 밥 필요 레시피 추천에 뜸', () => {
+    expect(isIngredientMatch('쌀', '밥')).toBe(true)
+    expect(isIngredientMatch('마늘', '다진마늘')).toBe(true)
+  })
+
+  it('SUBSTITUTES 비움 — 액젓끼리·풍미 다른 양념 등은 더이상 매칭 안 됨 (정직성)', () => {
+    expect(isIngredientMatch('까나리액젓', '멸치액젓')).toBe(false)
+    expect(isIngredientMatch('설탕', '올리고당')).toBe(false)
   })
 })
 
@@ -249,12 +256,21 @@ describe('computeRecipeMatch — 레시피↔냉장고 대조', () => {
     expect(r.missingIngredientNames).toEqual(expect.arrayContaining(['소고기', '당근']))
   })
 
-  it('대체 가능 — 보유 아니지만 missing 도 아님', () => {
-    const r = computeRecipeMatch(['까나리액젓'], noIds, [ri('멸치액젓')])
+  it('PREPARABLE 매칭 — 쌀 보유 + 밥 필요 = substitutable (보유 아니지만 missing 도 아님)', () => {
+    // SUBSTITUTES 비웠으니 까나리액젓↔멸치액젓 같은 매핑 더이상 없음.
+    // PREPARABLE 한 방향만 — 쌀로 밥 만들 수 있음.
+    const r = computeRecipeMatch(['쌀'], noIds, [ri('밥')])
     expect(r.ownedIngredientNames).toHaveLength(0)
-    expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '밥', via: '쌀' }])
     expect(r.missingCount).toBe(0)
     expect(r.matchedCount).toBe(1)
+  })
+
+  it('SUBSTITUTES 비움 — 액젓끼리는 더이상 substitutable 아님 (정직성 정책)', () => {
+    const r = computeRecipeMatch(['까나리액젓'], noIds, [ri('멸치액젓')])
+    expect(r.substitutableIngredients).toEqual([])
+    expect(r.missingCount).toBe(1)
+    expect(r.matchedCount).toBe(0)
   })
 
   it('물(보편 재료)은 total 에서 제외', () => {
@@ -358,18 +374,18 @@ describe('computeRecipeMatch — is_optional·substitutes·extraGlobalSubstitute
     expect(r.missingCount).toBe(0)
   })
 
-  it('extraGlobalSubstitutes — 전역에 이미 있으면 그쪽 우선 (둘 다 substitutable)', () => {
+  it('PREPARABLE 우선 — 전역 단방향 가공 매핑 (쌀→밥) 이 extras 없이도 풀림', () => {
     const extras = new Map<string, Set<string>>()
-    // 까나리액젓 ↔ 멸치액젓은 이미 코드 상수에 있어 extras 없이도 풀림
-    const r = computeRecipeMatch(['까나리액젓'], noIds, [ri('멸치액젓')], extras)
-    expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+    const r = computeRecipeMatch(['쌀'], noIds, [ri('밥')], extras)
+    expect(r.substitutableIngredients).toEqual([{ ingredient: '밥', via: '쌀' }])
   })
 
-  it('우선순위: 전역 INGREDIENT_SUBSTITUTES → recipe-specific → extras', () => {
-    // 사용자가 까나리액젓 보유. 레시피의 멸치액젓은 ① 전역에서 대체로 풀림.
-    // recipe-specific에 다른 매핑이 있어도 전역이 먼저.
+  it('우선순위: 전역(ALIASES+PREPARABLE) → recipe-specific → extras', () => {
+    // SUBSTITUTES 비움 (2026-05-29). 양방향 대체는 recipe-specific/extras 에서만.
+    // 사용자가 까나리액젓 보유, 레시피 멸치액젓 + recipe-specific 에 ['까나리액젓'] 명시
+    // → recipe-specific 으로 풀림 (전역엔 매핑 없음).
     const r = computeRecipeMatch(['까나리액젓'], noIds, [
-      ri('멸치액젓', { substitutes: ['엉뚱한대체재'] }),
+      ri('멸치액젓', { substitutes: ['까나리액젓'] }),
     ])
     expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
   })

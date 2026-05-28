@@ -341,7 +341,9 @@ export const ja = {
     optionalBadgeAria: '任意食材の説明を見る',
     substituteBadgeTooltip: '{name}で代用できます',
     substituteAvailableTooltip: '{name}で代用できます',
+    preparableBadgeTooltip: '{name}から作れます',
     substituteBadgeAria: '代用食材の説明を見る',
+    preparableBadgeAria: '調理して作れる食材の説明を見る',
   },
   profile: {
     recipes: 'レシピ',
@@ -1177,7 +1179,6 @@ export const ja = {
     linkCopied: 'リンクがコピーされました',
     copyFailed: 'コピーに失敗しました',
     kakao: 'カカオトーク',
-    instagram: 'Instagram',
     whatsapp: 'WhatsApp',
   },
   autocomplete: {
