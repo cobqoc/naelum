@@ -14,6 +14,11 @@ interface SubstituteIndicatorProps {
    *  - owned=false: 작성자 명시 author list (note 는 stripped)
    *  비어 있으면 generic fallback. */
   names?: string[];
+  /** 관계 종류 — 시각·언어 분기 (2026-05-29).
+   *  - 'substitute' (default): 양방향 대체 (액젓끼리 등) → 🔄 + "대체할 수 있어요"
+   *  - 'preparable': 단방향 raw→processed (쌀→밥 등) → 🍳 + "만들 수 있어요"
+   *  owned=false 인 경우 author 명시 substitutes 이므로 항상 'substitute' 로 처리한다. */
+  kind?: 'substitute' | 'preparable';
 }
 
 /** 한국어 로/으로 조사 자동 선택.
@@ -48,7 +53,7 @@ function withRoParticle(name: string): string {
  *  - 바깥 mousedown → close
  *  - aria-expanded·aria-label 접근성
  */
-export default function SubstituteIndicator({ owned = false, names }: SubstituteIndicatorProps = {}) {
+export default function SubstituteIndicator({ owned = false, names, kind = 'substitute' }: SubstituteIndicatorProps = {}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement | null>(null);
@@ -62,9 +67,14 @@ export default function SubstituteIndicator({ owned = false, names }: Substitute
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
-  // tooltip 메시지 — names 있으면 인터폴레이션, 없으면 fallback.
-  // ko 는 마지막 이름 batchim 검사로 로/으로 자동 처리, 그 외 locale 은 {name} 단순 치환.
-  const template = owned ? t.recipe.substituteBadgeTooltip : t.recipe.substituteAvailableTooltip;
+  // kind 별 시각·언어 분기:
+  //  - preparable + owned: 🍳 + "{쌀}로 만들 수 있어요" — 사용자가 원재료 보유, 조리해서 준비 가능
+  //  - substitute + owned: 🔄 + "{name}로 대체할 수 있어요" — 사용자가 보유한 대체재
+  //  - owned=false: 🔄 + "{names}로 대체 가능해요" — author 명시 대체재 (preparable 케이스 없음)
+  const isPreparable = kind === 'preparable' && owned;
+  const template = isPreparable
+    ? t.recipe.preparableBadgeTooltip
+    : owned ? t.recipe.substituteBadgeTooltip : t.recipe.substituteAvailableTooltip;
   const tooltipText = (() => {
     if (!names || names.length === 0) {
       // names 미전달 fallback — placeholder 가 남아있을 수 있어 빈 문자열로 치환.
@@ -94,10 +104,10 @@ export default function SubstituteIndicator({ owned = false, names }: Substitute
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         className="inline-flex items-center rounded-full text-xs cursor-help hover:opacity-80 transition-opacity"
-        aria-label={t.recipe.substituteBadgeAria}
+        aria-label={isPreparable ? t.recipe.preparableBadgeAria : t.recipe.substituteBadgeAria}
         aria-expanded={open}
       >
-        <span aria-hidden>🔄</span>
+        <span aria-hidden>{isPreparable ? '🍳' : '🔄'}</span>
       </button>
       {open && (
         <span

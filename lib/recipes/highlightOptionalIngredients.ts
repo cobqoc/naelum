@@ -14,7 +14,7 @@
  * 호출자가 단계마다 같은 Set 을 넘기면 step1 의 "청양고추(선택)" → step2 의 "청양고추" 색만.
  */
 
-import { INGREDIENT_ALIASES } from '@/lib/recommendations/match';
+import { INGREDIENT_ALIASES, INGREDIENT_PREPARABLE_TO } from '@/lib/recommendations/match';
 
 export interface OptionalIngredient {
   name: string;
@@ -71,7 +71,11 @@ function isParticleStart(text: string, fromIndex: number): boolean {
 function buildCandidates(name: string): string[] {
   const lower = name.toLowerCase();
   const aliases = INGREDIENT_ALIASES[lower] ?? [];
-  const safeAliases = aliases.filter(a => a.length >= 2);
+  // PREPARABLE_TO 단방향 가공 형태도 강조 후보 (마늘 → 다진마늘·편마늘 등) —
+  // 사용자가 본문 "다진마늘" 봤을 때 optional 표시되어야 친절. 강조는 시각적
+  // 안내일 뿐 매칭 판정과 무관해 정직성 정책 위반 X.
+  const preparable = INGREDIENT_PREPARABLE_TO[lower] ?? [];
+  const safeAliases = [...aliases, ...preparable].filter(a => a.length >= 2);
   const all = new Set<string>([name, ...safeAliases]);
   return Array.from(all).sort((a, b) => b.length - a.length);
 }

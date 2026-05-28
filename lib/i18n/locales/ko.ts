@@ -343,7 +343,9 @@ export const ko = {
     optionalBadgeAria: '선택 재료 설명 보기',
     substituteBadgeTooltip: '{nameWithRo} 대체할 수 있어요',
     substituteAvailableTooltip: '{nameWithRo} 대체 가능해요',
+    preparableBadgeTooltip: '{nameWithRo} 만들 수 있어요',
     substituteBadgeAria: '대체 가능 재료 설명 보기',
+    preparableBadgeAria: '조리해서 만들 수 있는 재료 설명 보기',
   },
   profile: {
     recipes: '레시피',
@@ -1179,7 +1181,6 @@ export const ko = {
     linkCopied: '링크가 복사되었습니다',
     copyFailed: '복사에 실패했습니다',
     kakao: '카카오톡',
-    instagram: '인스타그램',
     whatsapp: '왓츠앱',
   },
   autocomplete: {

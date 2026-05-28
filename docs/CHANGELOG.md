@@ -11,6 +11,32 @@
 
 ## 2026-05 작업 로그
 
+- **재료 매칭 정직성 정책 — SUBSTITUTES 전량 비움 + PREPARABLE 3그룹만** — 완료 (2026-05-29)
+  - **계기**: 사용자가 레시피 상세 카드에서 "🔄 쌀로 대체할 수 있어요" 툴팁 보고 "쌀로 밥을 *대체*는 어색하지 않냐"·"케첩으로 토마토소스 대체도 무리 아닌가" 지적. 매칭 데이터 전수 감사
+  - **1단계 — SubstituteIndicator kind 분기 (양방향 substitute vs 단방향 preparable 시각·언어 분리)**:
+    - `lib/recommendations/match.ts` 에 `getSubstituteKind()` helper 추가 — `'substitute' | 'preparable' | null` 분류
+    - `SubstituteIndicator` 에 `kind` prop 추가, 🔄 (대체) / 🍳 (가공) 이모지 분기 + 툴팁 메시지 분기
+    - 8개 locale 에 `preparableBadgeTooltip` + `preparableBadgeAria` 키 추가 (ko: "{쌀}로 만들 수 있어요")
+    - `IngredientsTab` 에서 `subKind` 계산 후 SubstituteIndicator 두 호출처에 전달
+  - **2단계 — 매칭 데이터 정직성 정리 (사용자 결정 — 신뢰 > 매칭 풍부함)**:
+    - `INGREDIENT_SUBSTITUTES`: **30개 → 0개** (빈 객체). 양방향 대체는 *recipe-specific* / *ingredient_substitutes_global* 만 인정. 이전 매핑(케첩↔토마토소스·진간장↔국간장·청양고추↔풋고추·액젓끼리·버터↔마가린·모짜렐라↔체다·스파게티↔펜네 등) 전부 풍미·식감·결과 미세 차이가 있어 정직성 미달
+    - `INGREDIENT_PREPARABLE_TO`: 5그룹 → **3그룹**. 유지: 쌀→밥. 제거: 우유→요거트(발효·새 재료), 토마토→토마토소스(졸이기+조미), 사과/오렌지→주스(착즙+단맛). 추가: 마늘→다진마늘/편마늘 (즙은 추가 가공이라 제외), 생강→다진생강
+    - `INGREDIENT_ALIASES`: 일부 정리 — 다진마늘/편마늘/마늘즙 PREPARABLE 로 이동·생강즙 제거·표고버섯에서 말린표고/건표고 제거(수분 90%+ 손실=새 재료)·토마토에서 방울토마토 제거(다른 품종)·호두에서 깐호두 제거·황설탕 신규 추가 + `'설탕': ['백설탕', '황설탕']` 양방향. **돼지고기↔삼겹살 유지** (알레르기 안전 — 매우 드문 돼지고기 알레르기 false negative 차단 우선)
+  - **3단계 — 영향 점검 + 테스트 6 케이스 재작성**:
+    - 사용처 6곳 전수 확인: 추천 API·useRecipeFridgeMatch·카트 보유 제외·요리 모드·알레르기 필터·단계 본문 highlight
+    - **알레르기는 ALIASES 만 사용** — SUBSTITUTES/PREPARABLE 변경 무관. 영문·한자 동의어(peanut·soybean·beef 등) 전부 유지로 안전
+    - `match.test.ts` 6 케이스 재작성: "SUBSTITUTES 비어있음", "마늘→다진마늘 (즙 제외, 역방향 X)", "제거된 가공 매핑 (우유→요거트·토마토→소스·주스) 새 재료라 false", computeRecipeMatch 케이스 까나리액젓↔멸치액젓 → 쌀→밥 PREPARABLE 로 교체
+    - `highlightOptionalIngredients` 가 PREPARABLE_TO 도 lookup 하도록 확장 — 본문 "다진마늘" 강조 유지(시각 안내, 정직성 정책과 별개). 회귀 테스트 1건 통과
+  - **추가 변경**: 인스타그램 공유 버튼 제거(레시피 상세 ShareButton) — 사용자 결정 "지금 기능 미흡, 사용자 요청 들어오면 그때 이미지+캡션 동시 복사 등 진짜 기능 붙여서 재추가". 8개 locale 에서 `share.instagram` 키 정리
+  - **데이터 현황 확인**: prod `recipe_ingredients.substitutes` 입력 = **1건**(admin 본인). `ingredient_substitutes_global` 어드민 승급 = **0행**. 어드민 승급 UI 인프라(2026-05-23 생성)는 *데이터 없어 빈 UI* 상태 — Phase 1 UI 만들 trigger 미달
+  - **어드민 승급 trigger 메모리 기록** ([[ingredient-match-honesty-policy]]):
+    - Phase 1 (수동 승급 UI): 작성자 substitutes **5건+** 누적 시
+    - Phase 2 (누적 분석 대시보드): **50건+** 누적
+    - Phase 3 (자동 승급, pattern_promoted): 같은 매핑 **5명+** 작성자 + 사용자 1000명+
+    - 그 전엔 어드민 = 본인 한 명이라 SQL 직접 실행으로 충분
+  - **점검 백로그**: 레시피 작성 폼의 substitutes 입력 UI 발견성 점검 — 왜 사용자 0건인지 (UI 문제 vs 단순 사용자 부족)
+  - 검증: lint 0 · build success · vitest **292/292 pass**
+
 - **카카오톡 공유 wire-up + 부수 React #418 · preload 404 · track 401 동시 해결** — 완료 (2026-05-27, PR #187~#195)
   - **카카오톡 공유** (PR #187·#188): JS SDK 키 발급(카카오 개발자 콘솔 앱 ID `1468686`, 카테고리 식음료) + CSP 3 directive에 카카오 도메인 추가(`script-src`/`connect-src`/`form-action` ← `developers.kakao.com`·`t1.kakaocdn.net`·`sharer.kakao.com`) + Service Worker cross-origin fetch skip(CACHE_VERSION v14 — SW가 fetch로 가로채면 connect-src까지 적용돼 외부 SDK 차단됨) + Vercel env `NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY` prod/preview(develop)/development 3환경 등록 + 카카오 콘솔 JS SDK 도메인(`naelum.app`·preview) + **제품 링크 관리 웹 도메인**(`naelum.app`) 별도 등록 — 둘 다 필요(JS SDK 도메인=SDK 로드/init용, 제품 링크 도메인=메시지 카드 link 이동 허용). `sendScrap` → `sendDefault` 전환 — `sendScrap`은 카카오 서버가 requestUrl을 자체 crawler로 fetch해서 og 메타 추출하는데 Cloudflare Bot Fight Mode 차단 → "잘못된 요청". `sendDefault`는 title/description/imageUrl/link inline 직접 전달 → crawler 의존성 제거. lang prefix 추가(`/${lang}/recipes/${id}`). 외부 sharer 4종(왓츠앱·X·Facebook·LINE)은 og preview 미검증으로 `ENABLE_EXTERNAL_SHARERS=false` flag로 일단 숨김
   - **next/script 우회**(PR #195): `<Script src=external/>` 가 turbopack build에서 emit 안 되는 보조 chunk를 preload manifest에 등록해 404 발생 + 그 preload가 hydration 시 카드 link tap 영향. `useEffect`로 직접 `<script>` tag inject + `t1.kakaocdn.net` 직접 사용(developers.kakao.com 301 redirect 한 단계 절약)

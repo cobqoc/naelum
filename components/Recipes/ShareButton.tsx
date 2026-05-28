@@ -78,25 +78,6 @@ function LineIcon() {
   );
 }
 
-function InstagramIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="ig-grad" x1="2" y1="18" x2="18" y2="2" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFDC80"/>
-          <stop offset="0.4" stopColor="#F77737"/>
-          <stop offset="0.7" stopColor="#E1306C"/>
-          <stop offset="1" stopColor="#833AB4"/>
-        </linearGradient>
-      </defs>
-      <rect width="20" height="20" rx="5" fill="url(#ig-grad)"/>
-      <rect x="4.5" y="4.5" width="11" height="11" rx="2.5" stroke="white" strokeWidth="1.3" fill="none"/>
-      <circle cx="10" cy="10" r="2.6" stroke="white" strokeWidth="1.3" fill="none"/>
-      <circle cx="14.2" cy="5.8" r="0.9" fill="white"/>
-    </svg>
-  );
-}
-
 function CopyLinkIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -155,16 +136,6 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
   }, []);
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(recipeUrl);
-      toast.success(t.share.linkCopied);
-    } catch {
-      toast.error(t.share.copyFailed);
-    }
-    setIsOpen(false);
-  };
-
-  const handleInstagramShare = async () => {
     try {
       await navigator.clipboard.writeText(recipeUrl);
       toast.success(t.share.linkCopied);
@@ -276,15 +247,6 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
                 <span>{item.name}</span>
               </a>
             ))}
-
-            {/* 인스타그램 (링크 복사) */}
-            <button
-              onClick={handleInstagramShare}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-text-primary hover:bg-white/5 transition-colors w-full border-t border-white/5"
-            >
-              <InstagramIcon />
-              <span>{t.share.instagram} ({t.share.copyLink})</span>
-            </button>
 
             {/* 링크 복사 */}
             <button

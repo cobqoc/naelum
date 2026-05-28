@@ -341,7 +341,9 @@ export const it = {
     optionalBadgeAria: 'Vedi info ingrediente opzionale',
     substituteBadgeTooltip: 'Sostituibile con {name}',
     substituteAvailableTooltip: 'Sostituibile con {name}',
+    preparableBadgeTooltip: 'Si può fare con {name}',
     substituteBadgeAria: 'Vedi info sostituto',
+    preparableBadgeAria: 'Vedi info ingrediente preparabile',
   },
   profile: {
     recipes: 'Ricette',
@@ -1177,7 +1179,6 @@ export const it = {
     linkCopied: 'Link copiato',
     copyFailed: 'Copia fallita',
     kakao: 'KakaoTalk',
-    instagram: 'Instagram',
     whatsapp: 'WhatsApp',
   },
   autocomplete: {

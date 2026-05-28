@@ -2,7 +2,7 @@
 
 import FridgeIcon from '@/components/icons/FridgeIcon';
 import SubstituteIndicator from '@/components/Recipes/SubstituteIndicator';
-import { isSameIngredient } from '@/lib/recommendations/match';
+import { isSameIngredient, getSubstituteKind } from '@/lib/recommendations/match';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
 /**
@@ -156,6 +156,11 @@ export default function IngredientsTab({
         {ingredients.map((ing, idx) => {
           const owned = isIngredientOwned(ing.ingredient_name);
           const subVia = owned ? null : findSubstitute(ing.ingredient_name, ing.substitutes);
+          // 매칭 종류 분류 — getSubstituteKind 가 null 이면 author 명시 substitutes
+          // 매칭이므로 'substitute' 로 default (작성자는 의미상 대체 의도).
+          const subKind: 'substitute' | 'preparable' = subVia
+            ? (getSubstituteKind(subVia, ing.ingredient_name) ?? 'substitute')
+            : 'substitute';
           const scaledQty = scaleQty(ing.quantity);
           // unit '선택' sentinel 방어 — 옛 DB 행이 누수해도 화면에 노출 X
           const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
@@ -215,6 +220,7 @@ export default function IngredientsTab({
                     <SubstituteIndicator
                       owned={subViaInAuthorList}
                       names={subViaInAuthorList && subVia ? [subVia] : authorSubNamesClean}
+                      kind={subViaInAuthorList ? subKind : 'substitute'}
                     />
                     <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
                     <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
@@ -225,7 +231,7 @@ export default function IngredientsTab({
                     (hasSubs && !subViaInAuthorList) = author 가 명시한 것과 *다른* substitute 를 사용자가 보유. */}
                 {subVia && !subViaInAuthorList && (
                   <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
-                    <SubstituteIndicator owned={true} names={[subVia]} />
+                    <SubstituteIndicator owned={true} names={[subVia]} kind={subKind} />
                     <span aria-hidden className="text-success font-bold">✓</span>
                     <span className="font-medium text-success">{subVia}</span>
                   </span>
