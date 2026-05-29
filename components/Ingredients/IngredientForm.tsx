@@ -330,7 +330,9 @@ export default function IngredientForm({
             placeholder={t.quickAdd.searchPlaceholder}
             enableRecentItems={true}
             allowCustomIngredient={true}
-            autoFocus={true}
+            // autoFocus 의도적 제거 — 모바일에서 모달 열자마자 키보드가 떠 카테고리·최근·브라우저
+            // 탐색을 가린다. 사용자가 검색창을 능동적으로 탭할 때만 포커스.
+            // (IngredientPickerModal 2026-05-29 결정과 동일 — 그땐 이 폼을 놓쳤음)
             dropdownDirection="up"
           />
         </div>
