@@ -5,6 +5,7 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
+import KitchenViewTabs from './_components/KitchenViewTabs';
 
 
 // ─── 번역 없는 상수 ───────────────────────────────────────────
@@ -333,13 +334,16 @@ export default function IngredientBrowsePage() {
       <Header />
       <main className="container mx-auto max-w-2xl px-4 pt-20 pb-28">
 
-        {/* ── 타이틀 ── */}
-        <div className="pt-4 pb-3 flex items-baseline gap-2">
-          <h1 className="text-lg font-bold">{tb.browseTitle}</h1>
-          {total !== null && (
-            <span className="text-xs text-text-muted">{total.toLocaleString()}개</span>
-          )}
-          <span className="text-xs text-text-muted">{tb.browseSubtitle}</span>
+        {/* ── 타이틀 + 뷰 탭 ── */}
+        <div className="pt-4 pb-3">
+          <div className="flex items-baseline gap-2 mb-3">
+            <h1 className="text-lg font-bold">{tb.browseTitle}</h1>
+            {total !== null && (
+              <span className="text-xs text-text-muted">{total.toLocaleString()}개</span>
+            )}
+            <span className="text-xs text-text-muted">{tb.browseSubtitle}</span>
+          </div>
+          <KitchenViewTabs active="grid" />
         </div>
 
         {/* ── 카테고리 탭 (한 줄 가로 스크롤) ── */}

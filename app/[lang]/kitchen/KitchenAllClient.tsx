@@ -5,6 +5,7 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
+import KitchenViewTabs from './_components/KitchenViewTabs';
 
 /**
  * 부엌 도감 — 전체 가나다순 사전 뷰 (V2, 2026-05-29).
@@ -106,21 +107,16 @@ export default function KitchenAllClient() {
   return (
     <div className="min-h-screen bg-background-primary">
       <Header />
-      <main className="container mx-auto max-w-5xl px-4 pt-6 pb-24 md:pb-12">
-        {/* 헤더 */}
-        <div className="mb-6 flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg md:text-xl font-bold">📖 가나다순 전체 보기</h2>
-            <p className="text-xs text-text-muted mt-1">
-              {loading ? '...' : `총 ${items.length}개`}
-            </p>
+      <main className="container mx-auto max-w-2xl px-4 pt-20 pb-28">
+        {/* 헤더 + 뷰 탭 */}
+        <div className="pt-4 pb-3">
+          <div className="flex items-baseline gap-2 mb-3">
+            <h1 className="text-lg font-bold">📖 가나다순 전체</h1>
+            {!loading && (
+              <span className="text-xs text-text-muted">{items.length.toLocaleString()}개</span>
+            )}
           </div>
-          <Link
-            href="/kitchen"
-            className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-          >
-            ← 카드 그리드
-          </Link>
+          <KitchenViewTabs active="all" />
         </div>
 
         {/* 초성 인덱스 — sticky */}
