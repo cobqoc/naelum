@@ -145,9 +145,10 @@ export default function LinkingTab() {
         <p className="text-sm text-text-secondary">
           {loading ? '불러오는 중…' : (
             <>
-              미연결 재료 <span className="font-bold text-text-primary">{distinctNames.toLocaleString()}개</span>
-              {' '}(레시피 <span className="font-bold text-text-primary">{totalRows.toLocaleString()}행</span>) · 빈도순.
-              승인하면 그 이름의 모든 행에 번호가 붙고 목록에서 빠집니다.
+              공개 레시피 기준 미연결 재료 <span className="font-bold text-text-primary">{distinctNames.toLocaleString()}개</span>
+              {' '}(전체 영향 <span className="font-bold text-text-primary">{totalRows.toLocaleString()}행</span>) · 빈도순.
+              승인하면 그 이름의 (비공개 포함) 모든 행에 번호가 붙고 목록에서 빠집니다.
+              {' '}비공개 레시피에만 있는 재료(예: 멸치육수)는 큐에서 제외됩니다.
             </>
           )}
         </p>
