@@ -61,9 +61,21 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // 부엌 도감 라우트 이전 (2026-05-29): /ingredients → /kitchen
+      // 옛 북마크·검색엔진 인덱스 보호. lang prefix 패턴도 흡수.
+      {
+        source: '/ingredients',
+        destination: '/kitchen',
+        permanent: true,
+      },
+      {
+        source: '/:lang(ko|en|ja|zh|es|fr|de|it)/ingredients',
+        destination: '/:lang/kitchen',
+        permanent: true,
+      },
       {
         source: '/ingredients/browse',
-        destination: '/ingredients',
+        destination: '/kitchen',
         permanent: true,
       },
       // 홈이 곧 냉장고 UI가 되면서 /fridge-home을 /로 흡수. 이전 북마크/외부 링크가 깨지지 않도록 308 redirect.

@@ -57,9 +57,9 @@ test.describe('데모 냉장고 칩 이모지 (비로그인)', () => {
   });
 });
 
-test.describe('요리 도감 페이지 이모지', () => {
+test.describe('부엌 도감 페이지 이모지', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/ko/ingredients');
+    await page.goto('/ko/kitchen');
     await page.waitForLoadState('networkidle');
   });
 
