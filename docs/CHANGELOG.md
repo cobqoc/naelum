@@ -11,6 +11,29 @@
 
 ## 2026-05 작업 로그
 
+- **ingredients_master 쓰레기 row 폐기 + 카테고리 오분류 수정** — 완료 (2026-05-29)
+  - **계기**: V2 설계 진행 중 prod 1,694 row 데이터 정확성 확인 — recipe_extract 출처 76% 중 일부가 자동 추출 실패 잔재(수치 박힘·괄호 깨짐·OR 표현). 사용자 결정 "그냥 제거, 참조 레시피도 어차피 쓰레기"
+  - **사전 검증**:
+    - 쓰레기 패턴 (숫자·괄호 깨짐·콜론·또는) 매칭 41개 (전부 status='pending')
+    - 모두 recipe_ingredients FK 참조 (45 row)
+    - 영향 레시피 34개 — 전부 status='private' (사용자 노출 X), 사용자 활동(댓글·좋아요·저장·만들어봤어요) **0건**
+    - 완전 안전 폐기 영역 확인
+  - **dev → prod 순서 적용** (CLAUDE.md 규칙):
+    - dev(naelum-dev): 2 ingredient + 1 recipe 폐기 → 검증 OK
+    - prod(naelum): 41 ingredient + 34 recipe 폐기 → CASCADE 정상
+  - **prod 데이터 변화**:
+    - ingredients_master: **1,694 → 1,653** (-41)
+    - recipes: **1,466 → 1,432** (-34, private 1,459 → 1,424)
+    - 사용자 노출 영향 0 (published 그대로)
+  - **추가 정리 — 카테고리 오분류**:
+    - 달걀·메추리알·계란 category dairy → egg (rda_manual·hansik_api 출처임에도 오분류)
+    - dev + prod 동일 적용
+  - **남은 분석 영역 (V2 마이그레이션 시 처리)**:
+    - 계란↔달걀 중복 row (별개 id로 등록됨) — V2 forms 모델로 통합
+    - approved 688개 중 일부 메타데이터 빈약 (aliases 0.5%·allergens 0.1%·forms 0%) — V2 Phase 1
+    - recipe_extract 잔여 pending 약 919개 — V2 Phase 1-D recipe_ingredients 재맵핑과 같이
+  - **정리 정책**: 부분 fix 피한다 — V2 trigger 시 일괄 처리. 이번 폐기는 *완전 안전 영역*(사용자 노출 X·활동 0)이라 V2 부담 아님
+
 - **재료 매칭 V2 본질 재설계 — 설계 문서 작성 (구현 trigger 대기)** — 설계 완료 (2026-05-29)
   - **계기**: 다진마늘 → 편마늘 거짓 매칭 fix(PR #199) 후 사용자가 "더 본질적·근본적 해법 찾아봐" 요청. 표면 fix 반복이 같은 부류 버그 재발 패턴 누적 — 정직성 정책·SHAPE/STATE 분리·ALLERGEN 동의어만 등 모든 부분 fix가 *추측의 정확도 높이는 방향*. 본질 한계 동일
   - **본질 진단**: 모든 매칭 함수의 공통 가정 = "이름 문자열만 보고 시스템이 추측" — 그 가정 자체가 문제. INGREDIENT_ALIASES·SUBSTITUTES·PREPARABLE_TO·ALLERGEN_SYNONYMS·normalizeIngredientName 다 추측 기반. 부분 fix로 풀 수 없음
