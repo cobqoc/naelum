@@ -157,6 +157,16 @@ describe('matchRecipe — 카운트 집계', () => {
     expect(summary.ownedCount).toBe(1);
   });
 
+  it('fundamental(물) 은 id null 이어도 owned — 재료 목록에서 missing(빨강) 아님', () => {
+    const summary = matchRecipe(
+      [{ ingredient_id: null, ingredient_name: '물' }],
+      new Set(),
+      EMPTY_GRAPH,
+    );
+    expect(summary.totalCount).toBe(0);             // 기본 재료라 카운트 제외
+    expect(summary.results[0].kind).toBe('owned');  // 그래도 owned — 빨강 X
+  });
+
   it('전부 보유 — ingredientStatus all', () => {
     const summary = matchRecipe(
       [

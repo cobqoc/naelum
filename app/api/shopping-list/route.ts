@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { isFundamental } from '@/lib/recommendations/matchV2';
 
 /**
  * 사용자의 기본 장보기 리스트를 가져오거나, 없으면 생성합니다.
@@ -36,23 +37,41 @@ export async function GET() {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  // ingredients_master JOIN으로 emoji 포함 — 정적 파일 없이 DB 단일 소스
-  const { data, error } = await supabase
-    .from('shopping_list_items')
-    .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, is_owned, note, ingredients_master!ingredient_id(emoji)')
-    .eq('user_id', user.id)
-    .order('is_checked', { ascending: true })
-    .order('created_at', { ascending: false })
-    .limit(200);
+  // 장보기 항목 + 현재 보유 재료 병렬 조회.
+  // is_owned 는 *담을 때 스냅샷*(POST 시점 저장값)이 아니라 *현재 냉장고*로 재계산 —
+  // 냉장고가 바뀌면 "이미 있음" 배지도 즉시 따라온다 (stale snapshot 버그 fix, 2026-05-29).
+  const [{ data, error }, { data: owned }] = await Promise.all([
+    supabase
+      .from('shopping_list_items')
+      .select('id, ingredient_name, category, quantity, unit, recipe_id, recipe_title, is_checked, note, ingredients_master!ingredient_id(emoji)')
+      .eq('user_id', user.id)
+      .order('is_checked', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(200),
+    supabase
+      .from('user_ingredients')
+      .select('ingredient_name')
+      .eq('user_id', user.id),
+  ]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const ownedNames = new Set(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (owned || []).map((i: any) => (i.ingredient_name as string).toLowerCase()),
+  );
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const items = (data || []).map((row: any) => {
     const { ingredients_master: master, ...rest } = row;
-    return { ...rest, emoji: master?.emoji ?? null };
+    return {
+      ...rest,
+      // 보유 = 현재 냉장고에 있음 OR 기본 재료(물 등 — 누구나 가진 걸로 간주)
+      is_owned: ownedNames.has((rest.ingredient_name as string).toLowerCase()) || isFundamental(rest.ingredient_name as string),
+      emoji: master?.emoji ?? null,
+    };
   });
 
   return NextResponse.json({ items });
@@ -111,6 +130,8 @@ export async function POST(request: NextRequest) {
   const toInsert: Array<Record<string, unknown>> = [];
 
   for (const i of ingredients) {
+    // 기본 재료(물 등)는 장보기에 안 담음 — 누구나 가진 걸로 간주 (수돗물 살 일 없음).
+    if (isFundamental(i.ingredient_name)) continue;
     const key = i.ingredient_name.toLowerCase();
     const newQty = i.quantity ? parseFloat(i.quantity) : 1;
     const existing = existingByName.get(key);

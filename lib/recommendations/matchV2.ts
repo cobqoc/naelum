@@ -65,6 +65,12 @@ export function matchIngredient(
   userIngredientIds: Set<string>,
   graph: RelationGraph,
 ): MatchResult {
+  // 기본 재료(물 등)는 누구나 보유로 간주 — 코드 상수 allowlist.
+  // *이름 기반*이라 ingredient_id 가 null 이어도 작동 (id 기반 매칭의 예외, 이름으로만 판정).
+  // 카운트(matchRecipe)에서도 isFundamental 로 제외되므로 N/N 보유 수엔 영향 없음.
+  if (isFundamental(recipe.ingredient_name)) {
+    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name };
+  }
   if (recipe.ingredient_id === null) {
     return { kind: 'missing', recipeIngredientName: recipe.ingredient_name };
   }
