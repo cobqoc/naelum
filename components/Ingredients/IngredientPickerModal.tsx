@@ -104,7 +104,8 @@ export default function IngredientPickerModal({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t.quickAdd.searchPlaceholder}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-background-secondary border border-white/10 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-2 focus:ring-accent-warm/20 transition-all"
-              autoFocus
+              // 2026-05-29: autoFocus 제거 — 모바일 키보드 자동 팝업이 카테고리 탐색 가림.
+              // 사용자가 능동적으로 input 클릭 시 포커스. 탐색·검색 균형.
             />
           </div>
 
