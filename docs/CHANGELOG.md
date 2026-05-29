@@ -11,6 +11,29 @@
 
 ## 2026-05 작업 로그
 
+- **재료 매칭 V2 본질 재설계 — Phase 1·2 구현 완료** — 완료 (2026-05-29)
+  - 사용자 결정: trigger 대기 안 하고 *지금 갈아엎기* (사용자 적은 시점이 적기)
+  - **Phase 1 — DB 스키마 + 옛 데이터 폐기**:
+    - 신규 테이블 `ingredient_relations` — 매칭 그래프 (kind: 'substitute' 양방향 / 'preparable_to' 단방향)
+    - 양방향 trigger — substitute INSERT 시 reverse row 자동 생성 (데이터 정합성 100%)
+    - 신규 테이블 `cooking_tools` — 조리 도구 (요리 도감 Phase 2)
+    - **데이터 폐기**: ingredients_master 1,653 → 0, recipe_ingredients.ingredient_id 전부 NULL, user_ingredients 35 → 0
+    - **보존**: recipes 1,432 본문 전부 + recipe_ingredients 15,829 텍스트(이름·양·단위)
+    - 사용자 콘텐츠 영향 0 — published 8개 그대로
+    - dev → prod 순서 적용
+  - **Phase 2 — 코드 V2 일괄 폐기 + 신규**:
+    - **폐기**: match.ts(12 함수·5 코드 상수)·allergens.ts·allergyFilter.ts·옛 단위 테스트 2개
+    - **신규**: matchV2.ts(ID + 그래프 lookup)·fetchRelations.ts·allergyFilterV2.ts(DB allergens 직접)
+    - 27 회귀 가드 (다진마늘 → 편마늘 거짓 매칭 차단, 가공형 → 원형 차단, 케첩 ↔ 토마토소스 그래프 없으면 0)
+    - **호출처 V2 전환**: useRecipeFridgeMatch·useCartFromRecipe·IngredientsTab·RecipeBrowseView·RecipeCookMode·CookIngredientsSheet·추천 API·SearchClient·fridgeMatch·highlightOptionalIngredients
+    - 이름 매칭·정규화·substring 매칭 0 — V2 본질 달성
+  - **검증**: lint 0 · build success · vitest 249/249 pass · e2e 412 passed · 2 flaky(V2 무관) · 0 failure
+  - **사용자 화면 영향 0**: 레시피 본문·재료 텍스트·단계 그대로. 매칭은 DB 빈 상태라 missing 위주 — 사용자 입력 시작하면 자연 작동
+  - **남은 작업 (Phase 3·4 별도 세션)**:
+    - Phase 3: 사용자 자동완성 빈 상태 + 신규 재료 추가 모달 UI
+    - Phase 4: 어드민 승급 페이지 `/admin/relations`
+  - 메모리 [[ingredient-match-v2-redesign]] 업데이트
+
 - **ingredients_master 쓰레기 row 폐기 + 카테고리 오분류 수정** — 완료 (2026-05-29)
   - **계기**: V2 설계 진행 중 prod 1,694 row 데이터 정확성 확인 — recipe_extract 출처 76% 중 일부가 자동 추출 실패 잔재(수치 박힘·괄호 깨짐·OR 표현). 사용자 결정 "그냥 제거, 참조 레시피도 어차피 쓰레기"
   - **사전 검증**:
