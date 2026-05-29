@@ -106,3 +106,37 @@ export async function resolveIngredientIds(
 
   return result;
 }
+
+/**
+ * 재료명 배열 → Map<originalName, id> — *이름 정확일치 (승인된 마스터) 만*. 추측 0.
+ *
+ * `resolveIngredientIds`(정규화·단어분리 fallback 포함)와 달리 fuzzy 매칭을 *전혀* 하지 않는다.
+ * 레시피 저장 시 안전 자동 번호 부여용 — 정확히 같은 이름만 붙이고, 나머지(별칭·변형·신규)는
+ * Map 에서 빠져 호출처에서 null 로 남는다 → 어드민 "번호 연결" 큐로 흘러감.
+ * (2026-05-29 비대칭 resolution fix — 냉장고는 자동인데 레시피는 안 하던 문제)
+ */
+export async function resolveExactIngredientIds(
+  names: string[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any, any, any>
+): Promise<Map<string, string>> {
+  const lookup = [...new Set(names.map(n => n.trim()).filter(Boolean))];
+  if (lookup.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from('ingredients_master')
+    .select('id, name')
+    .eq('status', 'approved')
+    .in('name', lookup);
+
+  const byName = new Map<string, string>(
+    (data ?? []).map((r: { id: string; name: string }) => [r.name, r.id])
+  );
+
+  const result = new Map<string, string>();
+  for (const name of names) {
+    const id = byName.get(name.trim());
+    if (id) result.set(name, id);
+  }
+  return result;
+}

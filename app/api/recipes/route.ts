@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/api/auth'
 import { parsePagination } from '@/lib/api/pagination'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { normalizeSubstitutes } from '@/lib/recipes/substituteChips'
+import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
 // 저장 boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
 // 빈 배열은 NULL 로 (jsonb 행 깔끔 유지).
@@ -140,10 +141,15 @@ export async function POST(request: NextRequest) {
 
   // 재료 추가
   if (ingredients && ingredients.length > 0) {
+    // 클라가 번호 안 준 재료는 *이름 정확일치* 로만 자동 번호 부여 (추측 0). 못 찾으면 null → 어드민 큐.
+    const exactIds = await resolveExactIngredientIds(
+      ingredients.filter((i: { ingredient_id?: string | null }) => !i.ingredient_id).map((i: { ingredient_name: string }) => i.ingredient_name),
+      supabase
+    )
     const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: number; unit: string; notes?: string; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }, index: number) => ({
       recipe_id: recipe.id,
       ingredient_name: ing.ingredient_name,
-      ingredient_id: ing.ingredient_id || null,
+      ingredient_id: ing.ingredient_id || exactIds.get(ing.ingredient_name) || null,
       quantity: ing.quantity,
       unit: ing.unit,
       notes: ing.notes,
