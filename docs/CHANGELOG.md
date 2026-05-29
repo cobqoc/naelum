@@ -11,6 +11,19 @@
 
 ## 2026-05 작업 로그
 
+- **V2 매칭 후속 — 어드민 번호 연결 도구 + stale/비대칭 버그 fix + 물 기본재료** — 진행 (2026-05-29~30, **dev·미커밋**)
+  - **배경**: V2 Phase 1 에서 `recipe_ingredients.ingredient_id` 전량 NULL (의도적 폐기) 후 *재연결 안 됨* → V2 는 id-only 매칭이라 develop 에서 전면 "0 보유". prod(main)은 옛 이름 fallback 이라 안 깨짐 (V2 코드 main 미머지). **⚠️ 이대로 develop→main 머지하면 prod 매칭 죽음 (prod id 0%) — 백필·prod 마이그레이션 선행 필수.**
+  - **부엌 도감 그리드 탭 로고 겹침 fix**: `KitchenHomeClient` `<main>` `pt-6` → `pt-20` (fixed Header 와 탭 충돌; 가나다순·검색 뷰와 동일하게).
+  - **어드민 "재료 매칭" 페이지** (`/admin/ingredient-matching`, nav "대체 재료 제안" 대체):
+    - 탭① 번호 연결 — 미연결 재료 빈도순 + 이름 정확일치 제안 → 승인 시 service-role 로 `ingredient_id` 부여; 모달서 별칭 등록·새 재료 생성
+    - 탭② 관계 승인 — 기존 substitute-suggestions 패널 재사용 + **관계 직접 추가 폼** (쌀→밥 등 가공/대체)
+    - RPC `admin_unresolved_ingredients(_summary)` (SECURITY DEFINER·service_role 전용 — 1000행 silent 제한 회피). **dev DB 만 적용, prod 미적용**
+    - 자동 부여 X — 전부 어드민 승인 (정직성: 추측 0)
+  - **장보기 `is_owned` stale-snapshot fix**: 담을 때 냉장고 스냅샷이 박제돼 GET 이 그대로 읽음 → 냉장고 비운 뒤에도 거짓 "이미 있음". GET 에서 *현재 `user_ingredients`* 로 재계산. prod 실데이터 검증. (**이 버그 prod 에도 있음** — V2 이전 로직)
+  - **비대칭 resolution fix**: 냉장고 추가는 이름→id 자동 해석(`resolveIngredientId`)하는데 레시피 저장은 안 함 → 새 레시피도 계속 NULL. `resolveExactIngredientIds`(이름 정확일치·status approved·추측0·fuzzy 없음) 신설 + recipe POST(`api/recipes`)·PUT(`api/recipes/[id]`) 적용 → 새 레시피 NULL 유입 차단. **기존 15,829 NULL 은 어드민 도구 백필 필요(별개 단계)**
+  - **물 = 기본 재료, 코드 상수 일관 적용**: `isFundamental`(물·생수·식수·water) 을 `matchIngredient`(→owned, id null 이어도 이름으로)·장보기 GET(물=이미 있음)·POST(물 안 담음) 에 적용. DB 플래그 대신 코드 상수 채택 — 작고 고정된 *세상 사실* + id null 에도 작동 (소금·기름은 향후 *사용자 pantry(DB)* 로, 전역 플래그 금지=거짓양성). matchV2 회귀 테스트 1개 추가.
+  - 검증: `lint` 0 · `build` green · `vitest` matchV2 20/20. e2e·커밋·prod 는 정리 단계 진행 중.
+
 - **부엌 도감 V2 — 라우트 이전 + 카드 그리드 + 가나다순 탭** — 완료 (2026-05-29, PR #209·#210)
   - **라우트 이전**: `/ingredients` → `/kitchen` (PR #208). 8 locale 이름 변경: "요리 도감" → "부엌 도감" (Cook's Guide → Kitchen Reference)
   - **메인 = 카테고리 카드 그리드** (KitchenHomeClient): 17개 카테고리(채소·육류·해산물·달걀류·유제품·곡류·콩·과일·장양념·향신료·소스·발효·빵·음료·간식·가공·기타) 각각 그라데이션 톤·이모지·카운트·미리보기 8개. 도구·기법·단위 변환 "준비 중" 카드. `/api/kitchen/summary` 한 번 호출
