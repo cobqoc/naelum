@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { INGREDIENT_CATEGORIES } from './IngredientAutocompleteTypes';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { ALLERGEN_22, suggestAllergens } from '@/lib/constants/allergens';
 
 interface AddIngredientDialogProps {
   /** 다이얼로그 열림 상태 */
@@ -56,6 +57,8 @@ export default function AddIngredientDialog({
   const [nameEn, setNameEn] = useState('');
   const [category, setCategory] = useState('other');
   const [commonUnits, setCommonUnits] = useState<string[]>([]);
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
+  const [allergensTouched, setAllergensTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [duplicateError, setDuplicateError] = useState('');
@@ -73,12 +76,27 @@ export default function AddIngredientDialog({
       setNameEn('');
       setCategory('other');
       setCommonUnits([]);
+      setSelectedAllergens([]);
+      setAllergensTouched(false);
       setError('');
       setDuplicateError('');
       setSimilarIngredient(null);
       setSubmitting(false);
     }
   }, [isOpen, initialName]);
+
+  // 자동 알레르겐 추정 — 사용자가 직접 체크하기 전까진 이름 기반 제안 반영
+  const suggestedAllergens = useMemo(() => suggestAllergens(name), [name]);
+  useEffect(() => {
+    if (!allergensTouched) setSelectedAllergens(suggestedAllergens);
+  }, [suggestedAllergens, allergensTouched]);
+
+  const toggleAllergen = (key: string) => {
+    setAllergensTouched(true);
+    setSelectedAllergens(prev =>
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key],
+    );
+  };
 
   /**
    * 중복 체크 (디바운싱)
@@ -165,6 +183,7 @@ export default function AddIngredientDialog({
           name_en: nameEn || null,
           category,
           common_units: commonUnits,
+          allergens: selectedAllergens,
         }),
       });
 
@@ -280,6 +299,35 @@ export default function AddIngredientDialog({
                   }`}
                 >
                   {unit}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 알레르겐 — 식약처 22품목, 안전 critical */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              알레르기 유발 (해당 없으면 빈 채로) <span className="text-text-muted">식약처 22품목</span>
+            </label>
+            {suggestedAllergens.length > 0 && !allergensTouched && (
+              <p className="text-xs text-warning mb-2">
+                이름 기반 자동 제안: {suggestedAllergens.join(', ')} (확인 후 수정 가능)
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {ALLERGEN_22.map((a) => (
+                <button
+                  key={a.key}
+                  type="button"
+                  onClick={() => toggleAllergen(a.key)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    selectedAllergens.includes(a.key)
+                      ? 'bg-error/20 text-error border border-error/40'
+                      : 'bg-background-secondary text-text-muted border border-white/10 hover:bg-white/5'
+                  }`}
+                  aria-pressed={selectedAllergens.includes(a.key)}
+                >
+                  {a.emoji ? `${a.emoji} ` : ''}{a.label}
                 </button>
               ))}
             </div>
