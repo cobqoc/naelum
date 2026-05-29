@@ -107,18 +107,16 @@ export default function KitchenAllClient() {
   return (
     <div className="min-h-screen bg-background-primary">
       <Header />
-      <main className="container mx-auto max-w-5xl px-4 pt-6 pb-24 md:pb-12">
-        {/* 뷰 전환 탭 */}
-        <div className="mb-5">
+      <main className="container mx-auto max-w-2xl px-4 pt-20 pb-28">
+        {/* 헤더 + 뷰 탭 */}
+        <div className="pt-4 pb-3">
+          <div className="flex items-baseline gap-2 mb-3">
+            <h1 className="text-lg font-bold">📖 가나다순 전체</h1>
+            {!loading && (
+              <span className="text-xs text-text-muted">{items.length.toLocaleString()}개</span>
+            )}
+          </div>
           <KitchenViewTabs active="all" />
-        </div>
-
-        {/* 헤더 */}
-        <div className="mb-6">
-          <h2 className="text-lg md:text-xl font-bold">📖 가나다순 전체 보기</h2>
-          <p className="text-xs text-text-muted mt-1">
-            {loading ? '...' : `총 ${items.length}개`}
-          </p>
         </div>
 
         {/* 초성 인덱스 — sticky */}
