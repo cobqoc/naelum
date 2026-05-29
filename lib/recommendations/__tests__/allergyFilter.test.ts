@@ -129,3 +129,39 @@ describe('isRecipeBlockedByAllergies', () => {
     expect(isRecipeBlockedByAllergies(['우유', '설탕'], tokens)).toBe(true);
   });
 });
+
+// 2026-05-29: 알레르기 매핑이 ALIASES 에서 ALLERGEN_SYNONYMS (별도 파일) 로 분리.
+// 안전 critical path 격리 회귀 가드 — ALIASES 가 어떻게 변하든 알레르기 안전 유지.
+describe('알레르기 매핑 ALIASES 분리 — 안전 critical path 격리', () => {
+  it('돼지고기 알레르기 → 삼겹살·베이컨·pork 든 레시피 모두 차단 (부위·가공 보수적 포함)', () => {
+    const tokens = collectAllergyTokens(['돼지고기']);
+    expect(isRecipeBlockedByAllergies(['삼겹살', '양파'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['베이컨', '계란'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['pork', 'salt'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['스팸', '김치'], tokens)).toBe(true);
+  });
+
+  it('대두 알레르기 → 두유·두부·간장·된장 등 콩 가공품 모두 차단', () => {
+    const tokens = collectAllergyTokens(['대두']);
+    expect(isRecipeBlockedByAllergies(['두유'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['두부'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['간장'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['된장'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['콩나물'], tokens)).toBe(true);
+  });
+
+  it('우유 알레르기 → 치즈·요거트·버터 등 유제품 모두 차단', () => {
+    const tokens = collectAllergyTokens(['우유']);
+    expect(isRecipeBlockedByAllergies(['치즈'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['요거트'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['버터'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['생크림'], tokens)).toBe(true);
+  });
+
+  it('토마토 알레르기 → 케첩·토마토소스·방울토마토 모두 차단', () => {
+    const tokens = collectAllergyTokens(['토마토']);
+    expect(isRecipeBlockedByAllergies(['케첩'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['토마토소스'], tokens)).toBe(true);
+    expect(isRecipeBlockedByAllergies(['방울토마토'], tokens)).toBe(true);
+  });
+});

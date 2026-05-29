@@ -8,6 +8,7 @@ import {
   isAlmost,
   isAny,
   computeRecipeMatch,
+  INGREDIENT_ALIASES,
 } from '@/lib/recommendations/match'
 
 // route.ts(god-file)에서 추출한 순수 매칭 로직의 회귀 가드.
@@ -388,5 +389,60 @@ describe('computeRecipeMatch — is_optional·substitutes·extraGlobalSubstitute
       ri('멸치액젓', { substitutes: ['까나리액젓'] }),
     ])
     expect(r.substitutableIngredients).toEqual([{ ingredient: '멸치액젓', via: '까나리액젓' }])
+  })
+})
+
+// 2026-05-29: ALIAS 그룹 모델 도입 — SYNONYM_GROUPS·HYPONYM_GROUPS 정의 →
+// buildAliasGraph 가 양방향 인접 리스트 자동 생성. 사람이 한 방향만 적은 누락
+// 버그 차단 + 데이터 단순화 (그룹 1번 정의로 양쪽 자동).
+describe('ALIAS 그룹 빌드 — 양방향 자동 보장', () => {
+  it('SYNONYM 그룹 — 모든 페어 양방향 (달걀↔계란↔egg)', () => {
+    expect(INGREDIENT_ALIASES['달걀']).toContain('계란')
+    expect(INGREDIENT_ALIASES['계란']).toContain('달걀')
+    expect(INGREDIENT_ALIASES['달걀']).toContain('egg')
+    expect(INGREDIENT_ALIASES['egg']).toContain('달걀')
+    expect(INGREDIENT_ALIASES['계란']).toContain('egg')
+    expect(INGREDIENT_ALIASES['egg']).toContain('계란')
+  })
+
+  it('SYNONYM 새 멤버 (황설탕) — 다른 모든 그룹 멤버와 양방향', () => {
+    expect(INGREDIENT_ALIASES['설탕']).toContain('황설탕')
+    expect(INGREDIENT_ALIASES['황설탕']).toContain('설탕')
+    expect(INGREDIENT_ALIASES['백설탕']).toContain('황설탕')
+    expect(INGREDIENT_ALIASES['황설탕']).toContain('백설탕')
+  })
+
+  it('HYPONYM 그룹 — 일반명↔특정명 양방향, 특정명끼리는 alias 아님', () => {
+    // 간장 ⊃ 진간장/국간장: 일반명 통한 매칭
+    expect(INGREDIENT_ALIASES['간장']).toContain('진간장')
+    expect(INGREDIENT_ALIASES['진간장']).toContain('간장')
+    expect(INGREDIENT_ALIASES['간장']).toContain('국간장')
+    expect(INGREDIENT_ALIASES['국간장']).toContain('간장')
+    // 특정명끼리는 직접 연결 없음 — 진간장↔국간장 false 정직성 정책
+    expect(INGREDIENT_ALIASES['진간장']).not.toContain('국간장')
+    expect(INGREDIENT_ALIASES['국간장']).not.toContain('진간장')
+    // 액젓도 동일
+    expect(INGREDIENT_ALIASES['멸치액젓']).not.toContain('까나리액젓')
+    expect(INGREDIENT_ALIASES['까나리액젓']).not.toContain('멸치액젓')
+  })
+
+  it('같은 멤버 여러 그룹 — union 처리 (호박 = 애호박/주키니/단호박/늙은호박)', () => {
+    // 호박은 두 그룹 [애호박,주키니,호박]·[호박,단호박,늙은호박] 멤버
+    expect(INGREDIENT_ALIASES['호박']).toEqual(
+      expect.arrayContaining(['애호박', '주키니', '단호박', '늙은호박'])
+    )
+    // 다른 그룹 멤버끼리 (애호박↔단호박)는 직접 alias X
+    expect(INGREDIENT_ALIASES['애호박']).not.toContain('단호박')
+    expect(INGREDIENT_ALIASES['단호박']).not.toContain('애호박')
+  })
+
+  it('데이터 무결성 — 그래프가 양방향 (자가 검증)', () => {
+    for (const [key, values] of Object.entries(INGREDIENT_ALIASES)) {
+      for (const value of values) {
+        const reverse = INGREDIENT_ALIASES[value]
+        expect(reverse, `${value} should have reverse alias to ${key}`).toBeDefined()
+        expect(reverse).toContain(key)
+      }
+    }
   })
 })
