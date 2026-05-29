@@ -45,34 +45,49 @@ export function useIngredientPicker(
     try {
       setLoading(true);
 
-      const params = new URLSearchParams({
-        page: pageNum.toString(),
-        limit: PAGE_SIZE.toString(),
-        q: searchQuery,
-        categories: selectedCategories.join(','),
-        sort: 'search_count',
-      });
+      // V2 (2026-05-29): 빈 검색 + 단일 카테고리 또는 전체 → quick-add (개인+글로벌 인기)
+      // 검색어 있으면 → browse (search)
+      const hasSearchQuery = searchQuery.trim().length > 0;
 
-      const response = await fetch(`/api/ingredients/browse?${params}`);
+      let response: Response;
+      if (!hasSearchQuery && pageNum === 1) {
+        // 빈 상태 — V2 개인화/인기도 API
+        const cat = selectedCategories.length === 1 ? selectedCategories[0] : 'all';
+        const qaParams = new URLSearchParams({ category: cat, limit: PAGE_SIZE.toString() });
+        response = await fetch(`/api/ingredients/quick-add?${qaParams.toString()}`);
+      } else {
+        // 검색·페이지네이션 — 기존 browse
+        const params = new URLSearchParams({
+          page: pageNum.toString(),
+          limit: PAGE_SIZE.toString(),
+          q: searchQuery,
+          categories: selectedCategories.join(','),
+          sort: 'search_count',
+        });
+        response = await fetch(`/api/ingredients/browse?${params.toString()}`);
+      }
 
       if (!response.ok) {
         throw new Error('Failed to fetch ingredients');
       }
 
       const data = await response.json();
+      // quick-add 응답은 { items, total }, browse 응답은 { ingredients, ... }
+      // 정규화 — items 또는 ingredients 모두 처리
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const items: IngredientItem[] = (data.items ?? data.ingredients ?? []) as any;
 
       if (reset) {
-        setIngredients(data.ingredients || []);
+        setIngredients(items);
       } else {
         setIngredients((prev) => {
-          const newIngredients = data.ingredients || [];
           const existingIds = new Set(prev.map((item: IngredientItem) => item.id));
-          const uniqueNew = newIngredients.filter((item: IngredientItem) => !existingIds.has(item.id));
+          const uniqueNew = items.filter((item: IngredientItem) => !existingIds.has(item.id));
           return [...prev, ...uniqueNew];
         });
       }
 
-      setHasMore((data.ingredients || []).length === PAGE_SIZE);
+      setHasMore(items.length === PAGE_SIZE);
     } catch (error) {
       console.error('Error fetching ingredients:', error);
     } finally {
