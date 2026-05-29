@@ -1,0 +1,138 @@
+/**
+ * V2 재료 매칭 — ID 기반 그래프 lookup (2026-05-29 본질 재설계)
+ *
+ * 설계: docs/INGREDIENT_MATCHING_REDESIGN.md, 메모리 [[ingredient-match-v2-redesign]]
+ *
+ * 핵심 변화 vs 옛 시스템:
+ *  - 이름 매칭·정규화·substring 매칭 **전부 제거** — 추측 0
+ *  - ingredient_id 기반 정확 매칭만
+ *  - 관계는 DB `ingredient_relations` 테이블에서 lookup
+ *    - substitute (양방향): 액젓끼리 등. DB trigger로 reverse row 자동 보장
+ *    - preparable_to (단방향): raw→processed (마늘→다진마늘)
+ *  - 알레르기는 `ingredients_master.allergens` 컬럼 직접 lookup
+ *
+ * 매칭 함수는 *순수* — DB fetch 한 번 후 매칭은 in-memory.
+ * fetch 책임은 hook/route 가짐 (caching 위치).
+ */
+
+/**
+ * 보편 재료 — 수돗물처럼 누구나 항상 갖고 있다고 가정. 매칭에서 카운트 제외.
+ */
+const FUNDAMENTAL_NAMES = new Set(['물', '생수', '식수', 'water']);
+
+export function isFundamental(name: string): boolean {
+  return FUNDAMENTAL_NAMES.has(name.trim().toLowerCase());
+}
+
+export type MatchKind = 'owned' | 'preparable' | 'substitute' | 'missing';
+
+export interface MatchResult {
+  kind: MatchKind;
+  /** 레시피 재료 이름 (표시용) */
+  recipeIngredientName: string;
+  /** preparable·substitute 의 경우 사용자 보유 재료 이름 (chip 표시용) */
+  via?: string;
+}
+
+export interface UserIngredient {
+  ingredient_id: string;
+  name: string;
+}
+
+export interface RecipeIngredientInput {
+  ingredient_id: string | null;  // null = 옛 데이터, 매칭 안 됨
+  ingredient_name: string;
+  is_optional?: boolean;
+}
+
+/** ingredient_relations 그래프 — to_id 별로 incoming 관계 묶음 */
+export interface RelationGraph {
+  /** Map<to_id, [{from_id, kind}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색 */
+  incoming: Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to' }>>;
+}
+
+/**
+ * 한 레시피 재료를 사용자 보유 재료들과 매칭.
+ *
+ * 우선순위:
+ *  1. owned     — 정확 보유 (id 일치)
+ *  2. substitute— 양방향 대체 매핑 존재
+ *  3. preparable— 단방향 가공 매핑 존재 (사용자가 from, 레시피가 to)
+ *  4. missing   — 매칭 0
+ */
+export function matchIngredient(
+  recipe: RecipeIngredientInput,
+  userIngredientIds: Set<string>,
+  graph: RelationGraph,
+): MatchResult {
+  if (recipe.ingredient_id === null) {
+    return { kind: 'missing', recipeIngredientName: recipe.ingredient_name };
+  }
+
+  if (userIngredientIds.has(recipe.ingredient_id)) {
+    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name };
+  }
+
+  const incoming = graph.incoming.get(recipe.ingredient_id);
+  if (incoming) {
+    // substitute 우선 (양방향이 보유에 더 가까움), 그 다음 preparable
+    let preparableFrom: string | null = null;
+    for (const { from_id, kind } of incoming) {
+      if (!userIngredientIds.has(from_id)) continue;
+      if (kind === 'substitute') {
+        return { kind: 'substitute', recipeIngredientName: recipe.ingredient_name, via: from_id };
+      }
+      if (kind === 'preparable_to' && preparableFrom === null) {
+        preparableFrom = from_id;
+      }
+    }
+    if (preparableFrom !== null) {
+      return { kind: 'preparable', recipeIngredientName: recipe.ingredient_name, via: preparableFrom };
+    }
+  }
+
+  return { kind: 'missing', recipeIngredientName: recipe.ingredient_name };
+}
+
+/**
+ * 여러 레시피 재료를 한 번에 매칭 + 카운트 집계.
+ * is_optional 재료는 total/missing/owned 카운트에서 제외.
+ */
+export interface RecipeMatchSummary {
+  results: MatchResult[];
+  ownedCount: number;
+  totalCount: number;
+  matchRate: number;     // 0~100
+  ingredientStatus: 'none' | 'partial' | 'all';
+}
+
+export function matchRecipe(
+  recipeIngredients: RecipeIngredientInput[],
+  userIngredientIds: Set<string>,
+  graph: RelationGraph,
+): RecipeMatchSummary {
+  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph));
+
+  // is_optional + fundamental(물 등) 재료는 카운트에서 제외
+  const required = recipeIngredients
+    .map((ri, i) => ({ ri, result: results[i] }))
+    .filter(({ ri }) => !ri.is_optional && !isFundamental(ri.ingredient_name));
+
+  const totalCount = required.length;
+  const ownedCount = required.filter(({ result }) => result.kind === 'owned').length;
+  const matchRate = totalCount === 0 ? 0 : Math.round((ownedCount / totalCount) * 100);
+
+  const ingredientStatus: 'none' | 'partial' | 'all' =
+    totalCount === 0 ? 'none'
+    : ownedCount === 0 ? 'none'
+    : ownedCount === totalCount ? 'all'
+    : 'partial';
+
+  return { results, ownedCount, totalCount, matchRate, ingredientStatus };
+}
+
+/**
+ * 빈 그래프 — 사용자/시스템 초기 상태에서 안전 fallback.
+ * 모든 매칭이 missing 반환 (정확 보유만 매칭).
+ */
+export const EMPTY_GRAPH: RelationGraph = { incoming: new Map() };

@@ -75,10 +75,12 @@ describe('tokenizeStepText — 동의어 매칭', () => {
     expect(optionalToken).toMatchObject({ matchedText: '대파', ingredientName: '대파' });
   });
 
-  it('"마늘" optional → 본문 "다진마늘" 매칭 (alias)', () => {
+  it('"마늘" optional + 본문 "다진마늘" — V2 alias 확장 제거되어 매칭 X', () => {
+    // V2 (2026-05-29): 옛 INGREDIENT_ALIASES 확장 제거. 본문 강조는 재료명 자체만.
+    // 미래에 ingredients_master.aliases 컬럼 fetch 로 확장 가능.
     const tokens = tokenizeStepText('다진마늘 1큰술 넣고', [garlic], new Set());
     const optionalToken = tokens.find(t => t.type === 'optional');
-    expect(optionalToken).toMatchObject({ matchedText: '다진마늘', ingredientName: '마늘' });
+    expect(optionalToken).toBeUndefined();
   });
 
   it('긴 동의어 우선 — "대파"가 본문에 있으면 "파"가 아닌 "대파" 매칭', () => {

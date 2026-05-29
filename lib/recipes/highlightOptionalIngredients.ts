@@ -14,7 +14,9 @@
  * 호출자가 단계마다 같은 Set 을 넘기면 step1 의 "청양고추(선택)" → step2 의 "청양고추" 색만.
  */
 
-import { INGREDIENT_ALIASES, INGREDIENT_PREPARABLE_TO } from '@/lib/recommendations/match';
+// V2 (2026-05-29): 옛 코드 상수 INGREDIENT_ALIASES·PREPARABLE_TO 제거.
+// 본문 강조는 *재료명 자체*만 매칭. 미래에 ingredients_master.aliases 를 fetch 해
+// 확장 가능하지만 시각 안내 영역이라 우선은 단순화.
 
 export interface OptionalIngredient {
   name: string;
@@ -61,23 +63,14 @@ function isParticleStart(text: string, fromIndex: number): boolean {
 }
 
 /**
- * optional 재료 1개 → 매칭 후보 문자열 목록 (재료명 + 동의어).
- * 길이 내림차순 — 긴 매칭 먼저 시도 (대파 우선, 파 나중).
+ * optional 재료 1개 → 매칭 후보 문자열 목록.
+ * V2: 재료명 자체만 (옛 ALIAS·PREPARABLE 확장 제거).
  *
- * 1글자 *동의어*는 제외 — "파"(대파 동의어) 같은 1글자 form 이 합성어
- * ("파고명", "파전" 등) 에서 false positive 유발. 작성자가 일관되게 동의어
- * 풀텍스트 ("대파") 적을 가능성 높음. 1글자 *원본 재료명* (쌀·콩 등) 은 유지.
+ * 미래 확장 — ingredients_master.aliases 컬럼을 fetch 해서 확장 가능. 시각 강조
+ * 영역이라 매칭 판정과 분리됨.
  */
 function buildCandidates(name: string): string[] {
-  const lower = name.toLowerCase();
-  const aliases = INGREDIENT_ALIASES[lower] ?? [];
-  // PREPARABLE_TO 단방향 가공 형태도 강조 후보 (마늘 → 다진마늘·편마늘 등) —
-  // 사용자가 본문 "다진마늘" 봤을 때 optional 표시되어야 친절. 강조는 시각적
-  // 안내일 뿐 매칭 판정과 무관해 정직성 정책 위반 X.
-  const preparable = INGREDIENT_PREPARABLE_TO[lower] ?? [];
-  const safeAliases = [...aliases, ...preparable].filter(a => a.length >= 2);
-  const all = new Set<string>([name, ...safeAliases]);
-  return Array.from(all).sort((a, b) => b.length - a.length);
+  return [name];
 }
 
 interface MatchAttempt {

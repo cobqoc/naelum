@@ -1,21 +1,37 @@
 import { createClient } from '@/lib/supabase/client'
-import { computeRecipeMatch, type RecipeMatchResult } from './match'
+import { matchRecipe, type RecipeIngredientInput } from './matchV2'
+import { fetchRelationsForRecipe } from './fetchRelations'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
+export interface FridgeMatchResult {
+  ownedCount: number
+  totalIngredients: number
+  matchRate: number
+  ingredientStatus: 'none' | 'partial' | 'all'
+  ownedIngredientNames: string[]
+  missingIngredientNames: string[]
+  substitutableIngredients: { ingredient: string; via: string }[]
+  matchedCount: number
+  missingCount: number
+}
+
 /**
- * 레시피 배열에 냉장고 match(보유/대체/없음) 부착 — 추천 외 페이지(전체·검색)용 클라이언트 헬퍼.
+ * V2 레시피 배열에 냉장고 match 부착 (2026-05-29).
  *
- * 추천 페이지는 서버(API)에서 match 를 계산하지만, 전체·검색 페이지는 ISR/동적 fetch라
- * 클라이언트에서 계산한다. 핵심 매칭은 computeRecipeMatch 단일 출처 — 세 페이지 카운트 일치.
- * 비로그인이거나 냉장고가 비면 match 없이 그대로 반환 → 카드에 냉장고 줄이 안 뜬다.
- * 호출처는 setState 전에 await — 카드가 첫 렌더부터 줄을 포함해 layout shift 방지.
+ * 전체·검색 페이지용 클라이언트 헬퍼. 추천 페이지는 서버(API)에서 같은 매칭.
+ * V2 변화:
+ *   - 옛: computeRecipeMatch + 이름 매칭 + 정규화 + 코드 상수 lookup
+ *   - V2: matchRecipe + ingredient_id 그래프 + DB ingredient_relations
+ *   - 정규화·추측 0
+ *
+ * 비로그인 또는 냉장고 빈 경우 match 없이 그대로 반환.
  */
 export async function attachFridgeMatch<T extends { id: string }>(
   supabase: SupabaseClient,
   userId: string | null,
   recipes: T[],
-): Promise<(T & Partial<RecipeMatchResult>)[]> {
+): Promise<(T & Partial<FridgeMatchResult>)[]> {
   if (!userId || recipes.length === 0) return recipes
 
   const { data: userIngredients } = await supabase
@@ -24,31 +40,72 @@ export async function attachFridgeMatch<T extends { id: string }>(
     .eq('user_id', userId)
   if (!userIngredients || userIngredients.length === 0) return recipes
 
-  const names = userIngredients.map(i => i.ingredient_name.toLowerCase())
-  const idSet = new Set<string>(
-    userIngredients.filter(i => i.ingredient_id).map(i => i.ingredient_id as string),
+  const userIdSet = new Set<string>(
+    userIngredients
+      .filter(i => i.ingredient_id !== null && i.ingredient_id !== undefined)
+      .map(i => i.ingredient_id as string),
   )
+  const userIdToName = new Map<string, string>()
+  for (const ui of userIngredients) {
+    if (ui.ingredient_id) userIdToName.set(ui.ingredient_id as string, ui.ingredient_name)
+  }
 
   const { data: riRows } = await supabase
     .from('recipe_ingredients')
-    .select('recipe_id, ingredient_name, ingredient_id, is_optional, substitutes')
+    .select('recipe_id, ingredient_name, ingredient_id, is_optional')
     .in('recipe_id', recipes.map(r => r.id))
 
-  const byRecipe = new Map<string, { ingredient_name: string; ingredient_id: string | null; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }[]>()
+  const byRecipe = new Map<string, RecipeIngredientInput[]>()
   for (const row of riRows ?? []) {
     const arr = byRecipe.get(row.recipe_id) ?? []
     arr.push({
+      ingredient_id: row.ingredient_id ?? null,
       ingredient_name: row.ingredient_name,
-      ingredient_id: row.ingredient_id,
       is_optional: row.is_optional ?? false,
-      // legacy string[] / 신규 객체[] — computeRecipeMatch 가 두 형식 모두 처리.
-      substitutes: Array.isArray(row.substitutes) ? (row.substitutes as (string | { name?: string; note?: string })[]) : null,
     })
     byRecipe.set(row.recipe_id, arr)
   }
 
-  return recipes.map(r => ({
-    ...r,
-    ...computeRecipeMatch(names, idSet, byRecipe.get(r.id) ?? []),
-  }))
+  // 모든 레시피 재료의 id 모음 → 한 번에 그래프 fetch
+  const allRecipeIngredientIds = Array.from(
+    new Set(
+      Array.from(byRecipe.values())
+        .flat()
+        .map(i => i.ingredient_id)
+        .filter((id): id is string => id !== null),
+    ),
+  )
+  const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
+
+  return recipes.map(r => {
+    const ingredients = byRecipe.get(r.id) ?? []
+    const summary = matchRecipe(ingredients, userIdSet, graph)
+    const ownedIngredientNames: string[] = []
+    const missingIngredientNames: string[] = []
+    const substitutableIngredients: { ingredient: string; via: string }[] = []
+    summary.results.forEach((result, i) => {
+      const ing = ingredients[i]
+      if (ing.is_optional) return
+      if (result.kind === 'owned') ownedIngredientNames.push(ing.ingredient_name)
+      else if (result.via) {
+        const viaName = userIdToName.get(result.via) ?? ''
+        if (viaName) substitutableIngredients.push({ ingredient: ing.ingredient_name, via: viaName })
+        else missingIngredientNames.push(ing.ingredient_name)
+      } else {
+        missingIngredientNames.push(ing.ingredient_name)
+      }
+    })
+    return {
+      ...r,
+      ownedCount: summary.ownedCount,
+      totalIngredients: summary.totalCount,
+      matchRate: summary.matchRate,
+      ingredientStatus: summary.ingredientStatus,
+      ownedIngredientNames,
+      missingIngredientNames,
+      substitutableIngredients,
+      matchedCount: summary.ownedCount + substitutableIngredients.length,
+      missingCount: missingIngredientNames.length,
+    }
+  })
 }

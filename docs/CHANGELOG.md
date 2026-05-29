@@ -11,6 +11,74 @@
 
 ## 2026-05 작업 로그
 
+- **재료 매칭 V2 본질 재설계 — Phase 1·2 구현 완료** — 완료 (2026-05-29)
+  - 사용자 결정: trigger 대기 안 하고 *지금 갈아엎기* (사용자 적은 시점이 적기)
+  - **Phase 1 — DB 스키마 + 옛 데이터 폐기**:
+    - 신규 테이블 `ingredient_relations` — 매칭 그래프 (kind: 'substitute' 양방향 / 'preparable_to' 단방향)
+    - 양방향 trigger — substitute INSERT 시 reverse row 자동 생성 (데이터 정합성 100%)
+    - 신규 테이블 `cooking_tools` — 조리 도구 (요리 도감 Phase 2)
+    - **데이터 폐기**: ingredients_master 1,653 → 0, recipe_ingredients.ingredient_id 전부 NULL, user_ingredients 35 → 0
+    - **보존**: recipes 1,432 본문 전부 + recipe_ingredients 15,829 텍스트(이름·양·단위)
+    - 사용자 콘텐츠 영향 0 — published 8개 그대로
+    - dev → prod 순서 적용
+  - **Phase 2 — 코드 V2 일괄 폐기 + 신규**:
+    - **폐기**: match.ts(12 함수·5 코드 상수)·allergens.ts·allergyFilter.ts·옛 단위 테스트 2개
+    - **신규**: matchV2.ts(ID + 그래프 lookup)·fetchRelations.ts·allergyFilterV2.ts(DB allergens 직접)
+    - 27 회귀 가드 (다진마늘 → 편마늘 거짓 매칭 차단, 가공형 → 원형 차단, 케첩 ↔ 토마토소스 그래프 없으면 0)
+    - **호출처 V2 전환**: useRecipeFridgeMatch·useCartFromRecipe·IngredientsTab·RecipeBrowseView·RecipeCookMode·CookIngredientsSheet·추천 API·SearchClient·fridgeMatch·highlightOptionalIngredients
+    - 이름 매칭·정규화·substring 매칭 0 — V2 본질 달성
+  - **검증**: lint 0 · build success · vitest 249/249 pass · e2e 412 passed · 2 flaky(V2 무관) · 0 failure
+  - **사용자 화면 영향 0**: 레시피 본문·재료 텍스트·단계 그대로. 매칭은 DB 빈 상태라 missing 위주 — 사용자 입력 시작하면 자연 작동
+  - **남은 작업 (Phase 3·4 별도 세션)**:
+    - Phase 3: 사용자 자동완성 빈 상태 + 신규 재료 추가 모달 UI
+    - Phase 4: 어드민 승급 페이지 `/admin/relations`
+  - 메모리 [[ingredient-match-v2-redesign]] 업데이트
+
+- **ingredients_master 쓰레기 row 폐기 + 카테고리 오분류 수정** — 완료 (2026-05-29)
+  - **계기**: V2 설계 진행 중 prod 1,694 row 데이터 정확성 확인 — recipe_extract 출처 76% 중 일부가 자동 추출 실패 잔재(수치 박힘·괄호 깨짐·OR 표현). 사용자 결정 "그냥 제거, 참조 레시피도 어차피 쓰레기"
+  - **사전 검증**:
+    - 쓰레기 패턴 (숫자·괄호 깨짐·콜론·또는) 매칭 41개 (전부 status='pending')
+    - 모두 recipe_ingredients FK 참조 (45 row)
+    - 영향 레시피 34개 — 전부 status='private' (사용자 노출 X), 사용자 활동(댓글·좋아요·저장·만들어봤어요) **0건**
+    - 완전 안전 폐기 영역 확인
+  - **dev → prod 순서 적용** (CLAUDE.md 규칙):
+    - dev(naelum-dev): 2 ingredient + 1 recipe 폐기 → 검증 OK
+    - prod(naelum): 41 ingredient + 34 recipe 폐기 → CASCADE 정상
+  - **prod 데이터 변화**:
+    - ingredients_master: **1,694 → 1,653** (-41)
+    - recipes: **1,466 → 1,432** (-34, private 1,459 → 1,424)
+    - 사용자 노출 영향 0 (published 그대로)
+  - **추가 정리 — 카테고리 오분류**:
+    - 달걀·메추리알·계란 category dairy → egg (rda_manual·hansik_api 출처임에도 오분류)
+    - dev + prod 동일 적용
+  - **남은 분석 영역 (V2 마이그레이션 시 처리)**:
+    - 계란↔달걀 중복 row (별개 id로 등록됨) — V2 forms 모델로 통합
+    - approved 688개 중 일부 메타데이터 빈약 (aliases 0.5%·allergens 0.1%·forms 0%) — V2 Phase 1
+    - recipe_extract 잔여 pending 약 919개 — V2 Phase 1-D recipe_ingredients 재맵핑과 같이
+  - **정리 정책**: 부분 fix 피한다 — V2 trigger 시 일괄 처리. 이번 폐기는 *완전 안전 영역*(사용자 노출 X·활동 0)이라 V2 부담 아님
+
+- **재료 매칭 V2 본질 재설계 — 설계 문서 작성 (구현 trigger 대기)** — 설계 완료 (2026-05-29)
+  - **계기**: 다진마늘 → 편마늘 거짓 매칭 fix(PR #199) 후 사용자가 "더 본질적·근본적 해법 찾아봐" 요청. 표면 fix 반복이 같은 부류 버그 재발 패턴 누적 — 정직성 정책·SHAPE/STATE 분리·ALLERGEN 동의어만 등 모든 부분 fix가 *추측의 정확도 높이는 방향*. 본질 한계 동일
+  - **본질 진단**: 모든 매칭 함수의 공통 가정 = "이름 문자열만 보고 시스템이 추측" — 그 가정 자체가 문제. INGREDIENT_ALIASES·SUBSTITUTES·PREPARABLE_TO·ALLERGEN_SYNONYMS·normalizeIngredientName 다 추측 기반. 부분 fix로 풀 수 없음
+  - **본질 해법**: `재료 = (id, canonical_name, forms[], aliases[], allergens[])` 모델. 매칭 = (id 같음 AND form 호환성). 알레르기 = (재료.allergens ∩ 사용자.allergens != ∅). substring·정규화 매칭 0
+    - 핵심: `forms` 호환성 그래프 — `raw.compatible_with=['*']`, `minced.compatible_with=['minced','paste']` 등. 가공 단계가 낮을수록 호환성 넓음 → 단방향 자연 보장
+  - **데이터 현황 (prod 1,694 row)**:
+    - 표시·표현 메타 (description·storage·seasons·tastes·pairs): 84% 채워짐
+    - **매칭·안전 메타 (aliases·allergens·forms·substitutes): 0.1~0.5%** — 본질 해법 작업의 80%는 데이터 채우기
+    - 다진마늘·편마늘 등 가공형이 ingredients_master에 *별개 row*로 등록 — forms로 통합 마이그레이션 필요
+    - is_processed 컬럼 신뢰 불가 (1,694 중 36개만 true, 다진마늘조차 false)
+  - **마이그레이션 단계 (4~5주)**:
+    - Phase 0: DB 스키마(`forms` jsonb·ingredient_relations 테이블)·V2 함수·feature flag (1주)
+    - Phase 1: aliases·allergens·forms 채우기 + recipe_ingredients 재매핑 (2~3주, 70%)
+    - Phase 2: feature flag 단계적 켜기 + 회귀 광범위 (1주)
+    - Phase 3: 옛 상수·함수 제거 (1주)
+  - **Trigger (시작 조건, 둘 중 더 빠른 것)**:
+    - A. 작성자 substitutes 5건+ 누적 (현재 1건 = admin 본인) — 어드민 승급 UI Phase 1과 같이
+    - B. 사용자 100명+ 또는 messy 이름 매칭 실패 보고 1건+ (현재 0건)
+  - **그 사이 정책**: 부분 fix *피한다* — 또 다른 추상화 실수가 V2 마이그레이션 시 부채로 작용. 새 매칭 버그 보고 받아도 V2 설계로 트리거. [[ingredient-match-v2-redesign]] · [[ingredient-match-honesty-policy]]
+  - **설계 문서**: [`docs/INGREDIENT_MATCHING_REDESIGN.md`](INGREDIENT_MATCHING_REDESIGN.md) — 9개 섹션·회귀 가드 체크리스트·trigger·대안 평가 포함
+  - 메모리 [[ingredient-match-v2-redesign]] 등록
+
 - **재료 매칭 구조 개선 — buildAliasGraph + 알레르기 매핑 분리** — 완료 (2026-05-29)
   - 정직성 정책 후속 — 데이터 구조·결합 개선으로 미래 수정 안전·단순
   - **개선 1 (양방향 자동 graph)**:

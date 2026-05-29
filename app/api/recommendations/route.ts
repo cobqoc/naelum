@@ -2,22 +2,17 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
-import {
-  INGREDIENT_ALIASES,
-  INGREDIENT_SUBSTITUTES,
-  computeRecipeMatch,
-  isReady,
-  isAlmost,
-  isAny,
-} from '@/lib/recommendations/match'
-import { collectAllergyTokens, isRecipeBlockedByAllergies } from '@/lib/recommendations/allergyFilter'
+import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
+import { fetchRelationsForRecipe, fetchAllergensForRecipe } from '@/lib/recommendations/fetchRelations'
+import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 
-// 알레르기 필터 — 음식 안전 critical.
-// user_allergies 테이블에서 직접 읽음 (이전 user_preferences 는 prod DB 에 부재 — 필터링 미작동 버그였음).
-// 매칭 알고리즘은 lib/recommendations/allergyFilter.ts (alias 양방향 + normalize + substring).
-// 식단 필터(user_dietary_preferences) 는 별도 Phase 2 — vegan/halal 등 type 별 금지 재료군 매핑 필요.
-async function filterByAllergies<T extends { ingredients?: { ingredient_name: string }[] }>(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+// V2 알레르기 필터 — DB allergens 컬럼 lookup (2026-05-29).
+// substring 매칭·정규화 추측 제거. ingredient_id 기반 정확 매칭만.
+// user_allergies 테이블 → 사용자 알레르기 키워드 → 재료 마스터의 allergens 비교.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function filterByAllergies<T extends Record<string, any>>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   userId: string,
   recipes: T[]
 ): Promise<T[]> {
@@ -26,29 +21,63 @@ async function filterByAllergies<T extends { ingredients?: { ingredient_name: st
     .select('ingredient_name')
     .eq('user_id', userId)
 
-  // 음식 안전 critical — read 실패 시 *전부 차단*(보수적) 대신 그대로 통과 (현재 동작 보존).
-  // DB 일시 장애로 모든 추천이 막히는 것보다 알레르기 미적용 통과가 사용자 영향 작음.
-  // 단 error 는 console 로 표면화해 옵저버빌리티 확보.
+  // DB 일시 장애 시 보수적 통과 (안전 critical 이지만 가용성 우선).
   if (error) {
     console.error('[filterByAllergies] user_allergies read failed:', error)
     return recipes
   }
-
   if (!allergies || allergies.length === 0) return recipes
 
-  const allergyNames = allergies
-    .map(a => a.ingredient_name)
-    .filter((n): n is string => !!n)
+  const userAllergens = normalizeUserAllergens(
+    allergies.map((a: { ingredient_name: string | null }) => a.ingredient_name).filter((n: string | null): n is string => !!n)
+  )
+  if (userAllergens.length === 0) return recipes
 
-  const tokens = collectAllergyTokens(allergyNames)
-  if (tokens.size === 0) return recipes
+  // 모든 레시피 재료의 id 모음 → 한 번에 allergens fetch
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getIngs = (r: any): { ingredient_id?: string | null }[] => (r?.ingredients ?? []) as { ingredient_id?: string | null }[]
+  const allIds = Array.from(
+    new Set(
+      recipes
+        .flatMap(r => getIngs(r))
+        .map(i => i.ingredient_id)
+        .filter((id): id is string => !!id),
+    ),
+  )
+  if (allIds.length === 0) return recipes
+
+  const allergensMap = await fetchAllergensForRecipe(allIds, supabase)
 
   return recipes.filter(recipe => {
-    const recipeIngredientNames = (recipe.ingredients || []).map(
-      (i: { ingredient_name: string }) => i.ingredient_name
-    )
-    return !isRecipeBlockedByAllergies(recipeIngredientNames, tokens)
+    const recipeIds = getIngs(recipe)
+      .map(i => i.ingredient_id)
+      .filter((id): id is string => !!id)
+    const recipeAllergensMap = new Map<string, string[]>()
+    for (const id of recipeIds) {
+      const a = allergensMap.get(id)
+      if (a) recipeAllergensMap.set(id, a)
+    }
+    return !isRecipeBlockedV2(recipeAllergensMap, userAllergens)
   })
+}
+
+// 추천 mode 술어 — V2 ownedCount·totalCount·missingCount 기반.
+type RecipeWithMatch = {
+  ownedCount: number
+  totalIngredients: number
+  matchRate: number
+  matchedCount: number
+  missingCount: number
+}
+
+function isReady(r: RecipeWithMatch): boolean {
+  return r.totalIngredients > 0 && r.ownedCount === r.totalIngredients
+}
+function isAlmost(r: RecipeWithMatch): boolean {
+  return r.missingCount >= 1 && r.missingCount <= 3
+}
+function isAny(r: RecipeWithMatch): boolean {
+  return r.matchRate > 0
 }
 
 // GET /api/recommendations - 재료 기반 레시피 추천
@@ -107,9 +136,9 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        const userIngredientIdSet = new Set(userIngredientIds)
+        const userIdSet = new Set(userIngredientIds)
 
-        // 1) ingredient_id FK 매칭으로 후보 recipe_id 조회 (정확도 높음)
+        // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
         let idCandidateIds: string[] = []
         if (userIngredientIds.length > 0) {
           const { data: idCandidateRows } = await supabase
@@ -119,34 +148,27 @@ export async function GET(request: NextRequest) {
           idCandidateIds = idCandidateRows?.map(r => r.recipe_id) ?? []
         }
 
-        // 2) 텍스트 ILIKE 매칭으로 추가 후보 조회 (미연결 재료 대응)
-        const expandedSet = new Set<string>(ingredientNames)
-        for (const ing of ingredientNames) {
-          // 후보 검색은 동의어 + 대체재 둘 다로 확장 (대체 가능한 레시피도 후보 포함)
-          const related = [...(INGREDIENT_ALIASES[ing] ?? []), ...(INGREDIENT_SUBSTITUTES[ing] ?? [])]
-          related.forEach(s => expandedSet.add(s.toLowerCase().trim()))
+        // 이름 ilike fallback — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
+        // ID 기반이지만 후보 검색 단계는 이름으로 보강 (sweep 최소화).
+        let nameCandidateIds: string[] = []
+        if (ingredientNames.length > 0) {
+          const ilikeClauses = ingredientNames
+            .slice(0, 20)
+            .map(ing => `ingredient_name.ilike.%${ing}%`)
+            .join(',')
+          const { data: nameCandidateRows } = await supabase
+            .from('recipe_ingredients')
+            .select('recipe_id')
+            .or(ilikeClauses)
+          nameCandidateIds = nameCandidateRows?.map(r => r.recipe_id) ?? []
         }
 
-        const ilikeClauses = [...expandedSet]
-          .slice(0, 40)
-          .map(ing => `ingredient_name.ilike.%${ing}%`)
-          .join(',')
-
-        const { data: nameCandidateRows } = await supabase
-          .from('recipe_ingredients')
-          .select('recipe_id')
-          .or(ilikeClauses)
-
-        const candidateIds = [...new Set([
-          ...idCandidateIds,
-          ...(nameCandidateRows?.map(r => r.recipe_id) ?? []),
-        ])]
-
+        const candidateIds = [...new Set([...idCandidateIds, ...nameCandidateIds])]
         if (!candidateIds.length) {
           return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
-        // 후보 레시피만 fetch — ingredient_id 포함 (FK 매칭에 사용)
+        // 후보 레시피 fetch — ingredient_id 포함
         const { data: recipes } = await supabase
           .from('recipes')
           .select(`
@@ -154,7 +176,7 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
-            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional, substitutes)
+            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional)
           `)
           .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
@@ -163,34 +185,49 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
-        // 알레르기 필터링 적용 (로그인 사용자만)
+        // 알레르기 필터링 V2 (로그인 사용자만)
         const filteredRecipes = user
           ? await filterByAllergies(supabase, user.id, recipes)
           : recipes
 
-        // 어드민 승격된 대체재 매핑 fetch — 양방향 Map 구성.
-        // 코드 상수 INGREDIENT_SUBSTITUTES와 동등 우선순위로 매칭에 사용.
-        const { data: globalSubs } = await supabase
-          .from('ingredient_substitutes_global')
-          .select('from_name, to_name')
-        const extraSubs = new Map<string, Set<string>>()
-        for (const row of globalSubs ?? []) {
-          const a = row.from_name.toLowerCase().trim()
-          const b = row.to_name.toLowerCase().trim()
-          if (!extraSubs.has(a)) extraSubs.set(a, new Set())
-          extraSubs.get(a)!.add(b)
-          if (!extraSubs.has(b)) extraSubs.set(b, new Set())
-          extraSubs.get(b)!.add(a)
-        }
+        // V2 매칭 — ingredient_relations 그래프 한 번에 fetch
+        const allRecipeIngredientIds = Array.from(
+          new Set(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (filteredRecipes as any[])
+              .flatMap(r => r.ingredients ?? [])
+              .map((i: { ingredient_id: string | null }) => i.ingredient_id)
+              .filter((id: string | null): id is string => !!id),
+          ),
+        )
+        const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
 
-        // 보유/대체/없음 분류 — computeRecipeMatch(match.ts) 단일 출처. 전체·검색 페이지와 동일 로직.
+        // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const recipesWithMatch = filteredRecipes.map((recipe: any) => ({
-          ...recipe,
-          ...computeRecipeMatch(ingredientNames, userIngredientIdSet, recipe.ingredients || [], extraSubs),
-        }))
+        const recipesWithMatch = filteredRecipes.map((recipe: any) => {
+          const ingredients: RecipeIngredientInput[] = (recipe.ingredients ?? []).map(
+            (i: { ingredient_id: string | null; ingredient_name: string; is_optional?: boolean }) => ({
+              ingredient_id: i.ingredient_id ?? null,
+              ingredient_name: i.ingredient_name,
+              is_optional: i.is_optional ?? false,
+            }),
+          )
+          const summary = matchRecipe(ingredients, userIdSet, graph)
+          const matchedCount = summary.results.filter(
+            (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
+          ).length
+          const missingCount = summary.totalCount - matchedCount
+          return {
+            ...recipe,
+            ownedCount: summary.ownedCount,
+            totalIngredients: summary.totalCount,
+            matchRate: summary.matchRate,
+            matchedCount,
+            missingCount,
+            ingredientStatus: summary.ingredientStatus,
+          }
+        })
 
-        // mode별 필터 함수(isReady/isAlmost/isAny)는 @/lib/recommendations/match 에서 import
 
         // 'auto' 모드: 서버가 가장 유용한 결과 선택
         if (modeParam === 'auto') {

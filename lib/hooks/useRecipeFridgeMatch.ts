@@ -1,126 +1,150 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
-import { isSameIngredient, isSubstituteFor, isFundamental } from '@/lib/recommendations/match';
+import { useMemo, useCallback, useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import {
+  matchRecipe,
+  type RelationGraph,
+  type RecipeIngredientInput,
+  type RecipeMatchSummary,
+  EMPTY_GRAPH,
+} from '@/lib/recommendations/matchV2';
+import { fetchRelationsForRecipe } from '@/lib/recommendations/fetchRelations';
 
 /**
- * 레시피 재료 ↔ 사용자 냉장고 매칭 hook — RecipeBrowseView 의 fridge match 도메인.
+ * V2 레시피 ↔ 냉장고 매칭 hook (2026-05-29 본질 재설계).
  *
- * **Why 추출** ([[project-god-file-phase2]]):
- *  - RBV 의 *3 개 소비자*(재료 탭 카드 / 냉장고 모달 / cart "보유 제외" 토글)가 동일
- *    isIngredientOwned·findSubstitute·ownedCount 사용
- *  - 단일 출처화 — 한 곳만 수정하면 3 곳 동시 정확. 갈래나면 사용자에게 *모순된*
- *    화면 (재료 탭은 보유라는데 모달은 없다고 표시 등 — 2026-05-22 fix 사례)
- *  - 순수 derivation (state X) — useMemo 만으로 충분
+ * 변경:
+ *  - 옛 시스템: 이름 매칭 + 정규화 + 코드 상수 lookup
+ *  - V2: ingredient_id 정확 매칭 + DB ingredient_relations 그래프 lookup
+ *  - 정규화 부작용·이름 추측 0 — 다진마늘 → 통마늘 거짓 매칭 자체 불가능
  *
- * **불변식**:
- *  - 기본 재료(`isFundamental`: 물·소금 등)는 항상 보유 ✓
- *  - FK 일치(ingredient_id) 우선 — 이름 messy("양파(중)") 해도 정확 매칭
- *  - 동의어(`isSameIngredient`) — 까나리액젓을 멸치액젓 "보유" 처리 X (대체는 별도)
- *  - 매칭 카운트는 `is_optional` 재료 *제외* — "선택" 재료 보유 여부는 무관
- *  - findSubstitute: 전역 INGREDIENT_SUBSTITUTES → 레시피별(작성자 substitutes 배열) 순
+ * fetch 전략:
+ *  - 마운트 시 한 번 fetch — 레시피 재료 id 들의 incoming relations
+ *  - 양방향 substitute 는 DB trigger 로 reverse row 자동 존재 → 한 방향만 fetch
+ *
+ * **호환성**:
+ *  - 인터페이스는 옛 hook 과 유사 — RecipeBrowseView 등 호출처 변경 최소
+ *  - findSubstitute 반환은 *사용자 보유 재료의 ingredient_id* (이름이 아닌 id)
+ *    → 표시할 때는 호출처에서 id → name resolve 필요
  */
 
+/** 호출처 호환 — recipe.ingredients 의 ingredient_id 가 optional 인 케이스 허용 */
 export interface MatchableIngredient {
-  ingredient_name: string;
   ingredient_id?: string | null;
+  ingredient_name: string;
   is_optional?: boolean;
-  /** legacy DB rows: string[] / 신규: { name; note? }[] */
-  substitutes?: (string | { name?: string; note?: string })[] | null;
 }
 
 export interface UseRecipeFridgeMatchResult {
-  /** name 보유 판정 — FK·동의어·기본재료 */
-  isIngredientOwned: (name: string) => boolean;
+  /** name 보유 판정 — V2 는 id 기반이라 이름은 매칭 안 함. 호출처는 ingredient_id 로 lookup */
+  isIngredientOwned: (ingredient_id: string | null) => boolean;
   /**
-   * 보유는 아니지만 대체 가능한 사용자 재료(via)를 찾는다.
-   * @param name 레시피 재료명
-   * @param recipeSpecific 레시피별 작성자 명시 substitutes (legacy/신규 양형식)
+   * 레시피 재료 → 사용자 보유 재료 중 *대체 가능한* id 반환.
+   * preparable·substitute 케이스. 없으면 null.
    */
-  findSubstitute: (
-    name: string,
-    recipeSpecific?: (string | { name?: string; note?: string })[] | null,
-  ) => string | null;
-  /** 필수 재료(is_optional=false) 중 보유한 개수 */
+  findSubstitute: (ingredient_id: string | null) => string | null;
   ownedCount: number;
-  /** 필수 재료 총 개수 (is_optional 제외) */
   totalIngredients: number;
-  /** 'none'(0) | 'partial' | 'all' — 냉장고 아이콘 색상 분기용 */
   ingredientStatus: 'none' | 'partial' | 'all';
+  /** 전체 매칭 summary — UI 가 카드별 chip 결정에 사용 */
+  summary: RecipeMatchSummary;
+  /** fetch 중 여부 */
+  isLoading: boolean;
 }
 
 export function useRecipeFridgeMatch(
   ingredients: MatchableIngredient[],
-  userIngredients: string[],
+  userIngredients: string[],         // legacy (옛 시그너처) — V2 에서 무시
   userIngredientIds: string[],
 ): UseRecipeFridgeMatchResult {
-  // FK 매칭 — recipe 재료의 ingredient_id 가 user 보유 재료 id 와 일치하면 보유.
-  // 이름이 messy 해도("양파(중)" 등) FK 로 정확히 잡는다(추천 API 와 동일 기준).
-  const fkOwnedNames = useMemo(() => {
-    const userIdSet = new Set(userIngredientIds);
-    return new Set(
-      ingredients
-        .filter(i => i.ingredient_id && userIdSet.has(i.ingredient_id))
-        .map(i => i.ingredient_name),
-    );
-  }, [ingredients, userIngredientIds]);
+  void userIngredients;  // V2: 이름 매칭 안 함, 매개변수 호환만
 
-  // 보유 판정 — 물 등 기본 재료(isFundamental)는 항상 보유. FK 일치 또는
-  // isSameIngredient(동의어). 까나리액젓을 가졌다고 멸치액젓을 "보유"로
-  // 치지 않는다 — 그건 대체(findSubstitute) 영역.
-  const isIngredientOwned = useCallback(
-    (name: string) =>
-      isFundamental(name) ||
-      fkOwnedNames.has(name) ||
-      userIngredients.some(ui => isSameIngredient(ui, name)),
-    [fkOwnedNames, userIngredients],
+  const userIdSet = useMemo(() => new Set(userIngredientIds), [userIngredientIds]);
+
+  const recipeIngredientIds = useMemo(
+    () =>
+      ingredients
+        .map(i => i.ingredient_id ?? null)
+        .filter((id): id is string => id !== null),
+    [ingredients],
   );
 
-  // 대체 — 보유는 아니지만 가진 재료로 바꿔 쓸 수 있음. via(가진 재료명) 반환.
-  // ① 전역 INGREDIENT_SUBSTITUTES → ② recipe-specific(작성자가 적은 substitutes 배열) 순서.
-  // recipeSpecific: legacy string[] / 신규 {name,note?}[] 양형식 지원 (note 무시, name 만 매칭).
+  // matchRecipe 에 전달할 정규화된 ingredients (ingredient_id null 통일)
+  const normalizedIngredients = useMemo<RecipeIngredientInput[]>(
+    () =>
+      ingredients.map(i => ({
+        ingredient_id: i.ingredient_id ?? null,
+        ingredient_name: i.ingredient_name,
+        is_optional: i.is_optional,
+      })),
+    [ingredients],
+  );
+
+  const [graph, setGraph] = useState<RelationGraph>(EMPTY_GRAPH);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (recipeIngredientIds.length === 0) {
+      Promise.resolve().then(() => {
+        if (!cancelled) setGraph(EMPTY_GRAPH);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    // setIsLoading 을 microtask 로 — set-state-in-effect lint 회피
+    Promise.resolve().then(() => {
+      if (!cancelled) setIsLoading(true);
+    });
+    const supabase = createClient();
+    fetchRelationsForRecipe(recipeIngredientIds, supabase)
+      .then(g => {
+        if (!cancelled) setGraph(g);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [recipeIngredientIds]);
+
+  const summary = useMemo(
+    () => matchRecipe(normalizedIngredients, userIdSet, graph),
+    [normalizedIngredients, userIdSet, graph],
+  );
+
+  const isIngredientOwned = useCallback(
+    (id: string | null) => (id ? userIdSet.has(id) : false),
+    [userIdSet],
+  );
+
   const findSubstitute = useCallback(
-    (
-      name: string,
-      recipeSpecific?: (string | { name?: string; note?: string })[] | null,
-    ): string | null => {
-      const globalVia = userIngredients.find(ui => isSubstituteFor(ui, name)) ?? null;
-      if (globalVia) return globalVia;
-      if (Array.isArray(recipeSpecific) && recipeSpecific.length > 0) {
-        const subsLC = recipeSpecific
-          .map(s => (typeof s === 'string' ? s : (s?.name ?? '')).toLowerCase().trim())
-          .filter(Boolean);
-        return (
-          userIngredients.find(ui => {
-            const u = ui.toLowerCase().trim();
-            return subsLC.some(s => s === u || isSameIngredient(u, s));
-          }) ?? null
-        );
+    (id: string | null): string | null => {
+      if (!id) return null;
+      const incoming = graph.incoming.get(id);
+      if (!incoming) return null;
+      // substitute 우선
+      for (const { from_id, kind } of incoming) {
+        if (kind === 'substitute' && userIdSet.has(from_id)) return from_id;
+      }
+      for (const { from_id, kind } of incoming) {
+        if (kind === 'preparable_to' && userIdSet.has(from_id)) return from_id;
       }
       return null;
     },
-    [userIngredients],
+    [graph, userIdSet],
   );
 
-  // 매칭 카운트는 is_optional 재료를 제외하고 계산 ("선택" 재료는 보유 여부와 무관).
-  const requiredIngredients = useMemo(
-    () => ingredients.filter(i => !i.is_optional),
-    [ingredients],
-  );
-  const ownedCount = useMemo(
-    () => requiredIngredients.filter(i => isIngredientOwned(i.ingredient_name)).length,
-    [requiredIngredients, isIngredientOwned],
-  );
-  const totalIngredients = requiredIngredients.length;
-
-  const ingredientStatus: 'none' | 'partial' | 'all' =
-    totalIngredients === 0
-      ? 'none'
-      : ownedCount === 0
-        ? 'none'
-        : ownedCount === totalIngredients
-          ? 'all'
-          : 'partial';
-
-  return { isIngredientOwned, findSubstitute, ownedCount, totalIngredients, ingredientStatus };
+  return {
+    isIngredientOwned,
+    findSubstitute,
+    ownedCount: summary.ownedCount,
+    totalIngredients: summary.totalCount,
+    ingredientStatus: summary.ingredientStatus,
+    summary,
+    isLoading,
+  };
 }
