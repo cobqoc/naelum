@@ -89,7 +89,7 @@ export default function KitchenHomeClient() {
   return (
     <div className="min-h-screen bg-background-primary">
       <Header />
-      <main className="container mx-auto max-w-5xl px-4 pt-6 pb-24 md:pb-12">
+      <main className="container mx-auto max-w-5xl px-4 pt-20 pb-24 md:pb-12">
         {/* 뷰 전환 탭 — 카드 그리드 / 가나다순 */}
         <div className="mb-4">
           <KitchenViewTabs active="grid" />
