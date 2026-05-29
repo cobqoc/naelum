@@ -54,6 +54,7 @@ interface Recipe {
 interface RecipeCookModeProps {
   recipe: Recipe;
   userIngredients: string[];
+  userIngredientIds: string[];  // V2: id 기반 매칭
   preparedIngredients: Set<number>;
   completedSteps: Set<number>;
   onTogglePrepared: (index: number) => void;
@@ -71,6 +72,7 @@ interface RecipeCookModeProps {
 export default function RecipeCookMode({
   recipe,
   userIngredients,
+  userIngredientIds,
   preparedIngredients,
   completedSteps,
   onTogglePrepared,
@@ -158,8 +160,12 @@ export default function RecipeCookMode({
     );
   }
 
-  const isIngredientOwned = (name: string) =>
-    userIngredients.some(ui => name.includes(ui) || ui.includes(name));
+  // V2: ingredient_id 기반 정확 매칭. 이름 substring 추측 제거.
+  // userIngredients 는 표시·legacy 호환용으로 prop 유지하되 매칭에는 사용 X.
+  void userIngredients;
+  const idSet = new Set(userIngredientIds);
+  const isIngredientOwned = (ingredient_id: string | null) =>
+    ingredient_id !== null && idSet.has(ingredient_id);
 
   // 완료 처리
   const handleCompleteRecipe = () => {

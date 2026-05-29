@@ -2,7 +2,7 @@
 
 import FridgeIcon from '@/components/icons/FridgeIcon';
 import SubstituteIndicator from '@/components/Recipes/SubstituteIndicator';
-import { isSameIngredient, getSubstituteKind } from '@/lib/recommendations/match';
+import type { MatchResult } from '@/lib/recommendations/matchV2';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
 /**
@@ -20,6 +20,7 @@ import type { TranslationKeys } from '@/lib/i18n/translations';
  */
 
 interface IngredientLite {
+  ingredient_id: string | null;  // V2: id 기반 매칭. null = 옛 데이터, 매칭 안 됨
   ingredient_name: string;
   quantity: string;
   unit: string;
@@ -31,9 +32,10 @@ interface IngredientLite {
 interface IngredientsTabProps {
   activeTab: 'ingredients' | 'steps';
   ingredients: IngredientLite[];
-  /** 매칭 hook 결과 */
-  isIngredientOwned: (name: string) => boolean;
-  findSubstitute: (name: string, recipeSpecific?: (string | { name?: string; note?: string })[] | null) => string | null;
+  /** V2 매칭 결과 — 부모 hook 이 ingredients 순서대로 계산해서 전달 */
+  matchResults: MatchResult[];
+  /** 사용자 보유 재료 id → name 조회 (chip 표시용) */
+  userIngredientNameById: Map<string, string>;
   ownedCount: number;
   totalIngredients: number;
   ingredientStatus: 'none' | 'partial' | 'all';
@@ -57,8 +59,8 @@ interface IngredientsTabProps {
 export default function IngredientsTab({
   activeTab,
   ingredients,
-  isIngredientOwned,
-  findSubstitute,
+  matchResults,
+  userIngredientNameById,
   ownedCount,
   totalIngredients,
   ingredientStatus,
@@ -154,13 +156,15 @@ export default function IngredientsTab({
 
       <div className="grid grid-cols-2 gap-2 pb-4">
         {ingredients.map((ing, idx) => {
-          const owned = isIngredientOwned(ing.ingredient_name);
-          const subVia = owned ? null : findSubstitute(ing.ingredient_name, ing.substitutes);
-          // 매칭 종류 분류 — getSubstituteKind 가 null 이면 author 명시 substitutes
-          // 매칭이므로 'substitute' 로 default (작성자는 의미상 대체 의도).
-          const subKind: 'substitute' | 'preparable' = subVia
-            ? (getSubstituteKind(subVia, ing.ingredient_name) ?? 'substitute')
-            : 'substitute';
+          // V2: 매칭 결과는 부모 hook 이 ingredients 순서대로 계산해 전달
+          const matchResult = matchResults[idx];
+          const owned = matchResult?.kind === 'owned';
+          const subViaId = !owned && matchResult?.via ? matchResult.via : null;
+          // subVia 의 *사용자 보유 재료 이름* 조회 (chip 표시용)
+          const subVia = subViaId ? userIngredientNameById.get(subViaId) ?? null : null;
+          // V2: 가공 매칭(preparable)·대체 매칭(substitute) kind 가 그래프에서 직접 옴
+          const subKind: 'substitute' | 'preparable' =
+            matchResult?.kind === 'preparable' ? 'preparable' : 'substitute';
           const scaledQty = scaleQty(ing.quantity);
           // unit '선택' sentinel 방어 — 옛 DB 행이 누수해도 화면에 노출 X
           const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
@@ -186,16 +190,12 @@ export default function IngredientsTab({
             })
             .filter(Boolean);
           const hasSubs = recipeSubsList.length > 0;
-          // ✓ 마커 정확성 — subVia 가 author list 의 *이름과 매칭* 될 때만 ✓ 부착.
-          // 그렇지 않으면 사용자는 author 명시한 *다른 재료* 가 아닌 전역 매핑상 substitute 를
-          // 보유한 것 — chip 의 author 이름 옆 ✓ 는 거짓 신호가 됨 (예: author=돼지고기,
-          // user=삼겹살 (베이컨↔삼겹살 전역 매핑) → "또는 돼지고기 ✓" 잘못).
+          // ✓ 마커 정확성 — V2: subVia 가 author list 의 *이름과 정확 일치* 될 때만 ✓.
+          // 옛 시스템은 isSameIngredient(이름 정규화)로 매칭했지만 V2 정직성 정책상 정확 일치만.
           // tooltip 인터폴레이션 용 — 원본 케이스 + note 제외 한 author 이름들.
           const authorSubNamesClean = recipeSubsList.map(s => s.split(' · ')[0].trim()).filter(Boolean);
           const authorSubNames = authorSubNamesClean.map(n => n.toLowerCase());
-          const subViaInAuthorList = !!(subVia && authorSubNames.some(n =>
-            n === subVia.toLowerCase().trim() || isSameIngredient(n, subVia.toLowerCase().trim())
-          ));
+          const subViaInAuthorList = !!(subVia && authorSubNames.includes(subVia.toLowerCase().trim()));
           return (
             <div
               key={idx}

@@ -18,6 +18,7 @@ import type { TranslationKeys } from '@/lib/i18n/translations';
  */
 
 export interface RecipeIngredientForCart {
+  ingredient_id: string | null;  // V2: id 기반 매칭. null = 옛 데이터
   ingredient_name: string;
   quantity: string;
   unit: string;
@@ -54,7 +55,8 @@ export interface UseCartFromRecipeResult {
 
 export function useCartFromRecipe(args: {
   recipe: RecipeForCart;
-  isIngredientOwned: (name: string) => boolean;
+  /** V2: ingredient_id 기반 — null 이면 항상 false (옛 데이터 매칭 안 됨) */
+  isIngredientOwned: (ingredient_id: string | null) => boolean;
   ownedCount: number;
   toast: CartToastShape;
   locale: CartLocaleMessages;
@@ -68,7 +70,7 @@ export function useCartFromRecipe(args: {
     setAddingToShoppingList(true);
     try {
       const ingredientsToSend = excludeOwnedInCart
-        ? recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_name))
+        ? recipe.ingredients.filter(i => !isIngredientOwned(i.ingredient_id))
         : recipe.ingredients;
 
       if (ingredientsToSend.length === 0) {

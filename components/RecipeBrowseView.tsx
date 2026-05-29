@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
@@ -114,9 +114,18 @@ export default function RecipeBrowseView({
   const cook = useCookingMode(recipe.steps || []);
   // 냉장고 매칭 hook — 재료 탭·냉장고 모달·cart 보유 제외 3 곳 단일 출처.
   const match = useRecipeFridgeMatch(recipe.ingredients, userIngredients, userIngredientIds);
-  // 카트 추가 hook — match.isIngredientOwned·ownedCount 외부 주입.
+  // 카트 추가 hook — V2: ingredient_id 기반 매칭.
   const cart = useCartFromRecipe({
-    recipe: { id: recipe.id, title: recipe.title, ingredients: recipe.ingredients },
+    recipe: {
+      id: recipe.id,
+      title: recipe.title,
+      ingredients: recipe.ingredients.map(i => ({
+        ingredient_id: i.ingredient_id ?? null,
+        ingredient_name: i.ingredient_name,
+        quantity: i.quantity,
+        unit: i.unit,
+      })),
+    },
     isIngredientOwned: match.isIngredientOwned,
     ownedCount: match.ownedCount,
     toast,
@@ -141,8 +150,17 @@ export default function RecipeBrowseView({
   // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
   const [showFridgeModal, setShowFridgeModal] = useState(false);
 
-  // 매칭 결과는 match.* 로 접근. 짧은 alias 로 JSX 가독성 유지.
-  const { isIngredientOwned, findSubstitute, ownedCount, totalIngredients, ingredientStatus } = match;
+  // 매칭 결과는 match.* 로 접근. JSX 에서 사용하는 destructure 만.
+  const { ownedCount, totalIngredients, ingredientStatus, summary } = match;
+
+  // V2: id → name 매핑 (chip 표시·모달용). userIngredients 와 userIngredientIds 동일 순서 가정.
+  const userIngredientNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (let i = 0; i < userIngredientIds.length; i++) {
+      if (userIngredientIds[i]) m.set(userIngredientIds[i], userIngredients[i] ?? '');
+    }
+    return m;
+  }, [userIngredientIds, userIngredients]);
 
   // 재료 양 배율 계산
   const scaleQty = (qty: string): string => {
@@ -482,9 +500,17 @@ export default function RecipeBrowseView({
           {/* 재료 패널 — 추출된 표현 컴포넌트 ([[project-god-file-phase2]]) */}
           <IngredientsTab
             activeTab={activeTab}
-            ingredients={recipe.ingredients}
-            isIngredientOwned={isIngredientOwned}
-            findSubstitute={findSubstitute}
+            ingredients={recipe.ingredients.map(i => ({
+              ingredient_id: i.ingredient_id ?? null,
+              ingredient_name: i.ingredient_name,
+              quantity: i.quantity,
+              unit: i.unit,
+              notes: i.notes,
+              is_optional: i.is_optional,
+              substitutes: i.substitutes,
+            }))}
+            matchResults={summary.results}
+            userIngredientNameById={userIngredientNameById}
             ownedCount={ownedCount}
             totalIngredients={totalIngredients}
             ingredientStatus={ingredientStatus}
@@ -607,19 +633,26 @@ export default function RecipeBrowseView({
         />
       )}
 
-      {/* 냉장고 재료 비교 모달 — 재료 탭과 동일한 isIngredientOwned/findSubstitute 단일 판정.
-          is_optional 재료는 매칭에서 제외 (재료 탭의 ownedCount·totalIngredients와 일관) */}
+      {/* 냉장고 재료 비교 모달 — V2: matchResults 단일 출처 (재료 탭과 동일).
+          is_optional 재료는 매칭에서 제외 (재료 탭의 ownedCount·totalIngredients와 일관). */}
       {showFridgeModal && (() => {
         const owned: string[] = [];
         const substituteItems: { ingredient: string; via: string }[] = [];
         const missing: string[] = [];
-        for (const ing of recipe.ingredients) {
-          if (ing.is_optional) continue;
-          if (isIngredientOwned(ing.ingredient_name)) { owned.push(ing.ingredient_name); continue; }
-          const via = findSubstitute(ing.ingredient_name, ing.substitutes);
-          if (via) substituteItems.push({ ingredient: ing.ingredient_name, via });
-          else missing.push(ing.ingredient_name);
-        }
+        recipe.ingredients.forEach((ing, idx) => {
+          if (ing.is_optional) return;
+          const result = summary.results[idx];
+          if (!result) { missing.push(ing.ingredient_name); return; }
+          if (result.kind === 'owned') { owned.push(ing.ingredient_name); return; }
+          if (result.via) {
+            const viaName = userIngredientNameById.get(result.via) ?? '';
+            if (viaName) {
+              substituteItems.push({ ingredient: ing.ingredient_name, via: viaName });
+              return;
+            }
+          }
+          missing.push(ing.ingredient_name);
+        });
         return (
           <RecipeFridgeModal
             onClose={() => setShowFridgeModal(false)}

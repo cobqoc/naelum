@@ -15,6 +15,7 @@ import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
  */
 
 interface RecipeIngredient {
+  ingredient_id?: string | null;  // V2: id 기반 매칭
   ingredient_name: string;
   quantity: string;
   unit: string;
@@ -36,7 +37,8 @@ export default function CookIngredientsSheet({
   ingredients: RecipeIngredient[];
   preparedIngredients: Set<number>;
   onTogglePrepared: (index: number) => void;
-  isIngredientOwned: (name: string) => boolean;
+  /** V2: ingredient_id 기반 매칭. null = 옛 데이터 → false */
+  isIngredientOwned: (ingredient_id: string | null) => boolean;
   unitConv: UnitConv;
   onClose: () => void;
 }) {
@@ -72,7 +74,7 @@ export default function CookIngredientsSheet({
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {ingredients.map((ing, idx) => {
-              const owned = isIngredientOwned(ing.ingredient_name);
+              const owned = isIngredientOwned(ing.ingredient_id ?? null);
               const prepared = preparedIngredients.has(idx);
               const displayUnit = (ing.unit && ing.unit !== '선택') ? ing.unit : '';
               const converted = unitConv.convertIngredient(ing.quantity, displayUnit);
