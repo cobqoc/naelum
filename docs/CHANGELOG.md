@@ -11,6 +11,17 @@
 
 ## 2026-05 작업 로그
 
+- **부엌 도감 V2 — 라우트 이전 + 카드 그리드 + 가나다순 탭** — 완료 (2026-05-29, PR #209·#210)
+  - **라우트 이전**: `/ingredients` → `/kitchen` (PR #208). 8 locale 이름 변경: "요리 도감" → "부엌 도감" (Cook's Guide → Kitchen Reference)
+  - **메인 = 카테고리 카드 그리드** (KitchenHomeClient): 17개 카테고리(채소·육류·해산물·달걀류·유제품·곡류·콩·과일·장양념·향신료·소스·발효·빵·음료·간식·가공·기타) 각각 그라데이션 톤·이모지·카운트·미리보기 8개. 도구·기법·단위 변환 "준비 중" 카드. `/api/kitchen/summary` 한 번 호출
+  - **가나다순 사전 뷰** (KitchenAllClient, `?view=all`): 한글 초성(ㄱ,ㄴ,ㄷ...) + 영문(A-Z) 그룹화, sticky 인덱스, `/api/kitchen/all`
+  - **공통 탭** (KitchenViewTabs): 🗂️ 그리드 보기 / 📖 가나다순 — `active: 'grid' | 'all'`
+  - **필터·상세 = IngredientBrowseClient** (`?category=X` / `?q=X` / `?highlight=X`): 카테고리 chip + 맛 필터 + 리스트 + 상세 패널 (영양·보관·제철·페어링)
+  - **시드 65+ 재료** (3 round): 25 + 19 + 21. 알레르겐 22품목 (식약처 기준) auto-tag + 사용자 입력 — `quickAdd` API
+  - **달걀 vs 계란**: 마스터 = 달걀, alias = 계란 (중복 통합)
+  - **세션 노이즈**: 부엌 도감 layout 사이클 — c2ccf5a(카드 그리드) → bf4f48a(IngredientBrowseClient 회귀) → bb63905(잘못된 revert) → ... → 996bd1d 최종. 단어 해석 실수("리뉴얼"이 사용자한테 무엇을 지칭하는지 추측). 교훈 메모리화 [[no-guessing-user-words]]
+  - **최종 fix** (PR #210): 로고/타이틀 중복 제거 (Header 와 페이지 h1 같은 표시 충돌) + 카드 그리드 메인에 KitchenViewTabs 추가 (가나다순 탭 진입 path)
+
 - **재료 매칭 V2 본질 재설계 — Phase 1·2 구현 완료** — 완료 (2026-05-29)
   - 사용자 결정: trigger 대기 안 하고 *지금 갈아엎기* (사용자 적은 시점이 적기)
   - **Phase 1 — DB 스키마 + 옛 데이터 폐기**:
