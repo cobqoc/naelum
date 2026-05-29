@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // 3. 요청 데이터 파싱
     const body = await request.json();
-    const { name, name_en, category, common_units } = body;
+    const { name, name_en, category, common_units, allergens } = body;
 
     // 4. 기본 검증
     if (!name || typeof name !== 'string') {
@@ -105,20 +105,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 8. 카테고리 검증
+    // 8. 카테고리 검증 — V2 확장 (egg·legume·fermented·processed 추가)
     const validCategories = [
       'veggie',
       'fruit',
       'meat',
       'seafood',
+      'egg',
       'grain',
       'dairy',
+      'legume',
+      'fermented',
       'seasoning',
       'condiment',
       'spice',
       'beverage',
       'snack',
       'bakery',
+      'processed',
       'other',
     ];
 
@@ -130,7 +134,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 9. DB INSERT (수동 승인) - admin client 사용하여 RLS 우회
+    // 8-b. 알레르겐 검증 — 식약처 22품목 표준 키만 허용
+    const { ALLERGEN_KEY_SET } = await import('@/lib/constants/allergens');
+    const allergensValue: string[] = Array.isArray(allergens)
+      ? Array.from(new Set(
+          allergens
+            .filter((a: unknown): a is string => typeof a === 'string')
+            .filter((a: string) => ALLERGEN_KEY_SET.has(a)),
+        ))
+      : [];
+
+    // 9. DB INSERT — V2: data_source='user_added' + allergens 명시
     const { data: newIngredient, error: insertError } = await adminSupabase
       .from('ingredients_master')
       .insert({
@@ -139,8 +153,10 @@ export async function POST(request: NextRequest) {
         name_en: name_en || null,
         category: categoryValue,
         common_units: common_units || [],
+        allergens: allergensValue,
         search_count: 0,
-        status: 'pending', // 수동 승인 - 관리자 승인 대기
+        status: 'pending',
+        data_source: 'user_added',
         created_by: user.id,
         created_at: new Date().toISOString(),
       })
