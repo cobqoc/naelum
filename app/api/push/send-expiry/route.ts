@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         body: daysLeft === 0
           ? `${ing.ingredient_name}의 유통기한이 오늘 만료됩니다.`
           : `${ing.ingredient_name}의 유통기한이 ${daysLeft}일 후 만료됩니다. (${dLabel})`,
-        url: `/ingredients?highlight=${ing.id}`,
+        url: `/kitchen?highlight=${ing.id}`,
       });
 
       for (const sub of subscriptions) {
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
       const daysLeft2 = Math.ceil((expiryDate2.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const dLabel2 = daysLeft2 === 0 ? 'D-Day' : `D-${daysLeft2}`;
       const todayStart = today.toISOString();
-      const actionUrl = `/ingredients?highlight=${ing.id}`;
+      const actionUrl = `/kitchen?highlight=${ing.id}`;
 
       const { data: existing } = await supabase
         .from('notifications')
