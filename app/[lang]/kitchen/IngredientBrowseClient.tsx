@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -19,17 +19,6 @@ const TASTE_EMOJI: Record<string, string> = {
   sweet: '🍬', salty: '🧂', spicy: '🌶️', sour: '🍋', bitter: '☕', umami: '🍖',
 };
 
-const TASTE_COLOR: Record<string, string> = {
-  sweet: 'text-pink-300', salty: 'text-blue-300', spicy: 'text-red-300',
-  sour: 'text-yellow-300', bitter: 'text-amber-500', umami: 'text-orange-300',
-};
-
-const TASTE_ACTIVE_BG: Record<string, string> = {
-  sweet: 'bg-pink-500/25 border-pink-400', salty: 'bg-blue-500/25 border-blue-400',
-  spicy: 'bg-red-500/25 border-red-400', sour: 'bg-yellow-500/25 border-yellow-400',
-  bitter: 'bg-amber-800/25 border-amber-600', umami: 'bg-orange-500/25 border-orange-400',
-};
-
 const SEASON_COLOR: Record<string, string> = {
   spring: 'text-pink-300 bg-pink-500/15 border-pink-500/30',
   summer: 'text-yellow-300 bg-yellow-500/15 border-yellow-500/30',
@@ -40,6 +29,14 @@ const SEASON_COLOR: Record<string, string> = {
 
 const SEASON_EMOJI: Record<string, string> = {
   spring: '🌸', summer: '☀️', fall: '🍂', winter: '❄️', year_round: '🌿',
+};
+
+// 카테고리별 이모지 — 헤더/카드 표시용. 라벨은 i18n(tb.categoryLabels), 이모지는 심볼이라 하드코딩.
+// 허브(KitchenHomeClient)와 동일한 이모지 — 어느 카테고리로 진입하든 헤더 라벨이 정확히 해석됨.
+const CATEGORY_EMOJI: Record<string, string> = {
+  veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟', egg: '🥚', dairy: '🧀',
+  grain: '🌾', legume: '🥜', seasoning: '🧂', spice: '🌶️', condiment: '🫙',
+  fermented: '🍶', bakery: '🍞', beverage: '🥤', snack: '🍪', processed: '📦', other: '✨',
 };
 
 const LIMIT = 60;
@@ -263,7 +260,17 @@ function IngredientPanel({
 
 // ─── 메인 페이지 ──────────────────────────────────────────────
 
-export default function IngredientBrowsePage() {
+export default function IngredientBrowsePage({
+  initialCategory = '',
+  initialQuery = '',
+  highlightId = '',
+}: {
+  /** 허브 카테고리 클릭 → ?category=X. 가나다순 카드 클릭 → ?category=X&highlight=id */
+  initialCategory?: string;
+  initialQuery?: string;
+  /** 진입 시 자동으로 상세 패널을 열 재료 id */
+  highlightId?: string;
+} = {}) {
   const { t } = useI18n();
   const tb = t.ingredient;
 
@@ -279,24 +286,15 @@ export default function IngredientBrowsePage() {
     { value: 'condiment', label: tb.categoryLabels.condiment, emoji: '🫙' },
   ];
 
-  const TASTE_FILTERS = [
-    { value: '',       label: tb.tasteAll,    emoji: '✨', color: 'text-text-secondary', activeBg: 'bg-white/15 border-white/30' },
-    { value: 'sweet',  label: tb.tasteSweet,  emoji: '🍬', color: TASTE_COLOR.sweet,  activeBg: TASTE_ACTIVE_BG.sweet  },
-    { value: 'salty',  label: tb.tasteSalty,  emoji: '🧂', color: TASTE_COLOR.salty,  activeBg: TASTE_ACTIVE_BG.salty  },
-    { value: 'spicy',  label: tb.tasteSpicy,  emoji: '🌶️', color: TASTE_COLOR.spicy,  activeBg: TASTE_ACTIVE_BG.spicy  },
-    { value: 'sour',   label: tb.tasteSour,   emoji: '🍋', color: TASTE_COLOR.sour,   activeBg: TASTE_ACTIVE_BG.sour   },
-    { value: 'bitter', label: tb.tasteBitter, emoji: '☕', color: TASTE_COLOR.bitter, activeBg: TASTE_ACTIVE_BG.bitter },
-    { value: 'umami',  label: tb.tasteUmami,  emoji: '🍖', color: TASTE_COLOR.umami,  activeBg: TASTE_ACTIVE_BG.umami  },
-  ];
-
   const [items, setItems] = useState<IngredientItem[]>([]);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [category, setCategory] = useState('');
-  const [taste, setTaste] = useState('');
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [category, setCategory] = useState(initialCategory);
+  const [search, setSearch] = useState(initialQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialQuery);
   const [selected, setSelected] = useState<IngredientItem | null>(null);
+  // highlight 자동 오픈은 최초 1회만 — 이후 검색/카테고리 변경 시 재오픈 방지
+  const highlightOpenedRef = useRef(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 350);
@@ -308,23 +306,36 @@ export default function IngredientBrowsePage() {
     try {
       const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count', includePending: 'true' });
       if (category) params.set('categories', category);
-      if (taste) params.set('taste', taste);
       if (debouncedSearch.length >= 2) params.set('q', debouncedSearch);
       const res = await fetch(`/api/ingredients/browse?${params}`);
       const data = await res.json();
-      setItems(data.ingredients || []);
+      const list: IngredientItem[] = data.ingredients || [];
+      setItems(list);
       setTotal(data.total ?? null);
+      // 진입 시 highlight 재료 상세 자동 오픈 (effect 아닌 fetch 콜백 내 — set-state-in-effect 회피)
+      if (highlightId && !highlightOpenedRef.current) {
+        const found = list.find(i => i.id === highlightId);
+        if (found) { highlightOpenedRef.current = true; setSelected(found); }
+      }
     } finally {
       setLoading(false);
     }
-  }, [category, taste, debouncedSearch]);
+  }, [category, debouncedSearch, highlightId]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const handleCategoryChange = (val: string) => { setCategory(val); setSearch(''); };
-  const handleTasteChange = (val: string) => { setTaste(val === taste ? '' : val); };
 
-  const currentCategory = CATEGORIES.find(c => c.value === category) ?? CATEGORIES[0];
+  // 진입 카테고리가 탭 목록에 없어도(예: legume·spice·egg) 헤더 라벨이 정확히 해석되도록 완전 매핑 fallback.
+  const currentCategory =
+    CATEGORIES.find(c => c.value === category) ??
+    (category
+      ? {
+          value: category,
+          label: tb.categoryLabels[category as keyof typeof tb.categoryLabels] ?? category,
+          emoji: CATEGORY_EMOJI[category] ?? '🍽️',
+        }
+      : CATEGORIES[0]);
   const related = selected
     ? items.filter(i => i.category === selected.category && i.id !== selected.id).slice(0, 12)
     : [];
@@ -372,6 +383,7 @@ export default function IngredientBrowsePage() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm pointer-events-none">🔍</span>
           <input
             type="text"
+            data-testid="ingredient-search"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={
@@ -388,52 +400,21 @@ export default function IngredientBrowsePage() {
           )}
         </div>
 
-        {/* ── 맛 필터 ── */}
-        <div className="flex gap-1 overflow-x-auto mt-1.5 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-          {TASTE_FILTERS.map(f => {
-            const isActive = f.value === taste;
-            return (
-              <button
-                key={f.value}
-                onClick={() => handleTasteChange(f.value)}
-                className={`flex items-center gap-0.5 px-2.5 py-1 rounded-full border text-[11px] font-medium whitespace-nowrap shrink-0 transition-all duration-150 ${
-                  isActive
-                    ? `${f.activeBg} ${f.color}`
-                    : 'bg-transparent border-white/8 text-text-muted hover:border-white/20 hover:text-text-secondary'
-                }`}
-              >
-                <span>{f.emoji}</span>
-                <span className="ml-0.5">{f.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* ── 결과 헤더 ── */}
         <div className="flex items-center gap-1.5 mt-3 pb-1.5 border-b border-white/8">
           <span className="text-xs text-text-muted">{currentCategory.emoji} {currentCategory.label}</span>
-          {taste && (
-            <span className="text-[11px] text-text-muted">
-              · {TASTE_FILTERS.find(f => f.value === taste)?.emoji}
-            </span>
-          )}
           {!loading && (
             <span className="text-xs text-text-muted ml-auto">{items.length}{tb.countSuffixLabel}</span>
           )}
         </div>
 
-        {/* ── 재료 리스트 ── */}
+        {/* ── 재료 카드 그리드 ── 탭하면 상세 패널 오픈 */}
         {loading ? (
-          <>
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2.5 py-2 border-b border-white/5 animate-pulse">
-                <div className="text-base w-5 shrink-0 h-4 rounded bg-background-tertiary" />
-                <div className="flex-1 h-3.5 rounded bg-background-tertiary" style={{ maxWidth: `${60 + (i % 5) * 12}px` }} />
-                <div className="h-3 w-16 rounded bg-background-tertiary opacity-50 hidden sm:block" />
-                <div className="h-4 w-5 rounded-full bg-background-tertiary shrink-0" />
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="h-[60px] rounded-xl border border-white/10 bg-background-secondary animate-pulse" />
             ))}
-          </>
+          </div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 text-text-muted">
             <div className="text-5xl mb-3">{currentCategory.emoji}</div>
@@ -441,55 +422,28 @@ export default function IngredientBrowsePage() {
             <p className="text-xs mt-1">{tb.noMatchingHint}</p>
           </div>
         ) : (
-          <>
-            {items.map(item => {
-              const emoji = item.emoji ?? null;
-              const topTaste = item.tastes
-                ? Object.entries(item.tastes).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)[0]
-                : null;
-              const topSeason = item.seasons?.[0];
-
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setSelected(item)}
-                  className="flex items-center gap-2.5 w-full py-2 border-b border-white/5 hover:bg-background-secondary/50 active:bg-background-secondary/80 transition-colors text-left group"
-                >
-                  {/* 이모지 */}
-                  <span className="text-base w-5 text-center shrink-0">{emoji}</span>
-
-                  {/* 한글 이름 */}
-                  <span className="text-sm font-medium text-text-primary leading-none truncate min-w-0 flex-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-3">
+            {items.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setSelected(item)}
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-white/10 bg-background-secondary hover:bg-white/5 hover:border-accent-warm/30 active:scale-[0.99] transition-all text-left group"
+              >
+                <span className="text-xl md:text-2xl flex-shrink-0" aria-hidden>
+                  {item.emoji ?? '🍽️'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm md:text-base font-medium truncate group-hover:text-accent-warm transition-colors">
                     {item.name}
-                  </span>
-
-                  {/* 영문 이름 */}
-                  {item.name_en && (
-                    <span className="text-xs text-text-muted leading-none truncate shrink-0 hidden sm:block max-w-[120px]">
-                      {item.name_en}
-                    </span>
-                  )}
-
-                  {/* 배지 */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    {topSeason && SEASON_COLOR[topSeason] && (
-                      <span className={`text-[11px] px-1.5 py-0.5 rounded-full border ${SEASON_COLOR[topSeason]}`}>
-                        {SEASON_EMOJI[topSeason]}
-                      </span>
-                    )}
-                    {topTaste && (
-                      <span className={`text-[11px] ${TASTE_COLOR[topTaste[0]] ?? 'text-text-muted'}`}>
-                        {TASTE_EMOJI[topTaste[0]]}
-                      </span>
-                    )}
                   </div>
-
-                  {/* 화살표 */}
-                  <span className="text-text-muted/50 text-sm shrink-0 group-hover:text-text-muted transition-colors">›</span>
-                </button>
-              );
-            })}
-          </>
+                  <div className="text-[10px] md:text-xs text-text-muted truncate">
+                    {item.name_en ?? (item.category ? (tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? item.category) : '')}
+                  </div>
+                </div>
+                <span className="text-text-muted/40 text-sm shrink-0 group-hover:text-text-muted transition-colors">›</span>
+              </button>
+            ))}
+          </div>
         )}
 
       </main>

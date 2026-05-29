@@ -861,6 +861,8 @@ export const ja = {
     categoryFrequent: 'よく使う',
     categoryLabels: {
       veggie: '野菜',
+      egg: '卵類',
+      legume: '豆・ナッツ',
       meat: '肉類',
       seafood: '魚介類',
       grain: '穀物類',

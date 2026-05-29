@@ -861,6 +861,8 @@ export const de = {
     categoryFrequent: 'Häufig',
     categoryLabels: {
       veggie: 'Gemüse',
+      egg: 'Eier',
+      legume: 'Hülsenfrüchte & Nüsse',
       meat: 'Fleisch',
       seafood: 'Meeresfrüchte',
       grain: 'Getreide & Nüsse',

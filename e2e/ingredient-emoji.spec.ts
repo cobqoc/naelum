@@ -75,9 +75,17 @@ test.describe('부엌 도감 페이지 이모지', () => {
     await expect(emojiSpans.first()).toBeVisible({ timeout: 8000 });
   });
 
+  // 검색·필터가 실제 동작하는 곳은 브라우즈 뷰(IngredientBrowseClient).
+  // V2(2026-05-29)에서 /kitchen 루트는 카테고리 카드 허브(KitchenHomeClient)로 바뀜 —
+  // 허브 검색바("재료·도구·기법 검색…")는 navigate 전용이고, 도착하는 브라우즈 뷰의
+  // in-place 검색 input(data-testid="ingredient-search")으로 필터한다.
+  // (?category=veggie 로 브라우즈 뷰 렌더 → 그 안 검색 input 으로 필터 → 상세는 카드 탭으로)
   test('양파 검색 시 🧅 이모지 표시', async ({ page }) => {
-    // 요리 도감 재료 필터 input (Header SearchBar와 구별)
-    const searchInput = page.locator('input[placeholder*="재료 이름"]').first();
+    await page.goto('/ko/kitchen?category=veggie');
+    await page.waitForLoadState('networkidle');
+
+    const searchInput = page.getByTestId('ingredient-search');
+    await expect(searchInput).toBeVisible({ timeout: 8000 });
     await searchInput.fill('양파');
     await page.waitForTimeout(700);
 
@@ -86,7 +94,11 @@ test.describe('부엌 도감 페이지 이모지', () => {
   });
 
   test('당근 검색 시 🥕 이모지 표시', async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="재료 이름"]').first();
+    await page.goto('/ko/kitchen?category=veggie');
+    await page.waitForLoadState('networkidle');
+
+    const searchInput = page.getByTestId('ingredient-search');
+    await expect(searchInput).toBeVisible({ timeout: 8000 });
     await searchInput.fill('당근');
     await page.waitForTimeout(700);
 

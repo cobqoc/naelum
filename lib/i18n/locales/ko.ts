@@ -863,6 +863,8 @@ export const ko = {
     categoryFrequent: '자주',
     categoryLabels: {
       veggie: '채소',
+      egg: '달걀류',
+      legume: '콩·견과',
       meat: '육류',
       seafood: '해산물',
       grain: '곡물류',

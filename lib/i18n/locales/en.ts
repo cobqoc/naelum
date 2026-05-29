@@ -860,6 +860,8 @@ export const en = {
     categoryFrequent: 'Frequent',
     categoryLabels: {
       veggie: 'Vegetables',
+      egg: 'Eggs',
+      legume: 'Beans & Nuts',
       meat: 'Meat',
       seafood: 'Seafood',
       grain: 'Grains & Nuts',

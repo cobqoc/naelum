@@ -32,6 +32,14 @@ export default async function Page({
 }) {
   const sp = await searchParams;
   if (sp.view === 'all') return <KitchenAllClient />;
-  if (sp.category || sp.q || sp.highlight) return <IngredientBrowseClient />;
+  if (sp.category || sp.q || sp.highlight) {
+    return (
+      <IngredientBrowseClient
+        initialCategory={sp.category ?? ''}
+        initialQuery={sp.q ?? ''}
+        highlightId={sp.highlight ?? ''}
+      />
+    );
+  }
   return <KitchenHomeClient />;
 }

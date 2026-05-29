@@ -861,6 +861,8 @@ export const es = {
     categoryFrequent: 'Frecuentes',
     categoryLabels: {
       veggie: 'Verduras',
+      egg: 'Huevos',
+      legume: 'Legumbres y frutos secos',
       meat: 'Carne',
       seafood: 'Mariscos',
       grain: 'Cereales y frutos secos',
