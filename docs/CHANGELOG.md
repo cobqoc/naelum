@@ -11,6 +11,24 @@
 
 ## 2026-05 작업 로그
 
+- **재료 매칭 구조 개선 — buildAliasGraph + 알레르기 매핑 분리** — 완료 (2026-05-29)
+  - 정직성 정책 후속 — 데이터 구조·결합 개선으로 미래 수정 안전·단순
+  - **개선 1 (양방향 자동 graph)**:
+    - 기존 `INGREDIENT_ALIASES` 약 123 키 인접 리스트 → `SYNONYM_GROUPS` + `HYPONYM_GROUPS` 그룹 정의로 마이그레이션
+    - `buildAliasGraph(synonyms, hyponyms)` 빌드 함수가 모든 페어 양방향 인접 리스트 자동 생성
+    - 같은 멤버가 여러 그룹 등장 시 union 처리 (예: 호박이 [애호박,주키니,호박]·[호박,단호박,늙은호박] 양쪽 → 호박 인접 리스트 union, 애호박↔단호박 직접 연결 X)
+    - HYPONYM (일반명⊃특정명): 일반명↔각 특정명만 양방향, 특정명끼리는 alias 아님 (간장↔진간장 ✓, 진간장↔국간장 ✗)
+    - 효과: 한 방향만 적은 누락 버그 차단 + 데이터 약 30% 감소 + 새 멤버 추가 시 그룹에 한 줄만 적으면 양방향 자동
+  - **개선 2 (알레르기 매핑 분리)**:
+    - 신규 `lib/recommendations/allergens.ts` — `ALLERGEN_SYNONYMS` (식약처 22품목 + 알파-갈 증후군 대비 육류 + 가공형태 보수적 포함)
+    - `allergyFilter.ts` 가 `INGREDIENT_ALIASES` 의존 → `ALLERGEN_SYNONYMS` 의존으로 전환
+    - **Why**: 알레르기 안전 = critical path (false negative >> false positive). 정직성 정책으로 ALIASES 자주 수정될 때 알레르기 안전이 우연히 깨질 위험 차단 (이전 "돼지고기↔삼겹살 유지" 같은 trade-off가 결합 증거)
+    - 새 알레르기 매핑은 *생각할 수 있는 모든 표기·부위·가공형태* 보수적 포함 (예: 돼지고기 → 삼겹살·목살·돈육·pork·pork belly·bacon·햄·소시지·스팸·리챔)
+  - **회귀 가드 9 신규**:
+    - 5 ALIAS 그룹 빌드 — SYNONYM 양방향·HYPONYM 일반명↔특정명·union 처리·자가 양방향 무결성
+    - 4 알레르기 분리 — 돼지고기·대두·우유·토마토 보수적 차단 검증
+  - 검증: lint 0 · build success · vitest **301/301 pass**
+
 - **재료 매칭 정직성 정책 — SUBSTITUTES 전량 비움 + PREPARABLE 3그룹만** — 완료 (2026-05-29)
   - **계기**: 사용자가 레시피 상세 카드에서 "🔄 쌀로 대체할 수 있어요" 툴팁 보고 "쌀로 밥을 *대체*는 어색하지 않냐"·"케첩으로 토마토소스 대체도 무리 아닌가" 지적. 매칭 데이터 전수 감사
   - **1단계 — SubstituteIndicator kind 분기 (양방향 substitute vs 단방향 preparable 시각·언어 분리)**:
