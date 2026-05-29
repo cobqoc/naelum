@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import { useI18n } from '@/lib/i18n/context';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 
@@ -63,7 +62,6 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
 };
 
 export default function KitchenHomeClient() {
-  const { t } = useI18n();
   const localizedRouter = useLocalizedRouter();
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,17 +89,14 @@ export default function KitchenHomeClient() {
     <div className="min-h-screen bg-background-primary">
       <Header />
       <main className="container mx-auto max-w-5xl px-4 pt-6 pb-24 md:pb-12">
-        {/* 헤더 */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">📚 {t.ingredient.browseTitle}</h1>
-          <p className="text-sm text-text-secondary">
-            세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
-          </p>
-        </div>
+        {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
+        <p className="text-sm text-text-secondary mb-5">
+          세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
+        </p>
 
-        {/* 검색바 — 도감의 핵심 사용 흐름 */}
-        <form onSubmit={handleSearch} className="mb-8">
-          <div className="relative">
+        {/* 검색바 + 전체 보기 버튼 */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-2">
+          <form onSubmit={handleSearch} className="relative flex-1">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted"
               fill="none"
@@ -117,8 +112,16 @@ export default function KitchenHomeClient() {
               placeholder="재료·도구·기법 검색…"
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-background-secondary border border-white/10 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-accent-warm/20 transition-all"
             />
-          </div>
-        </form>
+          </form>
+          <button
+            type="button"
+            onClick={() => localizedRouter.push('/kitchen?view=all')}
+            className="px-4 py-3 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/10 transition-all text-sm font-medium whitespace-nowrap flex items-center gap-2 justify-center"
+            title="가나다순 전체 재료"
+          >
+            📖 가나다순 전체 보기
+          </button>
+        </div>
 
         {/* 재료 섹션 */}
         <section className="mb-8">
@@ -167,18 +170,28 @@ export default function KitchenHomeClient() {
                       </span>
                     </div>
 
-                    {/* 미리보기 이모지 — 카테고리 풍부함 시그널 */}
-                    <div className="flex flex-wrap gap-1.5 min-h-[1.5rem]">
-                      {cat.preview.slice(0, 8).map((item) => (
-                        <span
-                          key={item.id}
-                          className="text-lg md:text-xl"
-                          title={item.name}
-                          aria-label={item.name}
-                        >
-                          {item.emoji ?? item.name.slice(0, 1)}
-                        </span>
-                      ))}
+                    {/* 미리보기 — 이모지 있는 건 큰 이모지, 없는 건 작은 글자 chip
+                        (한 글자 폴백 어색함 회피: "간 고 국 된" 대신 "간장 고추장 ...") */}
+                    <div className="flex flex-wrap gap-1.5 items-center min-h-[1.5rem]">
+                      {cat.preview.slice(0, 8).map((item) =>
+                        item.emoji ? (
+                          <span
+                            key={item.id}
+                            className="text-lg md:text-xl"
+                            title={item.name}
+                            aria-label={item.name}
+                          >
+                            {item.emoji}
+                          </span>
+                        ) : (
+                          <span
+                            key={item.id}
+                            className="text-[10px] md:text-xs px-1.5 py-0.5 rounded-md bg-white/5 text-text-secondary whitespace-nowrap"
+                          >
+                            {item.name}
+                          </span>
+                        ),
+                      )}
                     </div>
 
                     {/* 화살표 — 호버 시 강조 */}

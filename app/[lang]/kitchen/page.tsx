@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 import IngredientBrowseClient from './IngredientBrowseClient';
 import KitchenHomeClient from './KitchenHomeClient';
+import KitchenAllClient from './KitchenAllClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -28,9 +29,13 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string; highlight?: string }>;
+  searchParams: Promise<{ category?: string; q?: string; highlight?: string; view?: string; sort?: string }>;
 }) {
   const sp = await searchParams;
-  const hasFilter = Boolean(sp.category || sp.q || sp.highlight);
-  return hasFilter ? <IngredientBrowseClient /> : <KitchenHomeClient />;
+  // view=all → 가나다순 사전 뷰 (전체 보기)
+  if (sp.view === 'all' || sp.sort === 'name') return <KitchenAllClient />;
+  // category/q/highlight 있으면 그리드 필터 페이지
+  if (sp.category || sp.q || sp.highlight) return <IngredientBrowseClient />;
+  // 기본 — 카테고리 카드 그리드
+  return <KitchenHomeClient />;
 }
