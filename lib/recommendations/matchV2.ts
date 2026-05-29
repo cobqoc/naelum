@@ -15,6 +15,15 @@
  * fetch 책임은 hook/route 가짐 (caching 위치).
  */
 
+/**
+ * 보편 재료 — 수돗물처럼 누구나 항상 갖고 있다고 가정. 매칭에서 카운트 제외.
+ */
+const FUNDAMENTAL_NAMES = new Set(['물', '생수', '식수', 'water']);
+
+export function isFundamental(name: string): boolean {
+  return FUNDAMENTAL_NAMES.has(name.trim().toLowerCase());
+}
+
 export type MatchKind = 'owned' | 'preparable' | 'substitute' | 'missing';
 
 export interface MatchResult {
@@ -104,10 +113,10 @@ export function matchRecipe(
 ): RecipeMatchSummary {
   const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph));
 
-  // is_optional 재료는 카운트에서 제외 (있어도 없어도 OK)
+  // is_optional + fundamental(물 등) 재료는 카운트에서 제외
   const required = recipeIngredients
     .map((ri, i) => ({ ri, result: results[i] }))
-    .filter(({ ri }) => !ri.is_optional);
+    .filter(({ ri }) => !ri.is_optional && !isFundamental(ri.ingredient_name));
 
   const totalCount = required.length;
   const ownedCount = required.filter(({ result }) => result.kind === 'owned').length;
