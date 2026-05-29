@@ -863,6 +863,8 @@ export const zh = {
       veggie: '蔬菜',
       egg: '蛋类',
       legume: '豆类·坚果',
+      oil: '油脂',
+      sweetener: '糖类·甜味剂',
       meat: '肉类',
       seafood: '海鲜',
       grain: '谷物类',

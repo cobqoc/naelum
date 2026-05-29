@@ -863,6 +863,8 @@ export const de = {
       veggie: 'Gemüse',
       egg: 'Eier',
       legume: 'Hülsenfrüchte & Nüsse',
+      oil: 'Öle & Fette',
+      sweetener: 'Zucker & Süßungsmittel',
       meat: 'Fleisch',
       seafood: 'Meeresfrüchte',
       grain: 'Getreide & Nüsse',

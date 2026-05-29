@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
 import KitchenViewTabs from './_components/KitchenViewTabs';
+import { groupByInitial } from '@/lib/kitchen/initialGroup';
 
 /**
  * 부엌 도감 — 전체 가나다순 사전 뷰 (V2, 2026-05-29).
@@ -28,46 +29,11 @@ interface IngredientItem {
 const CATEGORY_LABEL: Record<string, string> = {
   veggie: '채소', meat: '육류', seafood: '해산물', egg: '달걀류',
   dairy: '유제품', grain: '곡류·면', legume: '콩·견과', fruit: '과일',
-  seasoning: '장·양념', spice: '향신료', condiment: '소스·드레싱',
+  seasoning: '양념&소스', spice: '향신료', condiment: '조미료',
+  oil: '유지·기름', sweetener: '당류·감미료',
   fermented: '발효식품', bakery: '빵·베이커리', beverage: '음료',
   snack: '간식·디저트', processed: '가공식품', other: '기타',
 };
-
-/**
- * 한글 초성 추출 — 가나다 그룹화용.
- * 한글 외 문자는 'A-Z' 또는 '#' 으로 분류.
- */
-function getInitialGroup(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return '#';
-  const c = trimmed[0];
-  const code = c.charCodeAt(0);
-
-  // 한글 음절 (가-힣)
-  if (code >= 0xac00 && code <= 0xd7a3) {
-    const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
-    const idx = Math.floor((code - 0xac00) / 588);
-    return CHO[idx] ?? '#';
-  }
-
-  // 영문
-  if (/[a-zA-Z]/.test(c)) return c.toUpperCase();
-
-  return '#';
-}
-
-/** 정렬 우선순위 — 한글(ㄱ-ㅎ) → 영문(A-Z) → 기타(#) */
-const GROUP_ORDER: string[] = [
-  ...['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'],
-  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-  '#',
-];
-
-function groupSort(a: string, b: string): number {
-  const ai = GROUP_ORDER.indexOf(a);
-  const bi = GROUP_ORDER.indexOf(b);
-  return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-}
 
 export default function KitchenAllClient() {
   const localizedRouter = useLocalizedRouter();
@@ -83,20 +49,8 @@ export default function KitchenAllClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 그룹화 + 정렬
-  const grouped = new Map<string, IngredientItem[]>();
-  for (const item of items) {
-    const g = getInitialGroup(item.name);
-    if (!grouped.has(g)) grouped.set(g, []);
-    grouped.get(g)!.push(item);
-  }
-  const sortedGroups = Array.from(grouped.entries())
-    .map(([group, list]) => ({
-      group,
-      list: list.sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    }))
-    .sort((a, b) => groupSort(a.group, b.group));
-
+  // 그룹화 + 정렬 (공용 순수 로직)
+  const sortedGroups = groupByInitial(items);
   const activeGroups = sortedGroups.map(g => g.group);
 
   const scrollTo = (group: string) => {

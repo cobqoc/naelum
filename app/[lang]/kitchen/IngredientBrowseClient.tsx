@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
 import KitchenViewTabs from './_components/KitchenViewTabs';
+import { groupByInitial } from '@/lib/kitchen/initialGroup';
 
 
 // ─── 번역 없는 상수 ───────────────────────────────────────────
@@ -35,11 +36,13 @@ const SEASON_EMOJI: Record<string, string> = {
 // 허브(KitchenHomeClient)와 동일한 이모지 — 어느 카테고리로 진입하든 헤더 라벨이 정확히 해석됨.
 const CATEGORY_EMOJI: Record<string, string> = {
   veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟', egg: '🥚', dairy: '🧀',
-  grain: '🌾', legume: '🥜', seasoning: '🧂', spice: '🌶️', condiment: '🫙',
+  grain: '🌾', legume: '🥜', seasoning: '🥫', spice: '🌶️', condiment: '🧂',
+  oil: '🫗', sweetener: '🍯',
   fermented: '🍶', bakery: '🍞', beverage: '🥤', snack: '🍪', processed: '📦', other: '✨',
 };
 
-const LIMIT = 60;
+// 카테고리당 표시 상한 (API maxLimit=100). 카테고리가 100개 넘게 자라면 페이지네이션 필요.
+const LIMIT = 100;
 
 // ─── 타입 ────────────────────────────────────────────────────
 
@@ -282,8 +285,11 @@ export default function IngredientBrowsePage({
     { value: 'seafood',   label: tb.categoryLabels.seafood,   emoji: '🐟' },
     { value: 'grain',     label: tb.categoryLabels.grain,     emoji: '🌾' },
     { value: 'dairy',     label: tb.categoryLabels.dairy,     emoji: '🧀' },
-    { value: 'seasoning', label: tb.categoryLabels.seasoning, emoji: '🧂' },
-    { value: 'condiment', label: tb.categoryLabels.condiment, emoji: '🫙' },
+    { value: 'seasoning', label: tb.categoryLabels.seasoning, emoji: '🥫' },
+    { value: 'condiment', label: tb.categoryLabels.condiment, emoji: '🧂' },
+    { value: 'fermented', label: tb.categoryLabels.fermented, emoji: '🍶' },
+    { value: 'oil',       label: tb.categoryLabels.oil,       emoji: '🫗' },
+    { value: 'sweetener', label: tb.categoryLabels.sweetener, emoji: '🍯' },
   ];
 
   const [items, setItems] = useState<IngredientItem[]>([]);
@@ -304,7 +310,8 @@ export default function IngredientBrowsePage({
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'search_count', includePending: 'true' });
+      // 도감은 사전 — 가나다순 고정 (인기순 X: 검색이 빠른 찾기를 담당, 브라우징은 예측 가능한 순서)
+      const params = new URLSearchParams({ limit: String(LIMIT), sort: 'name', includePending: 'true' });
       if (category) params.set('categories', category);
       if (debouncedSearch.length >= 2) params.set('q', debouncedSearch);
       const res = await fetch(`/api/ingredients/browse?${params}`);
@@ -339,6 +346,13 @@ export default function IngredientBrowsePage({
   const related = selected
     ? items.filter(i => i.category === selected.category && i.id !== selected.id).slice(0, 12)
     : [];
+
+  // 초성 그룹화 (가나다순 뷰와 동일 — 카테고리만 필터). 사전형이라 항목이 쌓여도 예측 가능.
+  const sortedGroups = groupByInitial(items);
+  const activeGroups = sortedGroups.map(g => g.group);
+  const scrollToGroup = (group: string) => {
+    document.getElementById(`browse-group-${group}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary">
@@ -408,7 +422,25 @@ export default function IngredientBrowsePage({
           )}
         </div>
 
-        {/* ── 재료 카드 그리드 ── 탭하면 상세 패널 오픈 */}
+        {/* ── 초성 인덱스 (sticky) — 항목이 쌓이면 점프용 ── */}
+        {!loading && activeGroups.length > 1 && (
+          <div className="sticky top-2 z-10 mt-3 mb-1 rounded-2xl bg-background-secondary/95 backdrop-blur border border-white/10 p-2 shadow-lg">
+            <div className="flex flex-wrap gap-1 justify-center">
+              {activeGroups.map(group => (
+                <button
+                  key={group}
+                  type="button"
+                  onClick={() => scrollToGroup(group)}
+                  className="px-2 py-1 rounded-md text-sm font-medium text-text-secondary hover:bg-white/10 hover:text-text-primary transition-colors min-w-[2rem]"
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 재료 카드 (초성 그룹, 가나다순) ── 탭하면 상세 패널 오픈 ── */}
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-3">
             {Array.from({ length: 12 }).map((_, i) => (
@@ -422,26 +454,36 @@ export default function IngredientBrowsePage({
             <p className="text-xs mt-1">{tb.noMatchingHint}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-3">
-            {items.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setSelected(item)}
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-white/10 bg-background-secondary hover:bg-white/5 hover:border-accent-warm/30 active:scale-[0.99] transition-all text-left group"
-              >
-                <span className="text-xl md:text-2xl flex-shrink-0" aria-hidden>
-                  {item.emoji ?? '🍽️'}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm md:text-base font-medium truncate group-hover:text-accent-warm transition-colors">
-                    {item.name}
-                  </div>
-                  <div className="text-[10px] md:text-xs text-text-muted truncate">
-                    {item.name_en ?? (item.category ? (tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? item.category) : '')}
-                  </div>
+          <div className="space-y-5 mt-2">
+            {sortedGroups.map(({ group, list }) => (
+              <section key={group} id={`browse-group-${group}`} className="scroll-mt-20">
+                <h3 className="text-xl font-extrabold text-accent-warm mb-2 sticky top-16 z-[5] bg-background-primary/80 backdrop-blur py-1">
+                  {group}
+                  <span className="text-xs font-medium text-text-muted ml-2">{list.length}{tb.countSuffixLabel}</span>
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                  {list.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setSelected(item)}
+                      className="flex items-center gap-2 p-2.5 rounded-xl border border-white/10 bg-background-secondary hover:bg-white/5 hover:border-accent-warm/30 active:scale-[0.99] transition-all text-left group"
+                    >
+                      <span className="text-xl md:text-2xl flex-shrink-0" aria-hidden>
+                        {item.emoji ?? '🍽️'}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm md:text-base font-medium truncate group-hover:text-accent-warm transition-colors">
+                          {item.name}
+                        </div>
+                        <div className="text-[10px] md:text-xs text-text-muted truncate">
+                          {item.name_en ?? (item.category ? (tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? item.category) : '')}
+                        </div>
+                      </div>
+                      <span className="text-text-muted/40 text-sm shrink-0 group-hover:text-text-muted transition-colors">›</span>
+                    </button>
+                  ))}
                 </div>
-                <span className="text-text-muted/40 text-sm shrink-0 group-hover:text-text-muted transition-colors">›</span>
-              </button>
+              </section>
             ))}
           </div>
         )}
