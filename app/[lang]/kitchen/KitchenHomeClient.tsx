@@ -90,19 +90,19 @@ export default function KitchenHomeClient() {
     <div className="min-h-screen bg-background-primary">
       <Header />
       <main className="container mx-auto max-w-5xl px-4 pt-6 pb-24 md:pb-12">
-        {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
-        <p className="text-sm text-text-secondary mb-4">
-          세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
-        </p>
-
         {/* 뷰 전환 탭 — 카테고리 / 가나다순 */}
-        <div className="mb-5">
+        <div className="mb-4">
           <KitchenViewTabs active="home" />
         </div>
 
-        {/* 검색바 */}
-        <div className="mb-8">
-          <form onSubmit={handleSearch} className="relative">
+        {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
+        <p className="text-sm text-text-secondary mb-5">
+          세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
+        </p>
+
+        {/* 검색바 + 전체 보기 버튼 */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-2">
+          <form onSubmit={handleSearch} className="relative flex-1">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted"
               fill="none"
@@ -119,6 +119,14 @@ export default function KitchenHomeClient() {
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-background-secondary border border-white/10 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-accent-warm/20 transition-all"
             />
           </form>
+          <button
+            type="button"
+            onClick={() => localizedRouter.push('/kitchen?view=all')}
+            className="px-4 py-3 rounded-xl bg-background-secondary border border-white/10 hover:bg-white/10 transition-all text-sm font-medium whitespace-nowrap flex items-center gap-2 justify-center"
+            title="가나다순 전체 재료"
+          >
+            📖 가나다순 전체 보기
+          </button>
         </div>
 
         {/* 재료 섹션 */}
