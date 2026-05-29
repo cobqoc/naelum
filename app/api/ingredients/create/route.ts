@@ -4,6 +4,7 @@ import { containsBadWords } from '@/lib/utils/badWordsFilter';
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein';
 import { ingredientCreationLimiter } from '@/lib/utils/rateLimit';
 import { requireAuth } from '@/lib/api/auth';
+import { suggestEmoji } from '@/lib/constants/ingredientEmoji';
 
 /**
  * POST /api/ingredients/create
@@ -144,7 +145,10 @@ export async function POST(request: NextRequest) {
         ))
       : [];
 
-    // 9. DB INSERT — V2: data_source='user_added' + allergens 명시
+    // 9. emoji 자동 추정 (적합한 게 없으면 빈 문자열 — 박스 폴백 X)
+    const autoEmoji = suggestEmoji(name);
+
+    // 10. DB INSERT — V2: data_source='user_added' + allergens + emoji 자동
     const { data: newIngredient, error: insertError } = await adminSupabase
       .from('ingredients_master')
       .insert({
@@ -152,6 +156,7 @@ export async function POST(request: NextRequest) {
         name_ko: name,
         name_en: name_en || null,
         category: categoryValue,
+        emoji: autoEmoji || null,
         common_units: common_units || [],
         allergens: allergensValue,
         search_count: 0,
