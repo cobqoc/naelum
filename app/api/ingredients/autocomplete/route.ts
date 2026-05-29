@@ -39,10 +39,13 @@ export async function GET(request: NextRequest) {
     // 검색어 확장: 정확 일치 시 추가 검색어 포함
     const expansions = SEARCH_EXPANSIONS[query.trim()] || [];
     const searchTerms = [query, ...expansions];
+    // V2 (2026-05-29): aliases 컬럼도 검색에 포함 — "달걀" 검색 → 계란 row 매칭.
+    // PostgREST `cs` (contains) 는 ARRAY 정확 매칭 — 사용자가 alias 단어 전체 입력 시 작동.
     const orConditions = searchTerms.flatMap(term => [
       `name.ilike.%${term}%`,
       `name_ko.ilike.%${term}%`,
       `name_en.ilike.%${term}%`,
+      `aliases.cs.{${term}}`,
     ]).join(',');
 
     // ingredients_master 테이블에서 재료 검색

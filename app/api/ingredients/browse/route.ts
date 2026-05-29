@@ -34,9 +34,9 @@ export async function GET(request: NextRequest) {
         dbQuery = dbQuery.in('name', names);
       }
     } else {
-      // 검색어 필터
+      // 검색어 필터 — V2 (2026-05-29): aliases 컬럼도 검색에 포함.
       if (query.trim() && query.length >= 2) {
-        dbQuery = dbQuery.or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%`);
+        dbQuery = dbQuery.or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%,aliases.cs.{${query}}`);
       }
 
       // 카테고리 필터
