@@ -288,8 +288,14 @@ export function isSubstituteFor(userIng: string, recipeIng: string): boolean {
   const subB = INGREDIENT_SUBSTITUTES[b] ?? INGREDIENT_SUBSTITUTES[nb]
   if (subB && subB.some(s => s === a || s === na)) return true
 
-  // 단방향 raw→processed (쌀→밥 등). 역방향은 lookup 안 함 = 매칭 안 됨.
-  const prepA = INGREDIENT_PREPARABLE_TO[a] ?? INGREDIENT_PREPARABLE_TO[na]
+  // 단방향 raw→processed (쌀→밥, 마늘→다진마늘 등).
+  // **사용자 입력은 raw form 만 키로 인정** — 정규화(na)를 키로 쓰면 가공형(다진마늘)이
+  // 원형(마늘)으로 정규화돼 거짓 매칭 발생 (2026-05-29 fix: 사용자 "다진마늘" 보유 →
+  // 레시피 "편마늘" 필요 → "다진마늘로 만들 수 있어요" 거짓 표시. 가공형은 원형으로
+  // 못 돌아간다는 단방향 원칙 위반).
+  // 레시피 측(b)은 정규화 OK — PREPARABLE value 가 '다진마늘'·'다진 마늘' 등
+  // 변형 다 명시되어 있어 매칭 의미 변하지 않음.
+  const prepA = INGREDIENT_PREPARABLE_TO[a]
   if (prepA && prepA.some(s => s === b || s === nb)) return true
 
   return false
@@ -324,7 +330,9 @@ export function getSubstituteKind(
   const subB = INGREDIENT_SUBSTITUTES[b] ?? INGREDIENT_SUBSTITUTES[nb]
   if (subB && subB.some(s => s === a || s === na)) return 'substitute'
 
-  const prepA = INGREDIENT_PREPARABLE_TO[a] ?? INGREDIENT_PREPARABLE_TO[na]
+  // PREPARABLE 은 사용자 입력 raw form 만 키로 인정 — 가공형(다진/편 등) 입력이
+  // 정규화로 원형 처리되는 거짓 매칭 차단 (isSubstituteFor 와 동일 정책).
+  const prepA = INGREDIENT_PREPARABLE_TO[a]
   if (prepA && prepA.some(s => s === b || s === nb)) return 'preparable'
 
   return null

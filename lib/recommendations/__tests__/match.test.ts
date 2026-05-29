@@ -195,6 +195,23 @@ describe('isSubstituteFor — 대체 가능 판정', () => {
       expect(isSubstituteFor('마늘', '마늘즙')).toBe(false)
     })
 
+    // 2026-05-29: 가공형 입력의 거짓 PREPARABLE 매칭 차단 회귀 가드.
+    // 사용자 "다진마늘" 보유 시 정규화가 "마늘" 만들어 PREPARABLE_TO["마늘"] 의
+    // value '편마늘' 매칭하던 버그. 이제 사용자 입력은 raw form 만 키로 인정.
+    it('가공형 입력은 PREPARABLE 거짓 매칭 안 함 (다진마늘 → 편마늘 등)', () => {
+      // 다진마늘 보유자가 통마늘·편마늘 만들 수 없음 (가공형 → 원형 불가)
+      expect(isSubstituteFor('다진마늘', '편마늘')).toBe(false)
+      expect(isSubstituteFor('다진마늘', '마늘')).toBe(false)
+      expect(isSubstituteFor('다진 마늘', '편마늘')).toBe(false)
+      // 다진생강도 마찬가지
+      expect(isSubstituteFor('다진생강', '생강')).toBe(false)
+      // 조리법 접두사 입력도 동일 — "굵게 다진 마늘" 보유 → 편마늘 X
+      expect(isSubstituteFor('굵게 다진 마늘', '편마늘')).toBe(false)
+      // 원형(통마늘=마늘) 보유는 그대로 가공 가능
+      expect(isSubstituteFor('마늘', '다진마늘')).toBe(true)
+      expect(isSubstituteFor('마늘', '편마늘')).toBe(true)
+    })
+
     it('생강 → 다진생강 (즙 제외, 역방향 X)', () => {
       expect(isSubstituteFor('생강', '다진생강')).toBe(true)
       expect(isSubstituteFor('생강', '생강즙')).toBe(false)
