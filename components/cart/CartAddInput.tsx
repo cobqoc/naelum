@@ -134,7 +134,8 @@ export default function CartAddInput({
       </div>
 
       {/* 자동완성 목록 — WAI-ARIA combobox 패턴 (Common/Autocomplete 와 일관). */}
-      {showSuggestions && inputText.trim() && (
+      {/* 자동완성 제안만 — "직접 추가" 옵션은 제거(추가 버튼과 100% 중복). 제안 없으면 미노출. */}
+      {showSuggestions && inputText.trim() && suggestions.length > 0 && (
         <div
           id="cart-add-suggestions"
           role="listbox"
@@ -154,16 +155,6 @@ export default function CartAddInput({
               {s.category && <span className="text-text-muted">{s.category}</span>}
             </button>
           ))}
-          <button
-            id={`cart-add-option-${suggestions.length}`}
-            role="option"
-            aria-selected={false}
-            onMouseDown={() => addItem(inputText, '', undefined, 'manual')}
-            className="w-full text-left px-4 py-2.5 text-xs hover:bg-accent-warm/10 transition-colors flex items-center gap-2 border-t border-white/5"
-          >
-            <span className="text-accent-warm flex-shrink-0">+</span>
-            <span className="text-accent-warm font-medium truncate">{t.cart.directAddLabel.replace('{name}', inputText)}</span>
-          </button>
         </div>
       )}
     </div>
