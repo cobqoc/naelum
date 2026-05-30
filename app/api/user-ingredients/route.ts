@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { inferStorageLocation } from '@/lib/ingredients/storageMap';
-import { resolveIngredientId } from '@/lib/ingredients/resolveIngredientId';
+import { resolveExactIngredientId } from '@/lib/ingredients/resolveIngredientId';
 import { NextRequest, NextResponse } from 'next/server';
 
 const SELECT_COLS =
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
 
   const today = new Date().toISOString().slice(0, 10);
   // ingredient_id 해석 — 추천 FK 매칭(정확도 최우선)에 필요.
-  // HomeClient·add-to-ingredients 와 동일하게 resolveIngredientId 적용.
-  const ingredientId = await resolveIngredientId(name, supabase);
+  // 레시피 저장과 동일한 결정적 해석(정확/별칭/공백무시, 추측 0)으로 통일.
+  const ingredientId = await resolveExactIngredientId(name, supabase);
   const { data, error } = await supabase
     .from('user_ingredients')
     .insert({
