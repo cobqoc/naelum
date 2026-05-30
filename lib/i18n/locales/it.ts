@@ -277,6 +277,7 @@ export const it = {
     metricLabel: 'Metrico',
     imperialLabel: 'Imperiale',
     ownedSuffix: 'disponibile',
+    shortBySuffix: "in più necessario",
     fridgeBadgeReady: 'Pronto',
     fridgeBadgeMissing: '{n} mancanti',
     cartButton: 'Aggiungi alla lista',

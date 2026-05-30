@@ -24,6 +24,13 @@ export function isFundamental(name: string): boolean {
   return FUNDAMENTAL_NAMES.has(name.trim().toLowerCase());
 }
 
+/** 수량 안전 파싱 — number|string|null 어느 것이든 유한수만 반환, 아니면 null(분수·"약간" 등 → 판단 생략). */
+function toNum(v: number | string | null | undefined): number | null {
+  if (v == null || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 import { compareQuantity } from '@/lib/units/quantity';
 
 export type MatchKind = 'owned' | 'preparable' | 'substitute' | 'missing';
@@ -47,12 +54,12 @@ export interface RecipeIngredientInput {
   ingredient_id: string | null;  // null = 옛 데이터, 매칭 안 됨
   ingredient_name: string;
   is_optional?: boolean;
-  quantity?: number | null;  // 양 비교용 (Phase 2)
+  quantity?: number | string | null;  // 양 비교용 (Phase 2) — DB 가 문자열 반환 가능
   unit?: string | null;
 }
 
 /** 사용자 보유 재료의 양 — id 별. 양 매칭(Phase 2)용. 없으면 양 판단 생략(degrade). */
-export type UserQtyMap = Map<string, { quantity: number | null; unit: string | null }>;
+export type UserQtyMap = Map<string, { quantity: number | string | null; unit: string | null }>;
 
 /** ingredient_relations 그래프 — to_id 별로 incoming 관계 묶음 */
 export interface RelationGraph {
@@ -81,11 +88,12 @@ export function matchIngredient(
 ): MatchResult {
   // 양 부족분 계산 — owned(정확·변형)에만. 매칭된 보유 재료 id 의 양 vs 레시피 양.
   // 같은 단위/변환 가능할 때만 short, 아니면 undefined(충분 or 판단 생략 — 거짓 정확성 회피).
+  // 수량은 문자열("3")로 올 수 있어 안전 파싱(분수·"약간" 등 비수치 → null → 판단 생략).
   const shortOf = (matchedUserId: string): { by: number; unit: string } | undefined => {
     if (!userQtyMap) return undefined;
     const have = userQtyMap.get(matchedUserId);
     if (!have) return undefined;
-    const v = compareQuantity(recipe.quantity ?? null, recipe.unit ?? '', have.quantity, have.unit ?? '');
+    const v = compareQuantity(toNum(recipe.quantity), recipe.unit ?? '', toNum(have.quantity), have.unit ?? '');
     return v.kind === 'short' ? { by: v.by, unit: v.unit } : undefined;
   };
 

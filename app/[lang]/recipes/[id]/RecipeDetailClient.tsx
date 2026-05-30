@@ -70,6 +70,7 @@ export interface RecipeDetailClientProps {
   currentUserId: string | null;
   initialUserIngredients: string[];
   initialUserIngredientIds: string[];
+  initialUserIngredientQtys: { id: string; quantity: number | string | null; unit: string | null }[];
   initialIsSaved: boolean;
   initialSaveNotes: string | null;
   initialIsLiked: boolean;
@@ -82,6 +83,7 @@ export default function RecipeDetailClient({
   currentUserId,
   initialUserIngredients,
   initialUserIngredientIds,
+  initialUserIngredientQtys,
   initialIsSaved,
   initialSaveNotes,
   initialIsLiked,
@@ -104,6 +106,7 @@ export default function RecipeDetailClient({
   const [likeLoading, setLikeLoading] = useState(false);
   const [userIngredients] = useState<string[]>(initialUserIngredients);
   const [userIngredientIds] = useState<string[]>(initialUserIngredientIds);
+  const [userIngredientQtys] = useState(initialUserIngredientQtys);
   const [actionLoading, setActionLoading] = useState(false);
   // 조회수 증가 중복 방지용 ref
   const viewIncrementedRef = useRef(false);
@@ -344,6 +347,7 @@ export default function RecipeDetailClient({
         recipe={recipe}
         userIngredients={userIngredients}
         userIngredientIds={userIngredientIds}
+        userIngredientQtys={userIngredientQtys}
         isSaved={isSaved}
         saveNotes={saveNotes}
         onToggleSave={handleSave}

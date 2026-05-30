@@ -7,6 +7,7 @@ import {
   type RelationGraph,
   type RecipeIngredientInput,
   type RecipeMatchSummary,
+  type UserQtyMap,
   EMPTY_GRAPH,
 } from '@/lib/recommendations/matchV2';
 import { fetchRelationsForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations';
@@ -34,6 +35,8 @@ export interface MatchableIngredient {
   ingredient_id?: string | null;
   ingredient_name: string;
   is_optional?: boolean;
+  quantity?: number | string | null;  // 양 매칭(Phase 2)
+  unit?: string | null;
 }
 
 export interface UseRecipeFridgeMatchResult {
@@ -57,6 +60,8 @@ export function useRecipeFridgeMatch(
   ingredients: MatchableIngredient[],
   userIngredients: string[],         // legacy (옛 시그너처) — V2 에서 무시
   userIngredientIds: string[],
+  userQtyMap?: UserQtyMap,            // 양 매칭(Phase 2). 없으면 양 판단 생략(degrade).
+  servingsMultiplier: number = 1,    // 현재 인분/기본 인분 — 레시피 필요량 스케일
 ): UseRecipeFridgeMatchResult {
   void userIngredients;  // V2: 이름 매칭 안 함, 매개변수 호환만
 
@@ -70,15 +75,21 @@ export function useRecipeFridgeMatch(
     [ingredients],
   );
 
-  // matchRecipe 에 전달할 정규화된 ingredients (ingredient_id null 통일)
+  // matchRecipe 에 전달할 정규화된 ingredients (ingredient_id null 통일 + 인분 스케일 양)
   const normalizedIngredients = useMemo<RecipeIngredientInput[]>(
     () =>
-      ingredients.map(i => ({
-        ingredient_id: i.ingredient_id ?? null,
-        ingredient_name: i.ingredient_name,
-        is_optional: i.is_optional,
-      })),
-    [ingredients],
+      ingredients.map(i => {
+        const n = i.quantity == null || i.quantity === '' ? null : Number(i.quantity);
+        const scaledQty = n != null && Number.isFinite(n) ? n * servingsMultiplier : (i.quantity ?? null);
+        return {
+          ingredient_id: i.ingredient_id ?? null,
+          ingredient_name: i.ingredient_name,
+          is_optional: i.is_optional,
+          quantity: scaledQty,
+          unit: i.unit ?? null,
+        };
+      }),
+    [ingredients, servingsMultiplier],
   );
 
   const [graph, setGraph] = useState<RelationGraph>(EMPTY_GRAPH);
@@ -136,8 +147,8 @@ export function useRecipeFridgeMatch(
   }, [userIdsKey]);
 
   const summary = useMemo(
-    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap),
-    [normalizedIngredients, userIdSet, graph, userBaseMap],
+    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap),
+    [normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap],
   );
 
   const isIngredientOwned = useCallback(
