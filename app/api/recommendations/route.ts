@@ -112,11 +112,13 @@ export async function GET(request: NextRequest) {
         // 체험 모드: 비로그인 시 쿼리 파라미터로 재료 전달 (ingredients=토마토,양파,...)
         let ingredientNames: string[] = []
         let userIngredientIds: string[] = []
+        // 양 매칭(Phase 2) — 보유 재료 양 맵 (로그인만; 비로그인 체험은 양 없음 → 빈 맵 degrade)
+        const userQtyMap = new Map<string, { quantity: number | null; unit: string | null }>()
 
         if (user) {
           const { data: userIngredients } = await supabase
             .from('user_ingredients')
-            .select('ingredient_name, ingredient_id')
+            .select('ingredient_name, ingredient_id, quantity, unit')
             .eq('user_id', user.id)
           if (!userIngredients || userIngredients.length === 0) {
             return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
@@ -125,6 +127,9 @@ export async function GET(request: NextRequest) {
           userIngredientIds = userIngredients
             .filter(i => i.ingredient_id)
             .map(i => i.ingredient_id as string)
+          for (const ui of userIngredients) {
+            if (ui.ingredient_id) userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
+          }
         } else {
           const rawIngredients = searchParams.get('ingredients') || ''
           // 원본 이름(대소문자 보존) — id 정확일치 해석용. 후보 ilike 검색엔 소문자판 사용.
@@ -188,7 +193,7 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
-            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional)
+            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional, quantity, unit)
           `)
           .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
@@ -218,13 +223,15 @@ export async function GET(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
           const ingredients: RecipeIngredientInput[] = (recipe.ingredients ?? []).map(
-            (i: { ingredient_id: string | null; ingredient_name: string; is_optional?: boolean }) => ({
+            (i: { ingredient_id: string | null; ingredient_name: string; is_optional?: boolean; quantity?: number | null; unit?: string | null }) => ({
               ingredient_id: i.ingredient_id ?? null,
               ingredient_name: i.ingredient_name,
               is_optional: i.is_optional ?? false,
+              quantity: i.quantity ?? null,
+              unit: i.unit ?? null,
             }),
           )
-          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap)
+          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap)
           const matchedCount = summary.results.filter(
             (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
           ).length

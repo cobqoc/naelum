@@ -78,6 +78,54 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     expect(result.via).toBeUndefined();
   });
 
+  it('shortBy — owned 지만 양 부족 (양파 3개 필요 vs 1개 보유)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 3, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 1, unit: '개' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toEqual({ by: 2, unit: '개' });
+  });
+
+  it('shortBy 없음 — 양 충분', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 2, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 5, unit: '개' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toBeUndefined();
+  });
+
+  it('shortBy 없음 — 양 미입력시 판단 생략(degrade)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 3, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: null, unit: null }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toBeUndefined();
+  });
+
+  it('shortBy — 변형 보유도 양 비교 (소고기 200g 필요 vs 차돌박이 100g)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'beef', ingredient_name: '소고기', quantity: 200, unit: 'g' },
+      new Set(['chadol']),
+      EMPTY_GRAPH,
+      new Map([['beef', 'chadol']]),
+      new Map([['chadol', { quantity: 100, unit: 'g' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toEqual({ by: 100, unit: 'g' });
+  });
+
   it('missing — 옛 데이터(ingredient_id null) 는 매칭 안 됨', () => {
     const result = matchIngredient(
       { ingredient_id: null, ingredient_name: '양파' },

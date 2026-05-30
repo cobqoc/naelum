@@ -36,7 +36,7 @@ export async function attachFridgeMatch<T extends { id: string }>(
 
   const { data: userIngredients } = await supabase
     .from('user_ingredients')
-    .select('ingredient_name, ingredient_id')
+    .select('ingredient_name, ingredient_id, quantity, unit')
     .eq('user_id', userId)
   if (!userIngredients || userIngredients.length === 0) return recipes
 
@@ -46,13 +46,18 @@ export async function attachFridgeMatch<T extends { id: string }>(
       .map(i => i.ingredient_id as string),
   )
   const userIdToName = new Map<string, string>()
+  // 양 매칭(Phase 2) — 보유 재료 양 맵
+  const userQtyMap = new Map<string, { quantity: number | null; unit: string | null }>()
   for (const ui of userIngredients) {
-    if (ui.ingredient_id) userIdToName.set(ui.ingredient_id as string, ui.ingredient_name)
+    if (ui.ingredient_id) {
+      userIdToName.set(ui.ingredient_id as string, ui.ingredient_name)
+      userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
+    }
   }
 
   const { data: riRows } = await supabase
     .from('recipe_ingredients')
-    .select('recipe_id, ingredient_name, ingredient_id, is_optional')
+    .select('recipe_id, ingredient_name, ingredient_id, is_optional, quantity, unit')
     .in('recipe_id', recipes.map(r => r.id))
 
   const byRecipe = new Map<string, RecipeIngredientInput[]>()
@@ -62,6 +67,8 @@ export async function attachFridgeMatch<T extends { id: string }>(
       ingredient_id: row.ingredient_id ?? null,
       ingredient_name: row.ingredient_name,
       is_optional: row.is_optional ?? false,
+      quantity: row.quantity ?? null,
+      unit: row.unit ?? null,
     })
     byRecipe.set(row.recipe_id, arr)
   }
@@ -80,7 +87,7 @@ export async function attachFridgeMatch<T extends { id: string }>(
 
   return recipes.map(r => {
     const ingredients = byRecipe.get(r.id) ?? []
-    const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap)
+    const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap)
     const ownedIngredientNames: string[] = []
     const missingIngredientNames: string[] = []
     const substitutableIngredients: { ingredient: string; via: string }[] = []
