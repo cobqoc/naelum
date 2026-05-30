@@ -7,9 +7,10 @@ import {
   type RelationGraph,
   type RecipeIngredientInput,
   type RecipeMatchSummary,
+  type UserQtyMap,
   EMPTY_GRAPH,
 } from '@/lib/recommendations/matchV2';
-import { fetchRelationsForRecipe } from '@/lib/recommendations/fetchRelations';
+import { fetchRelationsForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations';
 
 /**
  * V2 레시피 ↔ 냉장고 매칭 hook (2026-05-29 본질 재설계).
@@ -34,6 +35,8 @@ export interface MatchableIngredient {
   ingredient_id?: string | null;
   ingredient_name: string;
   is_optional?: boolean;
+  quantity?: number | string | null;  // 양 매칭(Phase 2)
+  unit?: string | null;
 }
 
 export interface UseRecipeFridgeMatchResult {
@@ -57,6 +60,8 @@ export function useRecipeFridgeMatch(
   ingredients: MatchableIngredient[],
   userIngredients: string[],         // legacy (옛 시그너처) — V2 에서 무시
   userIngredientIds: string[],
+  userQtyMap?: UserQtyMap,            // 양 매칭(Phase 2). 없으면 양 판단 생략(degrade).
+  servingsMultiplier: number = 1,    // 현재 인분/기본 인분 — 레시피 필요량 스케일
 ): UseRecipeFridgeMatchResult {
   void userIngredients;  // V2: 이름 매칭 안 함, 매개변수 호환만
 
@@ -70,15 +75,21 @@ export function useRecipeFridgeMatch(
     [ingredients],
   );
 
-  // matchRecipe 에 전달할 정규화된 ingredients (ingredient_id null 통일)
+  // matchRecipe 에 전달할 정규화된 ingredients (ingredient_id null 통일 + 인분 스케일 양)
   const normalizedIngredients = useMemo<RecipeIngredientInput[]>(
     () =>
-      ingredients.map(i => ({
-        ingredient_id: i.ingredient_id ?? null,
-        ingredient_name: i.ingredient_name,
-        is_optional: i.is_optional,
-      })),
-    [ingredients],
+      ingredients.map(i => {
+        const n = i.quantity == null || i.quantity === '' ? null : Number(i.quantity);
+        const scaledQty = n != null && Number.isFinite(n) ? n * servingsMultiplier : (i.quantity ?? null);
+        return {
+          ingredient_id: i.ingredient_id ?? null,
+          ingredient_name: i.ingredient_name,
+          is_optional: i.is_optional,
+          quantity: scaledQty,
+          unit: i.unit ?? null,
+        };
+      }),
+    [ingredients, servingsMultiplier],
   );
 
   const [graph, setGraph] = useState<RelationGraph>(EMPTY_GRAPH);
@@ -111,14 +122,39 @@ export function useRecipeFridgeMatch(
     };
   }, [recipeIngredientIds]);
 
+  // 변형 매칭용 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족)
+  const [userBaseMap, setUserBaseMap] = useState<Map<string, string>>(new Map());
+  const userIdsKey = useMemo(() => [...userIdSet].sort().join(','), [userIdSet]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = userIdsKey ? userIdsKey.split(',') : [];
+    if (ids.length === 0) {
+      Promise.resolve().then(() => {
+        if (!cancelled) setUserBaseMap(new Map());
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const supabase = createClient();
+    fetchUserVariantBases(ids, supabase).then(m => {
+      if (!cancelled) setUserBaseMap(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userIdsKey]);
+
   const summary = useMemo(
-    () => matchRecipe(normalizedIngredients, userIdSet, graph),
-    [normalizedIngredients, userIdSet, graph],
+    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap),
+    [normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap],
   );
 
   const isIngredientOwned = useCallback(
-    (id: string | null) => (id ? userIdSet.has(id) : false),
-    [userIdSet],
+    // 정확 보유 또는 변형 보유(삼겹살→돼지고기). userBaseMap 은 base_id(=레시피 재료 id) 키.
+    (id: string | null) => (id ? userIdSet.has(id) || userBaseMap.has(id) : false),
+    [userIdSet, userBaseMap],
   );
 
   const findSubstitute = useCallback(

@@ -79,10 +79,38 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json()
   const action = typeof body.action === 'string' ? body.action : ''
+  const service: AnyClient = createServiceClient()
+
+  // ───────── id 기반 액션 (ingredient_name 불필요) ─────────
+
+  // 분류 계층 설정/해제 — target 을 base 의 변형으로 (삼겹살.base = 돼지고기)
+  if (action === 'set_base') {
+    const targetId = typeof body.target_id === 'string' ? body.target_id : ''
+    const baseId = typeof body.base_id === 'string' && body.base_id ? body.base_id : null
+    if (!targetId) return NextResponse.json({ error: 'target_id required' }, { status: 400 })
+    if (baseId) {
+      // 강제 1단계: ① 자기참조 ② base 가 또 변형이면 거부(다단계) ③ target 이 이미 누군가의 base 면 거부
+      if (baseId === targetId) return NextResponse.json({ error: '자기 자신을 base 로 지정 불가' }, { status: 400 })
+      const { data: baseRow } = await service
+        .from('ingredients_master').select('id, base_ingredient_id').eq('id', baseId).single()
+      if (!baseRow) return NextResponse.json({ error: 'base 재료를 찾을 수 없음' }, { status: 404 })
+      if (baseRow.base_ingredient_id) return NextResponse.json({ error: 'base 가 이미 다른 재료의 변형입니다(다단계 금지)' }, { status: 400 })
+      const { data: children } = await service
+        .from('ingredients_master').select('id').eq('base_ingredient_id', targetId).limit(1)
+      if (children && children.length > 0) return NextResponse.json({ error: '이 재료는 이미 다른 변형의 base 입니다(다단계 금지)' }, { status: 400 })
+    }
+    const { error } = await service
+      .from('ingredients_master').update({ base_ingredient_id: baseId }).eq('id', targetId)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    await logAdminAction(auth.user.id, 'ingredient_set_base', 'ingredients_master', targetId, { base_id: baseId })
+    return NextResponse.json({ ok: true })
+  }
+
+  // (가공/대체 관계 추가는 기존 `/api/admin/substitute-suggestions` POST 사용 — 중복 구현 안 함)
+
+  // ───────── 이름 기반 액션 ─────────
   const name = typeof body.ingredient_name === 'string' ? body.ingredient_name.trim() : ''
   if (!name) return NextResponse.json({ error: 'ingredient_name required' }, { status: 400 })
-
-  const service: AnyClient = createServiceClient()
 
   // 이름의 모든 미연결 행에 번호 부여 (service-role — RLS 우회)
   const linkRows = async (ingredientId: string): Promise<{ count: number; error: { message: string } | null }> => {

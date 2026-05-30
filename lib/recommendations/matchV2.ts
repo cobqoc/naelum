@@ -24,6 +24,15 @@ export function isFundamental(name: string): boolean {
   return FUNDAMENTAL_NAMES.has(name.trim().toLowerCase());
 }
 
+/** 수량 안전 파싱 — number|string|null 어느 것이든 유한수만 반환, 아니면 null(분수·"약간" 등 → 판단 생략). */
+function toNum(v: number | string | null | undefined): number | null {
+  if (v == null || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+import { compareQuantity } from '@/lib/units/quantity';
+
 export type MatchKind = 'owned' | 'preparable' | 'substitute' | 'missing';
 
 export interface MatchResult {
@@ -32,6 +41,10 @@ export interface MatchResult {
   recipeIngredientName: string;
   /** preparable·substitute 의 경우 사용자 보유 재료 이름 (chip 표시용) */
   via?: string;
+  /** 보유하지만 양 부족 — owned(정확·변형)에만. 같은 단위/변환 가능할 때만. 없으면 충분 or 판단 생략. */
+  shortBy?: { by: number; unit: string };
+  /** 대체 비율 (Phase 3) — substitute 에만. (from 사용량)/(to 1단위). 없으면 1:1. */
+  ratio?: number;
 }
 
 export interface UserIngredient {
@@ -43,28 +56,49 @@ export interface RecipeIngredientInput {
   ingredient_id: string | null;  // null = 옛 데이터, 매칭 안 됨
   ingredient_name: string;
   is_optional?: boolean;
+  quantity?: number | string | null;  // 양 비교용 (Phase 2) — DB 가 문자열 반환 가능
+  unit?: string | null;
 }
+
+/** 사용자 보유 재료의 양 — id 별. 양 매칭(Phase 2)용. 없으면 양 판단 생략(degrade). */
+export type UserQtyMap = Map<string, { quantity: number | string | null; unit: string | null }>;
 
 /** ingredient_relations 그래프 — to_id 별로 incoming 관계 묶음 */
 export interface RelationGraph {
-  /** Map<to_id, [{from_id, kind}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색 */
-  incoming: Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to' }>>;
+  /** Map<to_id, [{from_id, kind, ratio}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색. ratio=대체 비율(substitute). */
+  incoming: Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>>;
 }
 
 /**
  * 한 레시피 재료를 사용자 보유 재료들과 매칭.
  *
  * 우선순위:
- *  1. owned     — 정확 보유 (id 일치)
- *  2. substitute— 양방향 대체 매핑 존재
- *  3. preparable— 단방향 가공 매핑 존재 (사용자가 from, 레시피가 to)
- *  4. missing   — 매칭 0
+ *  1. owned       — 정확 보유 (id 일치)
+ *  2. owned(변형) — 사용자가 *변형*을 보유 (삼겹살 보유 → "돼지고기" 필요 충족). 단방향: 변형→base만.
+ *  3. substitute  — 양방향 대체 매핑 존재
+ *  4. preparable  — 단방향 가공 매핑 존재 (사용자가 from, 레시피가 to)
+ *  5. missing     — 매칭 0
+ *
+ * `userBaseMap`: Map<base_id, 사용자 보유 변형 id>. 비면 변형 매칭 없음(degrade) — 기존 동작.
  */
 export function matchIngredient(
   recipe: RecipeIngredientInput,
   userIngredientIds: Set<string>,
   graph: RelationGraph,
+  userBaseMap: Map<string, string> = new Map(),
+  userQtyMap?: UserQtyMap,
 ): MatchResult {
+  // 양 부족분 계산 — owned(정확·변형)에만. 매칭된 보유 재료 id 의 양 vs 레시피 양.
+  // 같은 단위/변환 가능할 때만 short, 아니면 undefined(충분 or 판단 생략 — 거짓 정확성 회피).
+  // 수량은 문자열("3")로 올 수 있어 안전 파싱(분수·"약간" 등 비수치 → null → 판단 생략).
+  const shortOf = (matchedUserId: string): { by: number; unit: string } | undefined => {
+    if (!userQtyMap) return undefined;
+    const have = userQtyMap.get(matchedUserId);
+    if (!have) return undefined;
+    const v = compareQuantity(toNum(recipe.quantity), recipe.unit ?? '', toNum(have.quantity), have.unit ?? '');
+    return v.kind === 'short' ? { by: v.by, unit: v.unit } : undefined;
+  };
+
   // 기본 재료(물 등)는 누구나 보유로 간주 — 코드 상수 allowlist.
   // *이름 기반*이라 ingredient_id 가 null 이어도 작동 (id 기반 매칭의 예외, 이름으로만 판정).
   // 카운트(matchRecipe)에서도 isFundamental 로 제외되므로 N/N 보유 수엔 영향 없음.
@@ -76,17 +110,24 @@ export function matchIngredient(
   }
 
   if (userIngredientIds.has(recipe.ingredient_id)) {
-    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name };
+    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name, shortBy: shortOf(recipe.ingredient_id) };
+  }
+
+  // 변형 보유 → base 필요 충족 (삼겹살→돼지고기). 변형은 base의 한 종류이므로 owned.
+  // 단방향: 레시피가 base(=어떤 변형의 base_id)일 때만. base→변형(돼지고기 보유→삼겹살 필요)은 여기 안 걸려 missing.
+  const variantId = userBaseMap.get(recipe.ingredient_id);
+  if (variantId) {
+    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name, via: variantId, shortBy: shortOf(variantId) };
   }
 
   const incoming = graph.incoming.get(recipe.ingredient_id);
   if (incoming) {
     // substitute 우선 (양방향이 보유에 더 가까움), 그 다음 preparable
     let preparableFrom: string | null = null;
-    for (const { from_id, kind } of incoming) {
+    for (const { from_id, kind, ratio } of incoming) {
       if (!userIngredientIds.has(from_id)) continue;
       if (kind === 'substitute') {
-        return { kind: 'substitute', recipeIngredientName: recipe.ingredient_name, via: from_id };
+        return { kind: 'substitute', recipeIngredientName: recipe.ingredient_name, via: from_id, ratio: ratio ?? undefined };
       }
       if (kind === 'preparable_to' && preparableFrom === null) {
         preparableFrom = from_id;
@@ -116,8 +157,10 @@ export function matchRecipe(
   recipeIngredients: RecipeIngredientInput[],
   userIngredientIds: Set<string>,
   graph: RelationGraph,
+  userBaseMap: Map<string, string> = new Map(),
+  userQtyMap?: UserQtyMap,
 ): RecipeMatchSummary {
-  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph));
+  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph, userBaseMap, userQtyMap));
 
   // is_optional + fundamental(물 등) 재료는 카운트에서 제외
   const required = recipeIngredients

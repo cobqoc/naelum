@@ -277,6 +277,8 @@ export const zh = {
     metricLabel: '公制',
     imperialLabel: '英制',
     ownedSuffix: '已有',
+    shortBySuffix: "还需要",
+    substituteRatioSuffix: "替代",
     fridgeBadgeReady: '可立即做',
     fridgeBadgeMissing: '缺{n}个',
     cartButton: '加入购物清单',

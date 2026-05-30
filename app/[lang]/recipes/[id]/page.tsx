@@ -65,7 +65,7 @@ async function fetchRecipePageData(id: string) {
       cookedCountPromise,
       supabase
         .from('user_ingredients')
-        .select('ingredient_name, ingredient_id')
+        .select('ingredient_name, ingredient_id, quantity, unit')
         .eq('user_id', user.id),
       supabase
         .from('recipe_saves')
@@ -97,6 +97,10 @@ async function fetchRecipePageData(id: string) {
       initialUserIngredientIds: (userIngData || [])
         .map(i => i.ingredient_id)
         .filter((x): x is string => !!x),
+      // 양 매칭(Phase 2) — id 보유 재료의 수량·단위 (부족분 표시용)
+      initialUserIngredientQtys: (userIngData || [])
+        .filter(i => i.ingredient_id)
+        .map(i => ({ id: i.ingredient_id as string, quantity: i.quantity ?? null, unit: i.unit ?? null })),
       initialIsSaved: !!saveData,
       initialSaveNotes: saveData?.notes ?? null,
       initialIsLiked: !!likeData,
@@ -114,6 +118,7 @@ async function fetchRecipePageData(id: string) {
     currentUserId: null,
     initialUserIngredients: [],
     initialUserIngredientIds: [],
+    initialUserIngredientQtys: [],
     initialIsSaved: false,
     initialSaveNotes: null,
     initialIsLiked: false,
@@ -240,6 +245,7 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         currentUserId={data.currentUserId}
         initialUserIngredients={data.initialUserIngredients}
         initialUserIngredientIds={data.initialUserIngredientIds}
+        initialUserIngredientQtys={data.initialUserIngredientQtys}
         initialIsSaved={data.initialIsSaved}
         initialSaveNotes={data.initialSaveNotes}
         initialIsLiked={data.initialIsLiked}

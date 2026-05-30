@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import LinkingTab from './_components/LinkingTab';
 import AddRelationForm from './_components/AddRelationForm';
+import SetBaseForm from './_components/SetBaseForm';
 import RelationsPanel from '../substitute-suggestions/page';
 
 /**
@@ -50,6 +51,7 @@ export default function IngredientMatchingPage() {
         <LinkingTab />
       ) : (
         <>
+          <SetBaseForm onDone={() => setRelKey((k) => k + 1)} />
           <AddRelationForm onAdded={() => setRelKey((k) => k + 1)} />
           <RelationsPanel key={relKey} />
         </>

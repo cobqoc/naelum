@@ -28,21 +28,50 @@ export async function fetchRelationsForRecipe(
 
   const { data, error } = await supabase
     .from('ingredient_relations')
-    .select('from_id, to_id, kind')
+    .select('from_id, to_id, kind, ratio')
     .in('to_id', validIds);
 
   if (error || !data) return { incoming: new Map() };
 
-  const incoming = new Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to' }>>();
-  for (const raw of data as Array<{ from_id: string; to_id: string; kind: 'substitute' | 'preparable_to' }>) {
+  const incoming = new Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>>();
+  for (const raw of data as Array<{ from_id: string; to_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>) {
     if (!incoming.has(raw.to_id)) incoming.set(raw.to_id, []);
-    incoming.get(raw.to_id)!.push({ from_id: raw.from_id, kind: raw.kind });
+    incoming.get(raw.to_id)!.push({ from_id: raw.from_id, kind: raw.kind, ratio: raw.ratio });
   }
   return { incoming };
 }
 
 /**
- * 레시피 재료들의 allergens 컬럼 fetch.
+ * 사용자 보유 재료 중 *변형*(base_ingredient_id 보유)을 base별로 묶음.
+ * 변형 매칭(삼겹살 보유 → "돼지고기" 필요 충족)용 입력.
+ * 반환: Map<base_id, 사용자 보유 변형 id>. 한 base에 변형 여럿이면 첫 번째.
+ * base_id 데이터 없으면 빈 Map → matchV2 변형 분기 자연 비활성(degrade).
+ */
+export async function fetchUserVariantBases(
+  userIngredientIds: string[],
+  supabase: AnySupabase,
+): Promise<Map<string, string>> {
+  const validIds = userIngredientIds.filter(Boolean);
+  if (validIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('ingredients_master')
+    .select('id, base_ingredient_id')
+    .in('id', validIds)
+    .not('base_ingredient_id', 'is', null);
+
+  if (error || !data) return new Map();
+
+  const map = new Map<string, string>();
+  for (const raw of data as Array<{ id: string; base_ingredient_id: string }>) {
+    if (!map.has(raw.base_ingredient_id)) map.set(raw.base_ingredient_id, raw.id);
+  }
+  return map;
+}
+
+/**
+ * 레시피 재료들의 allergens 컬럼 fetch + **base 상속 1단계**.
+ * 변형은 base의 알레르겐을 물려받는다 (모짜렐라.base=치즈 → 치즈.allergens=[우유] → 모짜렐라도 차단).
  * 알레르기 차단 판정에 사용.
  */
 export async function fetchAllergensForRecipe(
@@ -54,14 +83,30 @@ export async function fetchAllergensForRecipe(
 
   const { data, error } = await supabase
     .from('ingredients_master')
-    .select('id, allergens')
+    .select('id, allergens, base_ingredient_id')
     .in('id', validIds);
 
   if (error || !data) return new Map();
 
+  // base 알레르겐 상속 — 변형들의 base id 모아 한 번에 fetch
+  const rows = data as Array<{ id: string; allergens: string[] | null; base_ingredient_id: string | null }>;
+  const baseIds = Array.from(new Set(rows.map(r => r.base_ingredient_id).filter((b): b is string => !!b)));
+  const baseAllergens = new Map<string, string[]>();
+  if (baseIds.length > 0) {
+    const { data: baseData } = await supabase
+      .from('ingredients_master')
+      .select('id, allergens')
+      .in('id', baseIds);
+    for (const b of (baseData ?? []) as Array<{ id: string; allergens: string[] | null }>) {
+      baseAllergens.set(b.id, b.allergens ?? []);
+    }
+  }
+
   const result = new Map<string, string[]>();
-  for (const raw of data as Array<{ id: string; allergens: string[] | null }>) {
-    result.set(raw.id, raw.allergens ?? []);
+  for (const raw of rows) {
+    const own = raw.allergens ?? [];
+    const inherited = raw.base_ingredient_id ? (baseAllergens.get(raw.base_ingredient_id) ?? []) : [];
+    result.set(raw.id, Array.from(new Set([...own, ...inherited])));
   }
   return result;
 }

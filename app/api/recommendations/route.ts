@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
-import { fetchRelationsForRecipe, fetchAllergensForRecipe } from '@/lib/recommendations/fetchRelations'
+import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
@@ -112,11 +112,13 @@ export async function GET(request: NextRequest) {
         // 체험 모드: 비로그인 시 쿼리 파라미터로 재료 전달 (ingredients=토마토,양파,...)
         let ingredientNames: string[] = []
         let userIngredientIds: string[] = []
+        // 양 매칭(Phase 2) — 보유 재료 양 맵 (로그인만; 비로그인 체험은 양 없음 → 빈 맵 degrade)
+        const userQtyMap = new Map<string, { quantity: number | null; unit: string | null }>()
 
         if (user) {
           const { data: userIngredients } = await supabase
             .from('user_ingredients')
-            .select('ingredient_name, ingredient_id')
+            .select('ingredient_name, ingredient_id, quantity, unit')
             .eq('user_id', user.id)
           if (!userIngredients || userIngredients.length === 0) {
             return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
@@ -125,6 +127,9 @@ export async function GET(request: NextRequest) {
           userIngredientIds = userIngredients
             .filter(i => i.ingredient_id)
             .map(i => i.ingredient_id as string)
+          for (const ui of userIngredients) {
+            if (ui.ingredient_id) userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
+          }
         } else {
           const rawIngredients = searchParams.get('ingredients') || ''
           // 원본 이름(대소문자 보존) — id 정확일치 해석용. 후보 ilike 검색엔 소문자판 사용.
@@ -144,14 +149,19 @@ export async function GET(request: NextRequest) {
         }
 
         const userIdSet = new Set(userIngredientIds)
+        // 변형 매칭 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족).
+        // 후보 검색·매칭 양쪽에 쓰임 → 여기서 한 번 계산.
+        const userBaseMap = await fetchUserVariantBases(userIngredientIds, supabase)
+        // 후보 검색 풀 = 보유 id + 그 변형의 base id (소고기 쓰는 레시피도 차돌박이 보유자에게 후보).
+        const candidateIdPool = [...new Set([...userIngredientIds, ...userBaseMap.keys()])]
 
         // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
         let idCandidateIds: string[] = []
-        if (userIngredientIds.length > 0) {
+        if (candidateIdPool.length > 0) {
           const { data: idCandidateRows } = await supabase
             .from('recipe_ingredients')
             .select('recipe_id')
-            .in('ingredient_id', userIngredientIds)
+            .in('ingredient_id', candidateIdPool)
           idCandidateIds = idCandidateRows?.map(r => r.recipe_id) ?? []
         }
 
@@ -183,7 +193,7 @@ export async function GET(request: NextRequest) {
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
-            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional)
+            ingredients:recipe_ingredients(ingredient_name, ingredient_id, is_optional, quantity, unit)
           `)
           .eq('status', 'published')
           .in('id', candidateIds.slice(0, 300))
@@ -209,17 +219,19 @@ export async function GET(request: NextRequest) {
         )
         const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
 
-        // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup)
+        // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup) — userBaseMap 은 위에서 계산됨
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
           const ingredients: RecipeIngredientInput[] = (recipe.ingredients ?? []).map(
-            (i: { ingredient_id: string | null; ingredient_name: string; is_optional?: boolean }) => ({
+            (i: { ingredient_id: string | null; ingredient_name: string; is_optional?: boolean; quantity?: number | null; unit?: string | null }) => ({
               ingredient_id: i.ingredient_id ?? null,
               ingredient_name: i.ingredient_name,
               is_optional: i.is_optional ?? false,
+              quantity: i.quantity ?? null,
+              unit: i.unit ?? null,
             }),
           )
-          const summary = matchRecipe(ingredients, userIdSet, graph)
+          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap)
           const matchedCount = summary.results.filter(
             (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
           ).length

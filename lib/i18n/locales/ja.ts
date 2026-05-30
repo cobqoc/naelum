@@ -277,6 +277,8 @@ export const ja = {
     metricLabel: 'メートル法',
     imperialLabel: 'ヤード法',
     ownedSuffix: '所持中',
+    shortBySuffix: "さらに必要",
+    substituteRatioSuffix: "で代替",
     fridgeBadgeReady: 'すぐ作れる',
     fridgeBadgeMissing: '{n}個不足',
     cartButton: '買い物リストに追加',

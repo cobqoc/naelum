@@ -2,7 +2,8 @@
 
 > **작성일**: 2026-05-29
 > **저자**: 사용자 + Claude 협업
-> **상태**: 설계 단계 (구현 trigger 대기)
+> **상태**: 부분 superseded — **§2-2 `forms[]` 모델은 폐기**, 엣지+`base_ingredient_id` 모델로 대체됨. → **[`INGREDIENT_MODEL_REDESIGN.md`](INGREDIENT_MODEL_REDESIGN.md)(정본, 2026-05-31)** 참조.
+> 본 문서의 §1(왜)·정직성 원칙·§5 회귀 체크리스트는 유효. `forms[]` 관련(§2-2~2-3)만 새 문서로 대체.
 >
 > **관련 메모리**: [[ingredient-match-honesty-policy]] · [[project_ingredient_match_prefix_bug]] · [[project_is_demo_record_uuid_bug]]
 > **관련 PR**: #197(SUBSTITUTES 비움+PREPARABLE 3그룹) · #198(buildAliasGraph+알레르기 분리) · #199(다진마늘→편마늘 거짓 fix)

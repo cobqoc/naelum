@@ -77,6 +77,7 @@ interface RecipeBrowseViewProps {
   recipe: Recipe;
   userIngredients: string[];
   userIngredientIds: string[];
+  userIngredientQtys?: { id: string; quantity: number | string | null; unit: string | null }[];
   isSaved: boolean;
   saveNotes: string | null;
   onToggleSave: () => void;
@@ -95,6 +96,7 @@ export default function RecipeBrowseView({
   recipe,
   userIngredients,
   userIngredientIds,
+  userIngredientQtys,
   isSaved,
   saveNotes,
   onToggleSave,
@@ -112,8 +114,19 @@ export default function RecipeBrowseView({
   const { t } = useI18n();
   // 요리 모드 hook — completedSteps·timerSetup·multiTimer·voice 통합 ([[project-god-file-phase2]]).
   const cook = useCookingMode(recipe.steps || []);
+  // 인분 조절 — 양 매칭 스케일에 필요해 매칭 hook 앞에 선언.
+  const baseServings = Math.max(1, recipe.servings ?? 1);
+  const [currentServings, setCurrentServings] = useState(baseServings);
+  // 양 매칭(Phase 2) — 보유 재료 양 맵 (id → {quantity, unit})
+  const userQtyMap = useMemo(
+    () => new Map((userIngredientQtys ?? []).map(u => [u.id, { quantity: u.quantity, unit: u.unit }])),
+    [userIngredientQtys],
+  );
   // 냉장고 매칭 hook — 재료 탭·냉장고 모달·cart 보유 제외 3 곳 단일 출처.
-  const match = useRecipeFridgeMatch(recipe.ingredients, userIngredients, userIngredientIds);
+  // 양 매칭: 보유 양 맵 + 인분 배수(현재/기본) → 부족분(shortBy) 계산.
+  const match = useRecipeFridgeMatch(
+    recipe.ingredients, userIngredients, userIngredientIds, userQtyMap, currentServings / baseServings,
+  );
   // 카트 추가 hook — V2: ingredient_id 기반 매칭.
   const cart = useCartFromRecipe({
     recipe: {
@@ -142,10 +155,6 @@ export default function RecipeBrowseView({
   const [memoText, setMemoText] = useState(saveNotes || '');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
-
-  // 인분 조절
-  const baseServings = Math.max(1, recipe.servings ?? 1);
-  const [currentServings, setCurrentServings] = useState(baseServings);
 
   // 냉장고 재료 비교 모달 — 재료 탭·"N/N 보유"와 같은 isIngredientOwned 사용
   const [showFridgeModal, setShowFridgeModal] = useState(false);

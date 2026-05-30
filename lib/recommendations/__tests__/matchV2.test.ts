@@ -30,6 +30,102 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     expect(result.kind).toBe('missing');
   });
 
+  it('owned(변형) — 변형 보유 → base 필요 충족 (삼겹살→돼지고기)', () => {
+    // userBaseMap: base_id(돼지고기) → 사용자 보유 변형 id(삼겹살)
+    const result = matchIngredient(
+      { ingredient_id: 'pork', ingredient_name: '돼지고기' },
+      new Set(['samgyeopsal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'samgyeopsal']]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.via).toBe('samgyeopsal');
+  });
+
+  it('missing — base 보유 → 변형 필요 (돼지고기 보유 → "삼겹살" 필요, 단방향)', () => {
+    // 사용자는 일반 돼지고기(pork) 보유, 레시피는 삼겹살(변형) 요구.
+    // userBaseMap 은 base_id 키라 삼겹살 id 로 조회 안 됨 → missing.
+    const result = matchIngredient(
+      { ingredient_id: 'samgyeopsal', ingredient_name: '삼겹살' },
+      new Set(['pork']),
+      EMPTY_GRAPH,
+      new Map(), // pork 는 base_id 없음 → 빈 맵
+    );
+    expect(result.kind).toBe('missing');
+  });
+
+  it('missing — 형제 변형끼리 (목살 보유 → "삼겹살" 필요)', () => {
+    // 목살·삼겹살 둘 다 base=돼지고기. 사용자 목살 보유 → userBaseMap = {돼지고기→목살}.
+    // 레시피는 삼겹살(다른 변형) 요구 → samgyeopsal 키 없음 → missing.
+    const result = matchIngredient(
+      { ingredient_id: 'samgyeopsal', ingredient_name: '삼겹살' },
+      new Set(['moksal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'moksal']]),
+    );
+    expect(result.kind).toBe('missing');
+  });
+
+  it('변형 매칭은 정확 보유보다 후순위 — 정확 보유 우선', () => {
+    // 레시피 돼지고기, 사용자가 돼지고기(정확) + 삼겹살(변형) 둘 다 보유 → owned(정확), via 없음
+    const result = matchIngredient(
+      { ingredient_id: 'pork', ingredient_name: '돼지고기' },
+      new Set(['pork', 'samgyeopsal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'samgyeopsal']]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.via).toBeUndefined();
+  });
+
+  it('shortBy — owned 지만 양 부족 (양파 3개 필요 vs 1개 보유)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 3, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 1, unit: '개' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toEqual({ by: 2, unit: '개' });
+  });
+
+  it('shortBy 없음 — 양 충분', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 2, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 5, unit: '개' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toBeUndefined();
+  });
+
+  it('shortBy 없음 — 양 미입력시 판단 생략(degrade)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 3, unit: '개' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: null, unit: null }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toBeUndefined();
+  });
+
+  it('shortBy — 변형 보유도 양 비교 (소고기 200g 필요 vs 차돌박이 100g)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'beef', ingredient_name: '소고기', quantity: 200, unit: 'g' },
+      new Set(['chadol']),
+      EMPTY_GRAPH,
+      new Map([['beef', 'chadol']]),
+      new Map([['chadol', { quantity: 100, unit: 'g' }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toEqual({ by: 100, unit: 'g' });
+  });
+
   it('missing — 옛 데이터(ingredient_id null) 는 매칭 안 됨', () => {
     const result = matchIngredient(
       { ingredient_id: null, ingredient_name: '양파' },
@@ -52,6 +148,23 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     );
     expect(result.kind).toBe('substitute');
     expect(result.via).toBe('user-fish-sauce');
+    expect(result.ratio).toBeUndefined(); // ratio 없으면 1:1 (undefined)
+  });
+
+  it('substitute — 대체 비율(ratio) 전달 (Phase 3)', () => {
+    const graph: RelationGraph = {
+      incoming: new Map([
+        ['recipe-sugar', [{ from_id: 'user-honey', kind: 'substitute' as const, ratio: 0.75 }]],
+      ]),
+    };
+    const result = matchIngredient(
+      { ingredient_id: 'recipe-sugar', ingredient_name: '설탕' },
+      new Set(['user-honey']),
+      graph,
+    );
+    expect(result.kind).toBe('substitute');
+    expect(result.via).toBe('user-honey');
+    expect(result.ratio).toBe(0.75);
   });
 
   it('preparable — 단방향 raw→processed (사용자가 raw 보유)', () => {

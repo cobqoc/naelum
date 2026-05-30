@@ -15,7 +15,7 @@ import { useI18n } from '@/lib/i18n/context';
  * 대상 재료는 *승인된 마스터* 여야 검색됨. 없으면 "번호 연결" 탭에서 먼저 생성.
  */
 
-interface MasterResult {
+export interface MasterResult {
   id: string;
   name: string;
   category: string;
@@ -24,7 +24,7 @@ interface MasterResult {
 
 type Kind = 'substitute' | 'preparable_to';
 
-function Picker({
+export function Picker({
   label,
   selected,
   onSelect,
@@ -107,6 +107,7 @@ export default function AddRelationForm({ onAdded }: { onAdded: () => void }) {
   const [from, setFrom] = useState<MasterResult | null>(null);
   const [to, setTo] = useState<MasterResult | null>(null);
   const [kind, setKind] = useState<Kind>('preparable_to');
+  const [ratio, setRatio] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
@@ -114,10 +115,14 @@ export default function AddRelationForm({ onAdded }: { onAdded: () => void }) {
     if (from.id === to.id) { toast.error('서로 다른 재료를 선택하세요'); return; }
     setSubmitting(true);
     try {
+      const ratioNum = kind === 'substitute' && ratio.trim() ? Number(ratio) : undefined;
       const res = await fetch('/api/admin/substitute-suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from_id: from.id, to_id: to.id, kind, source: 'admin' }),
+        body: JSON.stringify({
+          from_id: from.id, to_id: to.id, kind, source: 'admin',
+          ...(ratioNum && Number.isFinite(ratioNum) && ratioNum > 0 ? { ratio: ratioNum } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.common.error);
@@ -125,6 +130,7 @@ export default function AddRelationForm({ onAdded }: { onAdded: () => void }) {
       setFrom(null);
       setTo(null);
       setKind('preparable_to');
+      setRatio('');
       onAdded();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t.common.error);
@@ -155,6 +161,24 @@ export default function AddRelationForm({ onAdded }: { onAdded: () => void }) {
           <span><b>대체 (양방향)</b> — 서로 바꿔 씀. 설탕↔흑설탕. <span className="text-text-muted">reverse 자동 생성.</span></span>
         </label>
       </div>
+
+      {/* 대체 비율 (Phase 3) — substitute 에만. (from 사용량)/(to 1단위). 비워두면 1:1. */}
+      {kind === 'substitute' && (
+        <div className="mb-3 flex items-center gap-2">
+          <label className="text-xs text-text-muted">대체 비율 (선택)</label>
+          <input
+            type="number" step="0.01" min="0" value={ratio}
+            onChange={(e) => setRatio(e.target.value)}
+            placeholder="예: 0.75"
+            className="w-24 px-2 py-1 rounded-lg bg-background-secondary border border-white/10 text-sm focus:outline-none focus:border-accent-warm/50"
+          />
+          {from && to && (
+            <span className="text-xs text-text-muted">
+              {to.name} 1 당 {from.name} {ratio.trim() || '1'} (비우면 1:1). 역방향은 1:1.
+            </span>
+          )}
+        </div>
+      )}
 
       {from && to && (
         <p className="text-xs text-text-secondary mb-2">

@@ -278,6 +278,8 @@ export const ko = {
     metricLabel: '미터법',
     imperialLabel: 'Imperial',
     ownedSuffix: '보유',
+    shortBySuffix: "더 필요",
+    substituteRatioSuffix: "로 대체",
     fridgeBadgeReady: '바로 가능',
     fridgeBadgeMissing: '{n}개 부족',
     cartButton: '장보기에 재료 담기',
