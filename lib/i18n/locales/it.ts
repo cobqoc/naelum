@@ -861,6 +861,10 @@ export const it = {
     categoryFrequent: 'Frequenti',
     categoryLabels: {
       veggie: 'Verdure',
+      egg: 'Uova',
+      legume: 'Legumi e frutta secca',
+      oil: 'Oli e grassi',
+      sweetener: 'Zuccheri e dolcificanti',
       meat: 'Carne',
       seafood: 'Pesce',
       grain: 'Cereali e noci',

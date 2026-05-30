@@ -12,6 +12,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   dairy:     '#f59e0b',
   seasoning: '#a855f7',
   condiment: '#14b8a6',
+  oil:       '#eab308',
+  sweetener: '#f472b6',
+  fermented: '#8b5cf6',
+  spice:     '#dc2626',
   other:     '#6b7280',
 };
 

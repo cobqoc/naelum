@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 import IngredientBrowseClient from './IngredientBrowseClient';
 import KitchenHomeClient from './KitchenHomeClient';
-import KitchenAllClient from './KitchenAllClient';
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
@@ -18,20 +17,29 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 /**
- * 부엌 도감 페이지 (V2, 2026-05-29).
+ * 부엌 도감 페이지.
  *
- * 세 가지 뷰:
- *  - 기본 (param 없음): KitchenHomeClient — 카테고리 카드 그리드 (V2 첫 디자인)
- *  - ?view=all: KitchenAllClient — 한글 초성 + 영문 그룹화 가나다순
- *  - ?category=X / ?q=X / ?highlight=X: IngredientBrowseClient — 검색·필터·상세 패널
+ * 두 가지 뷰:
+ *  - 기본 (param 없음): KitchenHomeClient — 카테고리 카드 그리드 (허브)
+ *  - ?category=X / ?q=X / ?highlight=X: IngredientBrowseClient — 가나다순 그룹 + 검색·상세 패널
+ *
+ * 가나다순 전체 탭(?view=all)은 제거 (2026-05-30) — 카테고리 뷰가 카테고리 내 가나다순/초성을
+ * 이미 제공 + 검색이 "이름으로 찾기" 담당. 글로벌 평면 A-Z는 카테고리 구조보다 열등해 잉여.
  */
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string; highlight?: string; view?: string }>;
+  searchParams: Promise<{ category?: string; q?: string; highlight?: string }>;
 }) {
   const sp = await searchParams;
-  if (sp.view === 'all') return <KitchenAllClient />;
-  if (sp.category || sp.q || sp.highlight) return <IngredientBrowseClient />;
+  if (sp.category || sp.q || sp.highlight) {
+    return (
+      <IngredientBrowseClient
+        initialCategory={sp.category ?? ''}
+        initialQuery={sp.q ?? ''}
+        highlightId={sp.highlight ?? ''}
+      />
+    );
+  }
   return <KitchenHomeClient />;
 }

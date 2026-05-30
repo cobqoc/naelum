@@ -5,7 +5,6 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
-import KitchenViewTabs from './_components/KitchenViewTabs';
 
 /**
  * 부엌 도감 메인 — 카테고리 카드 그리드 (V2, 2026-05-29).
@@ -51,9 +50,11 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   grain:      { label: '곡류·면',      emoji: '🌾', tone: 'from-amber-500/10 to-amber-500/5 border-amber-500/30' },
   legume:     { label: '콩·견과',      emoji: '🥜', tone: 'from-orange-700/10 to-orange-700/5 border-orange-700/30' },
   fruit:      { label: '과일',         emoji: '🍎', tone: 'from-pink-500/10 to-pink-500/5 border-pink-500/30' },
-  seasoning:  { label: '장·양념',      emoji: '🍯', tone: 'from-orange-500/10 to-orange-500/5 border-orange-500/30' },
+  seasoning:  { label: '양념&소스',    emoji: '🥫', tone: 'from-orange-500/10 to-orange-500/5 border-orange-500/30' },
   spice:      { label: '향신료',       emoji: '🌶️', tone: 'from-red-600/10 to-red-600/5 border-red-600/30' },
-  condiment:  { label: '소스·드레싱',  emoji: '🥫', tone: 'from-purple-500/10 to-purple-500/5 border-purple-500/30' },
+  condiment:  { label: '조미료',       emoji: '🧂', tone: 'from-purple-500/10 to-purple-500/5 border-purple-500/30' },
+  oil:        { label: '유지·기름',     emoji: '🫗', tone: 'from-yellow-600/10 to-yellow-600/5 border-yellow-600/30' },
+  sweetener:  { label: '당류·감미료',   emoji: '🍯', tone: 'from-rose-400/10 to-rose-400/5 border-rose-400/30' },
   fermented:  { label: '발효식품',     emoji: '🍶', tone: 'from-indigo-500/10 to-indigo-500/5 border-indigo-500/30' },
   bakery:     { label: '빵·베이커리',  emoji: '🍞', tone: 'from-amber-700/10 to-amber-700/5 border-amber-700/30' },
   beverage:   { label: '음료',         emoji: '🥤', tone: 'from-sky-500/10 to-sky-500/5 border-sky-500/30' },
@@ -90,11 +91,6 @@ export default function KitchenHomeClient() {
     <div className="min-h-screen bg-background-primary">
       <Header />
       <main className="container mx-auto max-w-5xl px-4 pt-20 pb-24 md:pb-12">
-        {/* 뷰 전환 탭 — 카드 그리드 / 가나다순 */}
-        <div className="mb-4">
-          <KitchenViewTabs active="grid" />
-        </div>
-
         {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
         <p className="text-sm text-text-secondary mb-6 md:mb-8">
           세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.

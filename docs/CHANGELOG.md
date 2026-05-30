@@ -11,6 +11,18 @@
 
 ## 2026-05 작업 로그
 
+- **부엌 도감 개편 + 재료 카테고리 본질 재분류 + 어드민 매칭 큐 정리** — 완료·develop→main 머지 (2026-05-30)
+  - **도감 카드 그리드 + URL 파라미터 + 가나다순 초성 그룹**: 카테고리 클릭 후 행-리스트 → 카드 그리드. URL `category`·`q`·`highlight` 실제 반영 → 가나다순/허브 진입 시 해당 재료 상세 자동 오픈 복구(이전 무시돼 깨짐). 카테고리 뷰도 가나다순 정렬+초성 그룹+인덱스. 초성 그룹화 `lib/kitchen/initialGroup.ts` 공용 추출 + vitest 9.
+  - **가나다순 전체 탭(?view=all) + 상세 "같은 카테고리 재료" 영구 제거**: 카테고리 뷰가 카테고리 내 가나다순 제공 + 검색이 이름찾기 담당 → 글로벌 평면 A-Z 잉여(규모 커져도 카테고리 구조가 우월). `KitchenAllClient`·`KitchenViewTabs` 삭제.
+  - **재료 카테고리 본질 기준 재분류** (도감=참조정보 ⇒ 용도 아닌 본질, 출처 검증): 장류·식초·맛술·액젓 → 발효식품, 신규 `oil`(유지·기름)·`sweetener`(당류·감미료), 소금→조미료, 굴소스→양념&소스. i18n 8 + INGREDIENT_CATEGORIES + 도감 hub/all/browse + picker + `/api/ingredients/create` 화이트리스트 + admin 매칭 생성 모달 + LinkingTab 라벨 통일. dev·prod 65개 적용. [[project-ingredient-category-taxonomy]]
+  - **어드민 매칭 큐 공개 레시피 한정**: `admin_unresolved_ingredients(_summary)` RPC 를 published 레시피 등장 이름만으로 → prod 미연결 1,921→52. 멸치육수 등 비공개-only 비-재료 자동 소멸. dev·prod RPC 적용.
+  - **재료 추가 모달 autofocus 제거**: AddIngredientModal→IngredientForm 검색창 모바일 키보드 자동팝업 제거(IngredientPickerModal 2026-05-29 fix 누락분).
+  - **admin nav "재료 승인"(`/admin/ingredients`) 추가** — pending 승인 페이지 발견성(이전 대시보드 카드로만).
+  - **의존성 moderate 3건 패치** (ws 8.21·brace-expansion 5.0.6·uuid 제거).
+  - **테스트 부채 해소**: recipe-cart-toggle V2 재작성(마스터 시드+id 링크, workerIndex 고유이름으로 cross-worker flaky 제거)·ingredient-emoji 셀렉터(testid) 갱신.
+  - **⚠️ 발견 — prod `ingredients_master` 65개·description 0**: 문서상 1,653/688(desc 86%)에서 대폭 축소. 본 세션 발생 X(reclassify만 함) — 이전 리셋 추정, **의도 미확인**. 도감 상세 콘텐츠(설명·보관·제철 등) 비어 있음. 또 prod `recipe_ingredients.ingredient_id` 연결 0.1%(8/15,848) — V2(id-only) 이미 main 적용 상태에서 백필 대기(미연결 대부분 비공개 레시피, 별개 진행 중).
+  - 검증: lint 0 · build green · vitest(initialGroup 9·matchV2) · 풀 e2e. matching core 미변경(이번 머지가 prod 매칭에 영향 X).
+
 - **V2 매칭 후속 — 어드민 번호 연결 도구 + stale/비대칭 버그 fix + 물 기본재료** — 진행 (2026-05-29~30, **dev·미커밋**)
   - **배경**: V2 Phase 1 에서 `recipe_ingredients.ingredient_id` 전량 NULL (의도적 폐기) 후 *재연결 안 됨* → V2 는 id-only 매칭이라 develop 에서 전면 "0 보유". prod(main)은 옛 이름 fallback 이라 안 깨짐 (V2 코드 main 미머지). **⚠️ 이대로 develop→main 머지하면 prod 매칭 죽음 (prod id 0%) — 백필·prod 마이그레이션 선행 필수.**
   - **부엌 도감 그리드 탭 로고 겹침 fix**: `KitchenHomeClient` `<main>` `pt-6` → `pt-20` (fixed Header 와 탭 충돌; 가나다순·검색 뷰와 동일하게).

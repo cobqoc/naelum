@@ -39,8 +39,9 @@ const CATEGORIES: { value: string; label: string }[] = [
   { value: 'seafood', label: '해산물' }, { value: 'egg', label: '달걀류' },
   { value: 'dairy', label: '유제품' }, { value: 'grain', label: '곡류·면' },
   { value: 'legume', label: '콩·견과' }, { value: 'fruit', label: '과일' },
-  { value: 'seasoning', label: '장·양념' }, { value: 'spice', label: '향신료' },
-  { value: 'condiment', label: '소스·드레싱' }, { value: 'fermented', label: '발효식품' },
+  { value: 'fermented', label: '발효식품' }, { value: 'seasoning', label: '양념&소스' },
+  { value: 'condiment', label: '조미료' }, { value: 'oil', label: '유지·기름' },
+  { value: 'sweetener', label: '당류·감미료' }, { value: 'spice', label: '향신료' },
   { value: 'bakery', label: '빵·베이커리' }, { value: 'beverage', label: '음료' },
   { value: 'snack', label: '간식·디저트' }, { value: 'processed', label: '가공식품' },
   { value: 'other', label: '기타' },
@@ -145,9 +146,10 @@ export default function LinkingTab() {
         <p className="text-sm text-text-secondary">
           {loading ? '불러오는 중…' : (
             <>
-              미연결 재료 <span className="font-bold text-text-primary">{distinctNames.toLocaleString()}개</span>
-              {' '}(레시피 <span className="font-bold text-text-primary">{totalRows.toLocaleString()}행</span>) · 빈도순.
-              승인하면 그 이름의 모든 행에 번호가 붙고 목록에서 빠집니다.
+              공개 레시피 기준 미연결 재료 <span className="font-bold text-text-primary">{distinctNames.toLocaleString()}개</span>
+              {' '}(전체 영향 <span className="font-bold text-text-primary">{totalRows.toLocaleString()}행</span>) · 빈도순.
+              승인하면 그 이름의 (비공개 포함) 모든 행에 번호가 붙고 목록에서 빠집니다.
+              {' '}비공개 레시피에만 있는 재료(예: 멸치육수)는 큐에서 제외됩니다.
             </>
           )}
         </p>
