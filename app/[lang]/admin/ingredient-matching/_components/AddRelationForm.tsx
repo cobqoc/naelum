@@ -15,7 +15,7 @@ import { useI18n } from '@/lib/i18n/context';
  * 대상 재료는 *승인된 마스터* 여야 검색됨. 없으면 "번호 연결" 탭에서 먼저 생성.
  */
 
-interface MasterResult {
+export interface MasterResult {
   id: string;
   name: string;
   category: string;
@@ -24,7 +24,7 @@ interface MasterResult {
 
 type Kind = 'substitute' | 'preparable_to';
 
-function Picker({
+export function Picker({
   label,
   selected,
   onSelect,

@@ -106,23 +106,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
-  // 가공/대체 관계 추가 — substitute reverse 는 DB trigger 자동
-  if (action === 'add_relation') {
-    const fromId = typeof body.from_id === 'string' ? body.from_id : ''
-    const toId = typeof body.to_id === 'string' ? body.to_id : ''
-    const kind = body.kind === 'substitute' || body.kind === 'preparable_to' ? body.kind : ''
-    if (!fromId || !toId || !kind) return NextResponse.json({ error: 'from_id·to_id·kind(substitute|preparable_to) required' }, { status: 400 })
-    if (fromId === toId) return NextResponse.json({ error: 'from 과 to 가 같을 수 없음' }, { status: 400 })
-    const { error } = await service
-      .from('ingredient_relations')
-      .insert({ from_id: fromId, to_id: toId, kind, source: 'admin', approved_by: auth.user.id })
-    if (error) {
-      if (error.code === '23505') return NextResponse.json({ error: '이미 같은 관계가 있습니다' }, { status: 409 })
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    await logAdminAction(auth.user.id, 'ingredient_add_relation', 'ingredient_relations', toId, { from_id: fromId, kind })
-    return NextResponse.json({ ok: true })
-  }
+  // (가공/대체 관계 추가는 기존 `/api/admin/substitute-suggestions` POST 사용 — 중복 구현 안 함)
 
   // ───────── 이름 기반 액션 ─────────
   const name = typeof body.ingredient_name === 'string' ? body.ingredient_name.trim() : ''
