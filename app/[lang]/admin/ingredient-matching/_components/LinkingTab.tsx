@@ -59,6 +59,8 @@ export default function LinkingTab() {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyName, setBusyName] = useState<string | null>(null);
+  // 목록 이름 필터 (클라이언트 — 현재 페이지에 로드된 항목 대상)
+  const [filterText, setFilterText] = useState('');
 
   // 모달 (다른 재료로 연결·별칭 / 새 재료 생성)
   const [modalRow, setModalRow] = useState<UnresolvedRow | null>(null);
@@ -139,6 +141,11 @@ export default function LinkingTab() {
   const hasPrev = offset > 0;
   const hasNext = offset + PAGE_SIZE < distinctNames;
 
+  const filterQ = filterText.trim().toLowerCase();
+  const visibleItems = filterQ
+    ? items.filter(r => r.ingredient_name.toLowerCase().includes(filterQ))
+    : items;
+
   return (
     <div className="space-y-5">
       <div>
@@ -154,6 +161,28 @@ export default function LinkingTab() {
           )}
         </p>
       </div>
+
+      {!loading && items.length > 0 && (
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm pointer-events-none">🔍</span>
+          <input
+            type="text"
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            placeholder="이 목록에서 재료 이름 검색…"
+            className="w-full pl-9 pr-9 py-2 rounded-lg bg-background-secondary border border-white/10 text-sm focus:outline-none focus:border-accent-warm/50"
+          />
+          {filterText && (
+            <button
+              type="button"
+              onClick={() => setFilterText('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary text-sm"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-text-muted">불러오는 중…</p>
@@ -171,7 +200,13 @@ export default function LinkingTab() {
               </tr>
             </thead>
             <tbody>
-              {items.map((row) => {
+              {visibleItems.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-text-muted">
+                    &quot;{filterText}&quot; 검색 결과 없음 (현재 페이지 {items.length}개 중)
+                  </td>
+                </tr>
+              ) : visibleItems.map((row) => {
                 const isBusy = busyName === row.ingredient_name;
                 return (
                   <tr key={row.ingredient_name} className="border-t border-white/5">
