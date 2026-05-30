@@ -70,7 +70,8 @@ export async function fetchUserVariantBases(
 }
 
 /**
- * 레시피 재료들의 allergens 컬럼 fetch.
+ * 레시피 재료들의 allergens 컬럼 fetch + **base 상속 1단계**.
+ * 변형은 base의 알레르겐을 물려받는다 (모짜렐라.base=치즈 → 치즈.allergens=[우유] → 모짜렐라도 차단).
  * 알레르기 차단 판정에 사용.
  */
 export async function fetchAllergensForRecipe(
@@ -82,14 +83,30 @@ export async function fetchAllergensForRecipe(
 
   const { data, error } = await supabase
     .from('ingredients_master')
-    .select('id, allergens')
+    .select('id, allergens, base_ingredient_id')
     .in('id', validIds);
 
   if (error || !data) return new Map();
 
+  // base 알레르겐 상속 — 변형들의 base id 모아 한 번에 fetch
+  const rows = data as Array<{ id: string; allergens: string[] | null; base_ingredient_id: string | null }>;
+  const baseIds = Array.from(new Set(rows.map(r => r.base_ingredient_id).filter((b): b is string => !!b)));
+  const baseAllergens = new Map<string, string[]>();
+  if (baseIds.length > 0) {
+    const { data: baseData } = await supabase
+      .from('ingredients_master')
+      .select('id, allergens')
+      .in('id', baseIds);
+    for (const b of (baseData ?? []) as Array<{ id: string; allergens: string[] | null }>) {
+      baseAllergens.set(b.id, b.allergens ?? []);
+    }
+  }
+
   const result = new Map<string, string[]>();
-  for (const raw of data as Array<{ id: string; allergens: string[] | null }>) {
-    result.set(raw.id, raw.allergens ?? []);
+  for (const raw of rows) {
+    const own = raw.allergens ?? [];
+    const inherited = raw.base_ingredient_id ? (baseAllergens.get(raw.base_ingredient_id) ?? []) : [];
+    result.set(raw.id, Array.from(new Set([...own, ...inherited])));
   }
   return result;
 }
