@@ -28,15 +28,15 @@ export async function fetchRelationsForRecipe(
 
   const { data, error } = await supabase
     .from('ingredient_relations')
-    .select('from_id, to_id, kind')
+    .select('from_id, to_id, kind, ratio')
     .in('to_id', validIds);
 
   if (error || !data) return { incoming: new Map() };
 
-  const incoming = new Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to' }>>();
-  for (const raw of data as Array<{ from_id: string; to_id: string; kind: 'substitute' | 'preparable_to' }>) {
+  const incoming = new Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>>();
+  for (const raw of data as Array<{ from_id: string; to_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>) {
     if (!incoming.has(raw.to_id)) incoming.set(raw.to_id, []);
-    incoming.get(raw.to_id)!.push({ from_id: raw.from_id, kind: raw.kind });
+    incoming.get(raw.to_id)!.push({ from_id: raw.from_id, kind: raw.kind, ratio: raw.ratio });
   }
   return { incoming };
 }

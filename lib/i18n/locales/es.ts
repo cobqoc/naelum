@@ -278,6 +278,7 @@ export const es = {
     imperialLabel: 'Imperial',
     ownedSuffix: 'disponible',
     shortBySuffix: "más necesario",
+    substituteRatioSuffix: "como sustituto",
     fridgeBadgeReady: 'Listo',
     fridgeBadgeMissing: 'Faltan {n}',
     cartButton: 'Añadir a la lista',

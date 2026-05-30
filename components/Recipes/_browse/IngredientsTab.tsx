@@ -255,6 +255,12 @@ export default function IngredientsTab({
                   🛒 {matchResult.shortBy.by}{matchResult.shortBy.unit} {t.recipe.shortBySuffix}
                 </div>
               )}
+              {/* 대체 비율 환산(Phase 3) — substitute + ratio + 수치 수량일 때만. 같은 단위 가정(근사). */}
+              {matchResult?.kind === 'substitute' && matchResult.ratio && subVia && Number.isFinite(Number(scaledQty)) && Number(scaledQty) > 0 && (
+                <div className="text-xs text-warning font-medium mt-0.5">
+                  🔄 {subVia} {Math.round(Number(scaledQty) * matchResult.ratio * 100) / 100}{displayUnit} {t.recipe.substituteRatioSuffix}
+                </div>
+              )}
               {ing.notes && (
                 <div className="text-xs text-text-secondary italic mt-1">💡 {ing.notes}</div>
               )}

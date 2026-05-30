@@ -148,6 +148,23 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     );
     expect(result.kind).toBe('substitute');
     expect(result.via).toBe('user-fish-sauce');
+    expect(result.ratio).toBeUndefined(); // ratio 없으면 1:1 (undefined)
+  });
+
+  it('substitute — 대체 비율(ratio) 전달 (Phase 3)', () => {
+    const graph: RelationGraph = {
+      incoming: new Map([
+        ['recipe-sugar', [{ from_id: 'user-honey', kind: 'substitute' as const, ratio: 0.75 }]],
+      ]),
+    };
+    const result = matchIngredient(
+      { ingredient_id: 'recipe-sugar', ingredient_name: '설탕' },
+      new Set(['user-honey']),
+      graph,
+    );
+    expect(result.kind).toBe('substitute');
+    expect(result.via).toBe('user-honey');
+    expect(result.ratio).toBe(0.75);
   });
 
   it('preparable — 단방향 raw→processed (사용자가 raw 보유)', () => {

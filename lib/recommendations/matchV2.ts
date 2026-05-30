@@ -43,6 +43,8 @@ export interface MatchResult {
   via?: string;
   /** 보유하지만 양 부족 — owned(정확·변형)에만. 같은 단위/변환 가능할 때만. 없으면 충분 or 판단 생략. */
   shortBy?: { by: number; unit: string };
+  /** 대체 비율 (Phase 3) — substitute 에만. (from 사용량)/(to 1단위). 없으면 1:1. */
+  ratio?: number;
 }
 
 export interface UserIngredient {
@@ -63,8 +65,8 @@ export type UserQtyMap = Map<string, { quantity: number | string | null; unit: s
 
 /** ingredient_relations 그래프 — to_id 별로 incoming 관계 묶음 */
 export interface RelationGraph {
-  /** Map<to_id, [{from_id, kind}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색 */
-  incoming: Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to' }>>;
+  /** Map<to_id, [{from_id, kind, ratio}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색. ratio=대체 비율(substitute). */
+  incoming: Map<string, Array<{ from_id: string; kind: 'substitute' | 'preparable_to'; ratio?: number | null }>>;
 }
 
 /**
@@ -122,10 +124,10 @@ export function matchIngredient(
   if (incoming) {
     // substitute 우선 (양방향이 보유에 더 가까움), 그 다음 preparable
     let preparableFrom: string | null = null;
-    for (const { from_id, kind } of incoming) {
+    for (const { from_id, kind, ratio } of incoming) {
       if (!userIngredientIds.has(from_id)) continue;
       if (kind === 'substitute') {
-        return { kind: 'substitute', recipeIngredientName: recipe.ingredient_name, via: from_id };
+        return { kind: 'substitute', recipeIngredientName: recipe.ingredient_name, via: from_id, ratio: ratio ?? undefined };
       }
       if (kind === 'preparable_to' && preparableFrom === null) {
         preparableFrom = from_id;

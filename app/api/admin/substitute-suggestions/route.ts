@@ -161,6 +161,8 @@ export async function POST(request: NextRequest) {
   const suggestionCount = typeof body.suggestion_count === 'number' && body.suggestion_count > 0
     ? Math.floor(body.suggestion_count) : 1
   const source = body.source === 'pattern_promoted' ? 'auto' : 'admin'
+  // 대체 비율(Phase 3) — substitute 에만 의미. 0 초과 양수만, 아니면 null(1:1).
+  const ratio = kind === 'substitute' && typeof body.ratio === 'number' && body.ratio > 0 ? body.ratio : null
 
   if (!fromId || !toId) {
     return NextResponse.json({ error: 'from_id, to_id required' }, { status: 400 })
@@ -178,6 +180,7 @@ export async function POST(request: NextRequest) {
       source,
       suggestion_count: suggestionCount,
       notes,
+      ratio,
       approved_by: auth.user.id,
     })
     .select()
