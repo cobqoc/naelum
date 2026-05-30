@@ -134,8 +134,8 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await page.locator('header button[aria-label="장보기"]').click();
     await expect(page.locator('text=테스트감자').first()).toBeVisible({ timeout: 5000 });
 
-    // + 스테퍼 2번 클릭 → 수량 3
-    const incBtn = page.locator('button[aria-label="수량 증가"]').first();
+    // + 스테퍼 2번 클릭 → 수량 3 (행 스테퍼 — add 바 스테퍼와 구별 위해 cart-list 로 scope)
+    const incBtn = page.locator('[data-testid="cart-list"] button[aria-label="수량 증가"]').first();
     await incBtn.click();
     await incBtn.click();
 
@@ -152,7 +152,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await expect.poll(readQty, { timeout: 10000 }).toBe(3);
 
     // - 1회 → 2
-    await page.locator('button[aria-label="수량 감소"]').first().click();
+    await page.locator('[data-testid="cart-list"] button[aria-label="수량 감소"]').first().click();
     await expect.poll(readQty, { timeout: 10000 }).toBe(2);
   });
 
@@ -395,5 +395,41 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
       .eq('user_id', testUser.userId);
     expect(data?.[0].ingredient_name).toBe('양파');
     expect(data?.[0].category).toBe('veggie'); // DB ingredients_master 카테고리 그대로 저장
+  });
+
+  // #7 회귀: 추가 버튼(onMouseDown)이 클릭 순간 스피너로 unmount → useOutsideClick 이
+  // detached 타깃을 "바깥 클릭"으로 오판해 모달이 닫히던 버그. + add 바 수량 스테퍼 반영.
+  test('#7 추가 버튼 직접 추가 — 모달 유지 + add 바 수량 스테퍼 반영', async ({ authenticatedPage, testUser }) => {
+    const page = authenticatedPage;
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    await page.locator('header button[aria-label="장보기"]').click();
+    const input = page.getByPlaceholder('재료 검색 또는 직접 입력...');
+    await expect(input).toBeVisible({ timeout: 5000 });
+    await input.fill('테스트오이_Q');
+
+    // add 바 수량 스테퍼 +2 → 3 (add 바는 cart-list 밖 → .first() = add 바 스테퍼)
+    const addInc = page.locator('button[aria-label="수량 증가"]').first();
+    await addInc.click();
+    await addInc.click();
+
+    // 추가 버튼 클릭 → (버그 시 모달 닫힘). 모달 유지 + 항목 추가돼야 함.
+    await page.getByRole('button', { name: '추가', exact: true }).click();
+
+    await expect(page.locator('[data-testid="cart-list"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=테스트오이_Q').first()).toBeVisible({ timeout: 5000 });
+
+    // add 바 수량 3 이 DB 에 반영
+    await expect.poll(async () => {
+      const { data } = await admin()
+        .from('shopping_list_items')
+        .select('quantity')
+        .eq('user_id', testUser.userId)
+        .eq('ingredient_name', '테스트오이_Q')
+        .maybeSingle();
+      return data ? Number(data.quantity) : null;
+    }, { timeout: 10000 }).toBe(3);
   });
 });
