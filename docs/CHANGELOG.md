@@ -11,6 +11,18 @@
 
 ## 2026-05 작업 로그
 
+- **장보기 카트 UX 개선 + 어드민 매칭 큐 검색** — 완료·develop→main 머지 (2026-05-31)
+  - **보유 재료 표시 = 냉장고 아이콘**: "❄️ 이미 있음" 텍스트 배지가 재료명과 한 칸 경쟁해 모바일서 이름 잘림 → 작은 `FridgeIcon`(네비 동일 SVG)로 교체, 탭 시 토스트(i18n `alreadyOwnedHint` 8). is_owned 는 현재 냉장고로 매번 재계산되므로 *실제 보유분*만 아이콘 표시.
+  - **모바일 삭제 버튼 노출 버그**: `opacity-0 group-hover`(hover 전용)라 모바일서 안 보임 → `opacity-100 sm:opacity-0 sm:group-hover` 로 모바일 항상 노출.
+  - **추가 버튼 모달 닫힘 버그**: 추가 버튼이 클릭 순간 스피너로 unmount → `useOutsideClick` 이 detached 타깃을 panel.contains()=false 로 "바깥 클릭" 오판 → onClose. 공용 hook 에 **detached 가드(`!target.isConnected`)** — 클릭 중 unmount되는 21개 dropdown 공통 보호. cart.spec #7 회귀 신설(실 mousedown).
+  - **add 바 수량 스테퍼**: 단위만 있고 수량 없어 항상 1로 담김 → 줄과 동일한 `[− n +]` 추가, `addItem(quantity)` 로 POST 전달(서버 파싱·합산). 칩은 명시 1.
+  - **"직접 추가" 옵션 제거**: 검색바 추가 버튼과 byte-identical 중복 → 제거(제안 없으면 드롭다운 미노출). 자동완성(+재료)은 이름완성·정규화용 유지.
+  - **카테고리 마스터 보정**: `POST /api/shopping-list` 가 이름=마스터 정확일치 시 **마스터 카테고리 적용(단일 출처)** — 추가버튼/Enter/자동완성/recipe 모든 경로 카테고리 정합. 매칭 안 되면 'other'.
+  - **어드민 매칭 큐 이름 검색 필터**: 미연결 재료 목록(빈도순) 상단 클라이언트 검색바(현 페이지 로드분 대상, PAGE_SIZE 100). 100 초과 시 서버검색 확장 여지.
+  - **쪽파 마스터 생성·연결 검증**: 어드민 매칭 "연결·생성"으로 쪽파(veggie) 생성 → 레시피 30행 전부 ingredient_id 연결, approved 65→66 (라이브 확인).
+  - 실수로 커밋된 루트 스크래치 파일 17개 제거 + `/_*.txt`·`/_*.css` gitignore 가드.
+  - 검증: lint 0 · build green · cart+decomposition+grouping 38/38 · ingredient-emoji 26/26 · 카트 라이브(모바일) 4항목 확인.
+
 - **부엌 도감 개편 + 재료 카테고리 본질 재분류 + 어드민 매칭 큐 정리** — 완료·develop→main 머지 (2026-05-30)
   - **도감 카드 그리드 + URL 파라미터 + 가나다순 초성 그룹**: 카테고리 클릭 후 행-리스트 → 카드 그리드. URL `category`·`q`·`highlight` 실제 반영 → 가나다순/허브 진입 시 해당 재료 상세 자동 오픈 복구(이전 무시돼 깨짐). 카테고리 뷰도 가나다순 정렬+초성 그룹+인덱스. 초성 그룹화 `lib/kitchen/initialGroup.ts` 공용 추출 + vitest 9.
   - **가나다순 전체 탭(?view=all) + 상세 "같은 카테고리 재료" 영구 제거**: 카테고리 뷰가 카테고리 내 가나다순 제공 + 검색이 이름찾기 담당 → 글로벌 평면 A-Z 잉여(규모 커져도 카테고리 구조가 우월). `KitchenAllClient`·`KitchenViewTabs` 삭제.
