@@ -42,7 +42,7 @@ import IngredientActionSheet from '@/components/Ingredients/IngredientActionShee
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
-import { resolveIngredientId } from '@/lib/ingredients/resolveIngredientId';
+import { resolveExactIngredientId } from '@/lib/ingredients/resolveIngredientId';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -256,12 +256,11 @@ export default function HomeClient({
     if (!user) return;
     const client = createClient();
 
-    // ingredient_id가 없으면 이름 기반 자동 조회.
-    // 1순위: 정확한 이름 일치, 2순위: 공백 분리 단어 일치
-    // ("엄마표 간장" → "간장" → 간장 ID → 이모지 연결)
+    // ingredient_id가 없으면 이름 기반 결정적 조회 (정확/별칭/공백무시, 추측 0).
+    // 레시피 저장·user-ingredients API 와 동일 해석으로 통일.
     let ingredientId = sanitized.ingredient_id ?? null;
     if (!ingredientId) {
-      ingredientId = await resolveIngredientId(sanitized.ingredient_name, client);
+      ingredientId = await resolveExactIngredientId(sanitized.ingredient_name, client);
     }
 
     const { data, error } = await client
