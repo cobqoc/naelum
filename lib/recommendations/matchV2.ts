@@ -55,15 +55,19 @@ export interface RelationGraph {
  * 한 레시피 재료를 사용자 보유 재료들과 매칭.
  *
  * 우선순위:
- *  1. owned     — 정확 보유 (id 일치)
- *  2. substitute— 양방향 대체 매핑 존재
- *  3. preparable— 단방향 가공 매핑 존재 (사용자가 from, 레시피가 to)
- *  4. missing   — 매칭 0
+ *  1. owned       — 정확 보유 (id 일치)
+ *  2. owned(변형) — 사용자가 *변형*을 보유 (삼겹살 보유 → "돼지고기" 필요 충족). 단방향: 변형→base만.
+ *  3. substitute  — 양방향 대체 매핑 존재
+ *  4. preparable  — 단방향 가공 매핑 존재 (사용자가 from, 레시피가 to)
+ *  5. missing     — 매칭 0
+ *
+ * `userBaseMap`: Map<base_id, 사용자 보유 변형 id>. 비면 변형 매칭 없음(degrade) — 기존 동작.
  */
 export function matchIngredient(
   recipe: RecipeIngredientInput,
   userIngredientIds: Set<string>,
   graph: RelationGraph,
+  userBaseMap: Map<string, string> = new Map(),
 ): MatchResult {
   // 기본 재료(물 등)는 누구나 보유로 간주 — 코드 상수 allowlist.
   // *이름 기반*이라 ingredient_id 가 null 이어도 작동 (id 기반 매칭의 예외, 이름으로만 판정).
@@ -77,6 +81,13 @@ export function matchIngredient(
 
   if (userIngredientIds.has(recipe.ingredient_id)) {
     return { kind: 'owned', recipeIngredientName: recipe.ingredient_name };
+  }
+
+  // 변형 보유 → base 필요 충족 (삼겹살→돼지고기). 변형은 base의 한 종류이므로 owned.
+  // 단방향: 레시피가 base(=어떤 변형의 base_id)일 때만. base→변형(돼지고기 보유→삼겹살 필요)은 여기 안 걸려 missing.
+  const variantId = userBaseMap.get(recipe.ingredient_id);
+  if (variantId) {
+    return { kind: 'owned', recipeIngredientName: recipe.ingredient_name, via: variantId };
   }
 
   const incoming = graph.incoming.get(recipe.ingredient_id);
@@ -116,8 +127,9 @@ export function matchRecipe(
   recipeIngredients: RecipeIngredientInput[],
   userIngredientIds: Set<string>,
   graph: RelationGraph,
+  userBaseMap: Map<string, string> = new Map(),
 ): RecipeMatchSummary {
-  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph));
+  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph, userBaseMap));
 
   // is_optional + fundamental(물 등) 재료는 카운트에서 제외
   const required = recipeIngredients

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
-import { fetchRelationsForRecipe, fetchAllergensForRecipe } from '@/lib/recommendations/fetchRelations'
+import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
@@ -144,14 +144,19 @@ export async function GET(request: NextRequest) {
         }
 
         const userIdSet = new Set(userIngredientIds)
+        // 변형 매칭 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족).
+        // 후보 검색·매칭 양쪽에 쓰임 → 여기서 한 번 계산.
+        const userBaseMap = await fetchUserVariantBases(userIngredientIds, supabase)
+        // 후보 검색 풀 = 보유 id + 그 변형의 base id (소고기 쓰는 레시피도 차돌박이 보유자에게 후보).
+        const candidateIdPool = [...new Set([...userIngredientIds, ...userBaseMap.keys()])]
 
         // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
         let idCandidateIds: string[] = []
-        if (userIngredientIds.length > 0) {
+        if (candidateIdPool.length > 0) {
           const { data: idCandidateRows } = await supabase
             .from('recipe_ingredients')
             .select('recipe_id')
-            .in('ingredient_id', userIngredientIds)
+            .in('ingredient_id', candidateIdPool)
           idCandidateIds = idCandidateRows?.map(r => r.recipe_id) ?? []
         }
 
@@ -209,7 +214,7 @@ export async function GET(request: NextRequest) {
         )
         const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
 
-        // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup)
+        // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup) — userBaseMap 은 위에서 계산됨
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const recipesWithMatch = filteredRecipes.map((recipe: any) => {
           const ingredients: RecipeIngredientInput[] = (recipe.ingredients ?? []).map(
@@ -219,7 +224,7 @@ export async function GET(request: NextRequest) {
               is_optional: i.is_optional ?? false,
             }),
           )
-          const summary = matchRecipe(ingredients, userIdSet, graph)
+          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap)
           const matchedCount = summary.results.filter(
             (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
           ).length

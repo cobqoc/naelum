@@ -9,7 +9,7 @@ import {
   type RecipeMatchSummary,
   EMPTY_GRAPH,
 } from '@/lib/recommendations/matchV2';
-import { fetchRelationsForRecipe } from '@/lib/recommendations/fetchRelations';
+import { fetchRelationsForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations';
 
 /**
  * V2 레시피 ↔ 냉장고 매칭 hook (2026-05-29 본질 재설계).
@@ -111,14 +111,39 @@ export function useRecipeFridgeMatch(
     };
   }, [recipeIngredientIds]);
 
+  // 변형 매칭용 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족)
+  const [userBaseMap, setUserBaseMap] = useState<Map<string, string>>(new Map());
+  const userIdsKey = useMemo(() => [...userIdSet].sort().join(','), [userIdSet]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = userIdsKey ? userIdsKey.split(',') : [];
+    if (ids.length === 0) {
+      Promise.resolve().then(() => {
+        if (!cancelled) setUserBaseMap(new Map());
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const supabase = createClient();
+    fetchUserVariantBases(ids, supabase).then(m => {
+      if (!cancelled) setUserBaseMap(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userIdsKey]);
+
   const summary = useMemo(
-    () => matchRecipe(normalizedIngredients, userIdSet, graph),
-    [normalizedIngredients, userIdSet, graph],
+    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap),
+    [normalizedIngredients, userIdSet, graph, userBaseMap],
   );
 
   const isIngredientOwned = useCallback(
-    (id: string | null) => (id ? userIdSet.has(id) : false),
-    [userIdSet],
+    // 정확 보유 또는 변형 보유(삼겹살→돼지고기). userBaseMap 은 base_id(=레시피 재료 id) 키.
+    (id: string | null) => (id ? userIdSet.has(id) || userBaseMap.has(id) : false),
+    [userIdSet, userBaseMap],
   );
 
   const findSubstitute = useCallback(

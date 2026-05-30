@@ -42,6 +42,34 @@ export async function fetchRelationsForRecipe(
 }
 
 /**
+ * 사용자 보유 재료 중 *변형*(base_ingredient_id 보유)을 base별로 묶음.
+ * 변형 매칭(삼겹살 보유 → "돼지고기" 필요 충족)용 입력.
+ * 반환: Map<base_id, 사용자 보유 변형 id>. 한 base에 변형 여럿이면 첫 번째.
+ * base_id 데이터 없으면 빈 Map → matchV2 변형 분기 자연 비활성(degrade).
+ */
+export async function fetchUserVariantBases(
+  userIngredientIds: string[],
+  supabase: AnySupabase,
+): Promise<Map<string, string>> {
+  const validIds = userIngredientIds.filter(Boolean);
+  if (validIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('ingredients_master')
+    .select('id, base_ingredient_id')
+    .in('id', validIds)
+    .not('base_ingredient_id', 'is', null);
+
+  if (error || !data) return new Map();
+
+  const map = new Map<string, string>();
+  for (const raw of data as Array<{ id: string; base_ingredient_id: string }>) {
+    if (!map.has(raw.base_ingredient_id)) map.set(raw.base_ingredient_id, raw.id);
+  }
+  return map;
+}
+
+/**
  * 레시피 재료들의 allergens 컬럼 fetch.
  * 알레르기 차단 판정에 사용.
  */

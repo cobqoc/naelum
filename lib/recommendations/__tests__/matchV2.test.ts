@@ -30,6 +30,54 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     expect(result.kind).toBe('missing');
   });
 
+  it('owned(변형) — 변형 보유 → base 필요 충족 (삼겹살→돼지고기)', () => {
+    // userBaseMap: base_id(돼지고기) → 사용자 보유 변형 id(삼겹살)
+    const result = matchIngredient(
+      { ingredient_id: 'pork', ingredient_name: '돼지고기' },
+      new Set(['samgyeopsal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'samgyeopsal']]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.via).toBe('samgyeopsal');
+  });
+
+  it('missing — base 보유 → 변형 필요 (돼지고기 보유 → "삼겹살" 필요, 단방향)', () => {
+    // 사용자는 일반 돼지고기(pork) 보유, 레시피는 삼겹살(변형) 요구.
+    // userBaseMap 은 base_id 키라 삼겹살 id 로 조회 안 됨 → missing.
+    const result = matchIngredient(
+      { ingredient_id: 'samgyeopsal', ingredient_name: '삼겹살' },
+      new Set(['pork']),
+      EMPTY_GRAPH,
+      new Map(), // pork 는 base_id 없음 → 빈 맵
+    );
+    expect(result.kind).toBe('missing');
+  });
+
+  it('missing — 형제 변형끼리 (목살 보유 → "삼겹살" 필요)', () => {
+    // 목살·삼겹살 둘 다 base=돼지고기. 사용자 목살 보유 → userBaseMap = {돼지고기→목살}.
+    // 레시피는 삼겹살(다른 변형) 요구 → samgyeopsal 키 없음 → missing.
+    const result = matchIngredient(
+      { ingredient_id: 'samgyeopsal', ingredient_name: '삼겹살' },
+      new Set(['moksal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'moksal']]),
+    );
+    expect(result.kind).toBe('missing');
+  });
+
+  it('변형 매칭은 정확 보유보다 후순위 — 정확 보유 우선', () => {
+    // 레시피 돼지고기, 사용자가 돼지고기(정확) + 삼겹살(변형) 둘 다 보유 → owned(정확), via 없음
+    const result = matchIngredient(
+      { ingredient_id: 'pork', ingredient_name: '돼지고기' },
+      new Set(['pork', 'samgyeopsal']),
+      EMPTY_GRAPH,
+      new Map([['pork', 'samgyeopsal']]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.via).toBeUndefined();
+  });
+
   it('missing — 옛 데이터(ingredient_id null) 는 매칭 안 됨', () => {
     const result = matchIngredient(
       { ingredient_id: null, ingredient_name: '양파' },
