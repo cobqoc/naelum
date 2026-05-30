@@ -5,6 +5,7 @@ import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
 import { fetchRelationsForRecipe, fetchAllergensForRecipe } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
+import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
 // V2 알레르기 필터 — DB allergens 컬럼 lookup (2026-05-29).
 // substring 매칭·정규화 추측 제거. ingredient_id 기반 정확 매칭만.
@@ -126,14 +127,20 @@ export async function GET(request: NextRequest) {
             .map(i => i.ingredient_id as string)
         } else {
           const rawIngredients = searchParams.get('ingredients') || ''
-          ingredientNames = rawIngredients
+          // 원본 이름(대소문자 보존) — id 정확일치 해석용. 후보 ilike 검색엔 소문자판 사용.
+          const rawNames = rawIngredients
             .split(',')
-            .map(s => s.trim().toLowerCase())
+            .map(s => s.trim())
             .filter(Boolean)
             .slice(0, 30)
-          if (ingredientNames.length === 0) {
+          ingredientNames = rawNames.map(s => s.toLowerCase())
+          if (rawNames.length === 0) {
             return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
           }
+          // 비로그인 체험: 이름 정확일치(승인 마스터)로 id 해석 — 추측 0.
+          // 로그인 사용자의 user_ingredients.ingredient_id 와 동등한 역할.
+          const resolved = await resolveExactIngredientIds(rawNames, supabase)
+          userIngredientIds = [...resolved.values()]
         }
 
         const userIdSet = new Set(userIngredientIds)
