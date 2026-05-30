@@ -1345,6 +1345,7 @@ export const en = {
     addToFridgeSuccess: '{count} ingredient(s) added to fridge!',
     addToFridgeFailed: 'Failed to add to fridge.',
     alreadyOwned: 'Already in fridge',
+    alreadyOwnedHint: 'This ingredient is already in your fridge',
     hideChecked: 'Hide checked items',
     showAll: 'Show all',
     clearAll: 'Clear all',

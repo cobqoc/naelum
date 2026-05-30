@@ -1346,6 +1346,7 @@ export const ja = {
     addToFridgeSuccess: '{count}個の材料が冷蔵庫に追加されました！',
     addToFridgeFailed: '冷蔵庫への追加に失敗しました。',
     alreadyOwned: '冷蔵庫にあり',
+    alreadyOwnedHint: 'この材料は冷蔵庫にすでにあります',
     hideChecked: 'チェック済みを隠す',
     showAll: 'すべて表示',
     clearAll: 'すべて削除',

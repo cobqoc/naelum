@@ -1346,6 +1346,7 @@ export const es = {
     addToFridgeSuccess: '¡{count} ingrediente(s) agregado(s) al refrigerador!',
     addToFridgeFailed: 'Error al agregar al refrigerador.',
     alreadyOwned: 'Ya en nevera',
+    alreadyOwnedHint: 'Este ingrediente ya está en tu nevera',
     hideChecked: 'Ocultar marcados',
     showAll: 'Mostrar todo',
     clearAll: 'Vaciar todo',

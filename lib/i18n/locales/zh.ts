@@ -1346,6 +1346,7 @@ export const zh = {
     addToFridgeSuccess: '{count}个食材已添加到冰箱！',
     addToFridgeFailed: '添加到冰箱失败。',
     alreadyOwned: '冰箱已有',
+    alreadyOwnedHint: '这个食材冰箱里已经有了',
     hideChecked: '隐藏已勾选项',
     showAll: '显示全部',
     clearAll: '清空全部',

@@ -1,0 +1,479 @@
+       320→380 (60px ↑) → fridge 위 spacer ~110px 보장 → 충돌 완전 해소 */
+      --scene-outlet-left: auto;
+      --scene-outlet-right: calc(50% 180px);
+      --scene-pendant-left: calc(50% 170px);
+      --scene-pendant-right: auto;
+      --scene-warmspot-left: calc(50% 110px);
+      --scene-warmspot-right: auto;
+    --fridge-max: 640px;
+    --fridge-max: 720px;
+    --fridge-reserved: 320px;
+    --fridge-reserved: 380px;
+    :root,
+    [data-theme="dark"] {
+    [data-theme="light"],
+    }
+    /* 펜던트+임박 배너 stack(~100px)이 검색바와 안 부딪치도록 spacer 확보.
+    90deg,
+    align-items: center;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation: none !important;
+    animation: none;
+    background-position: -200% 0;
+    background-position: 200% 0;
+    border-radius: 0;
+    border: 1px solid ButtonText;
+    box-shadow: 0 4px 14px 0 rgba(255, 153, 102, 0.5);
+    box-shadow: 0 8px 20px 0 rgba(255, 153, 102, 0.7);
+    display: flex;
+    font-size: 16px;
+    height: 40px;
+    height: 80vh;
+    justify-content: center;
+    left: 1rem;
+    left: 50%;
+    left: calc(50% - 350px);
+    margin-left: -300px;
+    max-height: 900px;
+    opacity: 0;
+    opacity: 1;
+    outline-offset: 2px;
+    outline: 3px solid Highlight;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding: 1.5rem;
+    right: 1rem;
+    right: calc(50% - 350px);
+    scroll-behavior: auto !important;
+    transform: translateX(-100%);
+    transform: translateX(0);
+    transform: translateX(100%);
+    transform: translateY(-3px) scale(1.04);
+    transform: translateY(-8px);
+    transform: translateY(0) scale(1);
+    transform: translateY(0);
+    transform: translateY(100%);
+    transform: translateY(10px);
+    transition-duration: 0.01ms !important;
+    transition: opacity 0.3s ease;
+    var(--background-secondary) 50%,
+    var(--background-tertiary) 25%,
+    var(--background-tertiary) 75%
+    width: 40px;
+    width: 600px;
+   (replaced by RecipeBrowseView RecipeCookMode)
+   *     (250 → 320으로 상향: 1280×900·1024×768에서 스크롤 제거 위/아래 도어 간격 축소)
+   *   - 모바일: 480 (대부분 viewport 폭이 더 작아 height식이 작동)
+   *   - 모바일(<md): header(56) 데모배지(~30) BottomNav(60) 여유(~14) = 160
+   *   - 큰 데스크탑(xl+): 720 (1080p+ 모니터에서 시원하게)
+   *   - 태블릿: 640
+   *   - 태블릿/데스크탑(md+): header(80) 검색·빠른링크(~140) 데모배지(~30) viewport fit 여유(~70) = 320
+   * max:
+   * reserved 측정:
+   * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
+   */
+   =================================== */
+   ACCESSIBILITY ENHANCEMENTS
+   angle(t) = -3° * cos(2π * t) — t=0에서 -3°, t=0.5에서3°, t=1에서 -3°로 복귀. */
+   COOK MODE: Ingredients Bottom Sheet
+   DEPRECATED: RECIPE BOOK PAGE TURNING
+   감속을 다시 적용해서 "오른쪽으로 땡기고 왼쪽으로 땡기는" 끊김 느낌을 줬는데, 이 방식은 그 문제 해결.
+   왜 이렇게: keyframe 사이를 `linear`로 보간하므로 양 끝에서 인위적 감속이 사라지고
+   전체가 매끄러운 sine 곡선이 됨. cubic-bezier(easeInOutSine)는 keyframe boundary마다
+  --accent-glow: rgba(255, 136, 68, 0.3);
+  --accent-glow: rgba(255, 153, 102, 0.3);
+  --accent-hover: #ff9955;
+  --accent-hover: #ffaa77;
+  --accent-warm: #ff8844;
+  --accent-warm: #ff9966;
+  --background-primary: #1a1a1a;
+  --background-primary: #f5f5f5;
+  --background-secondary: #2d2d2d;
+  --background-secondary: #ffffff;
+  --background-tertiary: #3a3a3a;
+  --background-tertiary: #e8e8e8;
+  --background: var(--background-primary);
+  --color-accent-glow: var(--accent-glow);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-warm: var(--accent-warm);
+  --color-background-primary: var(--background-primary);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
+  --color-error: var(--error);
+  --color-info: var(--info);
+  --color-match-high-text: var(--match-high-text);
+  --color-match-high: var(--match-high);
+  --color-match-low-text: var(--match-low-text);
+  --color-match-low: var(--match-low);
+  --color-match-mid-text: var(--match-mid-text);
+  --color-match-mid: var(--match-mid);
+  --color-success: var(--success);
+  --color-text-muted: var(--text-muted);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-warning: var(--warning);
+  --error: #c62828;
+  --error: #f44336;
+  --foreground: var(--text-primary);
+  --fridge-max: 480px;
+  --fridge-reserved: 160px;
+  --info: #1565c0;
+  --info: #2196f3;
+  --match-high-text: #6fcf73;
+  --match-high: #4caf50;
+  --match-low-text: #fc6d63;
+  --match-low: #f44336;
+  --match-mid-text: #fbbf24;
+  --match-mid: #f59e0b;
+  --scene-bb-divider: rgba(132, 102, 72, 1);
+  --scene-bb-divider: rgba(95, 65, 42, 0.6);
+  --scene-bb-hl: rgba(255, 190, 140, 0.18);
+  --scene-bb-hl: rgba(255, 240, 215, 0.75);
+  --scene-bb-inner-bot: rgba(112, 82, 55, 1);
+  --scene-bb-inner-bot: rgba(32, 20, 14, 0.98);
+  --scene-bb-inner-top: rgba(152, 122, 92, 1);
+  --scene-bb-inner-top: rgba(72, 48, 32, 0.85);
+  --scene-bb-outer-bot: rgba(158, 128, 95, 1);
+  --scene-bb-outer-bot: rgba(40, 26, 18, 0.85);
+  --scene-bb-outer-top: rgba(182, 152, 118, 1);
+  --scene-bb-outer-top: rgba(50, 34, 24, 0.55);
+  --scene-cornice-1: rgba(150, 115, 85, 0.6);
+  --scene-cornice-1: rgba(65, 42, 28, 0.5);
+  --scene-cornice-2: rgba(255, 190, 140, 0.12);
+  --scene-cornice-2: rgba(255, 240, 210, 0.65);
+  --scene-floor-bot: rgba(10, 7, 5, 1);
+  --scene-floor-bot: rgba(142, 102, 68, 1);
+  --scene-floor-plank: rgba(255, 185, 135, 0.1);
+  --scene-floor-plank: rgba(70, 42, 22, 0.32);
+  --scene-floor-specular: rgba(255, 200, 150, 0.12);
+  --scene-floor-specular: rgba(255, 225, 180, 0.45);
+  --scene-floor-top: rgba(178, 132, 92, 1);
+  --scene-floor-top: rgba(18, 12, 9, 0.98);
+  --scene-fridge-reflect: rgba(200, 80, 50, 0.22);
+  --scene-fridge-reflect: rgba(200, 80, 50, 0.28);
+  --scene-outlet-bg: #1a100a;
+  --scene-outlet-bg: #3a2a18;
+  --scene-outlet-border: rgba(255, 220, 170, 0.2);
+  --scene-outlet-border: rgba(255, 230, 200, 0.5);
+  --scene-outlet-left: 8%;
+  --scene-outlet-right: auto;
+  --scene-pendant-left: auto;
+  --scene-pendant-right: 10%;
+  --scene-wall-bot: rgba(210, 180, 152, 1);
+  --scene-wall-bot: rgba(26, 18, 13, 0.96);
+  --scene-wall-mid: rgba(232, 208, 182, 1);
+  --scene-wall-mid: rgba(32, 22, 16, 0.88);
+  --scene-wall-stripe: rgba(180, 130, 85, 0.05);
+  --scene-wall-stripe: rgba(255, 175, 120, 0.025);
+  --scene-warm-spot: rgba(255, 210, 140, 0.18);
+  --scene-warm-spot: rgba(255, 215, 145, 0.28);
+  --scene-warmspot-left: auto;
+  --scene-warmspot-right: 4%;
+  --success: #2e7d32;
+  --success: #4caf50;
+  --text-muted: #666666;
+  --text-muted: #888888;
+  --text-primary: #1a1a1a;
+  --text-primary: #e8e8e8;
+  --text-secondary: #4a4a4a;
+  --text-secondary: #b8b8b8;
+  --warning: #f57c00;
+  --warning: #ff9800;
+  -moz-appearance: none;
+  -moz-osx-font-smoothing: grayscale;
+  -ms-overflow-style: none;
+  -webkit-appearance: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  :root {
+  .animate-bounce,
+  .animate-fadeIn,
+  .animate-fridge-glow,
+  .animate-fridge-pulse {
+  .animate-pulse,
+  .animate-shimmer,
+  .animate-spin,
+  .bg-accent-warm,
+  .bg-background-secondary,
+  .bg-background-tertiary {
+  .page-animating-backward {
+  .page-animating-forward,
+  .page-nav-arrow {
+  .page-nav-arrow-left {
+  .page-nav-arrow-right {
+  .recipe-book-container {
+  .recipe-book-page {
+  );
+  }
+  @media (min-width: 768px) {
+  *,
+  *::after {
+  *::before,
+  *:focus-visible {
+  /* ── Home scene (wall/floor/baseboard) — 기본 = dark ── */
+  /* Accent Colors (Warm Tone) */
+  /* Default Next.js variables */
+  /* Home scene (dark theme) — 기본값 사용 */
+  /* Home scene (light theme): 따뜻한 베이지 벽 우드 플로어 (밝은 톤) */
+  /* Home scene 반응형 위치 변수 */
+  /* Match Rate Colors (냉장고 재료 매칭) */
+  /* Primary Colors */
+  /* Status Colors */
+  /* Text Colors */
+  /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
+  0%   { transform: rotate(-3deg);     }
+  0%   { transform: translateY(0px) rotate(0deg); }
+  0% {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.3); }
+  0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(244, 67, 54, 0.1); }
+  0%, 70%, 100% {
+  10%  { transform: rotate(-2.43deg);  }
+  100% {
+  100% { transform: rotate(-3deg);     }
+  100% { transform: translateY(0px) rotate(0deg); }
+  20%  { transform: rotate(-0.93deg);  }
+  30%  { transform: rotate(0.93deg);   }
+  33%  { transform: translateY(-12px) rotate(4deg); }
+  40%  { transform: rotate(2.43deg);   }
+  50%  { transform: rotate(3deg);      }
+  50% { box-shadow: 0 0 8px 3px rgba(244, 67, 54, 0.15); }
+  50% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 30px rgba(244, 67, 54, 0.3); }
+  60%  { transform: rotate(2.43deg);   }
+  66%  { transform: translateY(-6px) rotate(-3deg); }
+  70%  { transform: rotate(0.93deg);   }
+  80%  { transform: rotate(-0.93deg);  }
+  85% {
+  90%  { transform: rotate(-2.43deg);  }
+  align-items: center;
+  animation: cookieSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fadeIn 0.3s ease-out forwards;
+  animation: fridgeGlow 2s ease-in-out infinite;
+  animation: fridgePulse 1.5s ease-in-out infinite;
+  animation: naelum-dangle 2.4s linear infinite;
+  animation: shimmer 1.5s infinite;
+  animation: slideInLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  animation: slideOutLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  appearance: none;
+  backdrop-filter: blur(10px);
+  background-size: 200% 100%;
+  background: linear-gradient(
+  background: rgba(136, 136, 136, 0.6);
+  background: rgba(136, 136, 136, 0.9);
+  background: rgba(58, 58, 58, 0.95);
+  background: var(--accent-warm);
+  background: var(--background-primary);
+  background: var(--background-secondary);
+  body {
+  border-radius: 0;
+  border-radius: 0.5rem;
+  border-radius: 20px;
+  border-radius: 50%;
+  border-radius: 9999px;
+  border-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
+  bottom: 2rem;
+  box-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-glow);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  clip: auto;
+  clip: rect(0, 0, 0, 0);
+  color: var(--accent-warm);
+  color: var(--background-primary);
+  color: var(--text-primary);
+  cursor: not-allowed;
+  cursor: pointer;
+  display: flex;
+  display: none;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 1.5rem;
+  font-weight: bold;
+  from {
+  from { opacity: 0; }
+  from { width: 100%; }
+  gap: 0.75rem;
+  height: 100%;
+  height: 12px;
+  height: 1px;
+  height: 48px;
+  height: auto;
+  height: calc(100vh - 73px); /* 헤더 높이(약 73px) 제외 */
+  input,
+  justify-content: center;
+  left: 0;
+  left: 1rem;
+  left: 2rem;
+  left: 50%;
+  margin: -1px;
+  margin: 0;
+  opacity: 0;
+  opacity: 0.3;
+  opacity: 1;
+  outline-offset: 2px;
+  outline: 2px solid var(--accent-warm);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow: hidden;
+  overflow: visible;
+  overscroll-behavior-x: none;
+  padding: 0;
+  padding: 0.75rem 1.5rem;
+  padding: 1rem 2rem;
+  padding: 2rem;
+  pointer-events: none;
+  position: absolute;
+  position: fixed;
+  position: relative;
+  right: 2rem;
+  scrollbar-width: none;
+  select {
+  textarea,
+  to   { opacity: 1; }
+  to   { width: 0%; }
+  to {
+  top: 0;
+  top: 1rem;
+  top: 50%;
+  touch-action: manipulation;
+  transform-origin: 50% 0%;
+  transform: scale(1.3);
+  transform: scale(1.4);
+  transform: translateX(-50%);
+  transform: translateX(0);
+  transform: translateY(-50%) scale(1.1);
+  transform: translateY(-50%);
+  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  user-select: none;
+  white-space: normal;
+  white-space: nowrap;
+  width: 100%;
+  width: 12px;
+  width: 1px;
+  width: 48px;
+  width: auto;
+  will-change: transform;
+  z-index: 0;
+  z-index: 1;
+  z-index: 100;
+  z-index: 2;
+  z-index: 3;
+  z-index: 9999;
+ * 모바일 default 태블릿 큰 데스크탑 단계로 reserved/max 키움. */
+:root {
+.animate-cookie-slide-up {
+.animate-dangle {
+.animate-fadeIn {
+.animate-fridge-glow {
+.animate-fridge-pulse {
+.animate-shimmer {
+.animate-slide-up {
+.card-title    { font-size: 0.875rem; font-weight: 700; line-height: 1.4; } /* 14px — 카드 내 제목 */
+.label-text    { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); } /* 12px — 라벨 */
+.page-animating-backward {
+.page-animating-forward {
+.page-current {
+.page-hidden {
+.page-indicator-container {
+.page-indicator-dot {
+.page-indicator-dot-active {
+.page-indicator-dot:hover {
+.page-nav-arrow {
+.page-nav-arrow-left {
+.page-nav-arrow-right {
+.page-nav-arrow:disabled {
+.page-nav-arrow:hover:not(:disabled) {
+.page-title    { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }   /* 24px — 페이지 대제목 */
+.recipe-book-container {
+.recipe-book-page {
+.scroll-smooth {
+.scrollbar-hide {
+.scrollbar-hide::-webkit-scrollbar {
+.section-title { font-size: 1rem;   font-weight: 700; line-height: 1.4; }   /* 16px — 섹션 제목 */
+.select-none {
+.sr-only {
+.sr-only:focus {
+.touch-manipulation {
+[data-theme] {
+[data-theme="dark"] {
+[data-theme="light"] {
+[role="button"] {
+}
+@import "tailwindcss";
+@keyframes cookieSlideUp {
+@keyframes door-recipe-fade {
+@keyframes fadeIn {
+@keyframes food-float {
+@keyframes fridgeGlow {
+@keyframes fridgePulse {
+@keyframes naelum-bubble-pulse {
+@keyframes naelum-dangle {
+@keyframes shimmer {
+@keyframes slideIn {
+@keyframes slideInLeft {
+@keyframes slideInRight {
+@keyframes slideOutLeft {
+@keyframes slideOutRight {
+@keyframes slideUp {
+@keyframes toastProgress {
+@layer base {
+@media (forced-colors: active) {
+@media (max-width: 768px) {
+@media (min-width: 1024px) {
+@media (min-width: 1280px) {
+@media (min-width: 768px) {
+@media (prefers-reduced-motion: reduce) {
+@media screen and (max-width: 768px) {
+@supports (padding: max(0px)) {
+@theme inline {
+*:focus-visible {
+/* ===================================
+/* Animation utilities */
+/* Background food emoji float */
+/* Base styles */
+/* Better focus styles for accessibility */
+/* Container */
+/* Cookie consent slide-up animation */
+/* Dark Mode Theme (explicit) */
+/* Desktop - 크기 절반으로 축소 */
+/* Focus visible on skip link */
+/* Fridge animations */
+/* Heading scale utilities */
+/* Hide scrollbar utility */
+/* High contrast mode support */
+/* Individual page */
+/* iOS safe area support */
+/* Light Mode Theme */
+/* Mobile */
+/* Navigation arrows */
+/* Page indicator dots */
+/* Page states */
+/* Prevent horizontal scroll on all devices */
+/* Prevent text selection on interactive elements */
+/* Prevent zoom on input focus (iOS) */
+/* Reduced motion */
+/* Remove default input styles on mobile */
+/* Screen reader only */
+/* Skeleton loading animation */
+/* Slide animations */
+/* Smooth scroll for iOS */
+/* Tap highlight removal for mobile */
+/* Theme transition smoothing */
+/* Touch action for better mobile interactions */
+/* 냉장고 도어 레시피 카드 슬라이드 페이드 */
+/* 대롱대롱 매달린 효과 — sine wave 진자 운동을 10개 keyframe으로 수동 plot.
+/* 데스크탑에서 scene 요소를 냉장고 인접으로 배치 */
+/* 홈 냉장고 viewport별 반응형 fit — 위 :root에서 정의된 변수 override.
+/* 홈 냉장고 말풍선 CTA — 살짝 bounce shadow glow 반복 (주의 끌지만 과하지 않게) */
+a,
+body {
+button,
+html {
+input,
+select {
+textarea,

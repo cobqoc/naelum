@@ -1,0 +1,790 @@
+--- /tmp/orig.css	2026-05-30 23:54:28
++++ /tmp/current_clean.css	2026-05-30 23:54:28
+@@ -0,0 +1,787 @@
++@import "tailwindcss";
++
++:root {
++  /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
++   * 식: maxWidth = min(--fridge-max, calc((100dvh - --fridge-reserved - safe-area-bottom) * 540 / 670))
++   * reserved 측정:
++   *   - 모바일(<md): header(56) + 데모배지(~30) + BottomNav(60) + 여유(~14) = 160
++   *   - 태블릿/데스크탑(md+): header(80) + 검색·빠른링크(~140) + 데모배지(~30) + viewport fit 여유(~70) = 320
++   *     (250 → 320으로 상향: 1280×900·1024×768에서 스크롤 제거 + 위/아래 도어 간격 축소)
++   * max:
++   *   - 모바일: 480 (대부분 viewport 폭이 더 작아 height식이 작동)
++   *   - 태블릿: 640
++   *   - 큰 데스크탑(xl+): 720 (1080p+ 모니터에서 시원하게)
++   */
++  --fridge-reserved: 160px;
++  --fridge-max: 480px;
++
++  /* Primary Colors */
++  --background-primary: #1a1a1a;
++  --background-secondary: #2d2d2d;
++  --background-tertiary: #3a3a3a;
++
++  /* Accent Colors (Warm Tone) */
++  --accent-warm: #ff9966;
++  --accent-glow: rgba(255, 153, 102, 0.3);
++  --accent-hover: #ffaa77;
++
++  /* Text Colors */
++  --text-primary: #e8e8e8;
++  --text-secondary: #b8b8b8;
++  --text-muted: #888888;
++
++  /* Status Colors */
++  --success: #4caf50;
++  --error: #f44336;
++  --warning: #ff9800;
++  --info: #2196f3;
++
++  /* Match Rate Colors (냉장고 재료 매칭) */
++  --match-high: #4caf50;
++  --match-high-text: #6fcf73;
++  --match-mid: #f59e0b;
++  --match-mid-text: #fbbf24;
++  --match-low: #f44336;
++  --match-low-text: #fc6d63;
++
++  /* Home scene 반응형 위치 변수 */
++  --scene-pendant-left: auto;
++  --scene-pendant-right: 10%;
++  --scene-warmspot-left: auto;
++  --scene-warmspot-right: 4%;
++  --scene-outlet-left: 8%;
++  --scene-outlet-right: auto;
++
++  /* ── Home scene (wall/floor/baseboard) — 기본 = dark ── */
++  --scene-wall-mid: rgba(32, 22, 16, 0.88);
++  --scene-wall-bot: rgba(26, 18, 13, 0.96);
++  --scene-wall-stripe: rgba(255, 175, 120, 0.025);
++  --scene-cornice-1: rgba(65, 42, 28, 0.5);
++  --scene-cornice-2: rgba(255, 190, 140, 0.12);
++  --scene-bb-outer-top: rgba(50, 34, 24, 0.55);
++  --scene-bb-outer-bot: rgba(40, 26, 18, 0.85);
++  --scene-bb-divider: rgba(95, 65, 42, 0.6);
++  --scene-bb-inner-top: rgba(72, 48, 32, 0.85);
++  --scene-bb-inner-bot: rgba(32, 20, 14, 0.98);
++  --scene-bb-hl: rgba(255, 190, 140, 0.18);
++  --scene-floor-top: rgba(18, 12, 9, 0.98);
++  --scene-floor-bot: rgba(10, 7, 5, 1);
++  --scene-floor-plank: rgba(255, 185, 135, 0.1);
++  --scene-floor-specular: rgba(255, 200, 150, 0.12);
++  --scene-fridge-reflect: rgba(200, 80, 50, 0.22);
++  --scene-warm-spot: rgba(255, 210, 140, 0.18);
++  --scene-outlet-bg: #1a100a;
++  --scene-outlet-border: rgba(255, 220, 170, 0.2);
++
++  /* Default Next.js variables */
++  --background: var(--background-primary);
++  --foreground: var(--text-primary);
++}
++
++/* 데스크탑에서 scene 요소를 냉장고 인접으로 배치 */
++@layer base {
++  @media (min-width: 768px) {
++    :root,
++    [data-theme="light"],
++    [data-theme="dark"] {
++      --scene-pendant-left: calc(50% + 170px);
++      --scene-pendant-right: auto;
++      --scene-warmspot-left: calc(50% + 110px);
++      --scene-warmspot-right: auto;
++      --scene-outlet-left: auto;
++      --scene-outlet-right: calc(50% + 180px);
++    }
++  }
++}
++
++/* Light Mode Theme */
++[data-theme="light"] {
++  /* Primary Colors */
++  --background-primary: #f5f5f5;
++  --background-secondary: #ffffff;
++  --background-tertiary: #e8e8e8;
++
++  /* Accent Colors (Warm Tone) */
++  --accent-warm: #ff8844;
++  --accent-glow: rgba(255, 136, 68, 0.3);
++  --accent-hover: #ff9955;
++
++  /* Text Colors */
++  --text-primary: #1a1a1a;
++  --text-secondary: #4a4a4a;
++  --text-muted: #666666;
++
++  /* Status Colors */
++  --success: #2e7d32;
++  --error: #c62828;
++  --warning: #f57c00;
++  --info: #1565c0;
++
++  /* Home scene (light theme): 따뜻한 베이지 벽 + 우드 플로어 (밝은 톤) */
++  --scene-wall-mid: rgba(232, 208, 182, 1);
++  --scene-wall-bot: rgba(210, 180, 152, 1);
++  --scene-wall-stripe: rgba(180, 130, 85, 0.05);
++  --scene-cornice-1: rgba(150, 115, 85, 0.6);
++  --scene-cornice-2: rgba(255, 240, 210, 0.65);
++  --scene-bb-outer-top: rgba(182, 152, 118, 1);
++  --scene-bb-outer-bot: rgba(158, 128, 95, 1);
++  --scene-bb-divider: rgba(132, 102, 72, 1);
++  --scene-bb-inner-top: rgba(152, 122, 92, 1);
++  --scene-bb-inner-bot: rgba(112, 82, 55, 1);
++  --scene-bb-hl: rgba(255, 240, 215, 0.75);
++  --scene-floor-top: rgba(178, 132, 92, 1);
++  --scene-floor-bot: rgba(142, 102, 68, 1);
++  --scene-floor-plank: rgba(70, 42, 22, 0.32);
++  --scene-floor-specular: rgba(255, 225, 180, 0.45);
++  --scene-fridge-reflect: rgba(200, 80, 50, 0.28);
++  --scene-warm-spot: rgba(255, 215, 145, 0.28);
++  --scene-outlet-bg: #3a2a18;
++  --scene-outlet-border: rgba(255, 230, 200, 0.5);
++
++  /* Default Next.js variables */
++  --background: var(--background-primary);
++  --foreground: var(--text-primary);
++}
++
++/* Dark Mode Theme (explicit) */
++[data-theme="dark"] {
++  /* Primary Colors */
++  --background-primary: #1a1a1a;
++  --background-secondary: #2d2d2d;
++  --background-tertiary: #3a3a3a;
++
++  /* Accent Colors (Warm Tone) */
++  --accent-warm: #ff9966;
++  --accent-glow: rgba(255, 153, 102, 0.3);
++  --accent-hover: #ffaa77;
++
++  /* Text Colors */
++  --text-primary: #e8e8e8;
++  --text-secondary: #b8b8b8;
++  --text-muted: #888888;
++
++  /* Status Colors */
++  --success: #4caf50;
++  --error: #f44336;
++  --warning: #ff9800;
++  --info: #2196f3;
++
++  /* Home scene (dark theme) — 기본값 사용 */
++  --scene-wall-mid: rgba(32, 22, 16, 0.88);
++  --scene-wall-bot: rgba(26, 18, 13, 0.96);
++  --scene-wall-stripe: rgba(255, 175, 120, 0.025);
++  --scene-cornice-1: rgba(65, 42, 28, 0.5);
++  --scene-cornice-2: rgba(255, 190, 140, 0.12);
++  --scene-bb-outer-top: rgba(50, 34, 24, 0.55);
++  --scene-bb-outer-bot: rgba(40, 26, 18, 0.85);
++  --scene-bb-divider: rgba(95, 65, 42, 0.6);
++  --scene-bb-inner-top: rgba(72, 48, 32, 0.85);
++  --scene-bb-inner-bot: rgba(32, 20, 14, 0.98);
++  --scene-bb-hl: rgba(255, 190, 140, 0.18);
++  --scene-floor-top: rgba(18, 12, 9, 0.98);
++  --scene-floor-bot: rgba(10, 7, 5, 1);
++  --scene-floor-plank: rgba(255, 185, 135, 0.1);
++  --scene-floor-specular: rgba(255, 200, 150, 0.12);
++  --scene-fridge-reflect: rgba(200, 80, 50, 0.22);
++  --scene-warm-spot: rgba(255, 210, 140, 0.18);
++  --scene-outlet-bg: #1a100a;
++  --scene-outlet-border: rgba(255, 220, 170, 0.2);
++
++  /* Default Next.js variables */
++  --background: var(--background-primary);
++  --foreground: var(--text-primary);
++}
++
++@theme inline {
++  --color-background-primary: var(--background-primary);
++  --color-background-secondary: var(--background-secondary);
++  --color-background-tertiary: var(--background-tertiary);
++  --color-accent-warm: var(--accent-warm);
++  --color-accent-glow: var(--accent-glow);
++  --color-accent-hover: var(--accent-hover);
++  --color-text-primary: var(--text-primary);
++  --color-text-secondary: var(--text-secondary);
++  --color-text-muted: var(--text-muted);
++  --color-success: var(--success);
++  --color-error: var(--error);
++  --color-warning: var(--warning);
++  --color-info: var(--info);
++  --color-match-high: var(--match-high);
++  --color-match-high-text: var(--match-high-text);
++  --color-match-mid: var(--match-mid);
++  --color-match-mid-text: var(--match-mid-text);
++  --color-match-low: var(--match-low);
++  --color-match-low-text: var(--match-low-text);
++}
++
++/* Prevent horizontal scroll on all devices */
++html {
++  overflow-x: hidden;
++  overscroll-behavior-x: none;
++}
++
++/* Base styles */
++body {
++  background: var(--background-primary);
++  color: var(--text-primary);
++  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
++  -webkit-font-smoothing: antialiased;
++  -moz-osx-font-smoothing: grayscale;
++  overflow-x: hidden;
++  overscroll-behavior-x: none;
++}
++
++/* iOS safe area support */
++@supports (padding: max(0px)) {
++  body {
++    padding-left: env(safe-area-inset-left);
++    padding-right: env(safe-area-inset-right);
++  }
++}
++
++/* Hide scrollbar utility */
++.scrollbar-hide {
++  -ms-overflow-style: none;
++  scrollbar-width: none;
++}
++
++.scrollbar-hide::-webkit-scrollbar {
++  display: none;
++}
++
++/* Smooth scroll for iOS */
++.scroll-smooth {
++  -webkit-overflow-scrolling: touch;
++}
++
++/* Touch action for better mobile interactions */
++.touch-manipulation {
++  touch-action: manipulation;
++}
++
++/* Prevent text selection on interactive elements */
++.select-none {
++  -webkit-user-select: none;
++  user-select: none;
++}
++
++/* Tap highlight removal for mobile */
++button,
++a,
++[role="button"] {
++  -webkit-tap-highlight-color: transparent;
++}
++
++/* Better focus styles for accessibility */
++*:focus-visible {
++  outline: 2px solid var(--accent-warm);
++  outline-offset: 2px;
++}
++
++/* Remove default input styles on mobile */
++input,
++textarea,
++select {
++  -webkit-appearance: none;
++  -moz-appearance: none;
++  appearance: none;
++  border-radius: 0;
++}
++
++/* Prevent zoom on input focus (iOS) */
++@media screen and (max-width: 768px) {
++  input,
++  textarea,
++  select {
++    font-size: 16px;
++  }
++}
++
++/* Heading scale utilities */
++.page-title    { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }   /* 24px — 페이지 대제목 */
++.section-title { font-size: 1rem;   font-weight: 700; line-height: 1.4; }   /* 16px — 섹션 제목 */
++.card-title    { font-size: 0.875rem; font-weight: 700; line-height: 1.4; } /* 14px — 카드 내 제목 */
++.label-text    { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); } /* 12px — 라벨 */
++
++/* Animation utilities */
++@keyframes fadeIn {
++  from {
++    opacity: 0;
++    transform: translateY(10px);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++.animate-fadeIn {
++  animation: fadeIn 0.3s ease-out forwards;
++}
++
++/* Background food emoji float */
++@keyframes food-float {
++  0%   { transform: translateY(0px) rotate(0deg); }
++  33%  { transform: translateY(-12px) rotate(4deg); }
++  66%  { transform: translateY(-6px) rotate(-3deg); }
++  100% { transform: translateY(0px) rotate(0deg); }
++}
++
++/* Fridge animations */
++@keyframes fridgeGlow {
++  0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(244, 67, 54, 0.1); }
++  50% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 30px rgba(244, 67, 54, 0.3); }
++}
++
++@keyframes fridgePulse {
++  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.3); }
++  50% { box-shadow: 0 0 8px 3px rgba(244, 67, 54, 0.15); }
++}
++
++.animate-fridge-glow {
++  animation: fridgeGlow 2s ease-in-out infinite;
++}
++
++.animate-fridge-pulse {
++  animation: fridgePulse 1.5s ease-in-out infinite;
++}
++
++/* 대롱대롱 매달린 효과 — sine wave 진자 운동을 10개 keyframe으로 수동 plot.
++   왜 이렇게: keyframe 사이를 `linear`로 보간하므로 양 끝에서 인위적 감속이 사라지고
++   전체가 매끄러운 sine 곡선이 됨. cubic-bezier(easeInOutSine)는 keyframe boundary마다
++   감속을 다시 적용해서 "오른쪽으로 땡기고 왼쪽으로 땡기는" 끊김 느낌을 줬는데, 이 방식은 그 문제 해결.
++   angle(t) = -3° * cos(2π * t) — t=0에서 -3°, t=0.5에서 +3°, t=1에서 -3°로 복귀. */
++@keyframes naelum-dangle {
++  0%   { transform: rotate(-3deg);     }
++  10%  { transform: rotate(-2.43deg);  }
++  20%  { transform: rotate(-0.93deg);  }
++  30%  { transform: rotate(0.93deg);   }
++  40%  { transform: rotate(2.43deg);   }
++  50%  { transform: rotate(3deg);      }
++  60%  { transform: rotate(2.43deg);   }
++  70%  { transform: rotate(0.93deg);   }
++  80%  { transform: rotate(-0.93deg);  }
++  90%  { transform: rotate(-2.43deg);  }
++  100% { transform: rotate(-3deg);     }
++}
++.animate-dangle {
++  animation: naelum-dangle 2.4s linear infinite;
++  transform-origin: 50% 0%;
++  will-change: transform;
++}
++
++/* 홈 냉장고 말풍선 CTA — 살짝 bounce + shadow glow 반복 (주의 끌지만 과하지 않게) */
++@keyframes naelum-bubble-pulse {
++  0%, 70%, 100% {
++    transform: translateY(0) scale(1);
++    box-shadow: 0 4px 14px 0 rgba(255, 153, 102, 0.5);
++  }
++  85% {
++    transform: translateY(-3px) scale(1.04);
++    box-shadow: 0 8px 20px 0 rgba(255, 153, 102, 0.7);
++  }
++}
++
++/* Skeleton loading animation */
++@keyframes shimmer {
++  0% {
++    background-position: -200% 0;
++  }
++  100% {
++    background-position: 200% 0;
++  }
++}
++
++.animate-shimmer {
++  background: linear-gradient(
++    90deg,
++    var(--background-tertiary) 25%,
++    var(--background-secondary) 50%,
++    var(--background-tertiary) 75%
++  );
++  background-size: 200% 100%;
++  animation: shimmer 1.5s infinite;
++}
++
++/* ===================================
++   DEPRECATED: RECIPE BOOK PAGE TURNING
++   (replaced by RecipeBrowseView + RecipeCookMode)
++   =================================== */
++
++/* Container */
++.recipe-book-container {
++  position: relative;
++  width: 100%;
++  height: calc(100vh - 73px); /* 헤더 높이(약 73px) 제외 */
++  overflow: hidden;
++  background: var(--background-primary);
++}
++
++/* Individual page */
++.recipe-book-page {
++  position: absolute;
++  top: 0;
++  left: 0;
++  width: 100%;
++  height: 100%;
++  will-change: transform;
++  background: var(--background-secondary);
++  border-radius: 20px;
++  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
++  overflow-y: auto;
++  padding: 2rem;
++}
++
++/* Page states */
++.page-current {
++  opacity: 1;
++  z-index: 2;
++  transform: translateX(0);
++}
++
++.page-hidden {
++  opacity: 0;
++  z-index: 0;
++  pointer-events: none;
++}
++
++/* Slide animations */
++@keyframes slideOutLeft {
++  from {
++    transform: translateX(0);
++    opacity: 1;
++  }
++  to {
++    transform: translateX(-100%);
++    opacity: 0;
++  }
++}
++
++@keyframes slideInRight {
++  from {
++    transform: translateX(100%);
++    opacity: 0;
++  }
++  to {
++    transform: translateX(0);
++    opacity: 1;
++  }
++}
++
++@keyframes slideOutRight {
++  from {
++    transform: translateX(0);
++    opacity: 1;
++  }
++  to {
++    transform: translateX(100%);
++    opacity: 0;
++  }
++}
++
++@keyframes slideInLeft {
++  from {
++    transform: translateX(-100%);
++    opacity: 0;
++  }
++  to {
++    transform: translateX(0);
++    opacity: 1;
++  }
++}
++
++.page-animating-forward {
++  animation: slideOutLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
++  z-index: 1;
++}
++
++.page-animating-backward {
++  animation: slideInLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
++  z-index: 3;
++}
++
++/* Page indicator dots */
++.page-indicator-container {
++  position: absolute;
++  bottom: 2rem;
++  left: 50%;
++  transform: translateX(-50%);
++  z-index: 100;
++  display: flex;
++  gap: 0.75rem;
++  padding: 1rem 2rem;
++  background: rgba(58, 58, 58, 0.95);
++  border-radius: 9999px;
++  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
++  backdrop-filter: blur(10px);
++  border: 1px solid rgba(255, 255, 255, 0.1);
++}
++
++.page-indicator-dot {
++  width: 12px;
++  height: 12px;
++  border-radius: 50%;
++  background: rgba(136, 136, 136, 0.6);
++  transition: all 0.3s ease;
++  cursor: pointer;
++  border: none;
++  padding: 0;
++}
++
++.page-indicator-dot:hover {
++  transform: scale(1.3);
++  background: rgba(136, 136, 136, 0.9);
++}
++
++.page-indicator-dot-active {
++  background: var(--accent-warm);
++  transform: scale(1.4);
++  box-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-glow);
++}
++
++/* Navigation arrows */
++.page-nav-arrow {
++  position: absolute;
++  top: 50%;
++  transform: translateY(-50%);
++  z-index: 100;
++  width: 48px;
++  height: 48px;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  background: rgba(58, 58, 58, 0.95);
++  border-radius: 50%;
++  color: var(--accent-warm);
++  font-size: 1.5rem;
++  cursor: pointer;
++  transition: all 0.3s ease;
++  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
++  backdrop-filter: blur(10px);
++  border: 1px solid rgba(255, 255, 255, 0.1);
++}
++
++.page-nav-arrow:hover:not(:disabled) {
++  background: var(--accent-warm);
++  color: var(--background-primary);
++  transform: translateY(-50%) scale(1.1);
++}
++
++.page-nav-arrow:disabled {
++  opacity: 0.3;
++  cursor: not-allowed;
++}
++
++.page-nav-arrow-left {
++  left: 2rem;
++}
++
++.page-nav-arrow-right {
++  right: 2rem;
++}
++
++/* Desktop - 크기 절반으로 축소 */
++@media (min-width: 1024px) {
++  .recipe-book-container {
++    display: flex;
++    align-items: center;
++    justify-content: center;
++  }
++
++  .recipe-book-page {
++    width: 600px;
++    height: 80vh;
++    max-height: 900px;
++    left: 50%;
++    margin-left: -300px;
++  }
++
++  .page-nav-arrow-left {
++    left: calc(50% - 350px);
++  }
++
++  .page-nav-arrow-right {
++    right: calc(50% - 350px);
++  }
++}
++
++/* Mobile */
++@media (max-width: 768px) {
++  .recipe-book-page {
++    border-radius: 0;
++    padding: 1.5rem;
++  }
++
++  .page-nav-arrow {
++    width: 40px;
++    height: 40px;
++  }
++
++  .page-nav-arrow-left {
++    left: 1rem;
++  }
++
++  .page-nav-arrow-right {
++    right: 1rem;
++  }
++}
++
++/* Reduced motion */
++@media (prefers-reduced-motion: reduce) {
++  .page-animating-forward,
++  .page-animating-backward {
++    animation: none;
++    transition: opacity 0.3s ease;
++  }
++}
++
++/* ===================================
++   COOK MODE: Ingredients Bottom Sheet
++   =================================== */
++
++@keyframes slideIn {
++  from {
++    transform: translateY(-8px);
++    opacity: 0;
++  }
++  to {
++    transform: translateY(0);
++    opacity: 1;
++  }
++}
++
++@keyframes toastProgress {
++  from { width: 100%; }
++  to   { width: 0%; }
++}
++
++@keyframes slideUp {
++  from {
++    transform: translateY(100%);
++  }
++  to {
++    transform: translateY(0);
++  }
++}
++
++.animate-slide-up {
++  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
++}
++
++/* ===================================
++   ACCESSIBILITY ENHANCEMENTS
++   =================================== */
++
++/* Screen reader only */
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border-width: 0;
++}
++
++/* Focus visible on skip link */
++.sr-only:focus {
++  position: fixed;
++  top: 1rem;
++  left: 1rem;
++  z-index: 9999;
++  width: auto;
++  height: auto;
++  padding: 0.75rem 1.5rem;
++  margin: 0;
++  overflow: visible;
++  clip: auto;
++  white-space: normal;
++  background: var(--accent-warm);
++  color: var(--background-primary);
++  font-weight: bold;
++  border-radius: 0.5rem;
++  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
++}
++
++/* High contrast mode support */
++@media (forced-colors: active) {
++  .bg-accent-warm,
++  .bg-background-secondary,
++  .bg-background-tertiary {
++    border: 1px solid ButtonText;
++  }
++
++  *:focus-visible {
++    outline: 3px solid Highlight;
++    outline-offset: 2px;
++  }
++}
++
++/* Reduced motion */
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: 0.01ms !important;
++    scroll-behavior: auto !important;
++  }
++
++  .animate-pulse,
++  .animate-bounce,
++  .animate-spin,
++  .animate-shimmer,
++  .animate-fadeIn,
++  .animate-fridge-glow,
++  .animate-fridge-pulse {
++    animation: none !important;
++  }
++}
++
++/* Cookie consent slide-up animation */
++@keyframes cookieSlideUp {
++  from {
++    transform: translateY(100%);
++    opacity: 0;
++  }
++  to {
++    transform: translateY(0);
++    opacity: 1;
++  }
++}
++
++.animate-cookie-slide-up {
++  animation: cookieSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
++}
++
++/* Theme transition smoothing */
++[data-theme] {
++  transition: background-color 0.2s ease, color 0.2s ease;
++}
++
++/* 냉장고 도어 레시피 카드 슬라이드 페이드 */
++@keyframes door-recipe-fade {
++  from { opacity: 0; }
++  to   { opacity: 1; }
++}
++
++/* 홈 냉장고 viewport별 반응형 fit — 위 :root에서 정의된 변수 override.
++ * 모바일 default + 태블릿 + 큰 데스크탑 단계로 reserved/max 키움. */
++@media (min-width: 768px) {
++  :root {
++    --fridge-reserved: 320px;
++    --fridge-max: 640px;
++  }
++}
++@media (min-width: 1280px) {
++  :root {
++    /* 펜던트+임박 배너 stack(~100px)이 검색바와 안 부딪치도록 spacer 확보.
++       320→380 (60px ↑) → fridge 위 spacer ~110px 보장 → 충돌 완전 해소 */
++    --fridge-reserved: 380px;
++    --fridge-max: 720px;
++  }
++}
++

@@ -1348,6 +1348,7 @@ export const ko = {
     addToFridgeSuccess: '{count}개 재료가 냉장고에 추가됐어요!',
     addToFridgeFailed: '냉장고 추가에 실패했어요.',
     alreadyOwned: '이미 있음',
+    alreadyOwnedHint: '냉장고에 이미 있는 재료예요',
     hideChecked: '완료 항목 숨기기',
     showAll: '모두 보기',
     clearAll: '전체 비우기',

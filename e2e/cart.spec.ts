@@ -188,7 +188,7 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
 
   // ─── 신규 기능 검증 (#1 ~ #6) ───
 
-  test('#1 보유 재료 — is_owned=true 항목에 "이미 있음" 배지 노출', async ({ authenticatedPage, testUser }) => {
+  test('#1 보유 재료 — is_owned=true 항목에 냉장고 아이콘 표시 (탭 시 안내)', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
     await page.setViewportSize({ width: 1280, height: 800 });
 
@@ -217,8 +217,8 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await page.locator('header button[aria-label="장보기"]').click();
     await expect(page.locator('text=테스트양파_보유').first()).toBeVisible({ timeout: 5000 });
 
-    // 배지 노출
-    await expect(page.getByText('이미 있음').first()).toBeVisible();
+    // 보유 표시 — 냉장고 아이콘 버튼(텍스트 배지 → 아이콘, 이름 공간 확보). aria-label = 안내 메시지.
+    await expect(page.getByRole('button', { name: '냉장고에 이미 있는 재료예요' }).first()).toBeVisible();
   });
 
   test('#2 단위 드롭다운 — 직접 추가 시 단위 선택 → DB에 저장', async ({ authenticatedPage, testUser }) => {

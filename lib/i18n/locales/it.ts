@@ -1346,6 +1346,7 @@ export const it = {
     addToFridgeSuccess: '{count} ingredienti aggiunti al frigo!',
     addToFridgeFailed: 'Aggiunta al frigo fallita.',
     alreadyOwned: 'Già nel frigo',
+    alreadyOwnedHint: 'Questo ingrediente è già nel frigo',
     hideChecked: 'Nascondi i selezionati',
     showAll: 'Mostra tutto',
     clearAll: 'Svuota tutto',
