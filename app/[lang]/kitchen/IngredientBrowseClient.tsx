@@ -5,7 +5,6 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useI18n } from '@/lib/i18n/context';
-import KitchenViewTabs from './_components/KitchenViewTabs';
 import { groupByInitial } from '@/lib/kitchen/initialGroup';
 
 
@@ -187,10 +186,10 @@ function Divider() { return <div className="h-px bg-white/5 my-5" />; }
 // ─── 재료 상세 패널 ──────────────────────────────────────────
 
 function IngredientPanel({
-  item, related, onClose, onSelect,
+  item, onClose,
 }: {
-  item: IngredientItem; related: IngredientItem[];
-  onClose: () => void; onSelect: (item: IngredientItem) => void;
+  item: IngredientItem;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
   const tb = t.ingredient;
@@ -242,19 +241,6 @@ function IngredientPanel({
           <Link href={`/search?q=${encodeURIComponent(item.name)}`} onClick={onClose} className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold text-sm hover:bg-accent-hover transition-colors">
             🍳 {tb.panelFindRecipe}
           </Link>
-          {related.length > 0 && (
-            <div className="mt-5">
-              <SectionHeader emoji="📂" title={tb.panelSameCategory.replace('{cat}', catLabel)} />
-              <div className="flex flex-wrap gap-2">
-                {related.map(r => (
-                  <button key={r.id} onClick={() => onSelect(r)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background-tertiary hover:bg-white/10 border border-white/5 hover:border-accent-warm/30 transition-all text-sm">
-                    {r.emoji && <span>{r.emoji}</span>}
-                    <span className="text-text-secondary">{r.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </>
@@ -343,9 +329,6 @@ export default function IngredientBrowsePage({
           emoji: CATEGORY_EMOJI[category] ?? '🍽️',
         }
       : CATEGORIES[0]);
-  const related = selected
-    ? items.filter(i => i.category === selected.category && i.id !== selected.id).slice(0, 12)
-    : [];
 
   // 초성 그룹화 (가나다순 뷰와 동일 — 카테고리만 필터). 사전형이라 항목이 쌓여도 예측 가능.
   const sortedGroups = groupByInitial(items);
@@ -359,7 +342,7 @@ export default function IngredientBrowsePage({
       <Header />
       <main className="container mx-auto max-w-2xl px-4 pt-20 pb-28">
 
-        {/* ── 타이틀 + 뷰 탭 ── */}
+        {/* ── 타이틀 ── */}
         <div className="pt-4 pb-3">
           <div className="flex items-baseline gap-2 mb-3">
             <h1 className="text-lg font-bold">{tb.browseTitle}</h1>
@@ -368,7 +351,6 @@ export default function IngredientBrowsePage({
             )}
             <span className="text-xs text-text-muted">{tb.browseSubtitle}</span>
           </div>
-          <KitchenViewTabs active="grid" />
         </div>
 
         {/* ── 카테고리 탭 (한 줄 가로 스크롤) ── */}
@@ -494,9 +476,7 @@ export default function IngredientBrowsePage({
       {selected && (
         <IngredientPanel
           item={selected}
-          related={related}
           onClose={() => setSelected(null)}
-          onSelect={item => setSelected(item)}
         />
       )}
     </div>

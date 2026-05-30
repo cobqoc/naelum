@@ -5,7 +5,6 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
-import KitchenViewTabs from './_components/KitchenViewTabs';
 
 /**
  * 부엌 도감 메인 — 카테고리 카드 그리드 (V2, 2026-05-29).
@@ -92,11 +91,6 @@ export default function KitchenHomeClient() {
     <div className="min-h-screen bg-background-primary">
       <Header />
       <main className="container mx-auto max-w-5xl px-4 pt-20 pb-24 md:pb-12">
-        {/* 뷰 전환 탭 — 카드 그리드 / 가나다순 */}
-        <div className="mb-4">
-          <KitchenViewTabs active="grid" />
-        </div>
-
         {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
         <p className="text-sm text-text-secondary mb-6 md:mb-8">
           세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
