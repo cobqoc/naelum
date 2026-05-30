@@ -17,6 +17,8 @@ interface CartAddInputProps {
   setInputText: (v: string) => void;
   inputUnit: string;
   setInputUnit: (v: string) => void;
+  inputQuantity: number;
+  setInputQuantity: (v: number) => void;
   inputFocused: boolean;
   setInputFocused: (v: boolean) => void;
   suggestions: Suggestion[];
@@ -33,6 +35,8 @@ export default function CartAddInput({
   setInputText,
   inputUnit,
   setInputUnit,
+  inputQuantity,
+  setInputQuantity,
   inputFocused,
   setInputFocused,
   suggestions,
@@ -77,6 +81,27 @@ export default function CartAddInput({
             aria-haspopup="listbox"
             aria-autocomplete="list"
           />
+        {/* 수량 스테퍼 — 줄 스테퍼와 동일 패턴 [− n +]. 추가 시 그 수량으로 담김. */}
+        <div className="flex-shrink-0 flex items-center mr-1.5 rounded-md bg-background-tertiary overflow-hidden h-7">
+          <button
+            type="button"
+            onClick={() => setInputQuantity(Math.max(1, inputQuantity - 1))}
+            disabled={inputQuantity <= 1}
+            aria-label={t.cart.quantityDecrease}
+            className="w-6 h-7 flex items-center justify-center text-text-secondary hover:text-accent-warm disabled:opacity-30 transition-colors text-sm"
+          >
+            −
+          </button>
+          <span className="text-xs text-text-primary tabular-nums min-w-[1.2rem] text-center">{inputQuantity}</span>
+          <button
+            type="button"
+            onClick={() => setInputQuantity(inputQuantity + 1)}
+            aria-label={t.cart.quantityIncrease}
+            className="w-6 h-7 flex items-center justify-center text-text-secondary hover:text-accent-warm transition-colors text-sm"
+          >
+            +
+          </button>
+        </div>
         {/* 단위 select — DetailFields 패턴 (appearance-none + ▾) */}
         <div className="relative flex-shrink-0 flex items-center mr-1.5">
           <select
@@ -109,7 +134,8 @@ export default function CartAddInput({
       </div>
 
       {/* 자동완성 목록 — WAI-ARIA combobox 패턴 (Common/Autocomplete 와 일관). */}
-      {showSuggestions && inputText.trim() && (
+      {/* 자동완성 제안만 — "직접 추가" 옵션은 제거(추가 버튼과 100% 중복). 제안 없으면 미노출. */}
+      {showSuggestions && inputText.trim() && suggestions.length > 0 && (
         <div
           id="cart-add-suggestions"
           role="listbox"
@@ -129,16 +155,6 @@ export default function CartAddInput({
               {s.category && <span className="text-text-muted">{s.category}</span>}
             </button>
           ))}
-          <button
-            id={`cart-add-option-${suggestions.length}`}
-            role="option"
-            aria-selected={false}
-            onMouseDown={() => addItem(inputText, '', undefined, 'manual')}
-            className="w-full text-left px-4 py-2.5 text-xs hover:bg-accent-warm/10 transition-colors flex items-center gap-2 border-t border-white/5"
-          >
-            <span className="text-accent-warm flex-shrink-0">+</span>
-            <span className="text-accent-warm font-medium truncate">{t.cart.directAddLabel.replace('{name}', inputText)}</span>
-          </button>
         </div>
       )}
     </div>

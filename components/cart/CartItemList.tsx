@@ -3,6 +3,8 @@ import type { TranslationKeys } from '@/lib/i18n/translations';
 import type { ShoppingItem } from '@/lib/shopping-list/cache';
 import type { GroupedItems, GroupMode } from '@/lib/shopping-list/groupItems';
 import { COMMON_UNITS } from '@/components/cart/types';
+import FridgeIcon from '@/components/icons/FridgeIcon';
+import { useToast } from '@/lib/toast/context';
 
 /**
  * cart 항목 리스트 — 그룹 헤더·항목 행·수량 스테퍼·단위·메모 에디터 (순수 표현).
@@ -54,6 +56,7 @@ export default function CartItemList({
   updateNote,
   onClose,
 }: CartItemListProps) {
+  const toast = useToast();
   return (
     <div data-testid="cart-list" className="overflow-y-auto flex-1">
       {loading ? (
@@ -113,15 +116,18 @@ export default function CartItemList({
                     <span className={`text-sm truncate ${item.is_checked ? 'line-through text-text-muted' : 'text-text-primary'}`}>
                       {item.ingredient_name}
                     </span>
-                    {/* #1 보유 재료 배지 — 미체크 항목에만 (체크 후엔 곧 냉장고로 갈 거라 노이즈) */}
+                    {/* #1 보유 재료 표시 — 냉장고 아이콘만(이름 공간 확보). 탭 시 토스트 안내.
+                        미체크 항목에만 (체크 후엔 곧 냉장고로 갈 거라 노이즈) */}
                     {item.is_owned && !item.is_checked && (
-                      <span
-                        className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-info/15 text-info text-[10px] font-medium"
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); toast.info(t.cart.alreadyOwnedHint); }}
                         title={t.cart.alreadyOwned}
+                        aria-label={t.cart.alreadyOwnedHint}
+                        className="flex-shrink-0 leading-none p-0.5 -my-1 rounded hover:bg-white/5 transition-colors"
                       >
-                        <span aria-hidden="true">❄️</span>
-                        <span>{t.cart.alreadyOwned}</span>
-                      </span>
+                        <FridgeIcon size={18} />
+                      </button>
                     )}
                   </div>
 
@@ -173,7 +179,7 @@ export default function CartItemList({
 
                   <button
                     onClick={e => { e.stopPropagation(); deleteItem(item.id); }}
-                    className="flex-shrink-0 text-text-muted hover:text-error transition-colors opacity-0 group-hover:opacity-100 text-sm p-0.5"
+                    className="flex-shrink-0 text-text-muted hover:text-error transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-sm p-0.5"
                     aria-label={t.common.delete}
                   >
                     🗑

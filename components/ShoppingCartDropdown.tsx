@@ -56,6 +56,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 재료 추가 / 필터 입력
   const [inputText, setInputText] = useState('');
   const [inputUnit, setInputUnit] = useState('');
+  const [inputQuantity, setInputQuantity] = useState(1);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -171,8 +172,9 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     };
   }, [inputText]);
 
-  const addItem = async (name: string, category = '', unit?: string, source: CartAddSource = 'manual') => {
+  const addItem = async (name: string, category = '', unit?: string, source: CartAddSource = 'manual', quantity?: number) => {
     if (!name.trim() || adding) return;
+    const qty = quantity ?? inputQuantity ?? 1;
     setAdding(true);
     try {
       const res = await fetch('/api/shopping-list', {
@@ -181,7 +183,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         body: JSON.stringify({
           recipeId: null,
           recipeTitle: t.cart.manualAdd,
-          ingredients: [{ ingredient_name: name.trim(), category, unit: unit ?? inputUnit ?? '' }],
+          ingredients: [{ ingredient_name: name.trim(), category, unit: unit ?? inputUnit ?? '', quantity: String(qty) }],
         }),
       });
       if (res.ok) {
@@ -193,6 +195,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         });
         setInputText('');
         setInputUnit('');
+        setInputQuantity(1);
         setSuggestions([]);
         setShowSuggestions(false);
         window.dispatchEvent(new Event('shopping-list-updated'));
@@ -317,7 +320,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // Quick-add — favorites + popularIngredients fallback 통합 (중복 제거, 최대 8개).
   // 입력창 바로 아래에 항상 노출 (빈 상태/항목 있는 상태 공통).
   const quickAdd = (name: string, cartCategory: string) => {
-    addItem(name, cartCategory, undefined, 'chip');
+    addItem(name, cartCategory, undefined, 'chip', 1);
   };
 
   const quickAddItems: QuickItem[] = (() => {
@@ -444,6 +447,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
           setInputText={setInputText}
           inputUnit={inputUnit}
           setInputUnit={setInputUnit}
+          inputQuantity={inputQuantity}
+          setInputQuantity={setInputQuantity}
           inputFocused={inputFocused}
           setInputFocused={setInputFocused}
           suggestions={suggestions}

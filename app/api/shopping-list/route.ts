@@ -115,9 +115,12 @@ export async function POST(request: NextRequest) {
   const [{ data: ownedIngredients }, { data: existingItems }, { data: masterRows }] = await Promise.all([
     supabase.from('user_ingredients').select('ingredient_name').eq('user_id', user.id),
     supabase.from('shopping_list_items').select('id, ingredient_name, quantity').eq('user_id', user.id).eq('is_checked', false),
-    supabase.from('ingredients_master').select('id, name').in('name', names),
+    supabase.from('ingredients_master').select('id, name, category').in('name', names),
   ]);
-  const nameToMasterId = new Map((masterRows ?? []).map(r => [r.name, r.id]));
+  // 이름 → 마스터 {id, category}. 이름 정확일치 시 카테고리를 마스터 값으로 보정(단일 출처).
+  const nameToMaster = new Map(
+    (masterRows ?? []).map(r => [r.name, { id: r.id as string, category: r.category as string | null }]),
+  );
 
   const ownedNames = new Set((ownedIngredients || []).map(i => i.ingredient_name.toLowerCase()));
   const existingByName = new Map(
@@ -143,14 +146,15 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         shopping_list_id: shoppingListId,
         ingredient_name: i.ingredient_name,
-        category: i.category || 'other',
+        // 이름이 마스터와 일치하면 마스터 카테고리 우선 (정합성), 아니면 넘어온 값/기타
+        category: nameToMaster.get(i.ingredient_name)?.category || i.category || 'other',
         quantity: i.quantity ? parseFloat(i.quantity) : null,
         unit: i.unit && i.unit !== '선택' ? i.unit : null,
         recipe_id: recipeId,
         recipe_title: recipeTitle,
         is_owned: ownedNames.has(key),
         is_checked: false,
-        ingredient_id: nameToMasterId.get(i.ingredient_name) ?? null,
+        ingredient_id: nameToMaster.get(i.ingredient_name)?.id ?? null,
       });
     }
   }

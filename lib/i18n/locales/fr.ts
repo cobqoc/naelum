@@ -1346,6 +1346,7 @@ export const fr = {
     addToFridgeSuccess: '{count} ingrédient(s) ajouté(s) au réfrigérateur !',
     addToFridgeFailed: "Échec de l'ajout au réfrigérateur.",
     alreadyOwned: 'Déjà au frigo',
+    alreadyOwnedHint: 'Cet ingrédient est déjà dans votre frigo',
     hideChecked: 'Masquer les cochés',
     showAll: 'Tout afficher',
     clearAll: 'Tout effacer',

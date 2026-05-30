@@ -29,6 +29,9 @@ export function useOutsideClick(
     const handler = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node | null;
       if (!target) return;
+      // 클릭 순간 unmount된 노드(예: 스피너로 교체되는 추가 버튼)는 DOM에서 떨어져나가
+      // panel.contains()가 false → "바깥 클릭"으로 오판해 닫히던 버그. detached면 무시.
+      if (!target.isConnected) return;
       if (panelRef.current?.contains(target)) return;
       if (triggerRef?.current?.contains(target)) return;
       onClose();

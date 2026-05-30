@@ -1346,6 +1346,7 @@ export const de = {
     addToFridgeSuccess: '{count} Zutat(en) in den Kühlschrank hinzugefügt!',
     addToFridgeFailed: 'Fehler beim Hinzufügen zum Kühlschrank.',
     alreadyOwned: 'Schon im Kühlschrank',
+    alreadyOwnedHint: 'Diese Zutat ist schon im Kühlschrank',
     hideChecked: 'Erledigte ausblenden',
     showAll: 'Alle anzeigen',
     clearAll: 'Alles löschen',
