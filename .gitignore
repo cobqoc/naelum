@@ -69,3 +69,7 @@ supabase/.temp/
 kor.traineddata
 *.traineddata
 영수증.*
+
+# 루트 임시/스크래치 파일 (CSS recovery 등)
+/_*.txt
+/_*.css
