@@ -1,4 +1,5 @@
 import { verifyAdminAndLog } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 // PATCH /api/admin/users/[id] - 사용자 차단/해제
@@ -74,11 +75,17 @@ export async function DELETE(
     return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
 
-  // Delete user (cascade will handle related data)
-  const { error } = await auth.supabase
-    .from('profiles')
-    .delete()
-    .eq('id', id)
+  // 자기 계정은 이 경로로 삭제 금지 (설정 > 계정 삭제에서 처리)
+  if (id === auth.user.id) {
+    return NextResponse.json({ error: '본인 계정은 설정에서 삭제하세요' }, { status: 400 })
+  }
+
+  // 관리자는 대상 유저의 소유자가 아니라 user-context client 의 profiles.delete() 가
+  // RLS 에 막혀 0행 삭제+silent success + auth.users 잔존(재로그인 가능)이었다(H15).
+  // service-role 로 auth.users 를 삭제 → profiles_id_fkey ON DELETE CASCADE 로
+  // 프로필·연관 데이터까지 정리(자기삭제 delete_user RPC 와 동일 효과).
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.deleteUser(id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
