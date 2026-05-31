@@ -864,7 +864,8 @@ export const fr = {
     categoryLabels: {
       veggie: 'Légumes',
       egg: 'Œufs',
-      legume: 'Légumineuses et noix',
+      legume: 'Légumineuses',
+      nuts: 'Fruits à coque',
       oil: 'Huiles et graisses',
       sweetener: 'Sucres et édulcorants',
       mushroom: 'Champignons',

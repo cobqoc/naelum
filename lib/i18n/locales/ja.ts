@@ -864,7 +864,8 @@ export const ja = {
     categoryLabels: {
       veggie: '野菜',
       egg: '卵類',
-      legume: '豆・ナッツ',
+      legume: '豆類',
+      nuts: 'ナッツ',
       oil: '油脂',
       sweetener: '糖類・甘味料',
       mushroom: 'きのこ類',

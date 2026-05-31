@@ -864,7 +864,8 @@ export const de = {
     categoryLabels: {
       veggie: 'Gemüse',
       egg: 'Eier',
-      legume: 'Hülsenfrüchte & Nüsse',
+      legume: 'Hülsenfrüchte',
+      nuts: 'Nüsse',
       oil: 'Öle & Fette',
       sweetener: 'Zucker & Süßungsmittel',
       mushroom: 'Pilze',

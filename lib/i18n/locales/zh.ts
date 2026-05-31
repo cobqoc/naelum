@@ -864,7 +864,8 @@ export const zh = {
     categoryLabels: {
       veggie: '蔬菜',
       egg: '蛋类',
-      legume: '豆类·坚果',
+      legume: '豆类',
+      nuts: '坚果',
       oil: '油脂',
       sweetener: '糖类·甜味剂',
       mushroom: '菌菇类',
