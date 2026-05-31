@@ -100,7 +100,8 @@ feature/* → 기능 단위 브랜치 (선택)
   - windows-mcp는 OS 데스크톱 GUI 조작 전용 (파일 탐색기, 윈도우 앱 등)
 
 - **E2E 실행 전 기존 프로세스 킬 필수**
-  - 새 테스트 시작 전 반드시: `pkill -f "playwright test" 2>/dev/null; pkill -f "next start" 2>/dev/null`
+  - 새 테스트 시작 전 반드시: `pkill -f "playwright test" 2>/dev/null; lsof -ti tcp:3000 | xargs kill -9 2>/dev/null`
+  - ⚠️ **`pkill -f "next start"` 는 불충분** — 실제 prod 서버 프로세스명은 `next-server` 라 안 죽고 :3000 을 계속 점유. 그러면 playwright `reuseExistingServer:true` 가 그 **스테일 서버(옛 빌드)** 를 재사용 → 브라우저가 디스크에 없는 청크 요청 → 404 → hydration 실패 → 로그인 폼·cart 등 클라 페이지가 "Loading…" 에서 멈춰 **전 인증/폼 테스트 1분 타임아웃**. 반드시 **포트 기준**(`lsof -ti tcp:3000 | xargs kill -9`)으로 죽일 것. (2026-06-01: 이 함정으로 e2e 전수 빨강 → 1시간+ 오진. `e2e/global-setup.ts` 가 빌드 불일치 스테일 서버를 자동 정리하도록 처방됨.)
   - 중복 실행 시 워커 6개(3+3)가 dev DB 동시 접근 → 10초 timeout + retry 반복 → 전체 2시간 소요 사례 있음
   - 백그라운드 실행에 `| tail -15` 절대 금지 — 완료 전까지 출력 없어 실행 중인지 판단 불가 → 중복 실행 유발
   - 백그라운드 출력 확인이 필요하면 `tee /tmp/pw_run.log` 사용
