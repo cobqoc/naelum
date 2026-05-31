@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRows } from '@/lib/supabase/fetchAll';
 import { NextResponse } from 'next/server';
 
 /**
@@ -28,19 +29,21 @@ const PREVIEW_LIMIT = 8;
 export async function GET() {
   const supabase = await createClient();
 
-  // 1) 모든 approved 재료 + 카운트
-  const { data: rows, error } = await supabase
-    .from('ingredients_master')
-    .select('id, name, category, emoji, search_count')
-    .eq('status', 'approved');
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  // 1) 모든 approved 재료 + 카운트 — fetchAllRows 로 1000행 silent 절단 방지(AUDIT H 잠복)
+  type Row = { id: string; name: string; category: string | null; emoji: string | null; search_count: number | null };
+  let rows: Row[];
+  try {
+    rows = await fetchAllRows<Row>(() => supabase
+      .from('ingredients_master')
+      .select('id, name, category, emoji, search_count')
+      .eq('status', 'approved'));
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 
   // 2) 카테고리별 그룹화 + 정렬
   const byCategory = new Map<string, Array<{ id: string; name: string; emoji: string | null; search_count: number | null }>>();
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     const cat = (row.category as string | null) ?? 'other';
     if (!byCategory.has(cat)) byCategory.set(cat, []);
     byCategory.get(cat)!.push({

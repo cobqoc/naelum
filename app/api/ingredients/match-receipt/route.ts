@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRows } from '@/lib/supabase/fetchAll';
 import { NextRequest, NextResponse } from 'next/server';
 
 function hasKorean(s: string): boolean {
@@ -165,12 +166,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ productLines: [] });
   }
 
-  const { data: ingredients, error } = await supabase
-    .from('ingredients_master')
-    .select('id, name, category, common_units')
-    .order('search_count', { ascending: false, nullsFirst: false });
-
-  if (error || !ingredients) {
+  // 영수증 매칭 위해 전체 재료 필요 — fetchAllRows 로 1000행 silent 절단 방지
+  let ingredients: IngredientRow[];
+  try {
+    ingredients = await fetchAllRows<IngredientRow>(() => supabase
+      .from('ingredients_master')
+      .select('id, name, category, common_units')
+      .order('search_count', { ascending: false, nullsFirst: false }));
+  } catch {
     return NextResponse.json({ error: '재료 DB 조회 실패' }, { status: 500 });
   }
 
