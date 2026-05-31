@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import * as Sentry from '@sentry/nextjs';
-import { useI18n } from '@/lib/i18n/context';
 
 type ErrorMessages = {
   title: string;
@@ -23,6 +22,22 @@ const messages: Record<string, ErrorMessages> = {
   it: { title: 'Qualcosa è andato storto', description: 'Si è verificato un errore imprevisto. Riprova.', retry: 'Riprova', goHome: 'Vai alla home' },
 };
 
+// 루트 에러 바운더리는 I18nProvider *바깥*에서 렌더되므로 useI18n() 을 호출하면
+// "useI18n must be used within an I18nProvider" 로 자기 자신이 throw → 흰 화면 +
+// 진짜 에러 은폐. 그래서 context 없이 URL 경로(/ko, /en…)에서 직접 언어를 감지한다.
+// (path-based 라우팅이라 첫 세그먼트가 locale. fallback: <html lang> → 브라우저 → ko)
+function resolveLanguage(): string {
+  if (typeof window !== 'undefined') {
+    const seg = window.location.pathname.split('/')[1]?.toLowerCase();
+    if (seg && seg in messages) return seg;
+    const htmlLang = document.documentElement.lang?.toLowerCase();
+    if (htmlLang && htmlLang in messages) return htmlLang;
+    const nav = navigator.language?.split('-')[0]?.toLowerCase();
+    if (nav && nav in messages) return nav;
+  }
+  return 'ko';
+}
+
 export default function Error({
   error,
   reset,
@@ -34,8 +49,7 @@ export default function Error({
     Sentry.captureException(error);
   }, [error]);
 
-  const { language } = useI18n();
-  const t = messages[language] ?? messages.ko;
+  const t = messages[resolveLanguage()] ?? messages.ko;
 
   return (
     <div className="min-h-screen bg-background-primary text-text-primary flex items-center justify-center px-4">
