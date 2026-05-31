@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { matchRecipe, type RecipeIngredientInput } from './matchV2'
-import { fetchRelationsForRecipe, fetchUserVariantBases } from './fetchRelations'
+import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from './fetchRelations'
 
 type SupabaseClient = ReturnType<typeof createClient>
 
@@ -84,10 +84,11 @@ export async function attachFridgeMatch<T extends { id: string }>(
   )
   const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
   const userBaseMap = await fetchUserVariantBases([...userIdSet], supabase)
+  const coeffsMap = await fetchUnitCoeffs(allRecipeIngredientIds, supabase)
 
   return recipes.map(r => {
     const ingredients = byRecipe.get(r.id) ?? []
-    const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap)
+    const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
     const ownedIngredientNames: string[] = []
     const missingIngredientNames: string[] = []
     const substitutableIngredients: { ingredient: string; via: string }[] = []

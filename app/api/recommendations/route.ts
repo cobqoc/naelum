@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
-import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations'
+import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
@@ -218,6 +218,7 @@ export async function GET(request: NextRequest) {
           ),
         )
         const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
+        const coeffsMap = await fetchUnitCoeffs(allRecipeIngredientIds, supabase)
 
         // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup) — userBaseMap 은 위에서 계산됨
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,7 +232,7 @@ export async function GET(request: NextRequest) {
               unit: i.unit ?? null,
             }),
           )
-          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap)
+          const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
           const matchedCount = summary.results.filter(
             (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
           ).length
