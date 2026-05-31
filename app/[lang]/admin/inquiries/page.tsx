@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/lib/toast/context';
 
 interface Inquiry {
   id: string;
@@ -29,6 +30,7 @@ type FilterCategory = 'all' | 'bug' | 'feature' | 'other';
 
 export default function AdminInquiriesPage() {
   const supabase = createClient();
+  const toast = useToast();
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterCategory>('all');
@@ -36,12 +38,13 @@ export default function AdminInquiriesPage() {
 
   const loadInquiries = async () => {
     setLoading(true);
-    const query = supabase
+    // admin RLS 정책(20260601_contact_inquiries_admin_rls)으로 전체 문의 조회.
+    // .error 명시 체크 — 정책 누락/권한 문제를 조용히 빈 목록으로 숨기지 않음.
+    const { data, error } = await supabase
       .from('contact_inquiries')
       .select('*')
       .order('created_at', { ascending: false });
-
-    const { data } = await query;
+    if (error) toast.error(`문의 목록을 불러오지 못했습니다: ${error.message}`);
     setInquiries(data || []);
     setLoading(false);
   };
@@ -49,28 +52,33 @@ export default function AdminInquiriesPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const query = supabase
+      const { data, error } = await supabase
         .from('contact_inquiries')
         .select('*')
         .order('created_at', { ascending: false });
-
-      const { data } = await query;
       if (!cancelled) {
+        if (error) toast.error(`문의 목록을 불러오지 못했습니다: ${error.message}`);
         setInquiries(data || []);
         setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [supabase]);
+  }, [supabase, toast]);
 
   const updateStatus = async (id: string, newStatus: string) => {
-    await supabase
-      .from('contact_inquiries')
-      .update({ status: newStatus })
-      .eq('id', id);
+    // 옵티미스틱 갱신 — 실패 시 .error 체크해 롤백(조용한 원복 버그 방지, C8).
+    const prevInquiries = inquiries;
     setInquiries(prev =>
       prev.map(i => i.id === id ? { ...i, status: newStatus as Inquiry['status'] } : i)
     );
+    const { error } = await supabase
+      .from('contact_inquiries')
+      .update({ status: newStatus })
+      .eq('id', id);
+    if (error) {
+      setInquiries(prevInquiries); // 롤백
+      toast.error(`상태 변경에 실패했습니다: ${error.message}`);
+    }
   };
 
   const filtered = filter === 'all' ? inquiries : inquiries.filter(i => i.category === filter);
