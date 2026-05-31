@@ -9,7 +9,18 @@
 
 ---
 
-## 2026-05 작업 로그
+## 2026-06 작업 로그
+
+- **한식·양식 staple 재료 + 신규 카테고리 + Critical 3건 수정 + 전수 감사** (2026-05-31~06-01)
+  - **재료 매칭 V2 데이터 채우기 (dev, prod 미적용)**: 육류 부위 18 + 다진육 2(`seed_meat_cuts`), 1순위 버섯류 5·해조류 3·김치 base+변형 3(`seed_korean_staples`), 2순위 가공육 4·치즈 base+변형 3·버터/생크림/마가린 + 버터↔마가린 대체쌍(`seed_processed_meat_dairy`). dev approved 65→113.
+  - **신규 카테고리 mushroom(버섯류)·seaweed(해조류)** 배선 15곳(i18n 8 + 타입·색상·도감·create·admin). **가공식품(processed) 분류 규칙 확립**: 여러 식품군 재구성 완제품(스팸·소시지·햄·베이컨)만 processed, 단일 식품 가공(버터·치즈·두부)은 본질 카테고리+is_processed. 버터=dairy 단일. 상세 [[project_ingredient_category_taxonomy]].
+  - **알레르겐 어휘 통일**: 다진소고기 `소고기→쇠고기` 버그 수정(base 소고기와 불일치였음).
+  - **전수 감사**(`AUDIT_2026-05-31.md`): 코드감사 14기(2웨이브) + 프로덕션 빌드 라이브(curl+claude-in-chrome) + dev DB MCP 실측. ~70 발견(C1~C9·H1~H16). 반복 근본원인: `.error` 미체크 write·`.select()` 1000행 무방비·user-context write RLS 정책 누락.
+  - **Critical 수정 3건** (라이브 검증 완료):
+    - **C1** 약관/온보딩 게이트를 변경 API(POST/PUT/PATCH/DELETE)로 확장 — 미동의 세션 쓰기 차단(403). `/api/auth/*`·GET 예외. `proxy.ts` + `onboarding-gate.spec.ts`. 풀 e2e 446 passed.
+    - **C2** 루트 `app/error.tsx`의 `useI18n()` 제거(Provider 밖 자기 throw→흰 화면) → URL 경로 기반 언어 감지 + 정적 메시지 맵. 라이브: ko/en 에러 UI 정상 렌더.
+    - **C3** SW 레시피 캐시 정규식에 locale prefix 허용 + `CACHE_VERSION` v14→v15. 라이브: `/ko/recipes/{id}` 캐시 생성 확인. ⚠️ 최종 오프라인 검증은 Preview 권장.
+    - C6(offline.html addAll 거부)는 라이브 반증 — 버그 아님.
 
 - **장보기 카트 UX 개선 + 어드민 매칭 큐 검색** — 완료·develop→main 머지 (2026-05-31)
   - **보유 재료 표시 = 냉장고 아이콘**: "❄️ 이미 있음" 텍스트 배지가 재료명과 한 칸 경쟁해 모바일서 이름 잘림 → 작은 `FridgeIcon`(네비 동일 SVG)로 교체, 탭 시 토스트(i18n `alreadyOwnedHint` 8). is_owned 는 현재 냉장고로 매번 재계산되므로 *실제 보유분*만 아이콘 표시.
