@@ -64,7 +64,7 @@ export async function POST(
 
   if (existingRating) {
     // 평점 수정
-    await supabase
+    const { error } = await supabase
       .from('recipe_ratings')
       .update({
         rating,
@@ -72,9 +72,10 @@ export async function POST(
         updated_at: new Date().toISOString()
       })
       .eq('id', existingRating.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   } else {
     // 새 평점 등록
-    await supabase
+    const { error } = await supabase
       .from('recipe_ratings')
       .insert({
         recipe_id: recipeId,
@@ -82,6 +83,7 @@ export async function POST(
         rating,
         review: review || null
       })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   // 평균 평점 재계산 (SECURITY DEFINER 함수 사용)
