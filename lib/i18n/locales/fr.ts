@@ -867,6 +867,8 @@ export const fr = {
       legume: 'Légumineuses et noix',
       oil: 'Huiles et graisses',
       sweetener: 'Sucres et édulcorants',
+      mushroom: 'Champignons',
+      seaweed: 'Algues',
       meat: 'Viande',
       seafood: 'Fruits de mer',
       grain: 'Céréales et noix',

@@ -866,6 +866,8 @@ export const en = {
       legume: 'Beans & Nuts',
       oil: 'Oils & Fats',
       sweetener: 'Sugars & Sweeteners',
+      mushroom: 'Mushrooms',
+      seaweed: 'Seaweed',
       meat: 'Meat',
       seafood: 'Seafood',
       grain: 'Grains & Nuts',

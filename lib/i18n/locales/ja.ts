@@ -867,6 +867,8 @@ export const ja = {
       legume: '豆・ナッツ',
       oil: '油脂',
       sweetener: '糖類・甘味料',
+      mushroom: 'きのこ類',
+      seaweed: '海藻',
       meat: '肉類',
       seafood: '魚介類',
       grain: '穀物類',

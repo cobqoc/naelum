@@ -36,7 +36,7 @@ const SEASON_EMOJI: Record<string, string> = {
 const CATEGORY_EMOJI: Record<string, string> = {
   veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟', egg: '🥚', dairy: '🧀',
   grain: '🌾', legume: '🥜', seasoning: '🥫', spice: '🌶️', condiment: '🧂',
-  oil: '🫗', sweetener: '🍯',
+  oil: '🫗', sweetener: '🍯', mushroom: '🍄', seaweed: '🌿',
   fermented: '🍶', bakery: '🍞', beverage: '🥤', snack: '🍪', processed: '📦', other: '✨',
 };
 
@@ -269,13 +269,19 @@ export default function IngredientBrowsePage({
     { value: 'fruit',     label: tb.categoryLabels.fruit,     emoji: '🍎' },
     { value: 'meat',      label: tb.categoryLabels.meat,      emoji: '🥩' },
     { value: 'seafood',   label: tb.categoryLabels.seafood,   emoji: '🐟' },
+    { value: 'egg',       label: tb.categoryLabels.egg,       emoji: '🥚' },
     { value: 'grain',     label: tb.categoryLabels.grain,     emoji: '🌾' },
+    { value: 'legume',    label: tb.categoryLabels.legume,    emoji: '🥜' },
     { value: 'dairy',     label: tb.categoryLabels.dairy,     emoji: '🧀' },
     { value: 'seasoning', label: tb.categoryLabels.seasoning, emoji: '🥫' },
     { value: 'condiment', label: tb.categoryLabels.condiment, emoji: '🧂' },
+    { value: 'spice',     label: tb.categoryLabels.spice,     emoji: '🌶️' },
     { value: 'fermented', label: tb.categoryLabels.fermented, emoji: '🍶' },
     { value: 'oil',       label: tb.categoryLabels.oil,       emoji: '🫗' },
     { value: 'sweetener', label: tb.categoryLabels.sweetener, emoji: '🍯' },
+    { value: 'mushroom',  label: tb.categoryLabels.mushroom,  emoji: '🍄' },
+    { value: 'seaweed',   label: tb.categoryLabels.seaweed,   emoji: '🌿' },
+    { value: 'processed', label: tb.categoryLabels.processed, emoji: '📦' },
   ];
 
   const [items, setItems] = useState<IngredientItem[]>([]);

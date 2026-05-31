@@ -867,6 +867,8 @@ export const it = {
       legume: 'Legumi e frutta secca',
       oil: 'Oli e grassi',
       sweetener: 'Zuccheri e dolcificanti',
+      mushroom: 'Funghi',
+      seaweed: 'Alghe',
       meat: 'Carne',
       seafood: 'Pesce',
       grain: 'Cereali e noci',

@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 8. 카테고리 검증 — V2 확장 (egg·legume·fermented·processed, 2026-05-30 oil·sweetener 추가)
+    // 8. 카테고리 검증 — V2 확장 (egg·legume·fermented·processed, 2026-05-30 oil·sweetener, 2026-05-31 mushroom·seaweed 추가)
     const validCategories = [
       'veggie',
       'fruit',
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
       'condiment',
       'oil',
       'sweetener',
+      'mushroom',
+      'seaweed',
       'spice',
       'beverage',
       'snack',
