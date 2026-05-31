@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { useLocalizedRouter } from '@/lib/i18n/useLocalizedRouter';
+import { useI18n } from '@/lib/i18n/context';
 import Link from '@/components/Common/LocalizedLink';
 
 /**
@@ -68,6 +69,9 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
 
 export default function KitchenHomeClient() {
   const localizedRouter = useLocalizedRouter();
+  const { t } = useI18n();
+  const tb = t.ingredient;
+  const th = tb.home;
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,7 +100,7 @@ export default function KitchenHomeClient() {
       <main className="container mx-auto max-w-5xl px-4 pt-20 pb-24 md:pb-12">
         {/* 페이지 서브타이틀 — Header 에 이미 "부엌 도감" 표시 있어 중복 방지. 설명만. */}
         <p className="text-sm text-text-secondary mb-6 md:mb-8">
-          세상의 모든 재료·도구·기법을 한곳에서. 사용자 입력으로 자라는 카탈로그.
+          {th.subtitle}
         </p>
 
         {/* 검색바 — 도감의 핵심 사용 흐름 */}
@@ -114,7 +118,7 @@ export default function KitchenHomeClient() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="재료·도구·기법 검색…"
+              placeholder={th.searchPlaceholder}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-background-secondary border border-white/10 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-warm/50 focus:ring-2 focus:ring-accent-warm/20 transition-all"
             />
           </div>
@@ -124,12 +128,12 @@ export default function KitchenHomeClient() {
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
-              🥬 재료
+              🥬 {th.ingredientsHeading}
               <span className="text-sm font-medium text-text-muted">
-                {loading ? '...' : `${totalCount}개`}
+                {loading ? '...' : `${totalCount}${tb.countSuffixLabel}`}
               </span>
             </h2>
-            <span className="text-xs text-text-muted">사용자 입력으로 자라는 중</span>
+            <span className="text-xs text-text-muted">{th.growing}</span>
           </div>
 
           {loading ? (
@@ -140,15 +144,17 @@ export default function KitchenHomeClient() {
             </div>
           ) : categories.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/20 p-8 text-center">
-              <p className="text-text-secondary mb-2">아직 등록된 재료가 없어요</p>
+              <p className="text-text-secondary mb-2">{th.emptyTitle}</p>
               <Link href="/" className="text-accent-warm hover:underline text-sm">
-                냉장고에서 첫 재료를 추가해보세요 →
+                {th.emptyCta}
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
               {categories.map((cat) => {
                 const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.other;
+                const label =
+                  tb.categoryLabels[cat.category as keyof typeof tb.categoryLabels] ?? tb.categoryLabels.other;
                 return (
                   <button
                     key={cat.category}
@@ -160,7 +166,7 @@ export default function KitchenHomeClient() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl md:text-3xl" aria-hidden>{meta.emoji}</span>
-                        <span className="font-bold text-base md:text-lg">{meta.label}</span>
+                        <span className="font-bold text-base md:text-lg">{label}</span>
                       </div>
                       <span className="text-2xl md:text-3xl font-extrabold tabular-nums leading-none">
                         {cat.count}
@@ -195,30 +201,30 @@ export default function KitchenHomeClient() {
         {/* 조리 도구 섹션 (준비 중) */}
         <section className="mb-8">
           <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 mb-4">
-            🍳 조리 도구·기법
-            <span className="text-sm font-medium text-text-muted">준비 중</span>
+            🍳 {th.toolsHeading}
+            <span className="text-sm font-medium text-text-muted">{th.comingSoon}</span>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             <div className="rounded-2xl border border-dashed border-white/15 bg-background-secondary/30 p-4 md:p-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl md:text-3xl opacity-50" aria-hidden>🍳</span>
-                <span className="font-bold text-base md:text-lg text-text-muted">조리 도구</span>
+                <span className="font-bold text-base md:text-lg text-text-muted">{th.toolsCard}</span>
               </div>
-              <p className="text-xs text-text-muted">냄비·팬·칼·계량컵 등. 곧 추가 예정</p>
+              <p className="text-xs text-text-muted">{th.toolsCardDesc}</p>
             </div>
             <div className="rounded-2xl border border-dashed border-white/15 bg-background-secondary/30 p-4 md:p-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl md:text-3xl opacity-50" aria-hidden>🔥</span>
-                <span className="font-bold text-base md:text-lg text-text-muted">조리 기법</span>
+                <span className="font-bold text-base md:text-lg text-text-muted">{th.techCard}</span>
               </div>
-              <p className="text-xs text-text-muted">끓이기·볶기·튀기기 등. 곧 추가 예정</p>
+              <p className="text-xs text-text-muted">{th.techCardDesc}</p>
             </div>
             <div className="rounded-2xl border border-dashed border-white/15 bg-background-secondary/30 p-4 md:p-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-2xl md:text-3xl opacity-50" aria-hidden>📏</span>
-                <span className="font-bold text-base md:text-lg text-text-muted">단위 변환</span>
+                <span className="font-bold text-base md:text-lg text-text-muted">{th.unitCard}</span>
               </div>
-              <p className="text-xs text-text-muted">큰술↔ml↔g, 인분 조절</p>
+              <p className="text-xs text-text-muted">{th.unitCardDesc}</p>
             </div>
           </div>
         </section>
@@ -226,9 +232,9 @@ export default function KitchenHomeClient() {
         {/* 안내 */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-background-secondary/30 p-4 text-sm text-text-muted">
           <p className="leading-relaxed">
-            💡 도감은 사용자가 입력한 재료로 자랍니다. 자동완성에 없는 재료는 신규로 추가할 수 있어요.
+            {th.infoLine1}
             <br />
-            관리자가 카테고리·알레르겐 검수 후 도감에 노출됩니다.
+            {th.infoLine2}
           </p>
         </div>
       </main>

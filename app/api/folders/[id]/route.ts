@@ -131,11 +131,14 @@ export async function DELETE(
     return NextResponse.json({ error: '기본 폴더는 삭제할 수 없습니다' }, { status: 400 })
   }
 
-  // 폴더 내 저장된 레시피의 folder_id를 null로 변경
-  await supabase
+  // 폴더 내 저장된 레시피의 folder_id를 null로 변경 (실패 시 다음 삭제가 FK 위반)
+  const { error: unlinkError } = await supabase
     .from('recipe_saves')
     .update({ folder_id: null })
     .eq('folder_id', id)
+  if (unlinkError) {
+    return NextResponse.json({ error: unlinkError.message }, { status: 500 })
+  }
 
   // 폴더 삭제
   const { error } = await supabase

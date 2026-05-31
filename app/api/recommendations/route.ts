@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { fetchAllRows } from '@/lib/supabase/fetchAll'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
 import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
@@ -158,11 +159,12 @@ export async function GET(request: NextRequest) {
         // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
         let idCandidateIds: string[] = []
         if (candidateIdPool.length > 0) {
-          const { data: idCandidateRows } = await supabase
+          // fetchAllRows: 인기 재료 하나로 1000행 초과 쉬움 → silent 절단 시 후보 누락
+          const idCandidateRows = await fetchAllRows<{ recipe_id: string }>(() => supabase
             .from('recipe_ingredients')
             .select('recipe_id')
-            .in('ingredient_id', candidateIdPool)
-          idCandidateIds = idCandidateRows?.map(r => r.recipe_id) ?? []
+            .in('ingredient_id', candidateIdPool))
+          idCandidateIds = idCandidateRows.map(r => r.recipe_id)
         }
 
         // 이름 ilike fallback — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
@@ -173,11 +175,11 @@ export async function GET(request: NextRequest) {
             .slice(0, 20)
             .map(ing => `ingredient_name.ilike.%${ing}%`)
             .join(',')
-          const { data: nameCandidateRows } = await supabase
+          const nameCandidateRows = await fetchAllRows<{ recipe_id: string }>(() => supabase
             .from('recipe_ingredients')
             .select('recipe_id')
-            .or(ilikeClauses)
-          nameCandidateIds = nameCandidateRows?.map(r => r.recipe_id) ?? []
+            .or(ilikeClauses))
+          nameCandidateIds = nameCandidateRows.map(r => r.recipe_id)
         }
 
         const candidateIds = [...new Set([...idCandidateIds, ...nameCandidateIds])]
@@ -333,14 +335,14 @@ export async function GET(request: NextRequest) {
         const weekAgo = new Date()
         weekAgo.setDate(weekAgo.getDate() - 7)
 
-        // 최근 7일간 가장 많이 만들어진 레시피
-        const { data: trendingCooked } = await supabase
+        // 최근 7일간 가장 많이 만들어진 레시피 — 7일치 세션이 1000행 초과 시 집계 누락
+        const trendingCooked = await fetchAllRows<{ recipe_id: string }>(() => supabase
           .from('cooking_sessions')
           .select('recipe_id')
           .not('completed_at', 'is', null)
-          .gte('completed_at', weekAgo.toISOString())
+          .gte('completed_at', weekAgo.toISOString()))
 
-        if (trendingCooked && trendingCooked.length > 0) {
+        if (trendingCooked.length > 0) {
           // 레시피별 만들어본 횟수 집계
           const cookedCounts = new Map<string, number>()
           trendingCooked.forEach(s => {

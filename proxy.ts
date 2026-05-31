@@ -12,6 +12,7 @@ const I18N_EXEMPT_PREFIXES = [
   '/sitemap.xml',
   '/robots.txt',
   '/manifest.json',
+  '/offline.html',  // SW STATIC_ASSETS — locale 307 redirect 시 cache.addAll이 redirected 응답 거부 → install 실패 (C/AUDIT C6 footgun)
   '/favicon.ico',
   '/sw.js',
   '/workbox-',

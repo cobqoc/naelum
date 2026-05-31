@@ -34,18 +34,19 @@ export async function POST(
     .maybeSingle()
 
   if (existingSave) {
-    // 저장 취소
-    await supabase
+    // 저장 취소 — write 실패 시 count RPC 돌리면 count drift → .error 체크 후에만 진행
+    const { error } = await supabase
       .from('recipe_saves')
       .delete()
       .eq('id', existingSave.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     await supabase.rpc('decrement_saves_count', { recipe_id: recipeId })
 
     return NextResponse.json({ saved: false })
   } else {
-    // 저장 추가
-    await supabase
+    // 저장 추가 — 동일하게 insert 성공 후에만 count 증가 (drift 방지)
+    const { error } = await supabase
       .from('recipe_saves')
       .insert({
         recipe_id: recipeId,
@@ -53,6 +54,7 @@ export async function POST(
         folder_id: folderId,
         notes,
       })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     await supabase.rpc('increment_saves_count', { recipe_id: recipeId })
 

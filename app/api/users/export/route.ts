@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
+import { fetchAllData } from '@/lib/supabase/fetchAll';
 
 // GET /api/users/export
 // GDPR Article 20 (Right to Data Portability) — 본인 데이터 일괄 export.
@@ -43,51 +44,53 @@ export async function GET() {
       reportsRes, blocksRes, followsRes, ordersRes,
       masterIngsRes, substitutesRes,
     ] = await Promise.all([
+      // 전체 행이 진짜 필요한 GDPR export — 1000행 silent 절단 방지 위해 fetchAllData 로
+      // .range() 끝까지 페이지네이션. profiles 만 단일행(maybeSingle).
       sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
-      sb.from('user_interests').select('*').eq('user_id', uid),
-      sb.from('user_dietary_preferences').select('*').eq('user_id', uid),
-      sb.from('user_allergies').select('*').eq('user_id', uid),
-      sb.from('user_ingredients').select('*').eq('user_id', uid),
-      sb.from('user_favorites_ingredients').select('*').eq('user_id', uid),
-      sb.from('user_terms_acceptance').select('*').eq('user_id', uid),
-      sb.from('recipe_folders').select('*').eq('user_id', uid),
-      sb.from('recipe_saves').select('*').eq('user_id', uid),
-      sb.from('recipe_comments').select('*').eq('user_id', uid),
-      sb.from('recipe_ratings').select('*').eq('user_id', uid),
-      sb.from('recipe_likes').select('*').eq('user_id', uid),
-      sb.from('recipe_views').select('*').eq('user_id', uid),
-      sb.from('recipe_notes').select('*').eq('user_id', uid),
-      sb.from('comment_likes').select('*').eq('user_id', uid),
-      sb.from('cooking_sessions').select('*').eq('user_id', uid),
-      sb.from('experience_logs').select('*').eq('user_id', uid),
-      sb.from('user_badges').select('*').eq('user_id', uid),
-      sb.from('shopping_lists').select('*').eq('user_id', uid),
-      sb.from('shopping_list_items').select('*').eq('user_id', uid),
-      sb.from('meal_plans').select('*').eq('user_id', uid),
-      sb.from('notifications').select('*').eq('user_id', uid),
-      sb.from('search_history').select('*').eq('user_id', uid),
-      sb.from('recommendation_history').select('*').eq('user_id', uid),
-      sb.from('contact_inquiries').select('*').eq('user_id', uid),
-      sb.from('ingredient_price_reports').select('*').eq('user_id', uid),
-      sb.from('ingredient_training_data').select('*').eq('user_id', uid),
-      sb.from('events').select('*').eq('user_id', uid),
-      sb.from('delivery_addresses').select('*').eq('user_id', uid),
-      sb.from('delivery_rider_profiles').select('*').eq('user_id', uid),
+      fetchAllData(() => sb.from('user_interests').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_dietary_preferences').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_allergies').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_ingredients').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_favorites_ingredients').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_terms_acceptance').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_folders').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_saves').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_comments').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_ratings').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_likes').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_views').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recipe_notes').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('comment_likes').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('cooking_sessions').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('experience_logs').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('user_badges').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('shopping_lists').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('shopping_list_items').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('meal_plans').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('notifications').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('search_history').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('recommendation_history').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('contact_inquiries').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('ingredient_price_reports').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('ingredient_training_data').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('events').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('delivery_addresses').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('delivery_rider_profiles').select('*').eq('user_id', uid)),
       // recipes: soft-delete 시스템 미구현 (20260209 마이그레이션 미적용, deleted_at 컬럼 없음).
       // status 컬럼(private/published) 으로만 관리. 본인 author_id 전체 export.
-      sb.from('recipes').select('*').eq('author_id', uid),
-      sb.from('tip').select('*').eq('author_id', uid),
-      sb.from('delivery_restaurants').select('*').eq('owner_id', uid),
-      sb.from('reports').select('*').eq('reporter_id', uid),
+      fetchAllData(() => sb.from('recipes').select('*').eq('author_id', uid)),
+      fetchAllData(() => sb.from('tip').select('*').eq('author_id', uid)),
+      fetchAllData(() => sb.from('delivery_restaurants').select('*').eq('owner_id', uid)),
+      fetchAllData(() => sb.from('reports').select('*').eq('reporter_id', uid)),
       // user_blocks: 본인이 *차단한* 사람만 (blocked_id=본인 = 본인을 차단한 사람은 비공개)
-      sb.from('user_blocks').select('*').eq('blocker_id', uid),
+      fetchAllData(() => sb.from('user_blocks').select('*').eq('blocker_id', uid)),
       // user_follows: 양방향 (팔로잉·팔로워 모두 본인 사회 그래프)
-      sb.from('user_follows').select('*').or(`follower_id.eq.${uid},following_id.eq.${uid}`),
+      fetchAllData(() => sb.from('user_follows').select('*').or(`follower_id.eq.${uid},following_id.eq.${uid}`)),
       // delivery_orders: 소비자(user_id)·라이더(rider_id) 양쪽
-      sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`),
+      fetchAllData(() => sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
       // 어드민 활동 (일반 사용자는 빈 배열)
-      sb.from('ingredients_master').select('*').or(`created_by.eq.${uid},approved_by.eq.${uid}`),
-      sb.from('ingredient_substitutes_global').select('*').eq('approved_by', uid),
+      fetchAllData(() => sb.from('ingredients_master').select('*').or(`created_by.eq.${uid},approved_by.eq.${uid}`)),
+      fetchAllData(() => sb.from('ingredient_substitutes_global').select('*').eq('approved_by', uid)),
     ]);
 
     // Stage 2: 자식 테이블 (부모 id 의존). 빈 배열이면 PostgREST .in() 에러라 skip.
@@ -98,15 +101,15 @@ export async function GET() {
     const mealPlanIds = ((mealPlansRes.data as WithId[] | null) ?? []).map(p => p.id);
     const orderIds = ((ordersRes.data as WithId[] | null) ?? []).map(o => o.id);
 
-    const emptyData = { data: [] as unknown[] };
+    const emptyData = Promise.resolve({ data: [] as unknown[] });
     const [recipeIngsRes, recipeStepsRes, recipeTagsRes, tipStepsRes, tipTagsRes, mealPlanItemsRes, orderItemsRes] = await Promise.all([
-      recipeIds.length ? sb.from('recipe_ingredients').select('*').in('recipe_id', recipeIds) : emptyData,
-      recipeIds.length ? sb.from('recipe_steps').select('*').in('recipe_id', recipeIds) : emptyData,
-      recipeIds.length ? sb.from('recipe_tags').select('*').in('recipe_id', recipeIds) : emptyData,
-      tipIds.length ? sb.from('tip_steps').select('*').in('tip_id', tipIds) : emptyData,
-      tipIds.length ? sb.from('tip_tags').select('*').in('tip_id', tipIds) : emptyData,
-      mealPlanIds.length ? sb.from('meal_plan_items').select('*').in('meal_plan_id', mealPlanIds) : emptyData,
-      orderIds.length ? sb.from('delivery_order_items').select('*').in('order_id', orderIds) : emptyData,
+      recipeIds.length ? fetchAllData(() => sb.from('recipe_ingredients').select('*').in('recipe_id', recipeIds)) : emptyData,
+      recipeIds.length ? fetchAllData(() => sb.from('recipe_steps').select('*').in('recipe_id', recipeIds)) : emptyData,
+      recipeIds.length ? fetchAllData(() => sb.from('recipe_tags').select('*').in('recipe_id', recipeIds)) : emptyData,
+      tipIds.length ? fetchAllData(() => sb.from('tip_steps').select('*').in('tip_id', tipIds)) : emptyData,
+      tipIds.length ? fetchAllData(() => sb.from('tip_tags').select('*').in('tip_id', tipIds)) : emptyData,
+      mealPlanIds.length ? fetchAllData(() => sb.from('meal_plan_items').select('*').in('meal_plan_id', mealPlanIds)) : emptyData,
+      orderIds.length ? fetchAllData(() => sb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
     ]);
 
     const exportData = {

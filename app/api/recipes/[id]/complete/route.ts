@@ -71,7 +71,7 @@ export async function POST(
 
       if (existingRating) {
         // 2a. 기존 리뷰에 사진 추가/업데이트
-        await supabase
+        const { error: updateError } = await supabase
           .from('recipe_ratings')
           .update({
             photo_url: photoUrl,
@@ -79,6 +79,10 @@ export async function POST(
             updated_at: new Date().toISOString()
           })
           .eq('id', existingRating.id)
+        if (updateError) {
+          console.error('Rating photo update error:', updateError)
+          return NextResponse.json({ error: '사진 저장에 실패했습니다' }, { status: 500 })
+        }
       } else {
         // 2b. 사진만 있는 새 리뷰 생성 (평점 없음)
         const { error: ratingError } = await supabase
@@ -113,10 +117,14 @@ export async function POST(
     if (recentSession) {
       // 기존 세션이 있으면 사진만 업데이트
       if (photoUrl) {
-        await supabase
+        const { error: sessionPhotoError } = await supabase
           .from('cooking_sessions')
           .update({ photo_url: photoUrl })
           .eq('id', recentSession.id)
+        if (sessionPhotoError) {
+          console.error('Cooking session photo update error:', sessionPhotoError)
+          return NextResponse.json({ error: '사진 저장에 실패했습니다' }, { status: 500 })
+        }
       }
 
       return NextResponse.json({

@@ -19,25 +19,34 @@ export async function PUT(request: NextRequest) {
 
     const uid = user!.id
 
-    await supabase.from('user_interests').delete().eq('user_id', uid)
+    // 각 카테고리 delete→insert. Supabase 는 RLS 거부 시 throw 안 하고 { error }
+    // 반환 → delete 성공 후 insert 실패 시 선호 *전량 유실*인데 {ok:true} 였다(최악).
+    // 모든 write 의 .error 를 명시 체크해 실패를 표면화한다(CLAUDE.md 규율).
+    const { error: e1 } = await supabase.from('user_interests').delete().eq('user_id', uid)
+    if (e1) return NextResponse.json({ error: e1.message }, { status: 500 })
     if (interests.length > 0) {
-      await supabase.from('user_interests').insert(
+      const { error } = await supabase.from('user_interests').insert(
         interests.map((v: string) => ({ user_id: uid, interest_type: INTEREST_TYPE_CUISINE, interest_value: v }))
       )
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    await supabase.from('user_dietary_preferences').delete().eq('user_id', uid)
+    const { error: e2 } = await supabase.from('user_dietary_preferences').delete().eq('user_id', uid)
+    if (e2) return NextResponse.json({ error: e2.message }, { status: 500 })
     if (dietaryPreferences.length > 0) {
-      await supabase.from('user_dietary_preferences').insert(
+      const { error } = await supabase.from('user_dietary_preferences').insert(
         dietaryPreferences.map((v: string) => ({ user_id: uid, preference_type: v, is_active: true }))
       )
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    await supabase.from('user_allergies').delete().eq('user_id', uid)
+    const { error: e3 } = await supabase.from('user_allergies').delete().eq('user_id', uid)
+    if (e3) return NextResponse.json({ error: e3.message }, { status: 500 })
     if (allergies.length > 0) {
-      await supabase.from('user_allergies').insert(
+      const { error } = await supabase.from('user_allergies').insert(
         allergies.map((v: string) => ({ user_id: uid, ingredient_name: v, severity: 'moderate' }))
       )
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ ok: true, interests, dietaryPreferences, allergies })

@@ -1,24 +1,27 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRows } from '@/lib/supabase/fetchAll';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://naelum.app';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
-  // Fetch all public recipe IDs
-  const { data: recipes } = await supabase
-    .from('recipes')
-    .select('id, updated_at')
-    .eq('status', 'published')
-    .order('updated_at', { ascending: false });
+  // 전체 행이 진짜 필요(SEO) — 1000행 silent 절단 시 색인 누락. fetchAllRows 로 끝까지.
+  const recipes = await fetchAllRows<{ id: string; updated_at: string }>(
+    () => supabase
+      .from('recipes')
+      .select('id, updated_at')
+      .eq('status', 'published')
+      .order('updated_at', { ascending: false }),
+  );
 
-  // Fetch all public user profiles
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('username, created_at')
-    .order('created_at', { ascending: false })
-    .limit(1000);
+  const profiles = await fetchAllRows<{ username: string | null; created_at: string }>(
+    () => supabase
+      .from('profiles')
+      .select('username, created_at')
+      .order('created_at', { ascending: false }),
+  );
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
@@ -32,14 +35,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.1 },
   ];
 
-  const recipePages: MetadataRoute.Sitemap = (recipes || []).map((recipe) => ({
+  const recipePages: MetadataRoute.Sitemap = recipes.map((recipe) => ({
     url: `${BASE_URL}/recipes/${recipe.id}`,
     lastModified: new Date(recipe.updated_at),
     changeFrequency: 'weekly' as const,
     priority: 0.7,
   }));
 
-  const profilePages: MetadataRoute.Sitemap = (profiles || [])
+  const profilePages: MetadataRoute.Sitemap = profiles
     .filter((profile) => profile.username)
     .map((profile) => ({
       url: `${BASE_URL}/@${profile.username}`,

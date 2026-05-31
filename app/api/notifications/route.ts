@@ -70,18 +70,20 @@ export async function PUT(request: NextRequest) {
 
   if (markAll) {
     // 모든 알림 읽음 처리
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true, read_at: new Date().toISOString() })
       .eq('user_id', user.id)
       .eq('is_read', false)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   } else if (id) {
     // 특정 알림 읽음 처리
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ is_read: true, read_at: new Date().toISOString() })
       .eq('id', id)
       .eq('user_id', user.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
@@ -101,11 +103,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: '알림 ID가 필요합니다' }, { status: 400 })
   }
 
-  await supabase
+  // DELETE RLS 정책(20260601_notifications_delete_rls)으로 본인 알림 삭제 허용.
+  // .error 명시 체크 — 정책 누락/권한 문제로 0행 삭제 시 조용한 부활 방지(H12).
+  const { error } = await supabase
     .from('notifications')
     .delete()
     .eq('id', id)
     .eq('user_id', user.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }
