@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v15';
+const CACHE_VERSION = 'v16';
 const CACHE_NAME = `naelum-${CACHE_VERSION}`;
 const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
 const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
@@ -153,8 +153,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
       data: { url },
       tag: url,
       renotify: false,

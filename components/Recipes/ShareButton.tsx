@@ -155,7 +155,7 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
       content: {
         title,
         description,
-        imageUrl: imageUrl || `${baseUrl}/icon-512.png`,
+        imageUrl: imageUrl || `${baseUrl}/icons/icon-512.png`,
         link: { mobileWebUrl: recipeUrl, webUrl: recipeUrl },
       },
     });
