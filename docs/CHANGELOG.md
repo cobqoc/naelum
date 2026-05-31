@@ -11,6 +11,25 @@
 
 ## 2026-06 작업 로그
 
+- **전수 감사 후속 수정 9건 + e2e 인프라 근본 처방 2건** — 완료·develop→main 머지(PR #221·#222·#223) (2026-06-01)
+  - **감사 Critical 4건**:
+    - **C5** 소셜 테이블 UNIQUE 제약 dev 드리프트 복구 — prod엔 있으나 dev에만 없던 6제약(recipe_saves/likes/ratings·comment_likes·user_follows·user_blocks) 추가, prod와 1:1(`20260601_social_unique_constraints_dev_drift.sql`). 누락 시 dev race 중복행 + e2e가 prod와 다른 동작.
+    - **C7** 장보기 비숫자 수량이 기존 누적을 null로 파괴(데이터유실) — `"약간"` 등 → `parseFloat`=NaN → `currentQty+NaN`=NaN→null. `lib/shopping-list/quantity.ts`(parseQuantity·mergeQuantity, 미상값은 기존 누적 미파괴) + vitest 9. 같은 경로 UPDATE `.error` 미체크도 보강.
+    - **C8** 문의 관리 admin RLS 부재 — prod·dev 실측 결과 admin 정책 진짜 없음 확인 → admin SELECT/UPDATE 추가(reports 패턴, dev+prod). 운영자가 비로그인·타인 문의·저작권신고를 못 보던 라이브 버그 해소. 페이지 옵티미스틱 롤백+토스트.
+    - **C9** 저작권 신고 API 무방비 — `validateOrigin`+`checkRateLimit(5/시간)`+`sanitizeHeader`(이메일 subject 헤더 인젝션 차단). 이메일 폭탄·쿼터 소진·DB 스팸 방지.
+  - **감사 High/기타 6건**:
+    - **아이콘 404** — sw.js 알림 icon/badge·ShareButton 카카오공유 fallback이 실존하지 않는 파일명 참조(HTML fallback) → `icon-192.png`/`/icons/icon-512.png`로 정정, CACHE_VERSION v16.
+    - **H6** `/en/kitchen` 한글 노출 — KitchenHomeClient i18n 0% → `ingredient.home` 8개 locale 신설, 카테고리 라벨·countSuffix 재사용.
+    - **offline.html 307** — `proxy.ts` `I18N_EXEMPT_PREFIXES`에 `/offline.html` 추가(SW `cache.addAll` redirected 거부 방지, 라이브 200 검증).
+    - **H12·H15 RLS 갭** — notifications DELETE 정책(dev+prod)+`.error` 체크. 관리자 유저삭제는 user-context `profiles.delete()`(RLS에 막혀 silent+재로그인 가능)→service-role `auth.admin.deleteUser()`(auth.users CASCADE)+자기삭제 가드.
+    - **`.error` 미체크 write 일괄** — preferences(최악, 선호 전량 유실)·rating·save(count drift)·complete·folders 명시 체크. CLAUDE.md 규율 위반 반복 차단.
+    - **`.select()` 1000행 무방비 일괄** — `lib/supabase/fetchAll`(.range() 끝까지, .error throw) → GDPR export(H9, 37+7테이블)·sitemap·kitchen·추천·match-receipt 적용 + vitest 5. silent 절단으로 인한 GDPR 완전성·SEO·추천 누락 방지.
+  - **e2e 인프라 근본 처방 2건** (이번 세션 진단 교훈 — "무더기 빨강·간헐 flake는 거의 DB 아니라 *하이드레이션 타이밍*"):
+    - **스테일 prod 서버** — `pkill -f "next start"`가 실제 프로세스명 `next-server`를 못 죽여 :3000에 옛 빌드 잔존 → 청크 404 → hydration 실패 → 클라 페이지 "Loading…" hang → 인증/폼 e2e 전수 1분 타임아웃(baseline 대조까지 오염시켜 "pre-existing" 오판). `e2e/global-setup.ts`(런타임 청크 불일치=옛 빌드 감지 시 포트 정리, fresh만 reuse) + CLAUDE.md 킬 명령 포트 기준 정정. [[feedback_e2e_stale_server_port_kill]]
+    - **tip-creation 하이드레이션 race** — "2-worker DB contention"으로 의심됐으나 실패 스크린샷("제목을 입력해주세요")으로 확정: 부하 시 하이드레이션 전 `.fill()`이 title DOM value만 세팅→onChange 미발화→controlled input이 빈 state로 재렌더→값 유실→검증 실패→POST 안 감. `fillStable()`(fill 후 toHaveValue로 반영 확인, 안 되면 재fill). 부하 시 폼 e2e는 이 패턴 기본.
+  - **검증**: lint 0 · build green · vitest 310(C7 9·fetchAll 5 신규 포함) · **full e2e 446 passed / 0 flaky** (스테일·하이드레이션 처방 후, 7.6m→5.7m). C8/H12 DB정책은 prod 직접 적용 완료, 나머지 코드는 main 머지로 prod 반영.
+  - **남은 우선순위**(AUDIT 참조): C4(배달 가격조작)·H1(PUT mass-assignment)·H3(차단 무효)·H7(필터주입 🟡)·H10(IP 스푸핑)·H14(자동완성 race)·H16(draft 팁 발행).
+
 - **한식·양식 staple 재료 + 신규 카테고리 + Critical 3건 수정 + 전수 감사** (2026-05-31~06-01)
   - **재료 매칭 V2 데이터 채우기 (dev, prod 미적용)**: 육류 부위 18 + 다진육 2(`seed_meat_cuts`), 1순위 버섯류 5·해조류 3·김치 base+변형 3(`seed_korean_staples`), 2순위 가공육 4·치즈 base+변형 3·버터/생크림/마가린 + 버터↔마가린 대체쌍(`seed_processed_meat_dairy`). dev approved 65→113.
   - **신규 카테고리 mushroom(버섯류)·seaweed(해조류)** 배선 15곳(i18n 8 + 타입·색상·도감·create·admin). **가공식품(processed) 분류 규칙 확립**: 여러 식품군 재구성 완제품(스팸·소시지·햄·베이컨)만 processed, 단일 식품 가공(버터·치즈·두부)은 본질 카테고리+is_processed. 버터=dairy 단일. 상세 [[project_ingredient_category_taxonomy]].
