@@ -867,6 +867,8 @@ export const de = {
       legume: 'Hülsenfrüchte & Nüsse',
       oil: 'Öle & Fette',
       sweetener: 'Zucker & Süßungsmittel',
+      mushroom: 'Pilze',
+      seaweed: 'Algen',
       meat: 'Fleisch',
       seafood: 'Meeresfrüchte',
       grain: 'Getreide & Nüsse',

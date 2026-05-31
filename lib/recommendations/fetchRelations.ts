@@ -5,6 +5,7 @@
  */
 
 import type { RelationGraph } from './matchV2';
+import type { UnitCoeffs } from '@/lib/units/quantity';
 
 /**
  * Supabase 클라이언트 타입을 깊은 추론 없이 받기 위한 minimal interface.
@@ -109,4 +110,34 @@ export async function fetchAllergensForRecipe(
     result.set(raw.id, Array.from(new Set([...own, ...inherited])));
   }
   return result;
+}
+
+/**
+ * 레시피 재료들의 단위 변환 계수 fetch — 양 비교(Phase 2)의 차원 교차용.
+ * grams_per_ml(밀도)·grams_per_count(개수단위→g 맵). 둘 다 없으면 Map 에서 생략 → 변환 생략(degrade).
+ * 계수는 *레시피 재료 id* 기준으로 조회 (matchV2 가 변환 대상 = 레시피 단위 기준으로 쓴다).
+ */
+export async function fetchUnitCoeffs(
+  recipeIngredientIds: string[],
+  supabase: AnySupabase,
+): Promise<Map<string, UnitCoeffs>> {
+  const validIds = recipeIngredientIds.filter(Boolean);
+  if (validIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('ingredients_master')
+    .select('id, grams_per_ml, grams_per_count')
+    .in('id', validIds);
+
+  if (error || !data) return new Map();
+
+  const map = new Map<string, UnitCoeffs>();
+  for (const raw of data as Array<{ id: string; grams_per_ml: number | null; grams_per_count: Record<string, number> | null }>) {
+    const coeffs: UnitCoeffs = {};
+    if (raw.grams_per_ml != null) coeffs.gramsPerMl = raw.grams_per_ml;
+    if (raw.grams_per_count && Object.keys(raw.grams_per_count).length > 0) coeffs.gramsPerCountUnit = raw.grams_per_count;
+    // 둘 다 없으면 의미 없는 빈 객체 — Map 에 안 넣어 degrade
+    if (coeffs.gramsPerMl != null || coeffs.gramsPerCountUnit) map.set(raw.id, coeffs);
+  }
+  return map;
 }

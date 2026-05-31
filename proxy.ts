@@ -246,7 +246,23 @@ export async function proxy(request: NextRequest) {
   // 과거에 naelum_terms_ok 쿠키로 fast-path를 썼지만, profile 상태가 서버에서
   // 변경될 때(삭제/재생성, admin 리셋 등) 쿠키가 stale 상태로 남아 게이트를
   // 우회하는 버그가 있었다. 정확성 > 성능 원칙으로 매 요청마다 DB 체크.
-  if (user && !bare.startsWith('/auth/') && !pathname.startsWith('/api/')) {
+  //
+  // 페이지뿐 아니라 *변경(mutating) API* 도 게이트한다. 과거엔 `/api/*` 를 통째로
+  // 제외해, 약관·연령 미동의(onboarding_completed=false) 세션이 페이지 게이트를
+  // 우회해 POST/PUT/PATCH/DELETE 로 레시피·댓글·재료 등을 직접 쓸 수 있었다(동의 강제 무력화).
+  // 예외:
+  //   - /auth/ 페이지(약관 화면 자체) — 무한 redirect 방지
+  //   - /api/auth/* — signin·signout·cancel-signup 등 온보딩을 *완료/탈출* 하는 데 필요
+  //   - GET 등 비변경 메서드 — 읽기는 무해 + 온보딩 중 /api/users/check-username(GET) 필요
+  // 온보딩 완료 write(profile.onboarding_completed=true)·아바타 업로드는 클라이언트
+  // 직접 supabase 호출이라 /api 를 안 거침 → API 게이트해도 온보딩이 막히지 않는다.
+  const isApiPath = pathname.startsWith('/api/')
+  const isAuthApi = pathname.startsWith('/api/auth/')
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
+  const isGatedPage = !isApiPath && !bare.startsWith('/auth/')
+  const isGatedMutatingApi = isApiPath && !isAuthApi && isMutating
+
+  if (user && (isGatedPage || isGatedMutatingApi)) {
     const supabase = createSupabaseClient(request)
     const { data: profile } = await supabase
       .from('profiles')
@@ -255,6 +271,14 @@ export async function proxy(request: NextRequest) {
       .maybeSingle()
 
     if (!profile?.onboarding_completed) {
+      if (isGatedMutatingApi) {
+        // API 는 redirect 가 무의미 → 403 JSON 으로 표면화.
+        return applyNoStore(
+          NextResponse.json({ error: 'onboarding_required' }, { status: 403 }),
+          pathname,
+          true
+        )
+      }
       return applyNoStore(
         NextResponse.redirect(new URL(`${langPrefix}/auth/terms-agreement`, request.url)),
         pathname,

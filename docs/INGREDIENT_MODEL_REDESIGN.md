@@ -169,39 +169,55 @@ ingredient_relations  (가공·대체 그래프)
 
 ### 8-A. 지금 만든다 (인프라 — 모양 명확, additive·degrade-safe)
 
-#### Phase 1 — 분류 계층 (base_id) ★ 1순위 (설계 명확 + 즉시 사용)
+#### Phase 1 — 분류 계층 (base_id) ★ 1순위 (설계 명확 + 즉시 사용) ✅ 2026-05-31 완료
 
-- [ ] **스키마**: `ingredients_master.base_ingredient_id uuid REFERENCES ingredients_master(id)` (nullable, self-FK, `ON DELETE SET NULL`).
-- [ ] **무결성 가드(권장 아님·강제)**: ① `CHECK (base_ingredient_id <> id)` 자기참조 차단. ② 다단계 금지(base인 재료가 또 base를 갖지 못함) = 어드민 `set_base` 저장 시 "대상이 이미 base_id를 가지면 거부" + 순환(A→B→A) 거부 가드. 트리거보다 어드민 RPC 검증이 단순(쓰기 경로가 어드민뿐). 데이터 오염을 권장이 아닌 코드로 막는다.
-- [ ] **매칭**: `matchV2`에 §5의 *2번 변형 분기* 추가 — 보유 재료의 base_id 집합도 owned 후보로. 인터페이스 불변.
-- [ ] **알레르기**: `allergyFilterV2`에 base 상속 한 단계.
-- [ ] **어드민**: `/admin/ingredient-matching`에 `set_base`·`add_relation` 액션 추가(기존 `link·alias_link·create_link` 옆). 한 화면에서 별칭·계층·관계 관리.
-- [ ] **회귀 테스트**(§10) + **시드 예시**: 돼지고기{삼겹살·목살·대패삼겹살}, 소고기{차돌박이·사태…}, 고추{청양고추·풋고추}, 쌀{현미·백미}.
+- [x] **스키마**: `ingredients_master.base_ingredient_id uuid REFERENCES ingredients_master(id)` (nullable, self-FK, `ON DELETE SET NULL`). — `20260531_ingredient_base_id.sql`
+- [x] **무결성 가드(권장 아님·강제)**: ① `CHECK (base_ingredient_id <> id)` 자기참조 차단. ② 다단계 금지(base인 재료가 또 base를 갖지 못함) = 어드민 `set_base` 저장 시 "대상이 이미 base_id를 가지면 거부" + 순환(A→B→A) 거부 가드. 트리거보다 어드민 RPC 검증이 단순(쓰기 경로가 어드민뿐). 데이터 오염을 권장이 아닌 코드로 막는다.
+- [x] **매칭**: `matchV2`에 §5의 *2번 변형 분기* 추가 — 보유 재료의 base_id 집합도 owned 후보로. 인터페이스 불변. (`userBaseMap`)
+- [x] **알레르기**: `allergyFilterV2`에 base 상속 한 단계. (`fetchAllergensForRecipe`)
+- [x] **어드민**: `/admin/ingredient-matching`에 `set_base`·`add_relation` 액션 추가(`SetBaseForm`·`AddRelationForm`). 한 화면에서 별칭·계층·관계 관리.
+- [x] **회귀 테스트**(§10) + **시드 예시**: dev 시드 돼지고기{삼겹살·목살}, 소고기{차돌박이·사태} (`matchV2.test`·`allergyFilterV2.test`). ⚠️ dev base_id 데이터는 ad-hoc — 시드 마이그레이션 미캡처(아래 "남은 갭" 참조).
 
-#### Phase 2 — 양·단위 비교 코어 (모양 명확: 뺄셈 + 변환 수학)
+#### Phase 2 — 양·단위 비교 코어 (모양 명확: 뺄셈 + 변환 수학) ✅ 2026-05-31 완료
 
-- [ ] **단위 변환 엔진**(순수 함수, `lib/`): 부피↔부피는 상수(1큰술=15ml·1작은술=5ml·1컵=200ml), 부피↔무게·개수↔무게는 재료별 계수 조회. **계수 없으면 `null`(=비교 불가)** 반환 → degrade. (`useUnitConversion`이 표시용으로 일부 있음 → 매칭용으로 일반화·vitest.)
-- [ ] **양 매칭 레이어**: 레시피·냉장고 양이 *둘 다 있고* 단위가 *같거나 변환 가능*하면 비교 → `enough`/`short(부족분)`. 하나라도 없거나 변환 불가면 **기존 owned로 degrade**(거짓 정확성 회피). 인분 배수(servings stepper) 반영.
-- [ ] **결과 표시**: 부족 시 "양파 2개 더" / 장보기 담을 때 부족분만. `MatchKind`는 유지하되 `shortBy?` 메타 추가(UI 선택적 소비).
-- [ ] **회귀**: 같은 단위 비교 / 변환 가능 / 변환 불가(degrade) / 양 미입력(degrade) / 인분 배수 케이스.
+- [x] **단위 변환 엔진**(순수 함수, `lib/units/quantity.ts`): 부피↔부피는 상수(1큰술=15ml·1작은술=5ml·1컵=200ml), 부피↔무게·개수↔무게는 재료별 계수(`UnitCoeffs`) 조회. **계수 없으면 `null`(=비교 불가)** 반환 → degrade. vitest 완비.
+- [x] **양 매칭 레이어**: 레시피·냉장고 양이 *둘 다 있고* 단위가 *같거나 변환 가능*하면 비교 → `enough`/`short(부족분)`. 하나라도 없거나 변환 불가면 **owned로 degrade**. 인분 배수 반영(`useRecipeFridgeMatch` servingsMultiplier).
+- [x] **계수 배선**(2026-05-31): `matchV2`가 `compareQuantity`에 계수 미전달 → 차원 교차 항상 degrade였던 갭 해소. `fetchUnitCoeffs` 신규 + `matchRecipe(...,coeffsMap)` + 3 호출처 연결. 계수 DB 컬럼 `grams_per_ml`·`grams_per_count`(`ingredient_unit_coeffs` 마이그레이션, dev).
+- [x] **결과 표시**: 부족 시 "N개 부족" UI(상세 페이지). `MatchKind` 유지 + `shortBy?` 메타.
+- [x] **회귀**: 같은 단위 / 변환 가능(계수 적용) / 변환 불가(degrade) / 양 미입력(degrade) / 인분 배수 — `matchV2.test`·`quantity.test`.
 
-#### Phase 3 — 대체 비율 코어 (모양 명확: 숫자 1개)
+#### Phase 3 — 대체 비율 코어 (모양 명확: 숫자 1개) ✅ 2026-05-31 완료
 
-- [ ] **스키마**: `ingredient_relations.ratio numeric` nullable(기본 1.0 의미). substitute 매칭 시 있으면 양 조정 표시("꿀 75g로"). `notes`는 자유 메모로 유지.
-- [ ] **표시**: substitute 결과에 ratio 반영 + notes 노출. ratio 없으면 1:1로 degrade.
-- [ ] **어드민**: `add_relation`에 ratio 입력 칸.
+- [x] **스키마**: `ingredient_relations.ratio numeric` nullable(NULL=1:1). — `20260531_ingredient_relation_ratio.sql`. 역방향 trigger 미복사(추측 0).
+- [x] **표시**: substitute 결과에 `ratio` 반영(`matchV2` MatchResult.ratio). ratio 없으면 1:1 degrade.
+- [x] **어드민**: `AddRelationForm`에 ratio 입력 칸(substitute 한정).
 
 ### 8-B. 나중에 채운다 (데이터 — 모양 명확하나 양에 비례. 자동 매칭 금지)
 
 > 핵심 규칙: **AI·자동 sync 금지**(메모리 [[project_rda_nutrition_sync]] — 자동이 240행 오염시켜 폐기). 검증 소스에서 **staple부터 수동/반자동**, 사용하며 누적.
 
-- [ ] **사전 확장**: 진짜 없는 재료(베이컨·버터·치즈…) 어드민 큐로 추가.
+- [~] **사전 확장**: 진짜 없는 재료(베이컨·버터·치즈…) 어드민/시드로 추가. ← **현재 카탈로그 ~90개. 대체 비율 "30~50쌍"의 선행 조건**(버터·마가린·치즈 등이 없어 표준 대체쌍을 못 만듦). 빈도·효과 우선순위(2026-05-31 합의):
+  - **1순위 ✅ 완료(2026-05-31, dev)**: ① 버섯류 표고·느타리·새송이·팽이·양송이 ② 김치 base+배추김치·깍두기·총각김치 ③ 해조류 김·미역·다시마. → **버섯류·해조류 신규 카테고리 신설·배선 15곳 완료**(oil·sweetener 템플릿), 김치는 `fermented`. 마이그레이션 `seed_korean_staples.sql`.
+  - **2순위 ✅ 완료(2026-05-31, dev)**: 가공육 베이컨·소시지·햄·스팸(allergens=`돼지고기`) — **`processed`(가공식품)로 분류**(아래 판정 규칙). 유제품 치즈 base←모짜렐라·체다·슬라이스치즈 + 버터·생크림(dairy) + 마가린(oil). 대체쌍 **버터↔마가린**(1:1, 양방향). 생크림↔우유는 제외(유지방 달라 1:1 아님). 마이그레이션 `seed_processed_meat_dairy.sql`.
+  - **3순위 (예정)**: 생선(고등어·갈치·동태·~~참치캔~~ → 참치캔은 단일 식품 가공이라 seafood+가공, 멸치와 동일)·면떡(떡국떡·당면; ~~라면~~ 제외=완제품·재료 아님)·채소보강(숙주·상추·미나리·청경채)·양념(케첩·마요네즈→seasoning·물엿→sweetener·카레가루→spice).
+  - **카테고리 단일 원칙(2026-05-31)**: `category`는 단일 컬럼(이중 카테고리 안 만듦). 본질=카테고리, 기능·원료·가공=메타데이터. 버터=dairy 단일(우유 알레르겐 tiebreaker).
+  - **가공식품(processed) vs 본질 카테고리 판정 규칙(2026-05-31)**: "첨가물 있으면 processed"는 너무 넓음(버터·치즈·두부도 가공) → 도감 무의미. **선**: ⓐ *한 식품을 가공*(발효·압착·도정·응고·염지…)한 것 = 본질 카테고리 + `is_processed`(버터·치즈·두부·소면·다진고기·멸치). ⓑ *여러 식품군을 조합·재구성*한 완제품 = `processed`(스팸·소시지·햄·베이컨; 향후 어묵·만두·라면). ⓒ 소스류는 복합물이라도 seasoning(굴소스·케첩·마요네즈). ⓓ 발효는 fermented. 경계 tiebreaker="어느 코너에서 찾나"(마가린→oil·슬라이스치즈→dairy 유지). 상세: 메모리 `project_ingredient_category_taxonomy`.
+  - **알레르겐 어휘 통일**: 공식 용어(`쇠고기`·`돼지고기`·`닭고기`·`우유`·`난류`·`대두`·`밀`). 2026-05-31 다진소고기 `소고기→쇠고기` 버그 수정.
 - [ ] **base_id·aliases·allergens** 카탈로그 채우기 — 미연결 큐 빈도순.
-- [ ] **단위 변환 계수**(Phase 2 엔진 먹이): 부피↔무게 밀도·개수↔무게 평균중량. *소스* = 식약처/농진청(RDA) 공개 영양DB의 1회제공량·USDA FoodData·Open Food Facts에서 **사람이 확인해** staple 50~100개부터(= `rda_manual` 신뢰 입력 방식). 영수증 OCR 누적분 보조. (⚠️ 과거 문서·CLAUDE.md가 든 `scripts/cache/rda-food-list.json`은 **현재 없음** — 캐시 다시 만들면 그때 경로 명시.)
-- [ ] **대체 비율**(Phase 3 먹이): *소스* = 작성자 제안 누적 + 어드민이 표준 대체표에서 흔한 30~50쌍(버터↔마가린 1:1, 설탕↔꿀 1:0.75…).
+- [~] **단위 변환 계수**(Phase 2 엔진 먹이) — **2026-05-31 staple 17종 시드**:
+  - **밀도(grams_per_ml) 6** (`seed_unit_coeffs_and_ratios.sql`): 식용유·참기름·들기름 0.92·우유 1.03·식초 1.01·꿀 1.42 — 물리상수.
+  - **개당무게(grams_per_count) 11** (`seed_veggie_piece_weights.sql`): 무 1450·양배추 2500·배추 2000·애호박 350·오이 200·양파 200·당근 150·감자 130·피망 75·달걀 50·마늘 5.
+  - *출처 = 한국 기준*: **KAMIS 농산물 표준규격**(채소 무게등급, 중품 중앙값) 8 + **목측량**(양파·마늘) 2 + 달걀(USDA 대란). ⚠️ **영양DB(RDA·식약처)는 100g/섭취량 기준이라 개당무게 출처 아님**. 한국 무·배추는 미국 동명품목과 전혀 달라 USDA 적용 불가(무 1.45kg vs US radish 5g).
+  - **제외(NULL 유지)**: 사과·두부(출처 간 값 충돌 200~330/300~450)·오렌지·바나나(한국 1차출처 미확보)·대파(1대 전체무게 합의 없음). 개당무게는 본질적 분포라 단일 신뢰값 없으면 추측 안 함.
+  - 잔여: 가지·파프리카·청양고추 등 + 가루/곡물 밀도 — 검증 시 점진 보강.
+- [~] **대체 비율**(Phase 3 먹이): *소스* = 작성자 제안 누적 + 어드민이 표준 대체표에서 흔한 30~50쌍. **2026-05-31 시드**: 꿀→설탕 0.75(표준 제빵 대체) 마이그레이션 캡처. ⚠️ 나머지(버터↔마가린 1:1 등)는 **사전 확장 후** — 현 카탈로그에 해당 재료 없음.
 - [ ] **관계 엣지**: 작성자 substitutes 누적분 승인.
 
 > **순서 근거**: 8-A는 양과 무관한 일회성(안 썩음) → 지금이 가장 쌈. 8-B는 양에 비례(썩음) → 미뤄도 단가 불변, 큐로 점진.
+
+> **✅ 그래프 박제 완료 (2026-05-31)**: dev 손큐레이션이 ad-hoc라 유실 위험이던 것을 시드 마이그레이션으로 캡처 — `20260531_seed_v2_match_graph.sql`(base_id 변형 4·aliases 62·preparable 4·substitute 4쌍) + `20260531_seed_unit_coeffs_and_ratios.sql`(계수·ratio). 이름 기반·additive(`IS NULL`/`ON CONFLICT DO NOTHING`)·재실행 안전. 멱등 적용 검증(카운트 불변). **prod(main)에는 V2 스키마 자체가 아직 없음 — 승격(스키마+시드 일괄 적용)은 별도 결정.**
+>
+> 남은 데이터 작업(점진): 단위계수 17종 추가 캡처(`seed_veggie_piece_weights.sql`). 잔여 = 8-A 사전 확장(버터·치즈…) 후 대체쌍 확대 + 가지·파프리카 등 개당무게 보강.
 
 ---
 

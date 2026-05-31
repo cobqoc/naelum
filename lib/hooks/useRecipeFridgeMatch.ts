@@ -8,9 +8,10 @@ import {
   type RecipeIngredientInput,
   type RecipeMatchSummary,
   type UserQtyMap,
+  type CoeffsMap,
   EMPTY_GRAPH,
 } from '@/lib/recommendations/matchV2';
-import { fetchRelationsForRecipe, fetchUserVariantBases } from '@/lib/recommendations/fetchRelations';
+import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations';
 
 /**
  * V2 레시피 ↔ 냉장고 매칭 hook (2026-05-29 본질 재설계).
@@ -93,13 +94,15 @@ export function useRecipeFridgeMatch(
   );
 
   const [graph, setGraph] = useState<RelationGraph>(EMPTY_GRAPH);
+  // 양 비교(Phase 2) 차원 교차용 계수 — 레시피 재료 id 기준. 같은 키(recipeIngredientIds)라 그래프와 함께 fetch.
+  const [coeffsMap, setCoeffsMap] = useState<CoeffsMap>(new Map());
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     if (recipeIngredientIds.length === 0) {
       Promise.resolve().then(() => {
-        if (!cancelled) setGraph(EMPTY_GRAPH);
+        if (!cancelled) { setGraph(EMPTY_GRAPH); setCoeffsMap(new Map()); }
       });
       return () => {
         cancelled = true;
@@ -110,10 +113,10 @@ export function useRecipeFridgeMatch(
       if (!cancelled) setIsLoading(true);
     });
     const supabase = createClient();
-    fetchRelationsForRecipe(recipeIngredientIds, supabase)
-      .then(g => {
-        if (!cancelled) setGraph(g);
-      })
+    Promise.all([
+      fetchRelationsForRecipe(recipeIngredientIds, supabase).then(g => { if (!cancelled) setGraph(g); }),
+      fetchUnitCoeffs(recipeIngredientIds, supabase).then(c => { if (!cancelled) setCoeffsMap(c); }),
+    ])
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -147,8 +150,8 @@ export function useRecipeFridgeMatch(
   }, [userIdsKey]);
 
   const summary = useMemo(
-    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap),
-    [normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap],
+    () => matchRecipe(normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap),
+    [normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap],
   );
 
   const isIngredientOwned = useCallback(

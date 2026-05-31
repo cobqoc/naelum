@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `naelum-${CACHE_VERSION}`;
 const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
 const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
@@ -98,8 +98,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Strategy: 개별 레시피 페이지 (/recipes/[id]) — Network First with cache fallback
-  if (url.pathname.match(/^\/recipes\/[^/]+$/)) {
+  // Strategy: 개별 레시피 페이지 (/[lang]/recipes/[id]) — Network First with cache fallback
+  // ⚠️ locale prefix 필수: 2026-05-11 path-based i18n 마이그레이션으로 실제 경로는
+  // /ko/recipes/[id] 형태. 과거 정규식 /^\/recipes\/[^/]+$/ 는 prefix 를 못 맞춰
+  // 이 분기가 *영영 미실행* → 오프라인 레시피 캐시가 죽어 있었다(2026-06-01 수정).
+  // locale 목록은 SUPPORTED_LANGUAGES(lib/i18n/locales) 와 동기화. 신규 locale 추가 시 갱신.
+  // bare /recipes/[id] 도 안전상 허용(미들웨어가 prefix 로 redirect 하지만 방어적).
+  if (url.pathname.match(/^(\/(?:ko|en|ja|zh|es|fr|de|it))?\/recipes\/[^/]+$/)) {
     event.respondWith(
       fetch(request)
         .then((response) => {

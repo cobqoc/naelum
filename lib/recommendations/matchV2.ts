@@ -31,7 +31,7 @@ function toNum(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-import { compareQuantity } from '@/lib/units/quantity';
+import { compareQuantity, type UnitCoeffs } from '@/lib/units/quantity';
 
 export type MatchKind = 'owned' | 'preparable' | 'substitute' | 'missing';
 
@@ -63,6 +63,9 @@ export interface RecipeIngredientInput {
 /** 사용자 보유 재료의 양 — id 별. 양 매칭(Phase 2)용. 없으면 양 판단 생략(degrade). */
 export type UserQtyMap = Map<string, { quantity: number | string | null; unit: string | null }>;
 
+/** 재료별 단위 변환 계수 — id 별. 차원 교차(부피↔무게·개수↔무게) 양 비교용. 없으면 해당 변환 생략(degrade). */
+export type CoeffsMap = Map<string, UnitCoeffs>;
+
 /** ingredient_relations 그래프 — to_id 별로 incoming 관계 묶음 */
 export interface RelationGraph {
   /** Map<to_id, [{from_id, kind, ratio}]> — to(레시피 필요) 측에서 from(사용자 보유) 검색. ratio=대체 비율(substitute). */
@@ -87,15 +90,18 @@ export function matchIngredient(
   graph: RelationGraph,
   userBaseMap: Map<string, string> = new Map(),
   userQtyMap?: UserQtyMap,
+  coeffsMap?: CoeffsMap,
 ): MatchResult {
   // 양 부족분 계산 — owned(정확·변형)에만. 매칭된 보유 재료 id 의 양 vs 레시피 양.
   // 같은 단위/변환 가능할 때만 short, 아니면 undefined(충분 or 판단 생략 — 거짓 정확성 회피).
   // 수량은 문자열("3")로 올 수 있어 안전 파싱(분수·"약간" 등 비수치 → null → 판단 생략).
+  // 계수는 *레시피 재료 id* 기준(변환 대상 단위 = 레시피 단위). 변형 매칭도 base의 계수로 근사.
   const shortOf = (matchedUserId: string): { by: number; unit: string } | undefined => {
     if (!userQtyMap) return undefined;
     const have = userQtyMap.get(matchedUserId);
     if (!have) return undefined;
-    const v = compareQuantity(toNum(recipe.quantity), recipe.unit ?? '', toNum(have.quantity), have.unit ?? '');
+    const coeffs = recipe.ingredient_id ? coeffsMap?.get(recipe.ingredient_id) : undefined;
+    const v = compareQuantity(toNum(recipe.quantity), recipe.unit ?? '', toNum(have.quantity), have.unit ?? '', coeffs);
     return v.kind === 'short' ? { by: v.by, unit: v.unit } : undefined;
   };
 
@@ -159,8 +165,9 @@ export function matchRecipe(
   graph: RelationGraph,
   userBaseMap: Map<string, string> = new Map(),
   userQtyMap?: UserQtyMap,
+  coeffsMap?: CoeffsMap,
 ): RecipeMatchSummary {
-  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph, userBaseMap, userQtyMap));
+  const results = recipeIngredients.map(ri => matchIngredient(ri, userIngredientIds, graph, userBaseMap, userQtyMap, coeffsMap));
 
   // is_optional + fundamental(물 등) 재료는 카운트에서 제외
   const required = recipeIngredients

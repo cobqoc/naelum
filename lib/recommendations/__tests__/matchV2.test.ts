@@ -126,6 +126,46 @@ describe('matchIngredient — V2 ID 기반 매칭', () => {
     expect(result.shortBy).toEqual({ by: 100, unit: 'g' });
   });
 
+  it('shortBy — 차원 교차(개수↔무게) 계수 있으면 비교 (양파 300g 필요 vs 1개 보유, 1개=200g)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 300, unit: 'g' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 1, unit: '개' }]]),
+      new Map([['onion', { gramsPerCountUnit: { '개': 200 } }]]),
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toEqual({ by: 100, unit: 'g' }); // 300g 필요 - 200g 보유 = 100g 부족
+  });
+
+  it('shortBy 없음 — 차원 교차인데 계수 없으면 판단 생략(degrade)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'onion', ingredient_name: '양파', quantity: 300, unit: 'g' },
+      new Set(['onion']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['onion', { quantity: 1, unit: '개' }]]),
+      // coeffsMap 없음 → 개↔g 변환 불가 → unknown(degrade)
+    );
+    expect(result.kind).toBe('owned');
+    expect(result.shortBy).toBeUndefined();
+  });
+
+  it('shortBy — 부피↔무게 밀도 계수 (참기름 100g 필요 vs 50ml 보유, 0.92g/ml)', () => {
+    const result = matchIngredient(
+      { ingredient_id: 'sesameoil', ingredient_name: '참기름', quantity: 100, unit: 'g' },
+      new Set(['sesameoil']),
+      EMPTY_GRAPH,
+      new Map(),
+      new Map([['sesameoil', { quantity: 50, unit: 'ml' }]]),
+      new Map([['sesameoil', { gramsPerMl: 0.92 }]]),
+    );
+    expect(result.kind).toBe('owned');
+    // 50ml × 0.92 = 46g 보유, 100g 필요 → 54g 부족
+    expect(result.shortBy).toEqual({ by: 54, unit: 'g' });
+  });
+
   it('missing — 옛 데이터(ingredient_id null) 는 매칭 안 됨', () => {
     const result = matchIngredient(
       { ingredient_id: null, ingredient_name: '양파' },

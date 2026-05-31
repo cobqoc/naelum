@@ -869,6 +869,8 @@ export const ko = {
       legume: '콩·견과',
       oil: '유지·기름',
       sweetener: '당류·감미료',
+      mushroom: '버섯류',
+      seaweed: '해조류',
       meat: '육류',
       seafood: '해산물',
       grain: '곡물류',

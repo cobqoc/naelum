@@ -73,6 +73,8 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'spice', name: '향신료', icon: '🌶️' },
   { id: 'oil', name: '유지·기름', icon: '🫗' },
   { id: 'sweetener', name: '당류·감미료', icon: '🍯' },
+  { id: 'mushroom', name: '버섯류', icon: '🍄' },
+  { id: 'seaweed', name: '해조류', icon: '🌿' },
   { id: 'beverage', name: '음료', icon: '🥤' },
   { id: 'snack', name: '간식', icon: '🍪' },
   { id: 'bakery', name: '베이커리', icon: '🍞' },
