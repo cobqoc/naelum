@@ -35,10 +35,29 @@ async function gotoTipNew(page: Page) {
   await expect(page.locator('input[placeholder*="마늘"]').first()).toBeVisible({ timeout: 15000 });
 }
 
+/**
+ * 하이드레이션 안전 fill — 값이 *실제로 React state 에 반영됐는지* 확인 후 진행.
+ *
+ * **왜**: 병렬 부하(2 worker)에서 폼이 SSR/렌더는 됐지만 React 하이드레이션 전이면
+ * `.fill()` 이 DOM value 만 세팅하고 onChange 가 안 붙어 state 는 빈 채로 남는다.
+ * 하이드레이션이 끝나면 controlled input 이 빈 state 로 다시 그려 **값이 사라진다**
+ * → 제출 시 "제목을 입력해주세요" 검증 실패 → POST 안 감 → DB row 없음(=flake).
+ * (라이브 실패 스크린샷으로 확정 — 2026-06-01. DB contention 아님, 하이드레이션 race.)
+ *
+ * toPass 로 "fill → 값 유지 확인" 을 재시도: 하이드레이션 전이면 값이 지워져 재fill,
+ * 하이드레이션 후 값이 붙으면 통과. 타임아웃 땜질이 아니라 *전제조건 보장*.
+ */
+async function fillStable(locator: ReturnType<Page['locator']>, value: string) {
+  await expect(async () => {
+    await locator.fill(value);
+    await expect(locator).toHaveValue(value, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+}
+
 async function fillTipForm(page: Page, title: string) {
-  await page.locator('input[placeholder*="마늘"]').first().fill(title);
+  await fillStable(page.locator('input[placeholder*="마늘"]').first(), title);
   // 단계 1개(기본) — 공개/비공개 저장은 모든 단계 지시사항 필수
-  await page.locator('textarea[placeholder*="할 일"]').first().fill('E2E 단계 지시사항');
+  await fillStable(page.locator('textarea[placeholder*="할 일"]').first(), 'E2E 단계 지시사항');
 }
 
 /** 생성된 팁의 `is_public/is_draft` 를 문자열로 — 없으면 null */
