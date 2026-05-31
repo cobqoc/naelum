@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { isFundamental } from '@/lib/recommendations/matchV2';
+import { parseQuantity, mergeQuantity } from '@/lib/shopping-list/quantity';
 
 /**
  * 사용자의 기본 장보기 리스트를 가져오거나, 없으면 생성합니다.
@@ -127,20 +128,26 @@ export async function POST(request: NextRequest) {
     (existingItems || []).map(i => [i.ingredient_name.toLowerCase(), { id: i.id as string, quantity: i.quantity as number | null }])
   );
 
-  // 1) 같은 이름이 이미 있으면 quantity 합산 (UPDATE)
+  // 1) 같은 이름이 이미 있으면 quantity 병합 (UPDATE)
   // 2) 새 이름이면 INSERT
-  const toUpdate: { id: string; quantity: number }[] = [];
+  // 수량 파싱·병합은 lib/shopping-list/quantity 의 순수 함수로 위임 —
+  // "약간"·"적당량" 같은 비숫자 수량이 NaN→null 로 *기존 누적을 파괴*하던
+  // 버그(C7)를 거기서 차단한다. 미상값(null)은 기존 값을 절대 덮어쓰지 않음.
+  const toUpdate: { id: string; quantity: number | null }[] = [];
   const toInsert: Array<Record<string, unknown>> = [];
 
   for (const i of ingredients) {
     // 기본 재료(물 등)는 장보기에 안 담음 — 누구나 가진 걸로 간주 (수돗물 살 일 없음).
     if (isFundamental(i.ingredient_name)) continue;
     const key = i.ingredient_name.toLowerCase();
-    const newQty = i.quantity ? parseFloat(i.quantity) : 1;
+    const newQty = parseQuantity(i.quantity);
     const existing = existingByName.get(key);
     if (existing) {
-      const currentQty = existing.quantity ?? 0;
-      toUpdate.push({ id: existing.id, quantity: currentQty + newQty });
+      const merged = mergeQuantity(existing.quantity, newQty);
+      // 병합 결과가 기존과 같으면(= 새 수량 미상) 불필요한 쓰기·파괴 위험 회피 → 스킵
+      if (merged !== existing.quantity) {
+        toUpdate.push({ id: existing.id, quantity: merged });
+      }
     } else {
       toInsert.push({
         user_id: user.id,
@@ -148,7 +155,7 @@ export async function POST(request: NextRequest) {
         ingredient_name: i.ingredient_name,
         // 이름이 마스터와 일치하면 마스터 카테고리 우선 (정합성), 아니면 넘어온 값/기타
         category: nameToMaster.get(i.ingredient_name)?.category || i.category || 'other',
-        quantity: i.quantity ? parseFloat(i.quantity) : null,
+        quantity: newQty,
         unit: i.unit && i.unit !== '선택' ? i.unit : null,
         recipe_id: recipeId,
         recipe_title: recipeTitle,
@@ -159,9 +166,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // UPDATE는 행 단위로 (Supabase는 batch update가 까다로워 Promise.all로 처리)
+  // UPDATE는 행 단위로 (Supabase는 batch update가 까다로워 Promise.all로 처리).
+  // Supabase 는 RLS 거부·제약 위반 시 throw 안 하고 { error } 반환 →
+  // CLAUDE.md 규율대로 .error 명시 체크 후 실패 표면화 (silent 데이터유실 방지).
   if (toUpdate.length > 0) {
-    await Promise.all(
+    const updateResults = await Promise.all(
       toUpdate.map(u =>
         supabase
           .from('shopping_list_items')
@@ -170,6 +179,10 @@ export async function POST(request: NextRequest) {
           .eq('user_id', user.id)
       )
     );
+    const failed = updateResults.find(r => r.error);
+    if (failed?.error) {
+      return NextResponse.json({ error: failed.error.message }, { status: 500 });
+    }
   }
 
   let insertedData: unknown[] = [];
