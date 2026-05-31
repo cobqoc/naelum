@@ -16,6 +16,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   sweetener: '#f472b6',
   mushroom:  '#b45309',
   seaweed:   '#047857',
+  nuts:      '#92400e',
   fermented: '#8b5cf6',
   spice:     '#dc2626',
   other:     '#6b7280',

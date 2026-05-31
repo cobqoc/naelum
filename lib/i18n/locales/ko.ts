@@ -866,7 +866,8 @@ export const ko = {
     categoryLabels: {
       veggie: '채소',
       egg: '달걀류',
-      legume: '콩·견과',
+      legume: '콩류',
+      nuts: '견과류',
       oil: '유지·기름',
       sweetener: '당류·감미료',
       mushroom: '버섯류',

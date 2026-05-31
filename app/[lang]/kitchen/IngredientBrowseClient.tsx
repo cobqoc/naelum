@@ -35,7 +35,7 @@ const SEASON_EMOJI: Record<string, string> = {
 // 허브(KitchenHomeClient)와 동일한 이모지 — 어느 카테고리로 진입하든 헤더 라벨이 정확히 해석됨.
 const CATEGORY_EMOJI: Record<string, string> = {
   veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟', egg: '🥚', dairy: '🧀',
-  grain: '🌾', legume: '🥜', seasoning: '🥫', spice: '🌶️', condiment: '🧂',
+  grain: '🌾', legume: '🫘', nuts: '🥜', seasoning: '🥫', spice: '🌶️', condiment: '🧂',
   oil: '🫗', sweetener: '🍯', mushroom: '🍄', seaweed: '🌿',
   fermented: '🍶', bakery: '🍞', beverage: '🥤', snack: '🍪', processed: '📦', other: '✨',
 };
@@ -271,7 +271,8 @@ export default function IngredientBrowsePage({
     { value: 'seafood',   label: tb.categoryLabels.seafood,   emoji: '🐟' },
     { value: 'egg',       label: tb.categoryLabels.egg,       emoji: '🥚' },
     { value: 'grain',     label: tb.categoryLabels.grain,     emoji: '🌾' },
-    { value: 'legume',    label: tb.categoryLabels.legume,    emoji: '🥜' },
+    { value: 'legume',    label: tb.categoryLabels.legume,    emoji: '🫘' },
+    { value: 'nuts',      label: tb.categoryLabels.nuts,      emoji: '🥜' },
     { value: 'dairy',     label: tb.categoryLabels.dairy,     emoji: '🧀' },
     { value: 'seasoning', label: tb.categoryLabels.seasoning, emoji: '🥫' },
     { value: 'condiment', label: tb.categoryLabels.condiment, emoji: '🧂' },

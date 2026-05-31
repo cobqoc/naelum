@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
       'sweetener',
       'mushroom',
       'seaweed',
+      'nuts',
       'spice',
       'beverage',
       'snack',

@@ -864,7 +864,8 @@ export const es = {
     categoryLabels: {
       veggie: 'Verduras',
       egg: 'Huevos',
-      legume: 'Legumbres y frutos secos',
+      legume: 'Legumbres',
+      nuts: 'Frutos secos',
       oil: 'Aceites y grasas',
       sweetener: 'Azúcares y edulcorantes',
       mushroom: 'Setas',

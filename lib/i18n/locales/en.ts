@@ -863,7 +863,8 @@ export const en = {
     categoryLabels: {
       veggie: 'Vegetables',
       egg: 'Eggs',
-      legume: 'Beans & Nuts',
+      legume: 'Beans',
+      nuts: 'Nuts',
       oil: 'Oils & Fats',
       sweetener: 'Sugars & Sweeteners',
       mushroom: 'Mushrooms',
