@@ -43,6 +43,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   timeout: 60000,
+  // 스테일 :3000 서버(옛 빌드 청크 404 → hydration 실패 → 클라 페이지 "Loading…" hang)
+  // 를 webServer 기동 전에 정리. pkill -f "next start" 가 next-server 를 못 죽이던 함정 처방.
+  globalSetup: './e2e/global-setup.ts',
 
   use: {
     baseURL: BASE_URL,
