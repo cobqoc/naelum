@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { getBlockedUserIds, toNotInList } from '@/lib/social/blocks';
 
 // GET /api/recipes/[id]/comments/[commentId]/replies - 답글 목록 조회
 export async function GET(
@@ -13,14 +14,20 @@ export async function GET(
     // 현재 사용자 확인
     const { data: { user } } = await supabase.auth.getUser();
 
+    // 차단한 사용자의 답글은 가린다 (H3)
+    const notInList = toNotInList(await getBlockedUserIds(supabase, user?.id));
+
     // 답글 목록 조회 (삭제된 답글 포함)
-    const { data: replies, error } = await supabase
+    let repliesQuery = supabase
       .from('recipe_comments')
       .select(`
         *,
         user:profiles(id, username, avatar_url)
       `)
-      .eq('parent_comment_id', commentId)
+      .eq('parent_comment_id', commentId);
+    if (notInList) repliesQuery = repliesQuery.not('user_id', 'in', notInList);
+
+    const { data: replies, error } = await repliesQuery
       .order('created_at', { ascending: true }); // 오래된 답글이 위로
 
     if (error) {

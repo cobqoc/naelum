@@ -5,6 +5,7 @@ import { parsePagination } from '@/lib/api/pagination'
 import { sanitizeHtml } from '@/lib/security/sanitize'
 import { notifyComment } from '@/lib/notifications/create'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { getBlockedUserIds, toNotInList } from '@/lib/social/blocks'
 
 // GET /api/recipes/[id]/comments - 댓글 목록 조회
 export async function GET(
@@ -20,7 +21,11 @@ export async function GET(
   // 현재 사용자 확인
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: comments, error, count } = await supabase
+  // 차단한 사용자의 댓글은 가린다 (H3 — 단방향, blocker 관점)
+  const blockedIds = await getBlockedUserIds(supabase, user?.id)
+  const notInList = toNotInList(blockedIds)
+
+  let listQuery = supabase
     .from('recipe_comments')
     .select(`
       *,
@@ -29,6 +34,9 @@ export async function GET(
     .eq('recipe_id', recipeId)
     .is('parent_comment_id', null)
     .eq('is_deleted', false)
+  if (notInList) listQuery = listQuery.not('user_id', 'in', notInList)
+
+  const { data: comments, error, count } = await listQuery
     .order('created_at', { ascending: false })
     .range(offset, rangeEnd)
 
@@ -42,12 +50,14 @@ export async function GET(
   if (commentsWithReplies.length > 0) {
     const commentIds = commentsWithReplies.map(c => c.id)
 
-    // 1. 모든 댓글의 답글 수를 한 번에 조회
-    const { data: repliesData } = await supabase
+    // 1. 모든 댓글의 답글 수를 한 번에 조회 (차단 사용자 답글 제외 — 목록과 일관)
+    let repliesQuery = supabase
       .from('recipe_comments')
       .select('parent_comment_id')
       .in('parent_comment_id', commentIds)
       .eq('is_deleted', false)
+    if (notInList) repliesQuery = repliesQuery.not('user_id', 'in', notInList)
+    const { data: repliesData } = await repliesQuery
 
     // 답글 수 집계
     const repliesCountMap = new Map<string, number>()
