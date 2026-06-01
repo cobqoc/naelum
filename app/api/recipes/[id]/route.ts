@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/api/auth';
 import { normalizeSubstitutes } from '@/lib/recipes/substituteChips';
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId';
+import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns';
 
 // PUT boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
 function normalizeSubstitutesForStorage(raw: unknown): unknown[] | null {
@@ -100,12 +101,14 @@ export async function PUT(
     }
 
     // 레시피 기본 정보 업데이트
+    // mass-assignment 방어(H1): body 통째 스프레드 금지 — 편집 가능 콘텐츠 컬럼만 허용.
+    // status·카운터·author_id 등은 화이트리스트에서 제외(visibility 라우트·RPC 전용).
     const { error: updateError } = await supabase
       .from('recipes')
       .update({
         title,
         description,
-        ...recipeData,
+        ...pickEditableRecipeColumns(recipeData),
         updated_at: new Date().toISOString()
       })
       .eq('id', recipeId);
