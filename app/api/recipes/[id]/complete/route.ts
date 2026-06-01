@@ -55,51 +55,8 @@ export async function POST(
       photoUrl = getPublicUrl(supabase, 'recipe-completion-photos', uploadedPath ?? fileName)
     }
 
-    // 사진이 있으면 recipe_ratings에 저장
-    if (photoUrl) {
-      // 1. 기존 리뷰 확인
-      const { data: existingRating } = await supabase
-        .from('recipe_ratings')
-        .select('id, photo_url, review, rating')
-        .eq('recipe_id', recipeId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (existingRating) {
-        // 2a. 기존 리뷰에 사진 추가/업데이트
-        const { error: updateError } = await supabase
-          .from('recipe_ratings')
-          .update({
-            photo_url: photoUrl,
-            completed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingRating.id)
-        if (updateError) {
-          console.error('Rating photo update error:', updateError)
-          return NextResponse.json({ error: '사진 저장에 실패했습니다' }, { status: 500 })
-        }
-      } else {
-        // 2b. 사진만 있는 새 리뷰 생성 (평점 없음)
-        const { error: ratingError } = await supabase
-          .from('recipe_ratings')
-          .insert({
-            recipe_id: recipeId,
-            user_id: user.id,
-            rating: null, // 평점 없음 (사진만)
-            review: null,
-            photo_url: photoUrl,
-            is_photo_only: true,
-            completed_at: new Date().toISOString()
-          })
-
-        if (ratingError) {
-          console.error('Rating creation error:', ratingError)
-        }
-        // 주의: 평점이 NULL이므로 update_recipe_ratings 호출 불필요
-        // (평균 평점 계산 시 rating=NULL 레코드는 제외됨)
-      }
-    }
+    // 완료 사진은 cooking_sessions.photo_url 에만 저장(아래). recipe_ratings 사진글(별점없음)은
+    // 통합 피드(recipe_posts) 전환으로 폐기 — "별점 없는 만들어봤어요" 미지원(별점 필수 결정).
 
     // 이미 완료한 기록이 있는지 확인 (최근 24시간 이내)
     const { data: recentSession } = await supabase

@@ -55,8 +55,9 @@ export async function GET() {
       fetchAllData(() => sb.from('user_terms_acceptance').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_folders').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_saves').select('*').eq('user_id', uid)),
-      fetchAllData(() => sb.from('recipe_comments').select('*').eq('user_id', uid)),
-      fetchAllData(() => sb.from('recipe_ratings').select('*').eq('user_id', uid)),
+      // 통합 피드(recipe_posts) 전환 — 옛 recipe_comments/recipe_ratings 대체. post_likes 도 함께.
+      fetchAllData(() => sb.from('recipe_posts').select('*').eq('user_id', uid)),
+      fetchAllData(() => sb.from('post_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_views').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_notes').select('*').eq('user_id', uid)),
@@ -149,9 +150,9 @@ export async function GET() {
       activity: {
         recipe_saves: savesRes.data ?? [],
         recipe_likes: likesRes.data ?? [],
-        recipe_comments: commentsRes.data ?? [],
-        recipe_ratings: ratingsRes.data ?? [],
-        comment_likes: commentLikesRes.data ?? [],
+        recipe_posts: commentsRes.data ?? [],
+        post_likes: ratingsRes.data ?? [],
+        comment_likes: commentLikesRes.data ?? [], // legacy(빈 배열) — 옛 데이터 호환
         recipe_views: viewsRes.data ?? [],
         cooking_sessions: sessionsRes.data ?? [],
         search_history: searchHistRes.data ?? [],
