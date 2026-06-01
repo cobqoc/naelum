@@ -4,7 +4,7 @@ import { checkRateLimit } from '@/lib/ratelimit'
 import { fetchAllRows } from '@/lib/supabase/fetchAll'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
-import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
+import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchForwardRelationTargets, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 import { getBlockedUserIds } from '@/lib/social/blocks'
@@ -73,14 +73,17 @@ type RecipeWithMatch = {
   missingCount: number
 }
 
+// 매칭 판정은 matchedCount(정확 보유 + 변형 + preparable + substitute) 기준으로 통일.
+// owned 만 세면 "쌀 보유 → 밥(preparable) 레시피"가 전부 탈락 → RecipeCard 배지(missingCount===0
+// = 바로 가능)와도 불일치. missingCount = total - matchedCount 라 카드와 같은 기준.
 function isReady(r: RecipeWithMatch): boolean {
-  return r.totalIngredients > 0 && r.ownedCount === r.totalIngredients
+  return r.totalIngredients > 0 && r.missingCount === 0
 }
 function isAlmost(r: RecipeWithMatch): boolean {
   return r.missingCount >= 1 && r.missingCount <= 3
 }
 function isAny(r: RecipeWithMatch): boolean {
-  return r.matchRate > 0
+  return r.matchedCount > 0
 }
 
 // GET /api/recommendations - 재료 기반 레시피 추천
@@ -154,8 +157,10 @@ export async function GET(request: NextRequest) {
         // 변형 매칭 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족).
         // 후보 검색·매칭 양쪽에 쓰임 → 여기서 한 번 계산.
         const userBaseMap = await fetchUserVariantBases(userIngredientIds, supabase)
-        // 후보 검색 풀 = 보유 id + 그 변형의 base id (소고기 쓰는 레시피도 차돌박이 보유자에게 후보).
-        const candidateIdPool = [...new Set([...userIngredientIds, ...userBaseMap.keys()])]
+        // 보유에서 나가는 preparable_to·substitute 관계의 to_id (쌀 보유 → 밥 쓰는 레시피도 후보).
+        const forwardTargets = await fetchForwardRelationTargets(userIngredientIds, supabase)
+        // 후보 검색 풀 = 보유 id + 변형의 base id + preparable/substitute 타깃.
+        const candidateIdPool = [...new Set([...userIngredientIds, ...userBaseMap.keys(), ...forwardTargets])]
 
         // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
         let idCandidateIds: string[] = []

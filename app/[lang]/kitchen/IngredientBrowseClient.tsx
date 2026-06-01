@@ -37,6 +37,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   veggie: '🥬', fruit: '🍎', meat: '🥩', seafood: '🐟', egg: '🥚', dairy: '🧀',
   grain: '🌾', legume: '🫘', nuts: '🥜', seasoning: '🥫', spice: '🌶️', condiment: '🧂',
   oil: '🫗', sweetener: '🍯', mushroom: '🍄', seaweed: '🌿',
+  alcohol: '🍷', seeds: '🌰',
   fermented: '🍶', bakery: '🍞', beverage: '🥤', snack: '🍪', processed: '📦', other: '✨',
 };
 
@@ -282,6 +283,8 @@ export default function IngredientBrowsePage({
     { value: 'sweetener', label: tb.categoryLabels.sweetener, emoji: '🍯' },
     { value: 'mushroom',  label: tb.categoryLabels.mushroom,  emoji: '🍄' },
     { value: 'seaweed',   label: tb.categoryLabels.seaweed,   emoji: '🌿' },
+    { value: 'alcohol',   label: tb.categoryLabels.alcohol,   emoji: '🍷' },
+    { value: 'seeds',     label: tb.categoryLabels.seeds,     emoji: '🌰' },
     { value: 'processed', label: tb.categoryLabels.processed, emoji: '📦' },
   ];
 

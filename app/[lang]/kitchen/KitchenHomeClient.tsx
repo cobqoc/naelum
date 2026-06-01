@@ -59,6 +59,8 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
   sweetener:  { label: '당류·감미료',   emoji: '🍯', tone: 'from-rose-400/10 to-rose-400/5 border-rose-400/30' },
   mushroom:   { label: '버섯류',       emoji: '🍄', tone: 'from-amber-800/10 to-amber-800/5 border-amber-800/30' },
   seaweed:    { label: '해조류',       emoji: '🌿', tone: 'from-emerald-600/10 to-emerald-600/5 border-emerald-600/30' },
+  alcohol:    { label: '주류',         emoji: '🍷', tone: 'from-violet-500/10 to-violet-500/5 border-violet-500/30' },
+  seeds:      { label: '씨앗류',       emoji: '🌰', tone: 'from-yellow-700/10 to-yellow-700/5 border-yellow-700/30' },
   fermented:  { label: '발효식품',     emoji: '🍶', tone: 'from-indigo-500/10 to-indigo-500/5 border-indigo-500/30' },
   bakery:     { label: '빵·베이커리',  emoji: '🍞', tone: 'from-amber-700/10 to-amber-700/5 border-amber-700/30' },
   beverage:   { label: '음료',         emoji: '🥤', tone: 'from-sky-500/10 to-sky-500/5 border-sky-500/30' },

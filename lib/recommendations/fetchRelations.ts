@@ -71,6 +71,29 @@ export async function fetchUserVariantBases(
 }
 
 /**
+ * 보유 재료에서 *나가는*(from_id=보유) preparable_to·substitute 관계의 to_id 목록.
+ * 후보 검색 확장용: 쌀 보유 → (쌀 preparable_to 밥) → "밥" 쓰는 레시피도 후보로 발굴.
+ * 변형(base) 확장은 fetchUserVariantBases 가, 가공·대체 확장은 여기가 담당.
+ * (실제 매칭 판정은 matchV2 가 graph.incoming 으로 별도 수행 — 여긴 후보 발굴만.)
+ * 데이터 없으면 빈 배열 → 후보 확장 없음(degrade, 정확 보유 후보만).
+ */
+export async function fetchForwardRelationTargets(
+  userIngredientIds: string[],
+  supabase: AnySupabase,
+): Promise<string[]> {
+  const validIds = userIngredientIds.filter(Boolean);
+  if (validIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('ingredient_relations')
+    .select('to_id')
+    .in('from_id', validIds);
+
+  if (error || !data) return [];
+  return Array.from(new Set((data as Array<{ to_id: string }>).map(r => r.to_id)));
+}
+
+/**
  * 레시피 재료들의 allergens 컬럼 fetch + **base 상속 1단계**.
  * 변형은 base의 알레르겐을 물려받는다 (모짜렐라.base=치즈 → 치즈.allergens=[우유] → 모짜렐라도 차단).
  * 알레르기 차단 판정에 사용.

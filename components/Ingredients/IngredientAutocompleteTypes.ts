@@ -76,6 +76,8 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'mushroom', name: '버섯류', icon: '🍄' },
   { id: 'seaweed', name: '해조류', icon: '🌿' },
   { id: 'nuts', name: '견과류', icon: '🥜' },
+  { id: 'alcohol', name: '주류', icon: '🍷' },
+  { id: 'seeds', name: '씨앗류', icon: '🌰' },
   { id: 'processed', name: '가공식품', icon: '📦' },
   { id: 'beverage', name: '음료', icon: '🥤' },
   { id: 'snack', name: '간식', icon: '🍪' },
