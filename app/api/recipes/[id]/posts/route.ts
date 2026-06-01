@@ -76,17 +76,17 @@ export async function GET(
     }))
   }
 
-  // 헤더용 평균/리뷰수(denormalized 컬럼) + 만든 수(recipe_popularity 뷰 = distinct 유저 cooked)
-  const [{ data: recipe }, { data: pop }] = await Promise.all([
+  // 헤더용 평균/리뷰수(denormalized 컬럼) + 만든 수(공개 집계 — cooking_sessions RLS 우회 RPC)
+  const [{ data: recipe }, { data: cooked }] = await Promise.all([
     supabase.from('recipes').select('average_rating, ratings_count').eq('id', recipeId).maybeSingle(),
-    supabase.from('recipe_popularity').select('cooked_count').eq('recipe_id', recipeId).maybeSingle(),
+    supabase.rpc('recipe_cooked_count', { p_recipe_id: recipeId }),
   ])
 
   return NextResponse.json({
     posts: withMeta,
     averageRating: recipe?.average_rating ?? 0,
     ratingsCount: recipe?.ratings_count ?? 0,
-    cookedCount: pop?.cooked_count ?? 0,
+    cookedCount: cooked ?? 0,
     pagination: { page, limit, total: count || 0, totalPages: Math.ceil((count || 0) / limit) },
   })
 }
