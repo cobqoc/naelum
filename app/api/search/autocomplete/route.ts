@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
 
 // GET /api/search/autocomplete - 검색 자동완성
 export async function GET(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
 
   const rawQuery = searchParams.get('q') || ''
-  const query = rawQuery.replace(/[%_\\]/g, '').trim()
+  const query = sanitizeSearchTerm(rawQuery)
   const rawLimit = parseInt(searchParams.get('limit') || '10')
   const limit = Math.min(Math.max(1, isNaN(rawLimit) ? 10 : rawLimit), 20)
 
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
     supabase
       .from('ingredients_master')
       .select('name, name_ko')
+      .eq('status', 'approved')
       .or(`name.ilike.%${query}%,name_ko.ilike.%${query}%`)
       .limit(5),
 

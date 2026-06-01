@@ -150,15 +150,19 @@ export async function GET(
           return recipe?.id;
         }).filter(Boolean)
 
+        // 리뷰는 통합 피드(recipe_posts)의 rating 있는 글에서 조회 (review = content)
         const { data: ratings } = await supabase
-          .from('recipe_ratings')
-          .select('recipe_id, rating, review')
+          .from('recipe_posts')
+          .select('recipe_id, rating, content')
           .eq('user_id', profile.id)
+          .not('rating', 'is', null)
+          .is('parent_id', null)
+          .eq('is_deleted', false)
           .in('recipe_id', recipeIds)
 
         // 리뷰 데이터를 맵으로 변환
         const ratingsMap = new Map(
-          ratings?.map(r => [r.recipe_id, { rating: r.rating, review: r.review }]) || []
+          ratings?.map(r => [r.recipe_id, { rating: r.rating, review: r.content }]) || []
         )
 
         // completed_at, photo_url, 리뷰 정보를 recipe 객체에 포함

@@ -13,8 +13,8 @@ import RecipeBrowseView from '@/components/RecipeBrowseView';
 // Next 16 / React 19: dynamic({ ssr: false })가 BAILOUT_TO_CLIENT_SIDE_RENDERING
 // digest를 남겨 hydration mismatch(#418) 유발. loading fallback만 쓰고 SSR은 허용
 // (server에서 빈 마크업 render → client hydrate 시 동일 마크업이라 mismatch 없음).
-const RecipeComments = dynamic(() => import('@/components/RecipeComments'), { loading: () => null });
-const RecipeRatings = dynamic(() => import('@/components/RecipeRatings'), { loading: () => null });
+// 통합 피드(recipe_posts) — 리뷰(평점)·댓글·답글 한 곳. 옛 RecipeRatings+RecipeComments 대체.
+const RecipePostsFeed = dynamic(() => import('@/components/RecipePosts/RecipePostsFeed'), { loading: () => null });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -70,7 +70,7 @@ export interface RecipeDetailClientProps {
   currentUserId: string | null;
   initialUserIngredients: string[];
   initialUserIngredientIds: string[];
-  initialUserIngredientQtys: { id: string; quantity: number | string | null; unit: string | null }[];
+  initialUserIngredientQtys: { id: string; name: string; quantity: number | string | null; unit: string | null }[];
   initialIsSaved: boolean;
   initialSaveNotes: string | null;
   initialIsLiked: boolean;
@@ -361,20 +361,12 @@ export default function RecipeDetailClient({
         isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
       />
 
-      {/* 리뷰 섹션 */}
-      <RecipeRatings
+      {/* 통합 피드 (리뷰 + 댓글 + 답글) */}
+      <RecipePostsFeed
         recipeId={id}
-        averageRating={recipe.average_rating}
-        ratingsCount={recipe.ratings_count}
         currentUserId={currentUserId}
-        hasCooked={hasCooked}
+        isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
         onRatingUpdate={refreshRecipeRatings}
-      />
-
-      {/* 댓글 섹션 */}
-      <RecipeComments
-        recipeId={id}
-        currentUserId={currentUserId}
       />
 
     </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { parsePagination } from '@/lib/api/pagination';
+import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch';
 
 /**
  * GET /api/ingredients/browse
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   // 파라미터 파싱
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams, { defaultLimit: 50 });
-  const query = searchParams.get('q') || '';
+  const query = sanitizeSearchTerm(searchParams.get('q') || ''); // PostgREST 필터 주입 방어(H7)
   const categoriesParam = searchParams.get('categories') || '';
   const namesParam = searchParams.get('names') || ''; // 이름 목록으로 직접 조회 (popular items 등)
   const sort = searchParams.get('sort') || 'search_count'; // search_count | name
@@ -39,23 +40,15 @@ export async function GET(request: NextRequest) {
         dbQuery = dbQuery.or(`name.ilike.%${query}%,name_ko.ilike.%${query}%,name_en.ilike.%${query}%,aliases.cs.{${query}}`);
       }
 
-      // 카테고리 필터
-      // - 'processed' (가공식품): is_processed=true 필터
-      // - 일반 카테고리(meat·grain 등): category=X + is_processed=false (가공식품 중복 노출 차단)
-      //   → 도감(/ingredients)은 excludeProcessed 미적용·기존 category 기준 그대로
+      // 카테고리 필터 — 본질(essence) 기준 category 값으로 단일화 (H11).
+      // 'processed'(가공식품)는 *여러 식품 조합* 본질 카테고리(햄·베이컨·소시지·스팸)이며,
+      // is_processed 불리언(가공 여부 속성)과 무관. 치즈=dairy·다진육=meat·마가린=oil 은
+      // 각 본질 카테고리에 그대로 노출(is_processed=true 라도). 옛 is_processed 가상필터는
+      // 치즈·다진육을 가공식품 탭에 중복 노출 + 본질 탭에서 제외(picker 도달 불가)시켰음.
       if (categoriesParam) {
         const categories = categoriesParam.split(',').filter(Boolean);
         if (categories.length > 0) {
-          if (categories.length === 1 && categories[0] === 'processed') {
-            dbQuery = dbQuery.eq('is_processed', true);
-          } else {
-            dbQuery = dbQuery.in('category', categories);
-            // 모달 컨텍스트(includePending=false)에서만 가공식품 중복 노출 차단.
-            // 도감(includePending=true)은 정확한 분류 유지 — 스팸이 meat 탭에서도 보임.
-            if (!includePending) {
-              dbQuery = dbQuery.eq('is_processed', false);
-            }
-          }
+          dbQuery = dbQuery.in('category', categories);
         }
       }
     }

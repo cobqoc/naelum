@@ -1230,6 +1230,18 @@ export const it = {
     dark: 'Modalità scura',
     system: 'Impostazioni di sistema',
   },
+  posts: {
+    sectionTitle: 'Recensioni e commenti',
+    tabAll: 'Tutti',
+    tabReviews: 'Solo recensioni',
+    reviewCta: "L'ho fatto",
+    cookedBadge: 'Fatto',
+    cookedCountSuffix: " l'hanno fatto",
+    commentPlaceholder: 'Fai una domanda o condividi la tua opinione...',
+    emptyTitle: 'Lascia la prima recensione',
+    emptySub: "Vota se l'hai fatto, o lascia un commento con domande",
+    ownRecipeReviewBlocked: 'Non puoi valutare la tua ricetta',
+  },
   comments: {
     title: 'Commenti',
     loading: 'Caricamento...',

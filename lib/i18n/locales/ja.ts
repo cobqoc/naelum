@@ -1230,6 +1230,18 @@ export const ja = {
     dark: 'ダークモード',
     system: 'システム設定',
   },
+  posts: {
+    sectionTitle: 'レビュー・コメント',
+    tabAll: 'すべて',
+    tabReviews: 'レビューのみ',
+    reviewCta: '作ってみた',
+    cookedBadge: '作ってみた',
+    cookedCountSuffix: '人が作りました',
+    commentPlaceholder: '質問や感想を残してください...',
+    emptyTitle: '最初のレビューを残しましょう',
+    emptySub: '作ったら評価を、質問はコメントで残してください',
+    ownRecipeReviewBlocked: '自分のレシピには評価できません',
+  },
   comments: {
     title: 'コメント',
     loading: '読み込み中...',

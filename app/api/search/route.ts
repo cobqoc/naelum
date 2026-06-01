@@ -2,11 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
 import { checkRateLimit } from '@/lib/ratelimit'
+import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
 
-// 검색어 정제: 특수문자 제거
-function sanitizeQuery(q: string): string {
-  return q.replace(/[%_\\]/g, '').trim()
-}
+// 검색어 정제 — PostgREST 필터 주입 방어(H7). 단일 출처: lib/api/sanitizeSearch
+const sanitizeQuery = sanitizeSearchTerm
 
 // 안전한 정수 파싱 (범위 제한)
 function safeParseInt(value: string | null, defaultVal: number, min: number, max: number): number {

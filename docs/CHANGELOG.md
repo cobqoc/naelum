@@ -11,6 +11,30 @@
 
 ## 2026-06 작업 로그
 
+- **레시피 상세 통합 피드 — recipe_ratings + recipe_comments → recipe_posts 단일 테이블** (2026-06-01)
+  - **동기**: "리뷰(평점)"·"댓글"이 별개 테이블이라 한 피드로 못 합치고(페이지네이션·답글·정렬·리뷰에 답글), 상세에 빈 박스 2개. 사용자 결정으로 **단일 테이블 통합**(prod·dev 0행이라 마이그레이션 골든타임) + **"별점=만들어봤어요 인증" 차별화**(만든 사람만 별점 — 만개의레시피·Allrecipes엔 없는 신뢰 무기).
+  - **모델 결정**: 리뷰=별점 있는 최상위글 / 댓글=별점 없는 최상위글 / 답글=parent 있는 글(1단). 별점 필수(별점없는 만들어봤어요 폐기) · 만든 수=별점글 수 · 답글 1단 · 비요리자/본인 별점 차단.
+  - **DB**(`20260601_recipe_posts_unified_feed.sql`, dev+prod 적용): `recipe_posts`+`post_likes` + 트리거(답글 1단 강제·average_rating/ratings_count/comments_count 자동·likes_count) + RLS(읽기 공개·본인글만 write) + `toggle_post_like` RPC + 유저당 리뷰 1개 UNIQUE. ⚠️ `user_id`는 `profiles(id)` FK(auth.users 아님 — PostgREST `user:profiles` 임베드 필수, [[feedback_recipe_user_fk_and_e2e_context]]).
+  - **API**: `/posts`(GET 통합피드·필터 all/reviews·차단필터·답글수·좋아요 batch / POST 리뷰·댓글·답글 분기 / PUT·DELETE soft-delete / like RPC / replies). 옛 `/comments`·`/rating`·`/ratings` 라우트 삭제. `/complete`는 recipe_ratings 사진글 쓰기 제거(완료사진은 cooking_session만). 프로필 cooked 탭·GDPR export·RecipeReviewModal(프로필·쿠킹모드) 전부 recipe_posts 재배선.
+  - **UI**: `components/RecipePosts/`(RecipePostsFeed·PostCard·PostReplies·ReplyForm·ReviewComposerModal). 상세페이지 RecipeRatings+RecipeComments → 통합 피드. ✓만들어봤어요 배지·별점·전체/후기만 탭·답글 1단·인라인 수정·옵티미스틱 좋아요·빈상태. orphan RecipeRatings·RecipeComments(+서브) 삭제. i18n `posts` 8 locale 신설.
+  - **검증**: lint 0·build 439·vitest 322·**full e2e 448 passed / 0 fail**(회귀 0). 신규 `recipe-posts.spec`(라운드트립·필터·별점수정·카운트·본인레시피403·답글별점400·답글의답글400·본인글좋아요400·빈댓글400·미인증401).
+  - **남은 것**: ① 옛 테이블 drop(`20260601_drop_legacy_ratings_comments.sql`) — **develop→main 머지·배포 후** dev+prod 적용(현 prod 코드가 옛 테이블 사용하므로 머지 전 금지). ② 리뷰 작성 모달 사진 첨부 복원(현재 표시만).
+
+- **전수 감사 3차 후속 — High 9건 수정 + H10 인프라 처방 + 2FA UI 숨김** (2026-06-01)
+  - 사용자 지시 "추천 순서대로 쭉 진행". 영향도+위험도(낮은 것 먼저)+동일영역 묶음 순.
+  - **H5** 레시피 상세 대체재 chip에 *엉뚱한 보유재료명* — `userIngredients`(전체 행 이름)와 `userIngredientIds`(id-null 제외 행)를 index zip 하던 `userIngredientNameById`가, id 없는 보유재료 1개만 있어도 이후 전부 어긋남(V2 "추측 0" 정면 위반). 행단위 `userIngredientQtys`에 `name` 동봉 → 거기서 파생(zip 제거). `page.tsx`·`RecipeDetailClient`·`RecipeBrowseView`.
+  - **H1** recipes PUT/POST mass-assignment — `...recipeData` 통째 스프레드로 소유자가 `average_rating`·`cooked_count`·`views_count`·`status`·`published_at` 직접 세팅(카운터 RPC 우회·trending/rating sort 오염) 가능했음. `lib/recipes/editableColumns.ts`(EDITABLE_RECIPE_COLUMNS 콘텐츠 화이트리스트)로 통과 컬럼 제한 + POST는 status/remix 서버 명시 강제 + visibility 라우트 status enum 검증. +vitest 4.
+  - **H2** 완료사진 업로드 무검증(타입·크기·매직바이트 0) + lib/storage 우회 + 매 요청 createBucket — 유일한 무방비 업로드 경로. `lib/storage/validateImage.ts` 추출(/api/upload와 단일 출처), `lib/storage` 경유, createBucket 제거. dev `recipe-completion-photos` 버킷+Storage RLS 4종 프로비저닝(`20260601_recipe_completion_photos_bucket.sql`; prod엔 이미 존재). /api/upload도 동일 validator로 리팩터(중복 제거). +vitest 4.
+  - **H7+H8** PostgREST 필터 주입 + pending 노출 — 사용자 입력을 `.or('name.ilike.%${q}%,...')`·`aliases.cs.{${q}}`에 비이스케이프 보간(콤마·괄호·중괄호로 임의 컬럼 필터 주입). `lib/api/sanitizeSearch.ts`(`,(){}"\%_*` 제거) 4 라우트(search·ingredients autocomplete/browse) 적용 + autocomplete `status='approved'` 필터(pending 재료 노출 차단). +vitest 4.
+  - **H14** 자동완성 stale-response race — debounce가 타이머만 취소하고 in-flight 요청은 못 막아 느린 옛 응답이 최신 위 덮음. `Common/Autocomplete.tsx` requestId 단조증가 가드.
+  - **H16** draft 팁을 편집으로 발행 불가 — 편집 PUT이 `is_draft` 미전송 → draft 영구 고착. tip PUT `is_draft` 갱신(명시 전송 시) + 편집페이지 `wasDraftRef`로 "수정 완료"=발행(draft였으면 공개).
+  - **H11** 도감 "가공식품" 탭 본질항목 혼입 — `is_processed=true` 가상필터가 치즈·생크림·마가린·다진육(본질=dairy/oil/meat)을 가공식품 탭에 끌어와 도감 이중노출 + 모달 본질탭에선 제외돼 도달 불가. 본질 분류(2026-05-30~06-01)에 맞춰 가상필터 **제거** → `category='processed'`(여러 식품 조합 = 햄·베이컨·소시지·스팸)로 단일화. 치즈=dairy·다진육=meat·마가린=oil 각 본질탭 정상 노출. `INGREDIENT_CATEGORIES`에 processed 추가(getCategoryName 해소).
+  - **H3** user_blocks placebo(차단해도 아무 효과 없음) — `lib/social/blocks.ts`(getBlockedUserIds·toNotInList)로 댓글·답글·활성 추천경로(ingredient)에 차단 사용자 콘텐츠 필터 적용(단방향, blocker 관점). follower 목록 전용 라우트는 부재(export만)라 대상 외.
+  - **H10** rate limit IP 스푸핑 — 코드로 해결 불가(근본은 CF 우회 origin 직결). **인프라 처방 문서화**(AUDIT §1 H10): CF Authenticated Origin Pulls(mTLS) / Vercel IP allowlist(CF egress) / 보조 비밀헤더 검증. 운영자 액션.
+  - **2FA(H4 완화)** — TOTP setup/verify는 완비됐으나 로그인에서 미강제(켜도 비번만으로 로그인) = 거짓 안전감. 사용자 결정으로 **설정 UI 숨김**(`AccountTab.tsx` `TWO_FACTOR_UI_ENABLED=false`; API·테이블·컴포넌트 보존, 플래그만 되돌리면 복구). **실제 강제(H4)는 half-auth 고위험 변경이라 회귀 e2e 선작성 후 별도 세션 보류.**
+  - **검증**: lint 0 · build 439 pages · vitest 322 · **full e2e 446 passed / 2 skipped / 0 fail**. 회귀 0.
+  - **보류(사용자 결정)**: H4(2FA 강제)·C4(배달 가격조작 — `lib/delivery/api.ts`가 'use client'라 서버 재계산 불가, DB 트리거가 정답; prod 미점등이라 배달 런칭과 함께).
+
 - **전수 감사 후속 수정 9건 + e2e 인프라 근본 처방 2건** — 완료·develop→main 머지(PR #221·#222·#223) (2026-06-01)
   - **감사 Critical 4건**:
     - **C5** 소셜 테이블 UNIQUE 제약 dev 드리프트 복구 — prod엔 있으나 dev에만 없던 6제약(recipe_saves/likes/ratings·comment_likes·user_follows·user_blocks) 추가, prod와 1:1(`20260601_social_unique_constraints_dev_drift.sql`). 누락 시 dev race 중복행 + e2e가 prod와 다른 동작.

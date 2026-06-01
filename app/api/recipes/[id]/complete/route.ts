@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
+import { checkRateLimit } from '@/lib/ratelimit'
+import { uploadToBucket, getPublicUrl } from '@/lib/storage'
+import { validateImageFile } from '@/lib/storage/validateImage'
 
 // POST /api/recipes/[id]/complete - 요리 완성 기록
 export async function POST(
@@ -13,97 +16,47 @@ export async function POST(
   const { user, error: authError } = await requireAuth(supabase)
   if (authError) return authError
 
+  const { allowed } = await checkRateLimit(`complete-photo:${user.id}`, { windowMs: 60 * 1000, maxRequests: 10 })
+  if (!allowed) {
+    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
+  }
+
   try {
     // FormData에서 사진 추출
     const formData = await request.formData()
     const photo = formData.get('photo') as File | null
     let photoUrl: string | null = null
 
-    // 사진이 있으면 Supabase Storage에 업로드
+    // 사진이 있으면 검증 후 Supabase Storage에 업로드 (H2: 무검증·storage 우회·매요청 createBucket 제거)
     if (photo) {
-      const fileExt = photo.name.split('.').pop()
-      const fileName = `${user.id}/${recipeId}/${Date.now()}.${fileExt}`
-
-      // 버킷 확인 및 생성
-      const { data: buckets } = await supabase.storage.listBuckets()
-      const bucketExists = buckets?.some(b => b.name === 'recipe-completion-photos')
-
-      if (!bucketExists) {
-        await supabase.storage.createBucket('recipe-completion-photos', {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
-        })
+      // 타입·크기·매직바이트 검증 — /api/upload 와 동일 규칙(단일 출처)
+      const validation = await validateImageFile(photo)
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: 400 })
       }
 
-      // 파일 업로드
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('recipe-completion-photos')
-        .upload(fileName, photo, {
-          cacheControl: '3600',
-          upsert: false
-        })
+      const ext = photo.name.split('.').pop()?.toLowerCase() || 'jpg'
+      const fileName = `${user.id}/${recipeId}/${Date.now()}.${ext}`
+
+      // lib/storage 경유(AWS 이전 격리). 버킷은 인프라로 사전 프로비저닝(매요청 생성 금지).
+      const { path: uploadedPath, error: uploadError } = await uploadToBucket(
+        supabase,
+        'recipe-completion-photos',
+        fileName,
+        validation.bytes!,
+        { contentType: photo.type, cacheControl: '3600', upsert: false }
+      )
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
-        return NextResponse.json({
-          error: `사진 업로드 실패: ${uploadError.message}`,
-          details: uploadError
-        }, { status: 500 })
+        return NextResponse.json({ error: `사진 업로드 실패: ${uploadError.message}` }, { status: 500 })
       }
 
-      // Public URL 생성
-      const { data: urlData } = supabase.storage
-        .from('recipe-completion-photos')
-        .getPublicUrl(uploadData.path)
-      photoUrl = urlData.publicUrl
+      photoUrl = getPublicUrl(supabase, 'recipe-completion-photos', uploadedPath ?? fileName)
     }
 
-    // 사진이 있으면 recipe_ratings에 저장
-    if (photoUrl) {
-      // 1. 기존 리뷰 확인
-      const { data: existingRating } = await supabase
-        .from('recipe_ratings')
-        .select('id, photo_url, review, rating')
-        .eq('recipe_id', recipeId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (existingRating) {
-        // 2a. 기존 리뷰에 사진 추가/업데이트
-        const { error: updateError } = await supabase
-          .from('recipe_ratings')
-          .update({
-            photo_url: photoUrl,
-            completed_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingRating.id)
-        if (updateError) {
-          console.error('Rating photo update error:', updateError)
-          return NextResponse.json({ error: '사진 저장에 실패했습니다' }, { status: 500 })
-        }
-      } else {
-        // 2b. 사진만 있는 새 리뷰 생성 (평점 없음)
-        const { error: ratingError } = await supabase
-          .from('recipe_ratings')
-          .insert({
-            recipe_id: recipeId,
-            user_id: user.id,
-            rating: null, // 평점 없음 (사진만)
-            review: null,
-            photo_url: photoUrl,
-            is_photo_only: true,
-            completed_at: new Date().toISOString()
-          })
-
-        if (ratingError) {
-          console.error('Rating creation error:', ratingError)
-        }
-        // 주의: 평점이 NULL이므로 update_recipe_ratings 호출 불필요
-        // (평균 평점 계산 시 rating=NULL 레코드는 제외됨)
-      }
-    }
+    // 완료 사진은 cooking_sessions.photo_url 에만 저장(아래). recipe_ratings 사진글(별점없음)은
+    // 통합 피드(recipe_posts) 전환으로 폐기 — "별점 없는 만들어봤어요" 미지원(별점 필수 결정).
 
     // 이미 완료한 기록이 있는지 확인 (최근 24시간 이내)
     const { data: recentSession } = await supabase

@@ -11,6 +11,12 @@ export async function PATCH(
     const { id: recipeId } = await context.params;
     const { status } = await request.json();
 
+    // status 값 검증 — 임의 문자열 저장 방지 (CHECK 제약 부재 보완)
+    const ALLOWED_STATUS = ['published', 'private', 'draft'];
+    if (typeof status !== 'string' || !ALLOWED_STATUS.includes(status)) {
+      return NextResponse.json({ error: '잘못된 공개 설정 값입니다.' }, { status: 400 });
+    }
+
     const { user, error: authError } = await requireAuth(supabase);
     if (authError) return authError;
 

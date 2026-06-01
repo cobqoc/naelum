@@ -64,6 +64,9 @@ export default function Autocomplete<T extends AutocompleteItem>({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFocusedRef = useRef(false);
+  // stale-response race 가드(H14): 발사된 요청마다 단조 증가 id 부여.
+  // await 후 자신이 최신 요청일 때만 결과 반영 — 느린 옛 응답이 최신 위 덮기 방지.
+  const requestIdRef = useRef(0);
 
   // ===== 데스크톱 자동 포커스 =====
   useEffect(() => {
@@ -86,15 +89,18 @@ export default function Autocomplete<T extends AutocompleteItem>({
 
     setLoading(true);
     const timer = setTimeout(async () => {
+      const reqId = ++requestIdRef.current;
       try {
         const results = await fetchSuggestions(value);
+        if (reqId !== requestIdRef.current) return; // 더 새 요청이 떴음 — 옛 응답 폐기
         setSuggestions(results);
         if (isFocusedRef.current) setShowDropdown(true);
       } catch (error) {
+        if (reqId !== requestIdRef.current) return;
         console.error('Error fetching suggestions:', error);
         setSuggestions([]);
       } finally {
-        setLoading(false);
+        if (reqId === requestIdRef.current) setLoading(false);
       }
     }, debounceMs);
 

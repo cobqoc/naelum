@@ -18,7 +18,8 @@ export type StorageBucket =
   | 'tip-images'
   | 'avatars'
   | 'step-images'
-  | 'contact-screenshots';
+  | 'contact-screenshots'
+  | 'recipe-completion-photos';
 
 export interface UploadOptions {
   cacheControl?: string;

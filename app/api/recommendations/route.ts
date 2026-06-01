@@ -7,6 +7,7 @@ import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/m
 import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
+import { getBlockedUserIds } from '@/lib/social/blocks'
 
 // V2 알레르기 필터 — DB allergens 컬럼 lookup (2026-05-29).
 // substring 매칭·정규화 추측 제거. ingredient_id 기반 정확 매칭만.
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
         const { data: recipes } = await supabase
           .from('recipes')
           .select(`
-            id, title, description, thumbnail_url, display_image,
+            id, title, description, thumbnail_url, display_image, author_id,
             prep_time_minutes, cook_time_minutes, difficulty_level, dish_type,
             average_rating, servings,
             author:profiles!recipes_author_id_fkey(username, avatar_url),
@@ -205,9 +206,16 @@ export async function GET(request: NextRequest) {
         }
 
         // 알레르기 필터링 V2 (로그인 사용자만)
-        const filteredRecipes = user
+        const allergyFiltered = user
           ? await filterByAllergies(supabase, user.id, recipes)
           : recipes
+
+        // 차단 사용자 작성 레시피 제외 (H3 — 활성 추천 경로)
+        const blockedIds = new Set(await getBlockedUserIds(supabase, user?.id))
+        const filteredRecipes = blockedIds.size > 0
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ? (allergyFiltered as any[]).filter(r => !blockedIds.has(r.author_id))
+          : allergyFiltered
 
         // V2 매칭 — ingredient_relations 그래프 한 번에 fetch
         const allRecipeIngredientIds = Array.from(

@@ -5,6 +5,7 @@ import { parsePagination } from '@/lib/api/pagination'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { normalizeSubstitutes } from '@/lib/recipes/substituteChips'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
+import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns'
 
 // 저장 boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
 // 빈 배열은 NULL 로 (jsonb 행 깔끔 유지).
@@ -122,15 +123,20 @@ export async function POST(request: NextRequest) {
   }
 
   // 레시피 생성 (total_time_minutes는 DB에서 자동 계산되는 Generated Column)
+  // mass-assignment 방어(H1): 콘텐츠 컬럼 화이트리스트만 + remix 정체성·status 는 서버가 명시 강제.
+  // 카운터(average_rating·cooked_count·views_count 등)는 body 로 주입 불가.
+  const status = body.status === 'draft' ? 'draft' : 'published'
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes')
     .insert({
       author_id: user.id,
       title,
       description,
-      ...recipeData,
-      status: body.status || 'published',
-      published_at: (body.status || 'published') === 'published' ? new Date().toISOString() : null
+      ...pickEditableRecipeColumns(recipeData),
+      original_recipe_id: recipeData.original_recipe_id ?? null,
+      is_remix: !!recipeData.is_remix,
+      status,
+      published_at: status === 'published' ? new Date().toISOString() : null
     })
     .select()
     .single()
