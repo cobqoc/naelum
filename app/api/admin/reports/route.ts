@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       ? auth.supabase.from('profiles').select('id, username').in('id', userIds)
       : Promise.resolve({ data: [] }),
     commentIds.length > 0
-      ? auth.supabase.from('recipe_comments').select('id, content, recipe_id').in('id', commentIds)
+      ? auth.supabase.from('recipe_posts').select('id, content, recipe_id').in('id', commentIds)
       : Promise.resolve({ data: [] }),
   ])
 
