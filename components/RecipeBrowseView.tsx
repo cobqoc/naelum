@@ -90,6 +90,8 @@ interface RecipeBrowseViewProps {
   likeLoading?: boolean;
   /** 본인 콘텐츠 여부 — true 시 🚨 신고 버튼 숨김 (자기 자기 신고 UX 부자연스러움 해소) */
   isAuthor?: boolean;
+  /** 조리순서 끝 "다 만들었어요" 클릭 — 부모가 MadeItModal 오픈 */
+  onMadeIt?: () => void;
 }
 
 export default function RecipeBrowseView({
@@ -108,6 +110,7 @@ export default function RecipeBrowseView({
   onToggleLike,
   likeLoading = false,
   isAuthor = false,
+  onMadeIt,
 }: RecipeBrowseViewProps) {
   const toast = useToast();
   const unitConv = useUnitConversion();
@@ -544,6 +547,8 @@ export default function RecipeBrowseView({
             onOpenTimer={cook.openTimerForStep}
             getEffectiveTimers={cook.getEffectiveTimers}
             voice={cook.voice}
+            showMadeIt={!isAuthor}
+            onMadeIt={onMadeIt}
             t={t}
           />
 
