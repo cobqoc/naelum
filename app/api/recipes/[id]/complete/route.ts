@@ -83,7 +83,8 @@ export async function POST(
       return NextResponse.json({
         success: true,
         message: '이미 최근에 완료한 기록이 있습니다',
-        sessionId: recentSession.id
+        sessionId: recentSession.id,
+        photoUrl
       })
     }
 
@@ -108,7 +109,8 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: '요리 완성 기록이 저장되었습니다',
-      sessionId: session.id
+      sessionId: session.id,
+      photoUrl
     })
   } catch (error) {
     console.error('Complete recipe error:', error)
