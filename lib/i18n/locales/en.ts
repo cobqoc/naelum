@@ -887,6 +887,8 @@ export const en = {
       sweetener: 'Sugars & Sweeteners',
       mushroom: 'Mushrooms',
       seaweed: 'Seaweed',
+      alcohol: 'Liquor',
+      seeds: 'Seeds',
       meat: 'Meat',
       seafood: 'Seafood',
       grain: 'Grains & Nuts',

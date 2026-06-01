@@ -888,6 +888,8 @@ export const es = {
       sweetener: 'Azúcares y edulcorantes',
       mushroom: 'Setas',
       seaweed: 'Algas',
+      alcohol: 'Licores',
+      seeds: 'Semillas',
       meat: 'Carne',
       seafood: 'Mariscos',
       grain: 'Cereales y frutos secos',

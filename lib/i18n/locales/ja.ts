@@ -888,6 +888,8 @@ export const ja = {
       sweetener: '糖類・甘味料',
       mushroom: 'きのこ類',
       seaweed: '海藻',
+      alcohol: '酒類',
+      seeds: '種子類',
       meat: '肉類',
       seafood: '魚介類',
       grain: '穀物類',

@@ -124,6 +124,8 @@ export async function POST(request: NextRequest) {
       'mushroom',
       'seaweed',
       'nuts',
+      'alcohol',
+      'seeds',
       'spice',
       'beverage',
       'snack',
