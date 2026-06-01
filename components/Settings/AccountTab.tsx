@@ -12,6 +12,11 @@ import { useToast } from '@/lib/toast/context';
 
 const TwoFactorTab = dynamic(() => import('@/components/Settings/TwoFactorTab'), { ssr: false });
 
+// 2FA UI 숨김 (2026-06-01) — 로그인 경로에서 TOTP 를 강제하지 않아(H4 미구현) 2FA 를 켜도
+// 비밀번호만으로 로그인됨 → 사용자에게 거짓 안전감을 준다. 로그인 강제(H4)를 제대로
+// 구현하면 이 플래그를 true 로 되돌려 다시 노출할 것. (setup/verify/disable API·테이블은 보존)
+const TWO_FACTOR_UI_ENABLED = false;
+
 interface AccountTabProps {
   profile: { id: string; email: string; created_at: string } | null;
   supabase: SupabaseClient;
@@ -481,8 +486,8 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
           </div>
         )}
 
-        {/* Two-Factor Authentication — API는 쿠키 인증, profile 존재 확인만 게이트 */}
-        {profile && <TwoFactorTab />}
+        {/* Two-Factor Authentication — H4(로그인 TOTP 강제) 구현 전까지 숨김(거짓 안전감 방지) */}
+        {TWO_FACTOR_UI_ENABLED && profile && <TwoFactorTab />}
 
         {/* Blocked Users */}
         <div className="p-4 rounded-xl bg-background-secondary space-y-3">
