@@ -1230,6 +1230,18 @@ export const de = {
     dark: 'Dunkles Design',
     system: 'Systemeinstellung',
   },
+  posts: {
+    sectionTitle: 'Bewertungen & Kommentare',
+    tabAll: 'Alle',
+    tabReviews: 'Nur Bewertungen',
+    reviewCta: 'Nachgekocht',
+    cookedBadge: 'Nachgekocht',
+    cookedCountSuffix: ' haben es gekocht',
+    commentPlaceholder: 'Stelle eine Frage oder teile deine Meinung...',
+    emptyTitle: 'Schreibe die erste Bewertung',
+    emptySub: 'Bewerte es, wenn du es gekocht hast, oder hinterlasse einen Kommentar',
+    ownRecipeReviewBlocked: 'Du kannst dein eigenes Rezept nicht bewerten',
+  },
   comments: {
     title: 'Kommentare',
     loading: 'Laden...',

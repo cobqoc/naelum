@@ -1232,6 +1232,18 @@ export const ko = {
     dark: '다크 모드',
     system: '시스템 설정',
   },
+  posts: {
+    sectionTitle: '후기 · 댓글',
+    tabAll: '전체',
+    tabReviews: '후기만',
+    reviewCta: '만들어봤어요',
+    cookedBadge: '만들어봤어요',
+    cookedCountSuffix: '명이 만들어봤어요',
+    commentPlaceholder: '궁금한 점이나 의견을 남겨보세요...',
+    emptyTitle: '첫 후기를 남겨보세요',
+    emptySub: '만들어봤다면 별점을, 궁금한 점은 댓글로 남겨주세요',
+    ownRecipeReviewBlocked: '본인 레시피에는 별점을 매길 수 없어요',
+  },
   comments: {
     title: '댓글',
     loading: '로딩 중...',

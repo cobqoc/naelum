@@ -1230,6 +1230,18 @@ export const zh = {
     dark: '深色模式',
     system: '系统设置',
   },
+  posts: {
+    sectionTitle: '评价 · 评论',
+    tabAll: '全部',
+    tabReviews: '仅评价',
+    reviewCta: '我做过了',
+    cookedBadge: '做过了',
+    cookedCountSuffix: '人做过',
+    commentPlaceholder: '留下问题或想法...',
+    emptyTitle: '来写第一条评价吧',
+    emptySub: '做过就打个分，有疑问就留言',
+    ownRecipeReviewBlocked: '不能给自己的菜谱打分',
+  },
   comments: {
     title: '评论',
     loading: '加载中...',

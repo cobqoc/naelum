@@ -1229,6 +1229,18 @@ export const en = {
     dark: 'Dark Mode',
     system: 'System Default',
   },
+  posts: {
+    sectionTitle: 'Reviews & Comments',
+    tabAll: 'All',
+    tabReviews: 'Reviews only',
+    reviewCta: 'I made this',
+    cookedBadge: 'Made it',
+    cookedCountSuffix: ' made this',
+    commentPlaceholder: 'Ask a question or share your thoughts...',
+    emptyTitle: 'Be the first to leave a review',
+    emptySub: 'Rate it if you made it, or leave a comment with questions',
+    ownRecipeReviewBlocked: "You can't rate your own recipe",
+  },
   comments: {
     title: 'Comments',
     loading: 'Loading...',

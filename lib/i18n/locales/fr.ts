@@ -1230,6 +1230,18 @@ export const fr = {
     dark: 'Mode sombre',
     system: 'Système',
   },
+  posts: {
+    sectionTitle: 'Avis et commentaires',
+    tabAll: 'Tout',
+    tabReviews: 'Avis uniquement',
+    reviewCta: "Je l'ai fait",
+    cookedBadge: 'Réalisé',
+    cookedCountSuffix: " l'ont réalisé",
+    commentPlaceholder: 'Posez une question ou partagez votre avis...',
+    emptyTitle: 'Soyez le premier à laisser un avis',
+    emptySub: "Notez-la si vous l'avez faite, ou laissez un commentaire",
+    ownRecipeReviewBlocked: 'Vous ne pouvez pas noter votre propre recette',
+  },
   comments: {
     title: 'Commentaires',
     loading: 'Chargement...',

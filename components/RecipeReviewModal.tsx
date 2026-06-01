@@ -57,12 +57,13 @@ export default function RecipeReviewModal({
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/recipes/${recipeId}/rating`, {
+      // 통합 피드(recipe_posts) — 별점 리뷰 작성. review→content.
+      const response = await fetch(`/api/recipes/${recipeId}/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rating,
-          review: review.trim() || null
+          content: review.trim() || null
         }),
       });
 
@@ -71,14 +72,9 @@ export default function RecipeReviewModal({
         throw new Error(data.error || t.recipe.reviewSaveFailed);
       }
 
-      const data = await response.json();
-
-      // 성공 시 콜백 호출 (업데이트된 평점 데이터 전달)
+      // 성공 시 콜백(피드/목록 새로고침은 호출처 책임). 평균은 recipe_posts 트리거가 갱신.
       if (onSuccess) {
-        onSuccess({
-          averageRating: data.averageRating,
-          ratingsCount: data.ratingsCount
-        });
+        onSuccess();
       } else {
         onClose();
       }
