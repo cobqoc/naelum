@@ -47,6 +47,7 @@ interface LoadedTip {
   duration_minutes?: number | null;
   thumbnail_url?: string | null;
   is_public: boolean;
+  is_draft?: boolean;
   author_id: string;
   steps: Array<{ step_number: number; instruction: string; tip?: string | null; image_url?: string | null }>;
   tags: string[];
@@ -86,6 +87,8 @@ export default function TipEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const isPublicRef = useRef(true);
+  // 편집 진입 시점의 draft 여부 — draft 팁을 "수정 완료" 하면 발행(is_draft=false)해야 함(H16)
+  const wasDraftRef = useRef(false);
 
   const tagComposingRef = useRef(false);
 
@@ -114,6 +117,7 @@ export default function TipEditPage() {
         setDurationMinutes(tip.duration_minutes != null ? String(tip.duration_minutes) : '');
         setThumbnail(tip.thumbnail_url || null);
         isPublicRef.current = tip.is_public;
+        wasDraftRef.current = tip.is_draft === true;
         if (Array.isArray(tip.steps) && tip.steps.length > 0) {
           setSteps(
             tip.steps
@@ -202,7 +206,10 @@ export default function TipEditPage() {
           thumbnail_url: thumbnail,
           category,
           duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
-          is_public: isPublicRef.current,
+          // "수정 완료"는 완성된 팁(단계 검증 통과) → 발행. draft 였으면 공개로 발행(H16),
+          // 이미 발행된 팁은 기존 공개 상태 보존.
+          is_draft: false,
+          is_public: wasDraftRef.current ? true : isPublicRef.current,
           steps: steps.map(({ instruction, tip, image_url }) => ({ instruction, tip, image_url })),
           tags,
         }),

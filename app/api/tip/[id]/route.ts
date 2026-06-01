@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (authError) return authError;
 
   const { id } = await params;
-  const { title, description, category, duration_minutes, thumbnail_url, is_public, steps, tags } =
+  const { title, description, category, duration_minutes, thumbnail_url, is_public, is_draft, steps, tags } =
     await request.json();
 
   if (!title?.trim()) {
@@ -93,17 +93,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 });
   }
 
+  // is_draft 는 명시 전송 시에만 갱신 — draft 팁을 편집으로 발행(is_draft=false)할 수 있게(H16).
+  const updateFields: Record<string, unknown> = {
+    title,
+    description,
+    category: category || null,
+    duration_minutes,
+    thumbnail_url,
+    is_public: is_public !== false,
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof is_draft === 'boolean') updateFields.is_draft = is_draft;
+
   const { error: updateError } = await supabase
     .from('tip')
-    .update({
-      title,
-      description,
-      category: category || null,
-      duration_minutes,
-      thumbnail_url,
-      is_public: is_public !== false,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateFields)
     .eq('id', id)
     .eq('author_id', user.id);
 
