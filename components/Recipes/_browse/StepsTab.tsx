@@ -42,6 +42,9 @@ interface StepsTabProps {
     isSupported: boolean;
     speakStepDirect: (n: number, instruction: string, tip?: string) => void;
   };
+  /** 단계 끝 "다 만들었어요" 버튼 — 본인 레시피가 아닐 때만 노출 */
+  showMadeIt?: boolean;
+  onMadeIt?: () => void;
   t: TranslationKeys;
 }
 
@@ -56,6 +59,8 @@ export default function StepsTab({
   onOpenTimer,
   getEffectiveTimers,
   voice,
+  showMadeIt = false,
+  onMadeIt,
   t,
 }: StepsTabProps) {
   return (
@@ -200,6 +205,16 @@ export default function StepsTab({
         });
         })()}
       </div>
+
+      {/* 단계 끝 — "다 만들었어요" (따라 만들기 흐름 → 기록/별점으로 연결) */}
+      {showMadeIt && onMadeIt && (
+        <button
+          onClick={onMadeIt}
+          className="w-full mt-2 py-3.5 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors active:scale-[0.99]"
+        >
+          🍳 {t.posts.madeItCta}
+        </button>
+      )}
     </div>
   );
 }

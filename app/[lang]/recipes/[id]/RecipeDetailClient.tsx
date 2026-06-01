@@ -15,6 +15,7 @@ import RecipeBrowseView from '@/components/RecipeBrowseView';
 // (server에서 빈 마크업 render → client hydrate 시 동일 마크업이라 mismatch 없음).
 // 통합 피드(recipe_posts) — 리뷰(평점)·댓글·답글 한 곳. 옛 RecipeRatings+RecipeComments 대체.
 const RecipePostsFeed = dynamic(() => import('@/components/RecipePosts/RecipePostsFeed'), { loading: () => null });
+const MadeItModal = dynamic(() => import('@/components/RecipePosts/MadeItModal'), { ssr: false });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -113,6 +114,9 @@ export default function RecipeDetailClient({
 
   // hasCooked는 현재 플로우에서 페이지 내 mutation이 없으므로 setter 생략
   const [hasCooked] = useState(initialHasCooked);
+  // "만들어봤어요" 모달(조리순서 끝 버튼) + 성공 시 피드 새로고침용 키
+  const [madeItOpen, setMadeItOpen] = useState(false);
+  const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -359,6 +363,7 @@ export default function RecipeDetailClient({
         onToggleLike={handleLike}
         likeLoading={likeLoading}
         isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
+        onMadeIt={() => setMadeItOpen(true)}
       />
 
       {/* 통합 피드 (리뷰 + 댓글 + 답글) */}
@@ -367,6 +372,14 @@ export default function RecipeDetailClient({
         currentUserId={currentUserId}
         isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
         onRatingUpdate={refreshRecipeRatings}
+        refreshKey={feedRefreshKey}
+      />
+
+      <MadeItModal
+        recipeId={id}
+        isOpen={madeItOpen}
+        onClose={() => setMadeItOpen(false)}
+        onSuccess={() => { refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
       />
 
     </div>

@@ -29,6 +29,7 @@ export interface PostsResponse {
   posts: Post[];
   averageRating: number;
   ratingsCount: number;
+  cookedCount: number;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
