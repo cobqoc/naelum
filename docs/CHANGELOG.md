@@ -11,6 +11,16 @@
 
 ## 2026-06 작업 로그
 
+- **재료 마스터 확충 + 매칭 파이프라인 버그 2건 + 빈 매칭 fallback** (2026-06-02, PR #228 dev+prod 라이브)
+  - **발단**(사용자): 냉장고 "레시피 찾기"가 빈 우체통("매칭되는 레시피가 없어요") dead-end. "쌀 넣으면 밥 들어간 레시피 떠야 하지 않나?" → 매칭이 데이터 단에서 비어있었음.
+  - **진단**: 매칭 엔진은 `ingredient_id` 정확매칭만 하는데 published 레시피 재료의 **50%가 미연결(NULL)** + 마스터가 65~113개로 너무 작아 가리킬 재료 자체가 없었음. 미연결 291종 분석 → 본질 기준 분류.
+  - **재료 확충**: dev 113→316, prod 66→254. 신규 카테고리 3종 **bakery(빵류)·alcohol(마실 수 있는 술만 — 청주·와인; 맛술·미림은 발효 조미료라 fermented 유지)·seeds(씨앗·유지종자 — 깨·들깨·호박씨, nuts=나무견과와 구분)**. 토마토→veggie(오이·가지 선례), 매실액→sweetener. UI 배선 15곳(i18n 8국어 라벨·CATEGORY_COLORS·이모지·필터·도감 hub·picker). 파싱 쓰레기·브랜드는 추가 안 함.
+  - **★ 매칭 방향 모델**: `base_ingredient_id`=is-a 변형(멥쌀 is-a 쌀, 단방향 변형→base) / `ingredient_relations.preparable_to`=raw→processed(쌀→밥, 원물 보유→가공 충족). 냉장고 use-case는 preparable 방향 — 가공형(밥·다진X·즙)을 base로 넣으면 방향 반대라 안 켜짐(처음 실수 후 교정).
+  - **라이브가 적발한 파이프라인 버그 2건**(SQL 검증만으론 못 잡고 API curl로 발견): ① 후보 검색 풀이 보유+변형base만 담고 preparable/substitute 나가는 관계 누락 → 밥-레시피가 후보 fetch조차 안 됨(`fetchForwardRelationTargets` 추가). ② predicate `isAny=matchRate>0`·`isReady=ownedCount===total`이 정확보유만 세서 preparable-매칭 레시피 탈락 → `matchedCount`/`missingCount` 기준 교정(RecipeCard 배지 missingCount===0과 일치). 결과: 쌀 1개로 **5→18**(볶음밥·비빔밥·김밥류 점등), prod 라이브 "대패삼겹 양배추 덮밥" 점등.
+  - **빈 매칭 fallback**: dead-end 우체통 제거 → 매칭 0(전체 mode)·재료 미등록 시 `type=personalized` 인기 레시피를 "딱 맞는 건 없지만, 이런 레시피는 어때요?" 그리드로 제안. ready/almost 빈 상태는 기존 cascade 버튼 유지. i18n `fallbackTitle`·`emptyAllHint` 2키 × 8국어.
+  - **UGC 인프라 확인**: POST/PUT `/api/recipes` 둘 다 `resolveExactIngredientIds`로 신규/수정 레시피 재료를 마스터에 자동연결(기구현) → 마스터 확충이 곧 신규 레시피 매칭 참여율 상승. 코퍼스 전략=UGC 유입+오너 큐레이션(공공데이터 숨김 유지).
+  - **검증**: lint 0·build·**full e2e 448 passed / 0 fail**(2회)·로컬 prod 라이브·Preview 라이브·prod 라이브 전부 green. 마이그레이션 `20260602_ingredient_master_expansion.sql`(dev+prod 적용). graceful degrade(관계 없으면 정확매칭·빈 매칭은 fallback)로 prod 안전.
+
 - **"만들어봤어요" 기록 중심 리프레임 + 따라만들기 흐름 연결** (2026-06-02)
   - **문제의식**(사용자): ① 조리순서를 따라 만들어도 끝에 "만들어봤어요" 흐름이 끊김(통합 피드 전환 때 옛 쿠킹완료 화면 orphan) ② 별점 강제 + "리뷰 남겨주세요"는 *서비스 부탁*이라 "내가 왜 눌러?" → 안 누름.
   - **방향**(합의): 별점을 "남 위한 리뷰"가 아니라 **"내 요리 기록/사진 자랑"** 으로 리프레임 + **별점 선택(한 탭 기록)** 으로 마찰 제거. 별점 보상은 *내 것* (내 요리 갤러리에 표시·향후 정렬/추천).
