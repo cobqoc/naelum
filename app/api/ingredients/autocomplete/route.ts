@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch';
 
 /**
  * 검색어 확장 맵 — 사용자 의도와 DB 이름이 다른 경우 보강.
@@ -27,17 +28,19 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { searchParams } = new URL(request.url);
 
-  const query = searchParams.get('q') || '';
+  const rawQuery = searchParams.get('q') || '';
+  // PostgREST 필터 주입 방어(H7) — 보간 전 정규화
+  const query = sanitizeSearchTerm(rawQuery);
   const limit = parseInt(searchParams.get('limit') || '10');
   const categoriesParam = searchParams.get('categories'); // 카테고리 필터 파라미터
 
-  if (!query.trim() || query.length < 2) {
+  if (!query || query.length < 2) {
     return NextResponse.json({ suggestions: [] });
   }
 
   try {
-    // 검색어 확장: 정확 일치 시 추가 검색어 포함
-    const expansions = SEARCH_EXPANSIONS[query.trim()] || [];
+    // 검색어 확장: 정확 일치 시 추가 검색어 포함 (expansions 는 하드코딩 상수라 안전)
+    const expansions = SEARCH_EXPANSIONS[query] || [];
     const searchTerms = [query, ...expansions];
     // V2 (2026-05-29): aliases 컬럼도 검색에 포함 — "달걀" 검색 → 계란 row 매칭.
     // PostgREST `cs` (contains) 는 ARRAY 정확 매칭 — 사용자가 alias 단어 전체 입력 시 작동.
@@ -48,10 +51,11 @@ export async function GET(request: NextRequest) {
       `aliases.cs.{${term}}`,
     ]).join(',');
 
-    // ingredients_master 테이블에서 재료 검색
+    // ingredients_master 테이블에서 재료 검색 (status='approved' 만 — pending 노출 방지 H8)
     let dbQuery = supabase
       .from('ingredients_master')
       .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, emoji')
+      .eq('status', 'approved')
       .or(orConditions);
 
     // 카테고리 필터 적용

@@ -76,6 +76,7 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'mushroom', name: '버섯류', icon: '🍄' },
   { id: 'seaweed', name: '해조류', icon: '🌿' },
   { id: 'nuts', name: '견과류', icon: '🥜' },
+  { id: 'processed', name: '가공식품', icon: '📦' },
   { id: 'beverage', name: '음료', icon: '🥤' },
   { id: 'snack', name: '간식', icon: '🍪' },
   { id: 'bakery', name: '베이커리', icon: '🍞' },
@@ -85,14 +86,13 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
 /**
  * 재료 추가 모달에서 사용하는 카테고리 목록.
  * - 완성품(베이커리·간식·음료)과 기타는 검색으로만 추가하도록 탭에서 제외
- * - "가공식품" 탭 신설 (2026-05-20) — 라면·스팸·통조림·캔류 등 광범위 묶음.
- *   도감(INGREDIENT_CATEGORIES)은 정확한 세분화 유지 (스팸=meat, 라면=grain 등).
- *   `is_processed=true` 인 재료가 가공식품 탭에 노출됨.
+ * - "가공식품"(processed)은 본질 카테고리(여러 식품 조합 — 햄·베이컨·소시지·스팸).
+ *   본질 분류(2026-05-30~06-01)로 단일화 — is_processed 불리언과 무관. 치즈=dairy·
+ *   다진육=meat·마가린=oil 은 각 본질 탭에 노출됨. (H11: 옛 is_processed 가상필터 제거)
  */
-export const MODAL_INGREDIENT_CATEGORIES: IngredientCategory[] = [
-  ...INGREDIENT_CATEGORIES.filter(c => !['bakery', 'snack', 'beverage', 'other'].includes(c.id)),
-  { id: 'processed', name: '가공식품', icon: '🥫' },
-];
+export const MODAL_INGREDIENT_CATEGORIES: IngredientCategory[] = INGREDIENT_CATEGORIES.filter(
+  c => !['bakery', 'snack', 'beverage', 'other'].includes(c.id),
+);
 
 /**
  * 카테고리 ID를 이름으로 변환
