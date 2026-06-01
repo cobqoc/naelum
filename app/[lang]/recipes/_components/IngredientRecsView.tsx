@@ -32,6 +32,9 @@ export default function IngredientRecsView() {
   const [recommendations, setRecommendations] = useState<RecipeWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  // 빈 결과(터미널) 시 dead-end 회피용 인기 레시피 fallback
+  const [fallback, setFallback] = useState<RecipeWithMatch[]>([]);
+  const [fallbackTried, setFallbackTried] = useState(false);
 
   const fetchRecommendations = useCallback(async (modeVal: IngMode) => {
     setLoading(true);
@@ -97,6 +100,28 @@ export default function IngredientRecsView() {
     fetchRecommendations(mode);
   }, [mode, fetchRecommendations]);
 
+  // 결과가 비면(매칭 0 등 터미널 상태) 인기 레시피를 1회 로드 → dead-end 대신 제안
+  useEffect(() => {
+    if (loading || recommendations.length > 0 || fallbackTried) return;
+    setFallbackTried(true);
+    fetch('/api/recommendations?type=personalized&limit=10')
+      .then(r => r.json())
+      .then(d => setFallback(Array.isArray(d.recommendations) ? d.recommendations : []))
+      .catch(() => { /* fallback 실패는 조용히 무시 */ });
+  }, [loading, recommendations.length, fallbackTried]);
+
+  // "딱 맞는 건 없지만 이런 거 어때요" 제안 스트립 (빈 상태 공통)
+  const fallbackStrip = fallback.length > 0 ? (
+    <div className="mt-10 text-left">
+      <h2 className="text-sm font-bold text-text-primary mb-3 px-0.5">{t.recommendations.fallbackTitle}</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        {fallback.map((recipe) => (
+          <RecipeCard key={recipe.id} recipe={recipe} showAuthor />
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div>
       {/* 모드 pill 필터 */}
@@ -131,48 +156,56 @@ export default function IngredientRecsView() {
           <div className="animate-bounce text-4xl">🍳</div>
         </div>
       ) : message ? (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">📭</div>
-          <p className="text-text-muted">{message}</p>
-          <Link href="/" className="mt-4 inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold">
-            {t.recommendations.registerIngredients}
-          </Link>
-        </div>
+        <>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📭</div>
+            <p className="text-text-muted mb-4">{message}</p>
+            <Link href="/" className="inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold">
+              {t.recommendations.registerIngredients}
+            </Link>
+          </div>
+          {fallbackStrip}
+        </>
       ) : recommendations.length === 0 ? (
-        // 빈 결과 + mode 전환 CTA
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">📭</div>
-          {mode === 'ready' ? (
-            <>
-              <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyReadyTitle}</p>
-              <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyReadyHint}</p>
-              <button
-                onClick={() => setMode('almost')}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
-              >
-                {t.recommendations.emptyReadyCta}
-              </button>
-            </>
-          ) : mode === 'almost' ? (
-            <>
-              <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyAlmostTitle}</p>
-              <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyAlmostHint}</p>
-              <button
-                onClick={() => setMode('all')}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
-              >
-                {t.recommendations.emptyAlmostCta}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyAllTitle}</p>
-              <Link href="/" className="mt-4 inline-block px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold">
-                {t.recommendations.emptyAllCta}
-              </Link>
-            </>
-          )}
-        </div>
+        mode === 'ready' || mode === 'almost' ? (
+          // 부족 0/거의 빈 결과 → 더 넓은 mode 로 안내 (cascade)
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📭</div>
+            {mode === 'ready' ? (
+              <>
+                <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyReadyTitle}</p>
+                <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyReadyHint}</p>
+                <button
+                  onClick={() => setMode('almost')}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
+                >
+                  {t.recommendations.emptyReadyCta}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-text-primary font-medium mb-2">{t.recommendations.emptyAlmostTitle}</p>
+                <p className="text-text-muted text-sm mb-6">{t.recommendations.emptyAlmostHint}</p>
+                <button
+                  onClick={() => setMode('all')}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover active:scale-95 transition-all"
+                >
+                  {t.recommendations.emptyAlmostCta}
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          // 전체 mode 도 매칭 0 → dead-end 대신 인기 레시피 제안
+          <>
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📭</div>
+              <p className="text-text-primary font-medium mb-1">{t.recommendations.emptyAllTitle}</p>
+              <p className="text-text-muted text-sm">{t.recommendations.emptyAllHint}</p>
+            </div>
+            {fallbackStrip}
+          </>
+        )
       ) : (
         <div>
           <p className="text-xs text-text-muted mb-3 px-0.5">

@@ -413,6 +413,8 @@ export const ko = {
     emptyAlmostCta: '📋 전체 추천 보기',
     emptyAllTitle: '매칭되는 레시피가 없어요',
     emptyAllCta: '재료 등록하러 가기',
+    emptyAllHint: '재료를 더 추가하면 추천이 정확해져요',
+    fallbackTitle: '딱 맞는 건 없지만, 이런 레시피는 어때요?',
     resultCount: '{count}개 레시피',
     signupCtaTitle: '맘에 드는 레시피 찾으셨나요?',
     signupCtaDesc: '회원가입하면 레시피를 저장하고, 냉장고 재료를 관리하고, 다른 기기에서도 이어볼 수 있어요.',

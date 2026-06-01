@@ -411,6 +411,8 @@ export const en = {
     emptyAlmostCta: '📋 View all recommendations',
     emptyAllTitle: 'No matching recipes',
     emptyAllCta: 'Add ingredients',
+    emptyAllHint: 'Add more ingredients for better matches',
+    fallbackTitle: 'No exact match — but how about these?',
     resultCount: '{count} recipes',
     signupCtaTitle: 'Found a recipe you like?',
     signupCtaDesc: 'Sign up to save recipes, manage your fridge ingredients, and access them on any device.',

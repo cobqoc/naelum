@@ -411,6 +411,8 @@ export const fr = {
     emptyAlmostCta: '📋 Toutes les recommandations',
     emptyAllTitle: 'Aucune recette correspondante',
     emptyAllCta: 'Ajouter des ingrédients',
+    emptyAllHint: 'Ajoutez des ingrédients pour de meilleurs résultats',
+    fallbackTitle: 'Pas de correspondance exacte — et celles-ci ?',
     resultCount: '{count} recettes',
     signupCtaTitle: 'Vous avez trouvé une recette qui vous plaît ?',
     signupCtaDesc: 'Inscrivez-vous pour sauvegarder vos recettes, gérer les ingrédients de votre frigo et y accéder sur tous vos appareils.',

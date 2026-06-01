@@ -411,6 +411,8 @@ export const es = {
     emptyAlmostCta: '📋 Ver todas',
     emptyAllTitle: 'No hay recetas coincidentes',
     emptyAllCta: 'Añadir ingredientes',
+    emptyAllHint: 'Añade más ingredientes para mejores resultados',
+    fallbackTitle: 'Sin coincidencia exacta, ¿qué tal estas?',
     resultCount: '{count} recetas',
     signupCtaTitle: '¿Encontraste una receta que te guste?',
     signupCtaDesc: 'Regístrate para guardar recetas, gestionar los ingredientes de tu nevera y acceder desde cualquier dispositivo.',
