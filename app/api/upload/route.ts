@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { uploadToBucket, getPublicUrl, type StorageBucket } from '@/lib/storage';
+import { validateImageFile } from '@/lib/storage/validateImage';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_BUCKETS = ['recipe-images', 'tip-images', 'avatars', 'step-images', 'contact-screenshots'];
 
 // POST /api/upload - 이미지 업로드 (Supabase Storage)
@@ -37,36 +36,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '허용되지 않는 버킷입니다.' }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json(
-      { error: '지원하지 않는 파일 형식입니다. (JPEG, PNG, WebP, GIF만 허용)' },
-      { status: 400 }
-    );
+  // 타입·크기·매직바이트 검증 (lib/storage/validateImage 단일 출처)
+  const validation = await validateImageFile(file);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
-
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json(
-      { error: '파일 크기는 5MB를 초과할 수 없습니다.' },
-      { status: 400 }
-    );
-  }
-
-  // 파일 매직 바이트 검증
-  const bytes = await file.arrayBuffer();
-  const header = new Uint8Array(bytes, 0, 8);
-  const FILE_SIGNATURES: Record<string, number[]> = {
-    'image/jpeg': [0xFF, 0xD8, 0xFF],
-    'image/png': [0x89, 0x50, 0x4E, 0x47],
-    'image/gif': [0x47, 0x49, 0x46, 0x38],
-    'image/webp': [0x52, 0x49, 0x46, 0x46],
-  };
-  const expectedSig = FILE_SIGNATURES[file.type];
-  if (expectedSig && !expectedSig.every((b, i) => header[i] === b)) {
-    return NextResponse.json(
-      { error: '파일 내용이 선언된 형식과 일치하지 않습니다.' },
-      { status: 400 }
-    );
-  }
+  const bytes = validation.bytes!;
 
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
   const filename = `${user.id}/${Date.now()}.${ext}`;
