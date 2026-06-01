@@ -18,7 +18,8 @@
   - **UI**: `MadeItModal`(별점·사진·후기 모두 선택, 한 탭 "기록 남기기"). **조리순서 탭 끝 "🍳 다 만들었어요" 버튼**(따라만들기→기록 연결, 본인 레시피 숨김). 피드의 별점 버튼 제거(후기 섹션=댓글/질문만). 피드 헤더 카운트 2개.
   - **제출 흐름**: 항상 `POST /complete`(cooking_session + 사진) → 별점 있으면 `POST /posts`(리뷰, 같은 사진 재사용 → 피드 노출). `/complete` 응답에 photoUrl 추가. `/posts` GET에 cookedCount(recipe_popularity 뷰) 추가.
   - i18n `posts` 키 확장(8 locale). orphan `ReviewComposerModal` 삭제.
-  - **검증**: lint 0 · build 439 · vitest 322 · **full e2e 448 passed / 0 fail**.
+  - **검증**: lint 0 · build 439 · vitest 322 · **full e2e 448 passed / 0 fail** + **claude-in-chrome 라이브 테스트**(로컬 prod+test signin: 조리순서 끝 버튼→모달→4점 제출→피드 `🍳 1명이 만들어봤어요 · ⭐4.0(1)` + ✓배지 정상).
+  - **라이브가 적발한 버그 수정**(`recipe_cooked_count` RPC): 피드 "🍳 N명" 항상 0 — ① recipe_popularity 뷰 recipe id 컬럼은 `id`(recipe_id 아님) ② cooking_sessions SELECT RLS(본인만)로 유저 컨텍스트 집계가 0 필터. **RLS 테이블의 공개 집계는 SECURITY DEFINER 함수 필요**(신원 비노출·count만, dev+prod). build/e2e 못 잡고 라이브만 잡음.
   - **보류(fast-follow)**: 프로필 "내가 만든 요리" **별점순 정렬 + ⭐필터**(별점 보상 강화) — god-file UI + 페이지네이션 정확 정렬 필요, 초기 데이터 적어 가치 낮음. 별점은 이미 프로필 카드에 표시됨. `sortRecent/sortRating/filterRatedOnly` i18n 키 준비됨. / "3점+ → 취향 추천"은 데이터 쌓인 뒤(맞춤추천 부활 트리거).
 
 - **레시피 상세 통합 피드 — recipe_ratings + recipe_comments → recipe_posts 단일 테이블** (2026-06-01)
