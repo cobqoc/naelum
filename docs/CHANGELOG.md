@@ -11,6 +11,15 @@
 
 ## 2026-06 작업 로그
 
+- **레시피 상세 통합 피드 — recipe_ratings + recipe_comments → recipe_posts 단일 테이블** (2026-06-01)
+  - **동기**: "리뷰(평점)"·"댓글"이 별개 테이블이라 한 피드로 못 합치고(페이지네이션·답글·정렬·리뷰에 답글), 상세에 빈 박스 2개. 사용자 결정으로 **단일 테이블 통합**(prod·dev 0행이라 마이그레이션 골든타임) + **"별점=만들어봤어요 인증" 차별화**(만든 사람만 별점 — 만개의레시피·Allrecipes엔 없는 신뢰 무기).
+  - **모델 결정**: 리뷰=별점 있는 최상위글 / 댓글=별점 없는 최상위글 / 답글=parent 있는 글(1단). 별점 필수(별점없는 만들어봤어요 폐기) · 만든 수=별점글 수 · 답글 1단 · 비요리자/본인 별점 차단.
+  - **DB**(`20260601_recipe_posts_unified_feed.sql`, dev+prod 적용): `recipe_posts`+`post_likes` + 트리거(답글 1단 강제·average_rating/ratings_count/comments_count 자동·likes_count) + RLS(읽기 공개·본인글만 write) + `toggle_post_like` RPC + 유저당 리뷰 1개 UNIQUE. ⚠️ `user_id`는 `profiles(id)` FK(auth.users 아님 — PostgREST `user:profiles` 임베드 필수, [[feedback_recipe_user_fk_and_e2e_context]]).
+  - **API**: `/posts`(GET 통합피드·필터 all/reviews·차단필터·답글수·좋아요 batch / POST 리뷰·댓글·답글 분기 / PUT·DELETE soft-delete / like RPC / replies). 옛 `/comments`·`/rating`·`/ratings` 라우트 삭제. `/complete`는 recipe_ratings 사진글 쓰기 제거(완료사진은 cooking_session만). 프로필 cooked 탭·GDPR export·RecipeReviewModal(프로필·쿠킹모드) 전부 recipe_posts 재배선.
+  - **UI**: `components/RecipePosts/`(RecipePostsFeed·PostCard·PostReplies·ReplyForm·ReviewComposerModal). 상세페이지 RecipeRatings+RecipeComments → 통합 피드. ✓만들어봤어요 배지·별점·전체/후기만 탭·답글 1단·인라인 수정·옵티미스틱 좋아요·빈상태. orphan RecipeRatings·RecipeComments(+서브) 삭제. i18n `posts` 8 locale 신설.
+  - **검증**: lint 0·build 439·vitest 322·**full e2e 448 passed / 0 fail**(회귀 0). 신규 `recipe-posts.spec`(라운드트립·필터·별점수정·카운트·본인레시피403·답글별점400·답글의답글400·본인글좋아요400·빈댓글400·미인증401).
+  - **남은 것**: ① 옛 테이블 drop(`20260601_drop_legacy_ratings_comments.sql`) — **develop→main 머지·배포 후** dev+prod 적용(현 prod 코드가 옛 테이블 사용하므로 머지 전 금지). ② 리뷰 작성 모달 사진 첨부 복원(현재 표시만).
+
 - **전수 감사 3차 후속 — High 9건 수정 + H10 인프라 처방 + 2FA UI 숨김** (2026-06-01)
   - 사용자 지시 "추천 순서대로 쭉 진행". 영향도+위험도(낮은 것 먼저)+동일영역 묶음 순.
   - **H5** 레시피 상세 대체재 chip에 *엉뚱한 보유재료명* — `userIngredients`(전체 행 이름)와 `userIngredientIds`(id-null 제외 행)를 index zip 하던 `userIngredientNameById`가, id 없는 보유재료 1개만 있어도 이후 전부 어긋남(V2 "추측 0" 정면 위반). 행단위 `userIngredientQtys`에 `name` 동봉 → 거기서 파생(zip 제거). `page.tsx`·`RecipeDetailClient`·`RecipeBrowseView`.
