@@ -70,7 +70,7 @@ export interface RecipeDetailClientProps {
   currentUserId: string | null;
   initialUserIngredients: string[];
   initialUserIngredientIds: string[];
-  initialUserIngredientQtys: { id: string; quantity: number | string | null; unit: string | null }[];
+  initialUserIngredientQtys: { id: string; name: string; quantity: number | string | null; unit: string | null }[];
   initialIsSaved: boolean;
   initialSaveNotes: string | null;
   initialIsLiked: boolean;

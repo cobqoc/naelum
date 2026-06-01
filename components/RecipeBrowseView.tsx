@@ -77,7 +77,7 @@ interface RecipeBrowseViewProps {
   recipe: Recipe;
   userIngredients: string[];
   userIngredientIds: string[];
-  userIngredientQtys?: { id: string; quantity: number | string | null; unit: string | null }[];
+  userIngredientQtys?: { id: string; name: string; quantity: number | string | null; unit: string | null }[];
   isSaved: boolean;
   saveNotes: string | null;
   onToggleSave: () => void;
@@ -162,14 +162,14 @@ export default function RecipeBrowseView({
   // 매칭 결과는 match.* 로 접근. JSX 에서 사용하는 destructure 만.
   const { ownedCount, totalIngredients, ingredientStatus, summary } = match;
 
-  // V2: id → name 매핑 (chip 표시·모달용). userIngredients 와 userIngredientIds 동일 순서 가정.
+  // V2: id → name 매핑 (chip 표시·모달용). 반드시 행 단위 userIngredientQtys 에서 파생 —
+  // userIngredients(전체 행 이름)·userIngredientIds(id-null 제외 행)는 길이/순서가 달라
+  // index zip 하면 엉뚱한 보유재료명이 매핑됨(H5). qtys 는 id 기준 행이라 (id,name) 정렬 보장.
   const userIngredientNameById = useMemo(() => {
     const m = new Map<string, string>();
-    for (let i = 0; i < userIngredientIds.length; i++) {
-      if (userIngredientIds[i]) m.set(userIngredientIds[i], userIngredients[i] ?? '');
-    }
+    for (const u of userIngredientQtys ?? []) m.set(u.id, u.name ?? '');
     return m;
-  }, [userIngredientIds, userIngredients]);
+  }, [userIngredientQtys]);
 
   // 재료 양 배율 계산
   const scaleQty = (qty: string): string => {

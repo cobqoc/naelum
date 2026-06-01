@@ -98,9 +98,10 @@ async function fetchRecipePageData(id: string) {
         .map(i => i.ingredient_id)
         .filter((x): x is string => !!x),
       // 양 매칭(Phase 2) — id 보유 재료의 수량·단위 (부족분 표시용)
+      // name 동봉: id→name 매핑은 반드시 이 행 단위 구조에서 파생(이름·id 평행배열 zip 금지 — H5)
       initialUserIngredientQtys: (userIngData || [])
         .filter(i => i.ingredient_id)
-        .map(i => ({ id: i.ingredient_id as string, quantity: i.quantity ?? null, unit: i.unit ?? null })),
+        .map(i => ({ id: i.ingredient_id as string, name: i.ingredient_name, quantity: i.quantity ?? null, unit: i.unit ?? null })),
       initialIsSaved: !!saveData,
       initialSaveNotes: saveData?.notes ?? null,
       initialIsLiked: !!likeData,
