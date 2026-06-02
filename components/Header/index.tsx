@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
+import { swapLangSegment } from '@/lib/i18n/localizePath';
 import type { Language } from '@/lib/i18n/translations';
 import ShoppingCartDropdown, { useCartCount } from '../ShoppingCartDropdown';
 import CartIcon from '../icons/CartIcon';
@@ -42,11 +43,13 @@ export default function Header() {
   // 경로를 안 바꾸면 /ko 가 영어 콘텐츠를 서빙해 <title>·메타데이터가 이전 언어로 남는다(탭 제목·SEO 불일치).
   const handleLangSelect = (code: Language) => {
     setLanguage(code);
-    const segs = (pathname || '/').split('/');
-    if (segs[1] && LANG_OPTIONS.some(l => l.code === segs[1])) {
-      segs[1] = code;
-      router.push(segs.join('/') || '/');
-    }
+    // query·hash 보존 — usePathname 은 query 미포함이라 직접 붙인다(안 붙이면 필터·검색어 유실).
+    const target = swapLangSegment(
+      pathname || '/',
+      typeof window !== 'undefined' ? window.location.search + window.location.hash : '',
+      code,
+    );
+    if (target) router.push(target);
     setShowLangSelector(false);
   };
   const [showWriteModal, setShowWriteModal] = useState(false);
