@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { localDateISO } from '@/lib/date/localDate';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { getPasswordStrength } from '@/lib/utils/password';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
@@ -259,7 +260,7 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `naelum-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `naelum-data-${localDateISO()}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {

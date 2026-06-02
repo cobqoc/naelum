@@ -1,0 +1,22 @@
+{
+  "_note": "2026-06-03 죽은 레거시 테이블 drop 전 백업 (안전망/되돌리기용). 옛 테스트 유저 seed 데이터로, 현행 admin 활성 데이터 아님. 대체 테이블: cooking_tips→tip, cooked_records→cooking_sessions/recipe_posts, saved_recipes→recipe_saves.",
+  "backed_up_at": "2026-06-02T22:41:53Z",
+  "source_project": "naelum (prod, rgnlgpfazxgwsnkgrhzs)",
+  "cooking_tips": [
+    { "id": "701cb17e-7648-4148-aca0-e3d33088132e", "user_id": "0132b4d2-5a56-4687-9d34-e1965b565be0", "content": "파를 볶을 때 기름을 두르기 전에 팬을 충분히 달궈야 파가 타지 않고 향이 잘 납니다.", "category": "불 조절", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "343966d9-9b73-4dea-b69f-0d7677f19ca9", "user_id": "51a58cec-6372-409c-a205-f1094f1ae602", "content": "마늘은 칼 옆면으로 눌러서 껍질을 벗기면 훨씬 빠르게 손질할 수 있어요.", "category": "칼질·손질", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "60c8cdd9-86e3-42c1-9270-a0c46173e8af", "user_id": "0132b4d2-5a56-4687-9d34-e1965b565be0", "content": "간장, 설탕, 참기름 비율을 1:0.5:0.3으로 맞추면 기본 나물 양념으로 완벽합니다.", "category": "양념·소스", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "d7b03a20-e027-4dd3-86c0-d14d5ebf4e5b", "user_id": "51a58cec-6372-409c-a205-f1094f1ae602", "content": "남은 대파는 뿌리째 물에 꽂아두면 일주일 이상 신선하게 보관할 수 있어요.", "category": "보관법", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "ea4fdc8f-19a7-4ae4-ba93-9836251dc231", "user_id": "0132b4d2-5a56-4687-9d34-e1965b565be0", "content": "고기를 구울 때 표면에 육즙이 맺히기 시작할 때까지 기다리세요. 뒤집는 횟수가 적을수록 더 맛있어요.", "category": "불 조절", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "bc4d9f5d-7ef5-47cf-8437-4eee69d70639", "user_id": "51a58cec-6372-409c-a205-f1094f1ae602", "content": "채소는 세로 방향으로 썰면 섬유질이 살아있어 아삭함이 유지됩니다.", "category": "칼질·손질", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "d5bf7892-c268-4fe3-a91a-402df4f63208", "user_id": "0132b4d2-5a56-4687-9d34-e1965b565be0", "content": "된장찌개에 멸치다시마 육수를 쓰면 깊은 감칠맛이 납니다.", "category": "양념·소스", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" },
+    { "id": "d2d5d097-f43f-46d4-b5b2-2a690676c715", "user_id": "51a58cec-6372-409c-a205-f1094f1ae602", "content": "김치는 냉장 보관 시 꾹꾹 눌러 공기를 빼고 밀봉해야 오래 신선하게 유지돼요.", "category": "보관법", "like_count": 0, "created_at": "2026-04-14T17:06:57.210467+00:00" }
+  ],
+  "cooked_records": [
+    { "id": "2c3798c7-a88b-4d75-a033-01b87e2eb9b5", "user_id": "be660263-3b2e-4d6f-88a5-3c1be31fe8a0", "recipe_id": "d404a879-3cc4-441b-9350-7f68f9eeb40e", "rating": 4, "review_text": null, "created_at": "2026-04-14T18:48:30.025425+00:00" },
+    { "id": "b5600063-0e1d-44d3-873d-e9c013e454eb", "user_id": "be660263-3b2e-4d6f-88a5-3c1be31fe8a0", "recipe_id": "7b7a9f9c-8805-4143-891b-3196b6aad9b0", "rating": 4, "review_text": null, "created_at": "2026-04-15T09:32:14.280474+00:00" }
+  ],
+  "saved_recipes": [
+    { "user_id": "be660263-3b2e-4d6f-88a5-3c1be31fe8a0", "recipe_id": "7b7a9f9c-8805-4143-891b-3196b6aad9b0", "created_at": "2026-04-15T09:14:00.524015+00:00" }
+  ]
+}

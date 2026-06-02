@@ -125,6 +125,14 @@ feature/* → 기능 단위 브랜치 (선택)
   - `.select()` 결과를 `.length`로 세거나 전부 순회 = 1000개 넘으면 조용히 틀림
   - 사례: 프로필 카운트가 작성자 1,462개 레시피 중 1,000개만 세어 비공개 수 오류 (2026-05-21)
 
+- **client에서 `new Date().toISOString().slice(0,10)`/`.split('T')[0]` (날짜-only) 금지**
+  - `toISOString()`은 **UTC** → KST(UTC+9) 자정~오전9시엔 "오늘"이 하루 빠름. 유통기한 "오늘" 이 어제로 떴던 버그(2026-06-03).
+  - 사용자가 보거나 저장하는 *로컬 날짜*는 **`lib/date/localDate`**(`localDateISO`·`addDaysLocalISO`) 사용.
+  - 예외: 서버 라우트(`app/api/**`)의 날짜 키·냉장고 신선도 산수(`_home/helpers.ts`, SSR #418 회피)는 *의도적 UTC* — 그대로 둘 것.
+  - **가드레일: `npm run scan:fragility` 가 client 파일의 이 패턴을 머지 차단**(CI `quality` 잡). 하드코딩 한글 client 파일 수도 부채로 리포트.
+
+> **검증 전 `npm run scan` (god-file ≥900 차단 + 날짜 UTC 차단)** — lint/build/test 와 함께. CI 가 자동 강제하지만 로컬에서도 빠른 확인용.
+
 ## 🧱 코드 유지 체계 — 신규/수정/개선 시 필수 규칙 (영상 「2차 소프트웨어 위기」)
 
 > **이해 부채는 복리다. 아래는 권장이 아니라 필수.** 2026-05-17 Phase 2에서

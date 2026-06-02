@@ -1,5 +1,7 @@
 'use client';
 
+import { localDateISO } from '@/lib/date/localDate';
+
 import { useRef } from 'react';
 import Image from 'next/image';
 import { COUNTRIES } from '@/components/Onboarding/countries';
@@ -176,7 +178,7 @@ export default function ProfileTab({
           <input
             type="date"
             value={birthDate || ''}
-            max={new Date().toISOString().slice(0, 10)}
+            max={localDateISO()}
             onChange={(e) => setBirthDate(e.target.value || null)}
             className={INPUT_INNER_COMFORTABLE_CLASS}
             style={INPUT_INNER_STYLE}

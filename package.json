@@ -14,7 +14,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
     "test:visual": "PLAYWRIGHT_INCLUDE_VISUAL=1 playwright test e2e/_*.spec.ts",
-    "scan:line-counts": "node scripts/scan-line-counts.mjs"
+    "scan:line-counts": "node scripts/scan-line-counts.mjs",
+    "scan:fragility": "node scripts/scan-fragility.mjs",
+    "scan": "node scripts/scan-line-counts.mjs && node scripts/scan-fragility.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.47.0",
