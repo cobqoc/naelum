@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   matchIngredient,
   matchRecipe,
+  buildMatchNameArrays,
+  assembleRecipeMatchFields,
   isFundamental,
   type RelationGraph,
   EMPTY_GRAPH,
@@ -407,5 +409,61 @@ describe('V2 회귀 가드 — 옛 시스템 거짓 매칭 차단 (2026-05-29)',
     );
     expect(summary.ownedCount).toBe(1);
     expect(summary.totalCount).toBe(2);
+  });
+});
+
+describe('buildMatchNameArrays — RecipeCard 이름 배열 (배지 단일 출처)', () => {
+  // 회귀: 쌀만 보유인데 "대패삼겹 양배추 덮밥"(밥+마늘+양배추+대패삼겹살)이 "바로 가능"으로
+  // 오판하던 버그(2026-06-03). 추천 API 가 missingIngredientNames 를 안 실어 카드가 missing=[]→0 으로 봄.
+  // 밥은 쌀→밥 preparable 로 충족(대체), 나머지는 missing 이어야 한다.
+  const graph: RelationGraph = {
+    incoming: new Map([['rice-bap', [{ from_id: 'rice-raw', kind: 'preparable_to' as const }]]]),
+  };
+  const ingredients = [
+    { ingredient_id: 'rice-bap', ingredient_name: '밥' },
+    { ingredient_id: 'garlic', ingredient_name: '마늘' },
+    { ingredient_id: 'cabbage', ingredient_name: '양배추' },
+    { ingredient_id: null, ingredient_name: '대패삼겹살' },
+    { ingredient_id: 'green-onion', ingredient_name: '파고명', is_optional: true },
+  ];
+  const userIdSet = new Set(['rice-raw']);
+  const userIdToName = new Map([['rice-raw', '쌀']]);
+
+  it('쌀만 보유 → 밥=대체, 마늘·양배추·대패삼겹살=없음 (missing 길이 3, "바로 가능" 아님)', () => {
+    const summary = matchRecipe(ingredients, userIdSet, graph);
+    const { ownedIngredientNames, missingIngredientNames, substitutableIngredients } =
+      buildMatchNameArrays(ingredients, summary.results, userIdToName);
+
+    expect(missingIngredientNames).toEqual(['마늘', '양배추', '대패삼겹살']);
+    expect(missingIngredientNames.length).toBe(3); // ← RecipeCard 배지: 0 이면 "바로 가능" 오판
+    expect(substitutableIngredients).toEqual([{ ingredient: '밥', via: '쌀' }]);
+    expect(ownedIngredientNames).toEqual([]);
+  });
+
+  it('is_optional 재료는 배열에서 제외 (파고명 빠짐)', () => {
+    const summary = matchRecipe(ingredients, userIdSet, graph);
+    const { missingIngredientNames } = buildMatchNameArrays(ingredients, summary.results, userIdToName);
+    expect(missingIngredientNames).not.toContain('파고명');
+  });
+
+  it('via 표시명 못 찾으면 보수적으로 missing 처리', () => {
+    const summary = matchRecipe(ingredients, userIdSet, graph);
+    // userIdToName 비움 → 밥의 via(쌀) 이름 해석 불가 → 대체 아닌 missing 으로
+    const { missingIngredientNames, substitutableIngredients } =
+      buildMatchNameArrays(ingredients, summary.results, new Map());
+    expect(substitutableIngredients).toEqual([]);
+    expect(missingIngredientNames).toContain('밥');
+  });
+
+  it('assembleRecipeMatchFields — 단일 출처: missingCount === missingIngredientNames.length', () => {
+    const summary = matchRecipe(ingredients, userIdSet, graph);
+    const fields = assembleRecipeMatchFields(ingredients, summary, userIdToName);
+    // 쌀만 보유 → 밥=대체(1), 마늘·양배추·대패삼겹살=없음(3)
+    expect(fields.missingCount).toBe(3);
+    expect(fields.missingCount).toBe(fields.missingIngredientNames.length); // 배지/필터 단일 기준 불변식
+    expect(fields.matchedCount).toBe(1); // owned 0 + substitutable 1
+    expect(fields.matchedCount).toBe(fields.ownedCount + fields.substitutableIngredients.length);
+    expect(fields.totalIngredients).toBe(4); // 필수 4 (파고명 optional 제외)
+    expect(fields.ingredientStatus).toBe('none'); // owned 0
   });
 });

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { matchRecipe, type RecipeIngredientInput } from './matchV2'
+import { matchRecipe, assembleRecipeMatchFields, type RecipeIngredientInput } from './matchV2'
 import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from './fetchRelations'
 
 type SupabaseClient = ReturnType<typeof createClient>
@@ -89,32 +89,6 @@ export async function attachFridgeMatch<T extends { id: string }>(
   return recipes.map(r => {
     const ingredients = byRecipe.get(r.id) ?? []
     const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
-    const ownedIngredientNames: string[] = []
-    const missingIngredientNames: string[] = []
-    const substitutableIngredients: { ingredient: string; via: string }[] = []
-    summary.results.forEach((result, i) => {
-      const ing = ingredients[i]
-      if (ing.is_optional) return
-      if (result.kind === 'owned') ownedIngredientNames.push(ing.ingredient_name)
-      else if (result.via) {
-        const viaName = userIdToName.get(result.via) ?? ''
-        if (viaName) substitutableIngredients.push({ ingredient: ing.ingredient_name, via: viaName })
-        else missingIngredientNames.push(ing.ingredient_name)
-      } else {
-        missingIngredientNames.push(ing.ingredient_name)
-      }
-    })
-    return {
-      ...r,
-      ownedCount: summary.ownedCount,
-      totalIngredients: summary.totalCount,
-      matchRate: summary.matchRate,
-      ingredientStatus: summary.ingredientStatus,
-      ownedIngredientNames,
-      missingIngredientNames,
-      substitutableIngredients,
-      matchedCount: summary.ownedCount + substitutableIngredients.length,
-      missingCount: missingIngredientNames.length,
-    }
+    return { ...r, ...assembleRecipeMatchFields(ingredients, summary, userIdToName) }
   })
 }

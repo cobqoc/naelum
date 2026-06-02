@@ -666,6 +666,9 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
 - 새 컴포넌트에서 `'한글 텍스트'` 직접 작성 금지 → 반드시 `t.namespace.key` 사용
 - 새 키 추가 시 **8개 locale 모두** 동시에 추가 (TypeScript 타입 오류 방지)
 - DB 저장 값(냉장/냉동/상온 등)은 한글 그대로 유지 — locale key와 혼동 금지
+- **데모 냉장고 재료명**: `app/[lang]/_home/demoItems.ts`의 `DEMO` 세트를 바꾸면 **8개 locale `demoIngredients` 맵도 같이 갱신** (`HomeClient.getDisplayName`가 `t.demoIngredients[한글이름]` 룩업 — 누락 시 비한국어 로케일 홈에 한글 칩 노출). 2026-06-03 옛 세트(돼지고기·두부·김치…)와 어긋나 8종 미번역됐던 버그 교훈.
+- **법적 페이지(terms·privacy·copyright·cookies)는 본문 한글 전용** — 전문 AI 번역은 법적 리스크라 미제공. 비한국어 로케일엔 `LegalKoreanOnlyNotice`(한국어 원문이 기준임 명시)만 표시. 약관 갱신 시 이 정책 유지.
+- **API 라우트 에러 문자열은 한글 하드코딩**(서버 i18n 미도입) — UI에 raw로 노출 금지. 클라이언트가 `t.*` 번역 메시지로 치환할 것(2026-06-03 장보기 토스트 누출 교훈).
 
 ### 다국어 처리
 - **자동 언어 감지**
@@ -1267,7 +1270,8 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 - **마이그레이션 파일명·순서 주의**: prod 적용 시 `20260516_delivery_schema.sql` → `20260517_delivery_orders.sql` → `20260518_delivery_food_truck.sql` 순서 준수 (orders가 restaurants FK 참조, food_truck이 둘 위에 빌드). 배달 prod 점등 = 이 3개 순서 적용이 선행 조건
 - **프로덕션 추가 스키마 문서**: `docs/db/delivery-production-schema.sql` — 미적용 10개 테이블(rider_locations·order_status_history·payment_records·promotions·reviews·notifications·dispatch_log·settlements·business_hours_overrides·device_tokens). 출시 trigger별 적용 가이드 포함. **절대 자동 apply 금지**
 - ⚠️ `delivery_restaurants.owner_id`는 `ON DELETE SET NULL` — testUser 삭제 시 식당이 owner_id=NULL orphan으로 남음. e2e beforeEach에서 `name LIKE 'E2E%'` orphan 정리. 향후 `ON DELETE CASCADE` 검토(실 사용자 식당 데이터 손실 위험 있어 보류)
-- **cart는 DB 아님** — localStorage 유지 (구매 전 의도, 비로그인 OK). orders/addresses만 DB
+- **장보기(shopping_list)는 DB·로그인 필요** (2026-06-03 정정) — `/api/shopping-list`가 `shopping_lists`/`shopping_list_items`에 저장하고 비로그인은 401. "모든 기기 실시간 동기화"가 가치라 localStorage 비로그인 cart는 폐기됨. **레시피 "장보기 담기" 버튼은 비로그인 시 `RecipeBrowseView`의 `onRequireCartLogin`(번역된 로그인 유도 토스트)로 선차단** — 옛날엔 서버 401 raw 한글("로그인이 필요합니다")이 비한국어 로케일에 누출됐음. (배달 orders/addresses도 DB)
+  - ⚠️ API 라우트 에러 문자열(`/api/shopping-list` 등)은 여전히 한글 하드코딩 — UI에 그대로 노출 금지(클라에서 번역 메시지로 치환). 서버 i18n은 미도입.
 
 ### 레시피 DB
 - **prod: 1,432개** (**published 8** + **private 1,424**) / **dev: 102개** (published)

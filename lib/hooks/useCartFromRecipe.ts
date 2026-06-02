@@ -103,7 +103,9 @@ export function useCartFromRecipe(args: {
         );
         window.dispatchEvent(new Event('shopping-list-updated'));
       } else {
-        toast.error(data.error || locale.cartAddFailed);
+        // 서버 에러 메시지(data.error)는 한글 하드코딩이라 비한국어 로케일에 누출됨 →
+        // 항상 번역된 메시지로 표면화. (비로그인은 버튼에서 선차단되어 여기 도달 안 함)
+        toast.error(locale.cartAddFailed);
       }
     } catch {
       toast.error(locale.cartAddFailed);

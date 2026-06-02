@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import LegalKoreanOnlyNotice from '@/components/Common/LegalKoreanOnlyNotice';
 
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 
@@ -30,6 +31,8 @@ export default function CookiePolicyPage() {
           <h1 className="text-3xl font-bold mb-2">쿠키 정책</h1>
           <p className="text-text-muted text-sm">최종 업데이트: 2026년 4월 21일</p>
         </header>
+
+        <LegalKoreanOnlyNotice />
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">1. 쿠키란 무엇인가요?</h2>

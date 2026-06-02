@@ -92,6 +92,10 @@ interface RecipeBrowseViewProps {
   isAuthor?: boolean;
   /** 조리순서 끝 "다 만들었어요" 클릭 — 부모가 MadeItModal 오픈 */
   onMadeIt?: () => void;
+  /** 로그인 여부 — false 면 장보기 버튼이 onRequireCartLogin 호출(서버 401 raw 한글 토스트 방지) */
+  isLoggedIn?: boolean;
+  /** 비로그인 장보기 클릭 시 부모가 번역된 로그인 유도 토스트 노출 (like/save와 동일 패턴) */
+  onRequireCartLogin?: () => void;
 }
 
 export default function RecipeBrowseView({
@@ -111,6 +115,8 @@ export default function RecipeBrowseView({
   likeLoading = false,
   isAuthor = false,
   onMadeIt,
+  isLoggedIn = true,
+  onRequireCartLogin,
 }: RecipeBrowseViewProps) {
   const toast = useToast();
   const unitConv = useUnitConversion();
@@ -455,7 +461,7 @@ export default function RecipeBrowseView({
         const items = [
           totalTime != null ? { label: t.recipe.cookTimeLabel, value: `${totalTime}${t.recipe.minuteSuffix}` } : null,
           recipe.difficulty_level ? { label: t.recipe.difficultyLabel, value: recipe.difficulty_level === 'easy' ? t.difficulty.easy : recipe.difficulty_level === 'medium' ? t.difficulty.medium : t.difficulty.hard } : null,
-          recipe.servings ? { label: t.recipe.servingsLabel, value: `${recipe.servings} ${t.recipe.servingsSuffix}` } : null,
+          recipe.servings ? { label: t.recipe.servingsLabel, value: `${recipe.servings}${t.recipe.servingsSuffix}` } : null,
         ].filter(Boolean) as { label: string; value: string }[];
 
         if (items.length === 0) return null;
@@ -694,7 +700,10 @@ export default function RecipeBrowseView({
           )}
           <div className="flex items-center gap-2">
             <button
-              onClick={cart.addToShoppingList}
+              onClick={() => {
+                if (!isLoggedIn && onRequireCartLogin) { onRequireCartLogin(); return; }
+                cart.addToShoppingList();
+              }}
               disabled={cart.addingToShoppingList}
               className="flex-1 py-4 rounded-2xl bg-accent-warm text-background-primary font-bold text-lg hover:bg-accent-hover transition-all shadow-[0_0_30px_rgba(255,153,102,0.3)] flex items-center justify-center gap-2 disabled:opacity-70"
             >

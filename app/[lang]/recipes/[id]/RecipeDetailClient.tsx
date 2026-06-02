@@ -266,6 +266,16 @@ export default function RecipeDetailClient({
     }
   };
 
+  // 비로그인 장보기 클릭 — 서버 401 raw 한글 토스트 대신 번역된 로그인 유도(like/save와 동일 패턴)
+  const handleCartLogin = () => {
+    toast.warning(t.recipe.toastCartLogin, {
+      action: {
+        label: t.recipe.toastLoginCta,
+        onClick: () => router.push(`/signin?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/')}`)
+      }
+    });
+  };
+
   const handleUpdateMemo = async (notes: string) => {
     try {
       const res = await fetch(`/api/recipes/${id}/save`, {
@@ -373,6 +383,8 @@ export default function RecipeDetailClient({
         likeLoading={likeLoading}
         isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
         onMadeIt={() => setMadeItOpen(true)}
+        isLoggedIn={currentUserId !== null}
+        onRequireCartLogin={handleCartLogin}
       />
 
       {/* 2단계 재유도 — 만들었는데 아직 맛 별점 안 남긴 경우(먹고 나서) */}
