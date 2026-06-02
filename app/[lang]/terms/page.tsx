@@ -3,6 +3,7 @@
 import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import LegalKoreanOnlyNotice from '@/components/Common/LegalKoreanOnlyNotice';
 import { useState, useEffect } from 'react';
 
 
@@ -37,6 +38,8 @@ export default function TermsOfServicePage() {
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-text-primary mb-2">이용약관</h1>
         <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 25일</p>
+
+        <LegalKoreanOnlyNotice />
 
         <div className="space-y-8 text-text-primary">
           {/* 제1조 */}

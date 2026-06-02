@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
@@ -33,7 +34,21 @@ const LANG_OPTIONS = [
 export default function Header() {
   const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   const [showLangSelector, setShowLangSelector] = useState(false);
+
+  // 언어 선택 — 컨텍스트 즉시 전환 + URL의 [lang] 세그먼트도 교체해 서버 재렌더 유도.
+  // 경로를 안 바꾸면 /ko 가 영어 콘텐츠를 서빙해 <title>·메타데이터가 이전 언어로 남는다(탭 제목·SEO 불일치).
+  const handleLangSelect = (code: Language) => {
+    setLanguage(code);
+    const segs = (pathname || '/').split('/');
+    if (segs[1] && LANG_OPTIONS.some(l => l.code === segs[1])) {
+      segs[1] = code;
+      router.push(segs.join('/') || '/');
+    }
+    setShowLangSelector(false);
+  };
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -253,7 +268,7 @@ export default function Header() {
                           {LANG_OPTIONS.map(({ code, label, flag }) => (
                             <button
                               key={code}
-                              onClick={() => { setLanguage(code); setShowLangSelector(false); }}
+                              onClick={() => handleLangSelect(code)}
                               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                                 language === code
                                   ? 'bg-accent-warm/15 text-accent-warm font-medium'

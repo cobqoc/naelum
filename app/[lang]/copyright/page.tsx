@@ -2,6 +2,7 @@ import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import CopyrightReportForm from '@/components/CopyrightReportForm';
+import LegalKoreanOnlyNotice from '@/components/Common/LegalKoreanOnlyNotice';
 
 import type { Metadata } from 'next';
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
@@ -30,6 +31,8 @@ export default function CopyrightPolicyPage() {
       <main className="max-w-4xl mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold text-text-primary mb-2">저작권 정책</h1>
         <p className="text-text-secondary mb-8">최종 수정일: 2026년 4월 8일</p>
+
+        <LegalKoreanOnlyNotice />
 
         <div className="space-y-8 text-text-primary">
           {/* 머리말 */}

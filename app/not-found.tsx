@@ -1,4 +1,11 @@
 import Link from '@/components/Common/LocalizedLink';
+import type { Metadata } from 'next';
+
+// 스트리밍 SSR에서 notFound()가 200 상태로 응답을 마감하는 경우가 있어(soft-404)
+// 검색엔진이 빈 404 UI를 색인할 수 있음 → robots noindex로 색인 차단.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
   return (
