@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import { useI18n } from '@/lib/i18n/context';
+import { swapLangSegment } from '@/lib/i18n/localizePath';
 import type { Language } from '@/lib/i18n/translations';
 import { useTheme } from '@/lib/theme/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
@@ -48,6 +50,8 @@ export default function UserDropdown({
   const [showLangPanel, setShowLangPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const handleOpen = () => {
     setShowLangPanel(false);
@@ -57,6 +61,19 @@ export default function UserDropdown({
   const handleClose = () => {
     setShowLangPanel(false);
     onClose();
+  };
+
+  // 언어 선택 — 컨텍스트 전환 + [lang] 경로 이동(헤더 스위처와 동일). 경로 안 바꾸면
+  // /ko 가 다른 언어 콘텐츠를 서빙해 <title>·메타데이터가 이전 언어로 남는다(로그인 메뉴 회귀).
+  const handleLangSelect = (code: Language) => {
+    setLanguage(code);
+    const target = swapLangSegment(
+      pathname || '/',
+      typeof window !== 'undefined' ? window.location.search + window.location.hash : '',
+      code,
+    );
+    if (target) router.push(target);
+    handleClose();
   };
 
   // 외부 클릭 시 닫기 — overlay div 대신 document-level listener (이슈 #1).
@@ -127,7 +144,7 @@ export default function UserDropdown({
                   >
                     <div className="flex items-center gap-3">
                       <span>🌐</span>
-                      <span className="text-sm">{t.common.language ?? '언어'}</span>
+                      <span className="text-sm">{t.common.language}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-text-muted flex items-center gap-1.5">
@@ -144,7 +161,7 @@ export default function UserDropdown({
                       {LANGUAGES.map(({ code, label, flagClass }) => (
                         <button
                           key={code}
-                          onClick={() => { setLanguage(code); setShowLangPanel(false); }}
+                          onClick={() => handleLangSelect(code)}
                           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                             language === code
                               ? 'bg-accent-warm/15 text-accent-warm font-medium'
@@ -275,7 +292,7 @@ export default function UserDropdown({
                 >
                   <div className="flex items-center gap-3">
                     <span>🌐</span>
-                    <span className="text-sm">언어</span>
+                    <span className="text-sm">{t.common.language}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm text-text-muted flex items-center gap-1.5">
@@ -295,7 +312,7 @@ export default function UserDropdown({
                     {LANGUAGES.map(({ code, label, flagClass }) => (
                       <button
                         key={code}
-                        onClick={() => { setLanguage(code); setShowLangPanel(false); }}
+                        onClick={() => handleLangSelect(code)}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                           language === code
                             ? 'bg-accent-warm/15 text-accent-warm font-medium'
@@ -332,8 +349,8 @@ export default function UserDropdown({
                           : 'text-text-muted hover:text-text-secondary'
                       }`}
                     >
-                      <span>{icon}</span>
-                      <span>{label}</span>
+                      <span aria-hidden="true">{icon}</span>
+                      <span className="sr-only">{label}</span>
                     </button>
                   ))}
                 </div>

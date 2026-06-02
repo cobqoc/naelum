@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { subjectParticle } from '@/lib/i18n/josa';
 
 interface ActionItem {
   id: string;
@@ -76,7 +77,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
             <span className="flex-1 text-left">
               <span className="block text-base">이 재료로 만들기</span>
               <span className="block text-xs font-normal opacity-80 mt-0.5">
-                {item.ingredient_name}이(가) 들어간 레시피 보기
+                {item.ingredient_name}{subjectParticle(item.ingredient_name)} 들어간 레시피 보기
               </span>
             </span>
             <span className="text-lg">→</span>

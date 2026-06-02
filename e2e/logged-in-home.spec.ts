@@ -16,6 +16,13 @@ function isoDateOffsetDays(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// 앱은 purchase_date 를 *로컬 타임존* 기준으로 저장(2026-06-03 fix: UTC면 KST 새벽에 어제로 저장됨).
+// 따라서 저장값 단언은 로컬 오늘로 비교.
+function localTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () => {
   test.beforeEach(async ({ testUser }) => {
     // 매 테스트마다 user_ingredients/favorites 비움 → 시나리오별 격리
@@ -300,7 +307,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     expect(rows).toHaveLength(1);
     expect(rows?.[0].ingredient_name).toBe('양파');
     expect(rows?.[0].expiry_date).toBeNull();
-    expect(rows?.[0].purchase_date).toBe(new Date().toISOString().slice(0, 10));
+    expect(rows?.[0].purchase_date).toBe(localTodayISO());
   });
 
   // ── 시나리오 G: 수정 모드 — 만료일 지우고 저장 → sanitize로 null 저장 ───────
@@ -402,7 +409,7 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     // 모두 sanitize 적용 — expiry null, purchase_date = 오늘(자동 채우기)
     for (const r of rows ?? []) {
       expect(r.expiry_date).toBeNull();
-      expect(r.purchase_date).toBe(new Date().toISOString().slice(0, 10));
+      expect(r.purchase_date).toBe(localTodayISO());
     }
   });
 

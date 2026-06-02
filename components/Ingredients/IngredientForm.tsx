@@ -6,6 +6,7 @@ import IngredientBrowser from './IngredientBrowser';
 import { IngredientItem } from './IngredientAutocompleteTypes';
 import { getRecentIngredients, RecentIngredient } from '@/lib/utils/recentIngredients';
 import { lookupStorageByName } from '@/lib/ingredients/storageMap';
+import { localDateISO } from '@/lib/date/localDate';
 import { usePopularIngredients } from '@/lib/ingredients/usePopularIngredients';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -150,7 +151,7 @@ export default function IngredientForm({
       common_units: commonUnits || [],
       quantity: null,
       unit: commonUnits?.[0] || '선택',
-      purchase_date: new Date().toISOString().slice(0, 10),
+      purchase_date: localDateISO(),
       expiry_date: '',
       storage_location: storage,
       notes: '',

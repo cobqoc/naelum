@@ -11,6 +11,15 @@
 
 ## 2026-06 작업 로그
 
+- **로그인 상태 홈 라이브 전수 점검 → 5건 수정** (2026-06-03)
+  - **발단**(사용자): 비로그인 점검·추천 배지 수정 후, 로그인해서 홈 요소를 하나하나 점검 요청. 점검만 하고 발견 시 보고 → 사용자 지시로 전부 수정.
+  - **① [중요] 로그인 언어 전환이 URL/title 미갱신**: 로그인 시 헤더 🌐 스위처가 없고 언어가 *프로필 메뉴(`UserDropdown`)* 에 있음. 앞선 헤더 스위처 수정(`Header`)이 여기엔 미적용 → English 선택해도 콘텐츠만 영어, URL `/ko`·title 한글. → `swapLangSegment`로 `[lang]` 경로 이동(헤더와 동일). **함정**: `replace_all`이 들여쓰기 차이로 모바일 블록만 바꾸고 데스크톱 블록은 누락 → *라이브 검증에서 잡음*(소스 grep으로 확인). 두 블록 모두 수정해야 함.
+  - **② [날짜] 유통기한 빠른선택이 UTC**: 재료 수정 모달 "오늘/3일후/…"가 `toISOString().slice(0,10)`(UTC)라 KST 새벽엔 하루 빠름(로컬 6/3인데 "오늘 6/2"). → `lib/date/localDate`(`localDateISO`·`addDaysLocalISO`) 추출, DetailFields 프리셋·purchase_date 기본값(IngredientForm·quickAddList)에 적용. **⚠️ 냉장고 신선도("N일째") 계산(`helpers.ts`)은 의도적 UTC(SSR #418 hydration 회피)라 안 건드림.** e2e `logged-in-home`이 UTC 기대값을 박아놨던 것(버그를 기대) → 로컬 기준으로 갱신.
+  - **③ [i18n] 프로필 "언어" 라벨 하드코딩**: 데스크톱 블록이 `언어` 하드코딩(모바일은 `t.common.language`) → 영어 모드에서도 한글. → `{t.common.language}`로 통일.
+  - **④ [UI] 테마 옵션 행 clipping**: `w-56` 드롭다운에 "라이트 모드/다크 모드/시스템 설정" 3개가 안 맞아 잘림(de/fr는 더 김). → 아이콘 전용(label은 `sr-only`+`title`로 a11y 유지).
+  - **⑤ [i18n] 조사 "쌀이(가)"**: 액션시트 "이(가)" 병기 → `lib/i18n/josa`(받침 기반 이/가)로 "쌀이 들어간 레시피 보기".
+  - **검증**: lint 0 · build · vitest 344(신규 localDate·josa) · 풀 e2e 450 green · 로컬 프로덕션 빌드 라이브(로그인 냉장고=쌀: 언어전환 URL/en·title영어, "오늘 6/3", Language 라벨, 테마 아이콘, "쌀이 들어간"). **교훈: replace_all은 들여쓰기 다르면 일부만 바뀜 — grep으로 전수 확인 + 라이브 검증.**
+
 - **비로그인 라이브 전수 점검 → i18n/UX 6건 + 추천 배지 오판 버그 근본 수정** (2026-06-03, develop bc176ca·a0792fc·09a09bd)
   - **발단**(사용자): 비로그인 상태로 할 수 있는 모든 흐름을 라이브(naelum.app)로 하나씩 점검 요청 → 6건 발견·수정. 이후 "쌀 하나뿐인데 왜 바로 가능?" 지적으로 매칭 배지 버그 추가 적발 → "증상만 감춘 거냐"는 물음에 구조적 뿌리까지 제거.
   - **i18n/UX 6건 (bc176ca)**: ① 홈 데모 냉장고 재료명 부분 미번역(데모사전이 옛 세트에 멈춤 — 버터·올리브유·꿀·양배추·버섯·밀가루·파스타·소고기) → 8개 locale `demoIngredients`를 현재 DEMO 20종에 동기화. ② 레시피 "장보기 담기" 비로그인 시 서버 401 raw 한글("로그인이 필요합니다")이 비한국어 로케일에 누출 → `RecipeBrowseView.onRequireCartLogin`(번역 토스트+Sign in, like/save와 동일 패턴)으로 선차단 + 훅에서 raw 에러 미노출. ③ 언어 스위처(실제는 `Header/index.tsx`, context.tsx의 LanguageSwitcher는 dead)가 클라 컨텍스트만 바꾸고 경로를 안 바꿔 /ko가 영어 서빙·`<title>` 이전 언어로 남음 → `usePathname`+`router.push`로 `[lang]` 세그먼트 교체. 프로덕션 라이브 점검 중 *언어 전환 시 query 유실* 회귀 발견 → `lib/i18n/swapLangSegment` 순수함수로 추출(query·hash 보존, 회귀 테스트 포함). ④ 법적 페이지(terms·privacy·copyright·cookies) 본문 한글 전용 → `LegalKoreanOnlyNotice`(한국어 원문이 법적 기준임 명시)만 비한국어 로케일에 표시(전문 AI 번역은 법적 리스크라 지양). ⑤ "1servings" 붙음/복수 → servingsSuffix 비CJK 선행 공백. ⑥ soft-404(스트리밍 SSR notFound가 200 마감) → `app/not-found.tsx` robots noindex.
