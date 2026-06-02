@@ -215,20 +215,23 @@ export async function DELETE(request: NextRequest) {
   }
 
   // 단방향 row 삭제. substitute 면 reverse 도 함께.
-  await auth.supabase
+  // Supabase 는 RLS 거부 시 throw 안 하고 {error} 반환 → 명시 체크 후 실패 표면화(어드민이 알아야 함).
+  const { error: delErr } = await auth.supabase
     .from('ingredient_relations')
     .delete()
     .eq('from_id', fromId)
     .eq('to_id', toId)
     .eq('kind', kind)
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
 
   if (kind === 'substitute') {
-    await auth.supabase
+    const { error: revErr } = await auth.supabase
       .from('ingredient_relations')
       .delete()
       .eq('from_id', toId)
       .eq('to_id', fromId)
       .eq('kind', 'substitute')
+    if (revErr) return NextResponse.json({ error: revErr.message }, { status: 500 })
   }
 
   await logAdminAction(auth.user.id, 'relation_revoke', 'ingredient_relations', `${fromId}-${toId}`, {
