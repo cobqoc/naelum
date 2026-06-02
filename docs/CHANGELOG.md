@@ -11,6 +11,36 @@
 
 ## 2026-06 작업 로그
 
+- **만들어봤어요 흐름 리디자인 — 1단계(난이도)/2단계(맛 별점) 시간 분리** (2026-06-03)
+  - **발단**(사용자): `만들어봤어요` 클릭 즉시 별점+사진+후기 "폼 벽"이 떠 "만들자마자 다 작성"을 강요 → 맛 평가는 *먹고 나서* 나오는 신호라 시점이 어긋남.
+  - **개념 — 피드백 3종 분리**: ① 맛 ⭐+후기=공개·먹고 나서(`recipe_posts`, 기존) ② 체감 난이도=공개집계·만든 직후(`cooking_sessions.difficulty_felt` 신규) ③ 나만의 메모=비공개 지속기록(**보류**, 조리순서 탭 sticky 핀 방향만 확정).
+  - **구현(A)**: 1단계 `MadeItModal` 슬림화 = 사진 + 난이도 `[😊쉬움][🙂적당][😓어려움]` 원탭만(맛 별점·후기 textarea 제거). 2단계 = 재방문 시 `🍳 이 레시피 만들어보셨네요! [별점 남기기]` 배너 → 기존 `RecipeReviewModal` 재사용(`/posts`).
+  - **스키마**: `cooking_sessions.difficulty_felt smallint CHECK 1~3`(nullable). dev→prod 적용. **집계·표시는 데이터 축적 후**(추천 부활 trigger와 동일) — 현재 수집만.
+  - **API**: `/complete` 가 `difficulty_felt` 수신·저장(insert + 24h 재기록 둘 다, `.error` 체크).
+  - **라이브 검증 중 버그 1건**: 2단계 별점 모달이 신규인데 "리뷰 수정"+별5개로 떴음(`RecipeReviewModal` 기본 `initialRating=5`). → 2단계 진입 `initialRating={0}`("리뷰 작성"+빈 별점) + `rating<1` 0점 제출 가드 추가.
+  - **검증**: lint 0 · build · vitest 322 · **e2e 18/18**(신규 `e2e/made-it-flow.spec.ts` UI 커버 + cook-completion + recipe-posts, fresh build). 미사용 i18n 키 3개(ratingOptional·ratingHint·reviewOptional) 제거.
+  - **설계 문서**: `docs/MADE_IT_FLOW_REDESIGN.md`(만들어봤어요 + 나만의 메모 보류분). 메모리 [[project_made_it_flow_redesign]].
+
+- **재료 마스터 전수 정리 — 손질상태·중복·파싱쓰레기 → 베이스 재료만** (2026-06-02, dev 316→281 / prod 254→227)
+  - **발단**(사용자): "네모난햄" 같은 이상한 재료·`다진파`(=대파 다진 것)·`불린쌀`(=쌀) 등 손질상태가 마스터에 박혀 있는 것 지적. "이상한 거 자꾸 저장하니 싹 다 밀고 다시." 근본 원인 = `recipe_extract` 자동추출이 레시피 본문 글자를 검증 없이 마스터에 등록.
+  - **정리(dev→prod 둘 다, `recipe_ingredients.ingredient_id`는 ON DELETE SET NULL이라 매칭 연결을 베이스로 re-point 후 삭제 → 레시피 텍스트 불변·끊긴 매칭 0)**:
+    - 손질상태 베이스 흡수: 다진마늘→마늘(prod 416건!)·다진파→대파·당근채→당근·무채→무·편마늘→마늘·불린쌀→쌀 등
+    - 중복 통합: 모짜렐라치즈→모짜렐라·생굴→굴·참치통조림→참치캔·느타리→느타리버섯·양송이→양송이버섯·다짐육(X)→다진X·돼지고기안심→돼지안심
+    - 파싱쓰레기/오타: 네모난햄·무지개고추·참쌀(→찹쌀)·다진식파
+    - 서술형/색상형: 육수용 대파/통파/파뿌리→대파·노란/붉은 파프리카→파프리카·쌀밥→밥·오렌지(껍질)→오렌지·국물용멸치→멸치. `돼지 볼살`→`돼지볼살` 개명.
+    - **유지**: 가루류·즙류·건조/냉동·부위(삼겹살 등)·포괄명(버섯·치즈·견과류). **나만의메모(memoPlaceholder "다음엔 소금 줄이기")가 이미 손질 의도 커버**.
+  - **검증**: prod `마늘` 매칭 700건(다진마늘 416 흡수 확인), 손질/괄호/공백 패턴 잔존 0. CLAUDE.md 재료 수치 3곳 갱신.
+
+- **재료 마스터 확충 + 매칭 파이프라인 버그 2건 + 빈 매칭 fallback** (2026-06-02, PR #228 dev+prod 라이브)
+  - **발단**(사용자): 냉장고 "레시피 찾기"가 빈 우체통("매칭되는 레시피가 없어요") dead-end. "쌀 넣으면 밥 들어간 레시피 떠야 하지 않나?" → 매칭이 데이터 단에서 비어있었음.
+  - **진단**: 매칭 엔진은 `ingredient_id` 정확매칭만 하는데 published 레시피 재료의 **50%가 미연결(NULL)** + 마스터가 65~113개로 너무 작아 가리킬 재료 자체가 없었음. 미연결 291종 분석 → 본질 기준 분류.
+  - **재료 확충**: dev 113→316, prod 66→254. 신규 카테고리 3종 **bakery(빵류)·alcohol(마실 수 있는 술만 — 청주·와인; 맛술·미림은 발효 조미료라 fermented 유지)·seeds(씨앗·유지종자 — 깨·들깨·호박씨, nuts=나무견과와 구분)**. 토마토→veggie(오이·가지 선례), 매실액→sweetener. UI 배선 15곳(i18n 8국어 라벨·CATEGORY_COLORS·이모지·필터·도감 hub·picker). 파싱 쓰레기·브랜드는 추가 안 함.
+  - **★ 매칭 방향 모델**: `base_ingredient_id`=is-a 변형(멥쌀 is-a 쌀, 단방향 변형→base) / `ingredient_relations.preparable_to`=raw→processed(쌀→밥, 원물 보유→가공 충족). 냉장고 use-case는 preparable 방향 — 가공형(밥·다진X·즙)을 base로 넣으면 방향 반대라 안 켜짐(처음 실수 후 교정).
+  - **라이브가 적발한 파이프라인 버그 2건**(SQL 검증만으론 못 잡고 API curl로 발견): ① 후보 검색 풀이 보유+변형base만 담고 preparable/substitute 나가는 관계 누락 → 밥-레시피가 후보 fetch조차 안 됨(`fetchForwardRelationTargets` 추가). ② predicate `isAny=matchRate>0`·`isReady=ownedCount===total`이 정확보유만 세서 preparable-매칭 레시피 탈락 → `matchedCount`/`missingCount` 기준 교정(RecipeCard 배지 missingCount===0과 일치). 결과: 쌀 1개로 **5→18**(볶음밥·비빔밥·김밥류 점등), prod 라이브 "대패삼겹 양배추 덮밥" 점등.
+  - **빈 매칭 fallback**: dead-end 우체통 제거 → 매칭 0(전체 mode)·재료 미등록 시 `type=personalized` 인기 레시피를 "딱 맞는 건 없지만, 이런 레시피는 어때요?" 그리드로 제안. ready/almost 빈 상태는 기존 cascade 버튼 유지. i18n `fallbackTitle`·`emptyAllHint` 2키 × 8국어.
+  - **UGC 인프라 확인**: POST/PUT `/api/recipes` 둘 다 `resolveExactIngredientIds`로 신규/수정 레시피 재료를 마스터에 자동연결(기구현) → 마스터 확충이 곧 신규 레시피 매칭 참여율 상승. 코퍼스 전략=UGC 유입+오너 큐레이션(공공데이터 숨김 유지).
+  - **검증**: lint 0·build·**full e2e 448 passed / 0 fail**(2회)·로컬 prod 라이브·Preview 라이브·prod 라이브 전부 green. 마이그레이션 `20260602_ingredient_master_expansion.sql`(dev+prod 적용). graceful degrade(관계 없으면 정확매칭·빈 매칭은 fallback)로 prod 안전.
+
 - **"만들어봤어요" 기록 중심 리프레임 + 따라만들기 흐름 연결** (2026-06-02)
   - **문제의식**(사용자): ① 조리순서를 따라 만들어도 끝에 "만들어봤어요" 흐름이 끊김(통합 피드 전환 때 옛 쿠킹완료 화면 orphan) ② 별점 강제 + "리뷰 남겨주세요"는 *서비스 부탁*이라 "내가 왜 눌러?" → 안 누름.
   - **방향**(합의): 별점을 "남 위한 리뷰"가 아니라 **"내 요리 기록/사진 자랑"** 으로 리프레임 + **별점 선택(한 탭 기록)** 으로 마찰 제거. 별점 보상은 *내 것* (내 요리 갤러리에 표시·향후 정렬/추천).

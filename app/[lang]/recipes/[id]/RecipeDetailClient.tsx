@@ -16,6 +16,8 @@ import RecipeBrowseView from '@/components/RecipeBrowseView';
 // 통합 피드(recipe_posts) — 리뷰(평점)·댓글·답글 한 곳. 옛 RecipeRatings+RecipeComments 대체.
 const RecipePostsFeed = dynamic(() => import('@/components/RecipePosts/RecipePostsFeed'), { loading: () => null });
 const MadeItModal = dynamic(() => import('@/components/RecipePosts/MadeItModal'), { ssr: false });
+// 2단계 — 먹고 나서 맛 별점·후기 (만든 직후 모달과 분리)
+const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal'), { ssr: false });
 
 interface RecipeIngredient {
   ingredient_name: string;
@@ -77,6 +79,7 @@ export interface RecipeDetailClientProps {
   initialIsLiked: boolean;
   initialLikesCount: number;
   initialHasCooked: boolean;
+  initialHasReviewed: boolean;
 }
 
 export default function RecipeDetailClient({
@@ -90,6 +93,7 @@ export default function RecipeDetailClient({
   initialIsLiked,
   initialLikesCount,
   initialHasCooked,
+  initialHasReviewed,
 }: RecipeDetailClientProps) {
   const router = useRouter();
   const toast = useToast();
@@ -112,11 +116,16 @@ export default function RecipeDetailClient({
   // 조회수 증가 중복 방지용 ref
   const viewIncrementedRef = useRef(false);
 
-  // hasCooked는 현재 플로우에서 페이지 내 mutation이 없으므로 setter 생략
-  const [hasCooked] = useState(initialHasCooked);
-  // "만들어봤어요" 모달(조리순서 끝 버튼) + 성공 시 피드 새로고침용 키
+  // 1단계 "만들어봤어요"(조리순서 끝 버튼) 성공 시 hasCooked=true → 2단계 별점 prompt 노출
+  const [hasCooked, setHasCooked] = useState(initialHasCooked);
+  const [hasReviewed, setHasReviewed] = useState(initialHasReviewed);
   const [madeItOpen, setMadeItOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false); // 2단계 맛 별점·후기 모달
   const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+  // 작성자 본인은 별점 대상 아님. 만들었는데 아직 리뷰 안 남겼으면 재방문 prompt 노출.
+  const isOwnRecipe = currentUserId !== null && recipe.author_id === currentUserId;
+  const showReviewPrompt = !!currentUserId && !isOwnRecipe && hasCooked && !hasReviewed;
 
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -366,11 +375,26 @@ export default function RecipeDetailClient({
         onMadeIt={() => setMadeItOpen(true)}
       />
 
+      {/* 2단계 재유도 — 만들었는데 아직 맛 별점 안 남긴 경우(먹고 나서) */}
+      {showReviewPrompt && (
+        <div className="mt-6 rounded-2xl border border-accent-warm/30 bg-accent-warm/10 p-4 flex items-center gap-3">
+          <div className="text-3xl">🍳</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-text-primary">{t.posts.reviewPromptTitle}</p>
+            <p className="text-xs text-text-secondary mt-0.5">{t.posts.reviewPromptSub}</p>
+          </div>
+          <button onClick={() => setReviewOpen(true)}
+            className="shrink-0 px-4 py-2 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors">
+            {t.posts.reviewPromptCta}
+          </button>
+        </div>
+      )}
+
       {/* 통합 피드 (리뷰 + 댓글 + 답글) */}
       <RecipePostsFeed
         recipeId={id}
         currentUserId={currentUserId}
-        isAuthor={currentUserId !== null && recipe.author_id === currentUserId}
+        isAuthor={isOwnRecipe}
         onRatingUpdate={refreshRecipeRatings}
         refreshKey={feedRefreshKey}
       />
@@ -379,7 +403,16 @@ export default function RecipeDetailClient({
         recipeId={id}
         isOpen={madeItOpen}
         onClose={() => setMadeItOpen(false)}
-        onSuccess={() => { refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
+        onSuccess={() => { setHasCooked(true); refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
+      />
+
+      {/* 2단계 — 먹고 나서 맛 별점·후기 (신규 작성 → initialRating=0 으로 빈 별점·"리뷰 작성") */}
+      <RecipeReviewModal
+        recipeId={id}
+        isOpen={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        initialRating={0}
+        onSuccess={() => { setHasReviewed(true); refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
       />
 
     </div>

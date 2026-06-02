@@ -7,7 +7,6 @@ import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
-import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { createClient } from '@/lib/supabase/client';
 
 interface MadeItModalProps {
@@ -18,18 +17,17 @@ interface MadeItModalProps {
 }
 
 /**
- * "만들어봤어요" — 한 탭 기록(별점·사진·후기는 선택).
- *  - 항상: POST /complete → cooking_session(만든 기록) + 사진(있으면)
- *  - 별점 입력 시: POST /posts → recipe_posts 리뷰(같은 사진 재사용, 피드 노출)
- * 별점은 강제 아님 — "기록 남기면 내 요리 모음에 쌓이고, 별점 매기면 정리에 쓰임".
+ * "만들어봤어요" — 만든 직후 1단계: 사진 + 체감 난이도만(둘 다 선택).
+ *  - POST /complete → cooking_session(만든 기록) + 사진(있으면) + difficulty_felt(있으면)
+ *  - 맛 별점·후기는 여기서 안 받음 → 먹고 나서 RecipeReviewModal(2단계)에서.
+ * 사진=지금 제일 자연스러움, 난이도=방금 따라한 과정이라 신선. 맛은 먹어봐야 아는 신호라 분리.
  */
 export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: MadeItModalProps) {
   const toast = useToast();
   const router = useRouter();
   const { t } = useI18n();
   const tp = t.posts;
-  const [rating, setRating] = useState(0); // 0 = 별점 안 매김(선택)
-  const [review, setReview] = useState('');
+  const [difficulty, setDifficulty] = useState(0); // 0=미선택, 1=쉬움 2=적당 3=어려움
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +39,7 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
 
   useEffect(() => {
     if (!isOpen) return;
-    setRating(0); setReview(''); setPhoto(null); setPhotoPreview(null);
+    setDifficulty(0); setPhoto(null); setPhotoPreview(null);
     createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user));
   }, [isOpen]);
 
@@ -56,21 +54,12 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
     if (submitting) return;
     setSubmitting(true);
     try {
-      // 1) 항상 — 만든 기록(cooking_session) + 사진 업로드
+      // 만든 기록(cooking_session) + 사진 + 체감 난이도. 맛 별점은 2단계(먹고 나서)에서.
       const fd = new FormData();
       if (photo) fd.append('photo', photo);
+      if (difficulty > 0) fd.append('difficulty_felt', String(difficulty));
       const completeRes = await fetch(`/api/recipes/${recipeId}/complete`, { method: 'POST', body: fd });
       if (!completeRes.ok) { const d = await completeRes.json(); throw new Error(d.error || tp.madeItError); }
-      const { photoUrl } = await completeRes.json();
-
-      // 2) 별점 매겼으면 — 리뷰(recipe_posts, 같은 사진 재사용 → 피드 노출)
-      if (rating > 0) {
-        const postRes = await fetch(`/api/recipes/${recipeId}/posts`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rating, content: review.trim() || null, photo_url: photoUrl ?? null }),
-        });
-        if (!postRes.ok) { const d = await postRes.json(); throw new Error(d.error || t.recipe.reviewSaveFailed); }
-      }
 
       toast.success(tp.madeItDone);
       onSuccess();
@@ -109,18 +98,26 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
           <button onClick={onClose} disabled={submitting} className="w-8 h-8 rounded-full hover:bg-background-tertiary transition-colors flex items-center justify-center disabled:opacity-50">✕</button>
         </div>
 
-        {/* 별점 (선택) */}
+        {/* 체감 난이도 (선택) — 만든 직후 과정 신호 */}
         <div className="mb-4">
-          <label className="block text-sm font-bold text-text-primary mb-2">{tp.ratingOptional}</label>
-          <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button key={star} onClick={() => setRating(star === rating ? 0 : star)} disabled={submitting}
-                className="text-4xl transition-transform hover:scale-110 active:scale-95 disabled:opacity-50">
-                {star <= rating ? '⭐' : '☆'}
+          <label className="block text-sm font-bold text-text-primary mb-2">{tp.difficultyOptional}</label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { v: 1, label: tp.diffEasy, emoji: '😊' },
+              { v: 2, label: tp.diffMedium, emoji: '🙂' },
+              { v: 3, label: tp.diffHard, emoji: '😓' },
+            ].map(({ v, label, emoji }) => (
+              <button key={v} type="button" onClick={() => setDifficulty(v === difficulty ? 0 : v)} disabled={submitting}
+                className={`py-3 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
+                  difficulty === v
+                    ? 'border-accent-warm bg-accent-warm/15 text-accent-warm'
+                    : 'border-white/10 bg-background-tertiary text-text-secondary hover:text-text-primary'
+                }`}>
+                <span className="block text-lg mb-0.5">{emoji}</span>{label}
               </button>
             ))}
           </div>
-          <p className="text-center text-xs text-text-muted mt-2">{tp.ratingHint}</p>
+          <p className="text-center text-xs text-text-muted mt-2">{tp.difficultyHint}</p>
         </div>
 
         {/* 완성 사진 (선택) */}
@@ -140,16 +137,6 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
               📸 {tp.photoAdd}
             </button>
           )}
-        </div>
-
-        {/* 후기 (선택) */}
-        <div className="mb-5">
-          <label className="block text-sm font-bold text-text-primary mb-2">{tp.reviewOptional}</label>
-          <InputBoxWrapper className="!rounded-xl !px-4 !py-3 !min-h-[80px] !items-start">
-            <textarea value={review} onChange={(e) => setReview(e.target.value)} disabled={submitting}
-              placeholder={t.recipe.reviewPlaceholder} className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none disabled:opacity-50`}
-              style={INPUT_INNER_STYLE} rows={3} maxLength={500} />
-          </InputBoxWrapper>
         </div>
 
         <button onClick={handleSubmit} disabled={submitting}

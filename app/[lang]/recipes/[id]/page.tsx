@@ -61,6 +61,7 @@ async function fetchRecipePageData(id: string) {
       { data: saveData },
       { data: cookingData },
       { data: likeData },
+      { data: reviewData },
     ] = await Promise.all([
       cookedCountPromise,
       supabase
@@ -86,6 +87,15 @@ async function fetchRecipePageData(id: string) {
         .eq('recipe_id', id)
         .eq('user_id', user.id)
         .maybeSingle(),
+      // 내가 이미 별점 리뷰를 남겼는지(top-level + rating 있음) → 재방문 별점 prompt 노출 판단
+      supabase
+        .from('recipe_posts')
+        .select('id')
+        .eq('recipe_id', id)
+        .eq('user_id', user.id)
+        .is('parent_id', null)
+        .not('rating', 'is', null)
+        .maybeSingle(),
     ]);
 
     const recipe: Recipe = { ...recipeData, cooked_count: cookedCount || 0 };
@@ -107,6 +117,7 @@ async function fetchRecipePageData(id: string) {
       initialIsLiked: !!likeData,
       initialLikesCount: recipe.likes_count ?? 0,
       initialHasCooked: !!cookingData,
+      initialHasReviewed: !!reviewData,
     };
   }
 
@@ -125,6 +136,7 @@ async function fetchRecipePageData(id: string) {
     initialIsLiked: false,
     initialLikesCount: recipe.likes_count ?? 0,
     initialHasCooked: false,
+    initialHasReviewed: false,
   };
 }
 
@@ -252,6 +264,7 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         initialIsLiked={data.initialIsLiked}
         initialLikesCount={data.initialLikesCount}
         initialHasCooked={data.initialHasCooked}
+        initialHasReviewed={data.initialHasReviewed}
       />
     </>
   );
