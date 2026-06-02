@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { fetchAllRows } from '@/lib/supabase/fetchAll'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
-import { matchRecipe, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
+import { matchRecipe, buildMatchNameArrays, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
 import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchForwardRelationTargets, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
@@ -119,6 +119,8 @@ export async function GET(request: NextRequest) {
         let userIngredientIds: string[] = []
         // 양 매칭(Phase 2) — 보유 재료 양 맵 (로그인만; 비로그인 체험은 양 없음 → 빈 맵 degrade)
         const userQtyMap = new Map<string, { quantity: number | null; unit: string | null }>()
+        // via(대체/가공 출처) 표시명 해석용 — 보유 재료 id→이름. RecipeCard 이름 배열에 필요.
+        const userIdToName = new Map<string, string>()
 
         if (user) {
           const { data: userIngredients } = await supabase
@@ -133,7 +135,10 @@ export async function GET(request: NextRequest) {
             .filter(i => i.ingredient_id)
             .map(i => i.ingredient_id as string)
           for (const ui of userIngredients) {
-            if (ui.ingredient_id) userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
+            if (ui.ingredient_id) {
+              userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
+              userIdToName.set(ui.ingredient_id as string, ui.ingredient_name)
+            }
           }
         } else {
           const rawIngredients = searchParams.get('ingredients') || ''
@@ -151,6 +156,8 @@ export async function GET(request: NextRequest) {
           // 로그인 사용자의 user_ingredients.ingredient_id 와 동등한 역할.
           const resolved = await resolveExactIngredientIds(rawNames, supabase)
           userIngredientIds = [...resolved.values()]
+          // 체험: 이름→id 해석 맵을 역방향으로 — via 표시명 해석용
+          for (const [name, id] of resolved) userIdToName.set(id, name)
         }
 
         const userIdSet = new Set(userIngredientIds)
@@ -248,10 +255,13 @@ export async function GET(request: NextRequest) {
             }),
           )
           const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
-          const matchedCount = summary.results.filter(
-            (res, i) => !ingredients[i].is_optional && (res.kind === 'owned' || res.kind === 'preparable' || res.kind === 'substitute'),
-          ).length
-          const missingCount = summary.totalCount - matchedCount
+          // 이름 배열 — RecipeCard 배지/모달의 단일 데이터. fridgeMatch(전체/검색)와 동일 빌더로 통일.
+          // 이걸 안 실어서 카드가 missingIngredientNames=[] → 항상 "바로 가능" 오판하던 버그(2026-06-03) fix.
+          const { ownedIngredientNames, missingIngredientNames, substitutableIngredients } =
+            buildMatchNameArrays(ingredients, summary.results, userIdToName)
+          // 카운트도 이름 배열에서 파생 → 배지(missingIngredientNames.length)와 필터(missingCount) 단일 기준.
+          const matchedCount = summary.ownedCount + substitutableIngredients.length
+          const missingCount = missingIngredientNames.length
           return {
             ...recipe,
             ownedCount: summary.ownedCount,
@@ -260,6 +270,9 @@ export async function GET(request: NextRequest) {
             matchedCount,
             missingCount,
             ingredientStatus: summary.ingredientStatus,
+            ownedIngredientNames,
+            missingIngredientNames,
+            substitutableIngredients,
           }
         })
 

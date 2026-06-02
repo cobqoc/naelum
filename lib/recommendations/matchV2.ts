@@ -187,6 +187,49 @@ export function matchRecipe(
   return { results, ownedCount, totalCount, matchRate, ingredientStatus };
 }
 
+export interface MatchNameArrays {
+  /** 보유(정확·변형) 재료 이름 — 모달 "있는" 섹션 */
+  ownedIngredientNames: string[];
+  /** 없는 재료 이름 — RecipeCard 배지 카운트의 단일 출처(length) + 모달 "없는" */
+  missingIngredientNames: string[];
+  /** 대체/가공 충족 — {레시피 재료, 사용자 보유(via)}. 모달 "대체" 섹션 */
+  substitutableIngredients: { ingredient: string; via: string }[];
+}
+
+/**
+ * matchRecipe 결과 → RecipeCard 가 쓰는 이름 배열(보유/없는/대체).
+ *
+ * **fridgeMatch(client·전체/검색)·recommendations route(server·재료기반 추천) 공용.**
+ * 둘이 갈라져 추천 API 응답에 `missingIngredientNames` 가 안 실려, RecipeCard 배지가
+ * `missingIngredientNames.length`(undefined→0)로 항상 "바로 가능" 오판하던 버그
+ * (2026-06-03, 쌀만 보유인데 대패삼겹 양배추 덮밥이 바로 가능) 방지. is_optional 제외.
+ *
+ * `userIdToName`: 사용자 보유 재료 id→이름. via(대체/가공 출처) 표시명 해석용.
+ * via 이름을 못 찾으면(맵 누락) 보수적으로 missing 처리.
+ */
+export function buildMatchNameArrays(
+  recipeIngredients: RecipeIngredientInput[],
+  results: MatchResult[],
+  userIdToName: Map<string, string>,
+): MatchNameArrays {
+  const ownedIngredientNames: string[] = [];
+  const missingIngredientNames: string[] = [];
+  const substitutableIngredients: { ingredient: string; via: string }[] = [];
+  results.forEach((result, i) => {
+    const ing = recipeIngredients[i];
+    if (ing.is_optional) return;
+    if (result.kind === 'owned') ownedIngredientNames.push(ing.ingredient_name);
+    else if (result.via) {
+      const viaName = userIdToName.get(result.via) ?? '';
+      if (viaName) substitutableIngredients.push({ ingredient: ing.ingredient_name, via: viaName });
+      else missingIngredientNames.push(ing.ingredient_name);
+    } else {
+      missingIngredientNames.push(ing.ingredient_name);
+    }
+  });
+  return { ownedIngredientNames, missingIngredientNames, substitutableIngredients };
+}
+
 /**
  * 빈 그래프 — 사용자/시스템 초기 상태에서 안전 fallback.
  * 모든 매칭이 missing 반환 (정확 보유만 매칭).
