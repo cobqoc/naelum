@@ -3,6 +3,7 @@ import {
   matchIngredient,
   matchRecipe,
   buildMatchNameArrays,
+  assembleRecipeMatchFields,
   isFundamental,
   type RelationGraph,
   EMPTY_GRAPH,
@@ -452,5 +453,17 @@ describe('buildMatchNameArrays — RecipeCard 이름 배열 (배지 단일 출�
       buildMatchNameArrays(ingredients, summary.results, new Map());
     expect(substitutableIngredients).toEqual([]);
     expect(missingIngredientNames).toContain('밥');
+  });
+
+  it('assembleRecipeMatchFields — 단일 출처: missingCount === missingIngredientNames.length', () => {
+    const summary = matchRecipe(ingredients, userIdSet, graph);
+    const fields = assembleRecipeMatchFields(ingredients, summary, userIdToName);
+    // 쌀만 보유 → 밥=대체(1), 마늘·양배추·대패삼겹살=없음(3)
+    expect(fields.missingCount).toBe(3);
+    expect(fields.missingCount).toBe(fields.missingIngredientNames.length); // 배지/필터 단일 기준 불변식
+    expect(fields.matchedCount).toBe(1); // owned 0 + substitutable 1
+    expect(fields.matchedCount).toBe(fields.ownedCount + fields.substitutableIngredients.length);
+    expect(fields.totalIngredients).toBe(4); // 필수 4 (파고명 optional 제외)
+    expect(fields.ingredientStatus).toBe('none'); // owned 0
   });
 });

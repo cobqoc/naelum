@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { fetchAllRows } from '@/lib/supabase/fetchAll'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
-import { matchRecipe, buildMatchNameArrays, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
+import { matchRecipe, assembleRecipeMatchFields, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
 import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchForwardRelationTargets, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
@@ -255,25 +255,9 @@ export async function GET(request: NextRequest) {
             }),
           )
           const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
-          // 이름 배열 — RecipeCard 배지/모달의 단일 데이터. fridgeMatch(전체/검색)와 동일 빌더로 통일.
-          // 이걸 안 실어서 카드가 missingIngredientNames=[] → 항상 "바로 가능" 오판하던 버그(2026-06-03) fix.
-          const { ownedIngredientNames, missingIngredientNames, substitutableIngredients } =
-            buildMatchNameArrays(ingredients, summary.results, userIdToName)
-          // 카운트도 이름 배열에서 파생 → 배지(missingIngredientNames.length)와 필터(missingCount) 단일 기준.
-          const matchedCount = summary.ownedCount + substitutableIngredients.length
-          const missingCount = missingIngredientNames.length
-          return {
-            ...recipe,
-            ownedCount: summary.ownedCount,
-            totalIngredients: summary.totalCount,
-            matchRate: summary.matchRate,
-            matchedCount,
-            missingCount,
-            ingredientStatus: summary.ingredientStatus,
-            ownedIngredientNames,
-            missingIngredientNames,
-            substitutableIngredients,
-          }
+          // 매칭 필드 한 벌 — fridgeMatch(전체/검색)와 동일 빌더(단일 출처). 추천 응답이 이름 배열을
+          // 안 실어 RecipeCard 배지가 항상 "바로 가능" 오판하던 버그(2026-06-03)의 경로 이중화를 차단.
+          return { ...recipe, ...assembleRecipeMatchFields(ingredients, summary, userIdToName) }
         })
 
 

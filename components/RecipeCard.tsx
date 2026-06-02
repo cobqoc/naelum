@@ -6,6 +6,7 @@ import SafeImage from '@/components/Common/SafeImage';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import FridgeIcon from '@/components/icons/FridgeIcon';
 import { getDifficultyLabel, getTotalTime } from '@/lib/types/recipe';
+import { getFridgeBadge } from '@/lib/recommendations/fridgeBadge';
 import { useI18n } from '@/lib/i18n/context';
 
 interface RecipeCardRecipe {
@@ -25,6 +26,8 @@ interface RecipeCardRecipe {
   ownedIngredientNames?: string[];
   substitutableIngredients?: { ingredient: string; via: string }[];
   missingIngredientNames?: string[];
+  /** 배지 카운트의 단일 출처(매칭 레이어가 계산). 부재 시 배지 숨김 — 이름배열 length 추정 금지. */
+  missingCount?: number;
 }
 
 interface RecipeCardProps {
@@ -60,35 +63,30 @@ export default memo(function RecipeCard({ recipe, showAuthor = false, priority =
   const difficultyLabel = getDifficultyLabel(recipe.difficulty_level, t.difficulty);
   const rating = recipe.average_rating ?? 0;
 
-  // 재료 매칭 데이터가 있을 때만 냉장고 배지를 표시.
-  const hasMatch = recipe.matchRate !== undefined;
+  // 모달용 이름 배열. (배지 카운트는 아래 getFridgeBadge 가 명시 missingCount 만 신뢰)
   const missing = recipe.missingIngredientNames ?? [];
-  const missingCount = missing.length;
-  const totalCount = recipe.totalIngredients ?? 0;
 
   // 냉장고 매칭 배지 — 썸네일 좌상단 오버레이. 줄 전체 탭 → 보유/대체/없는 모달.
-  // full(추천): 항상 표시. positive(전체·검색): 바로 가능할 때만 — 둘러보기 "빨간 벽" 방지.
-  const fridgeBadge = (() => {
-    if (!hasMatch) return null;
-    const isReadyToCook = totalCount > 0 && missingCount === 0;
-    if (fridgeRowMode === 'positive' && !isReadyToCook) return null;
-    const label = missingCount === 0
-      ? t.recipe.fridgeBadgeReady
-      : t.recipe.fridgeBadgeMissing.replace('{n}', String(missingCount));
-    return (
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFridgeOpen(true); }}
-        aria-label={t.recipe.fridgeModalTitle}
-        className={`flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full shadow-lg transition-transform hover:scale-105 ${fridgeStatusBg(missingCount)}`}
-      >
-        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white shrink-0">
-          <FridgeIcon size={14} />
-        </span>
-        <span className="text-[11px] font-bold text-white whitespace-nowrap">{label}</span>
-      </button>
-    );
-  })();
+  // 데이터 불완전 시 null(배지 없음) — "모름 → 바로 가능(초록)" 오판을 구조적으로 차단.
+  // 판정 로직은 순수 함수(테스트됨): lib/recommendations/fridgeBadge.
+  const badge = getFridgeBadge(recipe, fridgeRowMode);
+  const fridgeBadge = badge ? (
+    <button
+      type="button"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFridgeOpen(true); }}
+      aria-label={t.recipe.fridgeModalTitle}
+      className={`flex items-center gap-1 pl-0.5 pr-2 py-0.5 rounded-full shadow-lg transition-transform hover:scale-105 ${fridgeStatusBg(badge.missingCount)}`}
+    >
+      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white shrink-0">
+        <FridgeIcon size={14} />
+      </span>
+      <span className="text-[11px] font-bold text-white whitespace-nowrap">
+        {badge.isReady
+          ? t.recipe.fridgeBadgeReady
+          : t.recipe.fridgeBadgeMissing.replace('{n}', String(badge.missingCount))}
+      </span>
+    </button>
+  ) : null;
 
   return (
     <>

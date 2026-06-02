@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { matchRecipe, buildMatchNameArrays, type RecipeIngredientInput } from './matchV2'
+import { matchRecipe, assembleRecipeMatchFields, type RecipeIngredientInput } from './matchV2'
 import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from './fetchRelations'
 
 type SupabaseClient = ReturnType<typeof createClient>
@@ -89,19 +89,6 @@ export async function attachFridgeMatch<T extends { id: string }>(
   return recipes.map(r => {
     const ingredients = byRecipe.get(r.id) ?? []
     const summary = matchRecipe(ingredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap)
-    const { ownedIngredientNames, missingIngredientNames, substitutableIngredients } =
-      buildMatchNameArrays(ingredients, summary.results, userIdToName)
-    return {
-      ...r,
-      ownedCount: summary.ownedCount,
-      totalIngredients: summary.totalCount,
-      matchRate: summary.matchRate,
-      ingredientStatus: summary.ingredientStatus,
-      ownedIngredientNames,
-      missingIngredientNames,
-      substitutableIngredients,
-      matchedCount: summary.ownedCount + substitutableIngredients.length,
-      missingCount: missingIngredientNames.length,
-    }
+    return { ...r, ...assembleRecipeMatchFields(ingredients, summary, userIdToName) }
   })
 }

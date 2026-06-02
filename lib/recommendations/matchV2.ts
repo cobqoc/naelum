@@ -230,6 +230,48 @@ export function buildMatchNameArrays(
   return { ownedIngredientNames, missingIngredientNames, substitutableIngredients };
 }
 
+/** 레시피에 부착되는 매칭 필드 한 벌 — RecipeCard 배지/모달·추천 응답 공용 계약. */
+export interface RecipeMatchFields {
+  ownedCount: number;
+  totalIngredients: number;
+  matchRate: number;
+  ingredientStatus: 'none' | 'partial' | 'all';
+  ownedIngredientNames: string[];
+  missingIngredientNames: string[];
+  substitutableIngredients: { ingredient: string; via: string }[];
+  matchedCount: number;
+  /** RecipeCard 배지의 단일 카운트 출처. missingIngredientNames.length 와 항상 동일. */
+  missingCount: number;
+}
+
+/**
+ * matchRecipe 결과 → 레시피에 붙는 매칭 필드 한 벌(이름배열 + 카운트).
+ *
+ * **fridgeMatch(client·전체/검색)·recommendations route(server·재료기반) 단일 출처.**
+ * 둘이 따로 조립하다 한쪽이 missingIngredientNames 를 빠뜨려 RecipeCard 배지가 항상
+ * "바로 가능" 오판하던 버그(2026-06-03)의 구조적 뿌리(경로 이중화)를 차단. 카운트는
+ * 이름배열에서 파생(matched = 보유 + 대체, missing = 없는.length)해 배지·필터가 한 기준.
+ */
+export function assembleRecipeMatchFields(
+  recipeIngredients: RecipeIngredientInput[],
+  summary: RecipeMatchSummary,
+  userIdToName: Map<string, string>,
+): RecipeMatchFields {
+  const { ownedIngredientNames, missingIngredientNames, substitutableIngredients } =
+    buildMatchNameArrays(recipeIngredients, summary.results, userIdToName);
+  return {
+    ownedCount: summary.ownedCount,
+    totalIngredients: summary.totalCount,
+    matchRate: summary.matchRate,
+    ingredientStatus: summary.ingredientStatus,
+    ownedIngredientNames,
+    missingIngredientNames,
+    substitutableIngredients,
+    matchedCount: summary.ownedCount + substitutableIngredients.length,
+    missingCount: missingIngredientNames.length,
+  };
+}
+
 /**
  * 빈 그래프 — 사용자/시스템 초기 상태에서 안전 fallback.
  * 모든 매칭이 missing 반환 (정확 보유만 매칭).
