@@ -40,6 +40,8 @@ jobs:
       - run: npm ci
       - name: ESLint (경고 0개)
         run: npm run lint
+      - name: 패턴/god-file 스캔 (날짜 UTC 블로킹 + god-file ≥900 차단)
+        run: npm run scan
       - name: Unit tests (vitest — 순수 로직 회귀 안전망)
         run: npm run test:unit
 

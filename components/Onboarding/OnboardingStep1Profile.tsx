@@ -1,5 +1,7 @@
 'use client';
 
+import { localDateISO } from '@/lib/date/localDate';
+
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
@@ -206,7 +208,7 @@ export default function OnboardingStep1Profile({
             type="date"
             value={formData.birth_date || ''}
             onChange={(e) => setFormData({ ...formData, birth_date: e.target.value || null })}
-            max={new Date().toISOString().split('T')[0]}
+            max={localDateISO()}
             className="w-full px-4 py-3 pr-10 rounded-xl bg-background-secondary text-text-primary outline-none ring-1 ring-white/10 focus:ring-2 focus:ring-accent-warm transition-all"
           />
           {formData.birth_date && (

@@ -1,5 +1,7 @@
 'use client';
 
+import { localDateISO } from '@/lib/date/localDate';
+
 import { useState, useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
@@ -265,7 +267,7 @@ export default function SetPasswordPage() {
                 type="date"
                 value={birthDate}
                 onChange={(e) => setBirthDate(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
+                max={localDateISO()}
                 className={INPUT_INNER_COMFORTABLE_CLASS}
                 style={INPUT_INNER_STYLE}
                 required
