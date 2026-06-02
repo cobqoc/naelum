@@ -4,6 +4,7 @@ import { useMemo, useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   matchRecipe,
+  countMatched,
   type RelationGraph,
   type RecipeIngredientInput,
   type RecipeMatchSummary,
@@ -48,9 +49,15 @@ export interface UseRecipeFridgeMatchResult {
    * preparable·substitute 케이스. 없으면 null.
    */
   findSubstitute: (ingredient_id: string | null) => string | null;
+  /** 정확 보유(+변형) 수 — cart "보유 재료 제외" 등 *물리적 보유* 기준에 사용 */
   ownedCount: number;
+  /** 충족 수 = 정확보유 + 변형 + 대체 + 가공(쌀→밥). RecipeCard 배지와 같은 기준 — 상세 "N/M 보유" 배지용 */
+  coveredCount: number;
   totalIngredients: number;
+  /** 정확보유 기준 상태 (cart 등) */
   ingredientStatus: 'none' | 'partial' | 'all';
+  /** 충족(coveredCount) 기준 상태 — 상세 배지 색. 쌀로 밥 충족이면 partial(빨강 아님) */
+  coverageStatus: 'none' | 'partial' | 'all';
   /** 전체 매칭 summary — UI 가 카드별 chip 결정에 사용 */
   summary: RecipeMatchSummary;
   /** fetch 중 여부 */
@@ -154,6 +161,19 @@ export function useRecipeFridgeMatch(
     [normalizedIngredients, userIdSet, graph, userBaseMap, userQtyMap, coeffsMap],
   );
 
+  // 충족 수 = owned + 변형 + 대체 + 가공(쌀→밥). RecipeCard 배지(missingCount)와 같은 기준.
+  // 상세 "N/M 보유" 가 ownedCount(정확보유=0)만 써서 "쌀로 밥 충족"인데 0/7 로 뜨던 불일치 fix.
+  const coveredCount = useMemo(
+    () => countMatched(normalizedIngredients, summary.results).matchedCount,
+    [normalizedIngredients, summary],
+  );
+  const coverageStatus: 'none' | 'partial' | 'all' =
+    summary.totalCount === 0 || coveredCount === 0
+      ? 'none'
+      : coveredCount >= summary.totalCount
+        ? 'all'
+        : 'partial';
+
   const isIngredientOwned = useCallback(
     // 정확 보유 또는 변형 보유(삼겹살→돼지고기). userBaseMap 은 base_id(=레시피 재료 id) 키.
     (id: string | null) => (id ? userIdSet.has(id) || userBaseMap.has(id) : false),
@@ -181,8 +201,10 @@ export function useRecipeFridgeMatch(
     isIngredientOwned,
     findSubstitute,
     ownedCount: summary.ownedCount,
+    coveredCount,
     totalIngredients: summary.totalCount,
     ingredientStatus: summary.ingredientStatus,
+    coverageStatus,
     summary,
     isLoading,
   };

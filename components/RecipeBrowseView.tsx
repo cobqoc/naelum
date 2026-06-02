@@ -169,7 +169,8 @@ export default function RecipeBrowseView({
   const [showFridgeModal, setShowFridgeModal] = useState(false);
 
   // 매칭 결과는 match.* 로 접근. JSX 에서 사용하는 destructure 만.
-  const { ownedCount, totalIngredients, ingredientStatus, summary } = match;
+  // ownedCount(정확보유)=cart "보유 제외"용 · coveredCount(대체·가공 포함)=재료 탭 배지(카드와 일관)
+  const { ownedCount, coveredCount, totalIngredients, coverageStatus, summary } = match;
 
   // V2: id → name 매핑 (chip 표시·모달용). 반드시 행 단위 userIngredientQtys 에서 파생 —
   // userIngredients(전체 행 이름)·userIngredientIds(id-null 제외 행)는 길이/순서가 달라
@@ -529,9 +530,9 @@ export default function RecipeBrowseView({
             }))}
             matchResults={summary.results}
             userIngredientNameById={userIngredientNameById}
-            ownedCount={ownedCount}
+            coveredCount={coveredCount}
             totalIngredients={totalIngredients}
-            ingredientStatus={ingredientStatus}
+            coverageStatus={coverageStatus}
             baseServings={baseServings}
             currentServings={currentServings}
             setCurrentServings={setCurrentServings}

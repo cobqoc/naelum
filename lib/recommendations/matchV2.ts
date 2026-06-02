@@ -252,6 +252,31 @@ export interface RecipeMatchFields {
  * "바로 가능" 오판하던 버그(2026-06-03)의 구조적 뿌리(경로 이중화)를 차단. 카운트는
  * 이름배열에서 파생(matched = 보유 + 대체, missing = 없는.length)해 배지·필터가 한 기준.
  */
+/**
+ * kind 기반 카운트(이름 불필요) — 충족/없는/전체. is_optional·fundamental(물) 제외.
+ *
+ * **충족(matched) = 정확보유 + 변형 + 대체 + 가공(preparable)** = kind !== 'missing'.
+ * RecipeCard 배지(missingCount)·레시피 상세 "N/M 보유" 배지가 *같은 기준*을 쓰도록 하는 단일 출처.
+ * 상세가 ownedCount(정확보유만)를 써서 "쌀로 밥 충족"인데 0/7 로 뜨고 카드는 6 부족인 불일치
+ * (2026-06-03)를 차단. via 이름 해석이 필요 없어(카운트만) userIdToName 없이 동작.
+ */
+export function countMatched(
+  recipeIngredients: RecipeIngredientInput[],
+  results: MatchResult[],
+): { matchedCount: number; missingCount: number; totalCount: number } {
+  let matchedCount = 0;
+  let missingCount = 0;
+  let totalCount = 0;
+  results.forEach((r, i) => {
+    const ing = recipeIngredients[i];
+    if (ing.is_optional || isFundamental(ing.ingredient_name)) return;
+    totalCount++;
+    if (r.kind === 'missing') missingCount++;
+    else matchedCount++;
+  });
+  return { matchedCount, missingCount, totalCount };
+}
+
 export function assembleRecipeMatchFields(
   recipeIngredients: RecipeIngredientInput[],
   summary: RecipeMatchSummary,

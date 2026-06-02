@@ -36,9 +36,10 @@ interface IngredientsTabProps {
   matchResults: MatchResult[];
   /** 사용자 보유 재료 id → name 조회 (chip 표시용) */
   userIngredientNameById: Map<string, string>;
-  ownedCount: number;
+  /** 충족 수(쌀→밥 등 대체·가공 포함) — RecipeCard 배지(부족 수)와 같은 기준. 정확보유만 세지 않음 */
+  coveredCount: number;
   totalIngredients: number;
-  ingredientStatus: 'none' | 'partial' | 'all';
+  coverageStatus: 'none' | 'partial' | 'all';
   /** 인분 조절 — baseServings: recipe 원본, currentServings: 사용자 선택 */
   baseServings: number;
   currentServings: number;
@@ -61,9 +62,9 @@ export default function IngredientsTab({
   ingredients,
   matchResults,
   userIngredientNameById,
-  ownedCount,
+  coveredCount,
   totalIngredients,
-  ingredientStatus,
+  coverageStatus,
   baseServings,
   currentServings,
   setCurrentServings,
@@ -102,22 +103,22 @@ export default function IngredientsTab({
               {/* pulse 는 *행동 유도* 신호 (마트 가기·재료 모으기) — 'all' = 준비 완료 상태에선
                   깜빡거림이 시각 노이즈가 됨. none/partial 만 pulse 유지. */}
               <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
-                ingredientStatus !== 'all' ? 'animate-pulse ' : ''
+                coverageStatus !== 'all' ? 'animate-pulse ' : ''
               }${
-                ingredientStatus === 'none'
+                coverageStatus === 'none'
                   ? 'bg-error text-white shadow-[0_0_12px_rgba(244,67,54,0.5)]'
-                  : ingredientStatus === 'all'
+                  : coverageStatus === 'all'
                   ? 'bg-success text-white shadow-[0_0_12px_rgba(76,175,80,0.5)]'
                   : 'bg-warning text-white shadow-[0_0_12px_rgba(255,152,0,0.5)]'
               }`}>
                 <FridgeIcon size={22} />
               </div>
               <span className={`text-[10px] font-medium ${
-                ingredientStatus === 'none' ? 'text-error'
-                  : ingredientStatus === 'all' ? 'text-success'
+                coverageStatus === 'none' ? 'text-error'
+                  : coverageStatus === 'all' ? 'text-success'
                   : 'text-warning'
               }`}>
-                {ownedCount}/{totalIngredients} {t.recipe.ownedSuffix}
+                {coveredCount}/{totalIngredients} {t.recipe.ownedSuffix}
               </span>
             </button>
           </div>
