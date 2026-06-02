@@ -54,6 +54,7 @@ export default function RecipeReviewModal({
 
   const handleSubmit = async () => {
     if (submitting) return;
+    if (rating < 1) { toast.error(t.recipe.reviewRatingLabel); return; } // 0점 리뷰 방지
 
     setSubmitting(true);
     try {

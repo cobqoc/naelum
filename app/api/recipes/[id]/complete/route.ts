@@ -22,10 +22,15 @@ export async function POST(
   }
 
   try {
-    // FormData에서 사진 추출
+    // FormData에서 사진 + 체감 난이도 추출
     const formData = await request.formData()
     const photo = formData.get('photo') as File | null
     let photoUrl: string | null = null
+
+    // 체감 난이도(선택): 1=쉬움 2=적당 3=어려움. 범위 밖/비숫자는 null(무시).
+    const rawDifficulty = formData.get('difficulty_felt')
+    const parsedDifficulty = rawDifficulty != null ? parseInt(String(rawDifficulty), 10) : NaN
+    const difficultyFelt = parsedDifficulty >= 1 && parsedDifficulty <= 3 ? parsedDifficulty : null
 
     // 사진이 있으면 검증 후 Supabase Storage에 업로드 (H2: 무검증·storage 우회·매요청 createBucket 제거)
     if (photo) {
@@ -68,15 +73,18 @@ export async function POST(
       .maybeSingle()
 
     if (recentSession) {
-      // 기존 세션이 있으면 사진만 업데이트
-      if (photoUrl) {
-        const { error: sessionPhotoError } = await supabase
+      // 기존 세션이 있으면 사진/난이도만 업데이트(있는 값만)
+      const patch: { photo_url?: string; difficulty_felt?: number } = {}
+      if (photoUrl) patch.photo_url = photoUrl
+      if (difficultyFelt != null) patch.difficulty_felt = difficultyFelt
+      if (Object.keys(patch).length > 0) {
+        const { error: sessionUpdateError } = await supabase
           .from('cooking_sessions')
-          .update({ photo_url: photoUrl })
+          .update(patch)
           .eq('id', recentSession.id)
-        if (sessionPhotoError) {
-          console.error('Cooking session photo update error:', sessionPhotoError)
-          return NextResponse.json({ error: '사진 저장에 실패했습니다' }, { status: 500 })
+        if (sessionUpdateError) {
+          console.error('Cooking session update error:', sessionUpdateError)
+          return NextResponse.json({ error: '기록 저장에 실패했습니다' }, { status: 500 })
         }
       }
 
@@ -96,7 +104,8 @@ export async function POST(
         recipe_id: recipeId,
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        difficulty_felt: difficultyFelt
       })
       .select()
       .single()
