@@ -68,13 +68,15 @@ export async function POST(request: NextRequest) {
       if (action === 'cook') updates.was_cooked = true
       if (session_duration_seconds) updates.session_duration_seconds = session_duration_seconds
 
-      await supabase
+      // best-effort 추적 — RLS/제약 실패는 사용자 흐름을 막지 않되 *보이게* 로그(Supabase는 throw 안 함).
+      const { error: updateErr } = await supabase
         .from('recommendation_history')
         .update(updates)
         .eq('id', existing.id)
+      if (updateErr) console.warn('[track] recommendation_history update 실패:', updateErr.message)
     } else {
       // Insert new record
-      await supabase
+      const { error: insertErr } = await supabase
         .from('recommendation_history')
         .insert({
           user_id: user.id,
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
           interaction_weight,
           session_duration_seconds: session_duration_seconds || null,
         })
+      if (insertErr) console.warn('[track] recommendation_history insert 실패:', insertErr.message)
     }
 
     // Update user interests based on interactions
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
 
           // After 3+ positive interactions, auto-learn the preference
           if ((count || 0) >= 3) {
-            await supabase
+            const { error: interestErr } = await supabase
               .from('user_interests')
               .insert({
                 user_id: user.id,
@@ -128,6 +131,7 @@ export async function POST(request: NextRequest) {
               })
               .select()
               .maybeSingle()
+            if (interestErr) console.warn('[track] user_interests insert 실패:', interestErr.message)
           }
         }
       }

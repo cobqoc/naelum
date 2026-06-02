@@ -102,12 +102,13 @@ export async function GET(request: NextRequest) {
           );
           sent++;
         } catch (err: unknown) {
-          // 만료된 구독 삭제
+          // 만료된 구독 삭제 (cron 정리 — 실패해도 다음 회차 재시도, 로그만)
           if (err && typeof err === 'object' && 'statusCode' in err && (err as { statusCode: number }).statusCode === 410) {
-            await supabase
+            const { error: delErr } = await supabase
               .from('push_subscriptions')
               .delete()
               .eq('endpoint', sub.endpoint);
+            if (delErr) console.warn('[send-expiry] 만료 구독 삭제 실패:', delErr.message);
           }
         }
       }

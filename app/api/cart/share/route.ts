@@ -35,11 +35,12 @@ export async function POST() {
     if (!existing.expires_at || new Date(existing.expires_at) > new Date()) {
       return NextResponse.json({ token: existing.token });
     }
-    // 만료된 거면 revoke 처리하고 새로 생성
-    await supabase
+    // 만료된 거면 revoke 처리하고 새로 생성. revoke 실패해도 토큰은 이미 만료라 새 토큰 발급이 본질 — 로그만.
+    const { error: revokeErr } = await supabase
       .from('shopping_list_shares')
       .update({ revoked_at: new Date().toISOString() })
       .eq('token', existing.token);
+    if (revokeErr) console.warn('[cart/share] 만료 토큰 revoke 실패:', revokeErr.message);
   }
 
   // 새 토큰 생성. 충돌 시 1회 재시도.

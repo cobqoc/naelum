@@ -33,11 +33,12 @@ export async function DELETE(request: NextRequest) {
   const { endpoint } = await request.json();
   if (!endpoint) return NextResponse.json({ error: 'endpoint required' }, { status: 400 });
 
-  await supabase
+  const { error: delErr } = await supabase
     .from('push_subscriptions')
     .delete()
     .eq('user_id', user.id)
     .eq('endpoint', endpoint);
+  if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }
