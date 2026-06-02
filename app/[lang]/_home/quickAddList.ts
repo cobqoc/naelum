@@ -3,6 +3,7 @@
  * - 데이터 출처 없이 상식 기반 큐레이션 (search_count는 유저 0명 상태라 의미 없음)
  * - 향후 유저가 늘어나면 ingredients_master.search_count 기반으로 자동 업데이트 가능
  */
+import { localDateISO } from '@/lib/date/localDate';
 
 export type QuickAddIngredient = {
   name: string;          // 한국어 이름 (DB의 ingredient_name으로 그대로 저장)
@@ -67,6 +68,6 @@ export function quickAddToPayload(item: QuickAddIngredient, userId: string) {
     storage_location: item.storage,
     quantity: 1,
     unit: '개',
-    purchase_date: new Date().toISOString().slice(0, 10),
+    purchase_date: localDateISO(),  // 로컬 기준 — UTC면 KST 새벽에 어제로 저장됨
   };
 }

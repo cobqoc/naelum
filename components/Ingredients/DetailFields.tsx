@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { addDaysLocalISO } from '@/lib/date/localDate';
 
 /**
  * 재료 상세 설정 필드 (카테고리·유통기한·수량/단위·보관위치·메모) — 공통 표현.
@@ -93,10 +94,8 @@ export default function DetailFields({
     };
   }, []);
 
-  const addDaysToISO = (days: number) => {
-    const d = new Date(); d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
-  };
+  // 로컬 타임존 기준 — UTC면 KST 새벽에 "오늘"이 하루 빨라짐(2026-06-03 버그).
+  const addDaysToISO = (days: number) => addDaysLocalISO(days);
 
   const QUICK_EXPIRY = [
     { label: t.quickAdd.expiryPresetToday, days: 0 },
