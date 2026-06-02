@@ -11,6 +11,12 @@
 
 ## 2026-06 작업 로그
 
+- **코드+DB read-only 감사 → 가드레일 + 죽은 레거시 정리** (2026-06-03)
+  - **발단**(사용자): "코드 더 깔끔하게·근본적으로·미래에 커지기 전에" — 전면 재작성 대신 *감사→우선순위 백로그→가드레일* 권유. DB도 정리 OK.
+  - **감사(read-only)**: god-file 11개·날짜 UTC 패턴·하드코딩 한글 ~71파일·Supabase write `.error` 미체크·중복(레시피 폼/재료 피커). DB: Supabase advisors(보안 WARN 59·성능 233, ERROR 0) + 죽은 레거시 테이블 후보.
+  - **가드레일(예방, develop beabaa0)**: `scripts/scan-fragility.mjs`(client 날짜 UTC 머지 차단 + 하드코딩 한글 부채 리포트) → `npm run scan` → CI `quality` 잡 연결. 잔여 client 날짜 UTC 5곳(생년월일 max 4 + 내보내기 파일명) → `lib/date/localDate`. dead `LanguageSwitcher` 제거. **스캔이 감사가 놓친 AccountTab까지 잡아 즉시 효과 입증.**
+  - **DB 죽은 레거시 정리** (`20260603_drop_legacy_cruft.sql`, dev→검증→prod): 전수 호환검사(app `.from()` 0·incoming FK 0·트리거 0·뷰 미사용·함수 고아) + **dev가 이 테이블들 없이 e2e 통과=불필요 증거**. drop: 테이블 7(comments·saved_recipes·cooking_tips·cooked_records·fridge_items·shopping_items·ingredient_substitutes_global)·뷰 2(popular_recipes·recipe_popularity)·고아함수 2(comment 카운트). 현행 매핑: recipe_posts·recipe_saves·tip·cooking_sessions·user_ingredients·shopping_list_items·ingredient_relations. 데이터(옛 테스트유저 seed 8+2+1행)는 `docs/db/legacy-tables-backup-20260603.json` 백업. export 라우트는 `ingredient_substitutes_global`→`ingredient_relations`(V2). `refresh_recipe_post_counts`(live)·`cooking_tools`(미래 도감)는 보존. **types 재생성 안 함**(prod/dev drift — 배달 dev전용). 검증: build·lint·풀 e2e 450·prod drop 후 live 테이블 무손상 확인.
+
 - **로그인 상태 홈 라이브 전수 점검 → 5건 수정** (2026-06-03)
   - **발단**(사용자): 비로그인 점검·추천 배지 수정 후, 로그인해서 홈 요소를 하나하나 점검 요청. 점검만 하고 발견 시 보고 → 사용자 지시로 전부 수정.
   - **① [중요] 로그인 언어 전환이 URL/title 미갱신**: 로그인 시 헤더 🌐 스위처가 없고 언어가 *프로필 메뉴(`UserDropdown`)* 에 있음. 앞선 헤더 스위처 수정(`Header`)이 여기엔 미적용 → English 선택해도 콘텐츠만 영어, URL `/ko`·title 한글. → `swapLangSegment`로 `[lang]` 경로 이동(헤더와 동일). **함정**: `replace_all`이 들여쓰기 차이로 모바일 블록만 바꾸고 데스크톱 블록은 누락 → *라이브 검증에서 잡음*(소스 grep으로 확인). 두 블록 모두 수정해야 함.

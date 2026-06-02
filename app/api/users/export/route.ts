@@ -90,7 +90,8 @@ export async function GET() {
       fetchAllData(() => sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
       // 어드민 활동 (일반 사용자는 빈 배열)
       fetchAllData(() => sb.from('ingredients_master').select('*').or(`created_by.eq.${uid},approved_by.eq.${uid}`)),
-      fetchAllData(() => sb.from('ingredient_substitutes_global').select('*').eq('approved_by', uid)),
+      // V2(2026-05-29): ingredient_substitutes_global → ingredient_relations 로 흡수. 흡수된 live 테이블에서 export.
+      fetchAllData(() => sb.from('ingredient_relations').select('*').eq('approved_by', uid)),
     ]);
 
     // Stage 2: 자식 테이블 (부모 id 의존). 빈 배열이면 PostgREST .in() 에러라 skip.
