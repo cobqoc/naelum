@@ -11,6 +11,15 @@
 
 ## 2026-06 작업 로그
 
+- **재료 보관기간(shelf-life) + 냉장고 신선도 추정 + 유통기한 추정 알림 + 푸시 인프라 활성화** (2026-06-04, PR #236 prod 배포)
+  - **발단**(사용자): "사용자가 앱을 열심히 쓰게 할 방법" → retention 레버로 유통기한/신선도. 실측하니 유통기한 Web Push 코드는 완성돼 있으나 `push_subscriptions` 테이블이 dev·prod 미적용이라 파이프 전체가 죽어있었음.
+  - **푸시 활성화**: `push_subscriptions` dev+prod 적용. cron `send-expiry` 선존 버그 수정(구독 없으면 앱내 알림조차 안 뜨던 것 → DB 알림은 구독 무관 생성, OS 푸시만 구독 시). action_url lang prefix는 미들웨어 307 리다이렉트로 정상 동작(버그 아님, 기각). Vercel VAPID·CRON_SECRET env 3환경 등록 확인.
+  - **신선도 구조 설계**(적대적 검토 3회): `shelf_life_days`(jsonb)는 ingredients_master 한 곳 — 도감 표시(타입) + 냉장고 추정(인스턴스) **한 컬럼 두 소비자**. 카디널리티 (재료,보관)당 값 하나라 jsonb가 storage 동적룩업에 최적. 추정은 **읽을 때 계산·DB 저장 0**(무결성·보정 즉시반영). 사다리 ①유저입력 expiry_date →②재료별 shelf_life →③카테고리×보관 →④모르면 추정안함. `lib/freshness` 순수모듈(vitest 26).
+  - **도감 표시**: 상세 패널에 "📅 보관 기간" 칩(`IngredientBrowseClient`, browse 라우트 select+응답매핑, i18n 8 locale). **냉장고 신선도**(`freshState`): expiry_date 없으면 추정 — amber "예상" 라벨, 빨강 펄스(isDanger)는 확정만(추측을 사실인 척 안 함). tier② FK 임베드(`useFridgeItems`, N+1 방지). 위험변경이라 회귀 안전망 baseline-green 후 변경(freshState 10 테스트 + e2e 34).
+  - **데이터**: USDA FoodKeeper(미 공공도메인) GitHub 미러(jelera/food-shelflife-db) 파싱 → 일수환산 → dev+prod **69종**. 한국 출처(식약처 소비기한)는 *포장식품 미개봉 기한*이라 가정 보관기간과 의미 다르고 신선식품 없음·API 없음 → FoodKeeper 채택. 매핑 오류 2건(식빵 homemade→시판, 소시지 pepperoni→비엔나) 수정, 대파 냉장 한국 조정. **prod master 누락 흔한 14종 보강(227→241)**.
+  - **Phase-2 추정 푸시**(보류였으나 사용자 요청): cron에 추정 분기 — 🧊 "예상" D-1~D-0만(보수적·과경보 방지), `notification_type` expiry/expiry_estimate 분리, 통합 루프. 실사용 데이터로 임계·톤 튜닝은 추후.
+  - **배포**: develop 2커밋(feat freshness / feat push) → Preview 라이브 검증(도감 가지 "냉장7일·냉동약8개월·상온1일" 렌더 + API shelf_life_days) → PR #236 develop→main 머지 → naelum.app prod 검증(API 35종 + 14재료 보강 확인). 마이그레이션 `20260603`(컬럼)·`20260604`(데이터+14재료 INSERT, 멱등)로 fresh prod 재현 가능. lint 0·build·vitest 371·e2e 34.
+
 - **코드+DB read-only 감사 → 가드레일 + 죽은 레거시 정리** (2026-06-03)
   - **발단**(사용자): "코드 더 깔끔하게·근본적으로·미래에 커지기 전에" — 전면 재작성 대신 *감사→우선순위 백로그→가드레일* 권유. DB도 정리 OK.
   - **감사(read-only)**: god-file 11개·날짜 UTC 패턴·하드코딩 한글 ~71파일·Supabase write `.error` 미체크·중복(레시피 폼/재료 피커). DB: Supabase advisors(보안 WARN 59·성능 233, ERROR 0) + 죽은 레거시 테이블 후보.
