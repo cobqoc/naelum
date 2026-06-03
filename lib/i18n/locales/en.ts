@@ -582,6 +582,7 @@ export const en = {
     expired: 'Expired',
     dDay: 'D-{n}',
     daysAged: '{n}d aged',
+    estimatePrefix: 'Est.',
   },
   nutrition: {
     title: 'Nutrition Info',
@@ -910,6 +911,10 @@ export const en = {
     },
     panelCountries: 'Used in',
     panelStorage: 'Storage',
+    panelShelfLife: 'Shelf life',
+    shelfLifeDays: '{n} days',
+    shelfLifeMonths: '~{n} months',
+    shelfLifeYears: '~{n} years',
     panelSeason: 'Season',
     panelTaste: 'Taste profile',
     panelNutrition: 'Nutrition (per 100g)',

@@ -582,6 +582,7 @@ export const ja = {
     expired: '期限切れ',
     dDay: 'D-{n}',
     daysAged: '{n}日経過',
+    estimatePrefix: '目安',
   },
   nutrition: {
     title: '栄養情報',
@@ -911,6 +912,10 @@ export const ja = {
     },
     panelCountries: '主な使用国',
     panelStorage: '保存方法',
+    panelShelfLife: '保存期間',
+    shelfLifeDays: '{n}日',
+    shelfLifeMonths: '約{n}ヶ月',
+    shelfLifeYears: '約{n}年',
     panelSeason: '旬の情報',
     panelTaste: '味のプロフィール',
     panelNutrition: '栄養情報（100gあたり）',

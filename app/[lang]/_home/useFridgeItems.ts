@@ -79,13 +79,13 @@ export function useFridgeItems({
     const client = createClient();
     const { data } = await client
       .from('user_ingredients')
-      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert, ingredients_master!ingredient_id(emoji)')
+      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert, ingredients_master!ingredient_id(emoji, shelf_life_days)')
       .eq('user_id', user.id)
       .order('expiry_date', { ascending: true, nullsFirst: false });
     return (data ?? []).map((row) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const master = (row as any).ingredients_master;
-      return { ...row, emoji: master?.emoji ?? null, ingredients_master: undefined } as FridgeItem;
+      return { ...row, emoji: master?.emoji ?? null, shelf_life_days: master?.shelf_life_days ?? null, ingredients_master: undefined } as FridgeItem;
     });
   }, [user]);
 

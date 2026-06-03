@@ -16,6 +16,7 @@ interface FridgeItem {
   quantity?: number | null;
   unit?: string | null;
   emoji?: string | null;
+  shelf_life_days?: Record<string, number> | null;
 }
 
 interface Props {
@@ -27,8 +28,8 @@ interface Props {
   /** chip hover X 클릭 시 빠른 삭제 (데스크톱) */
   onDelete: (item: FridgeItem) => void;
   /** freshState 계산 함수 (HomeClient에서 주입). category fallback을 위해 category 필드도 포함. */
-  freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category'>) => {
-    border: string; labelKind: FreshLabelKind; labelN: number; isDanger: boolean;
+  freshState: (item: Pick<FridgeItem, 'expiry_date' | 'purchase_date' | 'category' | 'storage_location' | 'shelf_life_days'>) => {
+    border: string; labelKind: FreshLabelKind; labelN: number; isDanger: boolean; isEstimate: boolean;
   };
   /** 데모 칩 표시명 변환 — HomeClient의 getDisplayName 주입. 기본은 ingredient_name 그대로. */
   getDisplayName?: (item: { id: string; ingredient_name: string; isDemoItem?: boolean }) => string;
@@ -197,8 +198,8 @@ export default function FridgeAllSheet({
                   {bucketList.map(bucket => {
                     // 대표 항목 = 가장 임박한 첫 항목
                     const repr = bucket[0];
-                    const { border, labelKind, labelN, isDanger } = freshState(repr);
-                    const freshLabel = formatFreshLabel(labelKind, labelN, t);
+                    const { border, labelKind, labelN, isDanger, isEstimate } = freshState(repr);
+                    const freshLabel = formatFreshLabel(labelKind, labelN, t, isEstimate);
                     const emoji = repr.emoji ?? null;
                     const displayName = display(repr);
                     const groupCount = bucket.length;
@@ -270,8 +271,8 @@ export default function FridgeAllSheet({
             </div>
             <div className="overflow-y-auto flex-1 p-3 space-y-2">
               {groupSheet.items.map(item => {
-                const { border, labelKind, labelN } = freshState(item);
-                const freshLabel = formatFreshLabel(labelKind, labelN, t);
+                const { border, labelKind, labelN, isEstimate } = freshState(item);
+                const freshLabel = formatFreshLabel(labelKind, labelN, t, isEstimate);
                 return (
                   <button
                     key={item.id}

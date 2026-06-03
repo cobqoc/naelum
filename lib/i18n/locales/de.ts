@@ -582,6 +582,7 @@ export const de = {
     expired: 'Abgelaufen',
     dDay: 'D-{n}',
     daysAged: '{n} T alt',
+    estimatePrefix: 'ca.',
   },
   nutrition: {
     title: 'Nährwertinformationen',
@@ -911,6 +912,10 @@ export const de = {
     },
     panelCountries: 'Verwendet in',
     panelStorage: 'Lagerung',
+    panelShelfLife: 'Haltbarkeit',
+    shelfLifeDays: '{n} Tage',
+    shelfLifeMonths: '~{n} Monate',
+    shelfLifeYears: '~{n} Jahre',
     panelSeason: 'Saison',
     panelTaste: 'Geschmacksprofil',
     panelNutrition: 'Nährwerte (pro 100g)',

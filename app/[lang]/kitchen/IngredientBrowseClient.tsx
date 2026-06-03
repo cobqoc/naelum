@@ -74,6 +74,7 @@ interface IngredientItem {
   pairs_well_with: string[] | null;
   description: string | null;
   emoji: string | null;
+  shelf_life_days: Record<string, number> | null;
 }
 
 // ─── 상세 패널 서브 컴포넌트 ─────────────────────────────────
@@ -201,6 +202,16 @@ function IngredientPanel({
   const emoji = item.emoji ?? null;
   const catLabel = tb.categoryLabels[item.category as keyof typeof tb.categoryLabels] ?? '';
   const hasTastes = item.tastes && Object.values(item.tastes).some(v => v > 0);
+  const SHELF_ORDER = ['냉장', '냉동', '상온'] as const;
+  const shelfEntries = (item.shelf_life_days
+    ? SHELF_ORDER.map(loc => ({ loc, days: item.shelf_life_days![loc] }))
+    : []
+  ).filter((e): e is { loc: (typeof SHELF_ORDER)[number]; days: number } => typeof e.days === 'number' && e.days >= 0);
+  // 보관일수 → 표시: 1년↑ "약 N년", 2달↑ "약 N개월", 그 외 "N일"
+  const fmtShelf = (n: number) =>
+    n >= 365 ? tb.shelfLifeYears.replace('{n}', String(Math.round(n / 365)))
+    : n >= 60 ? tb.shelfLifeMonths.replace('{n}', String(Math.round(n / 30)))
+    : tb.shelfLifeDays.replace('{n}', String(n));
 
   return (
     <>
@@ -234,6 +245,7 @@ function IngredientPanel({
           {item.description && (<><p className="text-sm text-text-secondary leading-relaxed bg-background-primary/40 rounded-xl p-3.5 border border-white/5">{item.description}</p><Divider /></>)}
           {item.countries_used && item.countries_used.length > 0 && (<><SectionHeader emoji="🌍" title={tb.panelCountries} /><div className="flex flex-wrap gap-2">{item.countries_used.map(c => <span key={c} className="px-3 py-1.5 rounded-xl bg-background-primary/60 border border-white/8 text-sm text-text-secondary">{c}</span>)}</div><Divider /></>)}
           {item.storage_tips && (<><SectionHeader emoji="🧊" title={tb.panelStorage} /><div className="bg-blue-500/8 border border-blue-500/15 rounded-xl p-3.5"><p className="text-sm text-text-secondary leading-relaxed">{item.storage_tips}</p></div><Divider /></>)}
+          {shelfEntries.length > 0 && (<><SectionHeader emoji="📅" title={tb.panelShelfLife} /><div className="flex flex-wrap gap-2">{shelfEntries.map(({ loc, days }) => <span key={loc} className="px-3 py-1.5 rounded-xl bg-background-primary/60 border border-white/8 text-sm text-text-secondary">{t.quickAdd.storageLocationLabels[loc]} · {fmtShelf(days)}</span>)}</div><Divider /></>)}
           {item.seasons && item.seasons.length > 0 && (<><SectionHeader emoji="🌸" title={tb.panelSeason} /><div className="flex flex-wrap gap-2">{item.seasons.map(season => { const label = SEASON_LABEL[season]; if (!label) return null; return <span key={season} className={`px-3 py-1.5 rounded-xl border text-sm font-medium ${SEASON_COLOR[season]}`}>{SEASON_EMOJI[season]} {label}</span>; })}</div><Divider /></>)}
           {hasTastes && (<><SectionHeader emoji="👅" title={tb.panelTaste} /><TasteBars tastes={item.tastes} /><Divider /></>)}
           {(item.nutrition || item.nutrition_detail) && (<><SectionHeader emoji="📊" title={tb.panelNutrition} /><NutritionCard nutrition={item.nutrition} detail={item.nutrition_detail} /><Divider /></>)}

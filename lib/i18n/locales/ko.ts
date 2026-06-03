@@ -584,6 +584,7 @@ export const ko = {
     expired: '만료',
     dDay: 'D-{n}',
     daysAged: '{n}일째',
+    estimatePrefix: '예상',
   },
   nutrition: {
     title: '영양 정보',
@@ -913,6 +914,10 @@ export const ko = {
     },
     panelCountries: '주요 사용 국가',
     panelStorage: '보관 방법',
+    panelShelfLife: '보관 기간',
+    shelfLifeDays: '{n}일',
+    shelfLifeMonths: '약 {n}개월',
+    shelfLifeYears: '약 {n}년',
     panelSeason: '제철 정보',
     panelTaste: '맛 프로필',
     panelNutrition: '영양 정보 (100g 기준)',
