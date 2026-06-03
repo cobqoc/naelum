@@ -64,8 +64,8 @@ export default function FridgeShelves({
               const renderGroup = (group: FridgeItem[], compact = false) => {
                 const repr = group[0]; // 가장 임박한 항목
                 const groupCount = group.length;
-                const { border, labelKind, labelN, isDanger } = freshState(repr);
-                const label = formatFreshLabel(labelKind, labelN, t);
+                const { border, labelKind, labelN, isDanger, isEstimate } = freshState(repr);
+                const label = formatFreshLabel(labelKind, labelN, t, isEstimate);
                 const emoji = repr.emoji ?? null;
                 const displayName = getDisplayName(repr);
                 const handleClick = (e: React.MouseEvent) => {

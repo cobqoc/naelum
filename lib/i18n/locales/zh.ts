@@ -582,6 +582,7 @@ export const zh = {
     expired: '已过期',
     dDay: 'D-{n}',
     daysAged: '存放{n}天',
+    estimatePrefix: '预计',
   },
   nutrition: {
     title: '营养信息',
@@ -911,6 +912,10 @@ export const zh = {
     },
     panelCountries: '主要使用国家',
     panelStorage: '储存方法',
+    panelShelfLife: '保存期限',
+    shelfLifeDays: '{n}天',
+    shelfLifeMonths: '约{n}个月',
+    shelfLifeYears: '约{n}年',
     panelSeason: '时令信息',
     panelTaste: '风味特征',
     panelNutrition: '营养信息（每100g）',

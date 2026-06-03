@@ -634,8 +634,8 @@ export default function HomeClient({
             </div>
             <div className="overflow-y-auto flex-1 p-3 space-y-2">
               {groupSheet.items.map(item => {
-                const { border, labelKind, labelN } = freshState(item);
-                const label = formatFreshLabel(labelKind, labelN, t);
+                const { border, labelKind, labelN, isEstimate } = freshState(item);
+                const label = formatFreshLabel(labelKind, labelN, t, isEstimate);
                 return (
                   <button
                     key={item.id}

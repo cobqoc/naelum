@@ -582,6 +582,7 @@ export const it = {
     expired: 'Scaduto',
     dDay: 'G-{n}',
     daysAged: '{n} g conservato',
+    estimatePrefix: 'Stim.',
   },
   nutrition: {
     title: 'Informazioni nutrizionali',
@@ -911,6 +912,10 @@ export const it = {
     },
     panelCountries: 'Usato in',
     panelStorage: 'Conservazione',
+    panelShelfLife: 'Durata',
+    shelfLifeDays: '{n} giorni',
+    shelfLifeMonths: '~{n} mesi',
+    shelfLifeYears: '~{n} anni',
     panelSeason: 'Stagione',
     panelTaste: 'Profilo del sapore',
     panelNutrition: 'Nutrizione (per 100g)',

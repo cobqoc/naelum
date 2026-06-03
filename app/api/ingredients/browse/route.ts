@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     // 기본 쿼리
     let dbQuery = supabase
       .from('ingredients_master')
-      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji', { count: 'exact' })
+      .select('id, name, name_en, name_ko, category, subcategory, image_url, common_units, search_count, tastes, countries_used, storage_tips, seasons, nutrition, pairs_well_with, description, nutrition_detail, emoji, shelf_life_days', { count: 'exact' })
       .in('status', includePending ? ['approved', 'pending'] : ['approved']);
 
     // 이름 목록 필터 (names 파라미터 있으면 카테고리/검색어 필터보다 우선)
@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
       description: ingredient.description || null,
       nutrition_detail: ingredient.nutrition_detail || null,
       emoji: ingredient.emoji || null,
+      shelf_life_days: ingredient.shelf_life_days || null,
       // AutocompleteItem 필드
       label: ingredient.name_ko || ingredient.name,
       secondaryLabel: ingredient.name_en || undefined,
