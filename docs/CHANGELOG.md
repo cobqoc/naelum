@@ -11,6 +11,14 @@
 
 ## 2026-06 작업 로그
 
+- **SEO: 사이트맵 lang prefix·hreflang 정정 + 미완성 페이지 noindex** (2026-06-04)
+  - **발단**(사용자): "구글에서 검색되냐" → `site:naelum.app` 0건 확인(미색인). 원인 점검 중 사이트맵 URL 결함 발견. Search Console 등록 전 정비.
+  - **사이트맵 정정**(`app/sitemap.ts`): path-based i18n인데 사이트맵이 prefix 없는 가짜 URL(`/recipes/{id}`)을 내보내 Google이 따라오면 매번 307 리다이렉트(`proxy.ts`)당하던 문제. canonical을 기본 로케일 `/ko/...`로 통일하고, **8개 언어 hreflang + `x-default`(언어 감지 bare URL)** alternate 추가. `languageAlternates()`·`entry()` 헬퍼로 정적/레시피/프로필 전 엔트리 일괄 적용. 실제 `/sitemap.xml` 렌더로 `<loc>`+`xhtml:link` 9종 검증.
+  - **미완성 페이지 noindex**: `/kitchen`(부엌 도감, 미완성) generateMetadata에 `robots:{index:false,follow:true}`. `/delivery/*`(prod 미적용)는 `delivery/layout.tsx`에 `metadata.robots` noindex로 하위 일괄(루트 page는 이미 자체 noindex,nofollow 보유). **완성 시 해당 robots 줄만 제거하면 색인 복구.** 막는 이유 2종 구분: 미완성(임시·복구 예정) vs 본질적 사적(`/cart/share/[token]` 토큰 공유링크 — 개인 장보기 노출 방지로 *영구* noindex, 기존 설정 유지). 팁·검색·회원가입·소개·법적페이지는 색인 유지(완성됐거나 색인 가치 있음).
+  - **무처리(불필요)**: `/settings`·`/recipes/new|edit|cook`·`/tip/new|edit`·`/merchant/*`·`/rider`·`/admin/*` 등 로그인 전용 — 비로그인 Googlebot이 `/signin` 리다이렉트당해 색인 자체 불가.
+  - **잔여(사용자 직접)**: Google Search Console·Naver Search Advisor 등록 + 사이트맵 제출. **Cloudflare Bot Fight Mode가 Googlebot 차단하는지 "URL 검사"로 확인 필수**(WebFetch 시 403 관측 — 무료플랜 알려진 부작용). hreflang 페이지 단위 `<head>` 태그는 추후.
+  - 검증: lint 0·build·실제 렌더 HTML로 noindex 적용(kitchen·delivery)/미적용(recipes) 직접 확인.
+
 - **재료 보관기간(shelf-life) + 냉장고 신선도 추정 + 유통기한 추정 알림 + 푸시 인프라 활성화** (2026-06-04, PR #236 prod 배포)
   - **발단**(사용자): "사용자가 앱을 열심히 쓰게 할 방법" → retention 레버로 유통기한/신선도. 실측하니 유통기한 Web Push 코드는 완성돼 있으나 `push_subscriptions` 테이블이 dev·prod 미적용이라 파이프 전체가 죽어있었음.
   - **푸시 활성화**: `push_subscriptions` dev+prod 적용. cron `send-expiry` 선존 버그 수정(구독 없으면 앱내 알림조차 안 뜨던 것 → DB 알림은 구독 무관 생성, OS 푸시만 구독 시). action_url lang prefix는 미들웨어 307 리다이렉트로 정상 동작(버그 아님, 기각). Vercel VAPID·CRON_SECRET env 3환경 등록 확인.

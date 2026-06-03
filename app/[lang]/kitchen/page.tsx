@@ -13,6 +13,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     title,
     description,
     openGraph: { title, description },
+    // 미완성 페이지 — 완성 전까지 검색 색인 제외 (크롤은 허용해 noindex 를 읽게 함).
+    robots: { index: false, follow: true },
   };
 }
 
