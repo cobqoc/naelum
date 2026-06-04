@@ -28,6 +28,12 @@ export const metadata: Metadata = {
   keywords: ["레시피", "요리", "음식", "재료", "추천", "한식", "양식", "recipe", "cooking"],
   authors: [{ name: "낼름 Team" }],
   metadataBase: new URL(BASE_URL),
+  // 검색엔진 소유확인. Google 은 DNS(도메인 속성)로 인증해 태그 불필요 — Naver 만 태그 방식.
+  verification: {
+    other: {
+      "naver-site-verification": "c0f3a5150bbb02e2adc8ae615f26f77194ee34dc",
+    },
+  },
   openGraph: {
     type: "website",
     locale: "ko_KR",
