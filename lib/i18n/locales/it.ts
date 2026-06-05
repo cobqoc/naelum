@@ -418,7 +418,7 @@ export const it = {
     resultCount: '{count} ricette',
     signupCtaTitle: 'Hai trovato una ricetta che ti piace?',
     signupCtaDesc: 'Registrati per salvare ricette, gestire gli ingredienti del frigo e accedervi da qualsiasi dispositivo.',
-    signupCtaButton: 'Registrati gratis',
+    signupCtaButton: 'Registrati e inizia',
   },
   difficulty: {
     easy: 'Facile',
@@ -1606,6 +1606,8 @@ export const it = {
     버섯: 'Funghi',
     새우: 'Gamberi',
     소고기: 'Manzo',
+    삼겹살: 'Pancetta',
+    만두: 'Ravioli',
     감자: 'Patata',
     양파: 'Cipolla',
     밀가루: 'Farina',

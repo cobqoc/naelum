@@ -89,7 +89,7 @@ export default function HomeClient({
   const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-  // 반응형 MAX — viewport width 기반. 모바일 4, 태블릿 6, 데스크톱 8.
+  // 반응형 MAX — viewport width 기반. 모바일 5, 태블릿/데스크톱 6.
   // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
   const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
   // 씬 요소(팬던트/웜스팟/콘센트) 배치용 — 데스크탑에선 냉장고 가까이, 모바일은 가장자리
@@ -102,7 +102,7 @@ export default function HomeClient({
       if (w >= 1024) setShelfMax({ body: 6, pantry: 4, door: 3 });
       else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
       else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
-      else setShelfMax({ body: 4, pantry: 1, door: 2 });
+      else setShelfMax({ body: 5, pantry: 1, door: 2 });
     };
     update();
     window.addEventListener('resize', update);

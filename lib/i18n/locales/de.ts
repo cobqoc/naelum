@@ -418,7 +418,7 @@ export const de = {
     resultCount: '{count} Rezepte',
     signupCtaTitle: 'Ein passendes Rezept gefunden?',
     signupCtaDesc: 'Registriere dich, um Rezepte zu speichern, deine Kühlschrank-Zutaten zu verwalten und auf allen Geräten zuzugreifen.',
-    signupCtaButton: 'Kostenlos registrieren',
+    signupCtaButton: 'Registrieren & loslegen',
   },
   difficulty: {
     easy: 'Einfach',
@@ -1606,6 +1606,8 @@ export const de = {
     버섯: 'Pilz',
     새우: 'Garnele',
     소고기: 'Rindfleisch',
+    삼겹살: 'Schweinebauch',
+    만두: 'Teigtaschen',
     감자: 'Kartoffel',
     양파: 'Zwiebel',
     밀가루: 'Mehl',

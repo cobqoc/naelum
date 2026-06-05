@@ -418,7 +418,7 @@ export const es = {
     resultCount: '{count} recetas',
     signupCtaTitle: '¿Encontraste una receta que te guste?',
     signupCtaDesc: 'Regístrate para guardar recetas, gestionar los ingredientes de tu nevera y acceder desde cualquier dispositivo.',
-    signupCtaButton: 'Regístrate gratis',
+    signupCtaButton: 'Regístrate y empieza',
   },
   difficulty: {
     easy: 'Fácil',
@@ -1606,6 +1606,8 @@ export const es = {
     버섯: 'Champiñón',
     새우: 'Camarón',
     소고기: 'Carne de res',
+    삼겹살: 'Panceta de cerdo',
+    만두: 'Empanadillas',
     감자: 'Patata',
     양파: 'Cebolla',
     밀가루: 'Harina',

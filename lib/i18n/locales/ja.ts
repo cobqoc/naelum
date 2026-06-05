@@ -418,7 +418,7 @@ export const ja = {
     resultCount: '{count}件のレシピ',
     signupCtaTitle: '気に入ったレシピは見つかりましたか?',
     signupCtaDesc: '新規登録するとレシピを保存し、冷蔵庫の食材を管理し、他のデバイスでも続きを見られます。',
-    signupCtaButton: '無料で新規登録',
+    signupCtaButton: '登録して始める',
   },
   difficulty: {
     easy: '簡単',
@@ -1606,6 +1606,8 @@ export const ja = {
     버섯: 'きのこ',
     새우: 'エビ',
     소고기: '牛肉',
+    삼겹살: '豚バラ肉',
+    만두: '餃子',
     감자: 'じゃがいも',
     양파: '玉ねぎ',
     밀가루: '小麦粉',

@@ -416,7 +416,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 비로그인: 로그인 유도 뷰 — components/cart/CartLoginPrompt.tsx 로 추출
   // (god-file 분해 Phase 2, 순수 표현·상태 0·JSX byte-identical)
   if (!user) {
-    return <CartLoginPrompt t={t} onClose={onClose} fromBottom={fromBottom} />;
+    return <CartLoginPrompt t={t} onClose={onClose} fromBottom={fromBottom} panelRef={panelRef} />;
   }
 
   return (
