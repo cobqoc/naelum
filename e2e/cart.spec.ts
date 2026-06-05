@@ -169,7 +169,14 @@ test.describe('장보기 카트 — 스모크 테스트', () => {
     await bottomNavCart.click();
 
     await expect(page.getByText('로그인하고 장보기 시작')).toBeVisible();
-    await expect(page.getByRole('link', { name: /로그인하고 시작하기/ })).toBeVisible();
+    const loginCta = page.getByRole('link', { name: /로그인하고 시작하기/ });
+    await expect(loginCta).toBeVisible();
+
+    // 회귀 가드(2026-06-06): CTA 클릭이 실제로 /signin 으로 네비게이션해야 함.
+    // 과거 panelRef 미부착 + 자체 오버레이로 mousedown 시 prompt 가 언마운트돼
+    // Link 의 click 네비게이션이 취소되던 버그("눌러도 반응 없음").
+    await loginCta.click();
+    await expect(page).toHaveURL(/\/signin/);
   });
 
   test('모바일 BottomNav cart 버튼 → dropdown 열림', async ({ authenticatedPage }) => {

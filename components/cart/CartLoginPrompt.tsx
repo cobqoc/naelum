@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
@@ -5,27 +6,32 @@ import type { TranslationKeys } from '@/lib/i18n/translations';
  * 비로그인 cart 드롭다운 — 로그인 유도 뷰 (순수 표현).
  *
  * god-file(ShoppingCartDropdown) 분해 Phase 2. 상태·로직 0 — t/onClose/fromBottom
- * props 만 받는 순수 표현. JSX·className 원본과 byte-identical → 행위 변경 0.
- * 회귀 가드: e2e/cart.spec.ts:164 (BottomNav 비로그인 → 로그인 유도 콘텐츠).
+ * props 만 받는 순수 표현.
+ *
+ * 외부 클릭 닫기는 부모의 useOutsideClick(panelRef) 가 담당 — panelRef 를 패널에
+ * 부착해야 *내부* 클릭(로그인 버튼)이 "바깥"으로 오판돼 mousedown 에 닫히지 않음.
+ * (자체 `fixed inset-0` 오버레이를 쓰면 panelRef 미부착으로 mousedown 시 prompt 가
+ *  언마운트돼 Link 의 click 네비게이션이 취소됐었음 — 2026-06-06 수정.)
+ * 회귀 가드: e2e/cart.spec.ts (BottomNav 비로그인 → 로그인 유도 + CTA 네비게이션).
  */
 
 interface CartLoginPromptProps {
   t: TranslationKeys;
   onClose: () => void;
   fromBottom: boolean;
+  panelRef: RefObject<HTMLDivElement | null>;
 }
 
-export default function CartLoginPrompt({ t, onClose, fromBottom }: CartLoginPromptProps) {
+export default function CartLoginPrompt({ t, onClose, fromBottom, panelRef }: CartLoginPromptProps) {
   return (
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div
-        className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${
-          fromBottom
-            ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm'
-            : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
-        }`}
-      >
+    <div
+      ref={panelRef}
+      className={`rounded-xl bg-background-secondary border border-white/10 shadow-2xl z-50 overflow-hidden flex flex-col ${
+        fromBottom
+          ? 'fixed left-1/2 -translate-x-1/2 bottom-20 w-[92vw] max-w-sm'
+          : 'absolute w-80 md:w-[30rem] max-w-[calc(100vw-2rem)] right-0 top-full mt-2'
+      }`}
+    >
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
           <span className="font-bold text-sm">{t.cart.title}</span>
@@ -80,6 +86,5 @@ export default function CartLoginPrompt({ t, onClose, fromBottom }: CartLoginPro
           </p>
         </div>
       </div>
-    </>
   );
 }
