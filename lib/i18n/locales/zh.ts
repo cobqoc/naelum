@@ -418,7 +418,7 @@ export const zh = {
     resultCount: '{count}个食谱',
     signupCtaTitle: '找到喜欢的食谱了吗?',
     signupCtaDesc: '注册后可以保存食谱、管理冰箱食材,在其他设备上继续查看。',
-    signupCtaButton: '免费注册',
+    signupCtaButton: '注册并开始',
   },
   difficulty: {
     easy: '简单',
@@ -1606,6 +1606,8 @@ export const zh = {
     버섯: '蘑菇',
     새우: '虾',
     소고기: '牛肉',
+    삼겹살: '五花肉',
+    만두: '饺子',
     감자: '土豆',
     양파: '洋葱',
     밀가루: '面粉',

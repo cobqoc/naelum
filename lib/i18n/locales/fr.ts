@@ -418,7 +418,7 @@ export const fr = {
     resultCount: '{count} recettes',
     signupCtaTitle: 'Vous avez trouvé une recette qui vous plaît ?',
     signupCtaDesc: 'Inscrivez-vous pour sauvegarder vos recettes, gérer les ingrédients de votre frigo et y accéder sur tous vos appareils.',
-    signupCtaButton: 'S\'inscrire gratuitement',
+    signupCtaButton: 'S\'inscrire et commencer',
   },
   difficulty: {
     easy: 'Facile',
@@ -1606,6 +1606,8 @@ export const fr = {
     버섯: 'Champignon',
     새우: 'Crevette',
     소고기: 'Bœuf',
+    삼겹살: 'Poitrine de porc',
+    만두: 'Raviolis',
     감자: 'Pomme de terre',
     양파: 'Oignon',
     밀가루: 'Farine',

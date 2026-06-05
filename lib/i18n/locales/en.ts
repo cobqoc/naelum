@@ -418,7 +418,7 @@ export const en = {
     resultCount: '{count} recipes',
     signupCtaTitle: 'Found a recipe you like?',
     signupCtaDesc: 'Sign up to save recipes, manage your fridge ingredients, and access them on any device.',
-    signupCtaButton: 'Sign up for free',
+    signupCtaButton: 'Sign up & get started',
   },
   difficulty: {
     easy: 'Easy',
@@ -1605,6 +1605,8 @@ export const en = {
     버섯: 'Mushroom',
     새우: 'Shrimp',
     소고기: 'Beef',
+    삼겹살: 'Pork belly',
+    만두: 'Dumplings',
     감자: 'Potato',
     양파: 'Onion',
     밀가루: 'Flour',

@@ -420,7 +420,7 @@ export const ko = {
     resultCount: '{count}개 레시피',
     signupCtaTitle: '맘에 드는 레시피 찾으셨나요?',
     signupCtaDesc: '회원가입하면 레시피를 저장하고, 냉장고 재료를 관리하고, 다른 기기에서도 이어볼 수 있어요.',
-    signupCtaButton: '무료로 회원가입',
+    signupCtaButton: '가입하고 시작하기',
   },
   difficulty: {
     easy: '쉬움',
@@ -1610,6 +1610,8 @@ export const ko = {
     버섯: '버섯',
     새우: '새우',
     소고기: '소고기',
+    삼겹살: '삼겹살',
+    만두: '만두',
     감자: '감자',
     양파: '양파',
     밀가루: '밀가루',
