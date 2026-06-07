@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import LocalizedLink from '@/components/Common/LocalizedLink';
-import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
@@ -33,7 +32,6 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   const router = useRouter();
   const { t } = useI18n();
   const toast = useToast();
-  const supabase = createClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -51,13 +49,12 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   // 네트워크 일시 장애도 다음 폴링에서 자동 복구되므로 사용자 인지 불필요.
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const { count } = await supabase
-        .from('notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_read', false);
-      setUnreadCount(count || 0);
+      const res = await fetch('/api/notifications?countOnly=true');
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnreadCount(data.unreadCount || 0);
     } catch { /* silent — 백그라운드 폴링, 다음 30초 후 자동 재시도 */ }
-  }, [supabase]);
+  }, []);
 
   // 사용자가 종 아이콘 클릭해 패널 열 때 호출 — 실패 시 빈 상태 표시되므로 표면화 필요.
   const fetchNotifications = async () => {
