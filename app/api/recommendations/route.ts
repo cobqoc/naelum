@@ -161,38 +161,39 @@ export async function GET(request: NextRequest) {
         }
 
         const userIdSet = new Set(userIngredientIds)
-        // 변형 매칭 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족).
-        // 후보 검색·매칭 양쪽에 쓰임 → 여기서 한 번 계산.
-        const userBaseMap = await fetchUserVariantBases(userIngredientIds, supabase)
-        // 보유에서 나가는 preparable_to·substitute 관계의 to_id (쌀 보유 → 밥 쓰는 레시피도 후보).
-        const forwardTargets = await fetchForwardRelationTargets(userIngredientIds, supabase)
+
+        // 이름 ilike fallback — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
+        // ID 기반이지만 후보 검색 단계는 이름으로 보강 (sweep 최소화). ingredientNames 만 의존.
+        const ilikeClauses = ingredientNames.length > 0
+          ? ingredientNames.slice(0, 20).map(ing => `ingredient_name.ilike.%${ing}%`).join(',')
+          : null
+
+        // userBaseMap·forwardTargets·nameCandidate 는 서로 독립(보유 id / 이름만 의존) → 병렬.
+        // userBaseMap: 변형 매칭(삼겹살 보유 → "돼지고기" 충족). forwardTargets: preparable/substitute 타깃(쌀 → 밥).
+        const [userBaseMap, forwardTargets, nameCandidateRows] = await Promise.all([
+          fetchUserVariantBases(userIngredientIds, supabase),
+          fetchForwardRelationTargets(userIngredientIds, supabase),
+          ilikeClauses
+            ? fetchAllRows<{ recipe_id: string }>(() => supabase
+                .from('recipe_ingredients')
+                .select('recipe_id')
+                .or(ilikeClauses))
+            : Promise.resolve([] as { recipe_id: string }[]),
+        ])
+        const nameCandidateIds = nameCandidateRows.map(r => r.recipe_id)
+
         // 후보 검색 풀 = 보유 id + 변형의 base id + preparable/substitute 타깃.
         const candidateIdPool = [...new Set([...userIngredientIds, ...userBaseMap.keys(), ...forwardTargets])]
 
-        // V2: 후보 검색 — FK 우선, 이름 ilike fallback (코드 상수 확장 제거)
+        // V2: 후보 검색 — FK 우선(recipe_ingredients.ingredient_id 인덱스), 이름 ilike fallback.
+        // candidateIdPool 의존이라 위 병렬 이후. fetchAllRows 로 1000행 silent 절단 회피.
         let idCandidateIds: string[] = []
         if (candidateIdPool.length > 0) {
-          // fetchAllRows: 인기 재료 하나로 1000행 초과 쉬움 → silent 절단 시 후보 누락
           const idCandidateRows = await fetchAllRows<{ recipe_id: string }>(() => supabase
             .from('recipe_ingredients')
             .select('recipe_id')
             .in('ingredient_id', candidateIdPool))
           idCandidateIds = idCandidateRows.map(r => r.recipe_id)
-        }
-
-        // 이름 ilike fallback — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
-        // ID 기반이지만 후보 검색 단계는 이름으로 보강 (sweep 최소화).
-        let nameCandidateIds: string[] = []
-        if (ingredientNames.length > 0) {
-          const ilikeClauses = ingredientNames
-            .slice(0, 20)
-            .map(ing => `ingredient_name.ilike.%${ing}%`)
-            .join(',')
-          const nameCandidateRows = await fetchAllRows<{ recipe_id: string }>(() => supabase
-            .from('recipe_ingredients')
-            .select('recipe_id')
-            .or(ilikeClauses))
-          nameCandidateIds = nameCandidateRows.map(r => r.recipe_id)
         }
 
         const candidateIds = [...new Set([...idCandidateIds, ...nameCandidateIds])]
@@ -217,13 +218,14 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ recommendations: [], mode: resolvedMode })
         }
 
-        // 알레르기 필터링 V2 (로그인 사용자만)
-        const allergyFiltered = user
-          ? await filterByAllergies(supabase, user.id, recipes)
-          : recipes
+        // 알레르기 필터(로그인만) 와 차단 사용자 조회는 독립 → 병렬.
+        const [allergyFiltered, blockedUserIds] = await Promise.all([
+          user ? filterByAllergies(supabase, user.id, recipes) : Promise.resolve(recipes),
+          getBlockedUserIds(supabase, user?.id),
+        ])
 
         // 차단 사용자 작성 레시피 제외 (H3 — 활성 추천 경로)
-        const blockedIds = new Set(await getBlockedUserIds(supabase, user?.id))
+        const blockedIds = new Set(blockedUserIds)
         const filteredRecipes = blockedIds.size > 0
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? (allergyFiltered as any[]).filter(r => !blockedIds.has(r.author_id))
@@ -239,8 +241,11 @@ export async function GET(request: NextRequest) {
               .filter((id: string | null): id is string => !!id),
           ),
         )
-        const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
-        const coeffsMap = await fetchUnitCoeffs(allRecipeIngredientIds, supabase)
+        // graph·coeffsMap 은 같은 id 집합에 독립 fetch → 병렬.
+        const [graph, coeffsMap] = await Promise.all([
+          fetchRelationsForRecipe(allRecipeIngredientIds, supabase),
+          fetchUnitCoeffs(allRecipeIngredientIds, supabase),
+        ])
 
         // 분류 — V2 matchRecipe (ID 기반, 그래프 lookup) — userBaseMap 은 위에서 계산됨
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
