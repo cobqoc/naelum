@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface UserProfile {
@@ -72,8 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
+  // useMemo: user/profile/loading/refresh 가 실제로 바뀔 때만 새 value → 전 소비처 불필요 리렌더 방지.
+  // (refresh 는 useCallback, 나머지는 state 라 값이 안 바뀌면 identity 안정.)
+  const value = useMemo(() => ({ user, profile, loading, refresh }), [user, profile, loading, refresh]);
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refresh }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

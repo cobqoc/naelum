@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { defaultLocale, loadLocale, SUPPORTED_LANGUAGES, type Language, type TranslationKeys } from './locales';
 
 interface I18nContextType {
@@ -71,7 +71,8 @@ export function I18nProvider({ children, initialLanguage, initialT }: I18nProvid
     document.documentElement.lang = language;
   }, [language]);
 
-  const setLanguage = async (lang: Language) => {
+  // useCallback: language 가 바뀔 때만 identity 갱신 → 매 렌더 재생성 방지(value 메모 안정화).
+  const setLanguage = useCallback(async (lang: Language) => {
     // 현재 언어와 동일하면 noop
     if (lang === language) return;
     try {
@@ -84,10 +85,13 @@ export function I18nProvider({ children, initialLanguage, initialT }: I18nProvid
     } catch (err) {
       console.error('Failed to load locale:', lang, err);
     }
-  };
+  }, [language]);
+
+  // useMemo: language/setLanguage/t 가 실제로 바뀔 때만 새 value → 전 소비처 불필요 리렌더 방지.
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );
