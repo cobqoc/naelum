@@ -168,11 +168,13 @@ function SearchContent() {
     setLoading(true);
     setPages({ recipes: 1, users: 1, ingredients: 1 });
     try {
-      const searchResults = await fetchSearch(searchQuery, 1);
-
-      // 만들어봄 여부 추가
+      // 검색 API 와 getUser 는 독립 → 병렬.
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const [searchResults, { data: { user } }] = await Promise.all([
+        fetchSearch(searchQuery, 1),
+        supabase.auth.getUser(),
+      ]);
+
       if (user) {
         const allIds = [
           ...(searchResults.recipes?.data.map((r: Recipe) => r.id) || []),
@@ -192,11 +194,17 @@ function SearchContent() {
             searchResults.ingredients.data = searchResults.ingredients.data.map((r: Recipe) => ({ ...r, has_cooked: cookedSet.has(r.id) }));
         }
 
-        // 냉장고 match 부착 — setResults 전에 await(CLS 방지). 핵심 매칭은 추천과 동일(computeRecipeMatch).
-        if (searchResults.recipes?.data)
-          searchResults.recipes.data = await attachFridgeMatch(supabase, user.id, searchResults.recipes.data);
-        if (searchResults.ingredients?.data)
-          searchResults.ingredients.data = await attachFridgeMatch(supabase, user.id, searchResults.ingredients.data);
+        // 냉장고 match 부착 — setResults 전에 await(CLS 방지). recipes/ingredients 두 탭은 독립 → 병렬.
+        await Promise.all([
+          (async () => {
+            if (searchResults.recipes?.data)
+              searchResults.recipes.data = await attachFridgeMatch(supabase, user.id, searchResults.recipes.data);
+          })(),
+          (async () => {
+            if (searchResults.ingredients?.data)
+              searchResults.ingredients.data = await attachFridgeMatch(supabase, user.id, searchResults.ingredients.data);
+          })(),
+        ]);
       }
 
       setResults(searchResults);
@@ -215,15 +223,24 @@ function SearchContent() {
     const nextPage = pages[activeTab] + 1;
     setLoadingMore(true);
     try {
-      const more = await fetchSearch(query, nextPage);
-      // 추가 페이지에도 냉장고 match 부착 — 스크롤 후 카드도 첫 페이지와 동일하게.
+      // 검색 API 와 getUser 는 독립 → 병렬.
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const [more, { data: { user } }] = await Promise.all([
+        fetchSearch(query, nextPage),
+        supabase.auth.getUser(),
+      ]);
+      // 추가 페이지에도 냉장고 match 부착 — 스크롤 후 카드도 첫 페이지와 동일하게. 두 탭 독립 → 병렬.
       if (user) {
-        if (more.recipes?.data)
-          more.recipes.data = await attachFridgeMatch(supabase, user.id, more.recipes.data);
-        if (more.ingredients?.data)
-          more.ingredients.data = await attachFridgeMatch(supabase, user.id, more.ingredients.data);
+        await Promise.all([
+          (async () => {
+            if (more.recipes?.data)
+              more.recipes.data = await attachFridgeMatch(supabase, user.id, more.recipes.data);
+          })(),
+          (async () => {
+            if (more.ingredients?.data)
+              more.ingredients.data = await attachFridgeMatch(supabase, user.id, more.ingredients.data);
+          })(),
+        ]);
       }
       setPages(prev => ({ ...prev, [activeTab]: nextPage }));
       setResults(prev => ({

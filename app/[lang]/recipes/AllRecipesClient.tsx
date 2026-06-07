@@ -114,7 +114,6 @@ export default function AllRecipesPage() {
 
   const fetchRecipes = useCallback(async (pageNum: number, sort: string, reset = false) => {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
     let query = supabase
       .from('recipes')
@@ -135,7 +134,11 @@ export default function AllRecipesPage() {
     const from = pageNum * RECIPES_PER_PAGE;
     query = query.range(from, from + RECIPES_PER_PAGE - 1);
 
-    const { data } = await query;
+    // getUser 와 recipes 쿼리는 서로 독립 → 병렬.
+    const [{ data: { user } }, { data }] = await Promise.all([
+      supabase.auth.getUser(),
+      query,
+    ]);
     if (!data) {
       setLoading(false);
       setLoadingMore(false);
@@ -149,22 +152,26 @@ export default function AllRecipesPage() {
 
     if (user && processedRecipes.length > 0) {
       const recipeIds = processedRecipes.map(r => r.id);
-      const { data: cookedSessions } = await supabase
-        .from('cooking_sessions')
-        .select('recipe_id')
-        .eq('user_id', user.id)
-        .in('recipe_id', recipeIds)
-        .not('completed_at', 'is', null);
-
+      // cooked 조회와 냉장고 match 는 서로 독립(둘 다 base 목록만 의존) → 병렬.
+      const [{ data: cookedSessions }, fridgeMatched] = await Promise.all([
+        supabase
+          .from('cooking_sessions')
+          .select('recipe_id')
+          .eq('user_id', user.id)
+          .in('recipe_id', recipeIds)
+          .not('completed_at', 'is', null),
+        attachFridgeMatch(supabase, user.id, processedRecipes),
+      ]);
       const cookedRecipeIds = new Set(cookedSessions?.map(s => s.recipe_id) || []);
-      processedRecipes = processedRecipes.map(r => ({
+      // fridge 결과에 has_cooked 병합 (필드 분리 → 순서 무관, 원본과 동일 결과).
+      processedRecipes = fridgeMatched.map(r => ({
         ...r,
         has_cooked: cookedRecipeIds.has(r.id)
       }));
+    } else {
+      // 비로그인/빈 목록: 냉장고 match 만 (원본과 동일, no-op 반환).
+      processedRecipes = await attachFridgeMatch(supabase, user?.id ?? null, processedRecipes);
     }
-
-    // 냉장고 match 부착 — setRecipes 전에 await 해 카드가 첫 렌더부터 냉장고 줄 포함(CLS 방지).
-    processedRecipes = await attachFridgeMatch(supabase, user?.id ?? null, processedRecipes);
 
     if (reset) {
       setRecipes(processedRecipes);
@@ -192,13 +199,16 @@ export default function AllRecipesPage() {
     if (hasFilter) return;
     const supabase = createClient();
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data } = await supabase
-        .from('recipes')
-        .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
-        .eq('status', 'published')
-        .order('views_count', { ascending: false })
-        .limit(4);
+      // getUser 와 trending 쿼리는 독립 → 병렬.
+      const [{ data: { user } }, { data }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+          .from('recipes')
+          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
+          .eq('status', 'published')
+          .order('views_count', { ascending: false })
+          .limit(4),
+      ]);
       if (!data) return;
       const processed: RecipeWithMatch[] = data.map(r => ({
         ...r,
