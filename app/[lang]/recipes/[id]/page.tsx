@@ -1,143 +1,20 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
 import RecipeJsonLd from '@/components/RecipeJsonLd';
-import RecipeDetailClient, { type Recipe } from './RecipeDetailClient';
+import RecipeDetailClient from './RecipeDetailClient';
 import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
+import { getRecipeDetailData, getRecipeMetadata } from '@/lib/queries/recipeDetail';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://naelum.app';
 
-// 로그인 유저에 따라 개인화 데이터가 달라지므로 정적 캐싱 불가
+// 로그인 유저에 따라 개인화 데이터(저장·좋아요·냉장고·만든기록)가 달라지고 비공개 레시피
+// 게이트가 있으므로 페이지 자체는 force-dynamic 유지(캐싱 시 사용자 상태 유출·비공개 유출 위험).
+// read 는 전부 lib/queries/recipeDetail 데이터 계층으로 이전됨(docs/DATA_LAYER.md 레퍼런스 슬라이스).
+// 공개 본문은 그 안에서 unstable_cache 로 공유 캐시.
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ id: string }>;
-}
-
-/**
- * 레시피 상세 데이터를 한 번의 round-trip으로 병렬 fetch한다.
- * - 비로그인: recipe + cooked count
- * - 로그인: recipe + cooked count + user_ingredients + recipe_saves + recipe_likes
- *           + cooking_sessions(hasCooked)
- */
-async function fetchRecipePageData(id: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // 1. 레시피 본문 (가장 큰 쿼리)
-  const { data: recipeData, error: recipeError } = await supabase
-    .from('recipes')
-    .select(`
-      *,
-      author:profiles!recipes_author_id_fkey(username, avatar_url, bio),
-      ingredients:recipe_ingredients(*),
-      steps:recipe_steps(*)
-    `)
-    .eq('id', id)
-    .maybeSingle();
-
-  if (recipeError || !recipeData) {
-    return null;
-  }
-
-  // 2. 비공개 레시피 접근 권한 체크 — 작성자만 열람 가능
-  if (recipeData.status !== 'published') {
-    if (!user || recipeData.author_id !== user.id) {
-      return null;
-    }
-  }
-
-  // 3. 병렬 쿼리: cooked count + 유저 전용 데이터
-  const cookedCountPromise = supabase
-    .from('cooking_sessions')
-    .select('user_id', { count: 'exact', head: true })
-    .eq('recipe_id', id)
-    .not('completed_at', 'is', null);
-
-  if (user) {
-    const [
-      { count: cookedCount },
-      { data: userIngData },
-      { data: saveData },
-      { data: cookingData },
-      { data: likeData },
-      { data: reviewData },
-    ] = await Promise.all([
-      cookedCountPromise,
-      supabase
-        .from('user_ingredients')
-        .select('ingredient_name, ingredient_id, quantity, unit')
-        .eq('user_id', user.id),
-      supabase
-        .from('recipe_saves')
-        .select('id, notes')
-        .eq('recipe_id', id)
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('cooking_sessions')
-        .select('id')
-        .eq('recipe_id', id)
-        .eq('user_id', user.id)
-        .not('completed_at', 'is', null)
-        .maybeSingle(),
-      supabase
-        .from('recipe_likes')
-        .select('id')
-        .eq('recipe_id', id)
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      // 내가 이미 별점 리뷰를 남겼는지(top-level + rating 있음) → 재방문 별점 prompt 노출 판단
-      supabase
-        .from('recipe_posts')
-        .select('id')
-        .eq('recipe_id', id)
-        .eq('user_id', user.id)
-        .is('parent_id', null)
-        .not('rating', 'is', null)
-        .maybeSingle(),
-    ]);
-
-    const recipe: Recipe = { ...recipeData, cooked_count: cookedCount || 0 };
-
-    return {
-      recipe,
-      currentUserId: user.id,
-      initialUserIngredients: (userIngData || []).map(i => i.ingredient_name),
-      initialUserIngredientIds: (userIngData || [])
-        .map(i => i.ingredient_id)
-        .filter((x): x is string => !!x),
-      // 양 매칭(Phase 2) — id 보유 재료의 수량·단위 (부족분 표시용)
-      // name 동봉: id→name 매핑은 반드시 이 행 단위 구조에서 파생(이름·id 평행배열 zip 금지 — H5)
-      initialUserIngredientQtys: (userIngData || [])
-        .filter(i => i.ingredient_id)
-        .map(i => ({ id: i.ingredient_id as string, name: i.ingredient_name, quantity: i.quantity ?? null, unit: i.unit ?? null })),
-      initialIsSaved: !!saveData,
-      initialSaveNotes: saveData?.notes ?? null,
-      initialIsLiked: !!likeData,
-      initialLikesCount: recipe.likes_count ?? 0,
-      initialHasCooked: !!cookingData,
-      initialHasReviewed: !!reviewData,
-    };
-  }
-
-  // 비로그인
-  const { count: cookedCount } = await cookedCountPromise;
-  const recipe: Recipe = { ...recipeData, cooked_count: cookedCount || 0 };
-
-  return {
-    recipe,
-    currentUserId: null,
-    initialUserIngredients: [],
-    initialUserIngredientIds: [],
-    initialUserIngredientQtys: [],
-    initialIsSaved: false,
-    initialSaveNotes: null,
-    initialIsLiked: false,
-    initialLikesCount: recipe.likes_count ?? 0,
-    initialHasCooked: false,
-    initialHasReviewed: false,
-  };
 }
 
 /**
@@ -158,13 +35,7 @@ async function fetchRecipePageData(id: string) {
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: recipe } = await supabase
-    .from('recipes')
-    .select('title, description, thumbnail_url, status, show_source, attributed_chef, source_channel, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, servings, author:profiles!recipes_author_id_fkey(username)')
-    .eq('id', id)
-    .maybeSingle();
+  const recipe = await getRecipeMetadata(id);
 
   if (!recipe || recipe.status !== 'published') {
     return {
@@ -227,7 +98,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function RecipeDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const data = await fetchRecipePageData(id);
+  const data = await getRecipeDetailData(id);
 
   if (!data) {
     notFound();
