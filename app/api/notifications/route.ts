@@ -11,6 +11,16 @@ export async function GET(request: NextRequest) {
   const { user, error: authError } = await requireAuth(supabase)
   if (authError) return authError
 
+  // 경량 모드: 안읽은 개수만 (헤더 종 배지 30초 폴링 — 목록 쿼리 생략).
+  if (searchParams.get('countOnly') === 'true') {
+    const { count } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    return NextResponse.json({ unreadCount: count || 0 })
+  }
+
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams)
   const unreadOnly = searchParams.get('unread') === 'true'
 

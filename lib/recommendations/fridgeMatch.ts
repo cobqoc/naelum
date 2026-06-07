@@ -82,9 +82,12 @@ export async function attachFridgeMatch<T extends { id: string }>(
         .filter((id): id is string => id !== null),
     ),
   )
-  const graph = await fetchRelationsForRecipe(allRecipeIngredientIds, supabase)
-  const userBaseMap = await fetchUserVariantBases([...userIdSet], supabase)
-  const coeffsMap = await fetchUnitCoeffs(allRecipeIngredientIds, supabase)
+  // 세 fetch는 서로 독립(입력이 이미 확정된 id 집합) → 병렬화로 3 round-trip → 1.
+  const [graph, userBaseMap, coeffsMap] = await Promise.all([
+    fetchRelationsForRecipe(allRecipeIngredientIds, supabase),
+    fetchUserVariantBases([...userIdSet], supabase),
+    fetchUnitCoeffs(allRecipeIngredientIds, supabase),
+  ])
 
   return recipes.map(r => {
     const ingredients = byRecipe.get(r.id) ?? []
