@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { isDemoRecord } from './helpers';
 import { LS_KEY_DEMO_ITEMS } from './constants';
 import { DEMO } from './demoItems';
@@ -76,17 +75,16 @@ export function useFridgeItems({
       } catch { /* localStorage 실패 시 DEMO fallback */ }
       return DEMO;
     }
-    const client = createClient();
-    const { data } = await client
-      .from('user_ingredients')
-      .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert, ingredients_master!ingredient_id(emoji, shelf_life_days)')
-      .eq('user_id', user.id)
-      .order('expiry_date', { ascending: true, nullsFirst: false });
-    return (data ?? []).map((row) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const master = (row as any).ingredients_master;
-      return { ...row, emoji: master?.emoji ?? null, shelf_life_days: master?.shelf_life_days ?? null, ingredients_master: undefined } as FridgeItem;
-    });
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read → GET /api/user-ingredients?withMaster=1
+    // (서버가 도감 emoji·shelf_life_days 조인·평탄화). pendingDeleteIdsRef 필터는 호출부 유지.
+    try {
+      const res = await fetch('/api/user-ingredients?withMaster=1');
+      if (!res.ok) return [];
+      const { items } = await res.json();
+      return (items ?? []) as FridgeItem[];
+    } catch {
+      return [];
+    }
   }, [user]);
 
   // 비로그인 체험 모드 — items 변경 시 localStorage 에 저장

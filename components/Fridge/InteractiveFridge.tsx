@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
-import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import {
   FridgeIngredient,
@@ -136,17 +135,16 @@ export default function InteractiveFridge() {
   const [ingredients, setIngredients] = useState<FridgeIngredient[]>([]);
 
   useEffect(() => {
+    // 데이터 계층 이전(docs/DATA_LAYER.md): getUser + 직접 read → GET /api/user-ingredients(401=비로그인).
     const fetchIngredients = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) { setState('anonymous'); return; }
-
-      const { data } = await supabase
-        .from('user_ingredients')
-        .select('id, ingredient_name, category, quantity, unit, expiry_date, storage_location')
-        .eq('user_id', user.id)
-        .order('expiry_date', { ascending: true, nullsFirst: false });
+      let data: FridgeIngredient[] | null = null;
+      try {
+        const res = await fetch('/api/user-ingredients');
+        if (res.status === 401) { setState('anonymous'); return; }
+        if (res.ok) data = (await res.json()).items as FridgeIngredient[];
+      } catch {
+        // 네트워크 실패 — 아래 빈 처리
+      }
 
       if (!data || data.length === 0) {
         setState('empty');
