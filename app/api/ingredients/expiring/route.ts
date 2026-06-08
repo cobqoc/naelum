@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     // 만료 임박 재료 조회
     const { data, error } = await supabase
       .from('user_ingredients')
-      .select('*')
+      // 아래 map 이 쓰는 컬럼만 (과대 fetch 축소). 반환 shape 이 계약 = 이 목록이 전부.
+      .select('id, ingredient_name, category, quantity, unit, expiry_date, storage_location')
       .eq('user_id', user.id)
       .not('expiry_date', 'is', null)
       .gte('expiry_date', today.toISOString().split('T')[0])

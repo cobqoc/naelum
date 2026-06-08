@@ -11,7 +11,8 @@ export async function GET() {
 
   const { data: folders, error } = await supabase
     .from('recipe_folders')
-    .select('*')
+    // user_id 는 필터 키라 클라에 되돌릴 필요 없음 — 나머지 전 컬럼 명시(과대 fetch 축소)
+    .select('id, folder_name, description, color, icon, is_default, recipes_count, created_at, updated_at')
     .eq('user_id', user.id)
     .order('is_default', { ascending: false })
     .order('created_at', { ascending: true })

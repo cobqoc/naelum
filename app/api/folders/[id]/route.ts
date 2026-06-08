@@ -17,10 +17,10 @@ export async function GET(
 
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams, { defaultLimit: 12 })
 
-  // 폴더 정보
+  // 폴더 정보 — user_id 는 필터 키라 반환 불필요, 나머지 전 컬럼 명시(과대 fetch 축소)
   const { data: folder, error: folderError } = await supabase
     .from('recipe_folders')
-    .select('*')
+    .select('id, folder_name, description, color, icon, is_default, recipes_count, created_at, updated_at')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
