@@ -16,7 +16,7 @@ const ContactModal = dynamic(() => import('./ContactModal'), { loading: () => nu
  * 숨김 조건:
  * - /auth/* — 인증 플로우 중엔 UI 방해
  * - /signup, /signin — 가입/로그인 중엔 숨김
- * - /recipes/[id]/cook — 쿠킹 모드 풀스크린
+ * - /recipes/[id] — 레시피 상세(조리순서 인라인 통합). 하단 바에 통합돼 고정 버튼 충돌
  * - 관리자 페이지 — 별도 도구 사용
  * - /delivery·/merchant·/rider — 배달 시스템은 앱 chrome 격리 플로우
  *   (CLAUDE.md: Header/BottomNav 미노출). 고정 버튼이 결제 등 UI 클릭 가로챔
