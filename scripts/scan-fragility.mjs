@@ -17,9 +17,9 @@
 // ── RATCHET 상한 — 현재 부채를 high-water mark 로 고정. 수치를 낮추면 여기 숫자도 같이 낮춰 다시 잠근다.
 const RATCHET = {
   hardcodedKoreanFiles: 71,    // client 한글 리터럴 파일 (글로벌 출시 전 burndown)
-  clientDirectReadFiles: 19,   // client 직접 supabase read 파일
-  clientDirectReadSites: 34,   // client 직접 supabase read 체인 총수
-  selectStar: 63,              // select('*') 사용처
+  clientDirectReadFiles: 18,   // client 직접 supabase read 파일
+  clientDirectReadSites: 31,   // client 직접 supabase read 체인 총수
+  selectStar: 60,              // select('*') 사용처
 };
 //
 // 사용:
