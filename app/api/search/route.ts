@@ -136,10 +136,13 @@ export async function GET(request: NextRequest) {
     })())
   }
 
-  await Promise.all(searchPromises)
+  // 병목 개선: getUser 는 검색쿼리와 독립(결과 enrichment 에만 필요) → 병렬로 1 round-trip 절감.
+  const [, { data: { user } }] = await Promise.all([
+    Promise.all(searchPromises),
+    supabase.auth.getUser(),
+  ])
 
   // 로그인 사용자: has_cooked 배지 + 검색 히스토리 저장
-  const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     const allRecipeIds = [
       ...(results.recipes?.data ?? []),
@@ -167,15 +170,19 @@ export async function GET(request: NextRequest) {
     }
 
     // 냉장고 match 부착 — 데이터 계층 이전(docs/DATA_LAYER.md): SearchClient 가 클라에서 하던 걸 서버로.
-    // recipes/ingredients 두 결과 독립 → 병렬. attachFridgeMatch 는 빈 배열·냉장고 없으면 no-op.
-    await Promise.all([
-      (async () => {
-        if (results.recipes) results.recipes.data = await attachFridgeMatch(supabase, user.id, results.recipes.data as { id: string }[])
-      })(),
-      (async () => {
-        if (results.ingredients) results.ingredients.data = await attachFridgeMatch(supabase, user.id, results.ingredients.data as { id: string }[])
-      })(),
-    ])
+    // 병목: recipes/ingredients 두 결과는 레시피가 겹칠 수 있어, 각각 attachFridgeMatch 하면
+    // user_ingredients·관계그래프 read 가 *2번* 중복됐다. union(고유 id) 1회 호출 후 id-맵으로
+    // 양쪽 배열에 복원 → 중복 read 제거(같은 match 결과). attachFridgeMatch 는 빈 배열/냉장고 없으면 no-op.
+    const recipeRows = (results.recipes?.data ?? []) as { id: string }[]
+    const ingredientRows = (results.ingredients?.data ?? []) as { id: string }[]
+    const seenIds = new Set(recipeRows.map(r => r.id))
+    const union = [...recipeRows, ...ingredientRows.filter(r => !seenIds.has(r.id))]
+    if (union.length > 0) {
+      const matched = await attachFridgeMatch(supabase, user.id, union)
+      const byId = new Map(matched.map(m => [m.id, m]))
+      if (results.recipes) results.recipes.data = recipeRows.map(r => byId.get(r.id) ?? r)
+      if (results.ingredients) results.ingredients.data = ingredientRows.map(r => byId.get(r.id) ?? r)
+    }
 
     if (query) {
       supabase.from('search_history').insert({

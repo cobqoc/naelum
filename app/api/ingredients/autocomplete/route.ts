@@ -90,7 +90,11 @@ export async function GET(request: NextRequest) {
       emoji: ingredient.emoji || null
     }));
 
-    return NextResponse.json({ suggestions });
+    // 병목: 재료 자동완성은 사용자 무관·정적·쿼리별 다양 → CDN 캐시(URL 키, 입력 hot path).
+    return NextResponse.json(
+      { suggestions },
+      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } }
+    );
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

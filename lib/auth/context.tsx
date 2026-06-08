@@ -27,14 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 profile read → GET /api/users/me/summary(lean).
+  const fetchProfile = useCallback(async () => {
     try {
-      const { data } = await createClient()
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', userId)
-        .maybeSingle();
-      if (data) setProfile(data);
+      const res = await fetch('/api/users/me/summary');
+      if (!res.ok) return;
+      const { profile } = await res.json();
+      if (profile) setProfile(profile);
     } catch {
       // 프로필 로드 실패 시 무시
     }
@@ -45,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setUser({ id: session.user.id, email: session.user.email || '' });
-      await fetchProfile(session.user.id);
+      await fetchProfile();
     } else {
       setUser(null);
       setProfile(null);
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email || '' });
         setLoading(false);
-        fetchProfile(session.user.id);
+        fetchProfile();
       } else {
         setUser(null);
         setProfile(null);

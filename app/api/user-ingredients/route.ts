@@ -9,16 +9,22 @@ const SELECT_COLS =
 
 // GET /api/user-ingredients — 로그인 사용자 냉장고 전체 조회
 // 정렬: expiry_date asc nullslast (KMP FridgeRepositoryImpl 과 동일)
-export async function GET() {
+// ?withMaster=1 — 도감 메타(emoji·shelf_life_days) 조인해 평탄화(홈 useFridgeItems 용).
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
+  const withMaster = request.nextUrl.searchParams.get('withMaster') === '1';
+  const cols = withMaster
+    ? `${SELECT_COLS},ingredients_master!ingredient_id(emoji, shelf_life_days)`
+    : SELECT_COLS;
+
   const { data, error } = await supabase
     .from('user_ingredients')
-    .select(SELECT_COLS)
+    .select(cols)
     .eq('user_id', user.id)
     .order('expiry_date', { ascending: true, nullsFirst: false });
 
@@ -26,7 +32,23 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ items: data ?? [] });
+  if (!withMaster) {
+    return NextResponse.json({ items: data ?? [] });
+  }
+
+  // 도감 조인 평탄화 — emoji·shelf_life_days 를 최상위로, 중첩 ingredients_master 제거.
+  const items = (data ?? []).map((row) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const master = (row as any).ingredients_master;
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(row as any),
+      emoji: master?.emoji ?? null,
+      shelf_life_days: master?.shelf_life_days ?? null,
+      ingredients_master: undefined,
+    };
+  });
+  return NextResponse.json({ items });
 }
 
 // POST /api/user-ingredients — 냉장고 항목 추가

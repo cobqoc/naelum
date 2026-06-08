@@ -50,18 +50,12 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!initialized) return;
 
-    const supabase = createClient();
     (async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('cookie_consent_version, cookie_consent_analytics, cookie_consent_marketing, cookie_consent_at')
-          .eq('id', user.id)
-          .maybeSingle();
-
+        // 데이터 계층 이전(docs/DATA_LAYER.md): getUser + profile read → GET /api/users/me/cookie-consent.
+        const res = await fetch('/api/users/me/cookie-consent');
+        if (!res.ok) return; // 비로그인(401) 등 → localStorage fallback 유지
+        const { consent: profile } = await res.json();
         if (!profile) return;
 
         const dbVersion = profile.cookie_consent_version as number | null;

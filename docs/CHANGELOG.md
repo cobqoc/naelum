@@ -11,6 +11,16 @@
 
 ## 2026-06 작업 로그
 
+- **데이터 계층 read 마이그레이션 100% 완료 + 서버 병목 1차 개선** (2026-06-08~09, PR #245·#246)
+  - **발단**(사용자): 성능 감사에서 "client 컴포넌트가 supabase 직접 멀티쿼리(browser→DB waterfall)" 구조 뿌리 → strangler fig 점진 이전(전면 재작성 X).
+  - **read 마이그레이션 완결**: client-direct-read **31→0곳/18→0파일** (RATCHET hard-block 으로 신규 직접 read 머지 차단). 배달(식당목록·주문·메뉴·라이더) + 레시피(브라우즈·검색·추천·수정·작성remix) + signin + signup완료(set-password·terms → `/api/auth/complete-onboarding`·`/onboarding-status`) + 레시피상세 + context 2(auth·cookieConsent → lean 엔드포인트) + 냉장고 load 2 + **냉장고 모달추가(atomic `POST /api/user-ingredients/add`)** 슬라이스. select-star 67→55.
+  - **핵심 해법**: `attachFridgeMatch` 를 `import type` 으로 server/client 공용화(빌드 함정: `SupabaseClient<Database>` 직접 타입은 `.from()` `never` → `ReturnType<typeof createClient>` 유지). owner/rider 엔드포인트는 클라 id 불신·서버 owner_id 재유도(IDOR). search·recommendations 의 has_cooked 죽은 중복 제거. **HomeClient 냉장고 race read → atomic 서버 통합: "API 외부화=race 악화"는 *naive 분리* 한정, read-then-write 를 한 서버요청으로 합치면 race 구조적 소거**(부모 불변 보류 해제).
+  - **#5 fix**: cooked_count 가 cooking_sessions 본인-only RLS 로 본인 것만(0/1) 세던 버그 → SECURITY DEFINER `recipe_cooked_count(uuid)` RPC(dev+prod, `20260609` 마이그레이션).
+  - **안전망-우선이 잠재 이슈 3건 적발**: remix ingredients `order_index`(존재 X 컬럼)로 정렬→재료 미prefill 버그 / signin provider-check 죽은코드(anon profiles SELECT GRANT 없음 dev+prod 실측 → google/kakao 차단 한 번도 미작동) / cooked_count RLS 버그. 신규 안전망 `recipe-remix`·`auth-onboarding-complete`·`preferences-save`·`search-fridge-match`.
+  - **서버 병목 1차 개선**: 직렬 round-trip 병렬화(preferences 3테이블 delete+insert·users/me 4쿼리·search getUser) + `delivery/restaurants .limit(200)` + **공개 엔드포인트 캐싱**(trending·delivery/restaurants `unstable_cache` cookieless anon=비공개 유출 0, ingredients catalog/autocomplete `Cache-Control` — 실측 hit ~2-3ms vs uncached ~24-29ms) + 검색 fridge-match 2회→union 1회. browse 는 "새 레시피 즉시 노출" 가드라 캐싱 제외.
+  - **이연**: RLS multiple_permissive_policies 6개 OR 병합 → 출시 보안 패스(cold 테이블 micro-opt + row 가시성 리스크). ILIKE sweep·hot select(*)·order limit → scale-gated.
+  - 검증: lint 0·build·scan(read 0/0)·**전체 e2e 464 passed**(fresh build). 상세 `docs/DATA_LAYER.md`.
+
 - **SEO: 사이트맵 lang prefix·hreflang 정정 + 미완성 페이지 noindex** (2026-06-04)
   - **발단**(사용자): "구글에서 검색되냐" → `site:naelum.app` 0건 확인(미색인). 원인 점검 중 사이트맵 URL 결함 발견. Search Console 등록 전 정비.
   - **사이트맵 정정**(`app/sitemap.ts`): path-based i18n인데 사이트맵이 prefix 없는 가짜 URL(`/recipes/{id}`)을 내보내 Google이 따라오면 매번 307 리다이렉트(`proxy.ts`)당하던 문제. canonical을 기본 로케일 `/ko/...`로 통일하고, **8개 언어 hreflang + `x-default`(언어 감지 bare URL)** alternate 추가. `languageAlternates()`·`entry()` 헬퍼로 정적/레시피/프로필 전 엔트리 일괄 적용. 실제 `/sitemap.xml` 렌더로 `<loc>`+`xhtml:link` 9종 검증.

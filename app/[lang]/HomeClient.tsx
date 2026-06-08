@@ -42,7 +42,6 @@ import IngredientActionSheet from '@/components/Ingredients/IngredientActionShee
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
-import { resolveExactIngredientId } from '@/lib/ingredients/resolveIngredientId';
 
 const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
   ssr: false,
@@ -252,75 +251,11 @@ export default function HomeClient({
   };
 
   // 실제 INSERT 수행 — 중복 다이얼로그 우회 시에도 재사용
-  const performIngredientInsert = async (sanitized: IngredientFormData) => {
-    if (!user) return;
-    const client = createClient();
-
-    // ingredient_id가 없으면 이름 기반 결정적 조회 (정확/별칭/공백무시, 추측 0).
-    // 레시피 저장·user-ingredients API 와 동일 해석으로 통일.
-    let ingredientId = sanitized.ingredient_id ?? null;
-    if (!ingredientId) {
-      ingredientId = await resolveExactIngredientId(sanitized.ingredient_name, client);
-    }
-
-    const { data, error } = await client
-      .from('user_ingredients')
-      .insert({ ...sanitized, user_id: user.id, ingredient_id: ingredientId })
-      .select()
-      .single();
-    if (error) {
-      console.error('[addIngredient] insert 실패:', error);
-      showToast(getErrorMessage(error, t.ingredient.addError));
-      return;
-    }
-    if (data) setItems(prev => [...prev, data as FridgeItem]);
-    track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
-    window.dispatchEvent(new Event('fridge-updated'));
-  };
-
-  // 기존 항목에 수량 합치기 — DB 기반 (state stale 회피)
-  // currentQty는 호출자가 DB에서 가져온 값 사용 (또는 fallback으로 다시 SELECT)
-  const mergeIngredientQuantity = async (
-    targetItemId: string,
-    pending: IngredientFormData,
-    knownCurrentQty?: number | null,
-  ) => {
-    if (!user) return;
-    const client = createClient();
-
-    // 현재 quantity 확정 — 호출자가 전달 안 했으면 DB에서 SELECT
-    let currentQty = knownCurrentQty ?? null;
-    if (currentQty === null) {
-      const { data } = await client
-        .from('user_ingredients')
-        .select('quantity')
-        .eq('id', targetItemId)
-        .eq('user_id', user.id)
-        .single();
-      currentQty = data?.quantity ?? 0;
-    }
-    const addQty = typeof pending.quantity === 'number' ? pending.quantity : (pending.quantity ? parseFloat(String(pending.quantity)) : 1);
-    const nextQty = (currentQty ?? 0) + (isNaN(addQty) ? 1 : addQty);
-    const { error } = await client
-      .from('user_ingredients')
-      .update({ quantity: nextQty })
-      .eq('id', targetItemId)
-      .eq('user_id', user.id);
-    if (error) {
-      console.error('[mergeIngredient] update 실패:', error);
-      showToast(getErrorMessage(error, t.ingredient.addError));
-      return;
-    }
-    setItems(prev => prev.map(i => (i.id === targetItemId ? { ...i, quantity: nextQty } : i)));
-    showToast(t.ingredient.mergedToast.replace('{name}', pending.ingredient_name));
-    track('ingredient_merge', { name: pending.ingredient_name });
-    window.dispatchEvent(new Event('fridge-updated'));
-  };
-
-  // AddIngredientModal onAddIngredient
-  // 자동 판단: 같은 이름 + 만료일·보관위치 동일 → 수량 합치기. 다르면 따로 추가.
-  // DB 직접 쿼리로 mergeTarget 찾음 — React state items는 비동기 업데이트로 stale 가능
-  // (Promise.all 병렬 추가 또는 연속 추가 시 누적 안 됨)
+  // AddIngredientModal onAddIngredient — 데이터 계층 이전(docs/DATA_LAYER.md):
+  // 같은 이름+만료일+보관위치 매치 검색(read) + 수량합치기/삽입(mutation)을
+  // POST /api/user-ingredients/add 로 서버에서 atomic 처리. read-then-write 가 한 요청 안에서
+  // 끝나 옛 클라 옵티미스틱 race(병렬·연속 추가 시 누적 안 됨)가 사라진다. ingredient_id 결정
+  // 해석도 서버가 수행. 옵티미스틱 UI 갱신·토스트·track 은 응답의 merged 플래그로 분기.
   const addIngredientFromModal = async (formData: IngredientFormData) => {
     const sanitized: IngredientFormData = {
       ...formData,
@@ -332,28 +267,29 @@ export default function HomeClient({
     };
     if (!user) return;
 
-    const client = createClient();
-    const name = sanitized.ingredient_name.trim();
-    const expiry = sanitized.expiry_date ?? null;
-    const storage = sanitized.storage_location ?? null;
-
-    // DB에서 같은 이름 + 만료일·보관위치 동일 항목 검색 (state stale 회피)
-    let q = client
-      .from('user_ingredients')
-      .select('id, quantity')
-      .eq('user_id', user.id)
-      .ilike('ingredient_name', name);
-    q = expiry === null ? q.is('expiry_date', null) : q.eq('expiry_date', expiry);
-    q = storage === null ? q.is('storage_location', null) : q.eq('storage_location', storage);
-    const { data: matches } = await q.limit(1);
-    const mergeTarget = matches?.[0];
-
-    if (mergeTarget) {
-      // 만료일·보관위치 같음 → 수량 합치기 (정보 손실 없음)
-      await mergeIngredientQuantity(mergeTarget.id, sanitized, mergeTarget.quantity);
-    } else {
-      // 같은 이름이지만 만료일·보관위치 다름 → 별도 행으로 따로 저장
-      await performIngredientInsert(sanitized);
+    try {
+      const res = await fetch('/api/user-ingredients/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sanitized),
+      });
+      if (!res.ok) {
+        showToast(t.ingredient.addError);
+        return;
+      }
+      const { item, merged } = await res.json();
+      if (merged) {
+        // 기존 항목 수량 합치기 — 서버가 합산한 결과 행으로 교체
+        setItems(prev => prev.map(i => (i.id === item.id ? { ...i, ...item } : i)));
+        showToast(t.ingredient.mergedToast.replace('{name}', sanitized.ingredient_name));
+        track('ingredient_merge', { name: sanitized.ingredient_name });
+      } else {
+        setItems(prev => [...prev, item as FridgeItem]);
+        track('ingredient_add', { name: sanitized.ingredient_name, source: 'modal' });
+      }
+      window.dispatchEvent(new Event('fridge-updated'));
+    } catch {
+      showToast(t.ingredient.addError);
     }
   };
 
