@@ -108,13 +108,15 @@ export async function GET(request: NextRequest) {
       badge: ingredient.category || undefined,
     }));
 
+    // 병목: 재료 마스터는 사용자 무관·거의 정적이고 쿼리별로 다양(파라미터) → CDN 캐시(URL 키).
+    // 완전공개라 public 안전. 마스터 변동은 admin 편집뿐이라 s-maxage 5분 + SWR 허용.
     return NextResponse.json({
       ingredients,
       total: count ?? 0,
       page,
       limit,
       hasMore: ingredients.length === limit,
-    });
+    }, { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(
