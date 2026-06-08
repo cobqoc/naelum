@@ -11,6 +11,17 @@
 
 ## 2026-06 작업 로그
 
+- **i18n 하드코딩 한글 + select-star burndown (가드레일 정직화 + 사용자화면 이관 완료)** (2026-06-09)
+  - **발단**(사용자): 데이터 계층 작업 후 남은 비차단 부채 2종(`scan:fragility` 의 하드코딩 한글 71파일·`select('*')` 55곳)을 "안전망 갖추고" 처리 지시.
+  - **핵심 교훈: 스캐너 휴리스틱이 "부채 아닌 것"까지 세고 있었다 → 먼저 *정직화*, 그다음 진짜 대상만 처리.** 무작정 71/55를 갈면 운영자 화면 번역·GDPR 완전성 회귀·DB값 번역으로 *틀린 작업*이 됨.
+  - **hardcoded-korean 71 → 5**: ① 면제(`KOREAN_EXEMPT`) admin/**·components/Admin(운영자전용)·error.tsx/global-error(I18nProvider 바깥이라 *이미* 인라인 ko/en/ja/zh 맵)·terms/privacy/copyright/cookies(법적 본문=인증번역 trigger 대기, `LegalKoreanOnlyNotice` 로 한국어 권위 명시). ② DB센티넬 토큰(`DB_SENTINEL_TOKENS`: 냉장/냉동/상온/큰술… = CLAUDE.md "DB값 한글유지", 표시는 `quickAdd.storageLocationLabels/unitLabels` 맵 경유)·주석·`console.*`·endonym(한국어) 제외 → 71→31(진짜 표시 텍스트). ③ **사용자화면 26개 t.* 이관**(31→5). 남은 5=배달 deferred.
+    - 재사용 승리(신규키 0): AboutClient `about ?? {한글}` 죽은 fallback 제거(t.about 8로케일 완비) · KitchenHomeClient `CATEGORY_META.label` 죽은 필드 제거(렌더는 이미 `t.ingredient.categoryLabels`) · age-gate `t.auth.x || \`한글\`` fallback 제거(+MIN_AGE import 정리).
+    - 신규키: `copyrightForm`(신규 ns 12키)+ingredient/cookMode/recipe/share/accessibility 등 ~28키 — **8로케일 동시삽입 스크립트**(네임스페이스 여는 줄 `  share: {` 이 로케일 간 동일 = 앵커, 값만 로케일별 실번역).
+    - 구조 추출: `withRoParticle`(한국어 으/로 조사)→`lib/i18n/koreanParticle.ts`(non-client; 스캐너는 'use client' 만 봄) · 미리보기 냉장고 인라인 샘플 중복→`components/Fridge/sampleIngredients.ts`.
+  - **select-star 55 → 5**: GDPR `users/export` 45곳은 *이동권=전체컬럼 필수*(새 PII 자동 포함이 바람직 → `select('*')` 가 정답)라 `SELECT_STAR_EXEMPT` 면제, JSDoc 주석 예시 2곳 제외. **실제 처리 3곳**: `ingredients/expiring`(route map 이 쓰는 7컬럼이 계약→명시) · `folders` 목록/상세(`recipe_folders` 10컬럼 중 클라 미사용 `user_id` 만 제외, MCP `information_schema` 실측 확인). `ingredient_recognition_feedback` 은 dev DB 미존재 dead 스텁(Phase3 이미지인식 대기)이라 미처리. 남은 5=배달 4+feedback.
+  - **함정**: API 한글 에러 raw 노출 금지(CopyrightReportForm `data.error||` 제거→번역 메시지) · default param 은 hook 못 써 body 에서 `?? t.x` resolve(Autocomplete·IngredientAutocompleteV2) · 폼리셋 위험 effect(recipes/new remix prefill)는 t 를 dep 아닌 ref 로(무해한 effect 는 dep 추가) · 블라인드 컬럼 드롭 금지(소비처+실스키마 확인 후만).
+  - 검증: lint 0/0·build✓·scan(한글 5·select-star 5 RATCHET 잠금)·**전체 e2e 464 passed**(fresh build, 회귀 0). 상세 메모리 `[[project_i18n_hardcoded_korean_burndown]]`.
+
 - **데이터 계층 read 마이그레이션 100% 완료 + 서버 병목 1차 개선** (2026-06-08~09, PR #245·#246)
   - **발단**(사용자): 성능 감사에서 "client 컴포넌트가 supabase 직접 멀티쿼리(browser→DB waterfall)" 구조 뿌리 → strangler fig 점진 이전(전면 재작성 X).
   - **read 마이그레이션 완결**: client-direct-read **31→0곳/18→0파일** (RATCHET hard-block 으로 신규 직접 read 머지 차단). 배달(식당목록·주문·메뉴·라이더) + 레시피(브라우즈·검색·추천·수정·작성remix) + signin + signup완료(set-password·terms → `/api/auth/complete-onboarding`·`/onboarding-status`) + 레시피상세 + context 2(auth·cookieConsent → lean 엔드포인트) + 냉장고 load 2 + **냉장고 모달추가(atomic `POST /api/user-ingredients/add`)** 슬라이스. select-star 67→55.
