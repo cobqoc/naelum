@@ -63,20 +63,27 @@
 ---
 
 ## 가드레일 (재발 차단 — 사람 규율 아니라 파이프라인)
-`npm run scan:fragility` 에 룰 추가됨 (2026-06-08, NOTE = 비블로킹 부채 추적):
-- `[NOTE]` **client-direct-read** — `'use client'` 파일의 `.from(...).select` read
-  (mutation insert/update/delete/upsert 는 제외). **baseline 27파일 / 51곳** — 숫자가 줄어야 함.
+`npm run scan:fragility` 에 룰 추가됨 (2026-06-08). **2026-06-08 ratchet(역행 차단) 블로킹으로 승격.**
+스캐너 상단 `RATCHET` 상수가 현재 부채를 high-water mark 로 고정 — **초과 시 `exit 1`**(머지 차단), 기존 부채는 통과.
+burndown 으로 수치가 줄면 **`RATCHET` 상한도 같이 낮춰 다시 잠근다**(스캐너가 미달 시 "상한 낮추세요" 알림 출력).
+- `[RATCHET]` **client-direct-read** — `'use client'` 파일의 `.from(...).select` read
+  (mutation insert/update/delete/upsert 는 제외). **상한 26파일 / 50곳** — 새로 늘면 차단.
   파일별 리스트를 출력해 *새* 위반이 diff 에 드러남.
-- `[NOTE]` **select-star** — `select('*')` 사용처 수. **baseline 67곳**.
+- `[RATCHET]` **select-star** — `select('*')` 사용처 수. **상한 67곳**.
+- `[RATCHET]` **hardcoded-korean** — client JSX 한글 리터럴 파일 수. **상한 72** (글로벌 출시 전 t.* 이관).
 - god-file(`scan:line-counts`)·date-utc(BLOCK) 가드와 같은 자리. `--json` CI 파싱 지원.
-- 블로킹(ratchet)으로 올릴지는 이전 진척 보며 결정 — 지금은 NOTE 로 burndown 추적.
 
 ---
 
 ## 진척 체크리스트 (이전된 슬라이스)
 - [x] 레시피 상세 read → `lib/queries/recipeDetail.ts` (행위보존, 2026-06-08)
+- [x] 첫 client→server 슬라이스: NotificationPanel → `/api/notifications?countOnly=true` (27→26파일)
+- [x] 가드레일 scan 룰 점등 + **ratchet 블로킹 승격** (2026-06-08)
+- [x] 고아 라우트 `/recipes/[id]/cook` 삭제 (인라인 통합으로 대체된 dead code, 링크 0건). 26→25파일/49곳, 한글 71. cook e2e 12/12 green (2026-06-08)
+- [x] `settings/page.tsx` loadProfile 직접 read 4개 → 기존 `GET /api/users/me` 재사용(이미 Promise.all 병렬+컬럼명시). select('*') 1개 제거. 25→24파일/45곳, select-star 67→66. AccountTab 보존 위해 me 엔드포인트 select 에 `email,created_at` 추가. profile e2e 18/18 green (2026-06-08)
+- [x] admin 대시보드+문의 — `admin/page.tsx`·`admin/inquiries` 직접 read 4개 → 신규 `GET /api/admin/{dashboard,inquiries}`(verifyAdmin 게이트+컬럼명시). 24→22파일/45→41곳, select-star 66→63. 안전망 신규작성: `e2e/admin-dashboard.spec.ts`(setUserRole admin 헬퍼, baseline→after 4/4 green, API 200 직접검증). 타임스탬프 보존 위해 server-component 대신 API패턴 (2026-06-08)
+- [x] `tip/new` 제출 후 username read 2개 제거 — POST `/api/tip` 응답에 `username` 동봉(서버에서 1회 조회). 401 이미 처리돼 getUser 가드 죽은코드라 함께 제거. 22→21파일/41→39곳. tip-creation e2e 6/6 green(응답 username 단언 보강) (2026-06-08)
 - [ ] engagement RPC 집계 + cooked_count 전역 교정 (동작 변경, 별도)
 - [ ] 검색(`SearchClient`) read 이전
 - [ ] 홈(`HomeClient`) 클라 read 이전
-- [ ] 프로필/설정 등 나머지 26개 클라 쿼리 파일
-- [ ] 가드레일 scan 룰 점등
+- [ ] delivery(`lib/delivery/api.ts` 4·각 client) / 나머지 21개 클라 쿼리 파일
