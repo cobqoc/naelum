@@ -22,9 +22,12 @@ function admin() {
  *   비공개로 저장 → is_public=false, is_draft=false
  *   팁 공유하기   → is_public=true,  is_draft=false
  *
- * 검증 패턴: 버튼 클릭 → DB 상태를 expect.poll 로 직접 폴링. 네비게이션을
- * 완료 프록시로 쓰지 않는다 — waitForURL 이 무거운 프로필 페이지 로딩에
- * race 가 걸려 병렬 부하 시 flake 했음(2026-05-22). 폴링이 곧 완료 대기다.
+ * 검증 패턴: 버튼 클릭 → **POST /api/tip 응답을 직접 대기**(waitForResponse) → DB 상태 확인.
+ * 네비게이션을 완료 프록시로 쓰지 않는다 — waitForURL 이 무거운 프로필 페이지 로딩에
+ * race 가 걸려 병렬 부하 시 flake 했음(2026-05-22).
+ * 또한 클릭 후 DB 를 *추측 폴링*(60s) 하던 옛 방식도 병렬 부하서 POST 왕복과 레이스해
+ * flake 했음(2026-06-07 전수 e2e). 이제 실제 응답을 기다려 (1) 클릭이 POST 를 발생시켰는지
+ * 확인 (2) 201=커밋완료라 DB 즉시 읽힘 (3) 실패 시 즉시 진단. submitTipAndExpect 참고.
  */
 
 async function gotoTipNew(page: Page) {
@@ -71,6 +74,34 @@ async function readTipState(userId: string, title: string) {
   return data ? `${data.is_public}/${data.is_draft}` : null;
 }
 
+/**
+ * 제출 버튼 클릭 → POST /api/tip 응답 직접 대기 → DB 상태(is_public/is_draft) 검증.
+ *
+ * 추측 폴링(60s) 대신 실제 POST 왕복을 기다린다 — 병렬 부하서 POST 가 느려도 정확히
+ * 그만큼만 대기(레이스 0), 비-2xx 면 응답 본문으로 즉시 진단. 201 = tip+steps 커밋
+ * 완료라 이후 DB 읽기는 즉시 성공(짧은 폴링은 안전망).
+ */
+async function submitTipAndExpect(
+  page: Page,
+  buttonName: string,
+  userId: string,
+  title: string,
+  expected: string,
+) {
+  const [res] = await Promise.all([
+    page.waitForResponse(
+      r => r.url().includes('/api/tip') && r.request().method() === 'POST',
+      { timeout: 60_000 },
+    ),
+    page.getByRole('button', { name: buttonName, exact: true }).click(),
+  ]);
+  expect(
+    res.status(),
+    `POST /api/tip 비정상 응답: ${res.status()} ${await res.text().catch(() => '')}`,
+  ).toBeLessThan(400);
+  await expect.poll(() => readTipState(userId, title), { timeout: 10_000 }).toBe(expected);
+}
+
 test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
   test.beforeEach(async ({ testUser }) => {
     // 팁 생성 POST(tip + steps insert)는 스위트에서 가장 무거운 쓰기 —
@@ -90,11 +121,7 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     const title = `E2E 팁 임시저장 ${Date.now()}`;
     await gotoTipNew(page);
     await fillTipForm(page, title);
-    await page.getByRole('button', { name: '임시저장', exact: true }).click();
-    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
-    await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
-      .toBe('false/true');
+    await submitTipAndExpect(page, '임시저장', testUser.userId, title, 'false/true');
   });
 
   test('[비공개로 저장] → is_public=false, is_draft=false (private)', async ({
@@ -104,11 +131,7 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     const title = `E2E 팁 비공개 ${Date.now()}`;
     await gotoTipNew(page);
     await fillTipForm(page, title);
-    await page.getByRole('button', { name: '비공개로 저장', exact: true }).click();
-    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
-    await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
-      .toBe('false/false');
+    await submitTipAndExpect(page, '비공개로 저장', testUser.userId, title, 'false/false');
   });
 
   test('[팁 공유하기] → is_public=true, is_draft=false (public)', async ({
@@ -118,10 +141,6 @@ test.describe('팁 작성 — 공개/비공개/임시저장 3-버튼', () => {
     const title = `E2E 팁 공개 ${Date.now()}`;
     await gotoTipNew(page);
     await fillTipForm(page, title);
-    await page.getByRole('button', { name: '팁 공유하기', exact: true }).click();
-    // 클릭 → POST → DB 반영을 직접 폴링 (expect.poll 이 곧 완료 대기)
-    await expect
-      .poll(() => readTipState(testUser.userId, title), { timeout: 60000 })
-      .toBe('true/false');
+    await submitTipAndExpect(page, '팁 공유하기', testUser.userId, title, 'true/false');
   });
 });
