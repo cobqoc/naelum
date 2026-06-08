@@ -12,11 +12,11 @@ export default async function MerchantOrdersPage({ params }: { params: Promise<{
 
   const { data: restaurant } = await supabase
     .from('delivery_restaurants')
-    .select('id, name')
+    .select('name')
     .eq('owner_id', user.id)
     .maybeSingle();
 
   if (!restaurant) redirect(`/${lang}/merchant/onboarding`);
 
-  return <MerchantOrdersClient restaurantId={restaurant.id} restaurantName={restaurant.name} />;
+  return <MerchantOrdersClient restaurantName={restaurant.name} />;
 }
