@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
@@ -72,21 +71,8 @@ export default function IngredientRecsView() {
         setMessage(data.message);
         setRecommendations([]);
       } else {
-        let recipeList = data.recommendations || [];
-        const supabase = createClient();
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser && recipeList.length > 0) {
-          const recipeIds = recipeList.map((r: RecipeWithMatch) => r.id);
-          const { data: cookedSessions } = await supabase
-            .from('cooking_sessions')
-            .select('recipe_id')
-            .eq('user_id', authUser.id)
-            .in('recipe_id', recipeIds)
-            .not('completed_at', 'is', null);
-          const cookedRecipeIds = new Set(cookedSessions?.map(s => s.recipe_id) || []);
-          recipeList = recipeList.map((r: RecipeWithMatch) => ({ ...r, has_cooked: cookedRecipeIds.has(r.id) }));
-        }
-        setRecommendations(recipeList);
+        // 데이터 계층 이전(docs/DATA_LAYER.md): has_cooked 는 /api/recommendations 가 서버에서 부착(중복 제거).
+        setRecommendations(data.recommendations || []);
       }
     } catch {
       setMessage(t.recommendations.loadFailed);

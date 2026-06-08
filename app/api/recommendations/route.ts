@@ -464,11 +464,13 @@ export async function GET(request: NextRequest) {
   if (user && recommendations.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recipeIds = recommendations.map((r: any) => r.id).filter(Boolean) as string[]
+    // 완료 세션만 "만들어봤어요" — 진행중(completed_at NULL) 제외(클라·browse·search 와 동일 의미).
     const { data: cooked } = await supabase
       .from('cooking_sessions')
       .select('recipe_id')
       .eq('user_id', user.id)
       .in('recipe_id', recipeIds)
+      .not('completed_at', 'is', null)
     const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recommendations = recommendations.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
