@@ -88,6 +88,16 @@ export async function deleteTestUser(userId: string): Promise<void> {
   }
 }
 
+/**
+ * 테스트 유저의 role 을 변경(service-role). 어드민 페이지 e2e 용.
+ * ⚠️ testUser 는 worker 공유이므로 admin 승격 후 반드시 'user' 로 원복할 것.
+ */
+export async function setUserRole(userId: string, role: 'user' | 'admin'): Promise<void> {
+  const admin = adminClient()
+  const { error } = await admin.from('profiles').update({ role }).eq('id', userId)
+  if (error) throw new Error(`setUserRole failed: ${error.message}`)
+}
+
 export interface CreateTestRecipeOptions {
   title?: string
   status?: 'published' | 'draft'
