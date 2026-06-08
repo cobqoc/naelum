@@ -97,15 +97,13 @@ export async function getRecipeDetailData(id: string): Promise<RecipeDetailData 
   }
 
   // 2. 병렬 쿼리: cooked count + 유저 전용 데이터
-  const cookedCountPromise = supabase
-    .from('cooking_sessions')
-    .select('user_id', { count: 'exact', head: true })
-    .eq('recipe_id', id)
-    .not('completed_at', 'is', null);
+  // #5: 전역 "만들어봤어요" 수 — cooking_sessions SELECT RLS 가 본인-only 라 직접 count 는
+  // 본인 것만(0/1) 셌다. SECURITY DEFINER 함수로 RLS 우회해 전체 완료 세션 집계(20260609 마이그레이션).
+  const cookedCountPromise = supabase.rpc('recipe_cooked_count', { p_recipe_id: id });
 
   if (user) {
     const [
-      { count: cookedCount },
+      { data: cookedCount },
       { data: userIngData },
       { data: saveData },
       { data: cookingData },
@@ -171,7 +169,7 @@ export async function getRecipeDetailData(id: string): Promise<RecipeDetailData 
   }
 
   // 비로그인
-  const { count: cookedCount } = await cookedCountPromise;
+  const { data: cookedCount } = await cookedCountPromise;
   const recipe: Recipe = { ...recipeData, cooked_count: cookedCount || 0 };
 
   return {
