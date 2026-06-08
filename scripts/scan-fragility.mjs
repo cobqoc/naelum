@@ -16,10 +16,10 @@
 //
 // ── RATCHET 상한 — 현재 부채를 high-water mark 로 고정. 수치를 낮추면 여기 숫자도 같이 낮춰 다시 잠근다.
 const RATCHET = {
-  hardcodedKoreanFiles: 71,    // client 한글 리터럴 파일 (글로벌 출시 전 burndown)
+  hardcodedKoreanFiles: 5,     // client *표시* 한글 파일 — 남은 5개는 전부 배달(delivery/merchant/rider/map) 미출시 deferred. 사용자 화면 i18n 이관 완료(2026-06-09). 출시 시 배달도 t.* 화 후 0 으로 잠금.
   clientDirectReadFiles: 0,    // client 직접 supabase read 파일
   clientDirectReadSites: 0,    // client 직접 supabase read 체인 총수
-  selectStar: 55,              // select('*') 사용처
+  selectStar: 5,               // select('*') 사용처. GDPR export(SELECT_STAR_EXEMPT)·JSDoc주석 제외 후 남은 실사용. 남은 5 = 배달 4(미출시 deferred) + ingredient_recognition_feedback(dev 미존재 dead 스텁, Phase3 이미지인식 대기). 사용자화면 read 는 컬럼 명시 완료(2026-06-09).
 };
 //
 // 사용:
@@ -43,6 +43,19 @@ const EXCLUDED_FILE = [
   /\/lib\/date\/localDate\.ts$/,
 ];
 
+// 한글 리터럴 카운트에서만 제외(다른 스캔은 정상 적용). 이들은 i18n(t.*) 부채가 아니다:
+//  - admin/** · components/Admin/** : 운영자(operator) 전용 화면. 8개 로케일 번역은 헛수고 + 정크 키. 한글 유지.
+//  - error.tsx · global-error.tsx : I18nProvider *바깥*에서 렌더돼 useI18n() 호출 불가 → 자체 인라인 ko/en/ja/zh… 맵으로 이미 지역화됨. ko 엔트리가 오탐될 뿐.
+//  - terms/privacy/copyright/cookies : 법적 본문은 인증(법무 검토) 번역 trigger 대기 — AI 번역은 법적 리스크. 비한국어엔 LegalKoreanOnlyNotice(번역됨) 표시. = 법무 백로그지 i18n 부채 아님.
+// ⚠️ 배달(delivery/merchant/rider/map)은 *여기 제외 아님* — 미출시라 번역을 미뤘을 뿐 진짜 i18n 부채. 카운트 유지하고 출시 trigger 때 burndown.
+const KOREAN_EXEMPT = [
+  /\/admin\//,
+  /\/components\/Admin\//,
+  /\/error\.tsx$/,
+  /\/global-error\.tsx$/,
+  /\/(terms|privacy|copyright|cookies)\/page\.tsx$/,
+];
+
 async function walk(dir, acc = []) {
   let entries;
   try { entries = await readdir(dir, { withFileTypes: true }); } catch { return acc; }
@@ -61,10 +74,31 @@ async function walk(dir, acc = []) {
 const DATE_UTC = /\.toISOString\(\)\s*\.\s*(slice\(\s*0\s*,\s*10\s*\)|split\(\s*['"]T['"]\s*\)\s*\[\s*0\s*\])/;
 // 한글 포함 문자열 리터럴 (대략치 — 부채 추적용)
 const HANGUL_LITERAL = /['"`][^'"`]*[가-힣][^'"`]*['"`]/;
+// DB 센티넬 토큰 — CLAUDE.md "DB 저장 값(냉장/냉동/상온 등)은 한글 그대로 유지" 규칙.
+// 이 한글들은 *DB 값/도메인 enum*(storage_location, unit)이라 번역 대상이 아니다(번역하면 DB 비교가 깨짐).
+// 표시는 t.quickAdd.storageLocationLabels / unitLabels 맵을 경유한다. 따라서 한 줄의 한글이
+// 이 토큰들*뿐*이면 i18n 부채로 세지 않는다(false positive 제거). storage/unit enum 과
+// useUnitConversion 의 단위 별칭(그램·리터 등) 포함.
+const DB_SENTINEL_TOKENS = [
+  '냉장', '냉동', '상온', '기타',                              // storage_location enum
+  '선택', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각',   // unit enum (quickAdd.unitLabels)
+  '장', '포기', '대', '모', '마리',
+  '그램', '킬로그램', '밀리리터', '리터', '컵', '온스', '파운드', // useUnitConversion 입력 별칭
+  '물',                                                       // 데모 워터 아이템 필터(DB 비교값)
+  '한국어',                                                   // 언어 스위처 endonym — 모든 로케일에서 한국어 이름은 "한국어"(자기언어 표기). 번역 대상 아님.
+];
+const SENTINEL_LITERAL = new RegExp(
+  '([\'"`])(' + DB_SENTINEL_TOKENS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\1',
+  'g'
+);
 // mutation 동사 — 이게 같은 .from() 체인에 있으면 read 아님(허용)
 const MUTATION = /\.(insert|update|delete|upsert)\(/;
 // select('*') / select("*") / select(`*`) — 과대 fetch
 const SELECT_STAR = /\.select\(\s*['"`]\*['"`]\s*\)/g;
+// select('*') 카운트 면제 — *의도적으로 전체 컬럼이 옳은* 곳:
+//  - users/export: GDPR Art.20 데이터 이동권. 모든 컬럼 포함이 요구사항 — 컬럼 명시하면 신규 PII 누락(완전성 회귀).
+//    새 컬럼이 자동으로 export 에 포함되는 게 *바람직*하므로 select('*') 가 정답.
+const SELECT_STAR_EXEMPT = [/\/app\/api\/users\/export\/route\.ts$/];
 
 // 한 'use client' 파일의 supabase 직접 read 체인 수 (.from(...) 이후 창에 .select 있고 mutation 없음)
 function countClientReadChains(src) {
@@ -82,6 +116,7 @@ for (const d of SCAN_DIRS) await walk(join(ROOT, d), files);
 
 const dateHits = [];
 let koreanFiles = 0;
+const koreanList = [];   // 한글 리터럴이 남은(면제 아님) client 파일 — burndown 추적용
 const clientReadFiles = [];   // 클라 직접 read 가 있는 파일들 (file:횟수)
 let clientReadSites = 0;       // 클라 직접 read 체인 총수
 let selectStar = 0;            // select('*') 총수 (서버 포함 전체)
@@ -89,8 +124,11 @@ let selectStar = 0;            // select('*') 총수 (서버 포함 전체)
 for (const f of files) {
   const src = await readFile(join(ROOT, f), 'utf8');
 
-  // select('*') 는 서버/클라 무관 전체 스캔
-  selectStar += (src.match(SELECT_STAR) || []).length;
+  // select('*') 는 서버/클라 무관 전체 스캔. 단 주석(JSDoc 사용 예시)과 면제 파일(GDPR export)은 제외.
+  if (!SELECT_STAR_EXEMPT.some(re => re.test('/' + f))) {
+    const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    selectStar += (codeOnly.match(SELECT_STAR) || []).length;
+  }
 
   const isClient = /^\s*['"]use client['"]/m.test(src.slice(0, 100));
   if (!isClient) continue;
@@ -98,12 +136,18 @@ for (const f of files) {
 
   lines.forEach((ln, i) => { if (DATE_UTC.test(ln)) dateHits.push(`${f}:${i + 1}`); });
 
-  const hasKorean = lines.some(ln => {
+  // 한글 i18n 부채 판정: 주석(블록·JSX·라인)과 console.* dev 로그는 UI 가 아니라 제외.
+  // 블록/JSX 주석은 여러 줄에 걸치므로 *소스 레벨*에서 먼저 제거(연속줄 false positive 차단).
+  const koreanExempt = KOREAN_EXEMPT.some(re => re.test('/' + f));
+  const srcNoBlock = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '');
+  const hasKorean = !koreanExempt && srcNoBlock.split('\n').some(ln => {
     const t = ln.trim();
-    if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false;
-    return HANGUL_LITERAL.test(ln);
+    if (t.startsWith('//') || t.startsWith('console.')) return false;   // 라인 주석·dev 로그 제외
+    // DB 센티넬 토큰('냉장','큰술' 등 quoted)을 제거한 뒤에도 한글 리터럴이 남으면 진짜 부채.
+    const stripped = ln.replace(SENTINEL_LITERAL, '$1$1');
+    return HANGUL_LITERAL.test(stripped);
   });
-  if (hasKorean) koreanFiles++;
+  if (hasKorean) { koreanFiles++; koreanList.push(f); }
 
   const reads = countClientReadChains(src);
   if (reads > 0) { clientReadFiles.push(`${f}:${reads}`); clientReadSites += reads; }
@@ -112,6 +156,7 @@ for (const f of files) {
 const report = {
   dateUtcClient: dateHits,
   hardcodedKoreanFiles: koreanFiles,
+  hardcodedKoreanList: koreanList,
   clientDirectReadFiles: clientReadFiles.length,
   clientDirectReadSites: clientReadSites,
   clientDirectReadList: clientReadFiles,
