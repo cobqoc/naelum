@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
-import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -294,15 +293,12 @@ export default function RecipeDetailClient({
   };
 
   // 리뷰 수정 후 레시피 평점 데이터 새로고침
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read → 기존 GET /api/recipes/[id] 재사용.
   const refreshRecipeRatings = async () => {
     try {
-      const supabase = createClient();
-      const { data: recipeData } = await supabase
-        .from('recipes')
-        .select('average_rating, ratings_count')
-        .eq('id', id)
-        .single();
-
+      const res = await fetch(`/api/recipes/${id}`);
+      if (!res.ok) return;
+      const { recipe: recipeData } = await res.json();
       if (recipeData) {
         setRecipe(prev => ({
           ...prev,
