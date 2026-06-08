@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
+import { withRoParticle } from '@/lib/i18n/koreanParticle';
 
 interface SubstituteIndicatorProps {
   /** 사용자가 substitute 중 하나를 *보유* 하고 있는지. tooltip 메시지 분기:
@@ -19,22 +20,6 @@ interface SubstituteIndicatorProps {
    *  - 'preparable': 단방향 raw→processed (쌀→밥 등) → 🍳 + "만들 수 있어요"
    *  owned=false 인 경우 author 명시 substitutes 이므로 항상 'substitute' 로 처리한다. */
   kind?: 'substitute' | 'preparable';
-}
-
-/** 한국어 로/으로 조사 자동 선택.
- *  - 끝글자 받침 없음(모음) 또는 ㄹ → 로
- *  - 그 외 받침 → 으로
- *  - 한글 아닌 글자 → 기본 로 (대부분 영문/숫자 끝나는 외래 재료명 자연스러움) */
-function withRoParticle(name: string): string {
-  const last = name.trim().slice(-1);
-  if (!last) return name;
-  const code = last.charCodeAt(0);
-  // 한글 음절 범위 (가~힣)
-  if (code < 0xac00 || code > 0xd7a3) return `${name}로`;
-  const batchim = (code - 0xac00) % 28;
-  // batchim === 0: 받침 없음(모음 끝), batchim === 8: ㄹ
-  if (batchim === 0 || batchim === 8) return `${name}로`;
-  return `${name}으로`;
 }
 
 /**

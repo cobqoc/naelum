@@ -8,6 +8,7 @@ import {
   type SubstituteEntry,
 } from '@/lib/recipes/substituteChips';
 import InputBoxWrapper from '@/components/UI/InputBoxWrapper';
+import { useI18n } from '@/lib/i18n/context';
 
 interface SubstituteChipInputProps {
   value: SubstituteEntry[];
@@ -53,6 +54,7 @@ export default function SubstituteChipInput({
   noteHint,
   ariaLabel,
 }: SubstituteChipInputProps) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState('');
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
@@ -205,7 +207,7 @@ export default function SubstituteChipInput({
                 removeAt(i);
               }}
               className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-warning/70 hover:text-warning hover:bg-warning/20 transition-colors"
-              aria-label={`${entry.name} 제거`}
+              aria-label={t.recipe.removeSubstituteAria.replace('{name}', entry.name)}
             >
               ×
             </button>

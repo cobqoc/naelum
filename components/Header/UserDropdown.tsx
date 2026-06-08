@@ -102,7 +102,7 @@ export default function UserDropdown({
             isOpen || isActive ? 'scale-110 ring-accent-warm' : 'ring-white/20'
           }`}>
             {profile?.avatar_url ? (
-              <Image src={profile.avatar_url} alt={profile.username ?? '프로필'} width={26} height={26} className="object-cover w-full h-full" />
+              <Image src={profile.avatar_url} alt={profile.username ?? t.common.profile} width={26} height={26} className="object-cover w-full h-full" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-sm">👤</div>
             )}

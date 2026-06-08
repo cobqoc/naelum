@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 
 export interface TimerCheckpoint {
   /** 경과 시간(초) — 이 시점에 도달하면 알림 발화 */
@@ -74,6 +75,7 @@ export function computeTimerState(t: Timer, now: number): {
 }
 
 export function useMultiTimer() {
+  const { t: i18n } = useI18n();
   const [timers, setTimers] = useState<Timer[]>([]);
   const intervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
@@ -147,7 +149,7 @@ export function useMultiTimer() {
               intervalsRef.current.delete(timer.id);
               playTimerSound();
               if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                new Notification(`${t.label} 완료!`, { body: '타이머가 완료되었습니다.' });
+                new Notification(i18n.cookMode.notifyTimerDone.replace('{label}', t.label), { body: i18n.cookMode.notifyTimerDoneBody });
               }
             } else if (justFiredCheckpoint) {
               playTimerSound();
@@ -167,7 +169,7 @@ export function useMultiTimer() {
         intervalsRef.current.delete(id);
       }
     });
-  }, [timers, playTimerSound]);
+  }, [timers, playTimerSound, i18n]);
 
   // 탭이 다시 보이면 wall-clock 으로 즉시 재계산 — 백그라운드 throttle 보정
   useEffect(() => {

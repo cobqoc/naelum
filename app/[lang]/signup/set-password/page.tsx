@@ -10,7 +10,7 @@ import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
-import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
+import { checkMinAge } from '@/lib/auth/ageGate';
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -71,12 +71,12 @@ export default function SetPasswordPage() {
 
     // 연령 gate — 글로벌 safe 기준 16세 (GDPR Art. 8 최강, COPPA·개인정보보호법 모두 충족)
     if (!birthDate) {
-      setError(t.auth.birthDateRequired || `생년월일을 입력해주세요. 만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      setError(t.auth.birthDateRequired);
       return;
     }
     const { meetsMinimum } = checkMinAge(birthDate);
     if (!meetsMinimum) {
-      setError(t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      setError(t.auth.ageGateError);
       return;
     }
 
@@ -107,7 +107,7 @@ export default function SetPasswordPage() {
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error === 'age_gate' ? (t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`) : t.auth.processErrorText);
+      setError(body.error === 'age_gate' ? t.auth.ageGateError : t.auth.processErrorText);
       setLoading(false);
       return;
     }
@@ -258,7 +258,7 @@ export default function SetPasswordPage() {
               />
             </InputBoxWrapper>
             <p className="text-[11px] text-text-muted">
-              {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
+              {t.auth.ageGateNotice}
             </p>
           </div>
 

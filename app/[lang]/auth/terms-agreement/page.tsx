@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
-import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
+import { checkMinAge } from '@/lib/auth/ageGate';
 
 const OnboardingWizard = dynamic(
   () => import('@/components/Onboarding/OnboardingWizard'),
@@ -92,12 +92,12 @@ export default function TermsAgreementPage() {
 
     // 연령 gate — 글로벌 safe 16세
     if (!birthDate) {
-      setError(t.auth.birthDateRequired || `생년월일을 입력해주세요. 만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      setError(t.auth.birthDateRequired);
       return;
     }
     const { meetsMinimum } = checkMinAge(birthDate);
     if (!meetsMinimum) {
-      setError(t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`);
+      setError(t.auth.ageGateError);
       return;
     }
 
@@ -121,7 +121,7 @@ export default function TermsAgreementPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         console.error('complete-onboarding failed:', body);
-        setError(body.error === 'age_gate' ? (t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`) : t.auth.processErrorText);
+        setError(body.error === 'age_gate' ? t.auth.ageGateError : t.auth.processErrorText);
         setLoading(false);
         return;
       }
@@ -193,7 +193,7 @@ export default function TermsAgreementPage() {
             />
           </InputBoxWrapper>
           <p className="text-[11px] text-text-muted">
-            {t.auth.ageGateNotice || `만 ${MIN_AGE}세 이상만 가입할 수 있어요 (GDPR·COPPA 등 글로벌 기준).`}
+            {t.auth.ageGateNotice}
           </p>
         </div>
 

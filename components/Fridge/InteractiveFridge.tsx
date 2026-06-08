@@ -10,6 +10,7 @@ import {
   FridgeFooter,
   ShelfSection,
 } from '@/components/Fridge/FridgeShelf';
+import { SAMPLE_INGREDIENTS } from '@/components/Fridge/sampleIngredients';
 
 // --- Types ---
 interface GroupedIngredients {
@@ -19,17 +20,6 @@ interface GroupedIngredients {
 }
 
 type FridgeState = 'loading' | 'anonymous' | 'empty' | 'filled';
-
-const SAMPLE_INGREDIENTS: FridgeIngredient[] = [
-  { id: 's1', ingredient_name: '양파', category: 'veggie', storage_location: '냉장' },
-  { id: 's2', ingredient_name: '소고기', category: 'meat', storage_location: '냉장' },
-  { id: 's3', ingredient_name: '두부', category: 'other', storage_location: '냉장' },
-  { id: 's4', ingredient_name: '계란', category: 'dairy', storage_location: '냉장' },
-  { id: 's5', ingredient_name: '새우', category: 'seafood', storage_location: '냉동' },
-  { id: 's6', ingredient_name: '삼겹살', category: 'meat', storage_location: '냉동' },
-  { id: 's7', ingredient_name: '소금', category: 'seasoning', storage_location: '상온' },
-  { id: 's8', ingredient_name: '쌀', category: 'grain', storage_location: '상온' },
-];
 
 function groupByStorage(ingredients: FridgeIngredient[]): GroupedIngredients {
   return {

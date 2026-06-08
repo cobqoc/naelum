@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { INGREDIENT_CATEGORIES } from './IngredientAutocompleteTypes';
+import { useI18n } from '@/lib/i18n/context';
 
 const CATEGORY_COLORS: Record<string, string> = {
   veggie:    '#22c55e',
@@ -35,6 +36,7 @@ export default function IngredientCategoryFilter({
   onChange,
   className = '',
 }: IngredientCategoryFilterProps) {
+  const { t } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(true);
@@ -72,7 +74,7 @@ export default function IngredientCategoryFilter({
   }, []);
 
   const allItems = [
-    { id: '__all__', name: '전체', icon: '🌐', color: '#ff9966' },
+    { id: '__all__', name: t.ingredient.categoryAll, icon: '🌐', color: '#ff9966' },
     ...INGREDIENT_CATEGORIES.map(c => ({ ...c, color: CATEGORY_COLORS[c.id] ?? '#6b7280' })),
   ];
 

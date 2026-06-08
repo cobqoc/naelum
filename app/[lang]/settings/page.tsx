@@ -522,7 +522,7 @@ export default function SettingsPage() {
                   <span>{tab.label}</span>
                   {/* Dirty indicator */}
                   {((tab.key === 'profile' && isDirtyProfile) || (tab.key === 'preferences' && isDirtyPreferences)) && (
-                    <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" aria-label="저장하지 않은 변경사항" />
+                    <span className="absolute top-2 right-1 w-1.5 h-1.5 bg-accent-warm rounded-full" aria-label={sp.unsavedChangesAria} />
                   )}
                 </button>
               );

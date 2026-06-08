@@ -63,18 +63,18 @@ export default function ExpiringIngredientsAlert() {
               <span className="text-2xl">⚠️</span>
               <div>
                 <h3 className="font-bold text-text-primary">
-                  {critical.length > 0 ? '긴급!' : '주의'} 만료 임박 재료
+                  {critical.length > 0 ? t.ingredient.expiringUrgent : t.ingredient.expiringCaution} {t.ingredient.expiringSoonItems}
                 </h3>
                 <p className="text-sm text-text-secondary mt-1">
                   {critical.length > 0 && (
                     <span className="text-error font-medium">
-                      {critical.length}개 재료가 3일 이내 만료
+                      {t.ingredient.expiringCount3d.replace('{count}', String(critical.length))}
                     </span>
                   )}
                   {critical.length > 0 && warning.length > 0 && ', '}
                   {warning.length > 0 && (
                     <span className="text-warning font-medium">
-                      {warning.length}개 재료가 7일 이내 만료
+                      {t.ingredient.expiringCount7d.replace('{count}', String(warning.length))}
                     </span>
                   )}
                 </p>
@@ -104,7 +104,7 @@ export default function ExpiringIngredientsAlert() {
           <div className="border-t border-current/10 p-4 space-y-3">
             {critical.length > 0 && (
               <div>
-                <h4 className="text-sm font-bold text-error mb-2">🚨 긴급 (3일 이내)</h4>
+                <h4 className="text-sm font-bold text-error mb-2">{t.ingredient.expiringUrgentSection}</h4>
                 <div className="space-y-2">
                   {critical.map((ingredient) => (
                     <div
@@ -117,19 +117,19 @@ export default function ExpiringIngredientsAlert() {
                         </div>
                         <div className="text-sm text-text-muted mt-1">
                           {ingredient.quantity && ingredient.unit && `${ingredient.quantity}${ingredient.unit} • `}
-                          {ingredient.days_until_expiry === 0 ? '오늘 만료' : `D-${ingredient.days_until_expiry}`}
+                          {ingredient.days_until_expiry === 0 ? t.ingredient.expiringToday : `D-${ingredient.days_until_expiry}`}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                         <span className="text-xs px-2 py-1 rounded-full bg-error/20 text-error font-bold">
-                          {ingredient.days_until_expiry === 0 ? '오늘!' : `D-${ingredient.days_until_expiry}`}
+                          {ingredient.days_until_expiry === 0 ? t.ingredient.expiringTodayShort : `D-${ingredient.days_until_expiry}`}
                         </span>
                         <Link
                           href={`/search?q=${encodeURIComponent(ingredient.ingredient_name)}`}
                           className="text-xs px-2.5 py-1 rounded-full bg-accent-warm/15 text-accent-warm hover:bg-accent-warm/25 font-semibold transition-colors whitespace-nowrap"
                           onClick={e => e.stopPropagation()}
                         >
-                          레시피 →
+                          {t.ingredient.recipeArrow}
                         </Link>
                       </div>
                     </div>
@@ -140,7 +140,7 @@ export default function ExpiringIngredientsAlert() {
 
             {warning.length > 0 && (
               <div>
-                <h4 className="text-sm font-bold text-warning mb-2">⚡ 주의 (7일 이내)</h4>
+                <h4 className="text-sm font-bold text-warning mb-2">{t.ingredient.expiringCautionSection}</h4>
                 <div className="space-y-2">
                   {warning.map((ingredient) => (
                     <div
@@ -165,7 +165,7 @@ export default function ExpiringIngredientsAlert() {
                           className="text-xs px-2.5 py-1 rounded-full bg-accent-warm/15 text-accent-warm hover:bg-accent-warm/25 font-semibold transition-colors whitespace-nowrap"
                           onClick={e => e.stopPropagation()}
                         >
-                          레시피 →
+                          {t.ingredient.recipeArrow}
                         </Link>
                       </div>
                     </div>

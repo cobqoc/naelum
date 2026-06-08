@@ -181,7 +181,7 @@ export default function StepsTab({
                   return (
                     <div className="mt-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
                       <p className="text-sm">
-                        <span className="font-bold text-warning">💡 팁:</span>{' '}
+                        <span className="font-bold text-warning">{t.cookMode.tipLabel}</span>{' '}
                         <span className="text-text-secondary">
                           {tipTokens.map((tok, i) =>
                             tok.type === 'text' ? (

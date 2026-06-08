@@ -23,46 +23,8 @@ export default function AboutClient() {
   const { t } = useI18n()
   const { user } = useAuth()
 
-  // 타입 안전성은 포기 — i18n 추가가 많아서 그냥 as any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const about = (t as any).about as {
-    heroTitle: string
-    heroSub: string
-    featuresTitle: string
-    feature1Title: string
-    feature1Desc: string
-    feature2Title: string
-    feature2Desc: string
-    feature3Title: string
-    feature3Desc: string
-    feature4Title: string
-    feature4Desc: string
-    whyTitle: string
-    whyBody: string
-    ctaTitle: string
-    ctaButton: string
-    ctaLoggedIn: string
-  } | undefined
-
-  // fallback (i18n key 없는 경우 대비)
-  const copy = about ?? {
-    heroTitle: '낼름이 뭐예요?',
-    heroSub: '냉장고 안 재료로 바로 만들 수 있는 한식 레시피를 여러 언어로.',
-    featuresTitle: '무엇을 할 수 있나요',
-    feature1Title: '냉장고 기반 추천',
-    feature1Desc: '가지고 있는 재료만 입력하면 만들 수 있는 레시피를 찾아드려요.',
-    feature2Title: '8개 언어 지원',
-    feature2Desc: '한국어, 영어, 일본어, 중국어 등 8개 언어로 한식을 즐기세요.',
-    feature3Title: '쿠킹 모드 + 타이머',
-    feature3Desc: '단계별 조리 안내, 타이머, 음성 가이드.',
-    feature4Title: '1,700+ 레시피',
-    feature4Desc: '검증된 한식 레시피와 유저 공유 레시피.',
-    whyTitle: '왜 만들었나요',
-    whyBody: '혼자 사는 사람, 해외에서 한식이 그리운 사람, 요리 초보자를 위해.',
-    ctaTitle: '지금 시작하세요',
-    ctaButton: '무료 회원가입',
-    ctaLoggedIn: '홈으로 가기',
-  }
+  // about 카피는 8개 로케일 전부에 t.about 으로 존재 — 직접 사용(이전 as any 캐스트+한글 fallback은 도달 불가 죽은 코드였음).
+  const copy = t.about
 
   const features = [
     { emoji: '🧊', title: copy.feature1Title, desc: copy.feature1Desc },
