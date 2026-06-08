@@ -11,9 +11,7 @@ import SafeImage from '@/components/Common/SafeImage';
 import { RecipeCardGridSkeleton } from '@/components/Common/Skeleton';
 import EmptyState from '@/components/Common/EmptyState';
 import IngredientRecsView from './_components/IngredientRecsView';
-import { createClient } from '@/lib/supabase/client';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
-import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
 import { useI18n } from '@/lib/i18n/context';
 import { useScrollCache } from '@/lib/hooks/useScrollCache';
 import { CUISINE_TYPES, DISH_TYPES } from '@/lib/constants/recipe';
@@ -112,74 +110,33 @@ export default function AllRecipesPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read(recipes·cooking_sessions) + 클라 fridge match
+  // → GET /api/recipes/browse (서버가 페이지네이션·냉장고 match·has_cooked 모두 처리).
   const fetchRecipes = useCallback(async (pageNum: number, sort: string, reset = false) => {
-    const supabase = createClient();
+    const params = new URLSearchParams({ sort, page: String(pageNum) });
+    if (cuisineFilterRef.current) params.set('cuisine_type', cuisineFilterRef.current);
+    if (dishFilterRef.current) params.set('dish_type', dishFilterRef.current);
 
-    let query = supabase
-      .from('recipes')
-      .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
-      .eq('status', 'published');
-
-    if (cuisineFilterRef.current) query = query.eq('cuisine_type', cuisineFilterRef.current);
-    if (dishFilterRef.current) query = query.eq('dish_type', dishFilterRef.current);
-
-    if (sort === 'latest') {
-      query = query.order('created_at', { ascending: false });
-    } else if (sort === 'rating') {
-      query = query.order('average_rating', { ascending: false });
-    } else if (sort === 'views') {
-      query = query.order('views_count', { ascending: false });
+    let data: RecipeWithMatch[] | null = null;
+    try {
+      const res = await fetch(`/api/recipes/browse?${params.toString()}`);
+      if (res.ok) data = (await res.json()).recipes as RecipeWithMatch[];
+    } catch {
+      // 네트워크 실패 — 아래 null 가드가 로딩 종료 처리.
     }
-
-    const from = pageNum * RECIPES_PER_PAGE;
-    query = query.range(from, from + RECIPES_PER_PAGE - 1);
-
-    // getUser 와 recipes 쿼리는 서로 독립 → 병렬.
-    const [{ data: { user } }, { data }] = await Promise.all([
-      supabase.auth.getUser(),
-      query,
-    ]);
     if (!data) {
       setLoading(false);
       setLoadingMore(false);
       return;
     }
 
-    let processedRecipes: RecipeWithMatch[] = data.map(r => ({
-      ...r,
-      author: Array.isArray(r.author) ? r.author[0] : r.author
-    }));
-
-    if (user && processedRecipes.length > 0) {
-      const recipeIds = processedRecipes.map(r => r.id);
-      // cooked 조회와 냉장고 match 는 서로 독립(둘 다 base 목록만 의존) → 병렬.
-      const [{ data: cookedSessions }, fridgeMatched] = await Promise.all([
-        supabase
-          .from('cooking_sessions')
-          .select('recipe_id')
-          .eq('user_id', user.id)
-          .in('recipe_id', recipeIds)
-          .not('completed_at', 'is', null),
-        attachFridgeMatch(supabase, user.id, processedRecipes),
-      ]);
-      const cookedRecipeIds = new Set(cookedSessions?.map(s => s.recipe_id) || []);
-      // fridge 결과에 has_cooked 병합 (필드 분리 → 순서 무관, 원본과 동일 결과).
-      processedRecipes = fridgeMatched.map(r => ({
-        ...r,
-        has_cooked: cookedRecipeIds.has(r.id)
-      }));
-    } else {
-      // 비로그인/빈 목록: 냉장고 match 만 (원본과 동일, no-op 반환).
-      processedRecipes = await attachFridgeMatch(supabase, user?.id ?? null, processedRecipes);
-    }
-
     if (reset) {
-      setRecipes(processedRecipes);
+      setRecipes(data);
     } else {
-      setRecipes(prev => [...prev, ...processedRecipes]);
+      setRecipes(prev => [...prev, ...data]);
     }
 
-    setHasMore(processedRecipes.length === RECIPES_PER_PAGE);
+    setHasMore(data.length === RECIPES_PER_PAGE);
     setLoading(false);
     setLoadingMore(false);
   }, []);
@@ -195,27 +152,20 @@ export default function AllRecipesPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 트렌딩 레시피 (이번 주 인기 = views_count 상위 4개) — 필터 적용 시 중복·혼란이라 스킵.
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read + fridge match → GET /api/recipes/trending.
   useEffect(() => {
     if (hasFilter) return;
-    const supabase = createClient();
+    let cancelled = false;
     (async () => {
-      // getUser 와 trending 쿼리는 독립 → 병렬.
-      const [{ data: { user } }, { data }] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase
-          .from('recipes')
-          .select('id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at')
-          .eq('status', 'published')
-          .order('views_count', { ascending: false })
-          .limit(4),
-      ]);
-      if (!data) return;
-      const processed: RecipeWithMatch[] = data.map(r => ({
-        ...r,
-        author: Array.isArray(r.author) ? r.author[0] : r.author,
-      }));
-      setTrending(await attachFridgeMatch(supabase, user?.id ?? null, processed));
+      try {
+        const res = await fetch('/api/recipes/trending');
+        if (cancelled || !res.ok) return;
+        setTrending((await res.json()).recipes as RecipeWithMatch[]);
+      } catch {
+        // 트렌딩 실패 무시 — 스트립 미노출(원본도 data 없으면 미노출).
+      }
     })();
+    return () => { cancelled = true; };
   }, [hasFilter]);
 
   // sortBy / 카테고리 필터 변경 시 재조회 (캐시 복원 직후 첫 실행은 스킵).

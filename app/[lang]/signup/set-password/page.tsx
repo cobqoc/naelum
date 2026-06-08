@@ -10,7 +10,6 @@ import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { useI18n } from '@/lib/i18n/context';
-import { createProfile, beginOnboarding } from '@/lib/auth/profile';
 import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
 export default function SetPasswordPage() {
@@ -94,38 +93,23 @@ export default function SetPasswordPage() {
       return;
     }
 
-    // 현재 사용자 정보 가져오기
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-      // 프로필 존재 여부 확인
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      // 프로필이 없으면 생성, 있으면 기존 프로필에 동의 기록·생년월일 업데이트
-      if (!existingProfile) {
-        await createProfile(supabase, {
-          id: user.id,
-          email: user.email || email,
-          authProvider: 'email',
-          marketingConsent: agreedToMarketing,
-          termsAgreed: true,
-          privacyAgreed: true,
-          copyrightAgreed: true,
-          birthDate,
-        });
-      } else {
-        // 이미 프로필 존재 (OAuth 후 이메일 등록 등) — 모든 동의 기록 갱신
-        await beginOnboarding(supabase, user.id, agreedToMarketing, {
-          termsAgreed: true,
-          privacyAgreed: true,
-          copyrightAgreed: true,
-          birthDate,
-        });
-      }
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 존재확인 read + createProfile/beginOnboarding
+    // mutation → POST /api/auth/complete-onboarding. onboardingCompleted 미전달 → createProfile
+    // 기본값(email 신규 가입은 완료) / 기존 프로필은 beginOnboarding.
+    const res = await fetch('/api/auth/complete-onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        authProvider: 'email',
+        marketingConsent: agreedToMarketing,
+        birthDate,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error === 'age_gate' ? (t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`) : t.auth.processErrorText);
+      setLoading(false);
+      return;
     }
 
     // 회원가입 완료 후 홈으로 이동

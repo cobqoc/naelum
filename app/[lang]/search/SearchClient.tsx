@@ -8,8 +8,6 @@ import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
 import RecipeCard from '@/components/RecipeCard';
-import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
-import { createClient } from '@/lib/supabase/client';
 import { type Recipe } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import BottomNav from '@/components/BottomNav';
@@ -159,7 +157,8 @@ function SearchContent() {
     return data.results || {};
   }, [cuisine, difficulty, maxTime]);
 
-  // 검색 실행 (첫 페이지)
+  // 검색 실행 (첫 페이지). 데이터 계층 이전(docs/DATA_LAYER.md): has_cooked·냉장고 match 는
+  // 이제 GET /api/search 가 서버에서 부착(클라 cooked read + fridge match 제거).
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults({});
@@ -168,46 +167,7 @@ function SearchContent() {
     setLoading(true);
     setPages({ recipes: 1, users: 1, ingredients: 1 });
     try {
-      // 검색 API 와 getUser 는 독립 → 병렬.
-      const supabase = createClient();
-      const [searchResults, { data: { user } }] = await Promise.all([
-        fetchSearch(searchQuery, 1),
-        supabase.auth.getUser(),
-      ]);
-
-      if (user) {
-        const allIds = [
-          ...(searchResults.recipes?.data.map((r: Recipe) => r.id) || []),
-          ...(searchResults.ingredients?.data.map((r: Recipe) => r.id) || []),
-        ];
-        if (allIds.length > 0) {
-          const { data: cooked } = await supabase
-            .from('cooking_sessions')
-            .select('recipe_id')
-            .eq('user_id', user.id)
-            .in('recipe_id', allIds)
-            .not('completed_at', 'is', null);
-          const cookedSet = new Set(cooked?.map(s => s.recipe_id) || []);
-          if (searchResults.recipes?.data)
-            searchResults.recipes.data = searchResults.recipes.data.map((r: Recipe) => ({ ...r, has_cooked: cookedSet.has(r.id) }));
-          if (searchResults.ingredients?.data)
-            searchResults.ingredients.data = searchResults.ingredients.data.map((r: Recipe) => ({ ...r, has_cooked: cookedSet.has(r.id) }));
-        }
-
-        // 냉장고 match 부착 — setResults 전에 await(CLS 방지). recipes/ingredients 두 탭은 독립 → 병렬.
-        await Promise.all([
-          (async () => {
-            if (searchResults.recipes?.data)
-              searchResults.recipes.data = await attachFridgeMatch(supabase, user.id, searchResults.recipes.data);
-          })(),
-          (async () => {
-            if (searchResults.ingredients?.data)
-              searchResults.ingredients.data = await attachFridgeMatch(supabase, user.id, searchResults.ingredients.data);
-          })(),
-        ]);
-      }
-
-      setResults(searchResults);
+      setResults(await fetchSearch(searchQuery, 1));
     } catch {
       setResults({});
     } finally {
@@ -223,25 +183,8 @@ function SearchContent() {
     const nextPage = pages[activeTab] + 1;
     setLoadingMore(true);
     try {
-      // 검색 API 와 getUser 는 독립 → 병렬.
-      const supabase = createClient();
-      const [more, { data: { user } }] = await Promise.all([
-        fetchSearch(query, nextPage),
-        supabase.auth.getUser(),
-      ]);
-      // 추가 페이지에도 냉장고 match 부착 — 스크롤 후 카드도 첫 페이지와 동일하게. 두 탭 독립 → 병렬.
-      if (user) {
-        await Promise.all([
-          (async () => {
-            if (more.recipes?.data)
-              more.recipes.data = await attachFridgeMatch(supabase, user.id, more.recipes.data);
-          })(),
-          (async () => {
-            if (more.ingredients?.data)
-              more.ingredients.data = await attachFridgeMatch(supabase, user.id, more.ingredients.data);
-          })(),
-        ]);
-      }
+      // 추가 페이지도 GET /api/search 가 has_cooked·냉장고 match 부착(서버). 클라 enrich 제거.
+      const more = await fetchSearch(query, nextPage);
       setPages(prev => ({ ...prev, [activeTab]: nextPage }));
       setResults(prev => ({
         ...prev,

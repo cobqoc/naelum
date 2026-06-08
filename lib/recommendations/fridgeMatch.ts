@@ -1,7 +1,9 @@
-import { createClient } from '@/lib/supabase/client'
+import type { createClient } from '@/lib/supabase/client'
 import { matchRecipe, assembleRecipeMatchFields, type RecipeIngredientInput } from './matchV2'
 import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from './fetchRelations'
 
+// server(API 라우트)·client(전체·검색 페이지) 양쪽 호출. 타입은 client 의 정확한 반환형을 유지하되
+// `import type` 으로 런타임 값(브라우저 client)은 서버 번들에 끌어오지 않음. 서버 client 도 동일 SupabaseClient<Database> 라 호환.
 type SupabaseClient = ReturnType<typeof createClient>
 
 export interface FridgeMatchResult {

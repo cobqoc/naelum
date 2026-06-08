@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
+import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch'
 
 // 검색어 정제 — PostgREST 필터 주입 방어(H7). 단일 출처: lib/api/sanitizeSearch
 const sanitizeQuery = sanitizeSearchTerm
@@ -147,11 +148,13 @@ export async function GET(request: NextRequest) {
     ].map((r: any) => r.id).filter(Boolean) as string[]
 
     if (allRecipeIds.length > 0) {
+      // 완료 세션만 "만들어봤어요" — completed_at NULL(진행중)은 제외(클라·browse 와 동일 의미).
       const { data: cooked } = await supabase
         .from('cooking_sessions')
         .select('recipe_id')
         .eq('user_id', user.id)
         .in('recipe_id', allRecipeIds)
+        .not('completed_at', 'is', null)
       const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
       if (results.recipes) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,6 +165,17 @@ export async function GET(request: NextRequest) {
         results.ingredients.data = results.ingredients.data.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
       }
     }
+
+    // 냉장고 match 부착 — 데이터 계층 이전(docs/DATA_LAYER.md): SearchClient 가 클라에서 하던 걸 서버로.
+    // recipes/ingredients 두 결과 독립 → 병렬. attachFridgeMatch 는 빈 배열·냉장고 없으면 no-op.
+    await Promise.all([
+      (async () => {
+        if (results.recipes) results.recipes.data = await attachFridgeMatch(supabase, user.id, results.recipes.data as { id: string }[])
+      })(),
+      (async () => {
+        if (results.ingredients) results.ingredients.data = await attachFridgeMatch(supabase, user.id, results.ingredients.data as { id: string }[])
+      })(),
+    ])
 
     if (query) {
       supabase.from('search_history').insert({

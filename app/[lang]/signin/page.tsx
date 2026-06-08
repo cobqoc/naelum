@@ -162,24 +162,10 @@ function LoginContent() {
     setLoginError('');
 
     try {
-      // Provider 확인 (실패해도 로그인 시도는 진행)
-      const { data: providerProfile } = await supabase
-        .from('profiles')
-        .select('auth_provider')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (providerProfile?.auth_provider === 'google') {
-        setLoginError(t.auth.googleRegisteredUseGoogle);
-        setLoading(false);
-        return;
-      }
-      if (providerProfile?.auth_provider === 'kakao') {
-        setLoginError(t.auth.kakaoRegisteredUseKakao);
-        setLoading(false);
-        return;
-      }
-
+      // 옛 provider 사전확인(google/kakao 가입자 차단)은 제거됨 — 비로그인 anon 은 profiles 에
+      // SELECT 권한이 없어(dev·prod 모두 GRANT 차단) 그 read 가 항상 permission denied→null 로
+      // 죽은 코드였다(차단이 한 번도 작동 안 함). OAuth 계정은 비번이 없어 아래 로그인이
+      // "invalid credentials" 로 자연 실패하므로 기능 손실 없음. (데이터 계층 이전 정리)
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,

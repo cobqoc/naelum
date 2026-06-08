@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import DeliveryFloatingNav from './DeliveryFloatingNav';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
@@ -40,7 +39,6 @@ function formatPrice(n: number, lang: string): string {
 }
 
 export default function DeliveryHomeClient() {
-  const supabase = createClient();
   const { t, language } = useI18n();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,23 +48,23 @@ export default function DeliveryHomeClient() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from('delivery_restaurants')
-        .select(
-          'id, name, description, cuisine_types, address, delivery_fee, min_order_price, avg_cook_time_min, rating, rating_count, is_open, thumbnail_url'
-        )
-        .eq('is_active', true)
-        .order('is_open', { ascending: false })
-        .order('rating', { ascending: false });
-
-      if (cancelled) return;
-      if (!error && data) setRestaurants(data);
-      setLoading(false);
+      try {
+        const res = await fetch('/api/delivery/restaurants');
+        if (cancelled) return;
+        if (res.ok) {
+          const { restaurants: data } = await res.json();
+          setRestaurants(data as Restaurant[]);
+        }
+      } catch {
+        // 네트워크 실패 시 빈 목록 유지(원본 동작: error 면 그대로).
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, []);
 
   const filtered = useMemo(() => {
     let list = restaurants;

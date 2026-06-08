@@ -20,7 +20,6 @@ interface OrderRow {
 }
 
 interface Props {
-  restaurantId: string;
   restaurantName: string;
 }
 
@@ -36,7 +35,7 @@ function formatTime(iso: string): string {
   }
 }
 
-export default function MerchantOrdersClient({ restaurantId, restaurantName }: Props) {
+export default function MerchantOrdersClient({ restaurantName }: Props) {
   const { t, language } = useI18n();
   const supabase = createClient();
 
@@ -44,46 +43,25 @@ export default function MerchantOrdersClient({ restaurantId, restaurantName }: P
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 2개 → 서버 엔드포인트.
+  // 소유 식당은 owner_id 로 서버가 재유도하므로 restaurantId 전달 불필요.
   const load = useCallback(async () => {
-    const { data: orderData, error: err } = await supabase
-      .from('delivery_orders')
-      .select('id, order_number, status, subtotal, delivery_fee, total, address_snapshot, request_note, placed_at')
-      .eq('restaurant_id', restaurantId)
-      .order('placed_at', { ascending: false })
-      .limit(50);
-
-    if (err) {
-      setError(err.message);
+    try {
+      const res = await fetch('/api/delivery/merchant/orders');
+      if (!res.ok) {
+        const msg = await res.json().then((b) => b.error).catch(() => String(res.status));
+        setError(msg ?? 'Failed');
+        setLoading(false);
+        return;
+      }
+      const { orders: data } = await res.json();
+      setOrders(data as OrderRow[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (!orderData || orderData.length === 0) {
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
-
-    const orderIds = orderData.map((o) => o.id);
-    const { data: itemsData } = await supabase
-      .from('delivery_order_items')
-      .select('order_id, name_snapshot, quantity')
-      .in('order_id', orderIds);
-
-    const itemsByOrder: Record<string, { name: string; quantity: number }[]> = {};
-    for (const it of itemsData ?? []) {
-      if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = [];
-      itemsByOrder[it.order_id].push({ name: it.name_snapshot, quantity: it.quantity });
-    }
-
-    setOrders(
-      orderData.map((o) => ({
-        ...o,
-        items: itemsByOrder[o.id] ?? [],
-      })) as OrderRow[]
-    );
-    setLoading(false);
-  }, [restaurantId, supabase]);
+  }, []);
 
   useEffect(() => {
     // 30초 polling으로 자동 갱신. 초기 로드는 setTimeout(0)으로 effect body 외부로 이동해

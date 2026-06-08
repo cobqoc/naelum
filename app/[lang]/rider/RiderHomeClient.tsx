@@ -52,33 +52,21 @@ export default function RiderHomeClient({ lang, userId, userEmail, initialProfil
   const [loading, setLoading] = useState(!!initialProfile);
   const [error, setError] = useState<string | null>(null);
 
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 2개 → 서버 엔드포인트.
+  // rider_id 는 서버가 인증 user 로 재유도. ?online 으로 미배정 주문 노출 여부만 전달(원본 로직 보존).
   const refreshOrders = useCallback(async () => {
     if (!profile) return;
-    // 1) 본인이 배차받은 진행 중인 주문
-    const { data: myOrder } = await supabase
-      .from('delivery_orders')
-      .select('id, order_number, status, total, delivery_fee, address_snapshot, request_note, placed_at, restaurant:delivery_restaurants(name, address)')
-      .eq('rider_id', userId)
-      .in('status', ['ready', 'picked_up'])
-      .order('placed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setCurrent((myOrder as unknown as CurrentOrder) ?? null);
-
-    // 2) 배차 가능한 ready 상태 주문 (라이더 미배정)
-    if (!myOrder && profile.status === 'online') {
-      const { data: openOrders } = await supabase
-        .from('delivery_orders')
-        .select('id, order_number, status, total, delivery_fee, address_snapshot, placed_at, restaurant:delivery_restaurants(name, address)')
-        .eq('status', 'ready')
-        .is('rider_id', null)
-        .order('placed_at', { ascending: true })
-        .limit(20);
-      setAvailable((openOrders as unknown as AvailableOrder[]) ?? []);
-    } else {
-      setAvailable([]);
+    try {
+      const online = profile.status === 'online' ? '1' : '0';
+      const res = await fetch(`/api/delivery/rider/orders?online=${online}`);
+      if (!res.ok) return;
+      const { current: myOrder, available: openOrders } = await res.json();
+      setCurrent((myOrder as CurrentOrder) ?? null);
+      setAvailable((openOrders as AvailableOrder[]) ?? []);
+    } catch {
+      // 폴링 실패 무시 — 다음 주기 재시도.
     }
-  }, [supabase, userId, profile]);
+  }, [profile]);
 
   useEffect(() => {
     if (!profile) return;

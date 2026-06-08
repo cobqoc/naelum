@@ -9,7 +9,6 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
-import { createProfile, beginOnboarding } from '@/lib/auth/profile';
 import { checkMinAge, MIN_AGE } from '@/lib/auth/ageGate';
 
 const OnboardingWizard = dynamic(
@@ -35,38 +34,31 @@ export default function TermsAgreementPage() {
   const [checking, setChecking] = useState(true);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
 
-  // 세션 확인
+  // 세션 확인 — 데이터 계층 이전(docs/DATA_LAYER.md): getUser + profile read → GET /api/auth/onboarding-status.
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        // 로그인되지 않은 경우 회원가입 페이지로
+      const res = await fetch('/api/auth/onboarding-status');
+      if (!res.ok) {
+        // 미인증(401) 등 → 회원가입 페이지로
         router.push('/signup');
         return;
       }
-
-      // 프로필 확인
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed, auth_provider, email')
-        .eq('id', user.id)
-        .maybeSingle(); // single() 대신 maybeSingle() - 프로필이 없을 수 있음
+      const { onboardingCompleted, authProvider, email } = await res.json();
 
       // 이미 온보딩 완료한 사용자는 홈으로
-      if (profile?.onboarding_completed) {
+      if (onboardingCompleted) {
         router.push('/');
         return;
       }
 
       // 프로필이 없거나(신규) onboarding_completed: false인 경우 → 약관 동의 필요
-      setEmail(profile?.email || user.email || '');
-      setProvider(profile?.auth_provider || 'google');
+      setEmail(email || '');
+      setProvider(authProvider || 'google');
       setChecking(false);
     };
 
     checkSession();
-  }, [router, supabase]);
+  }, [router]);
 
   const handleCancel = async () => {
     if (cancelling || loading) return;
@@ -113,55 +105,25 @@ export default function TermsAgreementPage() {
     setError('');
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setError(t.auth.sessionExpiredRetry);
-        setLoading(false);
-        return;
-      }
-
-      // 프로필 존재 여부 확인
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!existingProfile) {
-        // 프로필이 없으면 생성 — 모든 동의 기록 포함
-        const { error: insertError } = await createProfile(supabase, {
-          id: user.id,
-          email: user.email!,
+      // 데이터 계층 이전(docs/DATA_LAYER.md): 존재확인 read + createProfile/beginOnboarding
+      // mutation → POST /api/auth/complete-onboarding (서버가 upsert). OAuth 가입이라 온보딩 미완.
+      const res = await fetch('/api/auth/complete-onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           authProvider: provider,
+          marketingConsent: agreedToMarketing,
+          birthDate,
           onboardingCompleted: false,
           onboardingStep: 0,
-          marketingConsent: agreedToMarketing,
-          termsAgreed: true,
-          privacyAgreed: true,
-          copyrightAgreed: true,
-          birthDate,
-        });
-        if (insertError) {
-          console.error('Profile insert error:', insertError);
-          setError(t.auth.profileCreateError);
-          setLoading(false);
-          return;
-        }
-      } else {
-        // 기존 프로필 — 모든 동의 기록 갱신 + 온보딩 초기화
-        const { error: updateError } = await beginOnboarding(supabase, user.id, agreedToMarketing, {
-          termsAgreed: true,
-          privacyAgreed: true,
-          copyrightAgreed: true,
-          birthDate,
-        });
-        if (updateError) {
-          console.error('Profile update error:', updateError);
-          setError(t.auth.profileUpdateError);
-          setLoading(false);
-          return;
-        }
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.error('complete-onboarding failed:', body);
+        setError(body.error === 'age_gate' ? (t.auth.ageGateError || `만 ${MIN_AGE}세 이상만 가입할 수 있어요.`) : t.auth.processErrorText);
+        setLoading(false);
+        return;
       }
 
       // 세션 갱신 → auth context에서 profile 재조회 (드롭다운에 사용자 정보 표시)
