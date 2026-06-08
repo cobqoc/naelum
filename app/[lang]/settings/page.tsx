@@ -31,17 +31,6 @@ interface Profile {
   show_cooked_to_public: boolean;
 }
 
-interface Interest {
-  interest_value: string;
-}
-
-interface DietaryPreference {
-  preference_type: string;
-}
-
-interface Allergy {
-  ingredient_name: string;
-}
 
 type TabType = 'profile' | 'preferences' | 'notifications' | 'account';
 
@@ -158,18 +147,18 @@ export default function SettingsPage() {
     (activeTab === 'preferences' && isDirtyPreferences);
 
   const loadProfile = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 클라 직접 supabase read 4개 → 서버 엔드포인트 1회.
+    // GET /api/users/me 가 profile + interests/dietary/allergies 를 Promise.all 로 묶어 반환(쿠키 인증).
+    const res = await fetch('/api/users/me');
+    if (res.status === 401) {
       router.push('/signin');
       return;
     }
-
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    if (!res.ok) {
+      setLoading(false);
+      return;
+    }
+    const { profile: profileData, interests, dietaryPreferences, allergies } = await res.json();
 
     if (profileData) {
       setProfile(profileData);
@@ -193,41 +182,21 @@ export default function SettingsPage() {
       setOriginalShowCooked(!!profileData.show_cooked_to_public);
     }
 
-    const { data: interestsData } = await supabase
-      .from('user_interests')
-      .select('interest_value')
-      .eq('user_id', user.id);
+    // API 가 이미 string[] 로 매핑해 반환 (interest_value·preference_type·ingredient_name).
+    const interestVals: string[] = interests || [];
+    setInterests(interestVals);
+    setOriginalInterests(interestVals);
 
-    if (interestsData) {
-      const vals = interestsData.map((i: Interest) => i.interest_value);
-      setInterests(vals);
-      setOriginalInterests(vals);
-    }
+    const dietaryVals: string[] = dietaryPreferences || [];
+    setDietary(dietaryVals);
+    setOriginalDietary(dietaryVals);
 
-    const { data: dietaryData } = await supabase
-      .from('user_dietary_preferences')
-      .select('preference_type')
-      .eq('user_id', user.id);
-
-    if (dietaryData) {
-      const vals = dietaryData.map((d: DietaryPreference) => d.preference_type);
-      setDietary(vals);
-      setOriginalDietary(vals);
-    }
-
-    const { data: allergiesData } = await supabase
-      .from('user_allergies')
-      .select('ingredient_name')
-      .eq('user_id', user.id);
-
-    if (allergiesData) {
-      const val = allergiesData.map((a: Allergy) => a.ingredient_name).join(', ');
-      setAllergies(val);
-      setOriginalAllergies(val);
-    }
+    const allergyStr: string = (allergies || []).join(', ');
+    setAllergies(allergyStr);
+    setOriginalAllergies(allergyStr);
 
     setLoading(false);
-  }, [supabase, router]);
+  }, [router]);
 
   useEffect(() => {
     loadProfile();

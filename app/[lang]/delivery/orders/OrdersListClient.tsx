@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
-import { createClient } from '@/lib/supabase/client';
 import { fetchOrders } from '@/lib/delivery/api';
 import { inferStatus } from '@/lib/delivery/orders';
 import type { Order } from '@/lib/delivery/types';
@@ -49,7 +48,7 @@ export default function OrdersListClient() {
     let cancelled = false;
     (async () => {
       try {
-        const list = await fetchOrders(createClient(), user.id);
+        const list = await fetchOrders();
         if (!cancelled) {
           setOrders(list);
           setLoading(false);

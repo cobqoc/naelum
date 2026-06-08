@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { addToCart } from '@/lib/delivery/cart';
 import type { Restaurant, MenuCategory, MenuItem } from '@/lib/delivery/types';
@@ -19,7 +18,6 @@ function formatPrice(n: number, lang: string): string {
 }
 
 export default function RestaurantDetailClient({ restaurantId }: Props) {
-  const supabase = createClient();
   const router = useRouter();
   const { t, language } = useI18n();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -33,37 +31,21 @@ export default function RestaurantDetailClient({ restaurantId }: Props) {
   const [pendingReplace, setPendingReplace] = useState<{ menuItem: MenuItem; existingRestaurantName: string } | null>(null);
 
   useEffect(() => {
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 3개 → 공개 엔드포인트 1회
+    // (식당 + 메뉴 카테고리/항목을 서버에서 Promise.all 병렬·컬럼명시로 묶어 반환).
     let cancelled = false;
     (async () => {
-      const { data: restData } = await supabase
-        .from('delivery_restaurants')
-        .select('*')
-        .eq('id', restaurantId)
-        .eq('is_active', true)
-        .maybeSingle();
-
+      const res = await fetch(`/api/delivery/restaurants/${restaurantId}`);
       if (cancelled) return;
-      if (!restData) {
+      if (!res.ok) {
+        // 미존재(404)·로드 실패 → notFound (원본: restData null → notFound 와 동일).
         setNotFound(true);
         setLoading(false);
         return;
       }
-      setRestaurant(restData);
-
-      const [{ data: catData }, { data: itemData }] = await Promise.all([
-        supabase
-          .from('delivery_menu_categories')
-          .select('*')
-          .eq('restaurant_id', restaurantId)
-          .order('sort_order', { ascending: true }),
-        supabase
-          .from('delivery_menu_items')
-          .select('*')
-          .eq('restaurant_id', restaurantId)
-          .order('sort_order', { ascending: true }),
-      ]);
-
+      const { restaurant: restData, categories: catData, items: itemData } = await res.json();
       if (cancelled) return;
+      setRestaurant(restData);
       setCategories(catData ?? []);
       setItems(itemData ?? []);
       setLoading(false);
@@ -71,7 +53,7 @@ export default function RestaurantDetailClient({ restaurantId }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [supabase, restaurantId]);
+  }, [restaurantId]);
 
   const groupedItems = useMemo(() => {
     const groups: { category: MenuCategory | null; items: MenuItem[] }[] = [];

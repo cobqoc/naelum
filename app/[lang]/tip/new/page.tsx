@@ -194,13 +194,10 @@ export default function TipNewPage() {
         router.push(`/tip/${data.tip.id}`);
       } else {
         // 비공개 팁은 공개 목록에 안 뜨므로 프로필 비공개 탭으로 이동
-        // 토스트는 profile fallback 무관하게 항상 노출 — 사용자에게 저장 확인 신호
+        // 토스트는 username fallback 무관하게 항상 노출 — 사용자에게 저장 확인 신호
+        // username 은 POST 응답에 동봉됨(클라 직접 read 제거, docs/DATA_LAYER.md)
         toast.success(t.tipForm.toastSavedPrivate);
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data: profile } = user
-          ? await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
-          : { data: null };
-        router.push(profile?.username ? `/@${profile.username}?tab=private` : '/');
+        router.push(data.username ? `/@${data.username}?tab=private` : '/');
       }
     } catch {
       setError(t.tipForm.errorGeneric);
@@ -231,14 +228,13 @@ export default function TipNewPage() {
         }),
       });
       const data = await res.json();
+      // 미인증이면 POST 가 401 → 여기서 처리(별도 getUser 가드 불필요).
       if (!res.ok) { setError(data.error || t.tipForm.errorGeneric); return; }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/signin'); return; }
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      // username 은 POST 응답에 동봉됨(클라 직접 read 제거, docs/DATA_LAYER.md)
       clearAutosave(AUTOSAVE_KEY);
       toast.success(t.tipForm.toastSavedDraft);
-      router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
+      router.push(data.username ? `/@${data.username}?tab=drafts` : '/');
     } catch {
       setError(t.tipForm.errorGeneric);
     } finally {

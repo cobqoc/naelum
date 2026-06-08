@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Cart, Address, Order, OrderStatus } from './types';
+import { toClientOrder, type DbOrder, type DbOrderItem } from './orderMapping';
 
 // 주문 번호 생성 (사람이 읽기 쉬운)
 function generateOrderNumber(): string {
@@ -22,67 +23,6 @@ export interface CreateOrderInput {
   address: Address;
   requestNote: string;
   paymentMethod: string;
-}
-
-interface DbOrder {
-  id: string;
-  order_number: string;
-  user_id: string | null;
-  restaurant_id: string;
-  rider_id: string | null;
-  address_snapshot: Address;
-  status: OrderStatus;
-  subtotal: number;
-  delivery_fee: number;
-  discount: number;
-  total: number;
-  payment_method: string | null;
-  request_note: string | null;
-  estimated_delivery_at: string | null;
-  placed_at: string;
-  accepted_at: string | null;
-  ready_at: string | null;
-  picked_up_at: string | null;
-  delivered_at: string | null;
-  cancelled_at: string | null;
-  cancel_reason: string | null;
-  // 식당 정보 JOIN 결과
-  restaurant?: { name: string };
-}
-
-interface DbOrderItem {
-  id: string;
-  order_id: string;
-  menu_item_id: string | null;
-  name_snapshot: string;
-  price_snapshot: number;
-  quantity: number;
-  selected_options: unknown;
-  subtotal: number;
-}
-
-function toClientOrder(dbOrder: DbOrder, items: DbOrderItem[]): Order {
-  return {
-    id: dbOrder.id,
-    orderNumber: dbOrder.order_number,
-    restaurantId: dbOrder.restaurant_id,
-    restaurantName: dbOrder.restaurant?.name ?? '',
-    items: items.map((i) => ({
-      menuItemId: i.menu_item_id ?? '',
-      name: i.name_snapshot,
-      price: i.price_snapshot,
-      quantity: i.quantity,
-    })),
-    subtotal: dbOrder.subtotal,
-    deliveryFee: dbOrder.delivery_fee,
-    total: dbOrder.total,
-    address: dbOrder.address_snapshot,
-    requestNote: dbOrder.request_note ?? '',
-    paymentMethod: dbOrder.payment_method ?? 'mock',
-    status: dbOrder.status,
-    placedAt: dbOrder.placed_at,
-    estimatedDeliveryAt: dbOrder.estimated_delivery_at ?? dbOrder.placed_at,
-  };
 }
 
 export async function createOrder(
@@ -148,65 +88,27 @@ export async function createOrder(
   return toClientOrder(orderRow as DbOrder, itemsData as DbOrderItem[]);
 }
 
-export async function fetchOrders(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<Order[]> {
-  const { data: ordersData, error: ordersErr } = await supabase
-    .from('delivery_orders')
-    .select('*, restaurant:delivery_restaurants(name)')
-    .eq('user_id', userId)
-    .order('placed_at', { ascending: false });
-
-  if (ordersErr || !ordersData) {
-    throw new Error(`Failed to fetch orders: ${ordersErr?.message ?? 'unknown'}`);
+// 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read → 서버 엔드포인트.
+// 본인 주문 목록은 GET /api/delivery/orders 가 쿠키 인증 + 매핑까지 처리.
+export async function fetchOrders(): Promise<Order[]> {
+  const res = await fetch('/api/delivery/orders');
+  if (!res.ok) {
+    const msg = await res.json().then((b) => b.error).catch(() => String(res.status));
+    throw new Error(`Failed to fetch orders: ${msg ?? 'unknown'}`);
   }
-  if (ordersData.length === 0) return [];
-
-  const orderIds = (ordersData as DbOrder[]).map((o) => o.id);
-  const { data: itemsData, error: itemsErr } = await supabase
-    .from('delivery_order_items')
-    .select('*')
-    .in('order_id', orderIds);
-
-  if (itemsErr) {
-    throw new Error(`Failed to fetch order items: ${itemsErr.message}`);
-  }
-
-  const itemsByOrder: Record<string, DbOrderItem[]> = {};
-  for (const it of (itemsData as DbOrderItem[]) ?? []) {
-    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = [];
-    itemsByOrder[it.order_id].push(it);
-  }
-
-  return (ordersData as DbOrder[]).map((o) => toClientOrder(o, itemsByOrder[o.id] ?? []));
+  const { orders } = await res.json();
+  return orders as Order[];
 }
 
-export async function fetchOrder(
-  supabase: SupabaseClient,
-  orderId: string
-): Promise<Order | null> {
-  const { data: orderRow, error: orderErr } = await supabase
-    .from('delivery_orders')
-    .select('*, restaurant:delivery_restaurants(name)')
-    .eq('id', orderId)
-    .maybeSingle();
-
-  if (orderErr) {
-    throw new Error(`Failed to fetch order: ${orderErr.message}`);
+export async function fetchOrder(orderId: string): Promise<Order | null> {
+  const res = await fetch(`/api/delivery/orders/${orderId}`);
+  if (res.status === 404) return null; // 미존재/본인 아님(RLS) → null (원본 동작 보존)
+  if (!res.ok) {
+    const msg = await res.json().then((b) => b.error).catch(() => String(res.status));
+    throw new Error(`Failed to fetch order: ${msg ?? 'unknown'}`);
   }
-  if (!orderRow) return null;
-
-  const { data: itemsData, error: itemsErr } = await supabase
-    .from('delivery_order_items')
-    .select('*')
-    .eq('order_id', orderId);
-
-  if (itemsErr) {
-    throw new Error(`Failed to fetch order items: ${itemsErr.message}`);
-  }
-
-  return toClientOrder(orderRow as DbOrder, (itemsData as DbOrderItem[]) ?? []);
+  const { order } = await res.json();
+  return order as Order | null;
 }
 
 export async function cancelOrder(

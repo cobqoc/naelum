@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 
@@ -36,34 +36,27 @@ export default function AdminInquiriesPage() {
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const loadInquiries = async () => {
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 2개(중복) → 서버 엔드포인트 1회.
+  // GET /api/admin/inquiries 가 admin RLS + verifyAdmin 게이트로 전체 문의 반환. .error 표면화 보존.
+  const loadInquiries = useCallback(async () => {
     setLoading(true);
-    // admin RLS 정책(20260601_contact_inquiries_admin_rls)으로 전체 문의 조회.
-    // .error 명시 체크 — 정책 누락/권한 문제를 조용히 빈 목록으로 숨기지 않음.
-    const { data, error } = await supabase
-      .from('contact_inquiries')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) toast.error(`문의 목록을 불러오지 못했습니다: ${error.message}`);
+    const res = await fetch('/api/admin/inquiries');
+    if (!res.ok) {
+      let msg = String(res.status);
+      try { msg = (await res.json()).error || msg; } catch { /* noop */ }
+      toast.error(`문의 목록을 불러오지 못했습니다: ${msg}`);
+      setLoading(false);
+      return;
+    }
+    const { inquiries: data } = await res.json();
     setInquiries(data || []);
     setLoading(false);
-  };
+  }, [toast]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from('contact_inquiries')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!cancelled) {
-        if (error) toast.error(`문의 목록을 불러오지 못했습니다: ${error.message}`);
-        setInquiries(data || []);
-        setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [supabase, toast]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadInquiries();
+  }, [loadInquiries]);
 
   const updateStatus = async (id: string, newStatus: string) => {
     // 옵티미스틱 갱신 — 실패 시 .error 체크해 롤백(조용한 원복 버그 방지, C8).

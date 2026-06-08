@@ -99,6 +99,12 @@ async function submitTipAndExpect(
     res.status(),
     `POST /api/tip 비정상 응답: ${res.status()} ${await res.text().catch(() => '')}`,
   ).toBeLessThan(400);
+  // 데이터계층 이전 회귀 가드: 응답에 작성자 username 동봉(클라 리다이렉트가 직접 read 안 함).
+  const body = await res.json().catch(() => ({} as Record<string, unknown>));
+  expect(
+    typeof body.username === 'string' && (body.username as string).length > 0,
+    'POST /api/tip 응답에 username 누락 — 리다이렉트가 / 로 폴백됨',
+  ).toBeTruthy();
   await expect.poll(() => readTipState(userId, title), { timeout: 10_000 }).toBe(expected);
 }
 

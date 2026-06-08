@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import Link from '@/components/Common/LocalizedLink';
 
 interface DashboardStats {
@@ -27,44 +26,29 @@ interface RecentAction {
 }
 
 export default function AdminDashboard() {
-  const supabase = createClient();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadDashboardData = useCallback(async () => {
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 2개 → 서버 엔드포인트 1회.
+    // GET /api/admin/dashboard 가 통계+최근활동을 Promise.all 병렬로 묶어 반환(verifyAdmin 게이트).
     try {
-      // Load stats from view
-      const { data: statsData } = await supabase
-        .from('admin_dashboard_stats')
-        .select('*')
-        .single();
-
+      const res = await fetch('/api/admin/dashboard');
+      if (!res.ok) return;
+      const { stats: statsData, recentActions: actionsData } = await res.json();
       if (statsData) {
         setStats(statsData);
       }
-
-      // Load recent admin actions
-      const { data: actionsData } = await supabase
-        .from('admin_actions')
-        .select(`
-          id,
-          action_type,
-          created_at,
-          admin:profiles!admin_id(username)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
       if (actionsData) {
-        setRecentActions(actionsData as unknown as RecentAction[]);
+        setRecentActions(actionsData as RecentAction[]);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     loadDashboardData();
