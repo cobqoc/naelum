@@ -213,26 +213,23 @@ export default function NewRecipePage() {
   useEffect(() => {
     if (!remixId) return;
 
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read 3개(recipes·ingredients·steps)를
+    // 기존 GET /api/recipes/[id] 재사용으로 교체. 부수로 선존 버그 수정 — 옛 remix 는
+    // ingredients 를 존재하지 않는 `order_index` 로 정렬해 쿼리가 조용히 에러→재료 미prefill.
+    // 엔드포인트는 display_order 로 정렬하므로 재료가 정상 prefill 된다.
     const loadRemixData = async () => {
-      const { data: recipe } = await supabase
-        .from('recipes')
-        .select('id, title, description, cook_time_minutes, difficulty_level, servings, cuisine_type, dish_type, author_id, profiles:author_id(username)')
-        .eq('id', remixId)
-        .single();
-
+      const res = await fetch(`/api/recipes/${remixId}`);
+      if (!res.ok) return;
+      const { recipe } = await res.json();
       if (!recipe) return;
 
-      const { data: recipeIngredients } = await supabase
-        .from('recipe_ingredients')
-        .select('ingredient_name, quantity, unit, notes, is_optional, substitutes')
-        .eq('recipe_id', remixId)
-        .order('order_index');
-
-      const { data: recipeSteps } = await supabase
-        .from('recipe_steps')
-        .select('instruction, timer_minutes, tip')
-        .eq('recipe_id', remixId)
-        .order('step_number');
+      const recipeIngredients = recipe.ingredients as {
+        ingredient_name: string; quantity: number | null; unit: string | null;
+        notes: string | null; is_optional: boolean | null; substitutes: unknown;
+      }[] | null;
+      const recipeSteps = recipe.steps as {
+        instruction: string; timer_minutes: number | null; tip: string | null;
+      }[] | null;
 
       // 폼에 데이터 채우기
       setTitle(`리믹스: ${recipe.title}`);
@@ -246,7 +243,7 @@ export default function NewRecipePage() {
       if (recipeIngredients && recipeIngredients.length > 0) {
         setIngredients(recipeIngredients.map(i => ({
           ingredient_name: i.ingredient_name,
-          quantity: i.quantity || '',
+          quantity: i.quantity?.toString() || '',
           unit: i.unit || '선택',
           notes: i.notes || '',
           is_optional: i.is_optional || false,
@@ -264,7 +261,7 @@ export default function NewRecipePage() {
         })));
       }
 
-      const authorData = recipe.profiles as unknown as { username: string } | null;
+      const authorData = recipe.author as { username: string } | null;
       setRemixSource({
         id: recipe.id,
         title: recipe.title,
@@ -273,7 +270,7 @@ export default function NewRecipePage() {
     };
 
     loadRemixData();
-  }, [remixId, supabase]);
+  }, [remixId]);
 
   // 자동 태그 생성
   useEffect(() => {
@@ -582,10 +579,10 @@ export default function NewRecipePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || tf.errorDraft);
 
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      // 데이터 계층 이전(docs/DATA_LAYER.md): username 직접 read 제거 → POST 응답 동봉값 사용.
       clearAutosave(AUTOSAVE_KEY);
       toast.success(tf.successDraft);
-      router.push(profile?.username ? `/@${profile.username}?tab=drafts` : '/');
+      router.push(data.username ? `/@${data.username}?tab=drafts` : '/');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : tf.errorGeneric);
     } finally {

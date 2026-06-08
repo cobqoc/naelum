@@ -204,10 +204,18 @@ export async function POST(request: NextRequest) {
   // 사용자 레시피 카운트 업데이트
   await supabase.rpc('increment_recipes_count', { user_id: user.id })
 
+  // 작성자 username 동봉 — 클라가 작성 후 /@username 리다이렉트에 사용(데이터 계층 이전:
+  // recipes/new 의 draft 저장 후 profiles.username 직접 read 제거. 발행 경로는 무시).
+  const { data: authorProfile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .maybeSingle()
+
   // 캐시 무효화 불필요: 홈(force-dynamic)·레시피 상세(force-dynamic)는 매 요청 SSR이고,
   // /recipes 목록은 셸만 static(revalidate 3600)이며 실제 목록은 AllRecipesClient가
   // 클라이언트에서 fetch → 새 레시피가 즉시 노출됨. (과거 "홈 60초 revalidate 캐시" 주석은
   // 실재하지 않는 캐시를 가리켜 stale, 2026-06-08 정정.)
 
-  return NextResponse.json({ recipe }, { status: 201 })
+  return NextResponse.json({ recipe, username: authorProfile?.username ?? null }, { status: 201 })
 }
