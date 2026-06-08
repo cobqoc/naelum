@@ -122,20 +122,17 @@ export default function EditRecipePage(props: PageProps) {
           return;
         }
 
-        // 레시피 기본 정보 조회
-        const { data: recipeData, error: recipeError } = await supabase
-          .from('recipes')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (recipeError || !recipeData) {
+        // 데이터 계층 이전(docs/DATA_LAYER.md): 폼 로드 read 4개(recipes·ingredients·steps·tags)를
+        // 기존 GET /api/recipes/[id] 재사용(recipe 전 필드 + ingredients/steps 정렬 + tags string[]).
+        const res = await fetch(`/api/recipes/${id}`);
+        if (!res.ok) {
           if (isMounted) {
             toast.error(tf.errorRecipeNotFound);
             router.push('/');
           }
           return;
         }
+        const { recipe: recipeData } = await res.json();
 
         // 권한 확인
         if (recipeData.author_id !== user.id) {
@@ -146,25 +143,10 @@ export default function EditRecipePage(props: PageProps) {
           return;
         }
 
-        // 재료 조회
-        const { data: ingredientsData } = await supabase
-          .from('recipe_ingredients')
-          .select('*')
-          .eq('recipe_id', id)
-          .order('display_order', { ascending: true });
-
-        // 조리 단계 조회
-        const { data: stepsData } = await supabase
-          .from('recipe_steps')
-          .select('*')
-          .eq('recipe_id', id)
-          .order('step_number', { ascending: true });
-
-        // 태그 조회
-        const { data: tagsData } = await supabase
-          .from('recipe_tags')
-          .select('tag_name')
-          .eq('recipe_id', id);
+        // 응답에 동봉된 자식 컬렉션 (엔드포인트가 display_order·step_number 로 정렬, tags 는 string[]).
+        const ingredientsData = recipeData.ingredients;
+        const stepsData = recipeData.steps;
+        const tagsData: string[] = recipeData.tags;
 
         if (!isMounted) return;
 
@@ -219,9 +201,9 @@ export default function EditRecipePage(props: PageProps) {
           setSteps(loadedSteps);
         }
 
-        // 태그 설정
+        // 태그 설정 (엔드포인트가 이미 string[] 로 반환)
         if (tagsData && tagsData.length > 0) {
-          setTags(tagsData.map((t: { tag_name: string }) => t.tag_name));
+          setTags(tagsData);
         }
       } catch (error) {
         console.error('Error fetching recipe:', error);
