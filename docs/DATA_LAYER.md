@@ -67,11 +67,13 @@
 스캐너 상단 `RATCHET` 상수가 현재 부채를 high-water mark 로 고정 — **초과 시 `exit 1`**(머지 차단), 기존 부채는 통과.
 burndown 으로 수치가 줄면 **`RATCHET` 상한도 같이 낮춰 다시 잠근다**(스캐너가 미달 시 "상한 낮추세요" 알림 출력).
 - `[RATCHET]` **client-direct-read** — `'use client'` 파일의 `.from(...).select` read
-  (mutation insert/update/delete/upsert 는 제외). **상한 26파일 / 50곳** — 새로 늘면 차단.
+  (mutation insert/update/delete/upsert 는 제외). **상한 18파일 / 31곳** (시작 26/50 → burndown).
   파일별 리스트를 출력해 *새* 위반이 diff 에 드러남.
-- `[RATCHET]` **select-star** — `select('*')` 사용처 수. **상한 67곳**.
-- `[RATCHET]` **hardcoded-korean** — client JSX 한글 리터럴 파일 수. **상한 72** (글로벌 출시 전 t.* 이관).
+- `[RATCHET]` **select-star** — `select('*')` 사용처 수. **상한 60곳** (시작 67).
+- `[RATCHET]` **hardcoded-korean** — client JSX 한글 리터럴 파일 수. **상한 71** (글로벌 출시 전 t.* 이관).
 - god-file(`scan:line-counts`)·date-utc(BLOCK) 가드와 같은 자리. `--json` CI 파싱 지원.
+
+> **2026-06-08 세션 결산** — ratchet 승격 + 슬라이스 7개(cook삭제·settings·admin·tip·NotificationsTab·delivery주문·식당상세). client read **26파일/50곳 → 18/31**(-19곳, 38%), select-star 67→60. admin·알림탭 e2e 안전망 신규. 다음: merchant/rider·DeliveryHome·AllRecipes. HomeClient 냉장고는 옵티미스틱 race 로 보류.
 
 ---
 
