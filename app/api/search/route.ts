@@ -136,10 +136,13 @@ export async function GET(request: NextRequest) {
     })())
   }
 
-  await Promise.all(searchPromises)
+  // 병목 개선: getUser 는 검색쿼리와 독립(결과 enrichment 에만 필요) → 병렬로 1 round-trip 절감.
+  const [, { data: { user } }] = await Promise.all([
+    Promise.all(searchPromises),
+    supabase.auth.getUser(),
+  ])
 
   // 로그인 사용자: has_cooked 배지 + 검색 히스토리 저장
-  const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     const allRecipeIds = [
       ...(results.recipes?.data ?? []),

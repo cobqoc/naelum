@@ -10,21 +10,27 @@ export async function GET() {
     const { user, error: authError } = await requireAuth(supabase)
     if (authError) return authError
 
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('id, username, email, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country, created_at')
-      .eq('id', user!.id)
-      .maybeSingle()
-
-    if (error || !profile) {
-      return NextResponse.json({ error: '프로필을 찾을 수 없습니다' }, { status: 404 })
-    }
-
-    const [{ data: interests }, { data: dietaryPrefs }, { data: allergies }] = await Promise.all([
+    // 병목 개선: profile 과 3 선호도 read 는 모두 user.id 만 의존(독립) → 4개를 한 Promise.all
+    // 로 묶어 2단 round-trip → 1단. (profile null 체크는 결과 받은 뒤로 이동)
+    const [
+      { data: profile, error },
+      { data: interests },
+      { data: dietaryPrefs },
+      { data: allergies },
+    ] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, username, email, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country, created_at')
+        .eq('id', user!.id)
+        .maybeSingle(),
       supabase.from('user_interests').select('interest_value').eq('user_id', user!.id),
       supabase.from('user_dietary_preferences').select('preference_type').eq('user_id', user!.id),
       supabase.from('user_allergies').select('ingredient_name').eq('user_id', user!.id),
     ])
+
+    if (error || !profile) {
+      return NextResponse.json({ error: '프로필을 찾을 수 없습니다' }, { status: 404 })
+    }
 
     return NextResponse.json({
       profile,

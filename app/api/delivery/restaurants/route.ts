@@ -10,12 +10,15 @@ const RESTAURANT_COLS =
 export async function GET() {
   const supabase = await createClient();
 
+  // 병목/정합성: 비페이지네이션 목록이라 PostgREST 1000행 silent cap 방지 + 과대 fetch 차단.
+  // nearby 라우트(MAX_ROWS 500)와 동일 취지. 홈 목록 상한 200(현 6개, 충분한 헤드룸).
   const { data, error } = await supabase
     .from('delivery_restaurants')
     .select(RESTAURANT_COLS)
     .eq('is_active', true)
     .order('is_open', { ascending: false })
-    .order('rating', { ascending: false });
+    .order('rating', { ascending: false })
+    .limit(200);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
