@@ -41,29 +41,30 @@ export default function MenuManagerClient({ restaurantId, restaurantName }: Prop
   const [pendingDelete, setPendingDelete] = useState<{ type: 'category' | 'item'; id: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read 2개 → 서버 엔드포인트.
+  // 소유 식당은 owner_id 로 서버가 재유도하므로 restaurantId 전달 불필요(쓰기엔 계속 사용).
   async function load() {
     setLoading(true);
-    const [{ data: catData }, { data: itemData }] = await Promise.all([
-      supabase
-        .from('delivery_menu_categories')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('sort_order', { ascending: true }),
-      supabase
-        .from('delivery_menu_items')
-        .select('*')
-        .eq('restaurant_id', restaurantId)
-        .order('sort_order', { ascending: true }),
-    ]);
-    setCategories(catData ?? []);
-    setItems(itemData ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/delivery/merchant/menu');
+      if (res.ok) {
+        const { categories: catData, items: itemData } = await res.json();
+        setCategories(catData ?? []);
+        setItems(itemData ?? []);
+      } else {
+        const msg = await res.json().then((b) => b.error).catch(() => String(res.status));
+        setError(msg ?? 'Failed');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId]);
+  }, []);
 
   async function addCategory() {
     if (!newCategoryName.trim()) return;
