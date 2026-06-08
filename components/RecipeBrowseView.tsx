@@ -332,7 +332,7 @@ export default function RecipeBrowseView({
                 : 'bg-background-tertiary text-text-primary hover:bg-background-secondary'
             }`}
           >
-            {isSaved ? '👅 낼름함!' : '👅 낼름'}
+            {isSaved ? t.recipe.naelumSaved : t.recipe.naelumSave}
           </button>
         </div>
       </div>

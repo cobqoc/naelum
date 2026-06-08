@@ -112,9 +112,9 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
 
       // Build a human-readable page name from the pathname
       const pageName = getPageName(pathname);
-      announceMessage(`${pageName} 페이지로 이동했습니다. Navigated to ${pageName}.`);
+      announceMessage(t.accessibility.navigatedTo.replace('{page}', pageName));
     }
-  }, [pathname, announceMessage]);
+  }, [pathname, announceMessage, t]);
 
   // ── Keyboard shortcuts ──
 
@@ -145,8 +145,9 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
       // Alt+S: Focus search bar
       if (e.altKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
+        // SearchBar 는 type="search" — 그걸 우선 타깃. placeholder/aria 는 영어 fallback(로케일별 한글 placeholder 매칭은 불완전하므로 제거).
         const searchInput = document.querySelector<HTMLInputElement>(
-          'input[type="search"], input[placeholder*="검색"], input[placeholder*="search"], input[aria-label*="search"], input[aria-label*="검색"]'
+          'input[type="search"], input[placeholder*="search" i], input[aria-label*="search" i]'
         );
         if (searchInput) {
           searchInput.focus();

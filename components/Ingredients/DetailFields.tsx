@@ -258,8 +258,8 @@ export default function DetailFields({
                 const today = new Date(); today.setHours(0,0,0,0);
                 const d = new Date(item.expiry_date + 'T00:00:00'); d.setHours(0,0,0,0);
                 const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-                if (diff < 0) return `⚠️ ${Math.abs(diff)}일 지남`;
-                if (diff === 0) return '⚠️ 오늘 만료';
+                if (diff < 0) return t.ingredient.expiredDaysAgo.replace('{n}', String(Math.abs(diff)));
+                if (diff === 0) return t.ingredient.expiresTodayWarn;
                 return `D-${diff}`;
               })()}
             </p>

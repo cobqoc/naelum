@@ -116,7 +116,7 @@ export default function AddIngredientDialog({
         const data = await response.json();
 
         if (data.duplicate) {
-          setDuplicateError('비슷한 재료가 이미 있습니다');
+          setDuplicateError(t.ingredient.duplicateExists);
           setSimilarIngredient(data.similar.name);
         } else {
           setDuplicateError('');
@@ -128,7 +128,7 @@ export default function AddIngredientDialog({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [name]);
+  }, [name, t]);
 
   /**
    * 유효성 검사

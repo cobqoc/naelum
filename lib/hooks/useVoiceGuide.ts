@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useI18n } from '@/lib/i18n/context';
 
 type VoiceSpeed = 'slow' | 'normal' | 'fast';
 
@@ -11,6 +12,7 @@ const SPEED_RATES: Record<VoiceSpeed, number> = {
 };
 
 export function useVoiceGuide() {
+  const { t } = useI18n();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speed, setSpeed] = useState<VoiceSpeed>('normal');
@@ -81,20 +83,20 @@ export function useVoiceGuide() {
   }, [isSupported, speed, stop]);
 
   const speakStep = useCallback((stepNumber: number, instruction: string, tip?: string) => {
-    let text = `${stepNumber}단계. ${instruction}`;
+    let text = `${t.cookMode.voiceStepPrefix.replace('{n}', String(stepNumber))} ${instruction}`;
     if (tip) {
-      text += ` 팁: ${tip}`;
+      text += ` ${t.cookMode.voiceTipPrefix} ${tip}`;
     }
     speak(text);
-  }, [speak]);
+  }, [speak, t]);
 
   const speakStepDirect = useCallback((stepNumber: number, instruction: string, tip?: string) => {
-    let text = `${stepNumber}단계. ${instruction}`;
+    let text = `${t.cookMode.voiceStepPrefix.replace('{n}', String(stepNumber))} ${instruction}`;
     if (tip) {
-      text += ` 팁: ${tip}`;
+      text += ` ${t.cookMode.voiceTipPrefix} ${tip}`;
     }
     speakDirect(text);
-  }, [speakDirect]);
+  }, [speakDirect, t]);
 
   const toggle = useCallback(() => {
     if (!isEnabled) {

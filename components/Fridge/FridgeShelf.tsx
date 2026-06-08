@@ -54,12 +54,12 @@ export const SECTION_CONFIG = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-export function getExpiryInfo(expiryDate: string | null | undefined) {
+export function getExpiryInfo(expiryDate: string | null | undefined, expiredLabel: string) {
   if (!expiryDate) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const expiry = new Date(expiryDate); expiry.setHours(0, 0, 0, 0);
   const days = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 0) return { text: '만료', level: 'critical' as const };
+  if (days < 0) return { text: expiredLabel, level: 'critical' as const };
   if (days === 0) return { text: 'D-Day', level: 'critical' as const };
   if (days <= 3) return { text: `D-${days}`, level: 'critical' as const };
   if (days <= 7) return { text: `D-${days}`, level: 'warning' as const };
@@ -79,7 +79,7 @@ export function IngredientPill({
 }) {
   const { t } = useI18n();
   const icon = CATEGORY_ICONS[item.category] || '📦';
-  const expiry = getExpiryInfo(item.expiry_date);
+  const expiry = getExpiryInfo(item.expiry_date, t.fridge.expired);
 
   return (
     <span

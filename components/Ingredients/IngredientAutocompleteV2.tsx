@@ -16,6 +16,7 @@ import {
   clearRecentIngredients,
   RecentIngredient,
 } from '@/lib/utils/recentIngredients';
+import { useI18n } from '@/lib/i18n/context';
 
 /**
  * 재료 자동완성 V2 컴포넌트
@@ -40,7 +41,7 @@ export default function IngredientAutocompleteV2({
   value,
   onChange,
   onSelect,
-  placeholder = '재료 이름을 입력하세요',
+  placeholder,
   enableCategoryFilter = false,
   selectedCategories: externalSelectedCategories,
   onCategoryChange: externalOnCategoryChange,
@@ -54,6 +55,8 @@ export default function IngredientAutocompleteV2({
   compact = false,
   dropdownDirection = 'down',
 }: IngredientAutocompleteV2Props) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t.ingredient.namePlaceholder;
   // ===== 상태 관리 =====
   const [internalSelectedCategories, setInternalSelectedCategories] = useState<string[]>([]);
   const [recentItems, setRecentItems] = useState<IngredientItem[]>([]);
@@ -208,7 +211,7 @@ export default function IngredientAutocompleteV2({
         value={value}
         onChange={onChange}
         onSelect={handleSelectIngredient}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         fetchSuggestions={fetchIngredientSuggestions}
         minQueryLength={2}
         debounceMs={300}
@@ -222,7 +225,7 @@ export default function IngredientAutocompleteV2({
         disabled={disabled}
         autoFocus={autoFocus}
         dropdownDirection={dropdownDirection}
-        ariaLabel="재료 검색"
+        ariaLabel={t.ingredient.searchAria}
       />
 
       {/* 커스텀 재료 추가 다이얼로그 */}

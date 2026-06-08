@@ -35,38 +35,38 @@ interface CategorySummary {
 }
 
 interface CategoryMeta {
-  label: string;
   emoji: string;
   /** Tailwind 색상 톤 — 카드 배경·테두리 */
   tone: string;
 }
 
-// 카테고리 이름·이모지·색상 톤. status='pending' 카테고리는 메인에 노출 X.
+// 카테고리 이모지·색상 톤. 라벨은 t.ingredient.categoryLabels(8개 로케일)에서 가져온다(아래 render).
+// status='pending' 카테고리는 메인에 노출 X.
 const CATEGORY_META: Record<string, CategoryMeta> = {
-  veggie:     { label: '채소',         emoji: '🥬', tone: 'from-green-500/10 to-green-500/5 border-green-500/30' },
-  meat:       { label: '육류',         emoji: '🥩', tone: 'from-red-500/10 to-red-500/5 border-red-500/30' },
-  seafood:    { label: '해산물',       emoji: '🦐', tone: 'from-cyan-500/10 to-cyan-500/5 border-cyan-500/30' },
-  egg:        { label: '달걀류',       emoji: '🥚', tone: 'from-yellow-500/10 to-yellow-500/5 border-yellow-500/30' },
-  dairy:      { label: '유제품',       emoji: '🥛', tone: 'from-blue-500/10 to-blue-500/5 border-blue-500/30' },
-  grain:      { label: '곡류·면',      emoji: '🌾', tone: 'from-amber-500/10 to-amber-500/5 border-amber-500/30' },
-  legume:     { label: '콩류',         emoji: '🫘', tone: 'from-orange-700/10 to-orange-700/5 border-orange-700/30' },
-  nuts:       { label: '견과류',       emoji: '🥜', tone: 'from-orange-800/10 to-orange-800/5 border-orange-800/30' },
-  fruit:      { label: '과일',         emoji: '🍎', tone: 'from-pink-500/10 to-pink-500/5 border-pink-500/30' },
-  seasoning:  { label: '양념&소스',    emoji: '🥫', tone: 'from-orange-500/10 to-orange-500/5 border-orange-500/30' },
-  spice:      { label: '향신료',       emoji: '🌶️', tone: 'from-red-600/10 to-red-600/5 border-red-600/30' },
-  condiment:  { label: '조미료',       emoji: '🧂', tone: 'from-purple-500/10 to-purple-500/5 border-purple-500/30' },
-  oil:        { label: '유지·기름',     emoji: '🫗', tone: 'from-yellow-600/10 to-yellow-600/5 border-yellow-600/30' },
-  sweetener:  { label: '당류·감미료',   emoji: '🍯', tone: 'from-rose-400/10 to-rose-400/5 border-rose-400/30' },
-  mushroom:   { label: '버섯류',       emoji: '🍄', tone: 'from-amber-800/10 to-amber-800/5 border-amber-800/30' },
-  seaweed:    { label: '해조류',       emoji: '🌿', tone: 'from-emerald-600/10 to-emerald-600/5 border-emerald-600/30' },
-  alcohol:    { label: '주류',         emoji: '🍷', tone: 'from-violet-500/10 to-violet-500/5 border-violet-500/30' },
-  seeds:      { label: '씨앗류',       emoji: '🌰', tone: 'from-yellow-700/10 to-yellow-700/5 border-yellow-700/30' },
-  fermented:  { label: '발효식품',     emoji: '🍶', tone: 'from-indigo-500/10 to-indigo-500/5 border-indigo-500/30' },
-  bakery:     { label: '빵·베이커리',  emoji: '🍞', tone: 'from-amber-700/10 to-amber-700/5 border-amber-700/30' },
-  beverage:   { label: '음료',         emoji: '🥤', tone: 'from-sky-500/10 to-sky-500/5 border-sky-500/30' },
-  snack:      { label: '간식·디저트',  emoji: '🍪', tone: 'from-rose-500/10 to-rose-500/5 border-rose-500/30' },
-  processed:  { label: '가공식품',     emoji: '📦', tone: 'from-gray-500/10 to-gray-500/5 border-gray-500/30' },
-  other:      { label: '기타',         emoji: '✨', tone: 'from-slate-500/10 to-slate-500/5 border-slate-500/30' },
+  veggie:     { emoji: '🥬', tone: 'from-green-500/10 to-green-500/5 border-green-500/30' },
+  meat:       { emoji: '🥩', tone: 'from-red-500/10 to-red-500/5 border-red-500/30' },
+  seafood:    { emoji: '🦐', tone: 'from-cyan-500/10 to-cyan-500/5 border-cyan-500/30' },
+  egg:        { emoji: '🥚', tone: 'from-yellow-500/10 to-yellow-500/5 border-yellow-500/30' },
+  dairy:      { emoji: '🥛', tone: 'from-blue-500/10 to-blue-500/5 border-blue-500/30' },
+  grain:      { emoji: '🌾', tone: 'from-amber-500/10 to-amber-500/5 border-amber-500/30' },
+  legume:     { emoji: '🫘', tone: 'from-orange-700/10 to-orange-700/5 border-orange-700/30' },
+  nuts:       { emoji: '🥜', tone: 'from-orange-800/10 to-orange-800/5 border-orange-800/30' },
+  fruit:      { emoji: '🍎', tone: 'from-pink-500/10 to-pink-500/5 border-pink-500/30' },
+  seasoning:  { emoji: '🥫', tone: 'from-orange-500/10 to-orange-500/5 border-orange-500/30' },
+  spice:      { emoji: '🌶️', tone: 'from-red-600/10 to-red-600/5 border-red-600/30' },
+  condiment:  { emoji: '🧂', tone: 'from-purple-500/10 to-purple-500/5 border-purple-500/30' },
+  oil:        { emoji: '🫗', tone: 'from-yellow-600/10 to-yellow-600/5 border-yellow-600/30' },
+  sweetener:  { emoji: '🍯', tone: 'from-rose-400/10 to-rose-400/5 border-rose-400/30' },
+  mushroom:   { emoji: '🍄', tone: 'from-amber-800/10 to-amber-800/5 border-amber-800/30' },
+  seaweed:    { emoji: '🌿', tone: 'from-emerald-600/10 to-emerald-600/5 border-emerald-600/30' },
+  alcohol:    { emoji: '🍷', tone: 'from-violet-500/10 to-violet-500/5 border-violet-500/30' },
+  seeds:      { emoji: '🌰', tone: 'from-yellow-700/10 to-yellow-700/5 border-yellow-700/30' },
+  fermented:  { emoji: '🍶', tone: 'from-indigo-500/10 to-indigo-500/5 border-indigo-500/30' },
+  bakery:     { emoji: '🍞', tone: 'from-amber-700/10 to-amber-700/5 border-amber-700/30' },
+  beverage:   { emoji: '🥤', tone: 'from-sky-500/10 to-sky-500/5 border-sky-500/30' },
+  snack:      { emoji: '🍪', tone: 'from-rose-500/10 to-rose-500/5 border-rose-500/30' },
+  processed:  { emoji: '📦', tone: 'from-gray-500/10 to-gray-500/5 border-gray-500/30' },
+  other:      { emoji: '✨', tone: 'from-slate-500/10 to-slate-500/5 border-slate-500/30' },
 };
 
 export default function KitchenHomeClient() {

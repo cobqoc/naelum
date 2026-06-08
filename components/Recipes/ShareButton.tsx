@@ -147,7 +147,7 @@ export default function ShareButton({ recipeId, title, description, imageUrl }: 
 
   const handleKakaoShare = () => {
     if (!window.Kakao?.isInitialized()) {
-      toast.error('카카오 앱 키가 설정되지 않았습니다.');
+      toast.error(t.share.kakaoNotConfigured);
       return;
     }
     window.Kakao.Share.sendDefault({

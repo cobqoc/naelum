@@ -40,6 +40,9 @@ export default function NewRecipePage() {
   const toast = useToast();
   const { t } = useI18n();
   const tf = t.recipeForm;
+  // remix prefill effect 가 deps=[remixId] 라 t 를 dep 에 넣으면 언어변경 시 폼이 리셋됨 → ref 로 최신값만 읽음
+  const remixPrefixRef = useRef(tf.remixTitlePrefix);
+  remixPrefixRef.current = tf.remixTitlePrefix;
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const [remixSource, setRemixSource] = useState<{ id: string; title: string; author: string } | null>(null);
@@ -232,7 +235,7 @@ export default function NewRecipePage() {
       }[] | null;
 
       // 폼에 데이터 채우기
-      setTitle(`리믹스: ${recipe.title}`);
+      setTitle(remixPrefixRef.current.replace('{title}', recipe.title));
       setDescription(recipe.description || '');
       setServings(recipe.servings || '');
       setCookTime(recipe.cook_time_minutes || '');

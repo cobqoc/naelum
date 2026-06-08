@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n/context';
+
 interface IngredientCardProps {
   ingredient: {
     id: string;
@@ -35,6 +37,7 @@ const STORAGE_ICONS: Record<string, string> = {
 };
 
 export default function IngredientCard({ ingredient, onDelete, onEdit }: IngredientCardProps) {
+  const { t } = useI18n();
   // 만료일 계산
   const getExpiryInfo = () => {
     if (!ingredient.expiry_date) return null;
@@ -48,7 +51,7 @@ export default function IngredientCard({ ingredient, onDelete, onEdit }: Ingredi
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return { text: '만료됨', color: 'bg-gray-500' };
+    if (diffDays < 0) return { text: t.fridge.expired, color: 'bg-gray-500' };
     if (diffDays === 0) return { text: 'D-Day', color: 'bg-error' };
     if (diffDays <= 3) return { text: `D-${diffDays}`, color: 'bg-error' };
     if (diffDays <= 7) return { text: `D-${diffDays}`, color: 'bg-warning' };

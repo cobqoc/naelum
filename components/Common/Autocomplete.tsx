@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from 'react';
 import { AutocompleteItem, AutocompleteProps } from './AutocompleteTypes';
+import { useI18n } from '@/lib/i18n/context';
 
 /**
  * 범용 자동완성 컴포넌트
@@ -24,7 +25,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
   value,
   onChange,
   onSelect,
-  placeholder = '검색...',
+  placeholder,
 
   // 데이터 fetching
   fetchSuggestions,
@@ -53,6 +54,8 @@ export default function Autocomplete<T extends AutocompleteItem>({
   disabled = false,
   autoFocus = false,
 }: AutocompleteProps<T>) {
+  const { t } = useI18n();
+  const resolvedPlaceholder = placeholder ?? t.search.searchPlaceholderSmall;
   // ===== 상태 관리 =====
   const [suggestions, setSuggestions] = useState<T[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -326,7 +329,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={() => { setIsFocused(false); isFocusedRef.current = false; }}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           disabled={disabled}
           inputMode="text"
           className="w-full bg-transparent pl-4 pr-2 py-3 md:py-3.5 text-base text-text-primary placeholder-text-muted !outline-none !border-0 !border-none touch-manipulation disabled:cursor-not-allowed"
@@ -337,7 +340,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
           aria-autocomplete="list"
           aria-controls="autocomplete-listbox"
           aria-activedescendant={selectedIndex >= 0 ? `autocomplete-option-${selectedIndex}` : undefined}
-          aria-label={ariaLabel || placeholder}
+          aria-label={ariaLabel || resolvedPlaceholder}
         />
         {/* 오른쪽 아이콘 — 로딩 중엔 스피너, 평소엔 홈 검색바와 동일한 오렌지 돋보기 버튼 */}
         <div className="mr-2 flex-shrink-0">
@@ -458,7 +461,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
             {/* 검색 결과 없음 (커스텀 입력 비활성화) */}
             {!loading && value.length >= minQueryLength && suggestions.length === 0 && !showCustom && (
               <div className="p-4 text-center text-text-muted text-sm">
-                {renderNoResults ? renderNoResults() : '검색 결과가 없습니다'}
+                {renderNoResults ? renderNoResults() : t.search.noResults}
               </div>
             )}
           </div>

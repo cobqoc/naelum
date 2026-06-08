@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { useI18n } from '@/lib/i18n/context';
 
 export default function CopyrightReportForm() {
+  const { t } = useI18n();
+  const cf = t.copyrightForm;
   const [form, setForm] = useState({ reporter_name: '', reporter_email: '', recipe_url: '', description: '' });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -19,15 +22,15 @@ export default function CopyrightReportForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
       if (res.ok) {
         setStatus('success');
       } else {
-        setErrorMsg(data.error || '접수에 실패했습니다.');
+        // API 에러 문자열은 한글 하드코딩(서버 i18n 미도입) — raw 노출 금지, 번역 메시지로 치환 (CLAUDE.md)
+        setErrorMsg(cf.submitFailed);
         setStatus('error');
       }
     } catch {
-      setErrorMsg('네트워크 오류가 발생했습니다. hello@naelum.app 으로 직접 연락해주세요.');
+      setErrorMsg(cf.networkError);
       setStatus('error');
     }
   };
@@ -35,8 +38,8 @@ export default function CopyrightReportForm() {
   if (status === 'success') {
     return (
       <div className="p-5 bg-green-500/10 border border-green-500/30 rounded-xl text-center">
-        <p className="text-green-400 font-bold text-lg mb-1">✅ 신고가 접수되었습니다.</p>
-        <p className="text-text-secondary text-sm">영업일 기준 3일 이내에 처리 결과를 이메일로 안내해드립니다.</p>
+        <p className="text-green-400 font-bold text-lg mb-1">{cf.successTitle}</p>
+        <p className="text-text-secondary text-sm">{cf.successBody}</p>
       </div>
     );
   }
@@ -44,20 +47,20 @@ export default function CopyrightReportForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-1">이름 또는 채널명</label>
+        <label className="block text-sm font-medium text-text-primary mb-1">{cf.nameLabel}</label>
         <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
           <input
             type="text"
             value={form.reporter_name}
             onChange={e => setForm(f => ({ ...f, reporter_name: e.target.value }))}
-            placeholder="홍길동 / @채널명"
+            placeholder={cf.namePlaceholder}
             className={INPUT_INNER_COMFORTABLE_CLASS}
             style={INPUT_INNER_STYLE}
           />
         </InputBoxWrapper>
       </div>
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-1">연락처 이메일 <span className="text-accent-warm">*</span></label>
+        <label className="block text-sm font-medium text-text-primary mb-1">{cf.emailLabel} <span className="text-accent-warm">*</span></label>
         <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
           <input
             type="email"
@@ -71,7 +74,7 @@ export default function CopyrightReportForm() {
         </InputBoxWrapper>
       </div>
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-1">침해가 의심되는 낼름 레시피 URL</label>
+        <label className="block text-sm font-medium text-text-primary mb-1">{cf.recipeUrlLabel}</label>
         <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5">
           <input
             type="url"
@@ -84,14 +87,14 @@ export default function CopyrightReportForm() {
         </InputBoxWrapper>
       </div>
       <div>
-        <label className="block text-sm font-medium text-text-primary mb-1">침해 내용 설명 <span className="text-accent-warm">*</span></label>
+        <label className="block text-sm font-medium text-text-primary mb-1">{cf.descLabel} <span className="text-accent-warm">*</span></label>
         <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-2.5 !min-h-[100px] !items-start">
           <textarea
             required
             rows={4}
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="원본 영상/콘텐츠 URL, 침해된 표현, 본인이 저작권자임을 확인하는 진술 등을 포함해 주세요."
+            placeholder={cf.descPlaceholder}
             className={`${INPUT_INNER_COMFORTABLE_CLASS} resize-none`}
             style={INPUT_INNER_STYLE}
           />
@@ -105,7 +108,7 @@ export default function CopyrightReportForm() {
         disabled={status === 'submitting'}
         className="w-full py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-all disabled:opacity-50"
       >
-        {status === 'submitting' ? '접수 중...' : '저작권 침해 신고하기'}
+        {status === 'submitting' ? cf.submitting : cf.submit}
       </button>
     </form>
   );
