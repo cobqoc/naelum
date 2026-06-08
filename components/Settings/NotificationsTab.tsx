@@ -32,23 +32,22 @@ export default function NotificationsTab({ userId, t }: NotificationsTabProps) {
   }, []);
 
   useEffect(() => {
+    // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 supabase read → 기존 GET /api/users/me 재사용
+    // (profile.push_notifications 동봉). 토글 저장(handleToggle)은 mutation 이라 supabase 유지.
     let cancelled = false;
-    supabase
-      .from('profiles')
-      .select('push_notifications')
-      .eq('id', userId)
-      .single()
-      .then(({ data, error }) => {
+    fetch('/api/users/me')
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then(({ profile }) => {
         if (cancelled) return;
-        if (error) {
-          toast.error(t.common.error);
-          setExpiryEnabled(true);
-          return;
-        }
-        setExpiryEnabled(data?.push_notifications ?? true);
+        setExpiryEnabled(profile?.push_notifications ?? true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error(t.common.error);
+        setExpiryEnabled(true);
       });
     return () => { cancelled = true; };
-  }, [supabase, userId, toast, t.common.error]);
+  }, [toast, t.common.error]);
 
   const handleToggle = async () => {
     if (expiryEnabled === null || saving) return;

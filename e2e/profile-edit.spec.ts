@@ -23,6 +23,17 @@ test.describe('프로필 편집', () => {
     expect(pageErrors).toEqual([])
   })
 
+  test('인증 유저: 알림 탭 — 유통기한 토글 렌더 (read 성공, 스피너 미고착)', async ({ authenticatedPage: page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (e) => pageErrors.push(e.message))
+
+    // ?tab=notifications 딥링크 — NotificationsTab 이 push_notifications 를 읽어 토글 seed.
+    // read 가 깨지면 expiryEnabled===null 로 스피너에 영구 고착 → 토글 라벨이 안 뜸(데이터계층 이전 가드).
+    await page.goto('/settings?tab=notifications', { waitUntil: 'networkidle' })
+    await expect(page.getByText('유통기한 알림').first()).toBeVisible({ timeout: 8000 })
+    expect(pageErrors).toEqual([])
+  })
+
   test('PUT /api/users/[username]: full_name + bio 업데이트 성공', async ({
     authenticatedPage: page,
     testUser,
