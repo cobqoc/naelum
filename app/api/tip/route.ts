@@ -111,5 +111,13 @@ export async function POST(request: NextRequest) {
 
   // 홈 공유 쿼리 캐시는 60초 revalidate로 자동 갱신됨
 
-  return NextResponse.json({ tip }, { status: 201 });
+  // 작성 후 클라 리다이렉트(/@username?tab=…) 용 작성자 username 을 동봉 →
+  // 클라가 별도 profiles read 안 하도록(docs/DATA_LAYER.md 데이터계층 이전).
+  const { data: authorProfile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  return NextResponse.json({ tip, username: authorProfile?.username ?? null }, { status: 201 });
 }
