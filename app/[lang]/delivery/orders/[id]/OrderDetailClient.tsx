@@ -89,7 +89,7 @@ export default function OrderDetailClient({ orderId }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const o = await fetchOrder(createClient(), orderId);
+        const o = await fetchOrder(orderId);
         if (!cancelled) {
           setOrder(o);
           setLoading(false);
