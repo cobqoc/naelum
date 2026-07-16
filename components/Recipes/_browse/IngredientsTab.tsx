@@ -205,8 +205,9 @@ export default function IngredientsTab({
               {/* 재료명 + 정책 부속어("빼도 돼요") + substitute chip.
                   - "빼도 돼요" 는 정책 신호 — 항상 재료명 옆 (수량 줄에 붙으면 의미상 어색).
                   - chip 표시: ① 작성자 명시(hasSubs) ② 전역 규칙 매칭(subVia 단독).
-                  - chip 내부 whitespace-nowrap — 긴 substitute(예: "멸치 다시다 · 1/2큰술")는
-                    chip 자체가 부모 flex-wrap 으로 다음 줄로 떨어짐 (chip 내부는 한 줄 유지). */}
+                  - chip 은 max-w-full + flex-wrap 으로 내부가 줄바꿈됨 — 대체재가 여럿이면
+                    (예: "멸치액젓·1큰술, 멸치다시다·0.5큰술, 까나리액젓·1큰술") 좁은 2컬럼 카드
+                    폭을 넘지 않고 칩 안에서 다음 줄로 흐름 (whitespace-nowrap 이면 잘림). */}
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className={`text-sm font-medium ${nameColor}`}>
                   {ing.ingredient_name}
@@ -217,14 +218,14 @@ export default function IngredientsTab({
                   </span>
                 )}
                 {hasSubs && (
-                  <span className="inline-flex items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs whitespace-nowrap">
+                  <span className="inline-flex flex-wrap items-center gap-1 rounded bg-warning/15 px-1.5 py-0.5 text-xs max-w-full">
                     <SubstituteIndicator
                       owned={subViaInAuthorList}
                       names={subViaInAuthorList && subVia ? [subVia] : authorSubNamesClean}
                       kind={subViaInAuthorList ? subKind : 'substitute'}
                     />
                     <span className="text-text-muted/80">{t.recipe.ingredientSubstituteOr}</span>
-                    <span className="font-medium text-warning">{recipeSubsList.join(', ')}</span>
+                    <span className="font-medium text-warning min-w-0 break-words">{recipeSubsList.join(', ')}</span>
                     {subViaInAuthorList && <span aria-hidden className="text-success font-bold ml-0.5">✓</span>}
                   </span>
                 )}
