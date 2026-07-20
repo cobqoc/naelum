@@ -19,7 +19,7 @@
     "scan": "node scripts/scan-line-counts.mjs && node scripts/scan-fragility.mjs"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.47.0",
+    "@sentry/nextjs": "^10.66.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
     "@types/web-push": "^3.6.4",
