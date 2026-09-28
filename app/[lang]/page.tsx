@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUserIdFromHeaders } from '@/lib/supabase/middleware';
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 import HomeClient from './HomeClient';
+import { selectUserIngredientsWithMaster } from '@/lib/queries/userIngredients';
 
 // 홈은 user/items SSR fetch가 있어 dynamic 유지. 비인증 사용자 페이지는 fully cached 가능하지만
 // 인증 헤더 매번 검증해야 하므로 dynamic 필요.
@@ -32,23 +33,21 @@ export default async function HomePage() {
   if (userId) {
     const supabase = await createClient();
     // profile + items 병렬 fetch — 초기 렌더에서 빈 냉장고 flicker 제거.
-    // CSR에서도 fetchItems가 한 번 더 돌아 stale 데이터(타 기기 수정) 방어.
+    // items 는 API(/api/user-ingredients?withMaster=1)와 같은 도감 조인·평탄화라 재료 이모지·보관기간 추정이
+    // 첫 화면부터 보이고, 클라가 마운트 직후 같은 조회를 반복하지 않는다 (perf 2026-09-28).
+    // 이후 재조회(탭 복귀 등 auth 이벤트·fridge-updated)는 useFridgeItems 가 그대로 수행.
     const [profileRes, itemsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('username, onboarding_step, onboarding_completed')
         .eq('id', userId)
         .maybeSingle(),
-      supabase
-        .from('user_ingredients')
-        .select('id, ingredient_name, category, expiry_date, storage_location, quantity, unit, purchase_date, notes, expiry_alert')
-        .eq('user_id', userId)
-        .order('expiry_date', { ascending: true, nullsFirst: false }),
+      selectUserIngredientsWithMaster(supabase, userId),
     ]);
     initialUsername = profileRes.data?.username ?? null;
     initialOnboardingStep = profileRes.data?.onboarding_step ?? null;
     initialOnboardingCompleted = profileRes.data?.onboarding_completed ?? null;
-    initialItems = itemsRes.data ?? [];
+    initialItems = itemsRes.items ?? [];
   }
 
   return (

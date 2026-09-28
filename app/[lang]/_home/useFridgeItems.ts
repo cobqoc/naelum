@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { isDemoRecord } from './helpers';
 import { LS_KEY_DEMO_ITEMS } from './constants';
@@ -95,9 +95,18 @@ export function useFridgeItems({
     try { localStorage.setItem(LS_KEY_DEMO_ITEMS, JSON.stringify(items)); } catch { /* 용량 초과 등 무시 */ }
   }, [user, loading, items]);
 
+  // SSR 이 이미 도감 조인된 items 를 넘겼다면(로그인) 첫 번째 load 는 같은 조회의 반복이라 1회만 건너뛴다.
+  // 이후 재실행(auth 이벤트로 user 가 바뀌는 탭 복귀 등)은 이전과 똑같이 다시 불러온다 (perf 2026-09-28).
+  const skipFirstLoadRef = useRef(initialItems !== null);
+
   // 초기 load — auth hydration 후 한 번. pendingDeleteIdsRef 로 undo 창 중인 item 필터.
   useEffect(() => {
     if (authLoading) return;
+    if (skipFirstLoadRef.current) {
+      skipFirstLoadRef.current = false;
+      // SSR 은 로그인 상태였는데 클라 세션이 없으면(쿠키 race) 이전처럼 조회해 데모/DB 를 다시 결정한다.
+      if (user) return;
+    }
     let cancelled = false;
     queueMicrotask(async () => {
       const rows = await fetchItems();
@@ -108,7 +117,7 @@ export function useFridgeItems({
     });
     return () => { cancelled = true; };
     // pendingDeleteIdsRef 는 외부 안정 ref(identity 불변) → deps 추가해도 재실행 0.
-  }, [authLoading, fetchItems, pendingDeleteIdsRef]);
+  }, [authLoading, user, fetchItems, pendingDeleteIdsRef]);
 
   // 외부에서 냉장고 변경 이벤트 발생 시 재fetch
   // (예: ShoppingCartDropdown 에서 "냉장고에 추가" 후, 레시피 → 재료 추가 등).
