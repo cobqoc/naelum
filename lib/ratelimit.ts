@@ -26,12 +26,21 @@ interface RateLimitOptions {
   uniqueTokenPerInterval?: number;
 }
 
-function createRateLimitClient() {
+// 서비스 롤 클라이언트는 무상태(세션 저장·자동 갱신 끔)라 요청 간 재사용해도 동작이 같다.
+// 매 요청마다 새로 만들던 것(검색·추천·자동완성 등 rate limit 경로 전부)을 모듈 단위로 1회 생성 (perf 2026-09-27).
+// ※ 이것은 상태 저장이 아니다 — rate limit 카운터 자체는 여전히 DB(check_rate_limit RPC)에 있다.
+function newRateLimitClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+// ReturnType<typeof newRateLimitClient> 로 제네릭 추론 보존 (lib/supabase/client.ts 와 같은 패턴)
+let rateLimitClient: ReturnType<typeof newRateLimitClient> | null = null;
+function createRateLimitClient() {
+  if (!rateLimitClient) rateLimitClient = newRateLimitClient();
+  return rateLimitClient;
 }
 
 /**

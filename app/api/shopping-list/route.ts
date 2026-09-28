@@ -103,21 +103,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '재료가 필요합니다.' }, { status: 400 });
   }
 
-  // 기본 장보기 리스트 가져오기 (없으면 생성)
-  let shoppingListId: string;
-  try {
-    shoppingListId = await getOrCreateDefaultList(supabase, user.id);
-  } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-  }
-
-  // 보유 재료 + 기존 장보기 항목 + ingredients_master 병렬 조회
+  // 기본 장보기 리스트(없으면 생성) + 보유 재료 + 기존 장보기 항목 + ingredients_master 를 한 번에 병렬 (perf 2026-09-27).
+  // 세 읽기는 리스트 id 와 무관하다. 리스트 생성 실패 시 이전과 같은 500 메시지로 반환(읽기 결과는 버림).
   const names = ingredients.map(i => i.ingredient_name);
-  const [{ data: ownedIngredients }, { data: existingItems }, { data: masterRows }] = await Promise.all([
+  const [listResult, { data: ownedIngredients }, { data: existingItems }, { data: masterRows }] = await Promise.all([
+    getOrCreateDefaultList(supabase, user.id).then(
+      (id: string) => ({ id }),
+      (err: unknown) => ({ err: err as Error }),
+    ),
     supabase.from('user_ingredients').select('ingredient_name').eq('user_id', user.id),
     supabase.from('shopping_list_items').select('id, ingredient_name, quantity').eq('user_id', user.id).eq('is_checked', false),
     supabase.from('ingredients_master').select('id, name, category').in('name', names),
   ]);
+  if ('err' in listResult) {
+    return NextResponse.json({ error: listResult.err.message }, { status: 500 });
+  }
+  const shoppingListId: string = listResult.id;
   // 이름 → 마스터 {id, category}. 이름 정확일치 시 카테고리를 마스터 값으로 보정(단일 출처).
   const nameToMaster = new Map(
     (masterRows ?? []).map(r => [r.name, { id: r.id as string, category: r.category as string | null }]),

@@ -29,63 +29,78 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   const isOwnProfile = !!user && user.id === profile.id
 
-  // 최근 레시피 조회
-  const recipesQuery = supabase
-    .from('recipes')
-    .select(`
+  // 이하 read 는 전부 profile.id·isOwnProfile 에만 의존 → 한 번의 Promise.all (perf 2026-09-27).
+  // 이전: recipes → interests → dietaryPrefs → allergies → 공개 카운트 → (본인) 비공개 카운트, 6단계 직렬.
+  // getUser 는 위에서 직렬 유지(auth-js 인프로세스 락 안에서 네트워크를 타 병렬화 이득이 없음).
+  // 식단·알레르기는 응답에 본인일 때만 실리므로 타인 프로필에선 조회 자체를 생략(응답은 동일하게 []).
+  // postgrest-js 는 실패를 throw 하지 않고 { data: null, error } 로 resolve → Promise.all 이 새로 reject 할 경로 없음.
+  const skip = Promise.resolve({ data: null, count: null })
+  const [
+    { data: recipes },
+    { data: interests },
+    { data: dietaryPrefs },
+    { data: allergies },
+    pubRecipes,
+    pubTips,
+    draftRecipes,
+    privateRecipes,
+    draftTips,
+    privateTips,
+  ] = await Promise.all([
+    // 최근 레시피 조회
+    supabase
+      .from('recipes')
+      .select(`
       id, title, thumbnail_url, average_rating, created_at, status
     `)
-    .eq('author_id', profile.id)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(6)
-
-  const { data: recipes } = await recipesQuery
-
-  // 관심사 조회
-  const { data: interests } = await supabase
-    .from('user_interests')
-    .select('interest_value')
-    .eq('user_id', profile.id)
-
-  // 식단 선호도 조회
-  const { data: dietaryPrefs } = await supabase
-    .from('user_dietary_preferences')
-    .select('preference_type')
-    .eq('user_id', profile.id)
-
-  // 알레르기 정보 조회
-  const { data: allergies } = await supabase
-    .from('user_allergies')
-    .select('ingredient_name')
-    .eq('user_id', profile.id)
-
-  // 콘텐츠 카운트 — 프로필 카드 통계 블록용. 4개 버킷(공개 레시피·공개 팁·
-  // 임시저장·비공개)은 서로 겹치지 않고 사용자의 모든 글을 정확히 분할한다.
-  // count:'exact',head:true — 행을 가져오지 않고 집계해 PostgREST 기본 1000행
-  // 제한에 안 걸림(레시피 1000개 넘는 작성자도 정확). recipes_count 컬럼은
-  // 공개+비공개 전 상태 합산이라 "공개 레시피" 통계엔 부적합 → 직접 센다.
-  const counts = { recipes: 0, tips: 0, drafts: 0, private: 0 }
-  const [pubRecipes, pubTips] = await Promise.all([
+      .eq('author_id', profile.id)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(6),
+    // 관심사 조회
+    supabase
+      .from('user_interests')
+      .select('interest_value')
+      .eq('user_id', profile.id),
+    // 식단 선호도 · 알레르기 — 민감 정보, 본인만
+    isOwnProfile
+      ? supabase.from('user_dietary_preferences').select('preference_type').eq('user_id', profile.id)
+      : skip,
+    isOwnProfile
+      ? supabase.from('user_allergies').select('ingredient_name').eq('user_id', profile.id)
+      : skip,
+    // 콘텐츠 카운트 — 프로필 카드 통계 블록용. 4개 버킷(공개 레시피·공개 팁·
+    // 임시저장·비공개)은 서로 겹치지 않고 사용자의 모든 글을 정확히 분할한다.
+    // count:'exact',head:true — 행을 가져오지 않고 집계해 PostgREST 기본 1000행
+    // 제한에 안 걸림(레시피 1000개 넘는 작성자도 정확). recipes_count 컬럼은
+    // 공개+비공개 전 상태 합산이라 "공개 레시피" 통계엔 부적합 → 직접 센다.
     supabase.from('recipes').select('id', { count: 'exact', head: true })
       .eq('author_id', profile.id).eq('status', 'published'),
     supabase.from('tip').select('id', { count: 'exact', head: true })
       .eq('author_id', profile.id).eq('is_public', true).eq('is_draft', false),
+    // 임시저장·비공개는 비공개 정보 → 본인 프로필일 때만 계산
+    isOwnProfile
+      ? supabase.from('recipes').select('id', { count: 'exact', head: true })
+          .eq('author_id', profile.id).eq('status', 'draft')
+      : skip,
+    isOwnProfile
+      ? supabase.from('recipes').select('id', { count: 'exact', head: true })
+          .eq('author_id', profile.id).eq('status', 'private')
+      : skip,
+    isOwnProfile
+      ? supabase.from('tip').select('id', { count: 'exact', head: true })
+          .eq('author_id', profile.id).eq('is_draft', true)
+      : skip,
+    isOwnProfile
+      ? supabase.from('tip').select('id', { count: 'exact', head: true })
+          .eq('author_id', profile.id).eq('is_public', false).eq('is_draft', false)
+      : skip,
   ])
+
+  const counts = { recipes: 0, tips: 0, drafts: 0, private: 0 }
   counts.recipes = pubRecipes.count || 0
   counts.tips = pubTips.count || 0
-  // 임시저장·비공개는 비공개 정보 → 본인 프로필일 때만 계산
   if (isOwnProfile) {
-    const [draftRecipes, privateRecipes, draftTips, privateTips] = await Promise.all([
-      supabase.from('recipes').select('id', { count: 'exact', head: true })
-        .eq('author_id', profile.id).eq('status', 'draft'),
-      supabase.from('recipes').select('id', { count: 'exact', head: true })
-        .eq('author_id', profile.id).eq('status', 'private'),
-      supabase.from('tip').select('id', { count: 'exact', head: true })
-        .eq('author_id', profile.id).eq('is_draft', true),
-      supabase.from('tip').select('id', { count: 'exact', head: true })
-        .eq('author_id', profile.id).eq('is_public', false).eq('is_draft', false),
-    ])
     counts.drafts = (draftRecipes.count || 0) + (draftTips.count || 0)
     counts.private = (privateRecipes.count || 0) + (privateTips.count || 0)
   }

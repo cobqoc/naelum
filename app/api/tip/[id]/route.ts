@@ -28,10 +28,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // getUser 는 요청당 최대 1회 (perf 2026-09-27) — 이전엔 비공개 팁에서 같은 Auth 조회를 두 번 했다.
+  let userPromise: ReturnType<typeof supabase.auth.getUser> | null = null;
+  const getUserOnce = () => (userPromise ??= supabase.auth.getUser());
+
   // 비공개/임시저장 팁은 작성자만 접근. RLS 가 차단하지 않더라도 defense-in-depth.
   const isPublic = data.is_public === true && data.is_draft === false;
   if (!isPublic) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await getUserOnce();
     if (!user || user.id !== data.author_id) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
@@ -42,8 +46,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const viewedCookie = `tip_v_${id}`;
   const cookies = request.headers.get('cookie') || '';
   const alreadyViewed = cookies.split(';').some(c => c.trim().startsWith(`${viewedCookie}=`));
-  const { data: { user: currentUser } } = await supabase.auth.getUser();
-  const isOwnTip = currentUser?.id === data.author_id;
+  // 이미 본 팁이면 증가 여부가 작성자 여부와 무관하게 false → 사용자 조회 생략.
+  const isOwnTip = alreadyViewed ? false : (await getUserOnce()).data.user?.id === data.author_id;
   const shouldIncrement = !alreadyViewed && !isOwnTip;
 
   if (shouldIncrement) {

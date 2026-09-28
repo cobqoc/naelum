@@ -42,20 +42,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
   // 전체 행이 진짜 필요(SEO) — 1000행 silent 절단 시 색인 누락. fetchAllRows 로 끝까지.
-  const recipes = await fetchAllRows<{ id: string; updated_at: string }>(
-    () => supabase
-      .from('recipes')
-      .select('id, updated_at')
-      .eq('status', 'published')
-      .order('updated_at', { ascending: false }),
-  );
-
-  const profiles = await fetchAllRows<{ username: string | null; created_at: string }>(
-    () => supabase
-      .from('profiles')
-      .select('username, created_at')
-      .order('created_at', { ascending: false }),
-  );
+  // 레시피·프로필 페이지네이션은 서로 독립 → 병렬 (perf 2026-09-27). 어느 쪽이든 실패하면 이전처럼 throw(500).
+  const [recipes, profiles] = await Promise.all([
+    fetchAllRows<{ id: string; updated_at: string }>(
+      () => supabase
+        .from('recipes')
+        .select('id, updated_at')
+        .eq('status', 'published')
+        .order('updated_at', { ascending: false }),
+    ),
+    fetchAllRows<{ username: string | null; created_at: string }>(
+      () => supabase
+        .from('profiles')
+        .select('username, created_at')
+        .order('created_at', { ascending: false }),
+    ),
+  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     entry('', { changeFrequency: 'daily', priority: 1 }),

@@ -37,19 +37,19 @@ export async function GET(request: NextRequest) {
     query = query.eq('is_read', false)
   }
 
-  const { data: notifications, error, count } = await query
-    .range(offset, rangeEnd)
+  // 목록과 읽지 않은 알림 수는 서로 독립 → 병렬 (perf 2026-09-27). 목록 실패 시 500 은 이전과 동일.
+  const [{ data: notifications, error, count }, { count: unreadCount }] = await Promise.all([
+    query.range(offset, rangeEnd),
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false),
+  ])
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  // 읽지 않은 알림 수
-  const { count: unreadCount } = await supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('is_read', false)
 
   return NextResponse.json({
     notifications: notifications || [],

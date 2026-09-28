@@ -70,12 +70,17 @@ export interface RecipeDetailData {
  */
 export async function getRecipeDetailData(id: string): Promise<RecipeDetailData | null> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
   // 1. 레시피 본문 (가장 큰 쿼리)
   //    공개 레시피는 공유 캐시에서(사용자 무관). 캐시 미스(비공개/draft/미존재)면
   //    authed 라이브 조회로 폴백 후 작성자 게이트 적용.
-  let recipeData = await getCachedPublishedRecipeBody(id);
+  //    getUser(쿠키 클라이언트)와 캐시 본문 조회(쿠키 없는 별도 anon 클라이언트)는 서로 독립이라 병렬 —
+  //    로그인 사용자의 상세 SSR 임계 경로에서 Auth 왕복 1회만큼 단축 (perf 2026-09-27). 이후 게이트·폴백은 동일.
+  const [{ data: { user } }, cachedBody] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublishedRecipeBody(id),
+  ]);
+  let recipeData = cachedBody;
 
   if (!recipeData) {
     const { data: liveData, error: liveErr } = await supabase

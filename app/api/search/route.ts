@@ -150,25 +150,6 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ].map((r: any) => r.id).filter(Boolean) as string[]
 
-    if (allRecipeIds.length > 0) {
-      // 완료 세션만 "만들어봤어요" — completed_at NULL(진행중)은 제외(클라·browse 와 동일 의미).
-      const { data: cooked } = await supabase
-        .from('cooking_sessions')
-        .select('recipe_id')
-        .eq('user_id', user.id)
-        .in('recipe_id', allRecipeIds)
-        .not('completed_at', 'is', null)
-      const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
-      if (results.recipes) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        results.recipes.data = results.recipes.data.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
-      }
-      if (results.ingredients) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        results.ingredients.data = results.ingredients.data.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
-      }
-    }
-
     // 냉장고 match 부착 — 데이터 계층 이전(docs/DATA_LAYER.md): SearchClient 가 클라에서 하던 걸 서버로.
     // 병목: recipes/ingredients 두 결과는 레시피가 겹칠 수 있어, 각각 attachFridgeMatch 하면
     // user_ingredients·관계그래프 read 가 *2번* 중복됐다. union(고유 id) 1회 호출 후 id-맵으로
@@ -177,11 +158,41 @@ export async function GET(request: NextRequest) {
     const ingredientRows = (results.ingredients?.data ?? []) as { id: string }[]
     const seenIds = new Set(recipeRows.map(r => r.id))
     const union = [...recipeRows, ...ingredientRows.filter(r => !seenIds.has(r.id))]
-    if (union.length > 0) {
-      const matched = await attachFridgeMatch(supabase, user.id, union)
-      const byId = new Map(matched.map(m => [m.id, m]))
-      if (results.recipes) results.recipes.data = recipeRows.map(r => byId.get(r.id) ?? r)
-      if (results.ingredients) results.ingredients.data = ingredientRows.map(r => byId.get(r.id) ?? r)
+
+    // has_cooked 읽기와 냉장고 매칭은 서로 독립(user.id + 결과 id 만 의존) → 병렬 (perf 2026-09-27).
+    // 이전: has_cooked 를 먼저 붙인 행으로 매칭 → 최종 행 = { ...원본, has_cooked, ...매칭필드 }.
+    // 병렬화 후에도 같은 키 순서가 되도록 decorate 에서 has_cooked 를 먼저, 매칭이 바꾼 필드를 뒤에 얹는다.
+    const [cookedRes, matched] = await Promise.all([
+      allRecipeIds.length > 0
+        // 완료 세션만 "만들어봤어요" — completed_at NULL(진행중)은 제외(클라·browse 와 동일 의미).
+        ? supabase
+            .from('cooking_sessions')
+            .select('recipe_id')
+            .eq('user_id', user.id)
+            .in('recipe_id', allRecipeIds)
+            .not('completed_at', 'is', null)
+        : Promise.resolve(null),
+      union.length > 0 ? attachFridgeMatch(supabase, user.id, union) : Promise.resolve(null),
+    ])
+    const cookedSet = new Set(cookedRes?.data?.map(s => s.recipe_id) || [])
+    const byId = new Map((matched ?? []).map(m => [m.id, m]))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const decorate = (r: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const base: any = allRecipeIds.length > 0 ? { ...r, has_cooked: cookedSet.has(r.id) } : r
+      const m = matched ? byId.get(r.id) : undefined
+      if (!m) return base
+      // 매칭이 새로 붙였거나 바꾼 필드만 뒤에 얹는다(기존 키는 자리 유지 — 이전 스프레드 순서와 동일).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const out: any = { ...base }
+      for (const [k, v] of Object.entries(m)) {
+        if (!(k in r) || (r as Record<string, unknown>)[k] !== v) out[k] = v
+      }
+      return out
+    }
+    if (allRecipeIds.length > 0 || union.length > 0) {
+      if (results.recipes) results.recipes.data = results.recipes.data.map(decorate)
+      if (results.ingredients) results.ingredients.data = results.ingredients.data.map(decorate)
     }
 
     if (query) {

@@ -122,6 +122,30 @@ export async function GET(request: NextRequest) {
         // via(대체/가공 출처) 표시명 해석용 — 보유 재료 id→이름. RecipeCard 이름 배열에 필요.
         const userIdToName = new Map<string, string>()
 
+        // 차단 사용자 목록은 user 에만 의존 → 가장 먼저 시작해 아래 직렬 단계들과 겹친다 (perf 2026-09-27).
+        // getBlockedUserIds 는 오류를 삼키고 [] 를 돌려줘 reject 하지 않는다(early return 경로에서 미사용이어도 안전).
+        const blockedPromise = getBlockedUserIds(supabase, user?.id)
+
+        // 이름 ilike fallback 후보 — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
+        // ID 기반이지만 후보 검색 단계는 이름으로 보강 (sweep 최소화). ingredientNames 만 의존하므로
+        // 비로그인 체험에선 id 해석(resolveExactIngredientIds)을 기다리지 않고 먼저 시작한다 (perf 2026-09-27).
+        let nameCandidatePromise: Promise<{ recipe_id: string }[]> | null = null
+        const startNameCandidates = (): Promise<{ recipe_id: string }[]> => {
+          const ilikeClauses = ingredientNames.length > 0
+            ? ingredientNames.slice(0, 20).map(ing => `ingredient_name.ilike.%${ing}%`).join(',')
+            : null
+          const p = ilikeClauses
+            ? fetchAllRows<{ recipe_id: string }>(() => supabase
+                .from('recipe_ingredients')
+                .select('recipe_id')
+                .or(ilikeClauses))
+            : Promise.resolve([] as { recipe_id: string }[])
+          // 앞선 단계가 먼저 throw 해 이 promise 가 await 되지 않을 때의 unhandled rejection 방지.
+          // (원본 p 는 아래 Promise.all 에서 그대로 await 되므로 실패 시 이전과 같이 catch → 500.)
+          p.catch(() => {})
+          return p
+        }
+
         if (user) {
           const { data: userIngredients } = await supabase
             .from('user_ingredients')
@@ -152,6 +176,7 @@ export async function GET(request: NextRequest) {
           if (rawNames.length === 0) {
             return NextResponse.json({ recommendations: [], message: '보유 재료를 먼저 등록해주세요' })
           }
+          nameCandidatePromise = startNameCandidates()
           // 비로그인 체험: 이름 정확일치(승인 마스터)로 id 해석 — 추측 0.
           // 로그인 사용자의 user_ingredients.ingredient_id 와 동등한 역할.
           const resolved = await resolveExactIngredientIds(rawNames, supabase)
@@ -162,23 +187,12 @@ export async function GET(request: NextRequest) {
 
         const userIdSet = new Set(userIngredientIds)
 
-        // 이름 ilike fallback — 옛 데이터의 ingredient_id null 케이스 대응. V2 매칭은
-        // ID 기반이지만 후보 검색 단계는 이름으로 보강 (sweep 최소화). ingredientNames 만 의존.
-        const ilikeClauses = ingredientNames.length > 0
-          ? ingredientNames.slice(0, 20).map(ing => `ingredient_name.ilike.%${ing}%`).join(',')
-          : null
-
         // userBaseMap·forwardTargets·nameCandidate 는 서로 독립(보유 id / 이름만 의존) → 병렬.
         // userBaseMap: 변형 매칭(삼겹살 보유 → "돼지고기" 충족). forwardTargets: preparable/substitute 타깃(쌀 → 밥).
         const [userBaseMap, forwardTargets, nameCandidateRows] = await Promise.all([
           fetchUserVariantBases(userIngredientIds, supabase),
           fetchForwardRelationTargets(userIngredientIds, supabase),
-          ilikeClauses
-            ? fetchAllRows<{ recipe_id: string }>(() => supabase
-                .from('recipe_ingredients')
-                .select('recipe_id')
-                .or(ilikeClauses))
-            : Promise.resolve([] as { recipe_id: string }[]),
+          nameCandidatePromise ?? startNameCandidates(),
         ])
         const nameCandidateIds = nameCandidateRows.map(r => r.recipe_id)
 
@@ -221,7 +235,7 @@ export async function GET(request: NextRequest) {
         // 알레르기 필터(로그인만) 와 차단 사용자 조회는 독립 → 병렬.
         const [allergyFiltered, blockedUserIds] = await Promise.all([
           user ? filterByAllergies(supabase, user.id, recipes) : Promise.resolve(recipes),
-          getBlockedUserIds(supabase, user?.id),
+          blockedPromise,
         ])
 
         // 차단 사용자 작성 레시피 제외 (H3 — 활성 추천 경로)
