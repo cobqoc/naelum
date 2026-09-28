@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession, USER_ID_HEADER } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 import { SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales'
+import { peekSessionJwt } from '@/lib/auth/peekSessionJwt'
 
 // /[lang]/ path-based i18n. URL prefix가 없으면 detected locale로 redirect.
 // 각 locale별 정적 prerender → CDN 캐시 분리 가능 (Vary 쿠키 없이도 캐싱).
@@ -20,6 +21,23 @@ const I18N_EXEMPT_PREFIXES = [
 
 function isI18nExempt(pathname: string): boolean {
   return I18N_EXEMPT_PREFIXES.some((p) => pathname === p || pathname.startsWith(p))
+}
+
+// public/ 정적 PWA 자산 — 세션 갱신·온보딩 게이트가 필요 없는 파일. 봇 차단 뒤, i18n 리다이렉트 앞에서
+// 통과시킨다(perf 2026-09-27). 브라우저는 /sw.js 를 매 하드 내비게이션마다 쿠키와 함께 다시 받아가므로,
+// 로그인 사용자는 이 요청 하나에 getUser(Auth 왕복) + profiles 조회를 매번 치르고 있었다.
+// 응답 바이트·헤더는 동일: 비로그인은 원래 no-store 없이, 세션 쿠키 보유자는 원래대로 no-store.
+// 부수 효과 하나: onboarding_completed=false 세션에서 /sw.js 가 terms-agreement 로 307 되어 SW 등록이
+// 실패하던 잠복 버그가 사라진다(SW 는 navigate 를 network-only 로 넘기므로 게이트는 페이지 요청에서 그대로 작동).
+// 목록은 쿠키가 실려 오는 세 파일로 한정 — /robots.txt·/sitemap.xml 은 크롤러 요청이라 쿠키가 없고,
+// AI 크롤러 403 을 유지하기 위해 matcher 제외 대신 코드 내 early return 을 쓴다.
+const STATIC_PASSTHROUGH = ['/sw.js', '/manifest.json', '/offline.html']
+
+/** Supabase 세션 쿠키(`sb-<ref>-auth-token*`) 보유 여부 — 없으면 user 는 반드시 null (Supabase 호출 생략 근거). */
+function hasSupabaseSessionCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(
+    c => c.name.startsWith('sb-') && c.name.includes('-auth-token')
+  )
 }
 
 function hasLangPrefix(pathname: string): Language | null {
@@ -91,6 +109,12 @@ function isBlockedBot(request: NextRequest): boolean {
   return BLOCKED_UA_PATTERNS.some(p => p.test(ua))
 }
 
+/** auth-js EXPIRY_MARGIN_MS(3 × 30s)와 동일 — 이 구간이면 서버 클라이언트가 토큰 갱신을 시도하므로 겹치기 생략 */
+const JWT_EXPIRY_MARGIN_MS = 90_000
+
+/** 게이트가 쓰는 profiles 행(role·onboarding_completed). null = 행 없음/오류. */
+type GateProfileRow = { role: string | null; onboarding_completed: boolean | null } | null
+
 // 로그인 필요 경로 (정적)
 // — 체험 모드 철학: 재료 추가/추천/조리 가이드는 비로그인도 가능.
 //   쓰기(낼름/만들어봤어요/댓글/조리 완료 기록)만 로그인 요구.
@@ -157,6 +181,11 @@ export async function proxy(request: NextRequest) {
     return new NextResponse('Forbidden', { status: 403 })
   }
 
+  // 정적 PWA 자산 통과 — 세션 갱신·게이트 생략, Cache-Control 은 기존과 동일 (STATIC_PASSTHROUGH 주석 참고)
+  if (STATIC_PASSTHROUGH.includes(pathname)) {
+    return applyNoStore(NextResponse.next(), pathname, hasSupabaseSessionCookie(request))
+  }
+
   // /[lang]/ path-based i18n: bare path는 detected lang으로 redirect.
   // /api, /icons 등 i18n 무관 경로는 skip.
   if (!isI18nExempt(pathname) && !hasLangPrefix(pathname)) {
@@ -186,9 +215,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 세션 쿠키 없으면 user는 반드시 null → Supabase API 호출 생략
-  const hasSessionCookie = request.cookies.getAll().some(
-    c => c.name.startsWith('sb-') && c.name.includes('-auth-token')
-  )
+  const hasSessionCookie = hasSupabaseSessionCookie(request)
 
   if (!hasSessionCookie) {
     if (isProtected || isAdmin) {
@@ -205,8 +232,64 @@ export async function proxy(request: NextRequest) {
     return applyNoStore(NextResponse.next({ request: { headers } }), pathname, false)
   }
 
+  // 읽기 API fast path (perf 2026-09-27): GET/HEAD /api/* 에서는 미들웨어가 인증 결과를 쓰지 않는다.
+  //  - isAuthOnly/isProtected/isAdmin 은 페이지 경로 패턴이라 /api/* 는 매칭되지 않고
+  //  - 온보딩 게이트는 변경 메서드(POST/PUT/PATCH/DELETE)에만 적용되며(isGatedMutatingApi)
+  //  - x-naelum-user-id 를 읽는 곳은 홈 페이지(app/[lang]/page.tsx)뿐, API 라우트는 0곳.
+  // 모든 API 라우트는 requireAuth/verifyAdmin/createClient 로 스스로 인증한다 → Auth 왕복 1회 절감.
+  // 만료 임박 토큰 갱신은 라우트의 createClient()(route handler 에서 cookies().set 가능)가 같은 방식으로 수행한다.
+  // 응답은 기존과 동일: 위조 헤더 제거, 레거시 쿠키 청소, Cache-Control no-store.
+  if (pathname.startsWith('/api/') && (request.method === 'GET' || request.method === 'HEAD')) {
+    const headers = new Headers(request.headers)
+    headers.delete(USER_ID_HEADER)
+    const readResponse = NextResponse.next({ request: { headers } })
+    if (request.cookies.get('naelum_terms_ok')) {
+      readResponse.cookies.delete('naelum_terms_ok')
+    }
+    return applyNoStore(readResponse, pathname, true)
+  }
+
+  // 약관/온보딩 게이트 대상 판정(아래 게이트 주석 참고) — profiles 조회를 getUser 와 겹치기 위해 위로 올림.
+  const isApiPath = pathname.startsWith('/api/')
+  const isAuthApi = pathname.startsWith('/api/auth/')
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
+  const isGatedPage = !isApiPath && !bare.startsWith('/auth/')
+  const isGatedMutatingApi = isApiPath && !isAuthApi && isMutating
+
+  // (perf 2026-09-27) 게이트용 profiles 행 조회를 getUser(Auth 왕복)와 겹쳐 시작한다.
+  // 쿠키의 *서명 미검증* sub 로 시작만 하고, 아래에서 검증된 user.id 와 같을 때만 결과를 쓴다 — 판정은 여전히
+  // 검증된 user 로만 한다. 토큰 만료 90초 이내(auth-js 가 갱신을 시도하는 구간)면 겹치지 않고 기존 직렬 경로.
+  // 조회는 요청 자신의 쿠키 JWT 로 PostgREST 가 인가하므로(profiles SELECT 는 인증 사용자에 공개) 위조 sub 로
+  // 얻을 수 있는 것이 없고, 불일치·오류·마진 안이면 기존 쿼리가 기존 시점에 그대로 실행된다.
+  let overlap: { sub: string; promise: Promise<GateProfileRow | undefined> } | null = null
+  if (isGatedPage || isGatedMutatingApi || isProtected || isAdmin) {
+    const jwt = await peekSessionJwt((name) => request.cookies.get(name)?.value, process.env.NEXT_PUBLIC_SUPABASE_URL!)
+    if (jwt && jwt.exp * 1000 - Date.now() > JWT_EXPIRY_MARGIN_MS) {
+      overlap = {
+        sub: jwt.sub,
+        // PostgREST 빌더는 .then 호출 시 즉시 요청을 보낸다. 결과는 절대 reject 하지 않는 Promise 로 감싼다.
+        promise: Promise.resolve(
+          createSupabaseClient(request)
+            .from('profiles')
+            .select('role, onboarding_completed')
+            .eq('id', jwt.sub)
+            .maybeSingle()
+            .then(
+              ({ data, error }) => (error ? undefined : ((data as GateProfileRow) ?? null)),
+              () => undefined,
+            ),
+        ),
+      }
+    }
+  }
+
   // 세션 쿠키 있음: 토큰 갱신 + user 반환
   const { response, user } = await updateSession(request)
+
+  // 겹쳐 읽은 행 — 검증된 user 와 같은 id 이고 오류가 없을 때만 사용. undefined = 사용 불가(기존 쿼리 실행).
+  // 게이트가 실제로 행을 필요로 할 때만 기다린다(로그인 사용자의 /signin 리다이렉트 등은 기다리지 않음).
+  const getOverlappedProfile = async (): Promise<GateProfileRow | undefined> =>
+    overlap && user && overlap.sub === user.id ? overlap.promise : undefined
 
   // 이미 로그인된 사용자가 /signin, /signup 접근 시 홈으로 리다이렉트
   if (isAuthOnly && user) {
@@ -220,31 +303,44 @@ export async function proxy(request: NextRequest) {
     return applyNoStore(NextResponse.redirect(loginUrl), pathname, !!user)
   }
 
+  // 보호/관리자 경로에서 읽은 profiles 행을 아래 온보딩 게이트가 재사용한다 (같은 요청·같은 행).
+  // undefined = 아직 안 읽음(게이트가 기존 쿼리 실행), null = 읽었지만 없음/오류.
+  let gateProfile: GateProfileRow | undefined
+
   // 인증된 사용자에 대한 추가 체크 (차단 여부, 관리자 권한)
   if (user && (isProtected || isAdmin)) {
     const supabase = createSupabaseClient(request)
 
-    const { data: banned } = await supabase
-      .from('banned_users')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    // banned 조회와 profiles(role·onboarding) 조회는 서로 독립한 읽기 → 병렬 (perf 2026-09-27).
+    // 판정 순서(차단 → 관리자 권한 → 온보딩)는 그대로다.
+    const [{ data: banned }, profileRes] = await Promise.all([
+      supabase
+        .from('banned_users')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      // 겹쳐 읽은 행이 있으면 그것을, 없으면(불일치·오류·마진 안) 기존과 같은 조회를 banned 와 병렬로.
+      getOverlappedProfile().then(async (row): Promise<{ data: GateProfileRow; error: unknown }> =>
+        row !== undefined
+          ? { data: row, error: null }
+          : await supabase
+              .from('profiles')
+              .select('role, onboarding_completed')
+              .eq('id', user.id)
+              .maybeSingle(),
+      ),
+    ])
+    gateProfile = profileRes.error ? null : profileRes.data
 
     if (banned) {
       await supabase.auth.signOut()
       return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
     }
 
-    if (isAdmin) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (profileError || !profile || profile.role !== 'admin') {
-        return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
-      }
+    // 이전 `.single()` + (error || !profile || role !== 'admin') 와 같은 입력 집합에서 리다이렉트:
+    // 행 없음/오류 → gateProfile null → 리다이렉트.
+    if (isAdmin && (!gateProfile || gateProfile.role !== 'admin')) {
+      return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
     }
   }
 
@@ -262,19 +358,24 @@ export async function proxy(request: NextRequest) {
   //   - GET 등 비변경 메서드 — 읽기는 무해 + 온보딩 중 /api/users/check-username(GET) 필요
   // 온보딩 완료 write(profile.onboarding_completed=true)·아바타 업로드는 클라이언트
   // 직접 supabase 호출이라 /api 를 안 거침 → API 게이트해도 온보딩이 막히지 않는다.
-  const isApiPath = pathname.startsWith('/api/')
-  const isAuthApi = pathname.startsWith('/api/auth/')
-  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
-  const isGatedPage = !isApiPath && !bare.startsWith('/auth/')
-  const isGatedMutatingApi = isApiPath && !isAuthApi && isMutating
-
+  // (isApiPath·isGatedPage·isGatedMutatingApi 판정은 updateSession 위로 올라가 있다)
   if (user && (isGatedPage || isGatedMutatingApi)) {
-    const supabase = createSupabaseClient(request)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .maybeSingle()
+    // 보호/관리자 경로에서 이미 읽은 행이 있으면 재사용(같은 요청의 같은 행), 없으면 기존 쿼리 그대로.
+    let profile: { onboarding_completed: boolean | null } | null
+    const overlapped = gateProfile === undefined ? await getOverlappedProfile() : undefined
+    if (gateProfile !== undefined) {
+      profile = gateProfile
+    } else if (overlapped !== undefined) {
+      profile = overlapped
+    } else {
+      const supabase = createSupabaseClient(request)
+      const { data } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle()
+      profile = data
+    }
 
     if (!profile?.onboarding_completed) {
       if (isGatedMutatingApi) {
