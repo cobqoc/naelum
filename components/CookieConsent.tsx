@@ -176,16 +176,7 @@ export default function CookieConsent() {
         )}
       </div>
 
-      <style jsx>{`
-        @keyframes cookie-slide-up {
-          from { transform: translateY(100%); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes cookie-slide-down {
-          from { transform: translateY(0); opacity: 1; }
-          to { transform: translateY(100%); opacity: 0; }
-        }
-      `}</style>
+      {/* cookie-slide-up/down 키프레임은 app/globals.css 로 이관 (styled-jsx 런타임 제거, perf 2026-09-27) */}
     </div>
   );
 }

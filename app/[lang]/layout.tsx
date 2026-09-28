@@ -49,13 +49,18 @@ export default async function LangLayout({
   // server에서 locale 미리 로드 → I18nProvider에 전달. SSR 첫 렌더부터 정확한 t.
   // path별 빌드 타임에 결정되므로 정적 prerender 호환.
   const initialT = await loadLocale(lang as Language);
+  // ko 는 클라이언트 번들에 정적 포함된 defaultLocale(=동일한 ko 객체)이라 RSC 페이로드로 다시 보내지
+  // 않는다 — 페이지당 ~56KB(HTML·RSC) 중복 제거 (perf 2026-09-27). I18nProvider 는 initialT 부재 시
+  // defaultLocale 로 시작하고 ko 면 추가 로드 없이 그대로 유지하므로 첫 렌더·hydration 결과가 동일하다.
+  // 비-ko 는 SSR 첫 렌더 정확성(번역 깜빡임 방지)을 위해 계속 전달한다.
+  const clientInitialT = lang === 'ko' ? undefined : initialT;
 
   return (
     <>
       <HtmlLangSync lang={lang} />
       <ServiceWorkerRegister />
       <ThemeProvider>
-        <I18nProvider initialLanguage={lang as Language} initialT={initialT}>
+        <I18nProvider initialLanguage={lang as Language} initialT={clientInitialT}>
           <AuthProvider>
             <ToastProvider>
               <ConsentProvider>

@@ -49,12 +49,12 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[sheet-fade-in_0.15s_ease-out]"
         onClick={onClose}
       />
 
       {/* Sheet */}
-      <div ref={panelRef} className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden animate-[slideUp_0.2s_ease-out] md:animate-[fadeIn_0.15s_ease-out]">
+      <div ref={panelRef} className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden animate-[slideUp_0.2s_ease-out] md:animate-[sheet-fade-in_0.15s_ease-out]">
         {/* 핸들 (모바일) */}
         <div className="md:hidden flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1 rounded-full bg-white/20" />
@@ -111,10 +111,8 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
         </button>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      `}</style>
+      {/* 키프레임: slideUp 은 globals.css 전역과 동일해 그대로 사용, opacity 전용 페이드는 sheet-fade-in
+          (전역 fadeIn 은 translateY 포함이라 이름 분리). styled-jsx 런타임 제거, perf 2026-09-27 */}
     </div>
   );
 }

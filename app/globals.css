@@ -1,4 +1,10 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+/* 클래스 스캔을 런타임 코드로 한정 (perf 2026-09-27). 기본 자동 감지는 저장소 전체(docs·scripts·
+   .fridge-backups·supabase SQL 등 ~9MB)를 스캔해 문서에만 등장하는 클래스까지 CSS 에 넣었다.
+   렌더되는 클래스 리터럴은 전부 아래 세 디렉터리에 있다 (public/offline.html 은 자체 인라인 CSS). */
+@source "../app";
+@source "../components";
+@source "../lib";
 
 :root {
   /* 홈 냉장고 viewport fit — 반응형으로 viewport별 reserved(고정 영역 높이)와 max(절대 상한) 분리.
@@ -249,11 +255,6 @@ body {
   display: none;
 }
 
-/* Smooth scroll for iOS */
-.scroll-smooth {
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Touch action for better mobile interactions */
 .touch-manipulation {
   touch-action: manipulation;
@@ -297,12 +298,6 @@ select {
   }
 }
 
-/* Heading scale utilities */
-.page-title    { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }   /* 24px — 페이지 대제목 */
-.section-title { font-size: 1rem;   font-weight: 700; line-height: 1.4; }   /* 16px — 섹션 제목 */
-.card-title    { font-size: 0.875rem; font-weight: 700; line-height: 1.4; } /* 14px — 카드 내 제목 */
-.label-text    { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); } /* 12px — 라벨 */
-
 /* Animation utilities */
 @keyframes fadeIn {
   from {
@@ -317,33 +312,6 @@ select {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
-}
-
-/* Background food emoji float */
-@keyframes food-float {
-  0%   { transform: translateY(0px) rotate(0deg); }
-  33%  { transform: translateY(-12px) rotate(4deg); }
-  66%  { transform: translateY(-6px) rotate(-3deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
-}
-
-/* Fridge animations */
-@keyframes fridgeGlow {
-  0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(244, 67, 54, 0.1); }
-  50% { box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 30px rgba(244, 67, 54, 0.3); }
-}
-
-@keyframes fridgePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.3); }
-  50% { box-shadow: 0 0 8px 3px rgba(244, 67, 54, 0.15); }
-}
-
-.animate-fridge-glow {
-  animation: fridgeGlow 2s ease-in-out infinite;
-}
-
-.animate-fridge-pulse {
-  animation: fridgePulse 1.5s ease-in-out infinite;
 }
 
 /* 대롱대롱 매달린 효과 — sine wave 진자 운동을 10개 keyframe으로 수동 plot.
@@ -382,259 +350,6 @@ select {
   }
 }
 
-/* Skeleton loading animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--background-tertiary) 25%,
-    var(--background-secondary) 50%,
-    var(--background-tertiary) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* ===================================
-   DEPRECATED: RECIPE BOOK PAGE TURNING
-   (replaced by RecipeBrowseView + RecipeCookMode)
-   =================================== */
-
-/* Container */
-.recipe-book-container {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 73px); /* 헤더 높이(약 73px) 제외 */
-  overflow: hidden;
-  background: var(--background-primary);
-}
-
-/* Individual page */
-.recipe-book-page {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  will-change: transform;
-  background: var(--background-secondary);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  overflow-y: auto;
-  padding: 2rem;
-}
-
-/* Page states */
-.page-current {
-  opacity: 1;
-  z-index: 2;
-  transform: translateX(0);
-}
-
-.page-hidden {
-  opacity: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* Slide animations */
-@keyframes slideOutLeft {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideOutRight {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.page-animating-forward {
-  animation: slideOutLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
-  z-index: 1;
-}
-
-.page-animating-backward {
-  animation: slideInLeft 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
-  z-index: 3;
-}
-
-/* Page indicator dots */
-.page-indicator-container {
-  position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: flex;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  background: rgba(58, 58, 58, 0.95);
-  border-radius: 9999px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.page-indicator-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(136, 136, 136, 0.6);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-}
-
-.page-indicator-dot:hover {
-  transform: scale(1.3);
-  background: rgba(136, 136, 136, 0.9);
-}
-
-.page-indicator-dot-active {
-  background: var(--accent-warm);
-  transform: scale(1.4);
-  box-shadow: 0 0 15px var(--accent-glow), 0 0 30px var(--accent-glow);
-}
-
-/* Navigation arrows */
-.page-nav-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 100;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(58, 58, 58, 0.95);
-  border-radius: 50%;
-  color: var(--accent-warm);
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.page-nav-arrow:hover:not(:disabled) {
-  background: var(--accent-warm);
-  color: var(--background-primary);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.page-nav-arrow:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.page-nav-arrow-left {
-  left: 2rem;
-}
-
-.page-nav-arrow-right {
-  right: 2rem;
-}
-
-/* Desktop - 크기 절반으로 축소 */
-@media (min-width: 1024px) {
-  .recipe-book-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .recipe-book-page {
-    width: 600px;
-    height: 80vh;
-    max-height: 900px;
-    left: 50%;
-    margin-left: -300px;
-  }
-
-  .page-nav-arrow-left {
-    left: calc(50% - 350px);
-  }
-
-  .page-nav-arrow-right {
-    right: calc(50% - 350px);
-  }
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .recipe-book-page {
-    border-radius: 0;
-    padding: 1.5rem;
-  }
-
-  .page-nav-arrow {
-    width: 40px;
-    height: 40px;
-  }
-
-  .page-nav-arrow-left {
-    left: 1rem;
-  }
-
-  .page-nav-arrow-right {
-    right: 1rem;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .page-animating-forward,
-  .page-animating-backward {
-    animation: none;
-    transition: opacity 0.3s ease;
-  }
-}
-
 /* ===================================
    COOK MODE: Ingredients Bottom Sheet
    =================================== */
@@ -662,10 +377,6 @@ select {
   to {
     transform: translateY(0);
   }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* ===================================
@@ -733,39 +444,14 @@ select {
   .animate-pulse,
   .animate-bounce,
   .animate-spin,
-  .animate-shimmer,
-  .animate-fadeIn,
-  .animate-fridge-glow,
-  .animate-fridge-pulse {
+  .animate-fadeIn {
     animation: none !important;
   }
-}
-
-/* Cookie consent slide-up animation */
-@keyframes cookieSlideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-cookie-slide-up {
-  animation: cookieSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* Theme transition smoothing */
 [data-theme] {
   transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-/* 냉장고 도어 레시피 카드 슬라이드 페이드 */
-@keyframes door-recipe-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
 }
 
 /* 홈 냉장고 viewport별 반응형 fit — 위 :root에서 정의된 변수 override.
@@ -786,7 +472,8 @@ select {
 }
 
 /* ===================================
-   AccessibilityProvider 전역 스타일 — <style jsx global> 에서 이관 (fix 2026-09-27).
+   styled-jsx 이관 (perf 2026-09-27) — AccessibilityProvider·CookieConsent·IngredientActionSheet 의
+   <style jsx> 를 옮겨 styled-jsx 런타임(~5KB gz, 54개 라우트 공유 청크)을 제거했다.
    시트 *끝* 에 두는 이유: 기존 런타임 <style> 은 <head> 끝(CSS 링크 뒤)에 붙었으므로, .high-contrast 가
    같은 특이도(0,1,0)의 :root/[data-theme] 변수를 이기는 순서를 그대로 유지한다.
    =================================== */
@@ -812,4 +499,19 @@ select {
   --background-primary: #000000;
   --background-secondary: #1a1a1a;
   --background-tertiary: #333333;
+}
+
+@keyframes cookie-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes cookie-slide-down {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0; }
+}
+
+/* IngredientActionSheet 백드롭/패널 — opacity 전용 페이드 */
+@keyframes sheet-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

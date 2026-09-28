@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       '@supabase/realtime-js': './lib/supabase/shims/realtime-js.ts',
       '@supabase/functions-js': './lib/supabase/shims/functions-js.ts',
+      // storage-js 가 상단 import 하는 Iceberg 카탈로그 클라이언트 — analytics 버킷 미사용 (perf 2026-09-27)
+      'iceberg-js': './lib/supabase/shims/iceberg-js.ts',
     },
   },
   webpack: (config) => {
@@ -18,6 +20,7 @@ const nextConfig: NextConfig = {
       ...(config.resolve.alias || {}),
       '@supabase/realtime-js': path.resolve(__dirname, 'lib/supabase/shims/realtime-js.ts'),
       '@supabase/functions-js': path.resolve(__dirname, 'lib/supabase/shims/functions-js.ts'),
+      'iceberg-js': path.resolve(__dirname, 'lib/supabase/shims/iceberg-js.ts'),
     }
     return config
   },
