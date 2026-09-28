@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 
 interface RecipeReviewModalProps {
   recipeId: string;
@@ -32,7 +32,10 @@ export default function RecipeReviewModal({
   const [rating, setRating] = useState(initialRating);
   const [review, setReview] = useState(initialReview);
   const [submitting, setSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // 로그인 여부는 AuthProvider 가 이미 쿠키에서 복원한 세션으로 판단 — 열 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 3-상태 유지: null=인증 확인 중 / true / false. 실제 쓰기는 서버 API 가 다시 인증한다.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn: boolean | null = authLoading ? null : !!user;
   const panelRef = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose, isOpen && !submitting);
   useFocusTrap(isOpen, panelRef);
@@ -42,15 +45,6 @@ export default function RecipeReviewModal({
     setRating(initialRating);
     setReview(initialReview);
   }, [initialRating, initialReview]);
-
-  // 모달이 열릴 때 로그인 상태 확인
-  useEffect(() => {
-    if (!isOpen) return;
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
-  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (submitting) return;

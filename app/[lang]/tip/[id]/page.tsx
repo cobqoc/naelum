@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import Header from '@/components/Header';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 
 const ReportModal = dynamic(() => import('@/components/Common/ReportModal'), { ssr: false });
@@ -44,29 +44,27 @@ interface Tip {
 export default function TipDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const supabase = createClient();
+  // 현재 사용자는 AuthProvider 가 쿠키에서 복원한 세션에서 — 조회 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 수정/삭제 권한은 서버(DELETE /api/tip/[id]·수정 API)가 다시 검증한다.
+  const { user, loading: authLoading } = useAuth();
 
   const { t, language } = useI18n();
   const [tip, setTip] = useState<Tip | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const currentUserId = user?.id ?? null;
   const [deleting, setDeleting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [res, { data: { user } }] = await Promise.all([
-        fetch(`/api/tip/${id}`),
-        supabase.auth.getUser(),
-      ]);
+      const res = await fetch(`/api/tip/${id}`);
       const data = await res.json();
       if (res.ok) setTip(data.tip);
-      if (user) setCurrentUserId(user.id);
       setLoading(false);
     };
     fetchData();
-  }, [id, supabase]);
+  }, [id]);
 
   const handleDelete = async () => {
     setDeleteConfirmOpen(false);
@@ -76,7 +74,8 @@ export default function TipDetailPage() {
     else setDeleting(false);
   };
 
-  if (loading) {
+  // 인증 확정 전엔 스피너 유지 → 작성자 버튼이 첫 화면부터 정확(이전 Promise.all 과 같은 보장)
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />

@@ -7,7 +7,7 @@ import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 
 interface MadeItModalProps {
   recipeId: string;
@@ -31,7 +31,10 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // 로그인 여부는 AuthProvider 가 이미 쿠키에서 복원한 세션으로 판단 — 열 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 3-상태 유지: null=인증 확인 중 / true / false. 실제 쓰기는 서버 API 가 다시 인증한다.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn: boolean | null = authLoading ? null : !!user;
   const panelRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEscapeKey(onClose, isOpen && !submitting);
@@ -40,7 +43,6 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
   useEffect(() => {
     if (!isOpen) return;
     setDifficulty(0); setPhoto(null); setPhotoPreview(null);
-    createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user));
   }, [isOpen]);
 
   const handlePickPhoto = (file: File) => {
