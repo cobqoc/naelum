@@ -1,28 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import type { EventStats } from '@/lib/analytics/aggregateEvents';
 import Link from '@/components/Common/LocalizedLink';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
-interface EventRow {
-  id: string;
-  event_type: string;
-  page: string | null;
-  payload: Record<string, unknown> | null;
-  viewport_w: number | null;
-  viewport_h: number | null;
-  user_id: string | null;
-  session_id: string;
-  ua: string | null;
-  created_at: string;
-}
-
+// 집계는 서버(/api/admin/analytics/events → lib/analytics/aggregateEvents)에서 — 같은 행·같은 코드라 숫자 동일 (perf 2026-09-28)
 interface EventsResponse {
   days: number;
   total: number;
-  events: EventRow[];
+  daily: ReturnType<typeof import('@/lib/analytics/aggregateEvents').dailyPageViews>;
+  topEvents: ReturnType<typeof import('@/lib/analytics/aggregateEvents').topEvents>;
+  topPages: ReturnType<typeof import('@/lib/analytics/aggregateEvents').topPages>;
+  stats: EventStats;
 }
 
 const RANGES = [
@@ -31,13 +23,6 @@ const RANGES = [
   { value: 30, label: '30일' },
   { value: 90, label: '90일' },
 ];
-
-function deviceCategory(w: number | null): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
-  if (!w) return 'unknown';
-  if (w < 768) return 'mobile';
-  if (w < 1280) return 'tablet';
-  return 'desktop';
-}
 
 export default function AdminEventsAnalyticsPage() {
   const [data, setData] = useState<EventsResponse | null>(null);
@@ -66,98 +51,10 @@ export default function AdminEventsAnalyticsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // 일별 페이지뷰 추이
-  const dailyPageViews = useMemo(() => {
-    if (!data) return [];
-    const byDay = new Map<string, number>();
-    for (const e of data.events) {
-      if (e.event_type !== 'page_view') continue;
-      const day = e.created_at.slice(0, 10);
-      byDay.set(day, (byDay.get(day) ?? 0) + 1);
-    }
-    return Array.from(byDay.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, count]) => ({ date: date.slice(5), count }));
-  }, [data]);
-
-  // Top events
-  const topEvents = useMemo(() => {
-    if (!data) return [];
-    const byType = new Map<string, number>();
-    for (const e of data.events) byType.set(e.event_type, (byType.get(e.event_type) ?? 0) + 1);
-    return Array.from(byType.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([type, count]) => ({ type, count }));
-  }, [data]);
-
-  // Top pages
-  const topPages = useMemo(() => {
-    if (!data) return [];
-    const byPage = new Map<string, number>();
-    for (const e of data.events) {
-      if (e.event_type !== 'page_view' || !e.page) continue;
-      byPage.set(e.page, (byPage.get(e.page) ?? 0) + 1);
-    }
-    return Array.from(byPage.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([page, count]) => ({ page, count }));
-  }, [data]);
-
-  // 디바이스 분포 + 보류 이슈 카드 데이터
-  const stats = useMemo(() => {
-    if (!data) return null;
-    const dev = { mobile: 0, tablet: 0, desktop: 0, unknown: 0 };
-    const uniqueSessions = new Set<string>();
-    const uniqueUsers = new Set<string>();
-    let pageViews = 0;
-    let pendantClicks = 0;
-    let bannerClicks = 0;
-    let fabClicks = 0;
-    let emptyCta = 0;
-    let recipePill = 0;
-    let recipePillModeReady = 0;
-    let recipePillModeAlmost = 0;
-    let recipePillModeAll = 0;
-    let bottomNavSearch = 0;
-    let overlayPillRecipes = 0;
-    let overlayPillTips = 0;
-    let ingredientAdd = 0;
-    let ingredientDelete = 0;
-
-    for (const e of data.events) {
-      dev[deviceCategory(e.viewport_w)]++;
-      uniqueSessions.add(e.session_id);
-      if (e.user_id) uniqueUsers.add(e.user_id);
-      if (e.event_type === 'page_view') pageViews++;
-      else if (e.event_type === 'pendant_click') pendantClicks++;
-      else if (e.event_type === 'expiring_banner_click') bannerClicks++;
-      else if (e.event_type === 'fab_add_click') fabClicks++;
-      else if (e.event_type === 'empty_cta_click') emptyCta++;
-      else if (e.event_type === 'recipe_pill_click') {
-        recipePill++;
-        const m = e.payload?.mode;
-        if (m === 'ready') recipePillModeReady++;
-        else if (m === 'almost') recipePillModeAlmost++;
-        else if (m === 'all') recipePillModeAll++;
-      }
-      else if (e.event_type === 'bottomnav_search_click') bottomNavSearch++;
-      else if (e.event_type === 'search_overlay_pill_click') {
-        if (e.payload?.pill === 'recipes') overlayPillRecipes++;
-        else if (e.payload?.pill === 'tips') overlayPillTips++;
-      }
-      else if (e.event_type === 'ingredient_add') ingredientAdd++;
-      else if (e.event_type === 'ingredient_delete') ingredientDelete++;
-    }
-    return {
-      dev, uniqueSessions: uniqueSessions.size, uniqueUsers: uniqueUsers.size,
-      pageViews, pendantClicks, bannerClicks, fabClicks, emptyCta,
-      recipePill, recipePillModeReady, recipePillModeAlmost, recipePillModeAll,
-      bottomNavSearch, overlayPillRecipes, overlayPillTips,
-      ingredientAdd, ingredientDelete,
-    };
-  }, [data]);
+  const dailyPageViews = data?.daily ?? [];
+  const topEvents = data?.topEvents ?? [];
+  const topPages = data?.topPages ?? [];
+  const stats = data?.stats ?? null;
 
   return (
     <div className="min-h-dvh bg-background-primary text-text-primary p-6">

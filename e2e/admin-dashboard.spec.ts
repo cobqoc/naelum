@@ -58,4 +58,28 @@ test.describe('어드민 — 데이터계층 이전 안전망', () => {
       await setUserRole(testUser.userId, 'user')
     }
   })
+
+  test('행동 분석(events): 서버 집계 요약 응답 + 페이지 렌더', async ({
+    authenticatedPage: page,
+    testUser,
+  }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', e => pageErrors.push(e.message))
+
+    await setUserRole(testUser.userId, 'admin')
+    try {
+      // 원본 행 대신 요약만 반환 (perf 2026-09-28) — 계약 고정
+      const apiRes = await page.request.get('/api/admin/analytics/events?days=7')
+      expect(apiRes.status()).toBe(200)
+      const body = await apiRes.json()
+      expect(body).not.toHaveProperty('events')
+      for (const k of ['days', 'total', 'daily', 'topEvents', 'topPages', 'stats']) expect(body).toHaveProperty(k)
+
+      await page.goto('/admin/analytics/events', { waitUntil: 'domcontentloaded' })
+      await expect(page.getByRole('heading', { name: /행동 분석/ })).toBeVisible({ timeout: 8000 })
+      expect(pageErrors).toEqual([])
+    } finally {
+      await setUserRole(testUser.userId, 'user')
+    }
+  })
 })
