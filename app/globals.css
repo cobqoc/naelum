@@ -785,3 +785,31 @@ select {
   }
 }
 
+/* ===================================
+   AccessibilityProvider 전역 스타일 — <style jsx global> 에서 이관 (fix 2026-09-27).
+   시트 *끝* 에 두는 이유: 기존 런타임 <style> 은 <head> 끝(CSS 링크 뒤)에 붙었으므로, .high-contrast 가
+   같은 특이도(0,1,0)의 :root/[data-theme] 변수를 이기는 순서를 그대로 유지한다.
+   =================================== */
+
+/* 모션 줄이기(사용자 설정 또는 OS prefers-reduced-motion → <html class="reduce-motion">) 일 때만 애니메이션 차단.
+   fix (2026-09-27): styled-jsx(stylis) 가 원래 소스 `.reduce-motion *::before` 를 `.reduce-motion *,:before,:after`
+   로 잘못 컴파일해, 설정과 무관하게 *모든 사용자* 의 ::before/::after 애니메이션·트랜지션이 0.01ms 로 꺼져 있었다
+   (예: 지도 '내 위치' 파란 점의 퍼지는 물결 — maplibregl-user-location-dot:before 가 멈춘 점으로 보임).
+   가상요소도 .reduce-motion 범위 안으로 되돌린다. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+.high-contrast {
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-muted: #c0c0c0;
+  --background-primary: #000000;
+  --background-secondary: #1a1a1a;
+  --background-tertiary: #333333;
+}

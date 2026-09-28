@@ -234,26 +234,7 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
         className="sr-only"
       />
 
-      {/* Global reduced-motion styles */}
-      <style jsx global>{`
-        .reduce-motion *,
-        .reduce-motion *::before,
-        .reduce-motion *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-
-        .high-contrast {
-          --text-primary: #ffffff;
-          --text-secondary: #e0e0e0;
-          --text-muted: #c0c0c0;
-          --background-primary: #000000;
-          --background-secondary: #1a1a1a;
-          --background-tertiary: #333333;
-        }
-      `}</style>
+      {/* reduce-motion·high-contrast 전역 스타일은 app/globals.css 끝으로 이관 (styled-jsx 런타임 제거, perf 2026-09-27) */}
     </AccessibilityContext.Provider>
   );
 }
