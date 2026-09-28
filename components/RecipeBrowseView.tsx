@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
@@ -181,18 +181,24 @@ export default function RecipeBrowseView({
     return m;
   }, [userIngredientQtys]);
 
+  // ── 탭 props 안정화 (perf 2026-09-27) ─────────────────────────────────────────────
+  // 요리 타이머가 돌면 useCookingMode 의 1초 틱마다 이 컴포넌트가 다시 렌더된다. 그때마다 재료·단계 탭 전체
+  // (단계별 정규식 토큰화·재료별 단위 변환 포함)가 다시 그려지던 것을, 탭을 memo 로 감싸고 아래 값들을
+  // 참조 고정해 틱에선 건너뛰게 한다. 값은 같은 입력의 같은 계산이라 출력 동일 — 인분·단위·완료 단계 등
+  // 실제 입력이 바뀌면 그대로 다시 그린다. 타이머 표시는 CookTimerPanel 이 매 틱 갱신.
+
   // 재료 양 배율 계산
-  const scaleQty = (qty: string): string => {
+  const scaleQty = useCallback((qty: string): string => {
     if (currentServings === baseServings || !qty) return qty;
     const num = parseFloat(qty);
     if (isNaN(num)) return qty;
     const scaled = num * (currentServings / baseServings);
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
-  };
+  }, [currentServings, baseServings]);
 
   // is_optional 재료 목록 + substitutes — 단계 본문 자동 highlight 용.
   // substitutes 는 display 용 string[] 로 평탄화 (note 있으면 "name · note" 합쳐서).
-  const optionalIngredients = recipe.ingredients
+  const optionalIngredients = useMemo(() => recipe.ingredients
     .filter(i => i.is_optional)
     .map(i => ({
       name: i.ingredient_name,
@@ -207,10 +213,36 @@ export default function RecipeBrowseView({
             })
             .filter(Boolean)
         : undefined,
-    }));
+    })), [recipe.ingredients]);
 
   // useCookingMode 가 제공하지 않는 *display order* 정렬은 RBV 가 책임 (hook 은 카운트만).
-  const sortedSteps = [...(recipe.steps || [])].sort((a, b) => a.step_number - b.step_number);
+  const sortedSteps = useMemo(
+    () => [...(recipe.steps || [])].sort((a, b) => a.step_number - b.step_number),
+    [recipe.steps],
+  );
+
+  // IngredientsTab 전용 — 매 렌더 새 배열/함수/객체였던 props 를 참조 고정
+  const tabIngredients = useMemo(() => recipe.ingredients.map(i => ({
+    ingredient_id: i.ingredient_id ?? null,
+    ingredient_name: i.ingredient_name,
+    quantity: i.quantity,
+    unit: i.unit,
+    notes: i.notes,
+    is_optional: i.is_optional,
+    substitutes: i.substitutes,
+  })), [recipe.ingredients]);
+  const openFridgeModal = useCallback(() => setShowFridgeModal(true), []);
+  const { isImperial, toggleSystem, convertIngredient } = unitConv;
+  const tabUnitConv = useMemo(
+    () => ({ isImperial, toggleSystem, convertIngredient }),
+    [isImperial, toggleSystem, convertIngredient],
+  );
+  // StepsTab 전용 — voice 훅 결과 객체는 매 렌더 새로 만들어지므로 쓰는 두 값만 고정
+  const { isSupported: voiceSupported, speakStepDirect } = cook.voice;
+  const tabVoice = useMemo(
+    () => ({ isSupported: voiceSupported, speakStepDirect }),
+    [voiceSupported, speakStepDirect],
+  );
 
   // 카트 추가 액션은 cart.addToShoppingList; ingredientStatus 는 match.* 에서.
 
@@ -519,15 +551,7 @@ export default function RecipeBrowseView({
           {/* 재료 패널 — 추출된 표현 컴포넌트 ([[project-god-file-phase2]]) */}
           <IngredientsTab
             activeTab={activeTab}
-            ingredients={recipe.ingredients.map(i => ({
-              ingredient_id: i.ingredient_id ?? null,
-              ingredient_name: i.ingredient_name,
-              quantity: i.quantity,
-              unit: i.unit,
-              notes: i.notes,
-              is_optional: i.is_optional,
-              substitutes: i.substitutes,
-            }))}
+            ingredients={tabIngredients}
             matchResults={summary.results}
             userIngredientNameById={userIngredientNameById}
             coveredCount={coveredCount}
@@ -537,8 +561,8 @@ export default function RecipeBrowseView({
             currentServings={currentServings}
             setCurrentServings={setCurrentServings}
             scaleQty={scaleQty}
-            unitConv={unitConv}
-            onShowFridgeModal={() => setShowFridgeModal(true)}
+            unitConv={tabUnitConv}
+            onShowFridgeModal={openFridgeModal}
             t={t}
           />
 
@@ -553,7 +577,7 @@ export default function RecipeBrowseView({
             onToggleStep={cook.toggleStep}
             onOpenTimer={cook.openTimerForStep}
             getEffectiveTimers={cook.getEffectiveTimers}
-            voice={cook.voice}
+            voice={tabVoice}
             showMadeIt={!isAuthor}
             onMadeIt={onMadeIt}
             t={t}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { hasSupabaseSessionCookie } from '@/lib/supabase/hasSessionCookie';
 import { useScrollCache } from '@/lib/hooks/useScrollCache';
 import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
@@ -114,6 +115,8 @@ function SearchContent() {
 
   // Fetch search history
   useEffect(() => {
+    // 비로그인(세션 쿠키 없음)은 서버가 항상 빈 히스토리로 응답 → 초기 state([]) 그대로. 요청 자체를 생략 (perf 2026-09-27).
+    if (!hasSupabaseSessionCookie()) return;
     fetch('/api/search/history')
       .then(res => res.json())
       .then(data => setSearchHistory(data.history || []))

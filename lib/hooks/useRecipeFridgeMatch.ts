@@ -105,9 +105,15 @@ export function useRecipeFridgeMatch(
   const [coeffsMap, setCoeffsMap] = useState<CoeffsMap>(new Map());
   const [isLoading, setIsLoading] = useState(false);
 
+  // 보유 재료 id 가 하나도 없으면(비로그인·빈 냉장고 — SEO·익명 트래픽 전부) graph·coeffs 는 어떤 결과에도
+  // 영향이 없다: matchIngredient 는 has()/userBaseMap 이 전부 false 라 incoming 루프가 모두 continue → missing,
+  // 계수(coeffsMap)를 읽는 shortOf 는 owned 분기에서만 호출된다. → 두 PostgREST read 를 생략 (perf 2026-09-27).
+  // boolean 키라 보유 id 집합이 바뀔 때마다 재실행하지 않고, 없음↔있음 전환 때만 다시 판단한다.
+  const hasUserIds = userIdSet.size > 0;
+
   useEffect(() => {
     let cancelled = false;
-    if (recipeIngredientIds.length === 0) {
+    if (recipeIngredientIds.length === 0 || !hasUserIds) {
       Promise.resolve().then(() => {
         if (!cancelled) { setGraph(EMPTY_GRAPH); setCoeffsMap(new Map()); }
       });
@@ -130,7 +136,7 @@ export function useRecipeFridgeMatch(
     return () => {
       cancelled = true;
     };
-  }, [recipeIngredientIds]);
+  }, [recipeIngredientIds, hasUserIds]);
 
   // 변형 매칭용 — 보유 재료의 base_id 맵 (삼겹살 보유 → "돼지고기" 필요 충족)
   const [userBaseMap, setUserBaseMap] = useState<Map<string, string>>(new Map());

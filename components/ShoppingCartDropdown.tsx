@@ -80,7 +80,8 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   // 사용자별 자주 쓰는 재료 — 빈 상태 quick-add에 노출
   const { items: favorites } = useFavorites(20);
-  const popularIngredients = usePopularIngredients();
+  // 비로그인은 아래 early return 에서 CartLoginPrompt 만 렌더 → 퀵추가 목록을 쓸 일이 없어 fetch 생략
+  const popularIngredients = usePopularIngredients(!!user);
 
   // 완료 항목 숨김 토글 (#4) — localStorage 저장
   const [hideChecked, setHideChecked] = useState<boolean>(() => {
@@ -281,6 +282,17 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   // 공유 링크 생성 + 클립보드 복사. 활성 토큰 있으면 재사용 (서버에서 처리).
   const [sharing, setSharing] = useState(false);
+
+  // ── 여기까지가 마지막 hook. 닫힌 상태·비로그인은 아래 파생 계산(퀵추가 병합·필터·카운트·그룹화)을
+  // 건너뛰도록 early return 을 hook 직후로 올림 — 렌더 결과 동일, 닫힌 드롭다운 2개(Header+BottomNav)가
+  // 페이지 상태 변경마다 하던 계산만 제거 (perf 2026-09-27).
+  if (!isOpen) return null;
+
+  // 비로그인: 로그인 유도 뷰 — components/cart/CartLoginPrompt.tsx 로 추출
+  // (god-file 분해 Phase 2, 순수 표현·상태 0·JSX byte-identical)
+  if (!user) {
+    return <CartLoginPrompt t={t} onClose={onClose} fromBottom={fromBottom} panelRef={panelRef} />;
+  }
   const handleShare = async () => {
     if (sharing) return;
     setSharing(true);
@@ -411,13 +423,6 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   const progressPct = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
   const groups = groupItems(filteredItems, groupMode);
 
-  if (!isOpen) return null;
-
-  // 비로그인: 로그인 유도 뷰 — components/cart/CartLoginPrompt.tsx 로 추출
-  // (god-file 분해 Phase 2, 순수 표현·상태 0·JSX byte-identical)
-  if (!user) {
-    return <CartLoginPrompt t={t} onClose={onClose} fromBottom={fromBottom} panelRef={panelRef} />;
-  }
 
   return (
     <>

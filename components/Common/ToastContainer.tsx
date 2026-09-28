@@ -1,6 +1,6 @@
 'use client';
 
-import { useToast, ToastType } from '@/lib/toast/context';
+import { useToast, useToastList, ToastType } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 
 /** SVG 아이콘 — 이모지 대신 고정된 크기/컬러 */
@@ -52,7 +52,8 @@ const STYLES: Record<ToastType, { stripe: string; iconBg: string }> = {
 };
 
 export default function ToastContainer() {
-  const { toasts, dismiss } = useToast();
+  const { dismiss } = useToast();
+  const toasts = useToastList();
   const { t: i18n } = useI18n();
 
   if (toasts.length === 0) return null;

@@ -2,7 +2,7 @@
 
 import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname';
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import SearchBar from './SearchBar';
@@ -65,7 +65,7 @@ interface NavItem {
   label: string;
 }
 
-export default function BottomNav() {
+function BottomNav() {
   // i18n: /[lang] prefix 제거된 bare 경로 — isActive·isFridgeHome 비교용.
   // raw usePathname()(=/ko…)을 '/' 와 비교하면 항상 어긋남(근본 원인 fix).
   const pathname = useLocalizedPathname();
@@ -236,3 +236,6 @@ export default function BottomNav() {
     </>
   );
 }
+
+// props 없는 컴포넌트 — Header 와 같은 이유로 memo (perf 2026-09-27).
+export default memo(BottomNav);

@@ -94,9 +94,9 @@ export default function TipListPage() {
       setCategory(cached.data.category);
       setLoading(false);
       setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' }), 150);
-    } else {
-      fetchTips('all', 0);
     }
+    // 신규 fetch 는 아래 category effect 가 mount 에 1회 담당(캐시 없으면 isRestoredRef=false) — 여기서 또
+    // 부르면 같은 URL 을 두 번 요청했다. 중복 제거, 결과 동일 (perf 2026-09-27).
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // category 변경 시 (복원 직후 첫 실행 스킵)

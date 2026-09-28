@@ -91,17 +91,20 @@ export default function HomeClient({
   // 반응형 MAX — viewport width 기반. 모바일 5, 태블릿/데스크톱 6.
   // 선반 폭이 비율로 스케일되므로 chip 개수도 비례 증가 가능.
   const [shelfMax, setShelfMax] = useState({ body: 4, pantry: 3, door: 2 });
-  // 씬 요소(팬던트/웜스팟/콘센트) 배치용 — 데스크탑에선 냉장고 가까이, 모바일은 가장자리
-  const [_isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      setIsDesktop(w >= 768);
       // body=6: 데모 17개 기준 6+6+5로 본체 3단 균등 분배. 8로 두면 마지막 단이 비어 본체와 냉동실이 시각적으로 분리됨.
-      if (w >= 1024) setShelfMax({ body: 6, pantry: 4, door: 3 });
-      else if (w >= 768) setShelfMax({ body: 6, pantry: 3, door: 3 });
-      else if (w >= 640) setShelfMax({ body: 5, pantry: 2, door: 2 });
-      else setShelfMax({ body: 5, pantry: 1, door: 2 });
+      const next =
+        w >= 1024 ? { body: 6, pantry: 4, door: 3 }
+        : w >= 768 ? { body: 6, pantry: 3, door: 3 }
+        : w >= 640 ? { body: 5, pantry: 2, door: 2 }
+        : { body: 5, pantry: 1, door: 2 };
+      // 값이 같으면 기존 객체를 돌려줘 React 가 bail-out — resize 이벤트(iOS 주소창 show/hide 등)마다
+      // 홈 트리 전체가 재렌더되던 것을 breakpoint 가 실제로 바뀔 때만으로 한정 (perf 2026-09-27).
+      setShelfMax(prev =>
+        prev.body === next.body && prev.pantry === next.pantry && prev.door === next.door ? prev : next,
+      );
     };
     update();
     window.addEventListener('resize', update);

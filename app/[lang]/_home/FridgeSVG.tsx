@@ -1,8 +1,10 @@
 'use client';
 
+import { memo } from 'react';
+
 // v9 — 웜 골드 + 바구니 타입별 디테일 (병 슬롯/메쉬/라벨/아이스 그리드)
 // (variant-warm-baskets.html 기반)
-export default function FridgeSVG() {
+function FridgeSVG() {
   return (
     <svg viewBox="30 -5 540 670" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -1293,3 +1295,7 @@ export default function FridgeSVG() {
         </svg>
   );
 }
+
+// props·hook·외부 읽기가 없는 순수 SVG(≈950 노드). memo 로 감싸 HomeClient 의 상태 변경(토스트·모달·
+// 리사이즈·재료 갱신)마다 SVG 트리를 다시 reconcile 하지 않게 한다 — 출력 DOM 은 동일 (perf 2026-09-27).
+export default memo(FridgeSVG);

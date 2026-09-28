@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 type EffectiveTheme = 'light' | 'dark';
@@ -34,22 +34,19 @@ function getInitialTheme(): { theme: Theme; effective: EffectiveTheme } {
   return { theme: 'system', effective };
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => getInitialTheme().theme);
-  const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>(() => getInitialTheme().effective);
-
-  // Get system theme preference
-  const getSystemTheme = (): EffectiveTheme => {
+// Calculate effective theme based on current theme setting (순수 — 컴포넌트 밖으로 올려 setTheme 을 안정 참조로)
+function calculateEffectiveTheme(currentTheme: Theme): EffectiveTheme {
+  if (currentTheme === 'system') {
     return getSystemThemeStatic();
-  };
+  }
+  return currentTheme;
+}
 
-  // Calculate effective theme based on current theme setting
-  const calculateEffectiveTheme = (currentTheme: Theme): EffectiveTheme => {
-    if (currentTheme === 'system') {
-      return getSystemTheme();
-    }
-    return currentTheme;
-  };
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  // mount 시 1회만 localStorage·matchMedia 읽기 (이전엔 두 useState 초기화가 각각 호출해 2회). 결과 동일.
+  const [initial] = useState(getInitialTheme);
+  const [theme, setThemeState] = useState<Theme>(initial.theme);
+  const [effectiveTheme, setEffectiveTheme] = useState<EffectiveTheme>(initial.effective);
 
   useEffect(() => {
     // Apply theme to document on mount
@@ -73,17 +70,20 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
 
     const effective = calculateEffectiveTheme(newTheme);
     setEffectiveTheme(effective);
     document.documentElement.setAttribute('data-theme', effective);
-  };
+  }, []);
+
+  // 값이 실제로 바뀔 때만 새 객체 — 소비처 불필요 리렌더 방지 (perf 2026-09-27).
+  const value = useMemo(() => ({ theme, setTheme, effectiveTheme }), [theme, setTheme, effectiveTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, effectiveTheme }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

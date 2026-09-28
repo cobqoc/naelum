@@ -43,8 +43,10 @@ export default function AllRecipesPage() {
   const hasFilter = !!(cuisineFilter || dishFilter);
 
   const { save, load, clear } = useScrollCache<RecipesCache>(CACHE_KEY);
-  // 필터 적용 시 캐시 무시
-  const initialCache = hasFilter ? null : load();
+  // 필터 적용 시 캐시 무시.
+  // useState lazy initializer: 초기 state 계산에만 쓰이는 값이라 mount 1회만 sessionStorage 읽기+JSON.parse
+  // (이전엔 매 렌더마다 최대 120개 레시피를 다시 parse). 초기값은 동일 (perf 2026-09-27).
+  const [initialCache] = useState(() => (hasFilter ? null : load()));
 
   // 카테고리 탭 — URL 필터가 활성이면 강제, 없으면 유저의 수동 선택 유지.
   // setState-in-effect 패턴을 피하기 위해 render time에 파생.
@@ -141,13 +143,16 @@ export default function AllRecipesPage() {
     setLoadingMore(false);
   }, []);
 
-  // mount 1회: 캐시 복원 시 스크롤 위치 복원, 아니면 신규 fetch
+  // mount 1회: 캐시 복원 시 스크롤 위치 복원.
+  // 신규 fetch 는 아래 sortBy/필터 effect 가 담당 — 캐시가 없으면 isRestoredRef 가 false 라 mount 에 반드시
+  // 1회 실행되므로 여기서 또 부르면 같은 목록을 두 번 요청하고(?sort= 딥링크면 'latest' 와 경쟁까지)
+  // 결과는 동일했다. 중복 요청 제거 (perf 2026-09-27).
   useEffect(() => {
-    const cached = hasFilter ? null : load();
+    // initialCache(= 첫 렌더에서 읽은 같은 sessionStorage 값)를 재사용 — mount 전에 save/clear 가 실행될 수
+    // 없어 다시 load() 한 결과와 동일하다. 최대 120개 레시피 JSON 의 두 번째 parse 제거 (perf 2026-09-27).
+    const cached = initialCache;
     if (cached) {
       setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' }), 150);
-    } else {
-      fetchRecipes(0, 'latest', true); // eslint-disable-line react-hooks/set-state-in-effect -- setState calls are all after await
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

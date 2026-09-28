@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -353,7 +353,8 @@ export default function IngredientBrowsePage({
       : CATEGORIES[0]);
 
   // 초성 그룹화 (가나다순 뷰와 동일 — 카테고리만 필터). 사전형이라 항목이 쌓여도 예측 가능.
-  const sortedGroups = groupByInitial(items);
+  // items 가 바뀔 때만 재그룹화 — 검색 키 입력마다 localeCompare 정렬을 반복하지 않는다 (perf 2026-09-27).
+  const sortedGroups = useMemo(() => groupByInitial(items), [items]);
   const activeGroups = sortedGroups.map(g => g.group);
   const scrollToGroup = (group: string) => {
     document.getElementById(`browse-group-${group}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });

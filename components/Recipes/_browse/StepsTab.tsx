@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import SafeImage from '@/components/Common/SafeImage';
 import OptionalIngredientBadge from '@/components/Recipes/OptionalIngredientBadge';
 import { tokenizeStepText, type OptionalIngredient } from '@/lib/recipes/highlightOptionalIngredients';
@@ -48,7 +49,7 @@ interface StepsTabProps {
   t: TranslationKeys;
 }
 
-export default function StepsTab({
+function StepsTab({
   activeTab,
   sortedSteps,
   completedSteps,
@@ -218,3 +219,6 @@ export default function StepsTab({
     </div>
   );
 }
+
+// 순수 표현(hook 0) — 요리 타이머 1초 틱으로 부모가 재렌더돼도 props 가 같으면 건너뛴다(출력 동일, perf 2026-09-27).
+export default memo(StepsTab);

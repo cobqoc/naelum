@@ -8,7 +8,7 @@
  * - GDPR 요구: 동의 기록(version + timestamp) + 언제든 철회 가능
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import {
   CookieConsent,
   CURRENT_CONSENT_VERSION,
@@ -16,6 +16,7 @@ import {
   writeStoredConsent,
 } from './types';
 import { createClient } from '@/lib/supabase/client';
+import { hasSupabaseSessionCookie } from '@/lib/supabase/hasSessionCookie';
 
 interface ConsentContextValue {
   /** 현재 consent. null = 아직 미결정 (배너 표시해야 함) */
@@ -49,6 +50,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   // 로그인 유저: DB의 consent가 더 최신이면 덮어쓰기
   useEffect(() => {
     if (!initialized) return;
+    // 세션 쿠키 없음(비로그인) = 서버는 반드시 401 → 아래 `!res.ok` 분기와 같은 no-op.
+    // proxy.ts 와 동일 기준으로 판정해 요청 자체를 생략 (perf 2026-09-27).
+    if (!hasSupabaseSessionCookie()) return;
 
     (async () => {
       try {
@@ -120,8 +124,14 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     setBannerVisible(false);
   }, []);
 
+  // 값이 실제로 바뀔 때만 새 객체 — 소비처 불필요 리렌더 방지 (perf 2026-09-27).
+  const value = useMemo(
+    () => ({ consent, bannerVisible, saveConsent, reopenBanner, closeBanner }),
+    [consent, bannerVisible, saveConsent, reopenBanner, closeBanner],
+  );
+
   return (
-    <ConsentContext.Provider value={{ consent, bannerVisible, saveConsent, reopenBanner, closeBanner }}>
+    <ConsentContext.Provider value={value}>
       {children}
     </ConsentContext.Provider>
   );

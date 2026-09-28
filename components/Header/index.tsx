@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
@@ -32,7 +32,7 @@ const LANG_OPTIONS = [
   { code: 'it' as Language, label: 'Italiano', flag: '🇮🇹' },
 ];
 
-export default function Header() {
+function Header() {
   const { language, setLanguage, t } = useI18n();
   const { user, profile } = useAuth();
   const pathname = usePathname();
@@ -305,3 +305,8 @@ export default function Header() {
     </>
   );
 }
+
+// props 없는 컴포넌트 — memo 로 감싸면 자기 상태·구독 컨텍스트(i18n·auth·pathname·cart 캐시)가 바뀔 때만
+// 렌더되고, 페이지 클라이언트의 무관한 상태 변경(검색 키 입력·타이머 틱 등)으로는 재렌더되지 않는다.
+// 출력 동일 (perf 2026-09-27).
+export default memo(Header);
