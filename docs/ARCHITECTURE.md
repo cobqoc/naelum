@@ -96,6 +96,18 @@ const { data: { user } } = await supabase.auth.getUser()
   middleware와 별도 request cycle일 수 있음
 - 로그인/로그아웃 등 auth 자체 작업: 당연히 `auth.*` 호출 필요
 
+### ⚠️ API 라우트는 반드시 스스로 인증 (2026-09-27 미들웨어 fast path)
+
+`proxy.ts` 는 **GET/HEAD `/api/*` 요청에서 `updateSession`(getUser) 을 건너뛴다** — 로그인 페이지뷰당
+Auth 왕복 5~6회 절감. 그래서:
+
+- API 라우트는 `x-naelum-user-id` 헤더를 **절대 읽지 말 것**(GET 에선 주입되지 않고 위조 헤더만 제거된다).
+  `requireAuth()`·`verifyAdmin()`·`createClient()`+RLS 로 스스로 인증한다.
+- 미들웨어의 온보딩 게이트는 *변경* API(POST/PUT/PATCH/DELETE)에만 적용된다(기존과 동일).
+- 보호/관리자 경로·온보딩 게이트용 `profiles` 조회는 getUser 와 겹쳐 시작한다(`lib/auth/peekSessionJwt.ts`,
+  서명 미검증 sub 로 *시작만* 하고 검증된 user.id 와 같을 때만 사용). 판정은 언제나 검증된 사용자 기준.
+- 회귀망: `e2e/proxy-gates.spec.ts`(게이트·no-store·비로그인 401) · `e2e/pwa-static.spec.ts` · `e2e/onboarding-gate.spec.ts`.
+
 ---
 
 ## 📦 데이터 fetching 우선순위
@@ -181,6 +193,18 @@ const ReviewModal = dynamic(() => import('./ReviewModal'), { ssr: false })
 // ❌ 헤더에 버튼 렌더되는데 dynamic하면 초기 화면 밀림
 const LoginButton = dynamic(() => import('./LoginButton'))
 ```
+
+### 📡 관측 SDK(Sentry)는 동의 시에만 지연 로딩
+
+`@sentry/nextjs` 는 Replay·tracing 포함 ≈350 KB raw / 110 KB gz. 정적 import 하면 *모든 라우트*의
+공유 메인 청크에 실린다(2026-09-27 감사: 공유 청크의 절반). 규칙:
+
+- SDK 로드는 `instrumentation-client.ts` 한 곳 — DSN + 분석 동의일 때만 `lib/sentry/client.ts`
+  파사드를 `import()` 하고 init. 비동의 세션은 바이트 0 (이전에도 `enabled:false` 라 전송 0).
+- **네임스페이스 `import('@sentry/nextjs')` 금지** — tree-shaking 을 잃어 feedback·profiling 등이
+  딸려온다(+225 KB raw 실측). 파사드는 필요한 이름만 `export { … } from '@sentry/nextjs'`.
+- 에러 바운더리는 `lib/sentry/captureException.ts`(런타임 import 없음, 전역 promise 경유).
+- `npm run scan` 이 app/components/lib 의 `@sentry/nextjs` 런타임 import 를 머지 차단한다.
 
 ### 판단 기준
 
@@ -432,9 +456,10 @@ CLAUDE.md에 "사용자 규모 증가 시 AWS 이전 예정"이라고 쓰여 있
 
 ## 🔗 참고
 
-- 성능 기준선 (2026-04-15 기준, Fast 3G + CPU 4x throttle)
-  - FCP: ~1.7s
-  - LCP: ~2.1s
-  - 홈 초기 JS 번들: 987 KB raw / 290 KB gzipped
+- 성능 기준선 (2026-09-27 기준, 비로그인 홈, Fast 3G + CPU 4x throttle — `docs/CHANGELOG.md` 2026-09 참고)
+  - FCP: ~1.1s / LCP: ~1.1s / TBT: ~60ms / load: ~2.3s
+  - 홈 초기 JS 번들: 1,056 KB raw / 287 KB gzipped (전 라우트 공유 청크 454 KB raw / 131 KB gz)
+  - 홈 HTML 108 KB, RSC 페이로드 12 KB (ko)
+  - 이전 기준선 (2026-04-15): FCP ~1.7s, LCP ~2.1s, 홈 JS 987 KB raw / 290 KB gz
 - 주요 리팩터 히스토리: `git log --grep "perf:"`
 - 안티패턴 교훈 정리: 이 문서의 "안티패턴 모음" 섹션 참고
