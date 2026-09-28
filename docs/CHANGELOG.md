@@ -18,8 +18,8 @@
   - **OPS-2(사용자 승인)**: 관리자 행동 분석 API 가 최대 1만 행 원본을 보내던 것 → 같은 행(필터·정렬·10k 상한)을 서버에서 집계해 요약만(`lib/analytics/aggregateEvents.ts`, git HEAD 의 페이지 집계 코드를 오라클로 한 vitest 로 동일성 증명). 화면 숫자 동일.
   - **검증**: lint 0 · vitest 399 · scan 통과 · fresh build 전체 e2e **481 passed / 0 failed / 1 flaky / 2 skipped**. flaky 는 `thumbnail-crop` tip/new(첫 시도 모달 미표시, 재시도 통과) — 이번 변경 파일과 무관하고 재시도 없이 15회 반복 90/90 통과. 화면에 입력이 보이자마자 파일을 주입하는 테스트의 하이드레이션 타이밍 경합으로 판단.
   - **커밋·푸시**: fix 와 perf/chore/docs 분리한 커밋 13개를 develop 에 푸시(2026-09-28). 커밋마다 tsc 통과 확인(기존 validateImage.test 오류 제외).
-  - **배포 후 확인할 것**: Preview URL 에서 로그인·홈 냉장고(이모지·보관기간 첫 화면)·PWA 설치 후 /offline.html·/sw.js 갱신 — 서비스 워커 경로(미들웨어 STATIC_PASSTHROUGH)는 dev 서버에서 재현 안 됨.
-  - **범위 밖이라 남긴 기존 문제(별도 세션)**: ① OnboardingWizard dynamic preload 404 ② `/ko/cart`·404 페이지 React #419 ③ `lib/storage/__tests__/validateImage.test.ts` tsc 오류(빌드는 통과) ④ `e2e/thumbnail-crop.spec.ts` tip/new 하이드레이션 전 setInputFiles 경합(드물게 1회 실패).
+  - **다음 작업 ① Preview 확인 → develop→main PR 머지**: Preview 는 naelum-dev DB 를 쓰므로 먼저 baedariyo pause → naelum-dev restore(확인 후 되돌림). Preview URL 에서 로그인·홈 냉장고(이모지·보관기간 첫 화면)·PWA 설치 후 /offline.html·/sw.js 갱신 — 서비스 워커 경로(미들웨어 STATIC_PASSTHROUGH)는 dev 서버에서 재현 안 됨.
+  - **다음 작업 ② 범위 밖이라 남긴 기존 문제(별도 세션, fix 커밋)**: ① OnboardingWizard dynamic preload 404 ② `/ko/cart`·404 페이지 React #419 ③ `lib/storage/__tests__/validateImage.test.ts` tsc 오류(빌드는 통과) ④ `e2e/thumbnail-crop.spec.ts` tip/new 하이드레이션 전 setInputFiles 경합(드물게 1회 실패).
 
 - **성능·경량화 3차 — dev DB 복구 후 로그인 경로 + 전체 e2e** (2026-09-27, 미커밋)
   - **dev DB 복구(사용자 선택 A)**: 무료플랜 활성 2개 제한 → `baedariyo` 일시정지 → `naelum-dev` 복원(90일 제한 걸리지 않음, 스키마=저장소 마이그레이션 일치). 작업 후 되돌림(dev 일시정지·baedariyo 복원).
