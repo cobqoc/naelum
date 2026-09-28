@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { updateSession, USER_ID_HEADER } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 import { SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales'
 
@@ -197,7 +197,12 @@ export async function proxy(request: NextRequest) {
       return applyNoStore(NextResponse.redirect(loginUrl), pathname, false)
     }
     // isAuthOnly: user가 null이므로 리다이렉트 불필요
-    return applyNoStore(NextResponse.next(), pathname, false)
+    // fix (2026-09-28): 세션 쿠키가 없어도 클라이언트가 보낸 x-naelum-user-id 는 반드시 제거한다.
+    // 이전엔 이 분기에서 제거하지 않아, 비로그인 요청이 위조 헤더로 홈 SSR 을 "로그인 상태"로 렌더시킬 수 있었다
+    // (RLS 로 개인 데이터 유출은 없었지만 인증 판정이 위조 가능). 쿠키 있는 경로(updateSession·읽기 API)는 이미 제거함.
+    const headers = new Headers(request.headers)
+    headers.delete(USER_ID_HEADER)
+    return applyNoStore(NextResponse.next({ request: { headers } }), pathname, false)
   }
 
   // 세션 쿠키 있음: 토큰 갱신 + user 반환

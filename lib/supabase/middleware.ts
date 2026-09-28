@@ -13,7 +13,7 @@ import type { User } from '@supabase/supabase-js'
  * - 클라이언트가 `x-naelum-user-id`를 위조해 보낼 수 있으므로 중계 전에 항상 delete 후
  *   실제 검증된 user.id로 덮어쓴다. 페이지 코드는 이 헤더를 신뢰해도 됨.
  */
-const USER_ID_HEADER = 'x-naelum-user-id'
+export const USER_ID_HEADER = 'x-naelum-user-id'
 
 export async function updateSession(request: NextRequest): Promise<{ response: NextResponse; user: User | null }> {
   // 1차: supabase가 cookie 갱신을 기록할 임시 응답
