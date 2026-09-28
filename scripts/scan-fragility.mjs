@@ -7,6 +7,10 @@
 // 카테고리:
 //  [BLOCK] client-date-utc — 'use client' 파일의 new Date().toISOString().slice(0,10)/.split('T')[0].
 //          UTC라 KST 자정~오전9시 "오늘"이 하루 빠름(2026-06-03 유통기한 버그). lib/date/localDate 사용. exit 1.
+//  [BLOCK] sentry-app-import — app/components/lib 안에서 '@sentry/nextjs' 를 런타임 import(정적·동적) 하면 exit 1.
+//          정적이면 SDK(≈350KB raw/110KB gz) 가 모든 라우트의 앱 번들로 되돌아오고, 네임스페이스 동적 import 는
+//          tree-shaking 을 잃는다(2026-09-27 perf: Sentry 는 instrumentation-client.ts 가 lib/sentry/client.ts 파사드만
+//          dynamic import, 에러 바운더리는 lib/sentry/captureException.ts 경유). 타입 전용(import type / typeof import) 허용.
 //  [RATCHET] hardcoded-korean / client-direct-read / select-star — 아래 RATCHET 상한(high-water mark) 초과 시 exit 1.
 //          기존 부채는 통과시키되 *새로 늘면* 막는다(역행 차단). burndown 으로 수치가 줄면 RATCHET 상한도 *반드시* 같이 낮춰 잠가라.
 //          - hardcoded-korean: client 컴포넌트 JSX 안 한글 문자열 리터럴 파일 수(i18n 부채). 글로벌 출시 전 t.* 로 이관.
@@ -100,6 +104,11 @@ const SELECT_STAR = /\.select\(\s*['"`]\*['"`]\s*\)/g;
 //    새 컬럼이 자동으로 export 에 포함되는 게 *바람직*하므로 select('*') 가 정답.
 const SELECT_STAR_EXEMPT = [/\/app\/api\/users\/export\/route\.ts$/];
 
+// Sentry 런타임 import 탐지 — `import ... from '@sentry/nextjs'`(import type 제외), `export ... from '@sentry/nextjs'`,
+// `import('@sentry/nextjs')`(typeof import 제외). 파사드(lib/sentry/client.ts)만 허용.
+const SENTRY_IMPORT = /(^\s*(?:import|export)\s+(?!type\b)[^;]*?from\s*['"]@sentry\/nextjs['"])|((?<!typeof\s+)import\s*\(\s*['"]@sentry\/nextjs['"]\s*\))/m;
+const SENTRY_IMPORT_EXEMPT = [/\/lib\/sentry\/client\.ts$/];
+
 // 한 'use client' 파일의 supabase 직접 read 체인 수 (.from(...) 이후 창에 .select 있고 mutation 없음)
 function countClientReadChains(src) {
   const parts = src.split(/\.from\(/);
@@ -115,6 +124,7 @@ const files = [];
 for (const d of SCAN_DIRS) await walk(join(ROOT, d), files);
 
 const dateHits = [];
+const sentryHits = [];   // 앱 번들에 Sentry SDK 를 되돌리는 런타임 import
 let koreanFiles = 0;
 const koreanList = [];   // 한글 리터럴이 남은(면제 아님) client 파일 — burndown 추적용
 const clientReadFiles = [];   // 클라 직접 read 가 있는 파일들 (file:횟수)
@@ -125,10 +135,12 @@ for (const f of files) {
   const src = await readFile(join(ROOT, f), 'utf8');
 
   // select('*') 는 서버/클라 무관 전체 스캔. 단 주석(JSDoc 사용 예시)과 면제 파일(GDPR export)은 제외.
+  const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   if (!SELECT_STAR_EXEMPT.some(re => re.test('/' + f))) {
-    const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     selectStar += (codeOnly.match(SELECT_STAR) || []).length;
   }
+  // Sentry 는 서버/클라 무관 전체 스캔(lib/* 은 클라 번들로 끌려갈 수 있음). 주석 제거본 기준.
+  if (!SENTRY_IMPORT_EXEMPT.some(re => re.test('/' + f)) && SENTRY_IMPORT.test(codeOnly)) sentryHits.push(f);
 
   const isClient = /^\s*['"]use client['"]/m.test(src.slice(0, 100));
   if (!isClient) continue;
@@ -155,6 +167,7 @@ for (const f of files) {
 
 const report = {
   dateUtcClient: dateHits,
+  sentryAppImport: sentryHits,
   hardcodedKoreanFiles: koreanFiles,
   hardcodedKoreanList: koreanList,
   clientDirectReadFiles: clientReadFiles.length,
@@ -169,6 +182,8 @@ if (process.argv.includes('--json')) {
   console.log('— fragility scan —\n');
   console.log(`[BLOCK] client 날짜 UTC: ${dateHits.length}`);
   dateHits.forEach(h => console.log(`   ✗ ${h}  → lib/date/localDate (localDateISO/addDaysLocalISO)`));
+  console.log(`[BLOCK] Sentry 앱 번들 import: ${sentryHits.length}`);
+  sentryHits.forEach(h => console.log(`   ✗ ${h}  → lib/sentry/captureException (에러 캡처) / instrumentation-client.ts 만 SDK 로드`));
   console.log(`\n[NOTE]  하드코딩 한글 client 파일: ${koreanFiles}  (i18n 부채 — 글로벌 출시 전 t.* 로 이관)`);
   console.log(`\n[NOTE]  client 직접 read: ${clientReadFiles.length}개 파일 / ${clientReadSites}곳  (데이터 페칭은 lib/queries 로 — docs/DATA_LAYER.md. 숫자가 줄어야 함)`);
   clientReadFiles.forEach(h => console.log(`   • ${h}`));
@@ -189,6 +204,10 @@ if (dateHits.length > 0) {
   console.error('\n❌ client 날짜 UTC 패턴 발견 — lib/date/localDate 로 교체하세요 (KST 하루 어긋남).');
   process.exit(1);
 }
+if (sentryHits.length > 0) {
+  console.error('\n❌ @sentry/nextjs 런타임 import 발견 — SDK 가 앱 번들로 되돌아옵니다. lib/sentry/captureException 를 쓰거나 파사드 lib/sentry/client.ts 를 통해 instrumentation-client.ts 에서만 로드하세요.');
+  process.exit(1);
+}
 if (ratchetViolations.length > 0) {
   if (!process.argv.includes('--json')) {
     console.error('\n❌ ratchet 역행 — 아래 부채가 상한을 넘었습니다 (새로 늘리지 말 것):');
@@ -201,5 +220,5 @@ if (ratchetViolations.length > 0) {
 if (!process.argv.includes('--json')) {
   ratchetLoosened.forEach(([name, cur, max]) =>
     console.log(`🔽 ${name}: ${cur} < 상한 ${max} — scan-fragility.mjs 의 RATCHET 상한을 ${cur} 로 낮춰 다시 잠그세요.`));
-  console.log('\n✅ 블로킹(날짜 UTC + ratchet) 통과.');
+  console.log('\n✅ 블로킹(날짜 UTC + Sentry import + ratchet) 통과.');
 }

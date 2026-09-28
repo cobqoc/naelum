@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
-import * as Sentry from '@sentry/nextjs';
+import { captureException } from '@/lib/sentry/captureException';
 
 type ErrorMessages = {
   title: string;
@@ -46,7 +46,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    captureException(error);
   }, [error]);
 
   const t = messages[resolveLanguage()] ?? messages.ko;

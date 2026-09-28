@@ -5,7 +5,7 @@
 // 이 파일이 우선 적용되어 [lang] 하위 라우트의 에러를 i18n 형태로 표시.
 
 import { useEffect } from 'react';
-import * as Sentry from '@sentry/nextjs';
+import { captureException } from '@/lib/sentry/captureException';
 import Link from '@/components/Common/LocalizedLink';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -30,7 +30,7 @@ export default function LangError({
   const { t, language } = useI18n();
 
   useEffect(() => {
-    Sentry.captureException(error);
+    captureException(error);
   }, [error]);
 
   // 개발 환경에서만 raw error 표시 — 프로덕션에선 깔끔한 fallback
