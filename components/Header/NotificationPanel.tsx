@@ -8,6 +8,7 @@ import { useToast } from '@/lib/toast/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { OPEN_NOTIFICATIONS_EVENT } from '@/components/Common/AccessibilityProvider';
 
 interface NotificationItem {
   id: string;
@@ -80,6 +81,22 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, [userId, fetchUnreadCount]);
+
+  // Alt+N 단축키(AccessibilityProvider)로 열기 — 종 버튼 클릭과 같은 경로(onOpen + 목록 조회), 이미 열려 있으면 무시.
+  // 최신 props 를 쓰도록 핸들러는 ref 로 들고 리스너는 한 번만 건다. (PAU-03, 2026-10-04 — 예전엔 없는 /notifications 로 이동)
+  const openFromShortcutRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    openFromShortcutRef.current = () => {
+      if (isOpen) return;
+      onOpen();
+      fetchNotifications();
+    };
+  });
+  useEffect(() => {
+    const handler = () => openFromShortcutRef.current();
+    window.addEventListener(OPEN_NOTIFICATIONS_EVENT, handler);
+    return () => window.removeEventListener(OPEN_NOTIFICATIONS_EVENT, handler);
+  }, []);
 
   const markAsRead = async (id: string) => {
     const res = await fetch('/api/notifications', {

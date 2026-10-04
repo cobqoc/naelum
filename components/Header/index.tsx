@@ -1,17 +1,19 @@
 'use client';
 
-import { memo, useEffect, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { memo, useRef, useState } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
-import { swapLangSegment } from '@/lib/i18n/localizePath';
+import { useToast } from '@/lib/toast/context';
 import type { Language } from '@/lib/i18n/translations';
+import { useCartRestore } from '@/lib/shopping-list/cartRestore';
 import ShoppingCartDropdown, { useCartCount } from '../ShoppingCartDropdown';
+import ContactModal from '../LazyContactModal';
 import CartIcon from '../icons/CartIcon';
 import SearchIcon from '../icons/SearchIcon';
 import NotificationPanel from './NotificationPanel';
 import UserDropdown from './UserDropdown';
+import { LANG_OPTIONS, useLanguageSwitch } from './useLanguageSwitch';
 import { useAuth } from '@/lib/auth/context';
 import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
@@ -19,37 +21,20 @@ import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useListKeyboardNav } from '@/lib/hooks/useListKeyboardNav';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { loading: () => null });
-const ContactModal = dynamic(() => import('../ContactModal'), { loading: () => null });
 
-const LANG_OPTIONS = [
-  { code: 'ko' as Language, label: '한국어', flag: '🇰🇷' },
-  { code: 'en' as Language, label: 'English', flag: '🇺🇸' },
-  { code: 'ja' as Language, label: '日本語', flag: '🇯🇵' },
-  { code: 'zh' as Language, label: '中文', flag: '🇨🇳' },
-  { code: 'es' as Language, label: 'Español', flag: '🇪🇸' },
-  { code: 'fr' as Language, label: 'Français', flag: '🇫🇷' },
-  { code: 'de' as Language, label: 'Deutsch', flag: '🇩🇪' },
-  { code: 'it' as Language, label: 'Italiano', flag: '🇮🇹' },
-];
+// 언어 목록(LANG_OPTIONS)·전환 핸들러는 UserDropdown 과 공유 — ./useLanguageSwitch (2026-10-04 PAU-32)
 
 function Header() {
-  const { language, setLanguage, t } = useI18n();
+  const { language, t } = useI18n();
+  const toast = useToast();
   const { user, profile } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const switchLanguage = useLanguageSwitch();
   const [showLangSelector, setShowLangSelector] = useState(false);
 
-  // 언어 선택 — 컨텍스트 즉시 전환 + URL의 [lang] 세그먼트도 교체해 서버 재렌더 유도.
+  // 언어 선택 — 컨텍스트 즉시 전환 + URL의 [lang] 세그먼트도 교체해 서버 재렌더 유도(useLanguageSwitch).
   // 경로를 안 바꾸면 /ko 가 영어 콘텐츠를 서빙해 <title>·메타데이터가 이전 언어로 남는다(탭 제목·SEO 불일치).
   const handleLangSelect = (code: Language) => {
-    setLanguage(code);
-    // query·hash 보존 — usePathname 은 query 미포함이라 직접 붙인다(안 붙이면 필터·검색어 유실).
-    const target = swapLangSegment(
-      pathname || '/',
-      typeof window !== 'undefined' ? window.location.search + window.location.hash : '',
-      code,
-    );
-    if (target) router.push(target);
+    switchLanguage(code);
     setShowLangSelector(false);
   };
   const [showWriteModal, setShowWriteModal] = useState(false);
@@ -61,22 +46,20 @@ function Header() {
   const { count: cartCount } = useCartCount();
 
   // 레시피 chip → 레시피 페이지 navigate 후 뒤로 돌아왔을 때 cart 자동 재오픈.
-  // BottomNav도 동일 로직을 갖고 있어서 PC/모바일 viewport 어느 쪽에서도 복원됨.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('naelum_cart_restore') === '1') {
-      // queueMicrotask: effect 안에서 동기 setState는 cascading render 경고를 일으킴
-      queueMicrotask(() => {
-        setShowCart(true);
-        sessionStorage.removeItem('naelum_cart_restore');
-      });
-    }
-  }, []);
+  // 헤더 장바구니는 데스크톱(md+)에서만 보임 — 모바일은 BottomNav 가 같은 훅으로 연다 (2026-10-04 PAU-33).
+  useCartRestore('desktop', () => setShowCart(true));
 
   const handleLogout = async () => {
     localStorage.removeItem('naelum_auto_login');
     // 서버 사이드 로그아웃: 서버가 쿠키를 직접 제거하고 홈으로 리다이렉트
-    await fetch('/api/auth/signout', { method: 'POST', redirect: 'manual' });
+    try {
+      await fetch('/api/auth/signout', { method: 'POST', redirect: 'manual' });
+    } catch {
+      // 2026-10-04 PAU-62: 네트워크 예외 시 처리되지 않은 rejection 으로 아무 반응 없이 멈췄다.
+      // 서버 쿠키가 그대로라 이동해도 로그인 상태이므로, 실패를 알리고 현재 화면에 머문다.
+      toast.error(t.auth.errNetwork);
+      return;
+    }
     window.location.href = '/';
   };
 
@@ -299,6 +282,10 @@ function Header() {
           </div>
         </nav>
       </header>
+      {/* 접근성 "콘텐츠로 건너뛰기"(AccessibilityProvider 의 href="#main-content") 대상 — 2026-10-04 PAU-01.
+          대상 요소가 앱 어디에도 없어 skip link 가 무동작이었다. 헤더는 페이지마다 렌더되므로(레이아웃 단일 래퍼는
+          헤더까지 감싸 건너뛸 게 없어짐) 헤더 바로 뒤에 포커스 가능한 빈 대상을 둔다. sr-only(absolute)라 화면·레이아웃 영향 없음. */}
+      <div id="main-content" tabIndex={-1} className="sr-only" />
 
       <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} />
       <WriteModal isOpen={showWriteModal} onClose={() => setShowWriteModal(false)} />

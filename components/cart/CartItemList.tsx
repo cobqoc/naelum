@@ -1,7 +1,8 @@
 import Link from '@/components/Common/LocalizedLink';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import type { ShoppingItem } from '@/lib/shopping-list/cache';
-import type { GroupedItems, GroupMode } from '@/lib/shopping-list/groupItems';
+import { categoryLabelFor, type GroupedItems, type GroupMode } from '@/lib/shopping-list/groupItems';
+import { markCartRestore } from '@/lib/shopping-list/cartRestore';
 import { COMMON_UNITS } from '@/components/cart/types';
 import FridgeIcon from '@/components/icons/FridgeIcon';
 import { useToast } from '@/lib/toast/context';
@@ -81,8 +82,10 @@ export default function CartItemList({
               <div className="px-4 py-2 bg-white/5 flex items-center gap-2">
                 <span className="text-sm">{group.groupIcon}</span>
                 <span className="text-xs font-medium text-text-secondary truncate">
+                  {/* 카테고리 라벨: 장보기 라벨 → 재료 분류 라벨(신규 분류) → 번역된 '기타'. 예전 마지막 폴백은 groupTitle(한국어
+                      '기타' 고정)이라 비-ko 에도 한글이 나왔다 — ko 출력은 동일 (TT-30, 2026-10-04) */}
                   {groupMode === 'category'
-                    ? (t.cart.categoryLabels[group.groupKey as keyof typeof t.cart.categoryLabels] ?? group.groupTitle)
+                    ? (categoryLabelFor(t, group.groupKey) ?? t.cart.categoryLabels.other)
                     : group.groupKey === '__manual__' ? t.cart.manualAdd : group.groupTitle}
                 </span>
                 <span className="text-[10px] text-text-muted ml-auto">
@@ -252,9 +255,7 @@ export default function CartItemList({
                           href={`/recipes/${item.recipe_id}`}
                           onClick={e => {
                             e.stopPropagation();
-                            if (typeof window !== 'undefined') {
-                              sessionStorage.setItem('naelum_cart_restore', '1');
-                            }
+                            markCartRestore();
                             onClose();
                           }}
                           className={`inline-flex items-center gap-0.5 text-xs max-w-[15rem] transition-colors ${item.is_checked ? 'text-text-muted line-through hover:text-text-secondary' : 'text-text-muted hover:text-accent-warm hover:underline'}`}

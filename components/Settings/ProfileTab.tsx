@@ -233,11 +233,17 @@ export default function ProfileTab({
           style={INPUT_INNER_STYLE}
         >
           <option value="">{sp.notSelected}</option>
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.name}>
-              {c.name} ({c.nameEn})
-            </option>
-          ))}
+          {COUNTRIES.map((c) => {
+            // 표시명은 현재 로케일(t.onboarding.countries — 온보딩과 같은 출처), 값(c.name 한국어)은 DB 호환 위해 유지.
+            // 예전엔 모든 로케일에 "대한민국 (South Korea)" 고정. ko 는 번역값이 c.name 과 같아 출력 동일,
+            // en 은 번역값이 영어명과 같으면 괄호 중복을 생략 (PAU-39, 2026-10-04).
+            const label: string = t.onboarding.countries[c.code] ?? c.name;
+            return (
+              <option key={c.code} value={c.name}>
+                {label === c.nameEn ? label : `${label} (${c.nameEn})`}
+              </option>
+            );
+          })}
         </select>
         </InputBoxWrapper>
       </div>

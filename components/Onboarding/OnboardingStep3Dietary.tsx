@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingStepProps } from './OnboardingTypes';
+import OnboardingNavButtons from './OnboardingNavButtons';
 import { useI18n } from '@/lib/i18n/context';
 
 export default function OnboardingStep3Dietary({
@@ -86,30 +87,8 @@ export default function OnboardingStep3Dietary({
         </div>
       </div>
 
-      {/* 버튼 */}
-      <div className="flex gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex-1 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all"
-        >
-          {t.onboarding.back}
-        </button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="px-4 py-3.5 rounded-xl bg-background-tertiary text-text-secondary hover:bg-white/5 font-medium transition-all whitespace-nowrap"
-        >
-          {t.onboarding.skipShort}
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          className="flex-1 py-3.5 rounded-xl bg-accent-warm text-background-primary hover:bg-accent-hover font-bold transition-all shadow-md"
-        >
-          {t.onboarding.next}
-        </button>
-      </div>
+      {/* 버튼 — Step2 와 공용 (PAU-38, 2026-10-04) */}
+      <OnboardingNavButtons t={t} onBack={onBack} onSkip={onSkip} onNext={onNext} />
     </div>
   );
 }

@@ -18,29 +18,34 @@ import { useCookieConsent } from '@/lib/cookieConsent/context';
 
 export default function CookieConsent() {
   const { t } = useI18n();
-  const { bannerVisible, saveConsent } = useCookieConsent();
+  const { bannerVisible, saveConsent, consent } = useCookieConsent();
 
-  const [dismissing, setDismissing] = useState(false);
+  // 2026-10-04 PAU-43: 닫힘(slide-down) 애니메이션용 `dismissing` 상태 삭제 — saveConsent 가 첫 await 전에
+  // bannerVisible=false 를 동기로 세팅해 같은 배치에서 배너가 언마운트(null)되므로 slide-down 은 재생된 적이 없다.
   const [customizing, setCustomizing] = useState(false);
   const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
   const handleAcceptAll = async () => {
-    setDismissing(true);
     await saveConsent(true, true);
-    setTimeout(() => setDismissing(false), 400);
   };
 
   const handleNecessaryOnly = async () => {
-    setDismissing(true);
     await saveConsent(false, false);
-    setTimeout(() => setDismissing(false), 400);
   };
 
   const handleSaveCustom = async () => {
-    setDismissing(true);
     await saveConsent(analytics, marketing);
-    setTimeout(() => { setDismissing(false); setCustomizing(false); }, 400);
+    // 다음에 배너를 다시 열면 기본 화면부터 — 기존 400ms 지연 그대로
+    setTimeout(() => { setCustomizing(false); }, 400);
+  };
+
+  // "세부 설정" 진입 시 토글을 *현재 저장된 동의*로 맞춘다 (PAU-42, 2026-10-04). 예전엔 항상 둘 다 꺼진 채 시작해
+  // 설정에서 배너를 다시 열고 하나만 바꿔 저장하면 나머지 기존 동의(예: 분석)가 조용히 철회됐다. 미결정이면 기존처럼 off.
+  const openCustomize = () => {
+    setAnalytics(consent?.analytics ?? false);
+    setMarketing(consent?.marketing ?? false);
+    setCustomizing(true);
   };
 
   if (!bannerVisible) return null;
@@ -51,7 +56,7 @@ export default function CookieConsent() {
     <div
       className="fixed left-0 right-0 z-40 px-3 pb-3 md:px-4 md:pb-4 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] md:bottom-0"
       style={{
-        animation: dismissing ? 'cookie-slide-down 0.35s ease-in forwards' : 'cookie-slide-up 0.4s ease-out forwards',
+        animation: 'cookie-slide-up 0.4s ease-out forwards',
       }}
       role="dialog"
       aria-label="Cookie consent"
@@ -98,7 +103,7 @@ export default function CookieConsent() {
 
             <div className="flex items-center justify-center gap-2 md:gap-3 mt-1.5 md:mt-3 text-[10px] md:text-xs">
               <button
-                onClick={() => setCustomizing(true)}
+                onClick={openCustomize}
                 className="underline transition-opacity hover:opacity-70"
                 style={{ color: 'var(--text-secondary)' }}
               >
@@ -176,7 +181,8 @@ export default function CookieConsent() {
         )}
       </div>
 
-      {/* cookie-slide-up/down 키프레임은 app/globals.css 로 이관 (styled-jsx 런타임 제거, perf 2026-09-27) */}
+      {/* cookie-slide-up 키프레임은 app/globals.css 로 이관 (styled-jsx 런타임 제거, perf 2026-09-27).
+          재생될 수 없던 dismiss 애니메이션(cookie-slide-down)은 2026-10-04 코드·키프레임 모두 삭제(PAU-43) */}
     </div>
   );
 }

@@ -8,6 +8,11 @@ interface LayoutProps {
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string; username: string }> }): Promise<Metadata> {
   const { username: rawSegment } = await params;
+  // `@` 없는 세그먼트(/ko/cart 등)는 page.tsx 가 404 로 끝낸다 — 프로필 조회 없이 기본 제목.
+  // (프로필 없음 분기와 같은 값. 봇·오타 경로마다 DB 왕복 1회 절감)
+  if (!rawSegment.startsWith('@') && !rawSegment.startsWith('%40')) {
+    return { title: '낼름' };
+  }
   const username = rawSegment.replace(/^%40|^@/, '');
 
   const supabase = await createClient();

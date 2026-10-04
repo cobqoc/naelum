@@ -25,9 +25,14 @@ export default function OnboardingStep1Profile({
 
   // 닉네임 중복 확인 (500ms 디바운스)
   useEffect(() => {
+    // 2026-10-04 PAU-20: 입력이 바뀌면 이전 요청 응답을 무시 — 늦게 도착한 이전 닉네임 결과가 현재 입력의
+    // 사용 가능 여부를 덮던 경합 차단(다음 버튼 활성 여부가 엉뚱한 닉네임 기준이 됨).
+    let cancelled = false;
     const checkUsername = async () => {
       if (!formData.username || formData.username.length < 2) {
         setUsernameAvailable(null);
+        // 무효화된 이전 확인은 스스로 스피너를 끄지 못하므로 여기서 해제
+        setCheckingUsername(false);
         return;
       }
 
@@ -35,8 +40,10 @@ export default function OnboardingStep1Profile({
       try {
         const res = await fetch(`/api/users/check-username?username=${encodeURIComponent(formData.username)}`);
         const data = await res.json();
+        if (cancelled) return;
         setUsernameAvailable(data.available);
       } catch (error) {
+        if (cancelled) return;
         console.error('Username check error:', error);
         setUsernameAvailable(null);
       }
@@ -44,7 +51,10 @@ export default function OnboardingStep1Profile({
     };
 
     const timer = setTimeout(checkUsername, 500);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [formData.username]);
 
   // 프로필 사진 선택 핸들러

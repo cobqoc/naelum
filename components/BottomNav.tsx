@@ -2,13 +2,14 @@
 
 import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname';
-import { memo, useState, useEffect } from 'react';
+import { memo, useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import ShoppingCartDropdown, { useCartCount } from './ShoppingCartDropdown';
 import SearchBar from './SearchBar';
 import SearchIcon from '@/components/icons/SearchIcon';
 import CartIcon from './icons/CartIcon';
 import { track } from '@/lib/analytics/track';
+import { useCartRestore } from '@/lib/shopping-list/cartRestore';
 
 // 홈 탭 아이콘 — PC 헤더 원본 실루엣 + 홈 FridgeSVG 팔레트 (teal→terracotta 빨강, 블랙→다크레드, 골드 유지).
 function FridgeIcon({ size = 30, active = false }: { size?: number; active?: boolean }) {
@@ -75,16 +76,8 @@ function BottomNav() {
   const { count: cartCount } = useCartCount();
 
   // 레시피 chip → 레시피 페이지 navigate 후 뒤로 돌아왔을 때 cart 자동 재오픈.
-  // Header도 동일 로직을 갖고 있어서 PC/모바일 viewport 어느 쪽에서도 복원됨.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (sessionStorage.getItem('naelum_cart_restore') === '1') {
-      queueMicrotask(() => {
-        setShowCart(true);
-        sessionStorage.removeItem('naelum_cart_restore');
-      });
-    }
-  }, []);
+  // 하단 네비 장바구니는 모바일(md 미만)에서만 보임 — 데스크톱은 Header 가 같은 훅으로 연다 (2026-10-04 PAU-33).
+  useCartRestore('mobile', () => setShowCart(true));
 
   // 프로필 슬롯은 모바일 헤더로 이관됨(중복 제거). 향후 다른 슬롯(예: 글쓰기) 추가 가능.
   const navItems: NavItem[] = [

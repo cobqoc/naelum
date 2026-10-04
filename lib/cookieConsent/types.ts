@@ -11,8 +11,8 @@
 /** 현재 쿠키 정책 버전. 정책 변경 시 올리면 전 유저 재동의 유도됨. */
 export const CURRENT_CONSENT_VERSION = 1;
 
-/** 로컬 저장소 키 — version은 value 안에 포함되어 있음. */
-export const CONSENT_KEY = 'naelum_cookie_consent';
+/** 로컬 저장소 키 — version은 value 안에 포함되어 있음. (파일 내부 전용 — 2026-10-04 외부 소비처 0 확인) */
+const CONSENT_KEY = 'naelum_cookie_consent';
 
 /**
  * 쿠키 카테고리.
@@ -28,29 +28,10 @@ export interface CookieConsent {
   timestamp: string; // ISO datetime
 }
 
-export const DEFAULT_REJECTED: CookieConsent = {
-  version: CURRENT_CONSENT_VERSION,
-  essential: true,
-  analytics: false,
-  marketing: false,
-  timestamp: '',
-};
-
-export const DEFAULT_ACCEPTED_ALL: CookieConsent = {
-  version: CURRENT_CONSENT_VERSION,
-  essential: true,
-  analytics: true,
-  marketing: true,
-  timestamp: '',
-};
-
-/** "모두 수락"·"필수만"·"커스터마이즈" 사용자 선택 구분용 */
-export type ConsentChoice = 'accept-all' | 'necessary-only' | 'custom';
-
 /**
  * 저장된 consent를 파싱. 유효하지 않거나 버전 낮으면 null 반환 (= 배너 재노출).
  */
-export function parseStoredConsent(raw: string | null): CookieConsent | null {
+function parseStoredConsent(raw: string | null): CookieConsent | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
@@ -100,19 +81,5 @@ export function writeStoredConsent(consent: CookieConsent): void {
   }
 }
 
-/**
- * 분석/에러 추적 허용 여부를 즉시 판단 (instrumentation-client에서 호출).
- * localStorage에서 동기 읽기 — Sentry init 전에 결정 필요.
- */
-export function canUseAnalytics(): boolean {
-  const consent = readStoredConsent();
-  return consent?.analytics === true;
-}
-
-/**
- * 마케팅/광고 허용 여부 (향후 광고 도입 시 사용).
- */
-export function canUseMarketing(): boolean {
-  const consent = readStoredConsent();
-  return consent?.marketing === true;
-}
+// 2026-10-04: 소비처 0 이던 canUseAnalytics·canUseMarketing·DEFAULT_REJECTED·DEFAULT_ACCEPTED_ALL·ConsentChoice 삭제.
+// instrumentation-client.ts 는 번들 분리를 위해 이 파일을 import 하지 않고 자체 _hasAnalyticsConsent() 를 쓴다.

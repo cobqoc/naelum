@@ -79,6 +79,8 @@ export default function OnboardingWizard({
       onClose();
     } catch (error) {
       console.error('Skip error:', error);
+      // 2026-10-04 PAU-36: 예전엔 console 만 — "나중에 하기"가 아무 반응 없이 멈췄다. 실패를 알린다(위저드 유지).
+      toast.error(`${t.onboarding.errorPrefix}: ${t.onboarding.errorUnknown}`);
     }
   };
 
@@ -122,7 +124,8 @@ export default function OnboardingWizard({
       }).eq('id', user.id);
 
       if (profileError) {
-        throw profileError;
+        // 닉네임 unique 위반(23505)은 사용자에게 의미 있는 사유라 번역 문구로 구분 (PAU-36, 2026-10-04)
+        throw profileError.code === '23505' ? new Error(t.onboarding.profile.usernameTaken) : profileError;
       }
 
       // 3. 관심사 저장
@@ -145,6 +148,8 @@ export default function OnboardingWizard({
 
         if (interestsError) {
           console.error('Interests save error:', interestsError);
+          // 2026-10-04 PAU-36(결정 대기 — 2026-10-04 감사 결정 목록): 관심사·식단·알레르기 저장 실패는 지금처럼 삼키고
+          // 완료 처리한다. 실패를 막아 세우면(throw) 중복 알레르기 입력 같은 경우 온보딩을 끝낼 수 없게 될 수 있어 보류.
         }
       }
 
@@ -201,7 +206,11 @@ export default function OnboardingWizard({
       onComplete();
     } catch (error) {
       console.error('Onboarding error:', error);
-      toast.error(`${t.onboarding.errorPrefix}: ${error instanceof Error ? error.message : t.onboarding.errorUnknown}`);
+      // 2026-10-04 PAU-36: DB 원문(PostgrestError.message — 영어 제약 위반 메시지 등)을 그대로 띄우지 않는다.
+      // 우리가 번역 문구로 던진 사유(인증 누락·닉네임 중복)만 그대로, 그 외는 일반 문구.
+      const known = [t.onboarding.errorAuthMissing, t.onboarding.profile.usernameTaken];
+      const detail = error instanceof Error && known.includes(error.message) ? error.message : t.onboarding.errorUnknown;
+      toast.error(`${t.onboarding.errorPrefix}: ${detail}`);
     } finally {
       setSaving(false);
     }

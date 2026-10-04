@@ -1,41 +1,25 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
   useRef,
   ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
+import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname';
 import { useI18n } from '@/lib/i18n/context';
+import type { TranslationKeys } from '@/lib/i18n/translations';
 
-// ── Types ──────────────────────────────────────────────
-
-interface AccessibilityContextValue {
-  /** Whether the user prefers reduced motion */
-  reducedMotion: boolean;
-  /** Whether the user has high-contrast mode enabled */
-  highContrast: boolean;
-  /** Announce a message to screen readers via aria-live region */
-  announceMessage: (message: string, priority?: 'polite' | 'assertive') => void;
-}
-
-const AccessibilityContext = createContext<AccessibilityContextValue>({
-  reducedMotion: false,
-  highContrast: false,
-  announceMessage: () => {},
-});
+// 2026-10-04: 소비처 0 이던 useAccessibility 훅·AccessibilityContext(값 객체)를 삭제(PAU-04).
+// announceMessage 는 아래 라우트 안내 effect 가 내부에서 계속 쓴다.
 
 /**
- * Hook to access accessibility state and utilities.
+ * Alt+N 단축키 → 헤더 알림 패널(NotificationPanel)을 여는 window 이벤트 이름.
+ * 예전엔 존재하지 않는 /notifications 로 이동해 404 였다(PAU-03, 2026-10-04).
  */
-export function useAccessibility() {
-  return useContext(AccessibilityContext);
-}
+export const OPEN_NOTIFICATIONS_EVENT = 'naelum:open-notifications';
 
 // ── Provider ───────────────────────────────────────────
 
@@ -45,7 +29,9 @@ interface AccessibilityProviderProps {
 
 export default function AccessibilityProvider({ children }: AccessibilityProviderProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  // 2026-10-04: raw usePathname()(=/ko/recipes)의 첫 세그먼트는 항상 언어코드라 "ko 페이지로 이동했습니다"만
+  // 낭독됐다(PAU-02) → [lang] 접두를 뗀 경로로 페이지명을 만든다.
+  const pathname = useLocalizedPathname();
   const { t } = useI18n();
 
   const [reducedMotion, setReducedMotion] = useState(() => {
@@ -111,7 +97,7 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
       prevPathnameRef.current = pathname;
 
       // Build a human-readable page name from the pathname
-      const pageName = getPageName(pathname);
+      const pageName = getPageName(pathname, t);
       announceMessage(t.accessibility.navigatedTo.replace('{page}', pageName));
     }
   }, [pathname, announceMessage, t]);
@@ -158,18 +144,16 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
         return;
       }
 
-      // Alt+N: Go to notifications
+      // Alt+N: 알림 패널 열기 — 알림 전용 페이지는 없고(/notifications 는 404) 헤더 종 아이콘 패널이 실제 알림 UI.
+      // 패널(로그인 + 헤더가 있는 페이지)이 없으면 아무 일도 일어나지 않는다. (PAU-03, 2026-10-04)
       if (e.altKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
-        router.push('/notifications');
+        window.dispatchEvent(new CustomEvent(OPEN_NOTIFICATIONS_EVENT));
         return;
       }
 
-      // Escape: Close modals (dispatch a custom event that modals can listen to)
-      if (e.key === 'Escape') {
-        document.dispatchEvent(new CustomEvent('accessibility:escape'));
-        return;
-      }
+      // (2026-10-04) Escape 시 'accessibility:escape' 이벤트를 쏘던 분기는 리스너 0 이라 삭제(PAU-04).
+      // 모달·드롭다운의 Escape 닫기는 각자 useEscapeKey 가 담당한다.
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -201,10 +185,8 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
   // ── Render ──
 
   return (
-    <AccessibilityContext.Provider
-      value={{ reducedMotion, highContrast, announceMessage }}
-    >
-      {/* Skip to content link */}
+    <>
+      {/* Skip to content link — 대상 #main-content 는 Header 가 <header> 바로 뒤에 렌더한다 (PAU-01) */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[10000] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:outline-none focus:ring-2"
@@ -235,28 +217,33 @@ export default function AccessibilityProvider({ children }: AccessibilityProvide
       />
 
       {/* reduce-motion·high-contrast 전역 스타일은 app/globals.css 끝으로 이관 (styled-jsx 런타임 제거, perf 2026-09-27) */}
-    </AccessibilityContext.Provider>
+    </>
   );
 }
 
 // ── Utility ────────────────────────────────────────────
 
-function getPageName(pathname: string): string {
+// 2026-10-04: 페이지명을 현재 로케일 라벨로(기존 번역 키 재사용). 옛 맵은 영어 고정 + 없어진 경로
+// (login·ingredients·recommendations·notifications) 기준이었다. 모르는 세그먼트(@닉네임 등)는 그대로 읽는다.
+function getPageName(pathname: string, t: TranslationKeys): string {
   const segments = pathname.split('/').filter(Boolean);
 
-  if (segments.length === 0) return 'Home';
+  if (segments.length === 0) return t.common.home;
 
   const nameMap: Record<string, string> = {
-    recipes: 'Recipes',
-    search: 'Search',
-    settings: 'Settings',
-    notifications: 'Notifications',
-    login: 'Login',
-    signup: 'Sign Up',
-    ingredients: 'Ingredients',
-    recommendations: 'Recommendations',
-    privacy: 'Privacy Policy',
-    terms: 'Terms of Service',
+    recipes: t.nav.recipes,
+    search: t.common.search,
+    settings: t.common.settings,
+    signin: t.common.login,
+    signup: t.common.signup,
+    kitchen: t.meta.ingredientsTitle,
+    tip: t.meta.tipTitle,
+    cart: t.bottomNav.cart,
+    about: t.about.title,
+    privacy: t.meta.privacyTitle,
+    terms: t.meta.termsTitle,
+    copyright: t.meta.copyrightTitle,
+    cookies: t.meta.cookiesTitle,
     admin: 'Admin',
   };
 

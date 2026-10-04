@@ -19,6 +19,7 @@ import { usePopularIngredients } from '@/lib/ingredients/usePopularIngredients';
 import { useFavorites } from '@/lib/favorites/useFavorites';
 import { track } from '@/lib/analytics/track';
 import { groupItems, type GroupMode } from '@/lib/shopping-list/groupItems';
+import { restoreRemoved } from '@/lib/shopping-list/optimistic';
 import CartLoginPrompt from '@/components/cart/CartLoginPrompt';
 import CartHeader from '@/components/cart/CartHeader';
 import CartAddInput from '@/components/cart/CartAddInput';
@@ -213,23 +214,51 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     }
   };
 
+  // 옵티미스틱 변경의 서버 반영 확인 (PAU-46, 2026-10-04). 예전엔 res.ok·예외를 안 봐서 실패해도 화면·공유 캐시
+  // (헤더 배지)만 바뀐 채 DB 와 조용히 어긋났고(다음에 열면 되돌아감) 네트워크 예외는 처리되지 않은 rejection 이었다.
+  // 실패(비-2xx·예외)면 *이 변경만* 되돌리고(revert — 그 사이 다른 항목 변경은 유지) 번역된 에러 토스트. 성공 경로는 그대로.
+  const syncOrRevert = async (
+    request: () => Promise<Response>,
+    revert: (list: ShoppingItem[]) => ShoppingItem[],
+  ): Promise<boolean> => {
+    try {
+      const res = await request();
+      if (res.ok) return true;
+    } catch {
+      // 네트워크 예외 — 아래에서 되돌림
+    }
+    // 공유 캐시가 가장 최신(옵티미스틱 변경·서버 새로고침 모두 동기 반영) — 없으면 이 렌더의 목록
+    const reverted = revert(getCachedShoppingList() ?? items);
+    setItems(reverted);
+    setCachedShoppingList(reverted);
+    toastError(t.cart.updateFailed);
+    return false;
+  };
+
   const toggleCheck = async (item: ShoppingItem) => {
     const next = !item.is_checked;
     const updated = items.map(i => (i.id === item.id ? { ...i, is_checked: next } : i));
     setItems(updated);
     setCachedShoppingList(updated); // 공유 캐시에 동기화 (useCartCount 등에 전파)
-    await fetch('/api/shopping-list', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, is_checked: next }),
-    });
+    await syncOrRevert(
+      () => fetch('/api/shopping-list', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, is_checked: next }),
+      }),
+      list => list.map(i => (i.id === item.id ? { ...i, is_checked: item.is_checked } : i)),
+    );
   };
 
   const deleteItem = async (id: string) => {
+    const prev = items;
     const updated = items.filter(i => i.id !== id);
     setItems(updated);
     setCachedShoppingList(updated);
-    await fetch(`/api/shopping-list?id=${id}`, { method: 'DELETE' });
+    await syncOrRevert(
+      () => fetch(`/api/shopping-list?id=${id}`, { method: 'DELETE' }),
+      list => restoreRemoved(list, prev, new Set([id])),
+    );
   };
 
   const updateQuantity = async (item: ShoppingItem, delta: number) => {
@@ -239,11 +268,14 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     const updated = items.map(i => (i.id === item.id ? { ...i, quantity: next } : i));
     setItems(updated);
     setCachedShoppingList(updated);
-    await fetch('/api/shopping-list', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, quantity: next }),
-    });
+    await syncOrRevert(
+      () => fetch('/api/shopping-list', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, quantity: next }),
+      }),
+      list => list.map(i => (i.id === item.id ? { ...i, quantity: item.quantity } : i)),
+    );
   };
 
   // 항목 단위 변경 (#2)
@@ -252,11 +284,14 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     const updated = items.map(i => (i.id === item.id ? { ...i, unit: finalUnit } : i));
     setItems(updated);
     setCachedShoppingList(updated);
-    await fetch('/api/shopping-list', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, unit: finalUnit }),
-    });
+    await syncOrRevert(
+      () => fetch('/api/shopping-list', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, unit: finalUnit }),
+      }),
+      list => list.map(i => (i.id === item.id ? { ...i, unit: item.unit } : i)),
+    );
   };
 
   // 항목 메모 변경 — 빈 문자열이면 NULL 처리
@@ -270,11 +305,15 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     setItems(updated);
     setCachedShoppingList(updated);
     try {
-      await fetch('/api/shopping-list', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, note: finalNote }),
-      });
+      // 실패 시 되돌림 — pending 해제(finally) 전에 되돌려야 서버 새로고침 보존 로직(applyServerItems)이 옛 메모를 쓴다
+      await syncOrRevert(
+        () => fetch('/api/shopping-list', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id, note: finalNote }),
+        }),
+        list => list.map(i => (i.id === item.id ? { ...i, note: item.note } : i)),
+      );
     } finally {
       pendingNoteEditIdsRef.current.delete(item.id);
     }
@@ -323,9 +362,13 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   // 전체 비우기 (#5) — 즉시 삭제 (cart는 휘발성, 잘못 눌러도 다시 추가하면 됨)
   const clearAll = async () => {
     if (items.length === 0) return;
+    const prev = items;
     setItems([]);
     setCachedShoppingList([]);
-    await fetch('/api/shopping-list', { method: 'DELETE' });
+    await syncOrRevert(
+      () => fetch('/api/shopping-list', { method: 'DELETE' }),
+      list => restoreRemoved(list, prev, new Set(prev.map(i => i.id))),
+    );
     window.dispatchEvent(new Event('shopping-list-updated'));
   };
 
@@ -381,11 +424,24 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
         }),
       });
       if (res.ok) {
-        await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
+        // 냉장고 추가는 성공. 장보기에서 완료 항목 정리(DELETE) 결과를 확인 — 예전엔 실패해도 화면에서 지워
+        // 장보기·냉장고 양쪽에 남은 걸 몰랐고, 네트워크 예외면 냉장고는 됐는데 "냉장고 추가 실패" 토스트가 떴다 (PAU-46).
+        let cleared = false;
+        try {
+          const del = await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
+          cleared = del.ok;
+        } catch {
+          // 아래에서 알림
+        }
         toastSuccess(t.cart.addToFridgeSuccess.replace('{count}', String(checked.length)));
-        const remaining = items.filter(i => !i.is_checked);
-        setItems(remaining);
-        setCachedShoppingList(remaining);
+        if (cleared) {
+          const remaining = items.filter(i => !i.is_checked);
+          setItems(remaining);
+          setCachedShoppingList(remaining);
+        } else {
+          // 서버엔 완료 항목이 그대로 — 화면도 지우지 않고 알림
+          toastError(t.cart.updateFailed);
+        }
         // 홈 화면 냉장고가 즉시 refetch하도록 이벤트 발송
         window.dispatchEvent(new Event('fridge-updated'));
         router.refresh();
@@ -400,10 +456,14 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
   };
 
   const clearChecked = async () => {
+    const prev = items;
     const remaining = items.filter(i => !i.is_checked);
     setItems(remaining);
     setCachedShoppingList(remaining);
-    await fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' });
+    await syncOrRevert(
+      () => fetch('/api/shopping-list?clearChecked=true', { method: 'DELETE' }),
+      list => restoreRemoved(list, prev, new Set(prev.filter(i => i.is_checked).map(i => i.id))),
+    );
   };
 
   const filteredItems = (() => {

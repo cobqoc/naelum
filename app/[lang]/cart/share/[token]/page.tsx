@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 import { createAdminClient } from '@/lib/supabase/server';
 import Link from '@/components/Common/LocalizedLink';
+import { after } from 'next/server';
 
 // 토큰별 실시간 데이터 — 캐시 X
 export const dynamic = 'force-dynamic';
@@ -43,10 +44,15 @@ async function loadShare(token: string): Promise<{ ownerName: string; items: Sha
       .limit(200),
   ]);
 
-  void supabase
-    .from('shopping_list_shares')
-    .update({ last_viewed_at: new Date().toISOString() })
-    .eq('token', token);
+  // 2026-10-04: `void builder` 는 요청이 나가지 않는다(PostgREST 빌더는 then() 때 실행) → last_viewed_at 이 영원히 NULL 이었다.
+  // 같은 기록을 하는 GET /api/cart/share/[token] 과 똑같이 실제 실행하고, 렌더는 기다리지 않게 after() 로 완료만 보장(실패는 로그).
+  after(Promise.resolve(
+    supabase
+      .from('shopping_list_shares')
+      .update({ last_viewed_at: new Date().toISOString() })
+      .eq('token', token)
+      .then(({ error }) => { if (error) console.error('[cart/share page] last_viewed_at update failed:', error.message); })
+  ));
 
   return {
     ownerName: profileRes.data?.full_name || profileRes.data?.username || '낼름',

@@ -48,7 +48,10 @@ export default function TipListPage() {
   const [offset, setOffset] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { save, load, clear } = useScrollCache<TipsCache>(CACHE_KEY);
-  const isRestoredRef = useRef(false);
+  // 캐시 복원 중인 카테고리 — category effect 가 이 값과 같은 카테고리로 한 번 돌 때까지 재요청을 건너뛴다.
+  // 2026-10-04 PAU-28: 예전 boolean 플래그는 mount 커밋의 첫 effect 실행(아직 category='all')에서 소진돼,
+  // '전체' 외 카테고리를 복원하면 다음 렌더(category 복원값)에서 캐시를 지우고 처음부터 재요청 → 스크롤 복원이 깨졌다.
+  const restoredCategoryRef = useRef<string | null>(null);
   const latestStateRef = useRef<TipsCache>({ tips: [], offset: 0, hasMore: false, category: 'all' });
   const scrollYRef = useRef(0);
   const isLeavingRef = useRef(false);
@@ -87,7 +90,7 @@ export default function TipListPage() {
   useEffect(() => {
     const cached = load();
     if (cached) {
-      isRestoredRef.current = true;
+      restoredCategoryRef.current = cached.data.category;
       setTips(cached.data.tips);
       setOffset(cached.data.offset);
       setHasMore(cached.data.hasMore);
@@ -95,13 +98,16 @@ export default function TipListPage() {
       setLoading(false);
       setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' }), 150);
     }
-    // 신규 fetch 는 아래 category effect 가 mount 에 1회 담당(캐시 없으면 isRestoredRef=false) — 여기서 또
+    // 신규 fetch 는 아래 category effect 가 mount 에 1회 담당(캐시 없으면 restoredCategoryRef=null) — 여기서 또
     // 부르면 같은 URL 을 두 번 요청했다. 중복 제거, 결과 동일 (perf 2026-09-27).
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // category 변경 시 (복원 직후 첫 실행 스킵)
+  // category 변경 시 (복원 직후엔 복원된 카테고리에 도달할 때까지 스킵 — PAU-28)
   useEffect(() => {
-    if (isRestoredRef.current) { isRestoredRef.current = false; return; }
+    if (restoredCategoryRef.current !== null) {
+      if (restoredCategoryRef.current === category) restoredCategoryRef.current = null;
+      return;
+    }
     clear();
     setOffset(0);
     fetchTips(category, 0);

@@ -8,7 +8,7 @@
  * - GDPR 요구: 동의 기록(version + timestamp) + 언제든 철회 가능
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import {
   CookieConsent,
   CURRENT_CONSENT_VERSION,
@@ -37,6 +37,9 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsent] = useState<CookieConsent | null>(null);
   const [bannerVisible, setBannerVisible] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  // 이번 세션에서 사용자가 배너로 직접 선택했는지 — 늦게 도착한 DB 동기화 GET 이 그 최신 선택을
+  // 예전 DB 값으로 덮지 않게 한다 (PAU-60, 2026-10-04).
+  const userChoseRef = useRef(false);
 
   // 초기 로드: localStorage에서 consent 읽기
   useEffect(() => {
@@ -66,6 +69,10 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
         if (dbVersion === null || dbVersion === undefined) return; // 미동의
         if (dbVersion < CURRENT_CONSENT_VERSION) return; // 구 버전 → 재동의 필요
 
+        // 응답을 기다리는 사이 사용자가 배너에서 직접 골랐으면 그 선택이 최신 — DB 값으로 덮지 않음 (PAU-60).
+        // (그 선택은 saveConsent 가 DB 에도 쓰므로 다음 로드부터 DB·로컬이 일치)
+        if (userChoseRef.current) return;
+
         // DB에 유효한 consent 있음 → localStorage도 동기화
         const dbConsent: CookieConsent = {
           version: dbVersion,
@@ -84,6 +91,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
   }, [initialized]);
 
   const saveConsent = useCallback(async (analytics: boolean, marketing: boolean) => {
+    userChoseRef.current = true; // 진행 중인 DB 동기화 GET 이 이 선택을 덮지 않게 (PAU-60)
     const newConsent: CookieConsent = {
       version: CURRENT_CONSENT_VERSION,
       essential: true,

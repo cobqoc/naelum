@@ -1,6 +1,5 @@
 'use client';
 
-import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { OnboardingStepProps } from './OnboardingTypes';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -9,13 +8,15 @@ export default function OnboardingStep4Complete({
   onNext,
   onBack,
 }: OnboardingStepProps) {
-  const router = useRouter();
   const { t } = useI18n();
   const tc = t.onboarding.complete;
 
+  // 2026-10-04 PAU-35: 예전엔 완료 저장(onNext = 위저드 handleComplete, 비동기)을 기다리지 않고 바로 router.push('/') →
+  // 저장 전에 도착한 요청을 미들웨어 온보딩 게이트가 onboarding_completed=false 로 읽어 약관 화면으로 되돌릴 수 있었고,
+  // 저장 실패 시에도 이미 페이지를 떠났다. 이동은 "메인으로 가기"와 같이 저장 성공 후 위저드 호출자의
+  // onComplete(약관 페이지: router.push('/'), 홈: 모달 닫기)에 맡긴다 — 실패하면 토스트와 함께 위저드에 남아 재시도.
   const handleGoToIngredients = () => {
-    onNext(); // 온보딩 완료 처리
-    router.push('/');
+    onNext(); // 온보딩 완료 처리 — 성공 시 onComplete 가 이동
   };
 
   const handleGoToHome = () => {
