@@ -18,7 +18,8 @@ interface EventsResponse {
 }
 
 const RANGES = [
-  { value: 1, label: '오늘' },
+  // 집계 범위는 지금부터 24시간 롤링(KST 자정 기준 '오늘' 아님) — 라벨을 의미에 맞춤(2026-10-04, 이전 라벨 '오늘')
+  { value: 1, label: '최근 24시간' },
   { value: 7, label: '7일' },
   { value: 30, label: '30일' },
   { value: 90, label: '90일' },

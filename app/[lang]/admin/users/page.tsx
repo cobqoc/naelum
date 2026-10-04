@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
@@ -29,7 +29,9 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
 
+  const requestSeq = useRef(0);
   const loadUsers = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     const params = new URLSearchParams({
       page: page.toString(),
@@ -37,16 +39,24 @@ export default function AdminUsersPage() {
       ...(search && { search })
     });
 
-    const res = await fetch(`/api/admin/users?${params}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/admin/users?${params}`);
+      const data = await res.json();
+      // 검색어를 빠르게 바꾸면 요청이 겹친다 — 마지막 요청의 응답만 반영(늦게 온 옛 응답이 최신 결과를 덮지 않게, 2026-10-04)
+      if (seq !== requestSeq.current) return;
 
-    if (data.users) {
-      setUsers(data.users);
-      setTotalPages(data.pagination.totalPages);
+      if (data.users) {
+        setUsers(data.users);
+        setTotalPages(data.pagination.totalPages);
+      }
+    } catch {
+      // 네트워크 실패·비JSON 응답(504 HTML 등)에도 스피너가 영구 고착되지 않게(2026-10-04)
+      if (seq !== requestSeq.current) return;
+      toast.error('사용자 목록을 불러오지 못했습니다');
     }
 
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -68,6 +78,10 @@ export default function AdminUsersPage() {
       toast.success('사용자가 차단되었습니다');
       loadUsers();
       setShowActionModal(false);
+    } else {
+      // 실패를 조용히 삼키던 것 → 사유 표시(2026-10-04)
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? '차단에 실패했습니다');
     }
   };
 
@@ -81,6 +95,9 @@ export default function AdminUsersPage() {
     if (res.ok) {
       toast.success('차단이 해제되었습니다');
       loadUsers();
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? '차단 해제에 실패했습니다');
     }
   };
 
@@ -94,7 +111,7 @@ export default function AdminUsersPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="사용자명 또는 이메일 검색..."
             className={INPUT_INNER_COMFORTABLE_CLASS}
             style={INPUT_INNER_STYLE}

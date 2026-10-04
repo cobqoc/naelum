@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { useToast } from '@/lib/toast/context';
+import AdminPagination from '@/components/Admin/AdminPagination';
 
 interface TargetInfo {
   id?: string;
@@ -61,6 +63,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AdminReportsPage() {
+  const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('pending');
@@ -78,14 +81,19 @@ export default function AdminReportsPage() {
       page: page.toString(),
       limit: '20',
     });
-    const res = await fetch(`/api/admin/reports?${params}`);
-    const data = await res.json();
-    if (data.reports) {
-      setReports(data.reports);
-      setTotalPages(data.pagination?.totalPages || 1);
+    try {
+      const res = await fetch(`/api/admin/reports?${params}`);
+      const data = await res.json();
+      if (data.reports) {
+        setReports(data.reports);
+        setTotalPages(data.pagination?.totalPages || 1);
+      }
+    } catch {
+      // 네트워크 실패·비JSON 응답(504 HTML 등)에도 스피너가 영구 고착되지 않게(2026-10-04)
+      toast.error('신고 목록을 불러오지 못했습니다');
     }
     setLoading(false);
-  }, [statusFilter, page]);
+  }, [statusFilter, page, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -105,6 +113,10 @@ export default function AdminReportsPage() {
       setResolveNote('');
       setActionTaken('');
       loadReports();
+    } else {
+      // 실패를 조용히 삼키던 것 → 사유 표시(2026-10-04)
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.error ?? '신고 처리에 실패했습니다');
     }
     setResolving(false);
   };
@@ -142,7 +154,8 @@ export default function AdminReportsPage() {
             <div
               key={report.id}
               className="p-4 rounded-xl bg-background-secondary border border-white/10 hover:border-white/20 transition-colors cursor-pointer"
-              onClick={() => setSelectedReport(report)}
+              // 열 때 입력 초기화 — 취소한 다른 신고의 메모·조치가 이월돼 그대로 처리 완료되던 문제(2026-10-04)
+              onClick={() => { setSelectedReport(report); setResolveNote(''); setActionTaken(''); }}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -174,27 +187,7 @@ export default function AdminReportsPage() {
       )}
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-lg bg-background-secondary disabled:opacity-40 hover:bg-white/10 transition-colors text-sm"
-          >
-            이전
-          </button>
-          <span className="px-4 py-2 text-sm text-text-muted">
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 rounded-lg bg-background-secondary disabled:opacity-40 hover:bg-white/10 transition-colors text-sm"
-          >
-            다음
-          </button>
-        </div>
-      )}
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* 신고 처리 모달 */}
       {selectedReport && (

@@ -40,21 +40,25 @@ export default function AdminInquiriesPage() {
   // GET /api/admin/inquiries 가 admin RLS + verifyAdmin 게이트로 전체 문의 반환. .error 표면화 보존.
   const loadInquiries = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/admin/inquiries');
-    if (!res.ok) {
-      let msg = String(res.status);
-      try { msg = (await res.json()).error || msg; } catch { /* noop */ }
-      toast.error(`문의 목록을 불러오지 못했습니다: ${msg}`);
+    try {
+      const res = await fetch('/api/admin/inquiries');
+      if (!res.ok) {
+        let msg = String(res.status);
+        try { msg = (await res.json()).error || msg; } catch { /* noop */ }
+        toast.error(`문의 목록을 불러오지 못했습니다: ${msg}`);
+        return;
+      }
+      const { inquiries: data } = await res.json();
+      setInquiries(data || []);
+    } catch {
+      // 네트워크 실패·비JSON 응답에도 스피너가 영구 고착되지 않게(2026-10-04)
+      toast.error('문의 목록을 불러오지 못했습니다');
+    } finally {
       setLoading(false);
-      return;
     }
-    const { inquiries: data } = await res.json();
-    setInquiries(data || []);
-    setLoading(false);
   }, [toast]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadInquiries();
   }, [loadInquiries]);
 
