@@ -6,6 +6,7 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
+import { subscribeCrossTabAuth, AUTH_EVENT_STORAGE_KEY } from '@/lib/auth/crossTabAuth';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 
@@ -37,24 +38,19 @@ export default function SignupPage() {
       });
     };
 
-    // BroadcastChannel로 다른 탭에서의 인증 완료 감지
-    const channel = new BroadcastChannel('auth-channel');
-    channel.onmessage = (event) => {
-      if (event.data.type === 'AUTH_SUCCESS') navigate();
-    };
-
-    const handleStorageEvent = (event: StorageEvent) => {
-      if (event.key === 'naelum_auth_event') {
-        try {
-          const data = JSON.parse(event.newValue || '{}');
-          if (data.type === 'AUTH_SUCCESS') {
-            localStorage.removeItem('naelum_auth_event');
-            navigate();
-          }
-        } catch {}
-      }
-    };
-    window.addEventListener('storage', handleStorageEvent);
+    // BroadcastChannel(+ localStorage 폴백)로 다른 탭(verify)에서의 인증 완료 감지
+    // — lib/auth/crossTabAuth (2026-10-04 PAU-16 — 미지원 브라우저에서도 storage 폴백 동작)
+    const unsubscribeCrossTab = subscribeCrossTabAuth({
+      onChannelMessage: (data) => {
+        if (data.type === 'AUTH_SUCCESS') navigate();
+      },
+      onStorageMessage: (data) => {
+        if (data.type === 'AUTH_SUCCESS') {
+          localStorage.removeItem(AUTH_EVENT_STORAGE_KEY);
+          navigate();
+        }
+      },
+    });
 
     // 기존 onAuthStateChange도 유지 (같은 탭에서 인증되는 경우 대비)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -77,8 +73,7 @@ export default function SignupPage() {
     }, 1000);
 
     return () => {
-      channel.close();
-      window.removeEventListener('storage', handleStorageEvent);
+      unsubscribeCrossTab();
       subscription.unsubscribe();
       clearInterval(interval);
     };
@@ -101,12 +96,20 @@ export default function SignupPage() {
     setError('');
 
     // 이미 가입된 이메일인지 확인 (서버 API 경유 - 직접 DB 쿼리 방지)
-    const checkRes = await fetch('/api/auth/check-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    const { provider } = await checkRes.json();
+    let provider: string | null | undefined;
+    try {
+      const checkRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      ({ provider } = await checkRes.json());
+    } catch {
+      // 네트워크 오류·비 JSON 응답 — 예전엔 처리 없이 reject 되어 버튼이 스피너로 영구 비활성 (2026-10-04 PAU-62)
+      setError(t.auth.processErrorText);
+      setLoading(false);
+      return;
+    }
 
     if (provider) {
       if (provider === 'google') {
@@ -134,7 +137,7 @@ export default function SignupPage() {
       if (otpError.message.includes('rate limit') || otpError.message.includes('Rate limit')) {
         setError(t.auth.rateLimitError);
       } else {
-        setError(translateError(otpError));
+        setError(translateError(otpError, t));
       }
       setLoading(false);
     } else {

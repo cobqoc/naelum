@@ -1,162 +1,130 @@
-/**
- * Supabase 및 일반 에러 메시지를 한국어로 변환하는 유틸리티
- */
+import type { TranslationKeys } from './locales';
 
-const errorMessages: Record<string, string> = {
+/**
+ * Supabase 및 일반 에러 메시지를 *현재 로케일* 문구로 변환하는 유틸리티.
+ *
+ * 2026-10-04 (PAU-06): 예전엔 한국어 고정 문자열을 반환해 비-ko 로케일 인증 화면에 한글이
+ * 노출됐다. 매핑 값을 번역 셀렉터(t => t.*)로 바꿔 호출처가 넘긴 `t` 의 번역을 쓴다.
+ * ko 번역 값 = 기존 한국어 문구 그대로 → ko 출력은 이전과 동일. 매칭 순서·규칙도 동일.
+ * (같은 날 PAU-05: 호출처 0 이던 translateErrors·getTranslatedErrorMessage 삭제)
+ */
+type Message = (t: TranslationKeys) => string;
+
+const errorMessages: Record<string, Message> = {
   // 비밀번호 관련
-  'New password should be different from the old password': '새 비밀번호는 기존 비밀번호와 달라야 합니다',
-  'Password should be at least 6 characters': '비밀번호는 최소 6자 이상이어야 합니다',
-  'Password is too weak': '비밀번호가 너무 약합니다',
+  'New password should be different from the old password': (t) => t.auth.errSamePassword,
+  'Password should be at least 6 characters': (t) => t.auth.errPasswordMin6,
+  'Password is too weak': (t) => t.auth.errPasswordWeak,
 
   // 로그인 관련
-  'Invalid login credentials': '이메일 또는 비밀번호가 일치하지 않습니다',
-  'Email not confirmed': '이메일 인증이 필요합니다',
-  'Invalid email or password': '이메일 또는 비밀번호가 일치하지 않습니다',
-  'User not found': '사용자를 찾을 수 없습니다',
+  'Invalid login credentials': (t) => t.auth.errInvalidCredentials,
+  'Email not confirmed': (t) => t.auth.errEmailNotConfirmed,
+  'Invalid email or password': (t) => t.auth.errInvalidCredentials,
+  'User not found': (t) => t.profile.userNotFound,
 
   // 회원가입 관련
-  'User already registered': '이미 등록된 이메일입니다',
-  'Email already registered': '이미 등록된 이메일입니다',
-  'Signup requires a valid password': '유효한 비밀번호가 필요합니다',
-  'Unable to validate email address: invalid format': '올바른 이메일 형식이 아닙니다',
+  'User already registered': (t) => t.auth.errEmailAlreadyRegistered,
+  'Email already registered': (t) => t.auth.errEmailAlreadyRegistered,
+  'Signup requires a valid password': (t) => t.auth.errValidPasswordRequired,
+  'Unable to validate email address: invalid format': (t) => t.auth.invalidEmailFormat,
 
   // 세션 관련
-  'Session expired': '세션이 만료되었습니다',
-  'Invalid token': '유효하지 않은 토큰입니다',
-  'Token has expired': '토큰이 만료되었습니다',
-  'No user found': '사용자를 찾을 수 없습니다',
+  'Session expired': (t) => t.auth.errSessionExpired,
+  'Invalid token': (t) => t.auth.errInvalidToken,
+  'Token has expired': (t) => t.auth.errTokenExpired,
+  'No user found': (t) => t.profile.userNotFound,
 
   // 이메일 관련
-  'Email link is invalid or has expired': '이메일 링크가 유효하지 않거나 만료되었습니다',
-  'Invalid email': '올바른 이메일 형식이 아닙니다',
-  'For security purposes, you can only request this once every 60 seconds': '보안을 위해 60초마다 한 번만 요청할 수 있습니다',
+  'Email link is invalid or has expired': (t) => t.auth.errEmailLinkInvalid,
+  'Invalid email': (t) => t.auth.invalidEmailFormat,
+  'For security purposes, you can only request this once every 60 seconds': (t) => t.auth.errRequestCooldown,
 
   // 일반 에러
-  'Network error': '네트워크 오류가 발생했습니다',
-  'Server error': '서버 오류가 발생했습니다',
-  'Something went wrong': '오류가 발생했습니다',
-  'Unable to process request': '요청을 처리할 수 없습니다',
+  'Network error': (t) => t.auth.errNetwork,
+  'Server error': (t) => t.auth.errServer,
+  'Something went wrong': (t) => t.auth.errGeneric,
+  'Unable to process request': (t) => t.auth.errRequestFailed,
 
   // OAuth 관련
-  'OAuth error': 'OAuth 인증 중 오류가 발생했습니다',
-  'Callback URL mismatch': '콜백 URL이 일치하지 않습니다',
+  'OAuth error': (t) => t.auth.errOAuth,
+  'Callback URL mismatch': (t) => t.auth.errCallbackMismatch,
 };
 
 /**
- * 에러 메시지를 한국어로 변환합니다.
- * 매칭되는 메시지가 없으면 기본 에러 메시지를 반환합니다.
+ * 에러 메시지를 현재 로케일 문구로 변환합니다.
+ * 매칭되는 메시지가 없으면 원본 메시지를 반환합니다(기존 동작 유지).
  *
  * @param error - 에러 메시지 문자열 또는 에러 객체
- * @returns 한국어로 변환된 에러 메시지
+ * @param t - 호출처의 번역 사전(useI18n().t)
+ * @returns 현재 로케일로 변환된 에러 메시지
  */
-export function translateError(error: string | { message?: string } | null | undefined): string {
+export function translateError(
+  error: string | { message?: string } | null | undefined,
+  t: TranslationKeys,
+): string {
   if (!error) {
-    return '알 수 없는 오류가 발생했습니다';
+    return t.auth.errUnknown;
   }
 
-  const errorMessage = typeof error === 'string' ? error : error.message || '알 수 없는 오류가 발생했습니다';
+  const errorMessage = typeof error === 'string' ? error : error.message;
+  // message 없는 에러 객체 — 예전엔 한국어 기본 문구를 아래 매칭에 그대로 흘려 보냈고 그 결과도
+  // 기본 문구였다. 번역 문구가 패턴 단어(login·email…)에 우연히 걸리지 않게 바로 반환.
+  if (!errorMessage) {
+    return t.auth.errUnknown;
+  }
 
-  // 정확히 일치하는 메시지 찾기
-  if (errorMessages[errorMessage]) {
-    return errorMessages[errorMessage];
+  // 정확히 일치하는 메시지 찾기 (프로토타입 키 'constructor' 등은 제외)
+  if (Object.prototype.hasOwnProperty.call(errorMessages, errorMessage)) {
+    return errorMessages[errorMessage](t);
   }
 
   // 부분 일치 검색 (case-insensitive)
   const lowerMessage = errorMessage.toLowerCase();
   for (const [key, value] of Object.entries(errorMessages)) {
     if (lowerMessage.includes(key.toLowerCase())) {
-      return value;
+      return value(t);
     }
   }
 
   // 특정 패턴 매칭
   if (lowerMessage.includes('password')) {
     if (lowerMessage.includes('weak') || lowerMessage.includes('strong')) {
-      return '비밀번호가 너무 약합니다';
+      return t.auth.errPasswordWeak;
     }
     if (lowerMessage.includes('match') || lowerMessage.includes('same') || lowerMessage.includes('different')) {
-      return '새 비밀번호는 기존 비밀번호와 달라야 합니다';
+      return t.auth.errSamePassword;
     }
     if (lowerMessage.includes('short') || lowerMessage.includes('length') || lowerMessage.includes('characters')) {
-      return '비밀번호는 최소 8자 이상이어야 합니다';
+      return t.settingsPage.passwordTooShort;
     }
-    return '비밀번호 오류가 발생했습니다';
+    return t.auth.errPassword;
   }
 
   if (lowerMessage.includes('email')) {
     if (lowerMessage.includes('invalid') || lowerMessage.includes('format')) {
-      return '올바른 이메일 형식이 아닙니다';
+      return t.auth.invalidEmailFormat;
     }
     if (lowerMessage.includes('exists') || lowerMessage.includes('already') || lowerMessage.includes('registered')) {
-      return '이미 등록된 이메일입니다';
+      return t.auth.errEmailAlreadyRegistered;
     }
     if (lowerMessage.includes('confirm') || lowerMessage.includes('verify')) {
-      return '이메일 인증이 필요합니다';
+      return t.auth.errEmailNotConfirmed;
     }
-    return '이메일 오류가 발생했습니다';
+    return t.auth.errEmail;
   }
 
   if (lowerMessage.includes('network')) {
-    return '네트워크 오류가 발생했습니다';
+    return t.auth.errNetwork;
   }
 
   if (lowerMessage.includes('token') || lowerMessage.includes('session') || lowerMessage.includes('expire')) {
-    return '세션이 만료되었습니다. 다시 로그인해주세요';
+    return t.auth.errSessionExpiredRelogin;
   }
 
   if (lowerMessage.includes('credentials') || lowerMessage.includes('login') || lowerMessage.includes('incorrect')) {
-    return '이메일 또는 비밀번호가 일치하지 않습니다';
+    return t.auth.errInvalidCredentials;
   }
 
-  // 매칭되지 않으면 원본 메시지 반환 (개발용)
-  // 프로덕션에서는 일반적인 메시지로 대체할 수 있습니다
-  return errorMessage || '알 수 없는 오류가 발생했습니다';
-}
-
-/**
- * 여러 에러 메시지를 한국어로 변환합니다.
- *
- * @param errors - 에러 메시지 배열
- * @returns 한국어로 변환된 에러 메시지 배열
- */
-export function translateErrors(errors: Array<string | { message?: string }>): string[] {
-  return errors.map(translateError);
-}
-
-/**
- * 에러 객체에서 메시지를 추출하고 번역합니다.
- *
- * @param error - 에러 객체 (다양한 형식 지원)
- * @returns 한국어로 변환된 에러 메시지
- */
-export function getTranslatedErrorMessage(error: unknown): string {
-  if (!error) {
-    return '알 수 없는 오류가 발생했습니다';
-  }
-
-  // error가 문자열인 경우
-  if (typeof error === 'string') {
-    return translateError(error);
-  }
-
-  if (typeof error === 'object') {
-    const err = error as Record<string, unknown>;
-
-    // error.message가 있는 경우
-    if (typeof err.message === 'string') {
-      return translateError(err.message);
-    }
-
-    // error.error가 있는 경우 (중첩된 에러)
-    if (err.error) {
-      return getTranslatedErrorMessage(err.error);
-    }
-
-    // error_description이 있는 경우 (OAuth 에러)
-    if (typeof err.error_description === 'string') {
-      return translateError(err.error_description);
-    }
-  }
-
-  return '알 수 없는 오류가 발생했습니다';
+  // 매칭되지 않으면 원본 메시지 반환 (기존 동작 유지 — 일반 문구 대체는 사용자 결정 대기)
+  return errorMessage;
 }

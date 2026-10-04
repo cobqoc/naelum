@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient, removeOAuthIdentity } from '@/lib/supabase/service'
+import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { NextResponse } from 'next/server'
 
 function redirectToDuplicateEmail(baseUrl: string, email: string, original: string): NextResponse {
@@ -19,7 +20,9 @@ function redirectToDuplicateEmail(baseUrl: string, email: string, original: stri
 async function deleteZombieUser(userId: string) {
   try {
     const admin = createServiceClient()
-    await admin.auth.admin.deleteUser(userId)
+    const { error } = await admin.auth.admin.deleteUser(userId)
+    // 2026-10-04 AG2-19: deleteUser 실패는 throw 가 아니라 { error } — 이전엔 로그도 없이 좀비 auth.users 가 남았다.
+    if (error) console.error('deleteZombieUser failed:', error)
   } catch (e) {
     console.error('deleteZombieUser failed:', e)
   }
@@ -28,7 +31,10 @@ async function deleteZombieUser(userId: string) {
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  // 2026-10-04 PAU-61: `next` 를 검증 없이 아래 `${baseUrl}${next}` 에 붙여 `?next=.evil.example`·`@evil.example`
+  // 로 외부 도메인 이동이 가능했다 → signin ?redirect 와 같은 규칙(safeRedirectPath: '/' 로 시작·두 번째 문자 '/'·'\'
+  // 아님·URL 해석 결과 같은 출처)인 경로만 허용, 아니면 기존 기본값 '/'. 정상 내부 경로는 그대로.
+  const next = safeRedirectPath(searchParams.get('next'), origin)
 
   if (code) {
     const supabase = await createClient()
@@ -56,22 +62,41 @@ export async function GET(request: Request) {
       // (이 경우 user.id는 기존 이메일 계정과 동일하므로 deleteUser 금지)
       if (emailIdentity && oauthIdentity) {
         try {
-          await removeOAuthIdentity(authData.user.id, oauthIdentity.provider)
-        } catch {
+          // 2026-10-04 AG2-19: RPC 실패는 throw 가 아니라 { error } 로 온다 — 이전엔 버려져 자동연결된 identity 가
+          // 무음으로 남았다. 흐름은 그대로(실패해도 signOut + duplicate 안내), 로그로만 표면화.
+          const { error: unlinkError } = await removeOAuthIdentity(authData.user.id, oauthIdentity.provider)
+          if (unlinkError) console.error('[auth/callback] removeOAuthIdentity failed:', unlinkError)
+        } catch (e) {
           // 제거 실패해도 signOut으로 세션 무효화
+          console.error('[auth/callback] removeOAuthIdentity threw:', e)
         }
         await supabase.auth.signOut()
         return redirectToDuplicateEmail(baseUrl, authData.user.email!, 'email')
       }
 
+      // 2026-10-04 AG2-45: OAuth 경로의 "email 로 기존 profile" 조회와 아래 "id 로 내 profile" 조회는 서로 독립 → 병렬
+      // (로그인당 왕복 1회 절감). 판정 순서는 그대로 — email 충돌이면 좀비 정리 후 duplicate(그때 id 조회 결과는 버림).
+      const [emailProfileRes, { data: profile }] = await Promise.all([
+        oauthIdentity
+          ? supabase
+              .from('profiles')
+              .select('auth_provider, id')
+              .eq('email', authData.user.email!)
+              .maybeSingle()
+          : null,
+        // 프로필 존재 여부 및 온보딩 완료 여부 확인
+        // (handle_new_user 트리거가 이미 profile 행을 생성했어야 함)
+        supabase
+          .from('profiles')
+          .select('id, onboarding_completed')
+          .eq('id', authData.user.id)
+          .maybeSingle(),
+      ])
+
       // OAuth only로 로그인했는데 다른 provider로 가입된 프로필이 있는 경우
       // → 이 user는 새로 생성된 좀비이므로 auth.users까지 완전 삭제
       if (oauthIdentity) {
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('auth_provider, id')
-          .eq('email', authData.user.email!)
-          .maybeSingle()
+        const existingProfile = emailProfileRes?.data
 
         if (existingProfile && existingProfile.id !== authData.user.id) {
           await supabase.auth.signOut()
@@ -79,14 +104,6 @@ export async function GET(request: Request) {
           return redirectToDuplicateEmail(baseUrl, authData.user.email!, existingProfile.auth_provider)
         }
       }
-
-      // 프로필 존재 여부 및 온보딩 완료 여부 확인
-      // (handle_new_user 트리거가 이미 profile 행을 생성했어야 함)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, onboarding_completed')
-        .eq('id', authData.user.id)
-        .maybeSingle()
 
       // 트리거가 email 충돌로 profile 생성을 스킵한 케이스 — duplicate로 처리
       if (!profile) {

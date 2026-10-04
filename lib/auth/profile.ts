@@ -50,21 +50,7 @@ export async function createProfile(
   return { error: error?.message };
 }
 
-/** 기존 프로필의 마케팅 동의를 업데이트합니다 */
-export async function updateMarketingConsent(
-  supabase: SupabaseClient,
-  userId: string,
-  consent: boolean
-): Promise<{ error?: string }> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      marketing_consent: consent,
-      marketing_consent_at: new Date().toISOString(),
-    })
-    .eq('id', userId);
-  return { error: error?.message };
-}
+// 2026-10-04: 호출처 0 이던 updateMarketingConsent 삭제 (마케팅 동의는 beginOnboarding·createProfile 이 기록).
 
 /** 약관 동의 후 온보딩 상태 초기화 및 동의 기록을 저장합니다 */
 export async function beginOnboarding(

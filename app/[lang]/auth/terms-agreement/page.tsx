@@ -1,14 +1,13 @@
 'use client';
 
-import { localDateISO } from '@/lib/date/localDate';
-
 import { useState, useEffect } from 'react';
-import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
-import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import AuthCheckingScreen from '@/components/Auth/AuthCheckingScreen';
+import BirthDateField from '@/components/Auth/BirthDateField';
+import ConsentCheckboxes from '@/components/Auth/ConsentCheckboxes';
 import { checkMinAge } from '@/lib/auth/ageGate';
 
 const OnboardingWizard = dynamic(
@@ -33,6 +32,9 @@ export default function TermsAgreementPage() {
   const [cancelling, setCancelling] = useState(false);
   const [checking, setChecking] = useState(true);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  // 세션 확인 요청 자체가 실패(네트워크 오류·비 JSON 응답)했을 때의 오류 화면 + 재시도 (2026-10-04 PAU-62)
+  const [checkFailed, setCheckFailed] = useState(false);
+  const [checkAttempt, setCheckAttempt] = useState(0);
 
   // 세션 확인 — 데이터 계층 이전(docs/DATA_LAYER.md): getUser + profile read → GET /api/auth/onboarding-status.
   useEffect(() => {
@@ -57,8 +59,14 @@ export default function TermsAgreementPage() {
       setChecking(false);
     };
 
-    checkSession();
-  }, [router]);
+    checkSession().catch((err) => {
+      // 예전엔 처리 없이 reject 되어 '확인 중…' 스피너에서 영구 정지했다 (2026-10-04 PAU-62).
+      // 가입 수단(provider)을 모르는 채 폼을 열면 잘못된 auth_provider 로 프로필이 생길 수 있어
+      // 폼 대신 오류 안내 + 재시도(checkAttempt 증가 → 이 effect 재실행).
+      console.error('onboarding-status error:', err);
+      setCheckFailed(true);
+    });
+  }, [router, checkAttempt]);
 
   const handleCancel = async () => {
     if (cancelling || loading) return;
@@ -139,15 +147,35 @@ export default function TermsAgreementPage() {
     }
   };
 
-  if (checking) {
+  if (checkFailed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background-primary">
-        <div className="flex items-center gap-3 text-text-muted">
-          <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          {t.auth.checking}
+      <div className="flex min-h-screen items-center justify-center bg-background-primary px-4 md:px-6 py-8 md:py-12">
+        <div className="w-full max-w-md rounded-2xl md:rounded-3xl bg-background-secondary p-6 md:p-10 shadow-2xl border border-white/5 text-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-error/20 flex items-center justify-center mb-6">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h1 className="mb-2 text-xl md:text-2xl font-bold text-text-primary">
+            {t.auth.processErrorText}
+          </h1>
+          <p className="mb-6 text-sm text-text-muted">
+            {t.auth.tryAgainLater}
+          </p>
+          <button
+            onClick={() => {
+              setCheckFailed(false);
+              setCheckAttempt((n) => n + 1);
+            }}
+            className="w-full rounded-xl bg-accent-warm py-4 font-bold text-background-primary transition-all hover:bg-accent-hover"
+          >
+            {t.common.retry}
+          </button>
         </div>
       </div>
     );
+  }
+
+  if (checking) {
+    return <AuthCheckingScreen label={t.auth.checking} />;
   }
 
   return (
@@ -176,205 +204,27 @@ export default function TermsAgreementPage() {
           </p>
         </div>
 
-        {/* 생년월일 — 연령 gate (글로벌 safe 16세) */}
-        <div className="space-y-1.5 mb-5">
-          <label className="text-sm font-medium text-text-secondary">
-            {t.auth.birthDateLabel} <span className="text-error">*</span>
-          </label>
-          <InputBoxWrapper className="!bg-background-primary !rounded-xl !px-4 !py-3">
-            <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              max={localDateISO()}
-              className={INPUT_INNER_COMFORTABLE_CLASS}
-              style={INPUT_INNER_STYLE}
-              required
-            />
-          </InputBoxWrapper>
-          <p className="text-[11px] text-text-muted">
-            {t.auth.ageGateNotice}
-          </p>
-        </div>
+        {/* 생년월일 — 연령 gate (글로벌 safe 16세). components/Auth/BirthDateField (2026-10-04 PAU-15) */}
+        <BirthDateField
+          t={t}
+          value={birthDate}
+          setValue={setBirthDate}
+          wrapperClassName="space-y-1.5 mb-5"
+          boxClassName="!bg-background-primary !rounded-xl !px-4 !py-3"
+        />
 
-        {/* 약관 동의 */}
-        <div className="space-y-4 mb-6">
-          {/* 전체 동의 */}
-          <label className="flex items-center gap-3 cursor-pointer pb-3 border-b border-white/10">
-            <div className="relative flex items-center justify-center">
-              <input
-                type="checkbox"
-                checked={agreedToTerms && agreedToPrivacy && agreedToCopyright && agreedToMarketing}
-                onChange={(e) => {
-                  setAgreedToTerms(e.target.checked);
-                  setAgreedToPrivacy(e.target.checked);
-                  setAgreedToCopyright(e.target.checked);
-                  setAgreedToMarketing(e.target.checked);
-                }}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-              />
-              <svg
-                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <span className="text-sm font-semibold text-text-primary">{t.auth.agreeAll}</span>
-          </label>
-
-          {/* 이용약관 동의 (필수) */}
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input
-                type="checkbox"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-              />
-              <svg
-                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                  {t.auth.termsAgreeLabel}
-                </span>
-                <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-              </div>
-              <Link
-                href="/terms"
-                target="_blank"
-                className="text-xs text-text-muted hover:text-accent-warm underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {t.auth.termsViewDetail}
-              </Link>
-            </div>
-          </label>
-
-          {/* 개인정보처리방침 동의 (필수) */}
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input
-                type="checkbox"
-                checked={agreedToPrivacy}
-                onChange={(e) => setAgreedToPrivacy(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-              />
-              <svg
-                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                  {t.auth.termsPrivacyLabel}
-                </span>
-                <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-              </div>
-              <Link
-                href="/privacy"
-                target="_blank"
-                className="text-xs text-text-muted hover:text-accent-warm underline"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {t.auth.termsViewDetail}
-              </Link>
-            </div>
-          </label>
-
-          {/* 저작권 조항 동의 (필수) */}
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input
-                type="checkbox"
-                checked={agreedToCopyright}
-                onChange={(e) => setAgreedToCopyright(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-              />
-              <svg
-                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                  {t.auth.termsCopyrightLabel}
-                </span>
-                <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-              </div>
-              <p className="text-xs text-text-muted mt-0.5">
-                {t.auth.termsCopyrightDesc}
-              </p>
-            </div>
-          </label>
-
-          {/* 마케팅 수신 동의 (선택) */}
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input
-                type="checkbox"
-                checked={agreedToMarketing}
-                onChange={(e) => setAgreedToMarketing(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-              />
-              <svg
-                className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                  {t.auth.termsMarketingLabel}
-                </span>
-                <span className="text-xs text-text-muted">{t.auth.termsOptionalLabel}</span>
-              </div>
-              <p className="text-xs text-text-muted mt-0.5">
-                {t.auth.termsMarketingDesc}
-              </p>
-            </div>
-          </label>
-        </div>
+        {/* 약관 동의 — components/Auth/ConsentCheckboxes (2026-10-04 PAU-15, 마크업 동일·상태는 이 페이지 소유) */}
+        <ConsentCheckboxes
+          t={t}
+          consents={{
+            terms: { checked: agreedToTerms, set: setAgreedToTerms },
+            privacy: { checked: agreedToPrivacy, set: setAgreedToPrivacy },
+            copyright: { checked: agreedToCopyright, set: setAgreedToCopyright },
+            marketing: { checked: agreedToMarketing, set: setAgreedToMarketing },
+          }}
+          containerClassName="space-y-4 mb-6"
+          agreeAllPaddingClassName="pb-3"
+        />
 
         {error && <p className="mb-4 text-center text-sm text-error">{error}</p>}
 
