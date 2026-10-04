@@ -12,9 +12,6 @@ export const RECOMMENDATIONS_LIMIT = 30;
 // 일반 토스트 자동 숨김.
 export const TOAST_AUTO_HIDE_MS = 2000;
 
-// 비로그인 체험 모드에서 "추가됐어요" 토스트 지속시간 (액션 버튼 누를 여유 필요해 길게).
-export const DEMO_ADD_TOAST_MS = 6000;
-
 // localStorage 키 — 홈 관련 상태 persist.
 // v2: DEMO 시드 확장(14→20개, 한식 ready 3+개 매칭 보장)으로 기존 캐시 무효화.
 // v3: 냉동 칩에 닭고기 추가(20→21개) — 본체/냉동 시각 균형 개선.
@@ -22,23 +19,6 @@ export const DEMO_ADD_TOAST_MS = 6000;
 // v5: 냉동 소고기(포괄명) → 삼겹살(부위) 교체 + 만두 추가(20→21개). 캐시 무효화.
 export const LS_KEY_DEMO_ITEMS = 'naelum_demo_items_v5';
 export const LS_KEY_ONBOARDING_BANNER = (userId: string) => `naelum_onboarding_banner_${userId}`;
-
-// 카테고리별 예상 보관 기한 (일). expiry_date가 없을 때 urgencyScore/freshState가 fallback으로 사용.
-// 평균적인 냉장 보관 기준 보수적 추정값. 실제 식재료 상태를 보장하지 않음.
-export const CATEGORY_SHELF_LIFE_DAYS: Record<string, number> = {
-  seafood: 3,
-  meat: 5,
-  dairy: 7,
-  veggie: 14,
-  grain: 30,
-  seasoning: 90,
-};
-export const DEFAULT_SHELF_LIFE_DAYS = 7;
-
-export function getShelfLifeDays(category: string | null | undefined): number {
-  if (!category) return DEFAULT_SHELF_LIFE_DAYS;
-  return CATEGORY_SHELF_LIFE_DAYS[category] ?? DEFAULT_SHELF_LIFE_DAYS;
-}
 
 // Long-press 트리거 시간 (모바일 chip에서 장누름 시 삭제 확인).
 export const LONG_PRESS_MS = 500;
@@ -59,24 +39,4 @@ export const SHELVES: { top: string; height: string; kind: 'fridge' | 'freezer' 
   { top: '21.6%', height: '10.9%', kind: 'fridge' },
   { top: '36.6%', height: '11.8%', kind: 'fridge' },
   { top: '63.4%', height: '15.7%', kind: 'freezer' },
-];
-
-// 냉장고 도어 선반 chip 좌표 — 좌·우 도어 각 2단(상단·중단).
-export const DOOR_SHELVES: { side: 'left' | 'right'; left: string; width: string; top: string; height: string }[] = [
-  { side: 'left',  left: '7%',  width: '16%', top: '11%', height: '6%' },
-  { side: 'left',  left: '7%',  width: '16%', top: '23%', height: '6%' },
-  { side: 'right', left: '77%', width: '16%', top: '11%', height: '6%' },
-  { side: 'right', left: '77%', width: '16%', top: '23%', height: '6%' },
-];
-export const MAX_DOOR_CHIPS_PER_SHELF = 2;
-
-/**
- * KitchenSVG landscape viewBox="0 -35 640 200" — 찬장(translate 230) 안 4선반.
- * top% = (shelfY+35)/200*100. items-end 기반 chip 바닥이 선반 상면.
- */
-export const PANTRY_SHELVES: { top: string; height: string; left: string; width: string }[] = [
-  { left: '0%',  width: '36%', top: '22%', height: '18%' }, // 좌상단 olive
-  { left: '14%', width: '22%', top: '67%', height: '16%' }, // 좌하단 terracotta (화분 우측)
-  { left: '64%', width: '25%', top: '15%', height: '18%' }, // 우상단 mauve
-  { left: '64%', width: '36%', top: '63%', height: '15%' }, // 우하단 slate
 ];

@@ -73,9 +73,11 @@ export default function IngredientCategoryFilter({
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
+  // 카테고리 표시명은 로케일 라벨로(ko 라벨 = INGREDIENT_CATEGORIES 의 한국어 name 과 동일 — ICL-02 2026-10-04)
+  const categoryLabels = t.ingredient.categoryLabels as Record<string, string>;
   const allItems = [
     { id: '__all__', name: t.ingredient.categoryAll, icon: '🌐', color: '#ff9966' },
-    ...INGREDIENT_CATEGORIES.map(c => ({ ...c, color: CATEGORY_COLORS[c.id] ?? '#6b7280' })),
+    ...INGREDIENT_CATEGORIES.map(c => ({ ...c, name: categoryLabels[c.id] ?? c.name, color: CATEGORY_COLORS[c.id] ?? '#6b7280' })),
   ];
 
   return (
@@ -164,7 +166,7 @@ export default function IngredientCategoryFilter({
 
       {selectedCategories.length > 0 && (
         <div className="mt-1.5 text-xs text-text-muted">
-          {selectedCategories.length}개 카테고리 선택됨
+          {t.ingredient.categoriesSelected.replace('{count}', String(selectedCategories.length))}
         </div>
       )}
     </div>

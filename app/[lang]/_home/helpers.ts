@@ -16,13 +16,13 @@ function todayUTC(): number {
 }
 
 /** 오늘 기준 만료일까지 남은 일수. expiry_date 없으면 99(만료 아님). */
-export function daysUntilExpiry(d: string | null): number {
+function daysUntilExpiry(d: string | null): number {
   if (!d) return 99;
   return Math.ceil((dateOnlyToUTC(d) - todayUTC()) / 86400000);
 }
 
 /** 구매 후 경과일. purchase_date 없으면 음수(미확인) 반환. */
-export function daysSincePurchase(d: string | null | undefined): number {
+function daysSincePurchase(d: string | null | undefined): number {
   if (!d) return -1;
   return Math.floor((todayUTC() - dateOnlyToUTC(d)) / 86400000);
 }

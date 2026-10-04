@@ -38,6 +38,8 @@ export interface UseFridgeItemsParams {
   initialItems: unknown[] | null;
   /** 외부 주입 — useFridgeInteractions 와 공유. 삭제 중인 item 필터링용. */
   pendingDeleteIdsRef: MutableRefObject<Set<string>>;
+  /** 로그인 사용자 재료 조회 실패(네트워크·비정상 응답) 알림 — 목록은 그대로 둔다(PHR-36). */
+  onFetchError?: () => void;
 }
 
 export interface UseFridgeItemsResult {
@@ -51,13 +53,22 @@ export function useFridgeItems({
   authLoading,
   initialItems,
   pendingDeleteIdsRef,
+  onFetchError,
 }: UseFridgeItemsParams): UseFridgeItemsResult {
   // SSR prefetch 된 items 가 있으면 초기 렌더부터 반영, 없으면 빈 배열 + loading 상태 유지.
   const [items, setItems] = useState<FridgeItem[]>(() => (initialItems as FridgeItem[] | null) ?? []);
   const [loading, setLoading] = useState(initialItems === null);
 
-  // DB/localStorage 에서 raw items 반환 (filter 는 호출부에서 적용)
-  const fetchItems = useCallback(async (): Promise<FridgeItem[]> => {
+  // 실패 알림 콜백은 ref 로 — 호출처가 매 렌더 새 함수를 넘겨도 fetchItems/effect 가 다시 돌지 않게.
+  const onFetchErrorRef = useRef(onFetchError);
+  useEffect(() => {
+    onFetchErrorRef.current = onFetchError;
+  }, [onFetchError]);
+
+  // DB/localStorage 에서 raw items 반환 (filter 는 호출부에서 적용).
+  // 로그인 조회가 실패하면 null — 호출부는 기존 목록을 유지한다. 전엔 [] 를 돌려줘 일시적 네트워크 오류·5xx·429
+  // 한 번에 냉장고 칩이 전부 사라지고 "냉장고가 비었어요" 가이드가 떴다(PHR-36, 2026-10-04).
+  const fetchItems = useCallback(async (): Promise<FridgeItem[] | null> => {
     if (!user) {
       // 비로그인 체험 모드: localStorage 에 저장된 데모 재료가 있으면 복원, 없으면 DEMO 기본값
       try {
@@ -79,11 +90,11 @@ export function useFridgeItems({
     // (서버가 도감 emoji·shelf_life_days 조인·평탄화). pendingDeleteIdsRef 필터는 호출부 유지.
     try {
       const res = await fetch('/api/user-ingredients?withMaster=1');
-      if (!res.ok) return [];
+      if (!res.ok) return null;
       const { items } = await res.json();
       return (items ?? []) as FridgeItem[];
     } catch {
-      return [];
+      return null;
     }
   }, [user]);
 
@@ -112,7 +123,8 @@ export function useFridgeItems({
       const rows = await fetchItems();
       if (cancelled) return;
       // undo 창 중인 pending-delete 는 제외 (DB 에는 아직 있지만 UX 상 삭제된 상태)
-      setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+      if (rows) setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+      else onFetchErrorRef.current?.(); // 실패 — 기존(SSR) 목록 유지 + 알림
       setLoading(false);
     });
     return () => { cancelled = true; };
@@ -129,7 +141,8 @@ export function useFridgeItems({
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const rows = await fetchItems();
-        setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+        if (rows) setItems(rows.filter(row => !pendingDeleteIdsRef.current.has(row.id)));
+        else onFetchErrorRef.current?.(); // 실패 — 화면의 칩은 그대로 두고 알림만
       }, 300);
     };
     window.addEventListener('fridge-updated', handler);

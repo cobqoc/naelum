@@ -370,7 +370,7 @@ export default function IngredientBrowsePage({
           <div className="flex items-baseline gap-2 mb-3">
             <h1 className="text-lg font-bold">{tb.browseTitle}</h1>
             {total !== null && (
-              <span className="text-xs text-text-muted">{total.toLocaleString()}개</span>
+              <span className="text-xs text-text-muted">{tb.browseTotalCount.replace('{count}', total.toLocaleString())}</span>
             )}
             <span className="text-xs text-text-muted">{tb.browseSubtitle}</span>
           </div>

@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { subjectParticle } from '@/lib/i18n/josa';
+import { useI18n } from '@/lib/i18n/context';
 
 interface ActionItem {
   id: string;
@@ -30,6 +31,7 @@ interface Props {
  *  - 🗑 삭제하기: 확인 후 삭제
  */
 export default function IngredientActionSheet({ item, onClose, onCook, onEdit, onDelete }: Props) {
+  const { t } = useI18n();
   const panelRef = useRef<HTMLDivElement>(null);
   useEscapeKey(onClose, !!item);
   useFocusTrap(!!item, panelRef);
@@ -75,9 +77,12 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
           >
             <span className="text-xl">🍳</span>
             <span className="flex-1 text-left">
-              <span className="block text-base">이 재료로 만들기</span>
+              <span className="block text-base">{t.ingredient.actionCookTitle}</span>
               <span className="block text-xs font-normal opacity-80 mt-0.5">
-                {item.ingredient_name}{subjectParticle(item.ingredient_name)} 들어간 레시피 보기
+                {/* {subj}(주격 조사 이/가)는 ko 문구에만 있다 — 다른 로케일은 치환 대상 없음 (ICL-02 2026-10-04) */}
+                {t.ingredient.actionCookDesc
+                  .replace('{name}', () => item.ingredient_name)
+                  .replace('{subj}', () => subjectParticle(item.ingredient_name))}
               </span>
             </span>
             <span className="text-lg">→</span>
@@ -89,7 +94,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background-tertiary hover:bg-white/5 text-text-primary transition-colors"
           >
             <span className="text-lg">✏️</span>
-            <span className="flex-1 text-left text-sm">수정하기</span>
+            <span className="flex-1 text-left text-sm">{t.ingredient.actionEdit}</span>
           </button>
 
           {/* Tertiary: 삭제 */}
@@ -98,7 +103,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-background-tertiary hover:bg-error/10 text-error transition-colors"
           >
             <span className="text-lg">🗑</span>
-            <span className="flex-1 text-left text-sm">삭제하기</span>
+            <span className="flex-1 text-left text-sm">{t.ingredient.actionDelete}</span>
           </button>
         </div>
 
@@ -107,7 +112,7 @@ export default function IngredientActionSheet({ item, onClose, onCook, onEdit, o
           onClick={onClose}
           className="w-full py-3 text-sm text-text-muted hover:text-text-primary border-t border-white/5 transition-colors"
         >
-          취소
+          {t.common.cancel}
         </button>
       </div>
 

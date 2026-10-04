@@ -5,6 +5,7 @@ import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
+import CloseIcon from '@/components/icons/CloseIcon';
 
 type LocMode = null | '냉장' | '냉동' | '상온';
 
@@ -25,7 +26,8 @@ interface AddIngredientModalProps {
   isOpen: boolean;
   location: string | null;
   onClose: () => void;
-  onAddIngredient: (formData: IngredientFormData) => void;
+  /** 재료 1개 저장. `false` = 실패 → 폼이 그 항목을 남기고 모달을 유지한다(ICL-04, 2026-10-04). */
+  onAddIngredient: (formData: IngredientFormData) => void | boolean | Promise<void | boolean>;
   /** 이미 냉장고에 있는 재료 이름 목록 — 브라우저 칩에 보유 중 표시용 */
   ownedNames?: string[];
 }
@@ -159,9 +161,7 @@ export default function AddIngredientModal({
                 aria-label={t.common.close}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon />
               </button>
             </div>
           </div>

@@ -30,7 +30,8 @@ import {
   LS_KEY_ONBOARDING_BANNER,
 } from './_home/constants';
 import type { FridgeItem, IngredientFormData } from './_home/types';
-import { freshState, formatFreshLabel, urgencyScore, isDemoRecord } from './_home/helpers';
+import { freshState, urgencyScore, isDemoRecord } from './_home/helpers';
+import { toStoredUnit } from '@/lib/ingredients/unitSentinel';
 import { track } from '@/lib/analytics/track';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
@@ -40,6 +41,7 @@ import AddIngredientModal from '@/components/Ingredients/AddIngredientModal';
 import AuthPromptSheet from '@/components/Auth/AuthPromptSheet';
 import IngredientActionSheet from '@/components/Ingredients/IngredientActionSheet';
 import FridgeAllSheet from '@/components/Ingredients/FridgeAllSheet';
+import SameNameGroupSheet from '@/components/Ingredients/SameNameGroupSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
@@ -76,6 +78,9 @@ export default function HomeClient({
   // HomeClient 가 ref 소유 = 양방향 의존성 해소. 두 hook 모두 외부 주입으로 받음 (2026-05-25).
   const pendingDeleteIdsRef = useRef<Set<string>>(new Set());
 
+  // 하단 토스트 — useFridgeItems 의 조회 실패 알림에서도 쓰므로 그보다 먼저 선언.
+  const [toast, setToast] = useState<string | null>(null);
+
   // 냉장고 items state + fetch + 3 effects — _home/useFridgeItems hook 으로 추출 (2026-05-25).
   // 비로그인 demo localStorage 동기화 + 초기 load + fridge-updated event listener + debounce.
   const { items, setItems, loading } = useFridgeItems({
@@ -83,9 +88,10 @@ export default function HomeClient({
     authLoading,
     initialItems,
     pendingDeleteIdsRef,
+    // 재료 재조회 실패 시 칩은 그대로 두고 번역된 안내만(PHR-36, 2026-10-04)
+    onFetchError: () => setToast(t.ingredient.loadError),
   });
 
-  const [toast, setToast] = useState<string | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // 반응형 MAX — viewport width 기반. 모바일 5, 태블릿/데스크톱 6.
@@ -228,7 +234,10 @@ export default function HomeClient({
   };
 
   // IngredientDetailModal onUpdate
-  const updateIngredient = async (id: string, formData: IngredientFormData) => {
+  const updateIngredient = async (id: string, submitted: IngredientFormData) => {
+    // 단위 미선택 센티넬('선택')은 저장 직전에 null 로 — DB·화면에 "1선택" 이 남지 않게(ICL-14, 2026-10-04).
+    // 실제 단위는 그대로라 정상 경로의 저장값·화면은 동일.
+    const formData: IngredientFormData = { ...submitted, unit: toStoredUnit(submitted.unit) };
     if (isDemoRecord({ id })) {
       setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
       setDetailItem(null);
@@ -259,7 +268,9 @@ export default function HomeClient({
   // POST /api/user-ingredients/add 로 서버에서 atomic 처리. read-then-write 가 한 요청 안에서
   // 끝나 옛 클라 옵티미스틱 race(병렬·연속 추가 시 누적 안 됨)가 사라진다. ingredient_id 결정
   // 해석도 서버가 수행. 옵티미스틱 UI 갱신·토스트·track 은 응답의 merged 플래그로 분기.
-  const addIngredientFromModal = async (formData: IngredientFormData) => {
+  // 반환값 = 저장 성공 여부(ICL-04, 2026-10-04) — false 면 IngredientForm 이 그 항목을 남기고 모달을 유지하며
+  // 전역 오류 토스트를 띄운다(이 화면 자체 토스트는 모달 아래라 안 보여 여기선 따로 띄우지 않음).
+  const addIngredientFromModal = async (formData: IngredientFormData): Promise<boolean> => {
     const sanitized: IngredientFormData = {
       ...formData,
       purchase_date: formData.purchase_date || null,
@@ -267,19 +278,20 @@ export default function HomeClient({
       ingredient_id: formData.ingredient_id && !formData.ingredient_id.startsWith('preset-')
         ? formData.ingredient_id
         : null,
+      // 단위 미선택 센티넬('선택')은 저장하지 않음(ICL-14) — 실제 단위는 그대로
+      unit: toStoredUnit(formData.unit),
     };
-    if (!user) return;
+    if (!user) return false;
 
+    let saved = false;
     try {
       const res = await fetch('/api/user-ingredients/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sanitized),
       });
-      if (!res.ok) {
-        showToast(t.ingredient.addError);
-        return;
-      }
+      if (!res.ok) return false;
+      saved = true;
       const { item, merged } = await res.json();
       if (merged) {
         // 기존 항목 수량 합치기 — 서버가 합산한 결과 행으로 교체
@@ -292,8 +304,12 @@ export default function HomeClient({
       }
       window.dispatchEvent(new Event('fridge-updated'));
     } catch {
-      showToast(t.ingredient.addError);
+      // 요청 자체가 실패했으면 저장 실패. 저장(2xx) 뒤 응답 처리 중 예외면 저장은 된 것 — 다시 담으면
+      // 수량이 중복 합산되므로 성공으로 보고, 화면 목록만 재조회로 맞춘다.
+      if (!saved) return false;
+      window.dispatchEvent(new Event('fridge-updated'));
     }
+    return true;
   };
 
 
@@ -549,56 +565,17 @@ export default function HomeClient({
         onClose={() => setShowAuthPrompt(false)}
       />
 
-      {/* 같은 이름 그룹 chip 클릭 시 미니 시트 — 그룹 내 항목 개별 선택 (만료일·구매일·수량 인라인 노출) */}
+      {/* 같은 이름 그룹 chip 클릭 시 미니 시트 — 그룹 내 항목 개별 선택 (만료일·구매일·수량 인라인 노출).
+          FridgeAllSheet 와 같은 마크업 → 공용 SameNameGroupSheet(ICL-15) — 이쪽만 보관 위치도 표시(showStorage). */}
       {groupSheet && (
-        <div className="fixed inset-0 z-[75] flex items-end md:items-center justify-center" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setGroupSheet(null)} />
-          <div className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[70dvh]">
-            <div className="md:hidden flex justify-center pt-2.5 pb-1">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
-            </div>
-            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
-              <h3 className="font-bold text-sm">
-                {groupSheet.name} <span className="text-text-muted font-normal">×{groupSheet.items.length}</span>
-              </h3>
-              <button
-                onClick={() => setGroupSheet(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
-                aria-label={t.common.close}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 p-3 space-y-2">
-              {groupSheet.items.map(item => {
-                const { border, labelKind, labelN, isEstimate } = freshState(item);
-                const label = formatFreshLabel(labelKind, labelN, t, isEstimate);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { setGroupSheet(null); handleChipClickWithLongPress(item, { stopPropagation() {}, preventDefault() {} } as React.MouseEvent); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-background-tertiary hover:bg-white/10 transition-colors text-left"
-                  >
-                    <span className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: border }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-text-primary truncate">
-                        {item.quantity != null ? `${item.quantity}${item.unit ?? ''}` : t.ingredient.qtyUnknown}
-                      </div>
-                      <div className="text-[11px] text-text-muted truncate">
-                        {item.purchase_date ? `${t.ingredient.purchasedShort} ${item.purchase_date.slice(5)}` : ''}
-                        {item.expiry_date ? ` · ${t.ingredient.expiryShort} ${item.expiry_date.slice(5)}` : ''}
-                        {item.storage_location ? ` · ${item.storage_location}` : ''}
-                        {label ? ` · ${label}` : ''}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <SameNameGroupSheet
+          name={groupSheet.name}
+          items={groupSheet.items}
+          freshState={freshState}
+          onClose={() => setGroupSheet(null)}
+          onPick={(item) => handleChipClickWithLongPress(item, { stopPropagation() {}, preventDefault() {} } as React.MouseEvent)}
+          showStorage
+        />
       )}
 
 

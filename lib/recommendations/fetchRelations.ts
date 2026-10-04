@@ -110,6 +110,9 @@ export async function fetchAllergensForRecipe(
     .select('id, allergens, base_ingredient_id')
     .in('id', validIds);
 
+  // 2026-10-04 API1-51: 조회 실패 시 빈 맵 → 알레르기 필터가 모든 레시피를 통과(fail-open, "가용성 우선" 정책)
+  // 하는데 로그가 없어 관측 불가였다 → 동작은 그대로 두고 로그로만 표면화(filterByAllergies 의 user_allergies 실패와 같은 방식).
+  if (error) console.error('[fetchAllergensForRecipe] ingredients_master read failed — allergy filter fail-open:', error);
   if (error || !data) return new Map();
 
   // base 알레르겐 상속 — 변형들의 base id 모아 한 번에 fetch
@@ -117,10 +120,12 @@ export async function fetchAllergensForRecipe(
   const baseIds = Array.from(new Set(rows.map(r => r.base_ingredient_id).filter((b): b is string => !!b)));
   const baseAllergens = new Map<string, string[]>();
   if (baseIds.length > 0) {
-    const { data: baseData } = await supabase
+    const { data: baseData, error: baseError } = await supabase
       .from('ingredients_master')
       .select('id, allergens')
       .in('id', baseIds);
+    // 2026-10-04 API1-51: base 알레르겐 상속 조회 실패도 같은 fail-open(변형 재료가 base 알레르겐을 못 물려받음) → 로그.
+    if (baseError) console.error('[fetchAllergensForRecipe] base allergens read failed — inheritance skipped:', baseError);
     for (const b of (baseData ?? []) as Array<{ id: string; allergens: string[] | null }>) {
       baseAllergens.set(b.id, b.allergens ?? []);
     }

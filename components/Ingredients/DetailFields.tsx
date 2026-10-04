@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { addDaysLocalISO } from '@/lib/date/localDate';
+import { INGREDIENT_UNITS } from '@/lib/constants/units';
 
 /**
  * 재료 상세 설정 필드 (카테고리·유통기한·수량/단위·보관위치·메모) — 공통 표현.
@@ -15,7 +16,8 @@ import { addDaysLocalISO } from '@/lib/date/localDate';
  * 회귀 가드: e2e/ingredient-auto-merge·autocomplete·picker-modal.
  */
 
-const UNITS = ['선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술', '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리'];
+// 단위 목록은 공용 단일 출처(값·순서 동일 — ICL-39, 2026-10-04)
+const UNITS = INGREDIENT_UNITS;
 
 const STORAGE_LOCATIONS = ['냉장', '냉동', '상온'];
 

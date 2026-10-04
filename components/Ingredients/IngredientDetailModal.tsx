@@ -5,6 +5,7 @@ import IngredientForm from './IngredientForm';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
+import CloseIcon from '@/components/icons/CloseIcon';
 
 interface Ingredient {
   id: string;
@@ -69,10 +70,13 @@ export default function IngredientDetailModal({
   }, [isOpen, ingredient]);
 
   const handleSubmit = (formData: IngredientFormData) => {
-    // Dirty 체크 — 변경 사항 없으면 불필요한 업데이트 skip
+    // Dirty 체크 — 변경 사항 없으면 불필요한 업데이트 skip.
+    // 폼은 빈 날짜를 null 로 정규화해 넘기므로(initialData 는 '') 빈 값끼리는 같다고 본다 — 안 그러면 날짜가
+    // 비어 있는 재료는 아무것도 안 바꿔도 항상 '변경'으로 잡혀 UPDATE + 성공 토스트가 났다(2026-10-04).
+    const sameValue = (a: unknown, b: unknown) => (a ?? '') === (b ?? '');
     const isDirty = Object.keys(initialData).some((key) => {
       const k = key as keyof IngredientFormData;
-      return (initialData as IngredientFormData)[k] !== formData[k];
+      return !sameValue((initialData as IngredientFormData)[k], formData[k]);
     });
     if (!isDirty) {
       onClose();
@@ -111,16 +115,14 @@ export default function IngredientDetailModal({
           <h2 className="text-lg font-bold text-text-primary truncate flex items-center gap-2 min-w-0">
             {emoji && <span className="text-xl flex-shrink-0">{emoji}</span>}
             <span className="truncate">{ingredient.ingredient_name}</span>
-            <span className="text-sm text-text-muted font-normal flex-shrink-0">수정</span>
+            <span className="text-sm text-text-muted font-normal flex-shrink-0">{t.common.edit}</span>
           </h2>
           <button
             onClick={onClose}
             aria-label={t.common.close}
             className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-white/5 text-text-muted hover:bg-white/10 hover:text-text-primary transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
@@ -142,7 +144,7 @@ export default function IngredientDetailModal({
               onClick={handleDelete}
               className="w-full mt-3 py-2.5 rounded-xl border border-error/30 text-error text-sm font-medium hover:bg-error/10 active:scale-[0.98] transition-all"
             >
-              🗑 이 재료 삭제
+              {t.ingredient.deleteThisIngredient}
             </button>
           )}
         </div>

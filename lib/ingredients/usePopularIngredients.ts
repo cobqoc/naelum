@@ -20,7 +20,12 @@ async function fetchPopularIngredients(): Promise<PopularIngredient[]> {
     fetchPromise = fetch(
       `/api/ingredients/browse?names=${encodeURIComponent(names)}&limit=${POPULAR_ITEM_NAMES.length}`
     )
-      .then(r => r.json())
+      // 비정상 응답(500 등)도 아래 catch 로 — 전엔 에러 JSON 을 그대로 파싱해 빈 배열을 *세션 내내 캐시*해
+      // 인기 재료 프리셋이 다시는 안 떴다(ICL-42, 2026-10-04). catch 는 캐시를 안 남겨 다음 사용 때 재시도.
+      .then(r => {
+        if (!r.ok) throw new Error(`popular ingredients ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         const map = new Map<string, PopularIngredient>();
         for (const ing of (data.ingredients ?? [])) {

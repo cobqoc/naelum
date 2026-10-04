@@ -62,14 +62,24 @@ export interface ConvertedIngredient {
 export function useUnitConversion() {
   const [system, setSystem] = useState<UnitSystem>(() => {
     if (typeof window === 'undefined') return 'metric';
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved === 'imperial' ? 'imperial' : 'metric';
+    // 쿠키·사이트 데이터를 차단한 브라우저는 localStorage 접근 자체가 SecurityError — 렌더 중 throw 로
+    // 레시피 화면이 깨지지 않게 기본 단위계로(ICL-27 저장소 안전성 부분, 2026-10-04). 저장값이 있으면 이전과 동일.
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved === 'imperial' ? 'imperial' : 'metric';
+    } catch {
+      return 'metric';
+    }
   });
 
   const toggleSystem = useCallback(() => {
     setSystem(prev => {
       const next = prev === 'metric' ? 'imperial' : 'metric';
-      localStorage.setItem(STORAGE_KEY, next);
+      try {
+        localStorage.setItem(STORAGE_KEY, next);
+      } catch {
+        // 저장 불가 환경(차단·용량 초과) — 전환은 이 화면에서만 유지
+      }
       return next;
     });
   }, []);

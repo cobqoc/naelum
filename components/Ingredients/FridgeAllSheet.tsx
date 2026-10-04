@@ -5,6 +5,8 @@ import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useI18n } from '@/lib/i18n/context';
 import { formatFreshLabel, type FreshLabelKind } from '@/app/[lang]/_home/helpers';
+import SameNameGroupSheet from './SameNameGroupSheet';
+import CloseIcon from '@/components/icons/CloseIcon';
 
 interface FridgeItem {
   id: string;
@@ -61,12 +63,18 @@ export default function FridgeAllSheet({
   useEscapeKey(onClose, isOpen);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  // Tab focus trap + 자동 이전 focus 복원 (trigger 명시 안 받음 — 외부 element 자동 기억).
-  // 기존 previousFocusRef + cleanup focus 로직을 hook 으로 통합.
-  useFocusTrap(isOpen, panelRef, undefined, { autoRestorePreviousFocus: true });
+  const groupPanelRef = useRef<HTMLDivElement>(null);
 
   // 같은 이름 그룹 클릭 시 미니 시트로 그룹 내 항목 목록 표시
   const [groupSheet, setGroupSheet] = useState<{ name: string; items: FridgeItem[] } | null>(null);
+
+  // Tab focus trap + 자동 이전 focus 복원 (trigger 명시 안 받음 — 외부 element 자동 기억).
+  // 기존 previousFocusRef + cleanup focus 로직을 hook 으로 통합.
+  // 미니 시트는 이 패널 *밖*(형제)에 렌더돼, 열린 동안 이 트랩이 Tab 마다 포커스를 가려진 메인 패널로 되돌려
+  // 키보드로 미니 시트를 쓸 수 없었다 → 미니 시트가 열린 동안은 이 트랩을 멈추고(paused — 복원 대상은 유지)
+  // 미니 시트 패널에 자체 트랩을 건다(PHR-33, 2026-10-04). 마크업 변화 없음.
+  useFocusTrap(isOpen, panelRef, undefined, { autoRestorePreviousFocus: true, paused: !!groupSheet });
+  useFocusTrap(isOpen && !!groupSheet, groupPanelRef, undefined, { autoRestorePreviousFocus: true });
 
   // 열릴 때 닫기 버튼에 포커스 (Enter 즉시 닫기 가능). 이전 focus 복원은 useFocusTrap 담당.
   useEffect(() => {
@@ -118,9 +126,7 @@ export default function FridgeAllSheet({
             className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
             aria-label={t.common.close}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <CloseIcon />
           </button>
         </div>
 
@@ -247,55 +253,17 @@ export default function FridgeAllSheet({
         </div>
       </div>
 
-      {/* 같은 이름 그룹 미니 시트 — chip 탭 시 같은 이름 항목 목록을 보여주고 개별 선택 */}
+      {/* 같은 이름 그룹 미니 시트 — chip 탭 시 같은 이름 항목 목록을 보여주고 개별 선택.
+          HomeClient 와 같은 마크업 → 공용 SameNameGroupSheet(ICL-15). 패널 ref 로 자체 포커스 트랩(PHR-33). */}
       {groupSheet && (
-        <div className="fixed inset-0 z-[75] flex items-end md:items-center justify-center" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setGroupSheet(null)} />
-          <div className="relative w-full md:max-w-sm bg-background-secondary rounded-t-2xl md:rounded-2xl border-t md:border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[70dvh]">
-            <div className="md:hidden flex justify-center pt-2.5 pb-1">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
-            </div>
-            <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between">
-              <h3 className="font-bold text-sm">
-                {groupSheet.name} <span className="text-text-muted font-normal">×{groupSheet.items.length}</span>
-              </h3>
-              <button
-                onClick={() => setGroupSheet(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-text-muted hover:text-text-primary transition-all"
-                aria-label={t.common.close}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 p-3 space-y-2">
-              {groupSheet.items.map(item => {
-                const { border, labelKind, labelN, isEstimate } = freshState(item);
-                const freshLabel = formatFreshLabel(labelKind, labelN, t, isEstimate);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => { setGroupSheet(null); onItemClick(item); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-background-tertiary hover:bg-white/10 transition-colors text-left"
-                  >
-                    <span className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: border }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-text-primary truncate">
-                        {item.quantity != null ? `${item.quantity}${item.unit ?? ''}` : t.ingredient.qtyUnknown}
-                      </div>
-                      <div className="text-[11px] text-text-muted truncate">
-                        {item.purchase_date ? `${t.ingredient.purchasedShort} ${item.purchase_date.slice(5)}` : ''}
-                        {item.expiry_date ? ` · ${t.ingredient.expiryShort} ${item.expiry_date.slice(5)}` : ''}
-                        {freshLabel ? ` · ${freshLabel}` : ''}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <SameNameGroupSheet
+          name={groupSheet.name}
+          items={groupSheet.items}
+          freshState={freshState}
+          onClose={() => setGroupSheet(null)}
+          onPick={onItemClick}
+          panelRef={groupPanelRef}
+        />
       )}
     </div>
   );

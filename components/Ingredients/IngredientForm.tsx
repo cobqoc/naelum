@@ -12,6 +12,7 @@ import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useFavorites } from '@/lib/favorites/useFavorites';
 import { sanitizeOutgoingPayload } from '@/lib/ingredients/sanitizeOutgoingPayload';
+import { sanitizeEditPayload } from '@/lib/ingredients/sanitizeEditPayload';
 import DetailFields from './DetailFields';
 import EditableName from './EditableName';
 
@@ -46,7 +47,9 @@ interface PendingIngredient {
 type LocMode = null | '냉장' | '냉동' | '상온';
 
 interface IngredientFormProps {
-  onSubmit: (formData: IngredientFormData) => void | Promise<void>;
+  /** 일괄 추가 모드: `false` 를 돌려준 항목은 저장 실패로 보고 목록·모달에 남긴다(ICL-04, 2026-10-04).
+   *  void/true 는 성공 — 수정 모드(IngredientDetailModal)처럼 결과를 안 돌려주는 호출처는 이전과 동일. */
+  onSubmit: (formData: IngredientFormData) => void | boolean | Promise<void | boolean>;
   onCancel?: () => void;
   initialData?: Partial<IngredientFormData>;
   /** 보관위치(냉장/냉동/상온) — 모달 헤더 pill(부모)이 제어하는 controlled 값.
@@ -66,7 +69,7 @@ export default function IngredientForm({
   ownedNames,
 }: IngredientFormProps) {
   const { t } = useI18n();
-  const { success: toastSuccess } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   // 기존 단일 입력 모드 (수정 모드에서 사용)
   const isEditMode = !!initialData?.ingredient_name;
@@ -95,7 +98,11 @@ export default function IngredientForm({
   // 빠른 추가 모드 상태
   const [inputValue, setInputValue] = useState('');
   const [pendingItems, setPendingItems] = useState<PendingIngredient[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  // 상세설정 대상은 배열 인덱스가 아니라 pending id 로 추적(ICL-36, 2026-10-04) — 인덱스로 추적하면 앞 태그를
+  // 지울 때 다른 재료를 편집하게 되거나, 대상이 사라져 패널 없이 브라우저만 숨은 빈 화면에 갇혔다.
+  // 대상이 목록에서 빠지면 editingItem 이 null 이 돼 자연히 상세 패널이 닫힌다.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingItem = editingId === null ? null : (pendingItems.find(p => p.id === editingId) ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [frequentIngredients, setFrequentIngredients] = useState<RecentIngredient[]>([]);
 
@@ -115,7 +122,9 @@ export default function IngredientForm({
 
   // 사용자별 자주 쓰는 재료 (DB, Stage 2: score 기반)
   const { items: favorites } = useFavorites(50);
-  const popularIngredients = usePopularIngredients();
+  // 수정 모드는 인기 재료를 렌더·로직 어디에도 안 쓴다 → 요청 생략(ICL-45, 2026-10-04). isEditMode 는 마운트 시
+  // initialData 로 정해져 훅 순서 영향 없음. (useFavorites 는 enabled 인자가 없어 그대로 — lib/favorites 소유 밖)
+  const popularIngredients = usePopularIngredients(!isEditMode);
 
   // 자주 쓰는 재료 로드 — DB favorites 우선, 비어있으면 localStorage(legacy/비로그인) fallback
   useEffect(() => {
@@ -169,29 +178,29 @@ export default function IngredientForm({
     setInputValue('');
   }, []);
 
-  // 태그 삭제
-  const handleRemoveItem = useCallback((index: number) => {
-    setPendingItems(prev => prev.filter((_, i) => i !== index));
-    if (editingIndex === index) setEditingIndex(null);
-  }, [editingIndex]);
+  // 태그 삭제 — id 기준(ICL-36). 편집 중이던 항목이면 상세 패널도 닫는다.
+  const handleRemoveItem = useCallback((id: string) => {
+    setPendingItems(prev => prev.filter(p => p.id !== id));
+    setEditingId(prev => (prev === id ? null : prev));
+  }, []);
 
   const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (editingIndex !== null && detailRef.current) {
+    if (editingId !== null && detailRef.current) {
       detailRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [editingIndex]);
+  }, [editingId]);
 
   // 태그 클릭 → 상세 설정 토글
-  const handleTagClick = useCallback((index: number) => {
-    setEditingIndex(prev => prev === index ? null : index);
+  const handleTagClick = useCallback((id: string) => {
+    setEditingId(prev => prev === id ? null : id);
   }, []);
 
-  // 상세 설정 변경
-  const handleDetailChange = useCallback((index: number, field: string, value: string | number | boolean | null) => {
-    setPendingItems(prev => prev.map((item, i) =>
-      i === index ? { ...item, [field]: value } : item
+  // 상세 설정 변경 — id 기준(ICL-36)
+  const handleDetailChange = useCallback((id: string, field: string, value: string | number | boolean | null) => {
+    setPendingItems(prev => prev.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
     ));
   }, []);
 
@@ -203,7 +212,7 @@ export default function IngredientForm({
     const count = items.length;
     setIsSubmitting(true);
 
-    await Promise.all(items.map(item => onSubmit(sanitizeOutgoingPayload({
+    const results = await Promise.all(items.map(item => onSubmit(sanitizeOutgoingPayload({
       ingredient_name: item.name,
       category: item.category,
       quantity: item.quantity,
@@ -215,12 +224,25 @@ export default function IngredientForm({
       expiry_alert: item.expiry_alert,
       ingredient_id: item.ingredientId ?? null,
     }))));
+    // 호출처가 false 를 돌려준 항목만 실패(ICL-04). 전엔 결과를 안 봐서 서버 실패에도 "N개 추가됐어요" + 모달 닫힘 → 입력 유실.
+    const failedIds = new Set(items.filter((_, i) => results[i] === false).map(item => item.id));
 
     setIsSubmitting(false);
-    setPendingItems([]);
-    setEditingIndex(null);
-    toastSuccess(t.quickAdd.addedToast.replace('{count}', String(count)));
-    onCancel?.();
+    if (failedIds.size === 0) {
+      setPendingItems([]);
+      setEditingId(null);
+      toastSuccess(t.quickAdd.addedToast.replace('{count}', String(count)));
+      onCancel?.();
+      return;
+    }
+    // 일부/전부 실패 — 성공한 항목만 목록에서 빼고(다시 눌러도 중복 저장 안 되게) 실패 항목은 남겨 모달 유지.
+    // 오류 안내는 전역 토스트로(홈 자체 토스트는 모달 아래 z-index 라 모달이 열린 동안 안 보인다).
+    const savedIds = new Set(items.filter(item => !failedIds.has(item.id)).map(item => item.id));
+    setPendingItems(prev => prev.filter(p => !savedIds.has(p.id)));
+    setEditingId(null);
+    const savedCount = count - failedIds.size;
+    if (savedCount > 0) toastSuccess(t.quickAdd.addedToast.replace('{count}', String(savedCount)));
+    toastError(t.ingredient.addError);
   };
 
   // === 수정 모드 (기존 로직) ===
@@ -245,8 +267,9 @@ export default function IngredientForm({
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (validate()) {
-        // 수정 모드도 같은 sanitize 적용 — 사용자가 만료일 지우고 저장 시 빈 문자열로 400 방지
-        onSubmit(sanitizeOutgoingPayload(formData));
+        // 수정 모드도 같은 sanitize 적용 — 사용자가 만료일 지우고 저장 시 빈 문자열로 400 방지.
+        // + 이름이 그대로면 재료 FK(ingredient_id)를 건드리지 않음(이전엔 null 로 덮어써 매칭·이모지 유실).
+        onSubmit(sanitizeEditPayload(formData, initialData?.ingredient_name || ''));
         setFormData({
           ingredient_name: '', category: 'other', quantity: null, unit: '선택',
           purchase_date: '', expiry_date: '', storage_location: '기타', notes: '', expiry_alert: true
@@ -315,7 +338,7 @@ export default function IngredientForm({
       {/* 저장 위치 pill UI는 AddIngredientModal 헤더로 이관됨 (controlled props로 제어) */}
 
       {/* 1. 재료 브라우저 + 검색 — 상세 설정 열릴 때 숨겨 모바일 공간 확보 */}
-      <div className={editingIndex !== null ? 'hidden' : ''}>
+      <div className={editingItem ? 'hidden' : ''}>
         <IngredientBrowser
           onSelect={handleQuickSelect}
           selectedNames={pendingItems.map(p => p.name)}
@@ -340,10 +363,10 @@ export default function IngredientForm({
       </div>
 
       {/* 상세 설정 열릴 때: "← 재료 더 추가" 버튼으로 브라우저 복귀 */}
-      {editingIndex !== null && (
+      {editingItem && (
         <button
           type="button"
-          onClick={() => setEditingIndex(null)}
+          onClick={() => setEditingId(null)}
           className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -368,7 +391,7 @@ export default function IngredientForm({
             {pendingItems.length > 1 && (
               <button
                 type="button"
-                onClick={() => { setPendingItems([]); setEditingIndex(null); }}
+                onClick={() => { setPendingItems([]); setEditingId(null); }}
                 className="text-xs text-text-muted hover:text-error transition-colors"
               >
                 {t.quickAdd.clearAll}
@@ -377,13 +400,13 @@ export default function IngredientForm({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {pendingItems.map((item, index) => (
+            {pendingItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => handleTagClick(index)}
+                onClick={() => handleTagClick(item.id)}
                 className={`group flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all ${
-                  editingIndex === index
+                  editingId === item.id
                     ? 'bg-accent-warm text-background-primary ring-2 ring-accent-warm/50'
                     : 'bg-accent-warm/15 text-accent-warm hover:bg-accent-warm/25'
                 }`}
@@ -398,9 +421,9 @@ export default function IngredientForm({
                   {item.storage_location === '냉장' ? '❄️' : item.storage_location === '냉동' ? '🧊' : '🌡'}
                 </span>
                 <span
-                  onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }}
+                  onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }}
                   className={`ml-0.5 rounded-full w-5 h-5 flex items-center justify-center text-[10px] transition-colors ${
-                    editingIndex === index
+                    editingId === item.id
                       ? 'hover:bg-background-primary/20'
                       : 'hover:bg-accent-warm/30'
                   }`}
@@ -412,23 +435,23 @@ export default function IngredientForm({
           </div>
 
           {/* 4. 상세 설정 (선택한 태그) */}
-          {editingIndex !== null && pendingItems[editingIndex] && (
+          {editingItem && (
             <div ref={detailRef} className="mt-3 rounded-2xl bg-background-tertiary/50 p-4 border border-white/5">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-medium text-text-primary">
-                  {pendingItems[editingIndex].name} {t.quickAdd.detailSettings}
+                  {editingItem.name} {t.quickAdd.detailSettings}
                 </p>
                 <button
                   type="button"
-                  onClick={() => setEditingIndex(null)}
+                  onClick={() => setEditingId(null)}
                   className="text-xs text-text-muted hover:text-text-secondary"
                 >
                   {t.quickAdd.close}
                 </button>
               </div>
               <DetailFields
-                item={pendingItems[editingIndex]}
-                onChange={(field, value) => handleDetailChange(editingIndex, field, value)}
+                item={editingItem}
+                onChange={(field, value) => handleDetailChange(editingItem.id, field, value)}
                 errors={{}}
                 t={t}
               />
