@@ -21,6 +21,7 @@
   - **문서**: 문서↔앱 불일치 111건 대조 → 98건 반영(버전·경로·라우트·데이터 수치(prod 실측)·스캐너 서술·GDPR 현황·삭제된 파일 언급 등). AGENTS.md·README.md 재작성. 리포만으로는 현행 DB 스키마 재현 불가 사실 명시.
   - **미적용 마이그레이션(작성만, dev → prod 순서로 적용 필요)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
   - **사용자 결정으로 남긴 것**: 이메일 가입 비밀번호 설정 단계 도달 불가(proxy, 패치 준비) · 보안·권한 관련 항목 다수(로컬 보고서) · prod `removeConsole` 이 서버 에러 로그까지 제거 · 알레르기 자유입력 ↔ 표준키 불일치 · 설정 아바타 base64 폴백(스토리지 정책 적용 후 제거 — 먼저 고쳤다가 정책 미적용 상태에선 아바타 변경이 막혀 되돌림) · 온보딩 선호도 저장 실패 시 완료를 막을지 등 — 로컬 감사 보고서 "결정 필요" 절.
+  - **다음 작업 (순서대로)**: ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
 
 ## 2026-09 작업 로그
 
@@ -31,8 +32,8 @@
   - **OPS-2(사용자 승인)**: 관리자 행동 분석 API 가 최대 1만 행 원본을 보내던 것 → 같은 행(필터·정렬·10k 상한)을 서버에서 집계해 요약만(`lib/analytics/aggregateEvents.ts`, git HEAD 의 페이지 집계 코드를 오라클로 한 vitest 로 동일성 증명). 화면 숫자 동일.
   - **검증**: lint 0 · vitest 399 · scan 통과 · fresh build 전체 e2e **481 passed / 0 failed / 1 flaky / 2 skipped**. flaky 는 `thumbnail-crop` tip/new(첫 시도 모달 미표시, 재시도 통과) — 이번 변경 파일과 무관하고 재시도 없이 15회 반복 90/90 통과. 화면에 입력이 보이자마자 파일을 주입하는 테스트의 하이드레이션 타이밍 경합으로 판단.
   - **커밋·푸시**: fix 와 perf/chore/docs 분리한 커밋 13개를 develop 에 푸시(2026-09-28). 커밋마다 tsc 통과 확인(기존 validateImage.test 오류 제외).
-  - **다음 작업 ① Preview 확인 → develop→main PR 머지**: Preview 는 naelum-dev DB 를 쓰므로 먼저 baedariyo pause → naelum-dev restore(확인 후 되돌림). Preview URL 에서 로그인·홈 냉장고(이모지·보관기간 첫 화면)·PWA 설치 후 /offline.html·/sw.js 갱신 — 서비스 워커 경로(미들웨어 STATIC_PASSTHROUGH)는 dev 서버에서 재현 안 됨.
-  - **다음 작업 ② 범위 밖이라 남긴 기존 문제(별도 세션, fix 커밋)**: ① OnboardingWizard dynamic preload 404 ② `/ko/cart`·404 페이지 React #419 ③ `lib/storage/__tests__/validateImage.test.ts` tsc 오류(빌드는 통과) ④ `e2e/thumbnail-crop.spec.ts` tip/new 하이드레이션 전 setInputFiles 경합(드물게 1회 실패).
+  - **다음 작업 ① Preview 확인 → develop→main PR 머지**: Preview 는 naelum-dev DB 를 쓰므로 먼저 baedariyo pause → naelum-dev restore(확인 후 되돌림). Preview URL 에서 로그인·홈 냉장고(이모지·보관기간 첫 화면)·PWA 설치 후 /offline.html·/sw.js 갱신 — 서비스 워커 경로(미들웨어 STATIC_PASSTHROUGH)는 dev 서버에서 재현 안 됨. → **미완 — 2026-10 작업 로그 "다음 작업" ①~③ 으로 이어짐.**
+  - **다음 작업 ② 범위 밖이라 남긴 기존 문제(별도 세션, fix 커밋)**: ① OnboardingWizard dynamic preload 404 ② `/ko/cart`·404 페이지 React #419 ③ `lib/storage/__tests__/validateImage.test.ts` tsc 오류(빌드는 통과) ④ `e2e/thumbnail-crop.spec.ts` tip/new 하이드레이션 전 setInputFiles 경합(드물게 1회 실패). → **2026-10-04 감사에서 4건 모두 수정**(① 의 실제 원인은 ContactModal 이중 dynamic import).
 
 - **성능·경량화 3차 — dev DB 복구 후 로그인 경로 + 전체 e2e** (2026-09-27, 미커밋)
   - **dev DB 복구(사용자 선택 A)**: 무료플랜 활성 2개 제한 → `baedariyo` 일시정지 → `naelum-dev` 복원(90일 제한 걸리지 않음, 스키마=저장소 마이그레이션 일치). 작업 후 되돌림(dev 일시정지·baedariyo 복원).
