@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import dynamic from 'next/dynamic'
 import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname'
 import { useI18n } from '@/lib/i18n/context'
-
-// ContactModal은 무겁고(이미지 업로드 등) 거의 열리지 않으므로 lazy load
-const ContactModal = dynamic(() => import('./ContactModal'), { loading: () => null })
+// ContactModal은 무겁고(이미지 업로드 등) 거의 열리지 않으므로 lazy load — 단일 출처(LazyContactModal)
+import ContactModal from './LazyContactModal'
 
 /**
  * 플로팅 피드백 버튼 — 모든 페이지 우측 하단에 떠있는 의견 수집 버튼.

@@ -37,7 +37,21 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const [screenshotUploading, setScreenshotUploading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  useEscapeKey(onClose, isOpen);
+
+  const handleClose = () => {
+    setCategory('bug');
+    setContent('');
+    setEmail('');
+    setError('');
+    setSubmitted(false);
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    setScreenshotUrl(null);
+    onClose();
+  };
+
+  // ESC 도 ✕·배경 클릭과 같은 닫기(상태 초기화) — 예전엔 onClose 만 불러 다시 열면 이전 '접수 완료' 화면이 남았다(2026-10-04).
+  useEscapeKey(handleClose, isOpen);
   useFocusTrap(isOpen, panelRef);
 
   if (!isOpen) return null;
@@ -73,9 +87,13 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, content, email, screenshotUrl: uploadedUrl }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t.contact.errorSubmit);
+        // 서버 에러 문자열은 한국어 고정(서버 i18n 미도입) — 상태·입력으로 번역 메시지를 고른다(2026-10-04).
+        // ko 문구는 서버 문구와 같다.
+        if (res.status === 429) setError(t.contact.errorRateLimit);
+        else if (res.status === 400 && isLoggedIn === false && !email.includes('@')) setError(t.contact.errorEmailRequired);
+        else if (res.status === 400 && content.trim().length < 10) setError(t.contact.errorMinLength);
+        else setError(t.contact.errorSubmit);
         return;
       }
       setSubmitted(true);
@@ -84,18 +102,6 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleClose = () => {
-    setCategory('bug');
-    setContent('');
-    setEmail('');
-    setError('');
-    setSubmitted(false);
-    setScreenshotFile(null);
-    setScreenshotPreview(null);
-    setScreenshotUrl(null);
-    onClose();
   };
 
   return (

@@ -90,7 +90,7 @@ export function levenshteinSimilarity(a: string, b: string): number {
  *
  * @example
  * ```typescript
- * isSimilar('새송이버섯', '새송이'); // true (>0.8 similarity)
+ * isSimilar('새송이버섯', '새송이'); // false (0.6 < 0.8) — 임계값 0.6 이면 true
  * isSimilar('토마토', '감자'); // false (<0.8 similarity)
  * ```
  */

@@ -1,3 +1,5 @@
+import { INGREDIENT_UNITS } from './units';
+
 export const CUISINE_TYPES = [
   { value: 'korean', label: '한식' },
   { value: 'chinese', label: '중식' },
@@ -32,10 +34,8 @@ export const DIFFICULTY_LEVELS = [
   { value: 'hard', label: '고급' },
 ] as const;
 
-export const UNITS = [
-  '선택', 'g', 'kg', 'ml', 'L', '개', '큰술', '작은술',
-  '컵', '줌', '꼬집', '조각', '장', '포기', '대', '모', '마리', '기타',
-] as const;
+// 레시피 폼 단위 = 공용 재료 단위 17개 + '기타'(레시피 전용 확장). 값·순서 이전과 동일(ICL-39, 2026-10-04).
+export const UNITS = [...INGREDIENT_UNITS, '기타'] as const;
 
 export const CUISINE_TYPE_TAGS: Record<string, string[]> = {
   korean: ['한식', 'KoreanFood'],

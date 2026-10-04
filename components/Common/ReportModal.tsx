@@ -42,6 +42,21 @@ export default function ReportModal({ isOpen, onClose, contentType, contentId }:
 
   if (!isOpen) return null;
 
+  // 신고 라우트 에러 → 번역 문구(ICL-06, 2026-10-04). 서버 한국어 원문(data.error)을 그대로 토스트하면 비한국어
+  // 로케일에 한국어가 노출됐다 → 원문은 콘솔에만. ko 문구는 서버 원문과 같은 키라 한국어 화면은 그대로.
+  // (400 은 이 UI 에서 사유·본문이 늘 유효하므로 "자기 콘텐츠 신고" 뿐)
+  const reportErrorMessage = (status: number): string => {
+    const isRecipe = contentType === 'recipe';
+    switch (status) {
+      case 401: return t.errors.loginRequired;
+      case 400: return isRecipe ? t.report.errorOwnRecipe : t.report.errorOwnTip;
+      case 404: return isRecipe ? t.recipeForm.errorRecipeNotFound : t.tip.detailNotFound;
+      case 409: return isRecipe ? t.report.errorAlreadyReportedRecipe : t.report.errorAlreadyReportedTip;
+      case 429: return t.report.errorTooMany;
+      default: return t.report.errorSubmit;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!reason) {
       toast.warning(t.report.warnReason);
@@ -59,7 +74,8 @@ export default function ReportModal({ isOpen, onClose, contentType, contentId }:
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || t.report.errorSubmit);
+        console.error('[ReportModal] 신고 실패:', res.status, data?.error);
+        toast.error(reportErrorMessage(res.status));
         return;
       }
       toast.success(t.report.successSubmit);

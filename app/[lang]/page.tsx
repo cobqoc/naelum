@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { getVerifiedUserIdFromHeaders } from '@/lib/supabase/middleware';
-import { loadLocale, SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales';
 import HomeClient from './HomeClient';
 import { selectUserIngredientsWithMaster } from '@/lib/queries/userIngredients';
 
@@ -9,18 +7,8 @@ import { selectUserIngredientsWithMaster } from '@/lib/queries/userIngredients';
 // 인증 헤더 매번 검증해야 하므로 dynamic 필요.
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
-  const { lang } = await params;
-  if (!SUPPORTED_LANGUAGES.includes(lang as Language)) return {};
-  const t = await loadLocale(lang as Language);
-  const title = `낼름 — ${t.home.tagline}`;
-  const description = t.home.taglineSub;
-  return {
-    title: { absolute: title },
-    description,
-    openGraph: { title, description },
-  };
-}
+// 메타데이터: [lang]/layout.tsx 의 generateMetadata 와 글자 그대로 같은 사본이 여기에도 있었다 → 레이아웃 것 하나만 둔다
+// (홈의 최종 메타데이터 동일, 같은 segment 이중 정의 제거 — 2026-10-04).
 
 export default async function HomePage() {
   const userId = await getVerifiedUserIdFromHeaders();

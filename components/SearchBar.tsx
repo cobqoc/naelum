@@ -73,20 +73,27 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
     }
   }, [autoFocus]);
 
+  // 응답이 디바운스(300ms)보다 늦게 오면 이전 질의의 제안이 최신 입력의 제안을 덮을 수 있다 → 마지막 요청만 반영(2026-10-04).
+  const requestSeqRef = useRef(0);
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 2) {
+      requestSeqRef.current++;
       setSuggestions([]);
+      setLoading(false);
       return;
     }
+    const seq = ++requestSeqRef.current;
     setLoading(true);
     try {
       const res = await fetch(`/api/search/autocomplete?q=${encodeURIComponent(q)}&limit=8`);
       const data = await res.json();
+      if (seq !== requestSeqRef.current) return;
       setSuggestions(data.suggestions || []);
     } catch {
+      if (seq !== requestSeqRef.current) return;
       setSuggestions([]);
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
   }, []);
 
@@ -97,7 +104,9 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
     if (value.trim().length >= 2) {
       debounceRef.current = setTimeout(() => fetchSuggestions(value.trim()), 300);
     } else {
+      requestSeqRef.current++; // 진행 중인 요청의 늦은 응답이 비운 목록을 다시 채우지 않게
       setSuggestions([]);
+      setLoading(false);
     }
   };
 

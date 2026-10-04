@@ -505,10 +505,6 @@ select {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-@keyframes cookie-slide-down {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(100%); opacity: 0; }
-}
 
 /* IngredientActionSheet 백드롭/패널 — opacity 전용 페이드 */
 @keyframes sheet-fade-in {

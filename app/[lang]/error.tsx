@@ -59,7 +59,8 @@ export default function LangError({
             onClick={reset}
             className="px-6 py-3 rounded-xl bg-accent-warm text-background-primary font-bold hover:bg-accent-hover transition-colors"
           >
-            {t.common.confirm}
+            {/* reset() 은 다시 시도 — 예전 라벨이 '확인'(t.common.confirm)이라 의미가 어긋났다(2026-10-04) */}
+            {t.common.retry}
           </button>
           <Link
             href="/"

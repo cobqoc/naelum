@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { captureException } from '@/lib/sentry/captureException';
 
 const messages = {
@@ -16,6 +16,8 @@ const messages = {
   },
 };
 
+const noopSubscribe = () => () => {};
+
 export default function GlobalError({
   error,
   reset,
@@ -27,7 +29,16 @@ export default function GlobalError({
     captureException(error);
   }, [error]);
 
-  const t = messages.ko;
+  // I18nProvider 바깥(루트 레이아웃까지 실패한 경우)이라 경로의 언어 세그먼트로 고른다. ko 외에는 영어(2026-10-04 — 예전엔 항상 ko).
+  // 서버 스냅샷은 ko → 하이드레이션 불일치 없이 클라이언트에서 실제 경로 값으로 갱신.
+  const lang = useSyncExternalStore(
+    noopSubscribe,
+    () => window.location.pathname.split('/')[1] ?? 'ko',
+    () => 'ko',
+  );
+  const t = lang === 'ko' || !lang ? messages.ko : messages.en;
+  // 원문 에러 메시지는 개발 환경에서만 — 프로덕션에선 내부 정보가 노출되지 않게 일반 안내(같은 정책의 [lang]/error.tsx 와 일치).
+  const isDev = process.env.NODE_ENV !== 'production';
 
   return (
     <html lang="ko">
@@ -39,7 +50,7 @@ export default function GlobalError({
               {t.title}
             </h1>
             <p style={{ color: '#888888', marginBottom: '2rem' }}>
-              {error.message || t.description}
+              {(isDev && error.message) || t.description}
             </p>
             <button
               onClick={reset}

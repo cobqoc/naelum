@@ -39,6 +39,8 @@ interface ImageCropModalProps {
  *  - 원본 mime 유지 시도 (jpeg → image/jpeg, png → image/png, webp → image/webp).
  *    그 외 image/jpeg fallback (조리 사진은 보통 사진 = jpeg 가 적합).
  *  - 출력 파일명 = 원본 이름 + `-cropped` 접미사 + 원본 확장자.
+ *    단 브라우저가 원본 mime 으로 인코딩 못 해 다른 형식(보통 PNG)으로 만든 경우엔
+ *    그 실제 형식의 type·확장자 (GIF·HEIC 등 — 2026-10-04).
  *  - 큰 사진(휴대폰 12MP+) 대응: 자른 영역의 *natural* 픽셀 그대로 출력 (resize 안 함).
  *    압축은 호출자/Supabase 측 책임.
  *
@@ -132,9 +134,18 @@ export default function ImageCropModal({
     });
     if (!blob) return null;
 
-    // 원본 확장자 보존. 못 찾으면 mime 에서 추출.
     const dot = file.name.lastIndexOf('.');
     const base = dot > 0 ? file.name.slice(0, dot) : file.name;
+    // 브라우저가 원본 mime 으로 인코딩 못 하면(GIF·HEIC·AVIF·BMP 등) toBlob 은 PNG 로 대신 인코딩한다.
+    // 그때는 실제 바이트 형식에 type·확장자를 맞춘다 — 전엔 PNG 내용에 원본 type·확장자를 붙여
+    // 업로드 객체의 확장자·Content-Type 이 내용과 어긋났다(2026-10-04). jpeg/png/webp 는 아래 기존 경로 그대로.
+    const encodedType = blob.type || mime;
+    if (encodedType !== mime) {
+      const sub = encodedType.split('/')[1] || 'png';
+      return new File([blob], `${base}-cropped.${sub === 'jpeg' ? 'jpg' : sub}`, { type: encodedType, lastModified: Date.now() });
+    }
+
+    // 원본 확장자 보존. 못 찾으면 mime 에서 추출.
     const extFromName = dot > 0 ? file.name.slice(dot) : '';
     const ext = extFromName || `.${mime.split('/')[1] ?? 'jpg'}`;
     return new File([blob], `${base}-cropped${ext}`, { type: mime, lastModified: Date.now() });

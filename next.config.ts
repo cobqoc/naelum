@@ -57,6 +57,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'www.nongsaro.go.kr',
       },
+      // 유튜브 팁 임포트(scripts/import-youtube-tip.ts)가 thumbnail_url 에 넣는 영상 썸네일.
+      // 미등록이던 탓에 최적화 요청이 400 → SafeImage 폴백(🍳)만 보였다(prod 비공개 팁 6건, 2026-10-04 실측).
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
     ],
   },
   compiler: {
@@ -118,8 +124,7 @@ const nextConfig: NextConfig = {
         'https://kauth.kakao.com https://kapi.kakao.com https://developers.kakao.com https://t1.kakaocdn.net',
         'https://cloudflareinsights.com https://static.cloudflareinsights.com',
         'https://*.sentry.io https://*.ingest.sentry.io',
-        // Tesseract.js: WASM 코어(jsdelivr) + 한국어 언어팩(tessdata)
-        'https://cdn.jsdelivr.net https://tessdata.projectnaptha.com',
+        // (2026-10-04) Tesseract.js(영수증 OCR) 출처 제거 — 패키지·코드가 모두 삭제돼 이 출처로 나가는 요청이 없다.
         // 자체 지도(map-core/MapLibre): V-World 타일·장소검색, CartoDB/OSM 폴백 타일,
         // OSRM 도로 경로(라이더 추적 단계). maplibre는 raster 타일을 fetch로 로드 → connect-src 필요
         'https://api.vworld.kr https://*.basemaps.cartocdn.com https://tile.openstreetmap.org https://router.project-osrm.org',

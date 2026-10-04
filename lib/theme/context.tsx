@@ -22,15 +22,32 @@ function getSystemThemeStatic(): EffectiveTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+// 저장소 접근은 throw 할 수 있다(쿠키·사이트 데이터 차단 시 `localStorage` 접근 자체가 SecurityError).
+// 이 Provider 는 [lang]/layout 전역이라 렌더 중 throw 하면 모든 페이지가 에러 화면이 됐다 → 실패는 저장 없음으로 취급(2026-10-04).
+function readSavedTheme(): string | null {
+  try {
+    return localStorage.getItem('theme');
+  } catch {
+    return null;
+  }
+}
+function saveTheme(value: Theme): void {
+  try {
+    localStorage.setItem('theme', value);
+  } catch {
+    /* 저장 불가 — 이번 세션 동안만 유지 */
+  }
+}
+
 function getInitialTheme(): { theme: Theme; effective: EffectiveTheme } {
   if (typeof window === 'undefined') return { theme: 'system', effective: 'dark' };
-  const savedTheme = localStorage.getItem('theme') as Theme;
+  const savedTheme = readSavedTheme() as Theme;
   if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
     const effective = savedTheme === 'system' ? getSystemThemeStatic() : savedTheme;
     return { theme: savedTheme, effective };
   }
   const effective = getSystemThemeStatic();
-  localStorage.setItem('theme', 'system');
+  saveTheme('system');
   return { theme: 'system', effective };
 }
 
@@ -72,7 +89,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
+    saveTheme(newTheme);
 
     const effective = calculateEffectiveTheme(newTheme);
     setEffectiveTheme(effective);
