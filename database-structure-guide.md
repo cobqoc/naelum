@@ -1,5 +1,14 @@
 # 낼름 Supabase 데이터베이스 구조 설명서
 
+> ⚠️ **2026-02-02 초기 설계 문서(v1.0.0) — 현행 스키마가 아니다.** 이후 변경은 `supabase/migrations/` 에 쌓였고 일부는 DB 에 직접 적용됐다. 현행 대조(2026-10-04, 코드의 `.from('…')` 기준):
+> - **이 문서에만 있고 코드가 안 쓰는 테이블**: `recipe_comments`·`comment_likes`·`recipe_ratings`(통합 피드 `recipe_posts`·`post_likes` 로 대체 — `supabase/migrations/20260601_drop_legacy_ratings_comments.sql` 의 drop 대상), `trending_searches`·`daily_stats`·`system_settings`·`translations`
+> - **코드가 쓰는데 이 문서에 없는 테이블**: `recipe_posts`·`post_likes`·`tip`·`tip_steps`·`tip_tags`·`rate_limits`·`events`·`push_subscriptions`·`push_tokens`·`ingredient_relations`·`ingredient_price_reports`·`shopping_list_shares`·`user_favorites_ingredients`·`contact_inquiries`·`user_blocks`·`banned_users`·`admin_actions`·`user_terms_acceptance`·`user_totp_secrets`·`user_badges`·`experience_logs`·`ingredient_recognition_feedback`·`ingredient_training_data`·`admin_dashboard_stats`, 배달 `delivery_*` 8개(dev 전용)
+> - `recipes.is_published` 컬럼은 없다 → `status`(`'draft' | 'private' | 'published'`, 2026-04-12 전환). 뷰 `popular_recipes` 는 drop 됨
+> - Supabase Realtime 사용 금지(shim 대체) — 알림은 요청 기반(`/api/notifications`)
+> - 스키마 재현: 리포만으로는 불가(기반 테이블은 `supabase-schema.sql` 에만 있고 일부 변경은 마이그레이션 없이 적용) — `SUPABASE_SETUP_GUIDE.md` 머리 경고 참조
+>
+> 아래 본문은 초기 설계 기록으로 보존한다(개념 설명은 여전히 참고 가능).
+
 ## 📊 데이터베이스 개요
 
 이 문서는 낼름(Naelum) 레시피 공유 플랫폼의 Supabase PostgreSQL 데이터베이스 구조를 설명합니다.
@@ -474,14 +483,14 @@
 
 Supabase는 PostgreSQL의 RLS를 활용하여 데이터 보안을 강화합니다.
 
-### 적용된 RLS 정책:
+### 적용된 RLS 정책: (초기 설계 기준 — 현행 정책은 `supabase/migrations/` 참조)
 
 #### 1. profiles
 - ✅ **SELECT**: 모든 사람이 프로필 조회 가능
 - ✅ **UPDATE**: 본인만 수정 가능
 
 #### 2. recipes
-- ✅ **SELECT**: 공개(`is_published = true`)된 레시피는 모두 조회, 비공개는 작성자만
+- ✅ **SELECT**: 공개(`status = 'published'` — 초기 설계의 `is_published = true`)된 레시피는 모두 조회, 비공개는 작성자만
 - ✅ **INSERT**: 인증된 사용자만 작성 가능
 - ✅ **UPDATE/DELETE**: 작성자만 가능
 
@@ -502,6 +511,8 @@ Supabase는 PostgreSQL의 RLS를 활용하여 데이터 보안을 강화합니�
 ---
 
 ## 🔄 자동화된 트리거 (Triggers)
+
+> 초기 설계 기준. 현행 트리거·함수는 `supabase/migrations/` 참조 — 댓글·평점 관련(`recipe_comments`·`recipe_ratings`)은 통합 피드(`recipe_posts`, `trg_recipe_posts_counts` 등)로 대체됐다.
 
 ### 1. 통계 카운트 자동 업데이트
 
@@ -600,26 +611,14 @@ ORDER BY ts_rank(search_vector, to_tsquery('english', 'john')) DESC;
 
 ## 📊 유용한 뷰 (Views)
 
-### 1. popular_recipes (인기 레시피)
-```sql
-CREATE VIEW popular_recipes AS
-SELECT 
-  r.*,
-  p.username AS author_username,
-  p.avatar_url AS author_avatar
-FROM recipes r
-JOIN profiles p ON r.author_id = p.id
-WHERE r.is_published = true
-ORDER BY 
-  (r.likes_count * 2 + r.saves_count * 3 + r.views_count * 0.1 + r.average_rating * 10) DESC;
-```
+### 1. popular_recipes (인기 레시피) — ⛔ 삭제됨
 
-**활용**:
-- 인기 레시피 페이지
-- 메인 페이지 추천
-- 트렌딩 레시피
+초기 설계의 뷰(`WHERE r.is_published = true` — 지금은 없는 컬럼)는 `supabase/migrations/20260527_tip_recipes_length_constraints.sql`·`20260603_drop_legacy_cruft.sql` 에서 `DROP VIEW` 됐다. 현재 트렌딩은 `GET /api/recipes/trending`(조회수 상위) 이 담당한다.
 
 ### 2. user_activity_summary (사용자 활동 요약)
+
+> 초기 설계(`supabase-schema.sql`)에만 있는 뷰 — 마이그레이션에 없고 코드도 쓰지 않는다(폐기된 `recipe_comments` 참조).
+
 ```sql
 CREATE VIEW user_activity_summary AS
 SELECT 
@@ -756,12 +755,15 @@ const { data: recipes, error } = await supabase
     likes:recipe_likes(count),
     saves:recipe_saves(count)
   `)
-  .eq('is_published', true)
+  .eq('status', 'published')
   .order('created_at', { ascending: false })
   .range(0, 9);
 ```
 
 ### 2. 재료 기반 레시피 추천
+
+> 초기 설계 예시 — `find_recipes_by_ingredients` RPC 는 존재하지 않는다. 실제 추천은 `GET /api/recommendations?type=ingredients`(`ingredient_id` 매칭, `lib/recommendations/matchV2.ts`).
+
 ```typescript
 const userIngredients = ['닭고기', '양파', '마늘'];
 
@@ -772,6 +774,9 @@ const { data: recipes } = await supabase
 ```
 
 ### 3. 레시피 상세 조회 (관계 포함)
+
+> 초기 설계 예시 — 댓글은 `recipe_comments` 가 아니라 통합 피드 `recipe_posts`(`GET /api/recipes/[id]/posts`). 실제 상세 read 는 `lib/queries/recipeDetail.ts`.
+
 ```typescript
 const { data: recipe } = await supabase
   .from('recipes')
@@ -815,25 +820,9 @@ const toggleLike = async (recipeId: string, userId: string) => {
 };
 ```
 
-### 5. 실시간 구독 (알림)
-```typescript
-const subscription = supabase
-  .channel('notifications')
-  .on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'notifications',
-      filter: `user_id=eq.${userId}`
-    },
-    (payload) => {
-      console.log('새 알림:', payload.new);
-      // UI 업데이트
-    }
-  )
-  .subscribe();
-```
+### 5. 실시간 구독 (알림) — ⛔ 사용 금지
+
+초기 설계의 `supabase.channel(...).on('postgres_changes', …)` 예시는 삭제했다. 이 리포는 `next.config.ts` 에서 `@supabase/realtime-js` 를 shim(`lib/supabase/shims/realtime-js.ts`)으로 대체해 동작하지 않으며, CLAUDE.md "Storage / 이식성" 규칙상 Realtime 사용 자체가 금지다. 알림은 요청 기반(`/api/notifications`)으로 조회한다.
 
 ---
 
@@ -845,11 +834,12 @@ const subscription = supabase
 3. 프로젝트 정보 입력
 
 ### 2. 스키마 적용
-1. Supabase Dashboard → SQL Editor
-2. `supabase-schema.sql` 파일 내용 복사
-3. "Run" 클릭
+⚠️ 초기 안내("SQL Editor 에 `supabase-schema.sql` 복사 → Run")는 **폐기**. 그 파일은 2026-02 초기 설계라 현행 앱이 동작하지 않고, 리포만으로는 현행 스키마를 처음부터 재현할 수 없다(기반 테이블은 `supabase-schema.sql` 에만 있고, `recipes.status` 전환 같은 일부 변경은 마이그레이션 없이 DB 에 직접 적용됨 — `SUPABASE_SETUP_GUIDE.md` 머리 경고). 새 환경은 운영 DB 스키마 기준으로 만들고, 이후 변경만 `supabase/migrations/` 로(dev → 검증 → prod, CLAUDE.md "DB 마이그레이션 흐름").
 
 ### 3. Storage 설정 (이미지/비디오)
+
+> 현재 앱이 쓰는 버킷은 **7개** — `recipe-images`·`recipe-videos`·`tip-images`·`avatars`·`step-images`·`contact-screenshots`·`recipe-completion-photos`(`lib/storage/index.ts` `StorageBucket`, 업로드는 `lib/storage` 경유 필수). 아래 SQL 은 초기 설계의 3개 예시이며, 각 버킷의 공개 여부·정책은 운영 DB 설정이 기준.
+
 ```sql
 -- Storage Buckets 생성
 INSERT INTO storage.buckets (id, name, public)
@@ -870,12 +860,15 @@ CREATE POLICY "Authenticated users can upload avatars"
 
 ### 4. Authentication 설정
 1. Supabase Dashboard → Authentication → Providers
-2. Google OAuth 활성화
+2. OAuth 활성화 (현재 Google·Kakao 사용)
 3. Redirect URLs 설정:
    - `http://localhost:3000/auth/callback` (개발)
    - `https://yourdomain.com/auth/callback` (프로덕션)
 
 ### 5. Environment Variables (.env.local)
+
+> 실제 템플릿은 리포 루트 `env.example`(아래 3개 외 다수 — 각 항목 주석 참고).
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -885,6 +878,8 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ---
 
 ## 📝 TODO & 추후 개선사항
+
+> 2026-02 초기 TODO — **진행 상황은 CLAUDE.md "🚀 개발 로드맵"이 기준이다.** 아래 Phase 1·2 의 CRUD·인증·이미지 업로드·재료 기반 추천·장보기 리스트·알림은 구현됐다(알림은 Realtime 금지로 *실시간*이 아니라 요청 기반). 목록은 기록으로 보존.
 
 ### Phase 1 (MVP)
 - [ ] 기본 CRUD API 구현
@@ -927,4 +922,5 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 **문서 작성일**: 2026-02-02  
 **버전**: 1.0.0  
+**현행 대조 표기**: 2026-10-04 (본문은 초기 설계 — 머리 경고 참조)  
 **작성자**: 낼름 개발팀

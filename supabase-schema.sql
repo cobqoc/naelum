@@ -1,4 +1,15 @@
 -- ================================================
+-- ⚠️ DEPRECATED — 2026-02-02 초기 설계 스냅샷. 현행 스키마가 아니다. (2026-10-04 표기)
+--   - 이 파일 단독 실행 금지: 이걸로 만든 DB 에서는 현재 앱이 동작하지 않는다.
+--     예) recipes.is_published (현행은 status 'draft'|'private'|'published'), 폐기된 recipe_comments·recipe_ratings·
+--     popular_recipes 포함 / recipe_posts·tip·rate_limits·push_subscriptions·delivery_* 등 이후 테이블 미포함.
+--   - 이후 변경은 supabase/migrations/ 에 있다. 다만 마이그레이션은 이 파일의 기반 테이블(profiles·recipes 등)을
+--     전제로 ALTER 하고, 일부 변경(예: recipes.status 전환, 2026-04-12)은 마이그레이션 없이 DB 에 직접 적용돼
+--     "이 파일 → migrations 순서" 로도 현행 스키마가 재현되지 않는다(20260413_sync_rls_policies_to_dev.sql 이 status 참조).
+--   - 새 환경은 운영 DB 스키마 기준으로 만들고, 신규 변경은 반드시 supabase/migrations/ 로(dev → 검증 → prod).
+--   - 참고: SUPABASE_SETUP_GUIDE.md·database-structure-guide.md 머리 경고, CLAUDE.md "DB 마이그레이션 흐름".
+-- ================================================
+-- ================================================
 -- 낼름 (Naelum) Supabase Database Schema
 -- 레시피 공유 웹앱 데이터베이스 구조
 -- Version: 1.0.0

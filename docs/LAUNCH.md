@@ -1,6 +1,6 @@
 # 낼름 런칭 플랜
 
-**상태**: Pre-launch (유저 0명, 프로덕션 배포 완료)
+**상태**: Pre-launch (작성 당시 유저 0명, 프로덕션 배포 완료) — 2026-10-04 prod 프로필 3명
 **작성일**: 2026-04-16
 **목표**: 7일 내 소프트 런칭, 30일 내 첫 100 유저
 
@@ -15,7 +15,7 @@
 **Primary 타겟**: 재한 외국인 + 해외교포 (8개 언어 지원 차별점)
 - 재한 외국인 60만+, 해외교포 700만+
 - 전용 앱 없음 = 빈 시장
-- 8개 언어 이미 구현됨, 추가 비용 0
+- 8개 언어 이미 구현됨(앱 화면 UI — 레시피 본문은 작성 언어 그대로이고 번역 기능은 없음), 추가 비용 0
 
 **Secondary 타겟**: MZ 1인 가구 요리 초보자
 - 만개는 가족 중심, UI 복잡
@@ -30,10 +30,10 @@
 | 낼름 무기 | 만개 상태 |
 |---|---|
 | 8개 언어 지원 | 한국어만 |
-| AI 추천 (Gemini) | 전통 카테고리 |
+| 냉장고 재료 매칭 추천 (규칙 기반 — LLM·Gemini 미사용) | 전통 카테고리 |
 | 모바일-first + 다크모드 | 데스크톱 시대 UI |
 | 쿠킹 모드 + 음성 | 텍스트 나열 |
-| 빠른 속도 (LCP 2.1s) | 느림 + 광고 |
+| 빠른 속도 (LCP ~1.1s — 2026-09-27 기준, 작성 당시 2.1s) | 느림 + 광고 |
 
 ### Anti-goal
 
@@ -58,16 +58,16 @@
 - [ ] E2E 테스트 통과 확인
 - [ ] 프로덕션 재배포
 
-### Day 3: 런칭 준비물 구현 ⬜
-- [ ] `/about` 페이지 — 앱 소개 3-5줄
-- [ ] 플로팅 피드백 버튼 (모든 페이지)
-- [ ] 이메일 수집 폼 (홈 또는 /waitlist)
-- [ ] Kakao 공유 SDK 동작 확인
+### Day 3: 런칭 준비물 구현 ✅ (이메일 수집 폼은 폐기)
+- [x] `/about` 페이지 — 앱 소개 3-5줄 (`app/[lang]/about/`)
+- [x] 플로팅 피드백 버튼 (모든 페이지 — `components/FloatingFeedbackButton.tsx`, `e2e/floating-feedback-button.spec.ts`)
+- ~~이메일 수집 폼 (홈 또는 /waitlist)~~ — 폐기: `20260416_waitlist.sql` 로 만들었다가 `20260419_drop_waitlist_table.sql` 로 drop
+- [x] Kakao 공유 SDK — 구현됨(`components/Recipes/ShareButton.tsx`)
 
 ### Day 4: 다국어 타겟 준비 + 유튜브 영상 첫 업로드 준비 ✅
 - [x] 홈 페이지에 언어 감지/전환 UX 점검 (외국인 친화적?)
   - 헤더 로그인 버튼 i18n 처리
-  - 모바일 BottomNav UserDropdown에 언어 스위처 추가
+  - UserDropdown(`components/Header/UserDropdown.tsx`)에 언어 스위처 추가 — 현재 언어 스위처는 헤더(`components/Header/index.tsx`)와 이 UserDropdown 에 있고, BottomNav 자체에는 없음
 - [x] AI 영상 제작 워크플로우 세팅 → `docs/VIDEO_WORKFLOW.md`
 - [x] 첫 영상 스크립트 작성 → `docs/launch/intro_video_script.md`
 - [x] 앱 → 영상 딥링크, 영상 → 앱 QR 코드 준비
@@ -118,7 +118,7 @@
   ```
 
 ### 영상 → 앱 유입 극대화
-- [ ] 레시피 상세 페이지에 "유튜브 영상 보기" 버튼 추가 (레시피별 video_url 컬럼 활용)
+- [x] 레시피 상세의 출처/영상 링크 — `components/RecipeBrowseView.tsx` 가 `video_url`(또는 `source_url`)로 출처 카드/링크를 렌더 (형태는 "영상 보기" 전용 버튼이 아니라 출처 블록)
 - [ ] 홈 페이지에 "이번 주 영상" 섹션
 - [ ] 영상 → 앱 딥링크 (모바일에서 YouTube → 브라우저 → 앱 설치 유도)
 
@@ -144,8 +144,8 @@
 
 ### 유기적 (시간 걸림)
 11. **유튜브** (상기 전략)
-12. **Google SEO** (sitemap 이미 있음, Search Console 등록 필요)
-13. **네이버 SEO** (네이버 서치어드바이저 등록)
+12. **Google SEO** (sitemap 있음, Search Console 등록 완료 — 2026-06-05)
+13. **네이버 SEO** (네이버 서치어드바이저 등록 완료 — 2026-06-05, `app/layout.tsx` 의 `naver-site-verification`)
 
 ---
 
@@ -230,7 +230,7 @@ Day 1에서 확인할 항목:
 ## 📎 참고
 
 - 아키텍처: `docs/ARCHITECTURE.md`
-- 성능 기준선: 홈 LCP 2.1s (Fast 3G), 번들 987 KB / gzip 290 KB
-- 테스트: 138 E2E passed
+- 성능 기준선: 작성 당시(2026-04) 홈 LCP 2.1s (Fast 3G), 번들 987 KB / gzip 290 KB → 현재 기준선은 `docs/ARCHITECTURE.md` "참고" 절(2026-09-27: LCP ~1.1s, 홈 JS 1,056 KB raw / 287 KB gz)
+- 테스트: 작성 당시 138 E2E passed (현재는 최신 `npx playwright test` 결과 기준)
 - 프로덕션: https://naelum.app
 - Dev Preview: https://naelum-git-develop-hudadaks-projects.vercel.app

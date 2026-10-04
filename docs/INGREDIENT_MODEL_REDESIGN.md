@@ -196,7 +196,7 @@ ingredient_relations  (가공·대체 그래프)
 
 > 핵심 규칙: **AI·자동 sync 금지**(메모리 [[project_rda_nutrition_sync]] — 자동이 240행 오염시켜 폐기). 검증 소스에서 **staple부터 수동/반자동**, 사용하며 누적.
 
-- [~] **사전 확장**: 진짜 없는 재료(베이컨·버터·치즈…) 어드민/시드로 추가. ← **현재 카탈로그 ~90개. 대체 비율 "30~50쌍"의 선행 조건**(버터·마가린·치즈 등이 없어 표준 대체쌍을 못 만듦). 빈도·효과 우선순위(2026-05-31 합의):
+- [~] **사전 확장**: 진짜 없는 재료(베이컨·버터·치즈…) 어드민/시드로 추가. ← **(2026-05-31 작성 당시) 카탈로그 ~90개(dev) — 이후 2026-06-04 prod 에 버터·치즈 등 흔한 재료 보강, 2026-10-04 prod `ingredients_master` 241행. 대체 비율 "30~50쌍"의 선행 조건**(버터·마가린·치즈 등이 없어 표준 대체쌍을 못 만듦). 빈도·효과 우선순위(2026-05-31 합의):
   - **1순위 ✅ 완료(2026-05-31, dev)**: ① 버섯류 표고·느타리·새송이·팽이·양송이 ② 김치 base+배추김치·깍두기·총각김치 ③ 해조류 김·미역·다시마. → **버섯류·해조류 신규 카테고리 신설·배선 15곳 완료**(oil·sweetener 템플릿), 김치는 `fermented`. 마이그레이션 `seed_korean_staples.sql`.
   - **2순위 ✅ 완료(2026-05-31, dev)**: 가공육 베이컨·소시지·햄·스팸(allergens=`돼지고기`) — **`processed`(가공식품)로 분류**(아래 판정 규칙). 유제품 치즈 base←모짜렐라·체다·슬라이스치즈 + 버터·생크림(dairy) + 마가린(oil). 대체쌍 **버터↔마가린**(1:1, 양방향). 생크림↔우유는 제외(유지방 달라 1:1 아님). 마이그레이션 `seed_processed_meat_dairy.sql`.
   - **3순위 (예정)**: 생선(고등어·갈치·동태·~~참치캔~~ → 참치캔은 단일 식품 가공이라 seafood+가공, 멸치와 동일)·면떡(떡국떡·당면; ~~라면~~ 제외=완제품·재료 아님)·채소보강(숙주·상추·미나리·청경채)·양념(케첩·마요네즈→seasoning·물엿→sweetener·카레가루→spice).
@@ -215,7 +215,7 @@ ingredient_relations  (가공·대체 그래프)
 
 > **순서 근거**: 8-A는 양과 무관한 일회성(안 썩음) → 지금이 가장 쌈. 8-B는 양에 비례(썩음) → 미뤄도 단가 불변, 큐로 점진.
 
-> **✅ 그래프 박제 완료 (2026-05-31)**: dev 손큐레이션이 ad-hoc라 유실 위험이던 것을 시드 마이그레이션으로 캡처 — `20260531_seed_v2_match_graph.sql`(base_id 변형 4·aliases 62·preparable 4·substitute 4쌍) + `20260531_seed_unit_coeffs_and_ratios.sql`(계수·ratio). 이름 기반·additive(`IS NULL`/`ON CONFLICT DO NOTHING`)·재실행 안전. 멱등 적용 검증(카운트 불변). **prod(main)에는 V2 스키마 자체가 아직 없음 — 승격(스키마+시드 일괄 적용)은 별도 결정.**
+> **✅ 그래프 박제 완료 (2026-05-31)**: dev 손큐레이션이 ad-hoc라 유실 위험이던 것을 시드 마이그레이션으로 캡처 — `20260531_seed_v2_match_graph.sql`(base_id 변형 4·aliases 62·preparable 4·substitute 4쌍) + `20260531_seed_unit_coeffs_and_ratios.sql`(계수·ratio). 이름 기반·additive(`IS NULL`/`ON CONFLICT DO NOTHING`)·재실행 안전. 멱등 적용 검증(카운트 불변). **(2026-05-31 작성 당시) prod(main)에는 V2 스키마 자체가 아직 없음 — 승격(스키마+시드 일괄 적용)은 별도 결정.** → 이후 PR #219 로 V2 코드가 main 에 반영됐다(main 코드가 `base_ingredient_id`·`ingredient_relations`·`grams_per_ml`/`grams_per_count` 를 조회 — `lib/recommendations/fetchRelations.ts`). prod 의 스키마·시드 적용 범위는 이 문서에 기록이 없고 2026-10-04 동기화 때 DB 미실측 — 확인 필요(V2 조회는 오류 시 빈 결과로 degrade 하므로 미적용이어도 에러가 드러나지 않는다).
 >
 > 남은 데이터 작업(점진): 단위계수 17종 추가 캡처(`seed_veggie_piece_weights.sql`). 잔여 = 8-A 사전 확장(버터·치즈…) 후 대체쌍 확대 + 가지·파프리카 등 개당무게 보강.
 
@@ -283,7 +283,7 @@ ingredient_relations  (가공·대체 그래프)
 
 ## 12. 데이터·안전성
 
-- prod `ingredients_master` 66 · `recipe_ingredients.ingredient_id` 백필됨(공개 57/85) · `user_ingredients` 1행(관리자). → base_id 추가/매칭 변경의 실데이터 리스크 거의 0.
+- (2026-05-31 작성 당시) prod `ingredients_master` 66 · `recipe_ingredients.ingredient_id` 백필됨(공개 57/85) · `user_ingredients` 1행(관리자). → base_id 추가/매칭 변경의 실데이터 리스크 거의 0. (2026-10-04 prod `ingredients_master` 241행·profiles 3)
 - `base_ingredient_id` null 기본 = 기존과 동일 동작. 점진 점등.
 - 모든 DB 쓰기는 dev(`jmyrdoguxlizvajfcwep`) 먼저 → 검증 → prod(`rgnlgpfazxgwsnkgrhzs`). 어드민/시스템 insert는 service-role.
 - ⚠️ **스키마 drift 주의**: `aliases`·`allergens` 컬럼은 실DB에 존재하나 `supabase/migrations/`에 명시적 `ADD COLUMN`이 없다(과거 MCP 등 비-마이그레이션 경로로 추가됨). `base_ingredient_id`·`ratio`는 **마이그레이션 파일로** 추가해 drift 키우지 말 것. 신규 환경 재현성 위해 누락 컬럼 backfill 마이그레이션도 검토.

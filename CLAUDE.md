@@ -9,10 +9,19 @@
 ## 💻 기술 스택 (현재 프로젝트 기준)
 
 ### Frontend
-- **Framework**: Next.js 16.2.3 (App Router)
+- **Framework**: Next.js 16.2.x (App Router) — `package.json` `^16.2.4`, lockfile·설치본 16.2.6 (16.2.3 은 `eslint-config-next` 버전)
 - **Library**: React 19.2.3
 - **Styling**: Tailwind CSS 4 (@tailwindcss/postcss)
 - **Language**: TypeScript 5.x
+
+### Backend·인프라·도구 (현재 실제 사용 — `package.json` 기준)
+- **DB·인증·스토리지**: Supabase (Postgres·Auth·Storage) — `@supabase/ssr`·`@supabase/supabase-js`, ORM 없음(PostgREST). 스키마 변경은 `supabase/migrations/`
+- **미들웨어**: `proxy.ts` (Next 16 컨벤션 — `middleware.ts` 아님)
+- **호스팅**: Vercel + Cloudflare(앞단)
+- **모니터링·분석**: Sentry(분석 동의 시 지연 로딩, `instrumentation-client.ts`) · 자체 analytics(`events` 테이블, 분석 동의자만)
+- **기타**: Resend(문의·신고 메일) · web-push(유통기한 푸시) · maplibre-gl(배달 지도, 미출시) · recharts(관리자 차트)
+- **상태 관리**: React Context + 모듈 캐시(예: `lib/shopping-list/cache.ts`) — 별도 상태 관리 라이브러리 없음
+- **테스트**: Vitest(단위) + Playwright(E2E). Git pre-commit 훅 없음
 
 ## 🗄️ Supabase 환경 분리
 
@@ -31,15 +40,15 @@
 
 > MCP로 DB 작업 시 항상 dev(`jmyrdoguxlizvajfcwep`) 먼저, 검증 후 prod(`rgnlgpfazxgwsnkgrhzs`) 순서로 진행
 
-### dev DB 현황 (2026-05-20 기준)
-- `recipes`: 100개 (published; MAFF 2,050개 2026-05-13 삭제됨)
-- `ingredients_master`: **dev 281개 / prod 241개** (전부 approved. 2026-06-02 정리 후 베이스 재료만 유지. **2026-06-04 prod에 흔한 재료 14종 보강 + `shelf_life_days`(보관기간) 컬럼·데이터 69종 추가**)
+### dev DB 현황 (2026-05~06 기준 — 현재 dev 정지로 미확인)
+- `recipes`: 아래 "📌 데이터 현황 > 레시피 DB" 절 참조 (published; MAFF 2,050개 2026-05-13 삭제됨)
+- `ingredients_master`: **dev 281개(2026-06 기준, 현재 dev 정지로 미확인) / prod 241개(2026-10-04 실측)** (전부 approved. 2026-06-02 정리 후 베이스 재료만 유지. **2026-06-04 prod에 흔한 재료 14종 보강 + `shelf_life_days`(보관기간) 컬럼·데이터 69종 추가**)
 - `shopping_list_items`: ingredient_id 컬럼 추가 완료
-- 함수·트리거·뷰 프로덕션과 동기화 완료
+- **dev ↔ prod 는 완전 동기 아님** — 배달 테이블은 dev 전용(아래 "배달 DB"), 과거 drift 기록 있음(`supabase/migrations/20260601_social_unique_constraints_dev_drift.sql`·`20260603_drop_legacy_cruft.sql` 주석). 리포에 정의가 없는 DB-only 객체도 있음(예: `push_tokens` 테이블 — `app/api/push-tokens/route.ts` 가 사용). `delete_user()` 는 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 리포에 백필됨(미적용, prod 정의와 동일). 신규 변경은 반드시 `supabase/migrations/` 경유
 
 ### 주의사항
 - **로컬/dev에서 절대 prod DB 직접 수정 금지**
-- dev에 유저 없음 → 유저 관련 기능 테스트 시 dev에서 직접 회원가입 필요
+- dev에 유저 없음(2026-05 기준 기록 — e2e `ensureTestUser` 가 dev 에 테스트 유저를 만들므로 현재와 다를 수 있음, dev 정지로 미확인) → 유저 관련 기능 테스트 시 dev에서 직접 회원가입 필요
 - Google OAuth 로그인 안 될 경우: naelum-dev → Authentication → URL Configuration에서 `http://localhost:3000` 등록 확인
 
 ---
@@ -71,7 +80,10 @@ feature/* → 기능 단위 브랜치 (선택)
 ## 🛠 개발 명령어
 - **개발 서버**: `npm run dev`
 - **프로젝트 빌드**: `npm run build`
-- **코드 린트**: `npm run lint`
+- **코드 린트**: `npm run lint` (경고까지 막으려면 `npm run lint -- --max-warnings=0` — CI 와 동일)
+- **타입 체크**: `npx tsc --noEmit` (테스트·e2e 파일까지 검사 — `next build` 는 테스트 파일 타입 오류를 거른다)
+- **가드레일 스캔**: `npm run scan` (`scan:line-counts` + `scan:fragility`)
+- **단위 테스트**: `npm test` (= `vitest run`)
 - **프로덕션 시작**: `npm run start`
 - **E2E 테스트**: `npx playwright test` (프로덕션 빌드 자동 실행)
 - **특정 테스트**: `npx playwright test e2e/auth.spec.ts --reporter=list`
@@ -83,10 +95,15 @@ feature/* → 기능 단위 브랜치 (선택)
 > **이 순서를 지키지 않으면 반드시 문제가 반복된다. 예외 없음.**
 
 ```
-1. npm run lint        → 경고 0개 확인
-2. npm run build       → 빌드 성공 확인
-3. npx playwright test → E2E 전체 통과 확인
+1. npm run lint -- --max-warnings=0 → 경고 0개 확인 (`npm run lint` 단독은 경고만 있으면 통과)
+2. npx tsc --noEmit                 → 타입 오류 0 (테스트 파일 포함)
+3. npm run scan                     → god-file ≥900·날짜 UTC·Sentry import·RATCHET 통과
+4. npm run build                    → 빌드 성공 확인
+5. npm test                         → vitest 단위 테스트 통과
+6. npx playwright test              → E2E 전체 통과 확인
 ```
+
+> **CI 가 강제하는 범위** (`.github/workflows/ci.yml`): `quality` 잡 = lint(`--max-warnings=0`) → `tsc --noEmit` → `npm run scan` → vitest. `e2e` 잡(build + playwright)은 repo secrets 가 없으면 skip 되는데 **2026-10-04 기준 secrets 미설정 → CI 는 build·E2E 를 돌리지 않는다.** build·E2E 는 로컬에서 반드시 실행.
 
 ### ❌ 절대 하지 말 것
 
@@ -101,8 +118,8 @@ feature/* → 기능 단위 브랜치 (선택)
 
 - **E2E 실행 전 기존 프로세스 킬 필수**
   - 새 테스트 시작 전 반드시: `pkill -f "playwright test" 2>/dev/null; lsof -ti tcp:3000 | xargs kill -9 2>/dev/null`
-  - ⚠️ **`pkill -f "next start"` 는 불충분** — 실제 prod 서버 프로세스명은 `next-server` 라 안 죽고 :3000 을 계속 점유. 그러면 playwright `reuseExistingServer:true` 가 그 **스테일 서버(옛 빌드)** 를 재사용 → 브라우저가 디스크에 없는 청크 요청 → 404 → hydration 실패 → 로그인 폼·cart 등 클라 페이지가 "Loading…" 에서 멈춰 **전 인증/폼 테스트 1분 타임아웃**. 반드시 **포트 기준**(`lsof -ti tcp:3000 | xargs kill -9`)으로 죽일 것. (2026-06-01: 이 함정으로 e2e 전수 빨강 → 1시간+ 오진. `e2e/global-setup.ts` 가 빌드 불일치 스테일 서버를 자동 정리하도록 처방됨.)
-  - 중복 실행 시 워커 6개(3+3)가 dev DB 동시 접근 → 10초 timeout + retry 반복 → 전체 2시간 소요 사례 있음
+  - ⚠️ **`pkill -f "next start"` 는 불충분** — 실제 prod 서버 프로세스명은 `next-server` 라 안 죽고 :3000 을 계속 점유. 그러면 playwright `reuseExistingServer:true` 가 그 **스테일 서버(옛 빌드)** 를 재사용 → 브라우저가 디스크에 없는 청크 요청 → 404 → hydration 실패 → 로그인 폼·cart 등 클라 페이지가 "Loading…" 에서 멈춰 **전 인증/폼 테스트 1분 타임아웃**. 반드시 **포트 기준**(`lsof -ti tcp:3000 | xargs kill -9`)으로 죽일 것. (2026-06-01: 이 함정으로 e2e 전수 빨강 → 1시간+ 오진. 빌드 불일치 스테일 서버 자동 정리는 `e2e/stale-server.ts`(`killStaleServerSync`) — `playwright.config.ts` 가 *설정 평가 시점*(webServer "재사용" 결정 전)에 호출한다. 예전 `e2e/global-setup.ts` 는 webServer 결정 *뒤*에 돌아 서버를 죽이면 그 실행 전체가 연결 거부로 실패했기에 2026-10-04 삭제·이관.)
+  - 중복 실행 시 워커가 두 배로 dev DB 동시 접근(현재 로컬 `workers: 2` → 2+2=4, 사례 당시엔 3+3=6) → 10초 timeout + retry 반복 → 전체 2시간 소요 사례 있음
   - 백그라운드 실행에 `| tail -15` 절대 금지 — 완료 전까지 출력 없어 실행 중인지 판단 불가 → 중복 실행 유발
   - 백그라운드 출력 확인이 필요하면 `tee /tmp/pw_run.log` 사용
 
@@ -129,15 +146,19 @@ feature/* → 기능 단위 브랜치 (선택)
   - `toISOString()`은 **UTC** → KST(UTC+9) 자정~오전9시엔 "오늘"이 하루 빠름. 유통기한 "오늘" 이 어제로 떴던 버그(2026-06-03).
   - 사용자가 보거나 저장하는 *로컬 날짜*는 **`lib/date/localDate`**(`localDateISO`·`addDaysLocalISO`) 사용.
   - 예외: 서버 라우트(`app/api/**`)의 날짜 키·냉장고 신선도 산수(`_home/helpers.ts`, SSR #418 회피)는 *의도적 UTC* — 그대로 둘 것.
-  - **가드레일: `npm run scan:fragility` 가 client 파일의 이 패턴을 머지 차단**(CI `quality` 잡). 하드코딩 한글 client 파일·`select('*')` 수도 RATCHET 부채로 리포트(역행 시 머지 차단).
-  - **스캐너는 "진짜 부채"만 센다(2026-06-09 정직화)**: 한글 카운트는 admin/legal/error 면제(`KOREAN_EXEMPT`)·DB센티넬 토큰(냉장/큰술 등 `DB_SENTINEL_TOKENS`, "DB값 한글유지" 규칙)·주석·`console.*`·endonym 제외. select-star 는 GDPR `users/export`(이동권=전체컬럼 필수, `SELECT_STAR_EXEMPT`)·주석 제외. **둘 다 남은 부채 5(배달 미출시 deferred)**. 사용자화면 i18n·과대fetch 이관 완료 → 신규 위반은 RATCHET 차단.
+  - **가드레일: `npm run scan:fragility` 가 client 파일의 이 패턴을 머지 차단**(CI `quality` 잡). 하드코딩 한글·client 직접/간접 read·`select('*')` 수도 RATCHET 부채로 리포트(역행 시 머지 차단).
+  - **스캐너가 세는 것(2026-06-09 정직화 + 2026-10-04 확장)** — 남은 부채 수치는 `scripts/scan-fragility.mjs` 의 `RATCHET` 상수가 단일 출처. 신규 위반은 RATCHET 차단:
+    - **hardcoded-korean**: 따옴표 문자열 리터럴 + JSX 텍스트 노드(TypeScript AST `JsxText`). 대상은 `'use client'` 파일 + 지시어 없는 표현 컴포넌트(`components/**`·`app/**/_components/**`). 브랜드명 '낼름' 제외. 면제: admin/legal/error(`KOREAN_EXEMPT`)·DB센티넬 토큰(냉장/큰술 등 `DB_SENTINEL_TOKENS`, "DB값 한글유지" 규칙)·주석·`console.*`·endonym
+    - **client-direct-read**(`'use client'` 파일 안의 `.from(...).select`) + **client-indirect-read**(`'use client'` 파일이 직접 import 한 지시어 없는 `lib/` 모듈 안의 read 체인, `server-only` 모듈 제외 — 예: `lib/hooks/useRecipeFridgeMatch.ts` → `lib/recommendations/fetchRelations.ts`, 배달 `MapView` → `lib/delivery/places.ts`)
+    - **select-star**: 첫 인자가 `'*'` 로 시작하는 select 문자열 전부(조인 `*, rel(...)`·여러 줄 템플릿·`'*', { count: 'exact' }` 포함, `{ head: true }` 카운트 질의 제외). GDPR `users/export`(이동권=전체컬럼 필수, `SELECT_STAR_EXEMPT`)·주석 제외
+  - ⚠️ **스캐너 한계(여전히 못 보는 것)**: lib 상수 라벨(예: `lib/constants/recipe.ts` `CUISINE_TYPES` 의 한글 `label`)을 JSX 가 그대로 렌더하는 경우, DB 원시값·서버 에러 원문 표시, select 문자열을 상수로 넘기는 경우(예: `lib/queries/recipeDetail.ts` 의 `RECIPE_BODY_SELECT`), `'use client'` 가 아닌 파일에서 시작하거나 import 를 2단계 이상 거치는 간접 read.
 
-> **검증 전 `npm run scan` (god-file ≥900 차단 + 날짜 UTC 차단)** — lint/build/test 와 함께. CI 가 자동 강제하지만 로컬에서도 빠른 확인용.
+> **검증 전 `npm run scan`** — god-file ≥900(`scan:line-counts`) + `scan:fragility` 의 날짜 UTC·Sentry 런타임 import 차단 + RATCHET(한글·client 직접/간접 read·`select('*')`) 역행 차단. CI `quality` 잡이 자동 강제하지만 로컬에서도 빠른 확인용.
 
 ## 🧱 코드 유지 체계 — 신규/수정/개선 시 필수 규칙 (영상 「2차 소프트웨어 위기」)
 
-> **이해 부채는 복리다. 아래는 권장이 아니라 필수.** 2026-05-17 Phase 2에서
-> god-file 8개 분해 + 선존 RLS 버그 2건 적발하며 확립한 규율 — 일회성 완료가
+> **이해 부채는 복리다. 아래는 권장이 아니라 필수.** 2026-05-17 까지 Phase 1·2에서
+> god-file 8개(Phase 1 2개 + Phase 2 6개) 분해 + 선존 RLS 버그 2건 적발하며 확립한 규율 — 일회성 완료가
 > 아니라 *모든* 신규/수정 코드가 영구히 지켜야 하는 유지 체계다.
 > 상세·근거·분해 이력: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) "Phase 2"·"진짜 기술 부채" 절.
 
@@ -164,7 +185,7 @@ feature/* → 기능 단위 브랜치 (선택)
 - god-file 분해·race/async 로직 수정 등 위험 변경은 **건드리기 전에** 회귀
   e2e/unit 작성 → **미수정 코드에서 green(baseline) 확인** → 변경 → **동일
   통과수 확인**. 기존 e2e가 이미 강커버면 **갭만 보강(중복 spec 금지)**.
-- 검증은 항상 `lint(0 errors) → build → vitest → 해당 e2e`. 최종 판정 회귀는
+- 검증은 항상 위 "필수 검증 순서"(`lint(경고 0) → tsc → scan → build → vitest → 해당 e2e`). 최종 판정 회귀는
   `:3000` 죽이고 fresh build(reuseExistingServer가 stale 재사용 → 오염).
 
 ### 3. DB 쓰기 / RLS (선존 데이터유실 버그 2건의 교훈)
@@ -657,7 +678,7 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
 1. 한국어 (ko)
 2. 영어 (en)
 3. 일본어 (ja)
-4. 중국어 간체 (zh-CN)
+4. 중국어 간체 (zh)
 5. 스페인어 (es)
 6. 프랑스어 (fr)
 7. 독일어 (de)
@@ -668,7 +689,7 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
 - **파일 위치**: `lib/i18n/locales/{ko,en,ja,zh,es,fr,de,it}.ts`
 - **컨텍스트**: `lib/i18n/context.tsx` — `useI18n()` 훅
 - **타입 안전성**: `TranslationKeys = typeof ko` — 8개 locale 모두 같은 key shape 필수
-- **전 페이지·컴포넌트 처리 완료** — 하드코딩 한글 없음
+- **사용자 화면 `t.*` 이관 진행** — 남은 하드코딩 한글은 `scan:fragility` hardcoded-korean 지표(따옴표 리터럴 + JSX 텍스트, 위 "스캐너가 세는 것")와 `RATCHET` 상수가 기준. 스캐너가 못 보는 잔존 형태: lib 상수의 한글 라벨을 그대로 렌더(예: `CUISINE_TYPES` label)·DB 원시값/서버 에러 원문 표시. 의도적 한글 유지: admin·법적 페이지·error 화면(면제), 배달(미출시 deferred), API 라우트 에러 문자열(서버 i18n 미도입), DB 저장값
 
 ### 🚨 i18n 개발 규칙
 
@@ -684,6 +705,7 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
   - 브라우저 언어 설정 우선
   - IP 기반 국가 감지 (보조)
   - 사용자 수동 선택 옵션
+  - *현재 구현*(`proxy.ts` `detectLanguage`): `language` 쿠키(수동 선택) > `Accept-Language` 첫 항목 > 기본 `ko`. IP 기반 감지는 미구현
 
 - **번역 범위**
   - UI 텍스트 전체 ✅
@@ -708,6 +730,8 @@ if (window.$RB?.length === 2) window.$RV(window.$RB);
 ---
 
 ## 💻 기술 스택 권장사항
+
+> **초기 기획(2026-02) 때의 권장·검토 목록 — 대부분 미채택.** Zustand·React Query·Radix·Framer Motion·React Hook Form·Prisma·NextAuth·Algolia·Redis·MongoDB·Jest·Prettier·Husky 등은 `package.json` 에 없다. 실제 사용 스택은 문서 상단 "💻 기술 스택 (현재 프로젝트 기준)" 절 참조.
 
 ### Frontend
 ```yaml
@@ -1000,7 +1024,19 @@ NLP (검색 개선):
 
 ---
 
-## 📝 API 엔드포인트 예시
+## 📝 API 엔드포인트 예시 (초기 설계 — 실제 라우트와 다름)
+
+> 아래 코드 블록들은 2026-02 초기 설계 *예시*다. 36개 중 실제로 같은 경로·메서드로 존재하는 건 일부뿐이다(예: `/api/auth/refresh`·`/forgot-password`·팔로우·`/comments`·`/search/suggestions`·`/api/user/ingredients`·이미지 인식은 없음). **실제 라우트는 `app/api/**/route.ts`(전체 목록: `find app/api -name route.ts`)** — 그룹 요약(2026-10-04 기준):
+>
+> | 그룹 | 실제 라우트 (`app/api/` 기준) |
+> |---|---|
+> | 인증 | `auth/{signup,signin,signout,check-email,find-email,reset-password-email,cancel-signup,complete-onboarding,onboarding-status}`, `auth/2fa/{setup,verify,disable}` — 웹 로그인 폼은 클라이언트에서 Supabase Auth 를 직접 호출(`/api/auth/signin` 은 KMP 앱 경로), 비밀번호 변경은 클라이언트 `supabase.auth.updateUser` |
+> | 사용자 | `users/[username]`(GET·PUT), `users/[username]/{recipes,tips,block,report}`, `users/me`(+`recipes`·`summary`·`preferences`·`cookie-consent`), `users/{check-username,blocks,delete,export}` — 팔로우 API 없음 |
+> | 레시피 | `recipes`(GET·POST), `recipes/[id]`(GET·PUT·DELETE), `recipes/[id]/{save,like,view,visibility,report,complete,cooked}`, 통합 피드 `recipes/[id]/posts`(+`[postId]`·`[postId]/replies`·`[postId]/like`), `recipes/{browse,trending}` — "만들어봤어요" 기록은 `POST recipes/[id]/complete`, 리뷰·댓글은 posts |
+> | 검색 | `search`, `search/autocomplete`, `search/history` |
+> | 추천 | 단일 `GET recommendations?type=ingredients\|personalized\|trending\|meal_time`, `recommendations/track` |
+> | 재료 | `ingredients/{browse,autocomplete,quick-add,create,check-duplicate,expiring,check-expiry,feedback,match-receipt,price-report,pending}`, `ingredients/[id]/approve`, `kitchen/summary`(소비처 없던 `kitchen/all` 은 2026-10-04 삭제), 보유 재료 `user-ingredients`(+`[id]`·`add`) |
+> | 그 외 | `tip/**`, `shopping-list/**`, `cart/share/**`, `favorites/**`, `folders/**`, `notifications`, `push/{subscribe,send-expiry}`, `push-tokens`, `events`, `contact`, `copyright/report`, `terms/accept`, `upload`, `upload-video`, `cron/cleanup-rate-limits`, `admin/**`, `delivery/**`(미출시), `test/signin`(로컬 e2e 전용) |
 
 ### 인증
 ```
@@ -1162,12 +1198,12 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 
 **작성일**: 2026-02-02  
 **버전**: 1.2.0  
-**최종 수정일**: 2026-05-23  
+**최종 수정일**: 2026-10-04 (문서↔앱 동기화)  
 **작성자**: 낼름 개발팀
 
 ---
 
-## 📌 데이터 현황 (2026-05-19 기준)
+## 📌 데이터 현황 (항목별 측정일 표기 — 최근 prod 실측 2026-10-04, dev 는 정지로 미확인)
 
 > 작업 로그(2026-05-19 이후 완료 항목)는 [`docs/CHANGELOG.md`](docs/CHANGELOG.md) 로 분리 (2026-05-27). 핵심 교훈은 메모리 `[[...]]` 참조. 미래 회귀 판단·옛 작업 의도 추적 시 CHANGELOG 열람.
 
@@ -1184,13 +1220,15 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 ### 보안 / 봇 차단 구현 현황
 - **Cloudflare** — naelum.app 앞단에 연결 완료 (무료 플랜)
   - Bot Fight Mode ON, SSL Full (strict), 서울 CDN
-- **AI 크롤러 차단** (`proxy.ts`) — GPTBot, ClaudeBot, CCBot, Bytespider, AhrefsBot 등 14종 전체 경로 차단
-- **robots.txt** — AI/SEO 봇 명시적 Disallow, 검색엔진(Google/Bing)만 허용
-- **Rate Limiting** — Supabase DB 기반 (`lib/ratelimit.ts`, `supabase/migrations/20260411_rate_limits.sql`)
-  - 검색: 30회/분 (IP), 추천: 20회/분 (IP), 업로드: 10회/분 (유저ID), 로그인: 5회/15분 (IP+email)
-  - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 사용
+- **AI 크롤러 차단** (`proxy.ts` `BLOCKED_AI_CRAWLERS`) — GPTBot, ClaudeBot, CCBot, Bytespider, AhrefsBot 등 13종, `/robots.txt` 를 제외한 전 경로 403
+- **robots.txt** — 실제 서빙되는 건 `app/robots.ts`: 전 UA `Allow: /` + `/api/`·`/admin/`·`/settings`·`/auth/` Disallow 뿐(AI·SEO 봇 개별 규칙 없음 — AI 크롤러 차단은 위 `proxy.ts` 403 이 담당. Disallow 경로에 lang prefix 가 없어 실제 URL `/ko/admin` 등에는 매칭되지 않음). `public/robots.txt`(AI/SEO 봇 개별 Disallow·검색엔진 허용 목록)는 `app/robots.ts` 에 가려져 **서빙되지 않는 파일** — 처리(삭제 또는 그 규칙을 `app/robots.ts` 로 이식)는 사용자 결정
+- **Rate Limiting** — Supabase DB 기반 (`lib/ratelimit.ts` `checkRateLimit`, `supabase/migrations/20260411_rate_limits.sql`)
+  - 대표 한도: 검색 30회/분 (IP), 추천 20회/분 (IP), 업로드 10회/분 (유저ID). 그 외(자동완성 60/분, 가입 5/시간, 문의 5/시간, 관리자 API 100/10분, 재료 생성 3/분 등)는 각 라우트의 `checkRateLimit(...)` 호출이 기준
+  - 로그인 5회/15분 (IP+email, `lib/security/loginLimiter.ts`)은 **`POST /api/auth/signin`(KMP 앱 경로) 한정** — 웹 로그인 폼은 브라우저에서 `supabase.auth.signInWithPassword` 를 직접 호출(`app/[lang]/signin/page.tsx`)하므로 앱 레벨 잠금 없이 Supabase Auth 자체 rate limit 만 적용. loginLimiter 는 `ENABLE_RATE_LIMITING` 플래그와 무관하게 동작
+  - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 — 클라이언트 IP 는 `lib/api/clientIp.ts` `getClientIp` 가 단일 출처(IP 키 rate limit·로그인 잠금 라우트 전부). 예외: 기록용 IP(약관 동의 `app/api/terms/accept`, 관리자 행동 로그 `lib/supabase/admin.ts`)는 `X-Forwarded-For` 사용
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
-- **Rate limits 테이블 정리** — 매시간 cron 실행 (`/api/cron/cleanup-rate-limits`)
+- **Rate limits 테이블 정리** — 매일 00:00 UTC(09:00 KST) cron (`/api/cron/cleanup-rate-limits`, `vercel.json` `0 0 * * *` — Vercel Hobby 플랜 cron 은 하루 1회 제한)
+- **미적용 DB 권한 정리 마이그레이션 1건(2026-10-04 작성)** — 공개 저장소라 적용 전까지 SQL 파일을 로컬에만 둔다(`.git/info/exclude`, 내용은 로컬 감사 보고서 `AUDIT_2026-10-04.md` §2). dev → 검증 → prod 적용 후 커밋
 
 ### 농사로 Open API 현황 (2026-05-08)
 
@@ -1259,10 +1297,10 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 | `nvpcFdCkry`, `todayDiet` 등 | 향토음식·추천식단 등 | — | — | ❌ code 13 (엔드포인트 오류) |
 
 #### prod 적용 명령어
+> 지역특산물(`localSpcprd`, `scripts/import-nongsaro-locspc.ts`) 명령은 삭제함 — 위 표대로 **재임포트 금지**.
+>
+> ⚠️ **`--prod` 함정**: 스크립트는 `--prod` 일 때 `NEXT_PUBLIC_SUPABASE_URL_PROD`·`SUPABASE_SERVICE_ROLE_KEY_PROD` 를 읽고 없으면 일반(dev) 키로 폴백한다. 그런데 현재 `.env.local` 의 prod 키 이름은 `PROD_SUPABASE_URL`·`PROD_SUPABASE_SERVICE_ROLE_KEY` 라, **아래 명령을 그대로 실행하면 로그엔 "🔴 PROD" 가 찍히지만 실제로는 dev DB 에 쓴다.**
 ```bash
-# 지역특산물 (신규 재료 추가)
-npx tsx scripts/import-nongsaro-locspc.ts --import --prod
-
 # 한영사전 (name_en 업데이트)
 npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ```
@@ -1271,29 +1309,31 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 
 ### 배달 DB (2026-05-16)
 - **dev 적용 완료 / prod 미적용** — 출시 결정 시 prod 적용 필요
-- 적용된 테이블 7개 (`naelum-dev` jmyrdoguxlizvajfcwep):
+- 적용된 테이블 8개 (`naelum-dev` jmyrdoguxlizvajfcwep):
   - `delivery_restaurants` / `delivery_menu_categories` / `delivery_menu_items` (`20260516_delivery_schema.sql`, 샘플 식당 6개)
   - `delivery_addresses` / `delivery_orders` / `delivery_order_items` / `delivery_rider_profiles` (`20260517_delivery_orders.sql`)
   - `delivery_truck_locations` + `delivery_restaurants.place_type`(restaurant|food_truck) (`20260518_delivery_food_truck.sql`, 푸드트럭 위치공개). dev 적용·e2e 검증 완료, prod 미적용
   - + `delivery_order_status` enum, 상태 전환 검증 트리거, RLS (소비자·식당owner·라이더·admin 권한 분리)
 - **마이그레이션 파일명·순서 주의**: prod 적용 시 `20260516_delivery_schema.sql` → `20260517_delivery_orders.sql` → `20260518_delivery_food_truck.sql` 순서 준수 (orders가 restaurants FK 참조, food_truck이 둘 위에 빌드). 배달 prod 점등 = 이 3개 순서 적용이 선행 조건
-- **프로덕션 추가 스키마 문서**: `docs/db/delivery-production-schema.sql` — 미적용 10개 테이블(rider_locations·order_status_history·payment_records·promotions·reviews·notifications·dispatch_log·settlements·business_hours_overrides·device_tokens). 출시 trigger별 적용 가이드 포함. **절대 자동 apply 금지**
+- **프로덕션 추가 스키마 문서**: `docs/db/delivery-production-schema.sql` — 미적용 11개 테이블(rider_locations·order_status_history·payment_records·promotions·promotion_redemptions·reviews·notifications·dispatch_log·settlements·business_hours_overrides·device_tokens). 출시 trigger별 적용 가이드 포함. **절대 자동 apply 금지**
+- **검색 색인(출시 시 주의)**: `/delivery` 하위 page 7개(`delivery`·`cart`·`checkout`·`orders`·`orders/[id]`·`restaurants/[id]`·`map`)가 각자 `generateMetadata` 에서 `robots: { index: false, follow: false }` 를 반환해 `app/[lang]/delivery/layout.tsx` 의 `{ index: false, follow: true }` 를 덮어쓴다. layout 주석("이 metadata 제거하면 색인 복구")과 달리 **layout 만 지우면 색인이 복구되지 않음** — page 7곳의 robots 도 함께 제거해야 함
+- **로그인 리다이렉트 예외(미정리)**: 배달 checkout·주문 목록·주문 상세 3개 클라이언트(`CheckoutClient`·`OrdersListClient`·`OrderDetailClient`)가 비로그인 시 effect 로 `/signin` 리다이렉트한다(`proxy.ts` `PROTECTED_ROUTES` 에 `/delivery` 없음) — "클라이언트에서 미들웨어 역할 중복 금지" 규칙의 미정리 예외. 출시 전 proxy 로 이관 검토
 - ⚠️ `delivery_restaurants.owner_id`는 `ON DELETE SET NULL` — testUser 삭제 시 식당이 owner_id=NULL orphan으로 남음. e2e beforeEach에서 `name LIKE 'E2E%'` orphan 정리. 향후 `ON DELETE CASCADE` 검토(실 사용자 식당 데이터 손실 위험 있어 보류)
 - **장보기(shopping_list)는 DB·로그인 필요** (2026-06-03 정정) — `/api/shopping-list`가 `shopping_lists`/`shopping_list_items`에 저장하고 비로그인은 401. "모든 기기 실시간 동기화"가 가치라 localStorage 비로그인 cart는 폐기됨. **레시피 "장보기 담기" 버튼은 비로그인 시 `RecipeBrowseView`의 `onRequireCartLogin`(번역된 로그인 유도 토스트)로 선차단** — 옛날엔 서버 401 raw 한글("로그인이 필요합니다")이 비한국어 로케일에 누출됐음. (배달 orders/addresses도 DB)
   - ⚠️ API 라우트 에러 문자열(`/api/shopping-list` 등)은 여전히 한글 하드코딩 — UI에 그대로 노출 금지(클라에서 번역 메시지로 치환). 서버 i18n은 미도입.
 
 ### 레시피 DB
-- **prod: 1,432개** (**published 8** + **private 1,424**) / **dev: 102개** (published)
+- **prod: 1,465개** (**published 14** + **private 1,451** + draft 0 — 2026-10-04 실측) / **dev: 100~102개** (published — 2026-05 기록이 100·102 로 엇갈림, 현재 dev 정지로 미확인)
 - **2026-05-29 — 쓰레기 ingredient 41개 폐기 시 34 private 레시피 CASCADE 폐기**
 - **2026-05-20 — prod 1,371개를 일괄 private로 비공개 (의도적)**
-  - 사용자 노출: `.eq('status', 'published')` 필터 거치는 검색·추천·전체·자동완성·sitemap 모두 **published 7개만** 보임
-  - published 7개 전부 admin 계정(`Naelum(낼름)`) 소유 — 사용자가 직접 작성한 YouTube 출처 레시피
-  - private 1,459개 = 공공데이터 임포트(식약처·농림·한식진흥원) — 운영자가 의도적으로 비공개 유지 중
-  - 일반 사용자 신규 작성 레시피는 `recipes/route.ts` POST의 `body.status || 'published'` 기본값으로 자동 published → 정상 노출 흐름
+  - 사용자 노출: `.eq('status', 'published')` 필터 거치는 검색·추천·전체·자동완성·sitemap 모두 **published 레시피(위 수치)만** 보임
+  - 당시(2026-05-20) published 7개는 전부 admin 계정(`Naelum(낼름)`) 소유 — 사용자가 직접 작성한 YouTube 출처 레시피 (이후 늘어난 published 의 작성자 분포는 미확인)
+  - private = 공공데이터 임포트(식약처·농림·한식진흥원) — 운영자가 의도적으로 비공개 유지 중
+  - 일반 사용자 신규 작성 레시피는 `app/api/recipes/route.ts` POST 가 `status` 를 화이트리스트로 강제(`body.status === 'draft' ? 'draft' : 'published'` — draft 외 값은 전부 published)해 자동 published → 정상 노출 흐름
   - **status 분포 보고 "회귀" 오판 금지** — 의도된 상태임
 - 이전 수정일: 2026-05-13 (MAFF 일본 향토요리 2,050개 dev+prod 전량 삭제)
 
-#### 출처별 구성 (2026-05-13 기준)
+#### 출처별 구성 (2026-05-13 시점 — 역사적 참고: 이후 2026-05-20 공공데이터 임포트 전량 private 전환. "상태" 열은 당시 값이고 합계도 현재 총수와 다름)
 | 출처 | 건수 | 상태 | 라이선스 | 임포트 스크립트 | 조건 |
 |------|------|------|----------|----------------|------|
 | 식품의약품안전처 (COOKRCP01) | ~1,146개 | published | 공공누리 1유형 | `scripts/import-recipes.ts` | 출처 표시 |
@@ -1319,13 +1359,13 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 **2026-05-16 후속 정리**: 로컬 데이터 `data/maff-*.json` (8.1MB) + 스크립트 6종 (`import-maff-recipes`, `scrape-maff-recipes`, `translate-maff-{batch,gemini,ingredients-db}`, `maff-translations-manual`) 전부 삭제. `ING_MAP` 일본어 재료 번역 사전 포함. 일본 콘텐츠 서비스 제외 결정 확정.
 
 ### 재료 DB
-- **dev: 281개 / prod: 241개** (`ingredients_master`, 전부 approved, pending 0) — 2026-06-02 정리(베이스만 유지) + **2026-06-04 prod 누락 흔한 재료 14종 보강(버터·치즈·삼겹살·닭가슴살·베이컨·햄·소시지·모짜렐라·버섯류 등) + `shelf_life_days` 보관기간 컬럼·데이터 69종(USDA FoodKeeper 공공도메인)**
+- **dev: 281개(2026-06 기준, 현재 dev 정지로 미확인) / prod: 241개(2026-10-04 실측)** (`ingredients_master`, 전부 approved, pending 0) — 2026-06-02 정리(베이스만 유지) + **2026-06-04 prod 누락 흔한 재료 14종 보강(버터·치즈·삼겹살·닭가슴살·베이컨·햄·소시지·모짜렐라·버섯류 등) + `shelf_life_days` 보관기간 컬럼·데이터 69종(USDA FoodKeeper 공공도메인)**
   - **2026-06-02 정리 (dev 316→281 / prod 254→227)**: 손질상태(다진마늘·다진파·당근채·무채·편마늘·불린쌀 등 → 베이스로 매칭 이전 후 삭제), 중복(모짜렐라치즈→모짜렐라·생굴→굴·참치통조림→참치캔·느타리→느타리버섯·양송이→양송이버섯·다짐육(X)→다진X·돼지고기안심→돼지안심), 파싱쓰레기(네모난햄·무지개고추·참쌀·다진식파), 서술형/색상형(육수용 대파/통파/파뿌리→대파·노란/붉은 파프리카→파프리카·쌀밥→밥·오렌지(껍질)→오렌지·국물용멸치→멸치). `돼지 볼살`→`돼지볼살` 개명. **`recipe_ingredients.ingredient_id`는 ON DELETE SET NULL이고 전부 베이스로 re-point 후 삭제 → 끊긴 매칭 0, 레시피 텍스트 불변** (prod 마늘 매칭 700건으로 다진마늘 416 흡수 확인)
   - **유지 원칙**: 가루류(밀가루·고춧가루)·즙류(레몬즙)·건조/냉동(건포도·북어·동태)·부위(삼겹살·목살·항정살)·포괄명(버섯·견과류·치즈·햄)·밥은 고유 제품/형태라 유지. **손질상태·용도·색상·괄호는 마스터 부적합** (recipe_extract 자동추출이 레시피 본문 글자를 검증 없이 박은 게 쓰레기 원인 — 자동추출→마스터 자동등록 금지)
   - 신규 카테고리: **mushroom(버섯류)·seaweed(해조류)** 배선 완료 + **processed(가공식품)** 에 가공육(스팸·소시지·햄·베이컨) 분류. 상세: [[project_ingredient_category_taxonomy]]
   - **카테고리 본질 기준 재분류 완료 (2026-05-30, [[project-ingredient-category-taxonomy]])** — 신규 oil(유지·기름)·sweetener(당류·감미료) 포함.
-    분포: veggie 24·fermented 8·grain 6·legume 5·sweetener 4·meat 3·seafood 3·fruit 3·oil 3·spice 2·condiment 1·seasoning 1·dairy 1·egg 1
-  - `description`·`storage_tips`·`seasons`·`tastes`·`pairs_well_with`: **현재 0개** — 도감 상세 콘텐츠 미보유(채우려면 재입력 필요). `emoji`는 일부 보유(도감 카드 표시됨).
+    분포(65개 축소 시점 — 역사, 합계 65): veggie 24·fermented 8·grain 6·legume 5·sweetener 4·meat 3·seafood 3·fruit 3·oil 3·spice 2·condiment 1·seasoning 1·dairy 1·egg 1. 현재 241행의 카테고리 분포는 미측정
+  - `description`·`storage_tips`·`seasons`·`tastes`·`pairs_well_with`: **현재 0개**(prod description 0 — 2026-10-04 실측) — 도감 상세 콘텐츠 미보유(채우려면 재입력 필요). `emoji`는 일부 보유(prod 98개, 도감 카드 표시됨). `shelf_life_days` 69개.
 - `recipe_ingredients.ingredient_id` 커버리지(별개 테이블, 65개 축소와 무관): 매칭 큐는 2026-05-30 공개 레시피 한정으로 재정의(prod 미연결 이름 1,921→52)
 
 > 아래는 **65개 축소 이전(1,653개 세트)** 기준 이력 — 역사적 참고용:
@@ -1342,7 +1382,7 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 | 농촌진흥청 수동 (`rda_manual`) | 143개 | 공공누리 | — |
 | Open Food Facts 글로벌 재료 (`open_food_facts`) | 55개 | ODbL | `scripts/import-off-ingredients.ts` |
 
-#### 영양정보 채우기 (2026-05-11 기준)
+#### 영양정보 채우기 (2026-05-11 기준 — 역사: 분모 2,141·977행 세트는 2026-06-02 베이스 재료 정리로 소멸. 현재 241행 기준 영양정보 보유 수는 미측정)
 | 환경 | 영양정보 보유 | 출처 |
 |------|--------------|------|
 | **prod** | 152개 / 2,141 (7.1%) | rda_manual 143 + open_food_facts 9 |
@@ -1371,21 +1411,21 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 **RDA API 캐시**: ~~`scripts/cache/rda-food-list.json` (2,765개 A~T 그룹 전체)~~ — **현재 파일·`scripts/cache/` 디렉터리 없음** (2026-05-31 확인). 영양/단위 변환 계수 수동 매핑 시엔 RDA Open API에서 재호출하거나 식약처·USDA·Open Food Facts에서 재취득. (재생성하면 그때 경로 갱신.)
 
 ### 요리 팁
-- **prod: 10건** (`tip` 테이블, **전부 비공개 `is_public=false`** — 사용자 노출 0개, 운영자 의도)
+- **prod: 25건** (2026-10-04 실측, `tip` 테이블, **공개 0건 — 전부 비공개** — 사용자 노출 0개, 운영자 의도)
   - 사용자 노출: `is_public=true AND is_draft=false` 필터 거치는 `/api/tip` → **0건 표시**
   - `/tip` 페이지는 빈 상태("아직 팁이 없습니다") 표시 — 회귀 아님, 의도된 상태
-  - prod recipes(published 7 / private 1,459)와 동일한 운영 패턴
+  - prod recipes(대부분 private — 위 "레시피 DB" 절)와 동일한 운영 패턴
   - 미래 세션에서 "/tip 비어있음" 보고 "회귀!" 오판 금지
 
 ---
 
-## 🚧 홈페이지에서 임시 제거된 기능 (배포 후 추가 예정)
+## 🚧 내비게이션에서 빠진 기능 (배포 후 추가 예정)
 
-페이지 자체는 존재하며 URL 직접 접근 가능. 홈 빠른 링크에서만 제거한 상태.
+페이지 자체는 존재하며 URL 직접 접근 가능. 현재 홈(`app/[lang]/page.tsx` → `app/[lang]/HomeClient.tsx` 냉장고 UI)에는 "빠른 링크" 배열 자체가 없고, Header·BottomNav 어디에도 이 페이지 링크가 없다.
 
-| 기능 | 라우트 | 제거 위치 | 복구 방법 |
+| 기능 | 라우트 | 현재 진입 경로 | 복구 방법 |
 |------|--------|-----------|-----------|
-| 요리 도감 | `/[lang]/kitchen` | `app/page.tsx` 빠른 링크 | `{ icon: '📚', label: '요리 도감', href: '/kitchen' }` 추가 |
+| 부엌 도감 (구 "요리 도감") | `/[lang]/kitchen` | URL 직접 · 유통기한 푸시 알림 링크(`/kitchen`) · 옛 `/ingredients` 308 리다이렉트(`next.config.ts`) | BottomNav 또는 Header 에 `t.home.navIngredients`("부엌 도감" — 8개 로케일에 키는 있으나 현재 사용처 0) 항목 추가 |
 
 ---
 
@@ -1411,9 +1451,9 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 
 ---
 
-## 📚 요리 도감 (Cook's Guide) — 로드맵
+## 📚 부엌 도감 (Kitchen Guide, 구 "요리 도감") — 로드맵
 
-**기존 "재료 백과사전"을 "요리 도감"으로 확장.** 재료에서 시작해 데이터가 쌓이는 단계별로 콘텐츠를 추가하는 방향.
+**기존 "재료 백과사전"을 "요리 도감"(2026-05-29 "부엌 도감"으로 개명, 라우트 `/kitchen`)으로 확장.** 재료에서 시작해 데이터가 쌓이는 단계별로 콘텐츠를 추가하는 방향.
 
 ### 구조: 허브 + 서브페이지
 
@@ -1432,7 +1472,7 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 
 | 카테고리 | 채우기 방법 | 상태 |
 |---|---|---|
-| 재료 | ingredients_master DB **prod 241개 / dev 281개** (베이스 재료만). **보관기간(shelf_life_days) 69종 표시 중**(2026-06-04, FoodKeeper). description 등 나머지 도감 상세 콘텐츠는 미보유 | 🟡 보관기간 완료 / 상세 콘텐츠 부분 |
+| 재료 | ingredients_master DB **prod 241개 / dev 281개(dev 는 2026-06 기준)** (베이스 재료만). **보관기간(shelf_life_days) 69종 표시 중**(2026-06-04, FoodKeeper). description 등 나머지 도감 상세 콘텐츠는 미보유 | 🟡 보관기간 완료 / 상세 콘텐츠 부분 |
 | 단위 변환 | 정적 데이터, 코드 하드코딩 | ⬜ Phase 3 예정 |
 | 조리 기구·기법 | 레시피 태그에서 자동 집계 (레시피↑ → 콘텐츠↑) | ⬜ Phase 2 예정 |
 | 용어 사전 | 농사로 한영사전 5,641개 필터링 활용 | ⬜ Phase 3 예정 |
@@ -1445,20 +1485,25 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 
 ### i18n 네이밍
 
+현재 값(`lib/i18n/locales/*.ts` 의 `home.navIngredients`·`browseTitle` — 2026-05-29 "부엌 도감" 개명 반영):
+
 | lang | navIngredients (nav) | browseTitle (페이지 h1) |
 |---|---|---|
-| ko | 요리 도감 | 요리 도감 |
-| en | Cook's Guide | Cook's Guide |
-| ja | 料理図鑑 | 料理図鑑 |
-| zh | 料理图鉴 | 料理图鉴 |
-| es | Guía culinaria | Guía culinaria |
-| fr | Guide culinaire | Guide culinaire |
-| de | Kochführer | Kochführer |
-| it | Guida culinaria | Guida culinaria |
+| ko | 부엌 도감 | 부엌 도감 |
+| en | Kitchen Guide | Kitchen Guide |
+| ja | キッチン図鑑 | キッチン図鑑 |
+| zh | 厨房图鉴 | 厨房图鉴 |
+| es | Guía de Cocina | Guía de Cocina |
+| fr | Guide de Cuisine | Guide de Cuisine |
+| de | Küchenführer | Küchenführer |
+| it | Guida da Cucina | Guida da Cucina |
 
-### 요리 도감 페이지 리뉴얼 (2026-05-14 진행 중)
+### 요리 도감 페이지 리뉴얼 (2026-05-14 설계 — 역사. 2026-05-29~30 "부엌 도감" 개편으로 구현 마무리, `docs/CHANGELOG.md` 2026-05-30 참조)
 
-#### DB 데이터 현황 (prod 기준, 2026-05-18)
+#### DB 데이터 현황 (prod 기준, 2026-05-18 — 1,896행 세트. 2026-06-02 베이스 재료 정리로 폐기된 수치)
+
+> **현재 prod(2026-10-04 실측)**: `ingredients_master` 241행 — description 0 · emoji 98 · shelf_life_days 69. 아래 표는 당시 기록.
+
 | 필드 | 채움률 |
 |---|---|
 | 이름/카테고리 | 100% |
@@ -1472,7 +1517,7 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 | 이미지 | 0% |
 | 가격 정보 | DB 테이블 존재, 데이터 미수집 |
 
-#### 새 레이아웃 방향
+#### 새 레이아웃 방향 (당시 계획 — 2026-05-30 개편에서 검색바·카테고리 카드는 반영됐고, 목록은 리스트가 아니라 **카드 그리드**로 구현)
 - **그리드 → 리스트 뷰**: 한 행에 이름+영문명+제철+맛 태그 인라인 표시. 데이터 밀도 높음
 - **검색 우선**: 검색바를 페이지 상단 중앙에 크게 배치
 - **카테고리 카드**: 작은 pill 대신 큰 아이콘 카드로 카테고리 선택
@@ -1498,8 +1543,7 @@ CASCADE FK로 recipe_ingredients/steps/tags/comments/likes/saves/views 등 모�
 - 환경변수: `KAMIS_API_KEY`
 
 ### 사용자 영수증 가격 저장 (Phase 1)
-현재 `match-receipt` API가 가격을 버리고 있음 (34번 줄 `.replace(/[\d,]+\s*원/g, '')`).
-이 부분을 수정해서 가격도 함께 파싱·저장.
+(2026-05-14 설계 당시) `match-receipt` API가 가격을 버리고 있었음 → **2026-05-16 수정 완료** — 현재 `app/api/ingredients/match-receipt/route.ts` 가 `([\d,]{2,})\s*원`(없으면 줄 끝 금액)으로 가격을 파싱해 반환(아래 "구현 우선순위" 3번).
 
 #### 신규 DB 테이블
 
@@ -1538,6 +1582,7 @@ CREATE TABLE ingredient_price_reports (
 ### 마트 지도 기능 (Phase 3 — 사용자 1,000명+ 이후)
 
 - **지도 API**: Kakao Maps (한국 데이터 정확, 무료 월 300만 건)
+  - *참고(현재 앱)*: 이후 배달 지도에서 자체 map-core(`components/map/*`, `maplibre-gl` + V-World/CartoDB/OSM 타일)로 지도 스택이 정해졌다. 이 기능 착수 시 지도 SDK 선택은 재검토
 - 마트 DB는 직접 구축 금지 — Kakao 장소 API로 실시간 검색 후 캐시
 - 마트명 파싱: OCR 자동 시도 → 실패 시 사용자 확인 UI
 
@@ -1575,10 +1620,10 @@ CREATE TABLE ingredient_price_reports (
 - **단위 변환 지옥** — 큰술↔ml↔g↔개 (재료마다 밀도 다름)
 - **상함·버림·선물** 추적 안 됨
 
-따라서 단기에는 **"보유 여부 표시"** 수준으로만 처리. 정확한 수량 비교는 *기대하지 않음*.
+따라서 단기에는 **"보유 여부 표시"** 중심으로 처리. 정확한 *재고(stock)* 추적은 *기대하지 않음* (아래 부족분 표시는 단위 비교가 가능할 때만 나오는 참고치).
 
-### 단기 (현재 구현 방향)
-cart에 레시피 재료 담을 때 **"보유 재료 마크"만 표시** + **토글로 cart 제외** (수량 비교 안 함):
+### 단기 (현재 구현)
+cart에 레시피 재료 담을 때 **"보유 재료 마크"** 표시 + **토글로 cart 제외**(장보기 버튼 위 "냉장고에 있는 재료 제외" 체크박스). **수량 비교는 같은/변환 가능한 단위일 때만** — 레시피 재료 탭이 보유 재료의 부족분("🛒 N단위 더 필요")을 표시하고, 변환 불가·비수치면 표시 생략(`lib/recommendations/matchV2.ts` `shortOf` → `lib/units/quantity.ts` `compareQuantity`, 인분 배수 반영 — `docs/INGREDIENT_MODEL_REDESIGN.md` Phase 2, 2026-05-31). 아래는 당시 설계 예시:
 ```
 🥚 양파 2개  [냉장고에 있음 ⚠️]   ← 사용자가 부족분 직접 판단
 🥩 소고기 300g [없음]

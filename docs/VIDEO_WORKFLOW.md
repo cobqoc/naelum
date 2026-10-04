@@ -138,7 +138,7 @@
 
 ## 🚧 v2 자동화 후보 (유저 100명 이후)
 
-- Supabase 함수에서 매주 일요일 cron → 후보 레시피 + Gemini 스크립트 자동 생성 → 슬랙 알림
+- Vercel cron(`vercel.json` `crons`) + API 라우트로 매주 일요일 → 후보 레시피 + Gemini 스크립트 자동 생성 → 슬랙 알림 (Supabase Functions 는 사용 금지 — CLAUDE.md "Storage / 이식성", 현재 cron 2개도 Vercel cron)
 - Remotion으로 영상 합성 자동화
 - YouTube Data API로 자동 업로드
 - 다국어 동시 발행 (en/ja)

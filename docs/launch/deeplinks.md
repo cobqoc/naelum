@@ -7,7 +7,7 @@
 
 ## 🔗 표준 딥링크 (UTM 포함)
 
-UTM 파라미터로 어디서 왔는지 추적. Vercel Analytics / Plausible에서 `referrer` + `utm_source`로 확인 가능.
+UTM 파라미터로 어디서 왔는지 추적. 자체 analytics 가 기록한다 — `components/Analytics/PageViewTracker.tsx` 가 `page_view` 이벤트의 `payload` 에 쿼리스트링(utm 포함)·`referrer` 를 담아 `events` 테이블에 저장(분석 쿠키 동의자만). 관리자 행동 분석 화면(`lib/analytics/aggregateEvents.ts`)에는 utm·referrer 별 집계가 없으므로 `utm_source` 별 분리는 `events.payload` 를 직접 조회해야 한다. 보조로 Cloudflare Web Analytics(CSP 허용). Vercel Analytics·Plausible 은 미도입.
 
 | 채널 | 목적 | URL |
 |------|------|-----|
@@ -57,7 +57,7 @@ Android App Link 설정 시 `public/.well-known/assetlinks.json` 필요.
 
 ## 📊 추적 설정 체크
 
-- [ ] Vercel Analytics에서 utm_source 분리해서 보이는지 확인
+- [ ] `events.payload` 의 `query`(utm_source)로 채널별 분리 집계가 되는지 확인 (Vercel Analytics 는 미도입)
 - [ ] Sentry에 utm 파라미터가 노이즈로 잡히지 않는지 (PII 아님, OK)
 - [ ] 향후 Plausible 도입 시 utm 자동 파싱 확인
 

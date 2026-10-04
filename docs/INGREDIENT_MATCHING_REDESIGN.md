@@ -4,6 +4,7 @@
 > **저자**: 사용자 + Claude 협업
 > **상태**: 부분 superseded — **§2-2 `forms[]` 모델은 폐기**, 엣지+`base_ingredient_id` 모델로 대체됨. → **[`INGREDIENT_MODEL_REDESIGN.md`](INGREDIENT_MODEL_REDESIGN.md)(정본, 2026-05-31)** 참조.
 > 본 문서의 §1(왜)·정직성 원칙·§5 회귀 체크리스트는 유효. `forms[]` 관련(§2-2~2-3)만 새 문서로 대체.
+> **구현 상태(2026-10-04 확인)**: V2(엣지 + `base_ingredient_id` 모델)는 **구현 완료** — `supabase/migrations/20260529_v2_ingredient_matching.sql`(`ingredient_relations`)·`20260531_ingredient_base_id.sql`·`20260531_ingredient_relation_ratio.sql`·`20260531_seed_*.sql`, 코드 `lib/recommendations/matchV2.ts`·`allergyFilterV2.ts`·`fetchRelations.ts`, main 반영은 PR #219. 따라서 §3(단계 계획)·§6(trigger)·§9(결론)는 **작성 당시 계획 — 역사**다: 실제로는 trigger 를 기다리지 않았고, `forms[]`·feature flag·데이터 이전 스크립트 없이 SQL 시드 마이그레이션으로 진행했다.
 >
 > **관련 메모리**: [[ingredient-match-honesty-policy]] · [[project_ingredient_match_prefix_bug]] · [[project_is_demo_record_uuid_bug]]
 > **관련 PR**: #197(SUBSTITUTES 비움+PREPARABLE 3그룹) · #198(buildAliasGraph+알레르기 분리) · #199(다진마늘→편마늘 거짓 fix)
@@ -215,10 +216,13 @@ function isAllergenicForUser(
 | **search synonyms** | `ALLERGEN_CANONICAL` 코드 상수 | 알레르기 입력 정규화 (땅콩↔peanut) |
 
 기존 `INGREDIENT_ALIASES`·`SUBSTITUTES`·`PREPARABLE_TO`·`ALLERGEN_SYNONYMS`·`normalizeIngredientName`는 **deprecated**. 점진 제거.
+→ (2026-10-04 확인) 코드 상수 4종과 옛 매칭 함수는 **제거 완료**(정의 0 — 주석 언급만 남음). `normalizeIngredientName` 은 `app/api/favorites/route.ts` 의 집계 키로만 남아 매칭엔 쓰이지 않는다.
 
 ---
 
 ## 3. How — 마이그레이션 단계
+
+> **작성 당시 계획 — 역사.** 실제 구현은 `forms[]`·feature flag(`INGREDIENT_MATCH_V2`)·이전 스크립트(`scripts/migrate-aliases-to-db.ts`·`migrate-allergens-to-db.ts`·`migrate-forms-from-ingredients.ts`·`remap-recipe-ingredients.ts` — 모두 만들지 않음) 없이, 엣지+`base_ingredient_id` 모델과 SQL 시드 마이그레이션(`20260531_seed_*.sql`)으로 진행됐다(`INGREDIENT_MODEL_REDESIGN.md` §8). 아래 Phase 3 체크리스트만 현재 상태로 갱신.
 
 ### Phase 0 — 사전 준비 (1주)
 
@@ -319,9 +323,9 @@ WHERE name = '땅콩버터';
 
 ### Phase 3 — 정리 (1주)
 
-- [ ] 옛 함수 제거 (`isSameIngredient`·`isSubstituteFor`·`getSubstituteKind`)
-- [ ] 옛 데이터 상수 제거 (`INGREDIENT_ALIASES`·`SUBSTITUTES`·`PREPARABLE_TO`·`ALLERGEN_SYNONYMS`)
-- [ ] `normalizeIngredientName` *검색·집계용*으로만 격리 (매칭과 분리)
+- [x] 옛 함수 제거 (`isSameIngredient`·`isSubstituteFor`·`getSubstituteKind`) — 코드 정의 0 (2026-10-04 grep)
+- [x] 옛 데이터 상수 제거 (`INGREDIENT_ALIASES`·`SUBSTITUTES`·`PREPARABLE_TO`·`ALLERGEN_SYNONYMS`) — 정의 0, 주석 언급만
+- [x] `normalizeIngredientName` *검색·집계용*으로만 격리 (매칭과 분리) — 현재 사용처는 `app/api/favorites/route.ts` 집계 키뿐
 - [ ] CHANGELOG·메모리 업데이트
 
 **총 4~5주.** Phase 1(데이터 채우기)이 70%.
@@ -332,9 +336,9 @@ WHERE name = '땅콩버터';
 
 | 호출처 | 영향 |
 |---|---|
-| `app/api/recommendations/route.ts` | 매칭 함수 V2로 전환. 호환 가능 (matchIngredientV2가 같은 interface) |
-| `lib/hooks/useRecipeFridgeMatch.ts` | isIngredientOwned·findSubstitute V2 사용 |
-| `lib/recommendations/allergyFilter.ts` | getAllergensV2 사용 — ALLERGEN_SYNONYMS substring 매칭 제거 |
+| `app/api/recommendations/route.ts` | 매칭 함수 V2로 전환 — 실제: `lib/recommendations/matchV2.ts` 의 `matchRecipe`·`assembleRecipeMatchFields` + `fetchRelations.ts` |
+| `lib/hooks/useRecipeFridgeMatch.ts` | 실제: `matchRecipe`·`countMatched`(matchV2) + `fetchRelationsForRecipe`·`fetchUserVariantBases`·`fetchUnitCoeffs`(fetchRelations) |
+| `lib/recommendations/allergyFilterV2.ts` (설계 당시 이름 `allergyFilter.ts`·`getAllergensV2` 는 만들지 않음) | 실제: `isRecipeBlockedV2`·`normalizeUserAllergens` — ALLERGEN_SYNONYMS substring 매칭 제거 |
 | `lib/recipes/highlightOptionalIngredients.ts` | aliases는 ingredients_master에서 lookup. 옛 상수 deprecate |
 | `components/Recipes/_browse/IngredientsTab.tsx` | match 결과 객체 구조 그대로 사용 (kind: 'owned'|'preparable'|'substitute'|'missing') |
 
@@ -367,6 +371,8 @@ UI 컴포넌트 영향 최소화 — 매칭 결과 객체 *interface 유지*.
 
 ## 6. Trigger — 언제 시작할까
 
+> **역사** — V2 는 아래 trigger 를 기다리지 않고 2026-05-29~06-01 에 구현됐다(문서 머리 "구현 상태").
+
 이 작업은 4~5주 큰 변경이라 trigger 신중히:
 
 ### 시작 가능 trigger (둘 중 더 빨리 오는 것)
@@ -386,9 +392,9 @@ UI 컴포넌트 영향 최소화 — 매칭 결과 객체 *interface 유지*.
 
 ### 미루는 동안 *할 일* (Phase 0 일부 선제)
 
-- [ ] `ingredient_relations` 테이블 마이그레이션만 미리 적용 (현재 0 row 영향 0)
-- [ ] feature flag 인프라 구축
-- [ ] aliases 마이그레이션 스크립트 작성 (실행은 trigger 후)
+- [x] `ingredient_relations` 테이블 — `20260529_v2_ingredient_matching.sql` 로 적용(V2 본 구현에 포함)
+- ~~feature flag 인프라 구축~~ — 쓰지 않음(V2 를 flag 없이 전환)
+- ~~aliases 마이그레이션 스크립트 작성~~ — 스크립트 대신 SQL 시드(`20260531_seed_v2_match_graph.sql`)로 처리
 
 이 정도는 trigger 전에 해두면 trigger 후 작업 단축.
 
@@ -424,7 +430,7 @@ UI 컴포넌트 영향 최소화 — 매칭 결과 객체 *interface 유지*.
 
 ---
 
-## 8. 데이터 통계 (2026-05-29 기준)
+## 8. 데이터 통계 (2026-05-29 기준 — 역사: 1,694행 세트는 이후 정리로 소멸, 2026-10-04 prod `ingredients_master` 241행)
 
 prod `ingredients_master` 1,694 row:
 
@@ -456,7 +462,7 @@ prod `ingredients_master` 1,694 row:
 
 부분 fix를 반복하면 비슷한 버그가 반복 발생한다. 사용자 신뢰 손상이 누적된다. 본질 해법은 변경 폭 크지만 *재발 0*을 보장하는 데이터 모델로의 전환이다.
 
-지금 즉시 시작하지 않아도 된다. **데이터·사용자 수가 의미 있게 쌓이는 시점**(작성자 substitutes 5건+, 사용자 100명+, 또는 messy 이름 매칭 실패 보고)에 한 번에 마이그레이션하는 게 합리적이다.
+(작성 당시 결론 — 실제로는 곧바로 구현됐다, 문서 머리 참조) 지금 즉시 시작하지 않아도 된다. **데이터·사용자 수가 의미 있게 쌓이는 시점**(작성자 substitutes 5건+, 사용자 100명+, 또는 messy 이름 매칭 실패 보고)에 한 번에 마이그레이션하는 게 합리적이다.
 
 그 사이에 부분 fix는 *피한다* — 또 다른 추상화 실수가 본질 해법 마이그레이션 시 부채로 작용한다.
 
