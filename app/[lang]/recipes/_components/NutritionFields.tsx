@@ -1,52 +1,44 @@
-import type { TranslationKeys } from '@/lib/i18n/translations'
-import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper'
+import type { TranslationKeys } from '@/lib/i18n/translations';
+import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { validateNutritionInput, type NutritionLimits } from '@/lib/recipes/nutritionInput';
 
-const NUTRITION_WRAPPER = '!rounded-xl !px-4 !py-3'
+const NUTRITION_WRAPPER = '!rounded-xl !px-4 !py-3';
 
 /**
- * 레시피 *수정* 폼 영양 정보 블록 표현 컴포넌트.
+ * 레시피 작성·수정 폼 공용 영양 정보 입력 블록 (presentational).
  *
- * god-file 분해 Phase 2. ⚠️ recipes/new 의 NutritionFields 와 검증 로직이 다르다:
- * new 는 상한(칼로리<5000·영양소<500)이 있고 edit 는 없다. new 것을 재사용하면
- * edit 동작이 바뀌므로(행위 변경) edit *현재* validateNutritionInput 을 그대로
- * 동봉해 edit 전용으로 추출한다. 두 폼 통합은 별도 제품 결정(이번 분해 범위 밖).
+ * 2026-10-04 [PHR-D1 (b)-2] new/edit 두 벌(JSX 는 세미콜론 외 동일)을 한 벌로. 유일한 차이인 검증 상한은
+ * `limits` prop 으로 보존 — new: NEW_RECIPE_NUTRITION_LIMITS(5000/500), edit: 생략(상한 없음). 검증 함수는
+ * lib/recipes/nutritionInput 으로 이동(옛 두 함수와 전 입력 동일 — vitest).
  *
- * 규약([[TagsField]] 동일): show·6필드 상태는 page 소유, 자식은 값+setter 만.
- * JSX·className 원본과 byte-identical → 행위 변경 0.
+ * god-file(NewRecipePage) 분해의 두 번째 down-payment — [[TagsField]] 규약 동일:
+ *  1. 상태(showNutrition·6필드)는 부모(page.tsx)가 소유, 자식은 값+setter 만 받음
+ *  2. JSX 는 원본과 byte-identical (마크업·className·핸들러 시그니처 동일) → 행위 변경 0
+ *  3. 검증: npm run build(strict props) + e2e/recipe-creation.spec.ts 회귀
+ *
+ * validateNutritionInput 은 이 블록에서만 쓰이는 순수 함수라 응집상 함께 이동했다
+ * (부모에서 다른 사용처 없음 — 이동해도 행위 동일, 부모 표면만 줄어듦).
  */
 
 interface NutritionFieldsProps {
-  t: TranslationKeys
-  tf: TranslationKeys['recipeForm']
-  show: boolean
-  onToggleShow: () => void
-  calories: string
-  setCalories: (v: string) => void
-  protein: string
-  setProtein: (v: string) => void
-  carbs: string
-  setCarbs: (v: string) => void
-  fat: string
-  setFat: (v: string) => void
-  fiber: string
-  setFiber: (v: string) => void
-  sodium: string
-  setSodium: (v: string) => void
-}
-
-// 영양 정보 검증 함수 (원본 edit/page.tsx 와 로직 동일 — 빈 값 허용, 음수/NaN
-// 거부, int=정수 여부만. new 와 달리 상한 없음 — edit 행위 보존).
-function validateNutritionInput(value: string, type: 'int' | 'decimal'): boolean {
-  if (value === '') return true // 빈 값 허용 (선택사항)
-
-  const num = parseFloat(value)
-  if (isNaN(num) || num < 0) return false
-
-  if (type === 'int') {
-    return Number.isInteger(num)
-  }
-
-  return true
+  t: TranslationKeys;
+  tf: TranslationKeys['recipeForm'];
+  show: boolean;
+  onToggleShow: () => void;
+  calories: string;
+  setCalories: (v: string) => void;
+  protein: string;
+  setProtein: (v: string) => void;
+  carbs: string;
+  setCarbs: (v: string) => void;
+  fat: string;
+  setFat: (v: string) => void;
+  fiber: string;
+  setFiber: (v: string) => void;
+  sodium: string;
+  setSodium: (v: string) => void;
+  /** 입력 상한 — new 만 지정({ int: 5000, decimal: 500 }), edit 는 생략(상한 없음) */
+  limits?: NutritionLimits;
 }
 
 export default function NutritionFields({
@@ -66,6 +58,7 @@ export default function NutritionFields({
   setFiber,
   sodium,
   setSodium,
+  limits,
 }: NutritionFieldsProps) {
   return (
     <div className="space-y-4">
@@ -98,8 +91,8 @@ export default function NutritionFields({
                   type="number"
                   value={calories}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'int')) {
-                      setCalories(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'int', limits)) {
+                      setCalories(e.target.value);
                     }
                   }}
                   min="0"
@@ -121,8 +114,8 @@ export default function NutritionFields({
                   type="number"
                   value={protein}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'decimal')) {
-                      setProtein(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'decimal', limits)) {
+                      setProtein(e.target.value);
                     }
                   }}
                   min="0"
@@ -144,8 +137,8 @@ export default function NutritionFields({
                   type="number"
                   value={carbs}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'decimal')) {
-                      setCarbs(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'decimal', limits)) {
+                      setCarbs(e.target.value);
                     }
                   }}
                   min="0"
@@ -167,8 +160,8 @@ export default function NutritionFields({
                   type="number"
                   value={fat}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'decimal')) {
-                      setFat(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'decimal', limits)) {
+                      setFat(e.target.value);
                     }
                   }}
                   min="0"
@@ -190,8 +183,8 @@ export default function NutritionFields({
                   type="number"
                   value={fiber}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'decimal')) {
-                      setFiber(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'decimal', limits)) {
+                      setFiber(e.target.value);
                     }
                   }}
                   min="0"
@@ -213,8 +206,8 @@ export default function NutritionFields({
                   type="number"
                   value={sodium}
                   onChange={(e) => {
-                    if (validateNutritionInput(e.target.value, 'int')) {
-                      setSodium(e.target.value)
+                    if (validateNutritionInput(e.target.value, 'int', limits)) {
+                      setSodium(e.target.value);
                     }
                   }}
                   min="0"
@@ -229,5 +222,5 @@ export default function NutritionFields({
         </div>
       )}
     </div>
-  )
+  );
 }

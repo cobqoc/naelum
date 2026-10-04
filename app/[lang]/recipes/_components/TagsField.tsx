@@ -4,7 +4,10 @@ import { useRef } from 'react';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 
 /**
- * 레시피 작성 폼의 태그 입력 블록 (presentational).
+ * 레시피 작성·수정 폼 공용 태그 입력 블록 (presentational).
+ *
+ * 2026-10-04 [PHR-D1 (a)-3] recipes/new/_components → recipes/_components 로 이동(내용 동일). edit 가 다른 라우트의
+ * private 폴더(`../../new/_components`)를 import 하던 것을 공용 위치로 정리.
  *
  * god-file(NewRecipePage 1587줄) 분해의 첫 down-payment.
  * 원칙(ARCHITECTURE.md Strangler Fig): 상태/핸들러는 부모(page.tsx)가 그대로

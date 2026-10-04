@@ -45,6 +45,13 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
     setDifficulty(0); setPhoto(null); setPhotoPreview(null);
   }, [isOpen]);
 
+  // 2026-10-04 [PHR-13] blob 미리보기 URL 해제 — 교체·제거·닫힘 리셋·언마운트 때 이전 URL 을 revoke(누수 방지).
+  // 새 URL 이 커밋된 뒤 cleanup 이 돌아 화면에 쓰이는 URL 은 건드리지 않는다.
+  useEffect(() => {
+    if (!photoPreview) return;
+    return () => URL.revokeObjectURL(photoPreview);
+  }, [photoPreview]);
+
   const handlePickPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error(t.tipForm.errorImageSize); return; }
@@ -125,8 +132,9 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
         {/* 완성 사진 (선택) */}
         <div className="mb-4">
           <label className="block text-sm font-bold text-text-primary mb-2">{tp.photoOptional}</label>
+          {/* 2026-10-04 [PHR-13] value 리셋 — 사진 제거 후 같은 파일을 다시 골라도 change 가 발생하도록(다른 업로드 입력과 동일) */}
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePickPhoto(f); }} />
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePickPhoto(f); e.target.value = ''; }} />
           {photoPreview ? (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden">
               <Image src={photoPreview} alt={t.recipe.ratingPhotoAlt} fill className="object-cover" unoptimized />

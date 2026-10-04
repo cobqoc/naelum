@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * 폼 자동저장 hook — localStorage 기반.
@@ -17,6 +17,35 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 interface UseAutosaveOptions {
   debounceMs?: number;
   enabled?: boolean;
+}
+
+// 2026-10-04 [PHR-19] 키별로 대기 중인 debounce 저장 타이머. clearAutosave(key) 가 함께 취소한다 —
+// 게시 직후(clear → router.push 로 아직 마운트 상태) 대기 중이던 저장이 clear *뒤에* 발화해 방금 게시한 폼을
+// 다시 저장, 다음 진입 때 "복원" 배너가 되살아나(→ 중복 게시 위험) 하던 경쟁 차단. 대기 저장이 없으면 동작 동일.
+const pendingSaveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * debounceMs 뒤 localStorage 에 `{ data, savedAt }` 스냅샷 저장을 예약한다(useAutosave 내부용 — 테스트 위해 export).
+ * 저장 성공 시 onSaved(savedAt). 같은 키로 clearAutosave 가 먼저 불리면 저장하지 않는다.
+ */
+export function scheduleAutosave<T>(
+  key: string,
+  data: T,
+  debounceMs: number,
+  onSaved?: (savedAt: number) => void,
+): ReturnType<typeof setTimeout> {
+  const timer = setTimeout(() => {
+    if (pendingSaveTimers.get(key) === timer) pendingSaveTimers.delete(key);
+    try {
+      const snapshot = { data, savedAt: Date.now() };
+      localStorage.setItem(key, JSON.stringify(snapshot));
+      onSaved?.(snapshot.savedAt);
+    } catch {
+      // localStorage 가득 차거나 거부 — 조용히 실패 (작성은 계속 가능)
+    }
+  }, debounceMs);
+  pendingSaveTimers.set(key, timer);
+  return timer;
 }
 
 export function useAutosave<T>(
@@ -36,18 +65,12 @@ export function useAutosave<T>(
       return;
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      try {
-        const snapshot = { data, savedAt: Date.now() };
-        localStorage.setItem(key, JSON.stringify(snapshot));
-        setSavedAt(snapshot.savedAt);
-      } catch {
-        // localStorage 가득 차거나 거부 — 조용히 실패 (작성은 계속 가능)
-      }
-    }, debounceMs);
+    const timer = scheduleAutosave(key, data, debounceMs, setSavedAt);
+    timeoutRef.current = timer;
 
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (pendingSaveTimers.get(key) === timer) pendingSaveTimers.delete(key);
     };
   }, [key, data, debounceMs, enabled]);
 
@@ -70,8 +93,13 @@ export function loadAutosave<T>(key: string, maxAgeMs?: number): { data: T; save
   }
 }
 
-/** 저장된 스냅샷 삭제 (게시·임시저장 성공 시 호출) */
+/** 저장된 스냅샷 삭제 (게시·임시저장 성공 시 호출) — 같은 키의 대기 중 debounce 저장도 취소([PHR-19]) */
 export function clearAutosave(key: string) {
+  const pending = pendingSaveTimers.get(key);
+  if (pending) {
+    clearTimeout(pending);
+    pendingSaveTimers.delete(key);
+  }
   try {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(key);
@@ -81,7 +109,3 @@ export function clearAutosave(key: string) {
   }
 }
 
-/** useCallback wrapper for clearAutosave */
-export function useClearAutosave(key: string) {
-  return useCallback(() => clearAutosave(key), [key]);
-}

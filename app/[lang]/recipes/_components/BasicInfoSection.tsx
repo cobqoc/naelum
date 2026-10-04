@@ -1,55 +1,55 @@
-import type { TranslationKeys } from '@/lib/i18n/translations'
-import { CUISINE_TYPES, DIFFICULTY_LEVELS } from '@/lib/constants/recipe'
+import type { TranslationKeys } from '@/lib/i18n/translations';
+import { CUISINE_TYPES, DISH_TYPES, DIFFICULTY_LEVELS } from '@/lib/constants/recipe';
 import InputBoxWrapper, {
   INPUT_INNER_STYLE,
   INPUT_INNER_COMFORTABLE_CLASS,
   INPUT_VARIANT_COMFORTABLE,
   INPUT_VARIANT_COMFORTABLE_TEXTAREA,
-} from '@/components/UI/InputBoxWrapper'
+} from '@/components/UI/InputBoxWrapper';
 
 /**
- * 레시피 *수정* 폼 Section 1(기본 정보) 표현 컴포넌트.
+ * 레시피 작성·수정 폼 공용 Section 1(기본 정보) 블록 (presentational).
  *
- * god-file 분해 Phase 2 (ARCHITECTURE.md). recipes/new 의 폼과 edit 폼은 이미
- * 분기돼(단계 제목 유무·재료 삭제 임계·영양 검증 상한) new/_components 를 그대로
- * 재사용하면 edit 동작이 조용히 깨진다. 그래서 edit *현재* JSX 와 byte-identical 한
- * edit 전용 표현 컴포넌트로만 추출한다(행위 변경 0). 규약은 [[TagsField]] 동일:
- * 상태·setter 는 page 가 소유, 자식은 값+setter 만 받음. JSX·className·핸들러
- * 시그니처 원본과 동일. 검증: build(strict props)+e2e/recipe-edit.spec.ts.
+ * 2026-10-04 [PHR-D1 (a)-4·(b)-3] new/edit 두 벌을 한 벌로. 공통 블록(제목·설명·인분/시간/난이도·요리 종류 칩)은
+ * 원래 diff -w 동일이었고, 섹션 래퍼(`<section>`+번호 h2)는 edit 처럼 이 컴포넌트가 소유(new 페이지가 갖고 있던
+ * 같은 마크업을 이리로). new 전용 블록은 선택 prop 으로 보존 — 생략하면(edit) 렌더 안 함:
+ *  - customCuisine: '기타' 선택 시 커스텀 요리 종류 입력
+ *  - dish: 요리 유형(2단계) 칩 + '기타' 커스텀 입력
+ * 상태·setter 는 page 가 소유, 이 컴포넌트는 값+setter 만(순수 controlled inputs).
+ * 검증: 렌더 동등성 하네스(new·edit 각 props) + e2e recipe-creation "UI 회귀(Section1)"·recipe-edit (1).
  */
 
 interface BasicInfoSectionProps {
-  t: TranslationKeys
-  tf: TranslationKeys['recipeForm']
-  title: string
-  setTitle: (v: string) => void
-  description: string
-  setDescription: (v: string) => void
-  servings: number | ''
-  setServings: (v: number | '') => void
-  cookTime: number | ''
-  setCookTime: (v: number | '') => void
-  difficulty: string
-  setDifficulty: (v: string) => void
-  cuisineType: string
-  setCuisineType: (v: string) => void
+  t: TranslationKeys;
+  tf: TranslationKeys['recipeForm'];
+  title: string;
+  setTitle: (v: string) => void;
+  description: string;
+  setDescription: (v: string) => void;
+  servings: number | '';
+  setServings: (v: number | '') => void;
+  cookTime: number | '';
+  setCookTime: (v: number | '') => void;
+  difficulty: string;
+  setDifficulty: (v: string) => void;
+  cuisineType: string;
+  setCuisineType: (v: string) => void;
+  /** new 전용 — '기타' 요리 종류 커스텀 입력. 생략(edit) 시 렌더 안 함 */
+  customCuisine?: { value: string; set: (v: string) => void };
+  /** new 전용 — 요리 유형(2단계) 칩 + '기타' 커스텀 입력. 생략(edit) 시 렌더 안 함 */
+  dish?: { type: string; setType: (v: string) => void; custom: string; setCustom: (v: string) => void };
 }
 
 export default function BasicInfoSection({
-  t,
-  tf,
-  title,
-  setTitle,
-  description,
-  setDescription,
-  servings,
-  setServings,
-  cookTime,
-  setCookTime,
-  difficulty,
-  setDifficulty,
-  cuisineType,
-  setCuisineType,
+  t, tf,
+  title, setTitle,
+  description, setDescription,
+  servings, setServings,
+  cookTime, setCookTime,
+  difficulty, setDifficulty,
+  cuisineType, setCuisineType,
+  customCuisine,
+  dish,
 }: BasicInfoSectionProps) {
   return (
     <section className="space-y-6">
@@ -152,7 +152,58 @@ export default function BasicInfoSection({
             </button>
           ))}
         </div>
+        {/* 기타 선택 시 커스텀 입력 (new 전용) */}
+        {customCuisine && cuisineType === 'other' && (
+          <InputBoxWrapper className="!rounded-xl !px-4 !py-3">
+            <input
+              type="text"
+              value={customCuisine.value}
+              onChange={(e) => customCuisine.set(e.target.value)}
+              placeholder={tf.cuisinePlaceholder}
+              className={INPUT_INNER_COMFORTABLE_CLASS}
+              style={INPUT_INNER_STYLE}
+            />
+          </InputBoxWrapper>
+        )}
       </div>
+
+      {/* 요리 유형 (2단계) - 조건부 표시 (new 전용) */}
+      {dish && cuisineType && (
+        <div className="space-y-2 animate-fadeIn">
+          <label className="text-sm font-medium text-text-secondary">
+            {tf.dishType} <span className="text-text-muted text-xs">{tf.optionalInputHint}</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {DISH_TYPES.map(d => (
+              <button
+                key={d.value}
+                type="button"
+                onClick={() => dish.setType(d.value)}
+                className={`px-4 py-2 rounded-full text-sm transition-all ${
+                  dish.type === d.value
+                    ? 'bg-accent-warm text-background-primary'
+                    : 'bg-background-secondary text-text-muted hover:bg-white/10'
+                }`}
+              >
+                {t.dishLabels[d.value as keyof typeof t.dishLabels] ?? d.label}
+              </button>
+            ))}
+          </div>
+          {/* 기타 선택 시 커스텀 입력 */}
+          {dish.type === 'other' && (
+            <InputBoxWrapper className="!rounded-xl !px-4 !py-3">
+              <input
+                type="text"
+                value={dish.custom}
+                onChange={(e) => dish.setCustom(e.target.value)}
+                placeholder={tf.dishTypePlaceholder}
+                className={INPUT_INNER_COMFORTABLE_CLASS}
+                style={INPUT_INNER_STYLE}
+              />
+            </InputBoxWrapper>
+          )}
+        </div>
+      )}
     </section>
-  )
+  );
 }

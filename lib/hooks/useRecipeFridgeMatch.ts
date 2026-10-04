@@ -26,10 +26,10 @@ import { fetchRelationsForRecipe, fetchUserVariantBases, fetchUnitCoeffs } from 
  *  - 마운트 시 한 번 fetch — 레시피 재료 id 들의 incoming relations
  *  - 양방향 substitute 는 DB trigger 로 reverse row 자동 존재 → 한 방향만 fetch
  *
- * **호환성**:
- *  - 인터페이스는 옛 hook 과 유사 — RecipeBrowseView 등 호출처 변경 최소
- *  - findSubstitute 반환은 *사용자 보유 재료의 ingredient_id* (이름이 아닌 id)
- *    → 표시할 때는 호출처에서 id → name resolve 필요
+ * 2026-10-04 [PHR-28] 소비자 0 인 공개 API 정리(행위 보존): findSubstitute·isLoading·ingredientStatus 반환과
+ * 옛 시그너처 호환용 `userIngredients` 인자(V2 에서 무시)를 제거. 호출처는 RecipeBrowseView 1곳이며
+ * isIngredientOwned·ownedCount·coveredCount·totalIngredients·coverageStatus·summary 만 사용한다(grep 확인).
+ * isLoading state 는 fetch 마다 true/false 로 RBV 를 2회 더 재렌더시키기만 했음. 정확보유 기준 상태는 summary.ingredientStatus 그대로.
  */
 
 /** 호출처 호환 — recipe.ingredients 의 ingredient_id 가 optional 인 케이스 허용 */
@@ -44,35 +44,23 @@ export interface MatchableIngredient {
 export interface UseRecipeFridgeMatchResult {
   /** name 보유 판정 — V2 는 id 기반이라 이름은 매칭 안 함. 호출처는 ingredient_id 로 lookup */
   isIngredientOwned: (ingredient_id: string | null) => boolean;
-  /**
-   * 레시피 재료 → 사용자 보유 재료 중 *대체 가능한* id 반환.
-   * preparable·substitute 케이스. 없으면 null.
-   */
-  findSubstitute: (ingredient_id: string | null) => string | null;
   /** 정확 보유(+변형) 수 — cart "보유 재료 제외" 등 *물리적 보유* 기준에 사용 */
   ownedCount: number;
   /** 충족 수 = 정확보유 + 변형 + 대체 + 가공(쌀→밥). RecipeCard 배지와 같은 기준 — 상세 "N/M 보유" 배지용 */
   coveredCount: number;
   totalIngredients: number;
-  /** 정확보유 기준 상태 (cart 등) */
-  ingredientStatus: 'none' | 'partial' | 'all';
   /** 충족(coveredCount) 기준 상태 — 상세 배지 색. 쌀로 밥 충족이면 partial(빨강 아님) */
   coverageStatus: 'none' | 'partial' | 'all';
   /** 전체 매칭 summary — UI 가 카드별 chip 결정에 사용 */
   summary: RecipeMatchSummary;
-  /** fetch 중 여부 */
-  isLoading: boolean;
 }
 
 export function useRecipeFridgeMatch(
   ingredients: MatchableIngredient[],
-  userIngredients: string[],         // legacy (옛 시그너처) — V2 에서 무시
   userIngredientIds: string[],
   userQtyMap?: UserQtyMap,            // 양 매칭(Phase 2). 없으면 양 판단 생략(degrade).
   servingsMultiplier: number = 1,    // 현재 인분/기본 인분 — 레시피 필요량 스케일
 ): UseRecipeFridgeMatchResult {
-  void userIngredients;  // V2: 이름 매칭 안 함, 매개변수 호환만
-
   const userIdSet = useMemo(() => new Set(userIngredientIds), [userIngredientIds]);
 
   const recipeIngredientIds = useMemo(
@@ -103,7 +91,6 @@ export function useRecipeFridgeMatch(
   const [graph, setGraph] = useState<RelationGraph>(EMPTY_GRAPH);
   // 양 비교(Phase 2) 차원 교차용 계수 — 레시피 재료 id 기준. 같은 키(recipeIngredientIds)라 그래프와 함께 fetch.
   const [coeffsMap, setCoeffsMap] = useState<CoeffsMap>(new Map());
-  const [isLoading, setIsLoading] = useState(false);
 
   // 보유 재료 id 가 하나도 없으면(비로그인·빈 냉장고 — SEO·익명 트래픽 전부) graph·coeffs 는 어떤 결과에도
   // 영향이 없다: matchIngredient 는 has()/userBaseMap 이 전부 false 라 incoming 루프가 모두 continue → missing,
@@ -121,18 +108,11 @@ export function useRecipeFridgeMatch(
         cancelled = true;
       };
     }
-    // setIsLoading 을 microtask 로 — set-state-in-effect lint 회피
-    Promise.resolve().then(() => {
-      if (!cancelled) setIsLoading(true);
-    });
     const supabase = createClient();
     Promise.all([
       fetchRelationsForRecipe(recipeIngredientIds, supabase).then(g => { if (!cancelled) setGraph(g); }),
       fetchUnitCoeffs(recipeIngredientIds, supabase).then(c => { if (!cancelled) setCoeffsMap(c); }),
-    ])
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+    ]);
     return () => {
       cancelled = true;
     };
@@ -186,32 +166,12 @@ export function useRecipeFridgeMatch(
     [userIdSet, userBaseMap],
   );
 
-  const findSubstitute = useCallback(
-    (id: string | null): string | null => {
-      if (!id) return null;
-      const incoming = graph.incoming.get(id);
-      if (!incoming) return null;
-      // substitute 우선
-      for (const { from_id, kind } of incoming) {
-        if (kind === 'substitute' && userIdSet.has(from_id)) return from_id;
-      }
-      for (const { from_id, kind } of incoming) {
-        if (kind === 'preparable_to' && userIdSet.has(from_id)) return from_id;
-      }
-      return null;
-    },
-    [graph, userIdSet],
-  );
-
   return {
     isIngredientOwned,
-    findSubstitute,
     ownedCount: summary.ownedCount,
     coveredCount,
     totalIngredients: summary.totalCount,
-    ingredientStatus: summary.ingredientStatus,
     coverageStatus,
     summary,
-    isLoading,
   };
 }

@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import Link from '@/components/Common/LocalizedLink';
 import Image from 'next/image';
-import SafeImage from '@/components/Common/SafeImage';
 import RecipeCard from '@/components/RecipeCard';
 import { type Recipe } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
@@ -129,6 +128,9 @@ function SearchContent() {
       setSuggestions([]);
       return;
     }
+    // 2026-10-04 [PHR-26] 드롭다운은 `!query` 일 때만 렌더되고 query 는 첫 검색 후 다시 비지 않는다 → 그동안 받은
+    // 제안은 화면에 쓰이지 않으면서 타이핑마다 자동완성 API(검색 레이트리밋 공유)를 호출했다. 표시 조건과 같은 조건으로 요청만 생략(화면 동일).
+    if (query) return;
 
     const timer = setTimeout(async () => {
       try {
@@ -141,7 +143,7 @@ function SearchContent() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, query]);
 
   // 검색 공통 fetch
   const fetchSearch = useCallback(async (searchQuery: string, page: number) => {
@@ -160,6 +162,10 @@ function SearchContent() {
     return data.results || {};
   }, [cuisine, difficulty, maxTime]);
 
+  // 2026-10-04 [PHR-25] 검색 세대 — 새 검색(질의·필터 변경)이 시작되면 그 전에 보낸 검색·더보기 응답은 버린다
+  // (늦게 온 옛 필터 결과/페이지가 새 결과를 덮거나 뒤에 섞여 붙던 경쟁 차단). 요청 1개뿐인 정상 경로는 동일.
+  const searchSeqRef = useRef(0);
+
   // 검색 실행 (첫 페이지). 데이터 계층 이전(docs/DATA_LAYER.md): has_cooked·냉장고 match 는
   // 이제 GET /api/search 가 서버에서 부착(클라 cooked read + fridge match 제거).
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -167,14 +173,16 @@ function SearchContent() {
       setResults({});
       return;
     }
+    const seq = ++searchSeqRef.current;
     setLoading(true);
     setPages({ recipes: 1, users: 1, ingredients: 1 });
     try {
-      setResults(await fetchSearch(searchQuery, 1));
+      const next = await fetchSearch(searchQuery, 1);
+      if (seq === searchSeqRef.current) setResults(next);
     } catch {
-      setResults({});
+      if (seq === searchSeqRef.current) setResults({});
     } finally {
-      setLoading(false);
+      if (seq === searchSeqRef.current) setLoading(false);
     }
   }, [fetchSearch]);
 
@@ -184,10 +192,12 @@ function SearchContent() {
     const currentResult = results[activeTab];
     if (!currentResult || currentResult.data.length >= currentResult.total) return;
     const nextPage = pages[activeTab] + 1;
+    const seq = searchSeqRef.current; // [PHR-25] 이 더보기가 속한 검색 세대
     setLoadingMore(true);
     try {
       // 추가 페이지도 GET /api/search 가 has_cooked·냉장고 match 부착(서버). 클라 enrich 제거.
       const more = await fetchSearch(query, nextPage);
+      if (seq !== searchSeqRef.current) return; // 그 사이 새 검색 시작 — 옛 세대 페이지는 붙이지 않음
       setPages(prev => ({ ...prev, [activeTab]: nextPage }));
       setResults(prev => ({
         ...prev,
@@ -219,6 +229,18 @@ function SearchContent() {
     return () => observer.disconnect();
   }, [loading, loadMore]);
 
+  // [PHR-25] 필터(요리종류·난이도·시간) 변경 시 현재 질의로 재검색 — 옛 코드는 필터 state 만 바뀌고 결과는 그대로였고
+  // 다음 "더보기" 만 새 필터로 받아 무필터 1페이지 뒤에 섞어 붙였다("초기화" 버튼도 결과 무반응).
+  // 직전 필터 값과 비교해 실제로 바뀐 때만 실행 → 첫 마운트·StrictMode 재실행·질의만 바뀐 렌더는 건너뜀.
+  // 캐시 복원은 아래 mount effect 가 이 ref 를 복원 필터로 맞춰 재검색하지 않게 한다(복원 결과 유지).
+  const prevFiltersRef = useRef({ cuisine, difficulty, maxTime });
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (prev.cuisine === cuisine && prev.difficulty === difficulty && prev.maxTime === maxTime) return;
+    prevFiltersRef.current = { cuisine, difficulty, maxTime };
+    if (query) performSearch(query);
+  }, [cuisine, difficulty, maxTime, query, performSearch]);
+
   // mount 1회: 캐시 복원 또는 신규 검색
   useEffect(() => {
     if (!initialQuery) return;
@@ -229,6 +251,8 @@ function SearchContent() {
       // ingredients 탭 제거 후엔 cache에 'ingredients'가 남아있어도 'recipes'로 fallback (빈 화면 방지)
       setActiveTab(cached.data.activeTab === 'ingredients' ? 'recipes' : cached.data.activeTab);
       setPages(cached.data.pages);
+      // [PHR-25] 복원 필터를 "직전 필터" 로 기록 — 필터 변경 effect 가 복원을 사용자 변경으로 오인해 재검색하지 않게
+      prevFiltersRef.current = { cuisine: cached.data.cuisine, difficulty: cached.data.difficulty, maxTime: cached.data.maxTime };
       setCuisine(cached.data.cuisine);
       setDifficulty(cached.data.difficulty);
       setMaxTime(cached.data.maxTime);
@@ -558,48 +582,8 @@ function SearchContent() {
                   </>
                 )}
 
-                {/* Ingredients */}
-                {activeTab === 'ingredients' && (
-                  <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {results.ingredients?.data.map((recipe) => (
-                      <Link
-                        key={recipe.id}
-                        href={`/recipes/${recipe.id}`}
-                        className="group rounded-2xl bg-background-secondary overflow-hidden hover:ring-2 hover:ring-accent-warm/50 transition-all"
-                      >
-                        <div className="relative h-40">
-                          {recipe.display_image ? (
-                            <SafeImage
-                              src={recipe.display_image}
-                              alt={recipe.title}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-background-tertiary">
-                              <span className="text-5xl">🍽️</span>
-                            </div>
-                          )}
-                          {/* 만들어봄 배지 */}
-                          {recipe.has_cooked && (
-                            <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-accent-warm text-background-primary text-xs font-bold shadow-lg">
-                              ✓ {t.recipe.cooked}
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-bold mb-1 group-hover:text-accent-warm transition-colors">{recipe.title}</h3>
-                          <p className="text-sm text-text-muted line-clamp-2">{recipe.description}</p>
-                        </div>
-                      </Link>
-                    ))}
-                    {results.ingredients?.data.length === 0 && (
-                      <p className="col-span-2 text-center text-text-muted py-10">{t.search.noResultsIngredients}</p>
-                    )}
-                  </div>
-                  </>
-                )}
+                {/* 2026-10-04 [PHR-26] 'ingredients' 탭 JSX 제거 — 탭 버튼은 recipes·users 뿐이고 캐시 복원도 'recipes' 로 치환해
+                    setActiveTab('ingredients') 경로가 없는 도달 불가 분기였음(재료 매칭 결과는 위 recipes 탭에 통합 표시). */}
 
                 {/* 무한 스크롤 sentinel */}
                 <div ref={sentinelRef} className="mt-6 flex justify-center">

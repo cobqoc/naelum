@@ -95,3 +95,30 @@ export function computeAutoTags(input: AutoTagInput): string[] {
 
   return autoTags;
 }
+
+/**
+ * 자동태그를 현재 태그 목록에 병합(순수) — recipes/new 의 자동태그 effect 가 setTags(prev => …) 안에서 사용.
+ *
+ * 2026-10-04 [PHR-43] 옛 병합은 "새 자동태그 추가"만 해서, 커스텀 요리종류를 한글 IME 로 입력하면 조합 단계마다
+ * `#ㅍ #퓨 #퓨ㅈ #퓨저 #퓨전` 이 쌓이고, 한식→일식 변경·채식 해제 후에도 옛 자동태그가 남아 저장됐다.
+ *  - prevAuto(직전 실행의 자동태그) 중 nextAuto 에 없는 태그만 제거 — 사용자가 직접 입력한 태그(prevAuto 에 없던 것)는 보존
+ *  - nextAuto 중 아직 없는 태그를 뒤에 추가, 상한 max(10)개 — 옛 동작과 동일(빈 슬롯만큼만 추가)
+ *  - 바뀐 게 없으면 prevTags 참조 그대로 반환(불필요 재렌더 없음)
+ * prevAuto 가 비어 있으면(첫 실행 등) 옛 병합과 결과가 같다.
+ * 한계: 사용자가 손으로 넣은 태그가 우연히 직전 자동태그와 같은 문자열이면 자동태그로 간주돼 함께 제거될 수 있다(출처 구분 불가).
+ */
+export function mergeAutoTags(
+  prevTags: string[],
+  prevAuto: string[],
+  nextAuto: string[],
+  max = 10,
+): string[] {
+  const kept = prevTags.filter(tag => !prevAuto.includes(tag) || nextAuto.includes(tag));
+  const toAdd = nextAuto.filter(tag => !kept.includes(tag));
+  if (toAdd.length === 0) {
+    return kept.length === prevTags.length ? prevTags : kept;
+  }
+  // 최대 max 개 제한 — 남은 슬롯만큼만 추가(옛 동작). 음수 슬롯은 0 으로(이미 상한 초과 시 slice(0, 음수) 로 더 붙던 경계 방지)
+  const remainingSlots = Math.max(0, max - kept.length);
+  return [...kept, ...toAdd.slice(0, remainingSlots)];
+}

@@ -18,8 +18,8 @@ import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import IngredientsTab from '@/components/Recipes/_browse/IngredientsTab';
 import StepsTab from '@/components/Recipes/_browse/StepsTab';
+import ContactModal from './LazyContactModal';
 
-const ContactModal = dynamic(() => import('./ContactModal'), { loading: () => null });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { loading: () => null });
 
 interface RecipeIngredient {
@@ -134,7 +134,7 @@ export default function RecipeBrowseView({
   // 냉장고 매칭 hook — 재료 탭·냉장고 모달·cart 보유 제외 3 곳 단일 출처.
   // 양 매칭: 보유 양 맵 + 인분 배수(현재/기본) → 부족분(shortBy) 계산.
   const match = useRecipeFridgeMatch(
-    recipe.ingredients, userIngredients, userIngredientIds, userQtyMap, currentServings / baseServings,
+    recipe.ingredients, userIngredientIds, userQtyMap, currentServings / baseServings,
   );
   // 카트 추가 hook — V2: ingredient_id 기반 매칭.
   const cart = useCartFromRecipe({
@@ -275,7 +275,8 @@ export default function RecipeBrowseView({
           </div>
           {recipe.thumbnail_url?.includes('wikim.re.kr') && (
             <p className="mt-1 text-right text-xs text-text-muted">
-              출처: 세계김치연구소 (공공누리 제1유형)
+              {/* 공공누리 출처표시 의무 — 2026-10-04 i18n(ko 값 = 원문 그대로, 기관명·유형 누락 금지) */}
+              {t.recipe.wikimImageCredit}
             </p>
           )}
         </div>
@@ -325,7 +326,8 @@ export default function RecipeBrowseView({
       <div className="flex items-center gap-3 mt-3 flex-wrap">
         <span className="text-accent-warm font-bold text-sm">⭐ {recipe.average_rating.toFixed(1)}</span>
         {(recipe.cooked_count ?? 0) > 0 && (
-          <span className="text-text-secondary text-sm">🍳 {recipe.cooked_count}명</span>
+          // 2026-10-04 [I18N-JSX] '명' JSX 텍스트 i18n(ko 값 '명' = 원문, 같은 텍스트 노드 구성)
+          <span className="text-text-secondary text-sm">🍳 {recipe.cooked_count}{t.recipe.cookedCountUnit}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           <ShareButton
@@ -586,48 +588,48 @@ export default function RecipeBrowseView({
         </div>
       </div>
 
-      {/* 영양 정보 (조건부) */}
-      {(recipe.calories || recipe.protein_grams || recipe.carbs_grams ||
+      {/* 영양 정보 (조건부) — 2026-10-04 [PHR-09] `{0 && …}` 가 숫자 "0" 을 그리드에 렌더하던 함정: !! 로 boolean 화(0 은 숨김 유지) */}
+      {!!(recipe.calories || recipe.protein_grams || recipe.carbs_grams ||
         recipe.fat_grams || recipe.fiber_grams || recipe.sodium_mg) && (
         <div className="mt-8 py-6 border-t border-white/10">
           <h2 className="text-lg font-bold mb-4">{t.nutrition.title}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {recipe.calories && (
+            {!!recipe.calories && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.calories}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.calories}</span>
                 <span className="text-xs text-text-muted ml-1">kcal</span>
               </div>
             )}
-            {recipe.protein_grams && (
+            {!!recipe.protein_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.protein}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.protein_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.carbs_grams && (
+            {!!recipe.carbs_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.carbs}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.carbs_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.fat_grams && (
+            {!!recipe.fat_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.fat}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fat_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.fiber_grams && (
+            {!!recipe.fiber_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.fiber}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fiber_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.sodium_mg && (
+            {!!recipe.sodium_mg && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.sodium}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.sodium_mg}</span>

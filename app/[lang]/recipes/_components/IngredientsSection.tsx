@@ -10,7 +10,11 @@ import type { IngredientItem } from '@/components/Ingredients/IngredientAutocomp
 import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/components/UI/InputBoxWrapper';
 
 /**
- * 레시피 작성 폼의 재료 준비 블록 (presentational).
+ * 레시피 작성·수정 폼 공용 재료 준비 블록 (presentational).
+ *
+ * 2026-10-04 [PHR-D1 (b)-1] new/edit 두 벌(비주석 차이 3줄)을 한 벌로. 차이는 prop 2개로 보존:
+ *  - removeDisabledAtOrBelow — 행 × 버튼 비활성 임계 (new 5 / edit 1, ARCHITECTURE.md 기록 분기 — 그대로 유지)
+ *  - addLabel — 추가 버튼 라벨 (new tf.addIngredient / edit tf.addFiveIngredients)
  *
  * 2026-05-23 레이아웃 재구성:
  *  - 각 재료 = 카드 (border + bg + padding) → 시각적 청크 단위 분명
@@ -30,6 +34,10 @@ interface IngredientsSectionProps {
   isDraggingIngredients: boolean;
   unitInputRefs: React.RefObject<(HTMLInputElement | null)[]>;
   getPlaceholder: (index: number, field: 'name' | 'quantity' | 'notes') => string;
+  /** 행 수가 이 값 이하이면 × 삭제 버튼 비활성 (new 5 · edit 1) */
+  removeDisabledAtOrBelow: number;
+  /** 하단 추가 버튼 라벨 (new tf.addIngredient · edit tf.addFiveIngredients) */
+  addLabel: string;
   onAddIngredients: () => void;
   onRemoveIngredient: (index: number) => void;
   onUpdateIngredient: (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => void;
@@ -51,6 +59,8 @@ export default function IngredientsSection({
   isDraggingIngredients,
   unitInputRefs,
   getPlaceholder,
+  removeDisabledAtOrBelow,
+  addLabel,
   onAddIngredients,
   onRemoveIngredient,
   onUpdateIngredient,
@@ -242,9 +252,9 @@ export default function IngredientsSection({
                 </button>
                 <button
                   onClick={() => onRemoveIngredient(index)}
-                  disabled={ingredients.length <= 5}
+                  disabled={ingredients.length <= removeDisabledAtOrBelow}
                   className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-all ${
-                    ingredients.length <= 5
+                    ingredients.length <= removeDisabledAtOrBelow
                       ? 'text-text-muted opacity-30'
                       : 'text-error hover:bg-error/10'
                   }`}
@@ -288,7 +298,7 @@ export default function IngredientsSection({
         onClick={onAddIngredients}
         className="w-full py-3 rounded-xl border-2 border-dashed border-white/20 text-text-muted hover:border-accent-warm hover:text-accent-warm transition-all"
       >
-        {tf.addIngredient}
+        {addLabel}
       </button>
     </div>
   );

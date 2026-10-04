@@ -1,9 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
-import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
-import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import SmallModal from '@/components/Common/SmallModal';
 
 interface RecipeFridgeModalProps {
   onClose: () => void;
@@ -64,36 +62,10 @@ export default function RecipeFridgeModal({
   fridgeEmpty,
 }: RecipeFridgeModalProps) {
   const { t } = useI18n();
-  // 호출처가 조건부 마운트 — 마운트 자체가 open 상태이므로 isOpen=true 고정.
-  const panelRef = useRef<HTMLDivElement>(null);
-  useEscapeKey(onClose, true);
-  useFocusTrap(true, panelRef);
-
+  // 호출처가 조건부 마운트 — 마운트 자체가 open 상태. 배경·헤더·ESC·포커스 트랩은 공용 SmallModal 셸(ICL-20).
+  // 카드(RecipeCard) 안에서 열리므로 배경 클릭이 카드 링크로 번지지 않게 stopBackdropPropagation.
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={(e) => { e.stopPropagation(); onClose(); }}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        ref={panelRef}
-        className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <span className="font-bold text-text-primary">{t.recipe.fridgeModalTitle}</span>
-          <button
-            onClick={onClose}
-            aria-label={t.common.close}
-            className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <SmallModal title={t.recipe.fridgeModalTitle} onClose={onClose} stopBackdropPropagation>
 
         {/* 요약 — 섹션 헤더 대신 한 줄. 아이콘 범례 + 개수 겸용 */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-5 py-3 border-b border-white/10">
@@ -146,7 +118,6 @@ export default function RecipeFridgeModal({
             </div>
           ))}
         </div>
-      </div>
-    </div>
+    </SmallModal>
   );
 }

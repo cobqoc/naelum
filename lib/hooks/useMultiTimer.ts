@@ -74,6 +74,22 @@ export function computeTimerState(t: Timer, now: number): {
   return { timer: { ...t, remainingSeconds: remaining }, justCompleted: false, justFiredCheckpoint: false };
 }
 
+/**
+ * 일시정지 — 남은 시간을 wall-clock(now)으로 확정하고 endsAt 을 비운다. 순수 함수.
+ * 2026-10-04 [PHR-08] togglePause 와 8줄 복붙이던 미사용 pauseTimer/resumeTimer 를 이 두 함수로 한 벌화.
+ */
+export function pausedTimer(t: Timer, now: number): Timer {
+  const remaining = t.endsAt != null
+    ? Math.max(0, Math.round((t.endsAt - now) / 1000))
+    : t.remainingSeconds;
+  return { ...t, isPaused: true, endsAt: null, remainingSeconds: remaining };
+}
+
+/** 재개 — 남은 시간으로 새 종료 예정 시각(epoch ms)을 잡는다. 순수 함수. */
+export function resumedTimer(t: Timer, now: number): Timer {
+  return { ...t, isPaused: false, endsAt: now + t.remainingSeconds * 1000 };
+}
+
 export function useMultiTimer() {
   const { t: i18n } = useI18n();
   const [timers, setTimers] = useState<Timer[]>([]);
@@ -82,7 +98,7 @@ export function useMultiTimer() {
   const playTimerSound = useCallback(() => {
     try {
       const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      [0, 300, 600].forEach(delay => {
+      const oscillators = [0, 300, 600].map(delay => {
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         oscillator.connect(gainNode);
@@ -92,7 +108,17 @@ export function useMultiTimer() {
         gainNode.gain.value = 0.3;
         oscillator.start(audioCtx.currentTime + delay / 1000);
         oscillator.stop(audioCtx.currentTime + delay / 1000 + 0.15);
+        return oscillator;
       });
+      // 2026-10-04 [PHR-08] 마지막 비프가 끝나면 컨텍스트를 닫는다 — 알림마다 새로 만들고 닫지 않아 긴 조리 세션에서
+      // 누적되던 것 해제. 소리(3회 비프)·생성 시점은 그대로(공유 컨텍스트 재사용은 iOS 자동재생 정책상 동작이 달라질 수 있어 안 함).
+      oscillators[oscillators.length - 1].onended = () => {
+        try {
+          audioCtx.close().catch(() => {});
+        } catch {
+          // close 미지원(구형 webkit) — 무시
+        }
+      };
     } catch {
       // AudioContext not supported
     }
@@ -185,34 +211,10 @@ export function useMultiTimer() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [playTimerSound]);
 
-  const pauseTimer = useCallback((id: string) => {
-    setTimers(prev => prev.map(t => {
-      if (t.id !== id || t.isPaused || !t.isActive) return t;
-      const remaining = t.endsAt != null
-        ? Math.max(0, Math.round((t.endsAt - Date.now()) / 1000))
-        : t.remainingSeconds;
-      return { ...t, isPaused: true, endsAt: null, remainingSeconds: remaining };
-    }));
-  }, []);
-
-  const resumeTimer = useCallback((id: string) => {
-    setTimers(prev => prev.map(t =>
-      t.id === id && t.isPaused && t.isActive
-        ? { ...t, isPaused: false, endsAt: Date.now() + t.remainingSeconds * 1000 }
-        : t
-    ));
-  }, []);
-
   const togglePause = useCallback((id: string) => {
     setTimers(prev => prev.map(t => {
       if (t.id !== id || !t.isActive) return t;
-      if (t.isPaused) {
-        return { ...t, isPaused: false, endsAt: Date.now() + t.remainingSeconds * 1000 };
-      }
-      const remaining = t.endsAt != null
-        ? Math.max(0, Math.round((t.endsAt - Date.now()) / 1000))
-        : t.remainingSeconds;
-      return { ...t, isPaused: true, endsAt: null, remainingSeconds: remaining };
+      return t.isPaused ? resumedTimer(t, Date.now()) : pausedTimer(t, Date.now());
     }));
   }, []);
 
@@ -253,8 +255,6 @@ export function useMultiTimer() {
     activeTimers,
     completedTimers,
     startTimer,
-    pauseTimer,
-    resumeTimer,
     togglePause,
     stopTimer,
     removeCompleted,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/context';
 import { Post, PostsResponse } from './types';
 import PostCard from './PostCard';
@@ -32,21 +32,31 @@ export default function RecipePostsFeed({ recipeId, currentUserId, onRatingUpdat
   const [ratingsCount, setRatingsCount] = useState(0);
   const [cookedCount, setCookedCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  // 2026-10-04 [PHR-15] 요청 세대 — 탭 빠른 전환·더보기 중 전환 시 늦게 도착한 옛 요청 응답이 새 목록을 덮어쓰던 경쟁 차단.
+  // 마지막으로 시작한 요청만 상태에 반영한다(요청이 하나뿐인 정상 경로는 동작 동일).
+  const requestSeqRef = useRef(0);
 
   const fetchFeed = useCallback(async (f: Filter, p: number, append: boolean) => {
+    const seq = ++requestSeqRef.current;
     setLoading(true);
     try {
       const res = await fetch(`/api/recipes/${recipeId}/posts?filter=${f}&page=${p}&limit=10`);
       const data: PostsResponse = await res.json();
+      if (seq !== requestSeqRef.current) return;
       if (!res.ok) return;
-      setPosts(prev => append ? [...prev, ...data.posts] : data.posts);
+      // append 시 이미 보이는 글 제외 — 새 댓글 prepend 로 offset 이 한 칸 밀려 다음 페이지에 같은 글이 다시 오던 중복(같은 key) 방지
+      setPosts(prev => {
+        if (!append) return data.posts;
+        const seen = new Set(prev.map(post => post.id));
+        return [...prev, ...data.posts.filter(post => !seen.has(post.id))];
+      });
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
       setAverageRating(data.averageRating);
       setRatingsCount(data.ratingsCount);
       setCookedCount(data.cookedCount ?? 0);
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
   }, [recipeId]);
 

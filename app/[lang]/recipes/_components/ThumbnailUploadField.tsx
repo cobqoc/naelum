@@ -2,7 +2,10 @@ import Image from 'next/image';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
 /**
- * 레시피 작성 폼 — 완성 요리 썸네일 업로드 필드 (presentational).
+ * 레시피 작성·수정 폼 공용 — 완성 요리 썸네일 업로드 필드 (presentational).
+ *
+ * 2026-10-04 [PHR-D1 (a)-1] recipes/new/_components → recipes/_components 로 이동(JSX 동일). edit/page.tsx 에
+ * 인라인으로 있던 같은 블록(식별자 바인딩만 다르고 마크업·className·testid·SVG 동일)을 이 컴포넌트로 교체.
  *
  * god-file(NewRecipePage) 분해 — [[BasicInfoSection]]·[[RecipeFormFooter]]·
  * [[IngredientsSection]] 규약 동일:

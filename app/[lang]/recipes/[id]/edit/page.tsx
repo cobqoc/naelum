@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback, use } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -10,12 +9,21 @@ import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
 import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
-import TagsField from '../../new/_components/TagsField';
-import BasicInfoSection from './_components/BasicInfoSection';
-import NutritionFields from './_components/NutritionFields';
-import IngredientsSection from './_components/IngredientsSection';
+// 2026-10-04 [PHR-D1] new/edit 공용 폼 블록은 recipes/_components 로 통합 — edit 고유 분기(재료 삭제 임계 <=1·
+// "재료 5개 추가" 라벨·영양 검증 상한 없음·커스텀 요리종류/요리유형 없음·툴팁 없음)는 prop 으로 그대로 보존.
+// StepsSection(단계 제목 input·팁 위치·드롭존 스타일이 new 와 진짜 다름)만 edit 전용 유지.
+import TagsField from '../../_components/TagsField';
+import BasicInfoSection from '../../_components/BasicInfoSection';
+import NutritionFields from '../../_components/NutritionFields';
+import IngredientsSection from '../../_components/IngredientsSection';
+import ThumbnailUploadField from '../../_components/ThumbnailUploadField';
+import DietaryOptionsField from '../../_components/DietaryOptionsField';
 import StepsSection from './_components/StepsSection';
-import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
+import { normalizeSubstitutes } from '@/lib/recipes/substituteChips';
+import {
+  updateIngredientAt, selectIngredientAt, updateStepAt, removeRowAt, getIngredientPlaceholder,
+  type IngredientValue,
+} from '@/lib/recipes/formRows';
 import ImageCropModal from '@/components/Common/ImageCropModal';
 import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
 import { useImageDropZone } from '@/lib/hooks/useImageDropZone';
@@ -41,7 +49,9 @@ export default function EditRecipePage(props: PageProps) {
   const [servings, setServings] = useState<number | ''>('');
   const [cookTime, setCookTime] = useState<number | ''>('');
   const [difficulty, setDifficulty] = useState('');
-  const [cuisineType, setCuisineType] = useState('korean');
+  // 2026-10-04 [PHR-04] 미선택 기본값 '' — 옛 'korean' 기본·폴백이 요리 종류 미선택(null/'') 레시피를 한식 칩 선택 상태로
+  // 보여주고 저장 시 'korean' 으로 덮어썼음. 미선택이면 PUT 에서 cuisine_type 키를 빼 DB 원래 값(null·'')을 그대로 둔다.
+  const [cuisineType, setCuisineType] = useState('');
 
   // 식단 옵션
   const [isVegetarian, setIsVegetarian] = useState(false);
@@ -156,7 +166,7 @@ export default function EditRecipePage(props: PageProps) {
         setServings(recipeData.servings ?? '');
         setCookTime(recipeData.cook_time_minutes ?? '');
         setDifficulty(recipeData.difficulty_level || '');
-        setCuisineType(recipeData.cuisine_type || 'korean');
+        setCuisineType(recipeData.cuisine_type || '');
         setIsVegetarian(recipeData.is_vegetarian || false);
         setIsVegan(recipeData.is_vegan || false);
         setIsGlutenFree(recipeData.is_gluten_free || false);
@@ -226,52 +236,39 @@ export default function EditRecipePage(props: PageProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, router, supabase]);
 
+  // 2026-10-04 [PHR-01] 재료·단계 핸들러는 전부 함수형 업데이트(prev => …) — 비동기 단계 이미지 업로드 완료 콜백이
+  // 업로드 시작 시점 배열로 덮어써 그 사이 수정한 단계 내용이 되돌아가던 stale closure 차단. 본문은 lib/recipes/formRows(new 와 공용).
+  // [PHR-03] 자동완성으로 고른(또는 로드된) 재료의 이름을 손으로 바꾸면 옛 ingredient_id 해제(updateIngredientAt).
   const addIngredients = () => {
     const newIngredients = Array(5).fill(null).map(() => ({
       ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: []
     }));
-    setIngredients([...ingredients, ...newIngredients]);
+    setIngredients(prev => [...prev, ...newIngredients]);
   };
 
   const removeIngredient = (index: number) => {
-    if (ingredients.length > 1) {
-      setIngredients(ingredients.filter((_, i) => i !== index));
-    }
+    setIngredients(prev => removeRowAt(prev, index));
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => {
-    const updated = [...ingredients];
-    updated[index] = { ...updated[index], [field]: value };
-    setIngredients(updated);
+  const updateIngredient = (index: number, field: keyof Ingredient, value: IngredientValue) => {
+    setIngredients(prev => updateIngredientAt(prev, index, field, value));
   };
 
   // 자동완성에서 재료 선택 — ingredient_id FK 설정 + common_units 자동 단위 추천 (new page와 동일)
   const selectIngredient = (index: number, item: IngredientItem) => {
-    const updated = [...ingredients];
-    const current = updated[index];
-    updated[index] = {
-      ...current,
-      ingredient_name: item.name,
-      ingredient_id: item.id,
-      ...(item.common_units?.[0] && current.unit === '선택' ? { unit: item.common_units[0] } : {}),
-    };
-    setIngredients(updated);
+    setIngredients(prev => selectIngredientAt(prev, index, item));
   };
 
   const addStep = () => {
-    setSteps([...steps, { title: '', instruction: '', timer_minutes: null, tip: '', image_url: null }]);
+    setSteps(prev => [...prev, { title: '', instruction: '', timer_minutes: null, tip: '', image_url: null }]);
   };
 
   const removeStep = (index: number) => {
-    if (steps.length > 1) {
-      setSteps(steps.filter((_, i) => i !== index));
-    }
+    setSteps(prev => removeRowAt(prev, index));
   };
 
   const updateStep = (index: number, field: keyof Step, value: string | number | null) => {
-    const updated = [...steps];
-    updated[index] = { ...updated[index], [field]: value };
-    setSteps(updated);
+    setSteps(prev => updateStepAt(prev, index, field, value));
   };
 
   // 이미지 업로드 함수
@@ -377,20 +374,9 @@ export default function EditRecipePage(props: PageProps) {
     setTags(tags.filter(t => t !== tag));
   };
 
-  const getPlaceholder = (index: number, field: 'name' | 'quantity' | 'notes') => {
-    const examples = {
-      0: { name: tf.getPlaceholderName1, quantity: tf.getPlaceholderQty1, notes: tf.getPlaceholderNotes1 },
-      2: { name: tf.getPlaceholderName2, quantity: tf.getPlaceholderQty2, notes: tf.getPlaceholderNotes2 },
-      4: { name: tf.getPlaceholderName3, quantity: tf.getPlaceholderQty3, notes: tf.getPlaceholderNotes3 }
-    };
-
-    const example = examples[index as keyof typeof examples];
-    if (example) {
-      return example[field];
-    }
-
-    return field === 'name' ? tf.ingName : field === 'quantity' ? tf.ingQuantity : tf.ingNotes;
-  };
+  // 1·3·5번째 행 예시 문구 — 5번째 행 예시("예: 소금")는 edit 만([PHR-D1 (b)-5])
+  const getPlaceholder = (index: number, field: 'name' | 'quantity' | 'notes') =>
+    getIngredientPlaceholder(tf, index, field, { fifthRowExample: true });
 
   const handleSubmit = async () => {
     // 유효성 검사
@@ -440,7 +426,7 @@ export default function EditRecipePage(props: PageProps) {
           servings: servings !== '' ? servings : null,
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
-          cuisine_type: cuisineType,
+          ...(cuisineType ? { cuisine_type: cuisineType } : {}),
           meal_type: 'lunch',
           is_vegetarian: isVegetarian,
           is_vegan: isVegan,
@@ -509,8 +495,8 @@ export default function EditRecipePage(props: PageProps) {
       </header>
 
       <div className="container mx-auto max-w-3xl px-6 py-6 space-y-10">
-        {/* Section 1: 기본 정보 — _components/BasicInfoSection.tsx 로 추출
-            (god-file 분해 Phase 2, 순수 표현·상태는 page 소유·JSX byte-identical) */}
+        {/* Section 1: 기본 정보 — 공용 BasicInfoSection(<section>+번호 h2 래퍼 포함). edit 는 커스텀 요리종류·
+            요리 유형 블록 없음(customCuisine/dish prop 생략) */}
         <BasicInfoSection
           t={t}
           tf={tf}
@@ -535,8 +521,7 @@ export default function EditRecipePage(props: PageProps) {
             {tf.section2Ingredients}
           </h2>
 
-          {/* 통합된 재료 준비 영역 — _components/IngredientsSection.tsx 로 추출
-              (edit 전용: 삭제 임계 <=1·focus ring 보존, JSX byte-identical) */}
+          {/* 통합된 재료 준비 영역 — 공용 IngredientsSection (edit: 삭제 임계 <=1 · "재료 5개 추가" 라벨) */}
           <IngredientsSection
             t={t}
             tf={tf}
@@ -546,6 +531,8 @@ export default function EditRecipePage(props: PageProps) {
             isDraggingIngredients={ingredientsDropZone.isDragging}
             unitInputRefs={unitInputRefs}
             getPlaceholder={getPlaceholder}
+            removeDisabledAtOrBelow={1}
+            addLabel={tf.addFiveIngredients}
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}
             onUpdateIngredient={updateIngredient}
@@ -586,72 +573,19 @@ export default function EditRecipePage(props: PageProps) {
             onStepDrop={handleStepDrop}
           />
 
-          {/* 완성된 요리 이미지 */}
-          <div className="space-y-3 pt-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.finalPhotoLabel}</label>
-            <p className="text-xs text-text-muted">{tf.finalPhotoDesc}</p>
-            {thumbnailImage ? (
-              <div className="relative w-full h-64">
-                <Image
-                  src={thumbnailImage}
-                  alt={tf.finalPhotoLabel}
-                  fill
-                  className="object-cover rounded-xl"
-                />
-                <button
-                  onClick={handleThumbnailRemove}
-                  className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-error transition-all text-xl"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <label className="block w-full">
-                <input
-                  type="file"
-                  accept="image/*"
-                  data-testid="thumbnail-file-input"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleThumbnailPick(file);
-                    }
-                    e.target.value = '';
-                  }}
-                  className="hidden"
-                  disabled={thumbUpload.uploading}
-                />
-                <div
-                  className={`w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-                    thumbnailDropZone.isDragging
-                      ? 'border-accent-warm bg-accent-warm/10'
-                      : 'border-white/20 hover:border-accent-warm hover:bg-white/5'
-                  }`}
-                  onDragOver={thumbnailDropZone.dropZoneProps.onDragOver}
-                  onDragEnter={thumbnailDropZone.dropZoneProps.onDragEnter}
-                  onDragLeave={thumbnailDropZone.dropZoneProps.onDragLeave}
-                  onDrop={thumbnailDropZone.dropZoneProps.onDrop}
-                >
-                  {thumbUpload.uploading ? (
-                    <>
-                      <div className="w-8 h-8 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm text-text-muted">{tf.uploading}</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-12 h-12 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-text-primary">{tf.finalPhotoAdd}</p>
-                        <p className="text-xs text-text-muted mt-1">{tf.maxFileSize}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </label>
-            )}
-          </div>
+          {/* 완성된 요리 이미지 — 공용 ThumbnailUploadField (옛 인라인 블록과 마크업 동일, [PHR-D1 (a)-1]) */}
+          <ThumbnailUploadField
+            tf={tf}
+            thumbnailImage={thumbnailImage}
+            uploadingThumbnail={thumbUpload.uploading}
+            isDraggingThumbnail={thumbnailDropZone.isDragging}
+            onUpload={handleThumbnailPick}
+            onRemove={handleThumbnailRemove}
+            onDrag={thumbnailDropZone.dropZoneProps.onDragOver}
+            onDragIn={thumbnailDropZone.dropZoneProps.onDragEnter}
+            onDragOut={thumbnailDropZone.dropZoneProps.onDragLeave}
+            onDrop={thumbnailDropZone.dropZoneProps.onDrop}
+          />
         </section>
 
         {/* Section 4: 추가 정보 */}
@@ -661,32 +595,15 @@ export default function EditRecipePage(props: PageProps) {
             {t.nutrition.section4Additional}
           </h2>
 
-          <div className="space-y-4">
-            <label className="text-sm font-medium text-text-secondary">{tf.dietaryLabel}</label>
-            <div className="flex flex-wrap gap-3">
-              {[
-                { value: isVegetarian, setter: setIsVegetarian, label: tf.dietaryVegetarian },
-                { value: isVegan, setter: setIsVegan, label: tf.dietaryVegan },
-                { value: isGlutenFree, setter: setIsGlutenFree, label: tf.dietaryGlutenFree },
-              ].map(opt => (
-                <button
-                  key={opt.label}
-                  type="button"
-                  onClick={() => opt.setter(!opt.value)}
-                  className={`px-4 py-2 rounded-full text-sm transition-all ${
-                    opt.value
-                      ? 'bg-accent-warm text-background-primary'
-                      : 'bg-background-secondary text-text-muted hover:bg-white/10'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* 식단 옵션 — 공용 DietaryOptionsField (edit 는 툴팁 없음 = 옛 인라인 마크업, [PHR-D1 (b)-4]) */}
+          <DietaryOptionsField
+            tf={tf}
+            isVegetarian={isVegetarian} setIsVegetarian={setIsVegetarian}
+            isVegan={isVegan} setIsVegan={setIsVegan}
+            isGlutenFree={isGlutenFree} setIsGlutenFree={setIsGlutenFree}
+          />
 
-          {/* 영양 정보 — _components/NutritionFields.tsx 로 추출 (edit 전용:
-              edit 의 무상한 validateNutritionInput 보존, JSX byte-identical) */}
+          {/* 영양 정보 — 공용 NutritionFields. edit 는 limits 생략 = 검증 상한 없음(옛 edit 동작 보존) */}
           <NutritionFields
             t={t}
             tf={tf}
@@ -706,8 +623,7 @@ export default function EditRecipePage(props: PageProps) {
             setSodium={setSodium}
           />
 
-          {/* 태그 — recipes/new/_components/TagsField 공유 재사용 (new/edit
-              동일 블록 — focus:ring-2 중복뿐, Tailwind 멱등 → 시각·행위 동일) */}
+          {/* 태그 — 공용 TagsField (recipes/_components) */}
           <TagsField
             label={tf.tagsLabel}
             placeholder={tf.tagInputPlaceholder}

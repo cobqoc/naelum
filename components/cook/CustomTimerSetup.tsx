@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useI18n } from '@/lib/i18n/context';
-import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
-import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import SmallModal from '@/components/Common/SmallModal';
+import CloseIcon from '@/components/icons/CloseIcon';
 
 interface CheckpointRow {
   /** React key 전용 (입력값 아님) */
@@ -37,10 +37,7 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
   const [rows, setRows] = useState<CheckpointRow[]>(
     prefill ? prefill.checkpointMinutes.map(m => newRow(String(m))) : [],
   );
-  const panelRef = useRef<HTMLDivElement>(null);
-  // a11y: 호출처 조건부 마운트 — isOpen=true 고정.
-  useEscapeKey(onClose, true);
-  useFocusTrap(true, panelRef);
+  // a11y(ESC·포커스 트랩)·배경·헤더는 공용 SmallModal 셸이 담당 — 호출처 조건부 마운트(ICL-20, 2026-10-04).
 
   const totalNum = Number(total);
   const totalValid = Number.isFinite(totalNum) && totalNum >= 1 && totalNum <= 120;
@@ -59,31 +56,7 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
     '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        ref={panelRef}
-        className="relative mx-4 w-full max-w-sm bg-background-secondary rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-          <span className="font-bold text-text-primary">⏱️ {t.cookMode.customTimerTitle}</span>
-          <button
-            onClick={onClose}
-            aria-label={t.common.close}
-            className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-white/10 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
+    <SmallModal title={<>⏱️ {t.cookMode.customTimerTitle}</>} onClose={onClose}>
         <div className="px-5 py-4 space-y-4">
           {/* 총 시간 */}
           <div>
@@ -139,9 +112,7 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
                     aria-label={t.common.close}
                     className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-error transition-all"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    <CloseIcon className="w-3.5 h-3.5" weight="regular" />
                   </button>
                 </div>
               ))}
@@ -165,7 +136,6 @@ export default function CustomTimerSetup({ onClose, onStart, prefill }: CustomTi
             {t.cookMode.timerStartButton}
           </button>
         </div>
-      </div>
-    </div>
+    </SmallModal>
   );
 }

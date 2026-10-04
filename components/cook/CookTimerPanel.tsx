@@ -54,7 +54,7 @@ export default function CookTimerPanel({
         <div className="fixed top-14 left-2 right-2 z-50 bg-background-secondary rounded-2xl shadow-2xl border border-white/10 max-h-64 overflow-y-auto">
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
             <h3 className="text-sm font-bold flex items-center gap-2">
-              ⏱️ 타이머 ({multiTimer.timers.length})
+              ⏱️ {t.cookMode.customTimerOpen} ({multiTimer.timers.length})
             </h3>
             <div className="flex gap-2">
               {multiTimer.completedTimers.length > 0 && (
