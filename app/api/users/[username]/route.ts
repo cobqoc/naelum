@@ -57,11 +57,11 @@ export async function GET(
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(6),
-    // 관심사 조회
-    supabase
-      .from('user_interests')
-      .select('interest_value')
-      .eq('user_id', profile.id),
+    // 관심사 조회 — 2026-10-04 API1-13: user_interests SELECT RLS 는 본인만(auth.uid() = user_id)이라
+    // 타인 프로필에선 항상 [] 였다 → 조회 생략(응답 interests: [] 동일, DB 왕복만 감소).
+    isOwnProfile
+      ? supabase.from('user_interests').select('interest_value').eq('user_id', profile.id)
+      : skip,
     // 식단 선호도 · 알레르기 — 민감 정보, 본인만
     isOwnProfile
       ? supabase.from('user_dietary_preferences').select('preference_type').eq('user_id', profile.id)

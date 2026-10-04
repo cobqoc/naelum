@@ -1,6 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
+// 2026-10-04 API1-37: tip_steps·tip_tags 행 매핑이 POST 와 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
+import { buildTipStepRows, buildTipTagRows } from '@/lib/api/recipeChildRows';
+import { firstOfEmbed } from '@/lib/queries/recipeCards';
 
 // GET /api/tip/[id]
 //
@@ -52,16 +55,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (shouldIncrement) {
     // 조회수 증가 — 비치명적(논블로킹). 실패해도 응답은 진행하되 .error 는 로깅.
-    const { error: viewError } = await supabase
-      .from('tip').update({ views_count: (data.views_count || 0) + 1 }).eq('id', id);
-    if (viewError) console.error('tip views_count update failed:', viewError);
+    // 2026-10-04 API1-05: tip UPDATE RLS 는 작성자만("Author update tip") — 증가 주체(비로그인·타인)의
+    // user-context UPDATE 는 0행·error 없음으로 무시돼 조회수가 영구 고정이었다.
+    // service-role 은 이 증가 UPDATE 한 곳에만 쓰고, 공개 팁(is_public·!is_draft) id 로 한정한다
+    // (shouldIncrement 는 공개 팁에서만 true — 비공개 팁은 위에서 작성자만 통과하고 작성자는 증가 제외).
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('tip views_count update skipped: SUPABASE_SERVICE_ROLE_KEY not set');
+    } else {
+      const { error: viewError } = await createAdminClient()
+        .from('tip')
+        .update({ views_count: (data.views_count || 0) + 1 })
+        .eq('id', id)
+        .eq('is_public', true)
+        .eq('is_draft', false);
+      if (viewError) console.error('tip views_count update failed:', viewError);
+    }
   }
 
   const result = {
     ...data,
     steps: (data.steps as { step_number: number }[]).sort((a, b) => a.step_number - b.step_number),
     tags: (data.tags as { tag: string }[]).map((t) => t.tag),
-    author: Array.isArray(data.author) ? data.author[0] : data.author,
+    author: firstOfEmbed(data.author), // 2026-10-04 API1-39: 같은 식 4벌 → lib/queries/recipeCards
   };
 
   const response = NextResponse.json({ tip: result });
@@ -109,14 +124,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   };
   if (typeof is_draft === 'boolean') updateFields.is_draft = is_draft;
 
-  const { error: updateError } = await supabase
+  const { error: updateError, count: updatedCount } = await supabase
     .from('tip')
-    .update(updateFields)
+    .update(updateFields, { count: 'exact' })
     .eq('id', id)
     .eq('author_id', user.id);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+  // 2026-10-04 API1-26: UPDATE 의 필터/RLS 불일치는 error 가 아니라 0행 — 남의 팁·없는 팁도 200 success 였다
+  // (steps/tags 를 안 보내면). 0행이면 자식 교체 전에 404 로 표면화. 본인 팁(1행)은 그대로 진행.
+  if (updatedCount === 0) {
+    return NextResponse.json({ error: '팁을 찾을 수 없습니다.' }, { status: 404 });
   }
 
   // 단계 교체 — Supabase는 RLS/제약 거부 시 throw 안 하고 { error } 반환.
@@ -125,15 +145,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { error: delStepsError } = await supabase.from('tip_steps').delete().eq('tip_id', id);
     if (delStepsError) return NextResponse.json({ error: delStepsError.message }, { status: 500 });
     if (steps.length > 0) {
-      const stepsToInsert = steps.map(
-        (s: { instruction: string; tip?: string; image_url?: string }, idx: number) => ({
-          tip_id: id,
-          step_number: idx + 1,
-          instruction: s.instruction,
-          tip: s.tip || null,
-          image_url: s.image_url || null,
-        })
-      );
+      const stepsToInsert = buildTipStepRows(id, steps);
       const { error: insStepsError } = await supabase.from('tip_steps').insert(stepsToInsert);
       if (insStepsError) return NextResponse.json({ error: insStepsError.message }, { status: 500 });
     }
@@ -144,7 +156,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { error: delTagsError } = await supabase.from('tip_tags').delete().eq('tip_id', id);
     if (delTagsError) return NextResponse.json({ error: delTagsError.message }, { status: 500 });
     if (tags.length > 0) {
-      const tagsToInsert = tags.map((tag: string) => ({ tip_id: id, tag }));
+      const tagsToInsert = buildTipTagRows(id, tags);
       const { error: insTagsError } = await supabase.from('tip_tags').insert(tagsToInsert);
       if (insTagsError) return NextResponse.json({ error: insTagsError.message }, { status: 500 });
     }
@@ -161,12 +173,15 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
   const { id } = await params;
 
-  const { error } = await supabase
+  const { error, count } = await supabase
     .from('tip')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('id', id)
     .eq('author_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // 2026-10-04 API1-26: 0행 삭제(남의 팁·없는 팁)도 200 success 라 클라가 낙관 제거 후 새로고침하면 되살아났다
+  // → 404. 본인 팁 삭제(1행)는 그대로 200 { success: true }.
+  if (count === 0) return NextResponse.json({ error: '팁을 찾을 수 없습니다.' }, { status: 404 });
   return NextResponse.json({ success: true });
 }

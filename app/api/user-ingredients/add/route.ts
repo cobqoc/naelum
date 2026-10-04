@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/api/isUuid';
+import { escapeLikePattern, hasUnescapableLikeChar } from '@/lib/api/likePattern';
 import { resolveExactIngredientId } from '@/lib/ingredients/resolveIngredientId';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -35,18 +37,25 @@ export async function POST(request: NextRequest) {
   const qty = Number.isNaN(addQty) ? 1 : addQty;
 
   // 같은 이름 + 만료일·보관위치 동일 항목 검색 (서버에서 — 클라 state stale·race 없음)
+  // 2026-10-04 AG2-13: 의도는 "대소문자 무시 정확 일치"인데 입력을 ilike 패턴으로 그대로 써서 `%`·`_` 가
+  // 와일드카드로 동작했다(예: "고%" 추가 → 기존 "고추" 수량에 합쳐짐) → 패턴 문자 이스케이프. `*` 는 PostgREST 가
+  // `%` 로 바꿔 이스케이프가 안 되므로, `*` 가 든 이름만 후보를 넓게 받아 정확 일치(대소문자 무시)로 다시 거른다.
+  // 특수문자 없는 일반 이름은 쿼리·결과 동일(limit 1, 첫 행).
+  const needsRecheck = hasUnescapableLikeChar(name);
   let q = supabase
     .from('user_ingredients')
-    .select('id, quantity')
+    .select('id, quantity, ingredient_name')
     .eq('user_id', user.id)
-    .ilike('ingredient_name', name);
+    .ilike('ingredient_name', escapeLikePattern(name));
   q = expiry === null ? q.is('expiry_date', null) : q.eq('expiry_date', expiry);
   q = storage === null ? q.is('storage_location', null) : q.eq('storage_location', storage);
-  const { data: matches, error: matchErr } = await q.limit(1);
+  const { data: matches, error: matchErr } = await q.limit(needsRecheck ? 50 : 1);
   if (matchErr) {
     return NextResponse.json({ error: matchErr.message }, { status: 500 });
   }
-  const mergeTarget = matches?.[0];
+  const mergeTarget = needsRecheck
+    ? matches?.find(m => String(m.ingredient_name).toLowerCase() === name.toLowerCase())
+    : matches?.[0];
 
   if (mergeTarget) {
     // 만료일·보관위치 같음 → 수량 합치기 (정보 손실 없음)
@@ -65,7 +74,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 신규 삽입 — ingredient_id 결정적 해석(이름 기반, 추측 0; 레시피 저장과 동일)
-  let ingredientId = (body.ingredient_id as string | null) ?? null;
+  // 클라이언트 id 는 UUID 형식일 때만 믿는다. "⭐ 자주" 탭 칩은 합성 id(`fav:<이름>`)를 갖고 있어
+  // 그대로 uuid 컬럼에 넣으면 22P02 로 추가가 실패했다(2026-10-04) → 그런 값은 이름으로 해석.
+  let ingredientId = isUuid(body.ingredient_id) ? body.ingredient_id : null;
   if (!ingredientId) {
     ingredientId = await resolveExactIngredientId(name, supabase);
   }

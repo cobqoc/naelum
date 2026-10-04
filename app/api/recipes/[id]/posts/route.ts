@@ -142,30 +142,38 @@ export async function POST(
     }
 
     // "만들어봤어요" 선언 — cooking_session 보장(트렌딩·검색배지·프로필 일관). 없을 때만 생성.
-    const { data: existingSession } = await supabase
-      .from('cooking_sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('recipe_id', recipeId)
-      .not('completed_at', 'is', null)
-      .maybeSingle()
+    // 2026-10-04 API1-01: 완료 세션 2행+ 이면 maybeSingle 이 null 을 줘 별점 저장마다 세션이 증식했다
+    // → 존재 확인은 limit(1). insert 실패는 기존처럼 리뷰 저장을 막지 않되 로그로 표면화.
+    // 2026-10-04 API1-45: 세션 존재 확인과 내 리뷰 조회는 서로 독립 → 병렬. 쓰기 순서(세션 보장 → 리뷰 저장)는 그대로.
+    const [{ data: existingSession }, { data: existing }] = await Promise.all([
+      supabase
+        .from('cooking_sessions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('recipe_id', recipeId)
+        .not('completed_at', 'is', null)
+        .limit(1)
+        .maybeSingle(),
+      // 유저당 리뷰 1개 — 있으면 수정, 없으면 생성
+      supabase
+        .from('recipe_posts')
+        .select('id')
+        .eq('recipe_id', recipeId)
+        .eq('user_id', user.id)
+        .not('rating', 'is', null)
+        .is('parent_id', null)
+        .eq('is_deleted', false)
+        .maybeSingle(),
+    ])
     if (!existingSession) {
       const now = new Date().toISOString()
-      await supabase.from('cooking_sessions').insert({
+      const { error: sessionInsertError } = await supabase.from('cooking_sessions').insert({
         user_id: user.id, recipe_id: recipeId, started_at: now, completed_at: now,
       })
+      if (sessionInsertError) {
+        console.error('[posts] cooking_session insert failed:', sessionInsertError)
+      }
     }
-
-    // 유저당 리뷰 1개 — 있으면 수정, 없으면 생성
-    const { data: existing } = await supabase
-      .from('recipe_posts')
-      .select('id')
-      .eq('recipe_id', recipeId)
-      .eq('user_id', user.id)
-      .not('rating', 'is', null)
-      .is('parent_id', null)
-      .eq('is_deleted', false)
-      .maybeSingle()
 
     let post, err
     if (existing) {

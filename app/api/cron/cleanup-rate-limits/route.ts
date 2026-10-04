@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getServiceRoleClient } from '@/lib/supabase/service'
+import { isAuthorizedCronRequest } from '@/lib/api/cron'
 
 export async function GET(request: NextRequest) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  // CRON_SECRET 미설정이면 거부(2026-10-04 AG2-16: 이전엔 "Bearer undefined" 통과)
+  if (!isAuthorizedCronRequest(request.headers)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  // 2026-10-04 AG2-29/API1-40: 인라인 사본 → 공용 service-role 클라이언트(같은 인자).
+  const supabase = getServiceRoleClient()
 
   const { error } = await supabase.rpc('cleanup_rate_limits')
 

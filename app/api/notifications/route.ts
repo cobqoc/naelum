@@ -114,7 +114,8 @@ export async function DELETE(request: NextRequest) {
   }
 
   // DELETE RLS 정책(20260601_notifications_delete_rls)으로 본인 알림 삭제 허용.
-  // .error 명시 체크 — 정책 누락/권한 문제로 0행 삭제 시 조용한 부활 방지(H12).
+  // .error 명시 체크 — 네트워크·제약 등 *오류*는 표면화한다. 주의(2026-10-04 API1-27 주석 정정): UPDATE/DELETE 는
+  // RLS 로 걸러져도 error 가 아니라 "0행 + error null" 이라, 정책이 다시 빠지면 이 체크로는 못 잡는다(행 수 확인 필요).
   const { error } = await supabase
     .from('notifications')
     .delete()

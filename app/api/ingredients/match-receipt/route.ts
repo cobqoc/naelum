@@ -153,8 +153,21 @@ function findIngredient(productText: string, ingredients: IngredientRow[]): Ingr
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  const body = await request.json() as { text: string };
+  // 2026-10-04 AG2-49: 형식 오류 JSON·객체 아닌 본문·문자열 아닌 text 는 request.json() throw / TypeError 로 500 이었다
+  // → 400. text 없음·빈 문자열은 기존처럼 200 { productLines: [] }.
+  let body: { text?: unknown } | null;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
   const { text } = body;
+  if (text != null && typeof text !== 'string') {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
 
   if (!text?.trim()) {
     return NextResponse.json({ productLines: [] });

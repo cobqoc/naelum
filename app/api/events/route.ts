@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 
@@ -23,9 +24,7 @@ const MAX_SESSION_LEN = 100
 const MAX_UA_LEN = 500
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

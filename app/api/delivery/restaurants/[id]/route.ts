@@ -16,21 +16,15 @@ export async function GET(
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: restaurant, error: restErr } = await supabase
-    .from('delivery_restaurants')
-    .select(RESTAURANT_COLS)
-    .eq('id', id)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (restErr) {
-    return NextResponse.json({ error: restErr.message }, { status: 500 });
-  }
-  if (!restaurant) {
-    return NextResponse.json({ restaurant: null, categories: [], items: [] }, { status: 404 });
-  }
-
-  const [{ data: categories }, { data: items }] = await Promise.all([
+  // 2026-10-04 AG2-45: 식당·카테고리·메뉴 read 는 모두 id 파라미터만 의존 → 3개 동시 시작(이전: 식당 확인 후 2개).
+  // 판정 순서(식당 오류 500 → 없음 404 → 200)·응답은 그대로, 404/500 이면 카테고리·메뉴 결과는 버린다.
+  const [{ data: restaurant, error: restErr }, { data: categories }, { data: items }] = await Promise.all([
+    supabase
+      .from('delivery_restaurants')
+      .select(RESTAURANT_COLS)
+      .eq('id', id)
+      .eq('is_active', true)
+      .maybeSingle(),
     supabase
       .from('delivery_menu_categories')
       .select(CATEGORY_COLS)
@@ -42,6 +36,13 @@ export async function GET(
       .eq('restaurant_id', id)
       .order('sort_order', { ascending: true }),
   ]);
+
+  if (restErr) {
+    return NextResponse.json({ error: restErr.message }, { status: 500 });
+  }
+  if (!restaurant) {
+    return NextResponse.json({ restaurant: null, categories: [], items: [] }, { status: 404 });
+  }
 
   return NextResponse.json({
     restaurant,

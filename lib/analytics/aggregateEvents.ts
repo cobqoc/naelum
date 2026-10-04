@@ -15,7 +15,7 @@ export interface EventRow {
   created_at: string;
 }
 
-export function deviceCategory(w: number | null): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
+function deviceCategory(w: number | null): 'mobile' | 'tablet' | 'desktop' | 'unknown' {
   if (!w) return 'unknown';
   if (w < 768) return 'mobile';
   if (w < 1280) return 'tablet';

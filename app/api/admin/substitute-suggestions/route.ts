@@ -43,71 +43,82 @@ export async function GET(_request: NextRequest) {
   const auth = await verifyAdmin()
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-  // 1) recipe_ingredients.substitutes 에서 누적 후보 쌍 카운트
-  const { data: rawRows, error } = await auth.supabase
-    .from('recipe_ingredients')
-    .select('ingredient_name, substitutes')
-    .not('substitutes', 'is', null)
+  // 2026-10-04 AG2-24(4): (①substitutes 읽기 → ②이름→id) 체인과 (③relations 읽기 → ④id→이름) 체인은 서로 결과를
+  // 쓰지 않음 → 두 체인을 병렬. 각 체인 안의 로직·순서는 그대로, ① 오류 시 500 도 그대로(그때 ③④ 결과는 버림).
+  const candidatesChain = (async () => {
+    // 1) recipe_ingredients.substitutes 에서 누적 후보 쌍 카운트
+    const { data: rawRows, error } = await auth.supabase
+      .from('recipe_ingredients')
+      .select('ingredient_name, substitutes')
+      .not('substitutes', 'is', null)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return { error, pairCounts: new Map<string, number>(), nameToId: new Map<string, string>() }
 
-  const pairCounts = new Map<string, number>()
-  for (const row of rawRows ?? []) {
-    const subs = Array.isArray(row.substitutes) ? (row.substitutes as unknown[]) : []
-    const from = row.ingredient_name.trim()
-    if (!from) continue
-    for (const raw of subs) {
-      let to = ''
-      if (typeof raw === 'string') to = raw.trim()
-      else if (raw && typeof raw === 'object' && 'name' in raw) {
-        const r = raw as { name?: unknown }
-        to = typeof r.name === 'string' ? r.name.trim() : ''
+    const pairCounts = new Map<string, number>()
+    for (const row of rawRows ?? []) {
+      const subs = Array.isArray(row.substitutes) ? (row.substitutes as unknown[]) : []
+      const from = row.ingredient_name.trim()
+      if (!from) continue
+      for (const raw of subs) {
+        let to = ''
+        if (typeof raw === 'string') to = raw.trim()
+        else if (raw && typeof raw === 'object' && 'name' in raw) {
+          const r = raw as { name?: unknown }
+          to = typeof r.name === 'string' ? r.name.trim() : ''
+        }
+        if (!to || to === from) continue
+        const key = `${from.toLowerCase()}|${to.toLowerCase()}`
+        pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1)
       }
-      if (!to || to === from) continue
-      const key = `${from.toLowerCase()}|${to.toLowerCase()}`
-      pairCounts.set(key, (pairCounts.get(key) ?? 0) + 1)
     }
-  }
 
-  // 2) 이름 → id 매핑 — ingredients_master 에서 이름 lookup
-  const allNames = new Set<string>()
-  for (const key of pairCounts.keys()) {
-    const [from, to] = key.split('|')
-    allNames.add(from)
-    allNames.add(to)
-  }
-  const nameToId = new Map<string, string>()
-  if (allNames.size > 0) {
-    const { data: nameRows } = await auth.supabase
-      .from('ingredients_master')
-      .select('id, name')
-      .in('name', Array.from(allNames).map(n => n.trim()))
-    for (const row of nameRows ?? []) {
-      nameToId.set((row.name as string).toLowerCase().trim(), row.id as string)
+    // 2) 이름 → id 매핑 — ingredients_master 에서 이름 lookup
+    const allNames = new Set<string>()
+    for (const key of pairCounts.keys()) {
+      const [from, to] = key.split('|')
+      allNames.add(from)
+      allNames.add(to)
     }
-  }
-
-  // 3) 이미 승급된 ingredient_relations 행
-  const { data: relationsRows } = await auth.supabase
-    .from('ingredient_relations')
-    .select('from_id, to_id, kind, source, suggestion_count, approved_at')
-
-  // join 으로 이름 가져오기
-  const promotedIds = new Set<string>()
-  for (const r of relationsRows ?? []) {
-    promotedIds.add(r.from_id as string)
-    promotedIds.add(r.to_id as string)
-  }
-  const idToName = new Map<string, string>()
-  if (promotedIds.size > 0) {
-    const { data: idNameRows } = await auth.supabase
-      .from('ingredients_master')
-      .select('id, name')
-      .in('id', Array.from(promotedIds))
-    for (const row of idNameRows ?? []) {
-      idToName.set(row.id as string, row.name as string)
+    const nameToId = new Map<string, string>()
+    if (allNames.size > 0) {
+      const { data: nameRows } = await auth.supabase
+        .from('ingredients_master')
+        .select('id, name')
+        .in('name', Array.from(allNames).map(n => n.trim()))
+      for (const row of nameRows ?? []) {
+        nameToId.set((row.name as string).toLowerCase().trim(), row.id as string)
+      }
     }
-  }
+    return { error: null, pairCounts, nameToId }
+  })()
+
+  const promotedChain = (async () => {
+    // 3) 이미 승급된 ingredient_relations 행
+    const { data: relationsRows } = await auth.supabase
+      .from('ingredient_relations')
+      .select('from_id, to_id, kind, source, suggestion_count, approved_at')
+
+    // join 으로 이름 가져오기
+    const promotedIds = new Set<string>()
+    for (const r of relationsRows ?? []) {
+      promotedIds.add(r.from_id as string)
+      promotedIds.add(r.to_id as string)
+    }
+    const idToName = new Map<string, string>()
+    if (promotedIds.size > 0) {
+      const { data: idNameRows } = await auth.supabase
+        .from('ingredients_master')
+        .select('id, name')
+        .in('id', Array.from(promotedIds))
+      for (const row of idNameRows ?? []) {
+        idToName.set(row.id as string, row.name as string)
+      }
+    }
+    return { relationsRows, idToName }
+  })()
+
+  const [{ error, pairCounts, nameToId }, { relationsRows, idToName }] = await Promise.all([candidatesChain, promotedChain])
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const promoted: PromotedRow[] = (relationsRows ?? [])
     .filter(r => idToName.has(r.from_id as string) && idToName.has(r.to_id as string))
@@ -153,7 +164,8 @@ export async function POST(request: NextRequest) {
   const auth = await verifyAdmin()
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-  const body = await request.json()
+  // 2026-10-04 AG2-49: 형식 오류 JSON·null 본문은 500 이었다 → 빈 본문 → 아래 기존 400('from_id, to_id required').
+  const body = (await request.json().catch(() => null)) ?? {}
   const fromId = typeof body.from_id === 'string' ? body.from_id : ''
   const toId = typeof body.to_id === 'string' ? body.to_id : ''
   const kind: Kind = body.kind === 'preparable_to' ? 'preparable_to' : 'substitute'
@@ -234,7 +246,10 @@ export async function DELETE(request: NextRequest) {
     if (revErr) return NextResponse.json({ error: revErr.message }, { status: 500 })
   }
 
-  await logAdminAction(auth.user.id, 'relation_revoke', 'ingredient_relations', `${fromId}-${toId}`, {
+  // 2026-10-04 AG2-24(1): target_id 는 admin_actions 의 UUID NOT NULL 컬럼인데 `${fromId}-${toId}`(73자)를 넣어
+  // insert 가 항상 22P02 로 실패 → 관계 회수 감사로그가 0건이었다. 유효한 UUID 인 from_id 를 대상으로 하고
+  // (위 delete 가 from_id 를 UUID 로 이미 통과시킴) to_id·kind 는 기존처럼 details 에.
+  await logAdminAction(auth.user.id, 'relation_revoke', 'ingredient_relations', fromId, {
     from_id: fromId, to_id: toId, kind,
   })
 

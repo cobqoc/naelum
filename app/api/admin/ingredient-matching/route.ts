@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
   const auth = await verifyAdmin()
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-  const body = await request.json()
+  // 2026-10-04 AG2-49: 형식 오류 JSON·null 본문은 500 이었다 → 빈 본문으로 보고 아래 기존 400 분기로.
+  const body = (await request.json().catch(() => null)) ?? {}
   const action = typeof body.action === 'string' ? body.action : ''
   const service: AnyClient = createServiceClient()
 
@@ -113,14 +114,15 @@ export async function POST(request: NextRequest) {
   if (!name) return NextResponse.json({ error: 'ingredient_name required' }, { status: 400 })
 
   // 이름의 모든 미연결 행에 번호 부여 (service-role — RLS 우회)
+  // 2026-10-04 AG2-45: 연결 수를 갱신 행을 *돌려받아* length 로 세던 것 → count: 'exact'(행 미전송). 갱신 대상·결과 동일,
+  // 응답 linked 값도 같음(반환 행이 PostgREST max-rows 에 걸리던 대량 연결만 정확해짐).
   const linkRows = async (ingredientId: string): Promise<{ count: number; error: { message: string } | null }> => {
-    const { data, error } = await service
+    const { count, error } = await service
       .from('recipe_ingredients')
-      .update({ ingredient_id: ingredientId })
+      .update({ ingredient_id: ingredientId }, { count: 'exact' })
       .eq('ingredient_name', name)
       .is('ingredient_id', null)
-      .select('id')
-    return { count: data?.length ?? 0, error }
+    return { count: count ?? 0, error }
   }
 
   if (action === 'link') {

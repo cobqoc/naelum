@@ -10,12 +10,28 @@ export async function PUT(request: NextRequest) {
     const { user, error: authError } = await requireAuth(supabase)
     if (authError) return authError
 
-    const body = await request.json()
+    // 2026-10-04 API1-41: 형식 오류 JSON·객체 아닌 본문·배열 아닌 필드는 아래에서 throw → catch → 500 이었고,
+    // 배열 아님(`interests: "abc"`)은 그 테이블을 *delete 한 뒤* .map TypeError 로 실패해 선호가 지워졌다
+    // → 쓰기 전에 400. 정상(배열) 입력은 그대로.
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+    }
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+    }
     const {
       interests = [],
       dietaryPreferences = [],
       allergies = [],
-    }: { interests: string[]; dietaryPreferences: string[]; allergies: string[] } = body
+    }: { interests: string[]; dietaryPreferences: string[]; allergies: string[] } = body as {
+      interests: string[]; dietaryPreferences: string[]; allergies: string[]
+    }
+    if (![interests, dietaryPreferences, allergies].every(Array.isArray)) {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 })
+    }
 
     const uid = user!.id
 

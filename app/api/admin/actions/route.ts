@@ -1,31 +1,18 @@
-import { verifyAdmin } from '@/lib/supabase/admin'
+import { guardAdminApi } from '@/lib/api/adminGuard'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePagination } from '@/lib/api/pagination'
-import { checkRateLimit } from '@/lib/ratelimit'
 
 /**
  * GET /api/admin/actions
  * 관리자 활동 로그 조회
  */
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
-  const { allowed } = await checkRateLimit(`admin-api:${ip}`, { windowMs: 10 * 60 * 1000, maxRequests: 100 })
-  if (!allowed) {
-    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
-  }
-
   try {
-    // 관리자 권한 확인
-    const auth = await verifyAdmin()
-
-    if ('error' in auth) {
-      return NextResponse.json(
-        { error: auth.error, code: auth.code },
-        { status: auth.status }
-      )
-    }
+    // 관리자 권한 확인 — 2026-10-04 AG2-30: 보일러플레이트 → lib/api/adminGuard. 인증 실패 본문의 code 는 옵션으로 보존.
+    // (rate limit 이 try 안으로 들어왔지만 getClientIp·checkRateLimit 은 throw 하지 않아 동작 동일)
+    const guard = await guardAdminApi(request, { includeErrorCode: true })
+    if (guard.response) return guard.response
+    const auth = guard.auth
 
     // 쿼리 파라미터
     const { searchParams } = new URL(request.url)

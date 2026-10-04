@@ -64,12 +64,16 @@ export async function POST(
     // 통합 피드(recipe_posts) 전환으로 폐기 — "별점 없는 만들어봤어요" 미지원(별점 필수 결정).
 
     // 이미 완료한 기록이 있는지 확인 (최근 24시간 이내)
+    // 2026-10-04 API1-01: 24h 내 세션이 2행+ 이면 maybeSingle 이 null → 또 insert(연쇄 증식).
+    // 가장 최근 1행만 받아 그 세션을 갱신(0/1행 결과 동일).
     const { data: recentSession } = await supabase
       .from('cooking_sessions')
       .select('id')
       .eq('user_id', user.id)
       .eq('recipe_id', recipeId)
       .gte('completed_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order('completed_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (recentSession) {

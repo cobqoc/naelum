@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { getClientIp } from '@/lib/api/clientIp'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
 import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch'
+import { fetchCookedRecipeIds } from '@/lib/queries/recipeCards'
 
 // 검색어 정제 — PostgREST 필터 주입 방어(H7). 단일 출처: lib/api/sanitizeSearch
 const sanitizeQuery = sanitizeSearchTerm
@@ -17,9 +19,7 @@ function safeParseInt(value: string | null, defaultVal: number, min: number, max
 
 // GET /api/search - 통합 검색
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
   const { allowed } = await checkRateLimit(`search:${ip}`, { windowMs: 60 * 1000, maxRequests: 30 })
   if (!allowed) {
     return NextResponse.json({ error: '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
@@ -162,19 +162,14 @@ export async function GET(request: NextRequest) {
     // has_cooked 읽기와 냉장고 매칭은 서로 독립(user.id + 결과 id 만 의존) → 병렬 (perf 2026-09-27).
     // 이전: has_cooked 를 먼저 붙인 행으로 매칭 → 최종 행 = { ...원본, has_cooked, ...매칭필드 }.
     // 병렬화 후에도 같은 키 순서가 되도록 decorate 에서 has_cooked 를 먼저, 매칭이 바꾼 필드를 뒤에 얹는다.
-    const [cookedRes, matched] = await Promise.all([
+    const [cookedSet, matched] = await Promise.all([
       allRecipeIds.length > 0
         // 완료 세션만 "만들어봤어요" — completed_at NULL(진행중)은 제외(클라·browse 와 동일 의미).
-        ? supabase
-            .from('cooking_sessions')
-            .select('recipe_id')
-            .eq('user_id', user.id)
-            .in('recipe_id', allRecipeIds)
-            .not('completed_at', 'is', null)
-        : Promise.resolve(null),
+        // (2026-10-04 API1-39: 같은 쿼리 4벌 → lib/queries/recipeCards.fetchCookedRecipeIds — 오류 시 빈 집합 동일)
+        ? fetchCookedRecipeIds(supabase, user.id, allRecipeIds)
+        : Promise.resolve(new Set<string>()),
       union.length > 0 ? attachFridgeMatch(supabase, user.id, union) : Promise.resolve(null),
     ])
-    const cookedSet = new Set(cookedRes?.data?.map(s => s.recipe_id) || [])
     const byId = new Map((matched ?? []).map(m => [m.id, m]))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const decorate = (r: any) => {
@@ -196,12 +191,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (query) {
-      supabase.from('search_history').insert({
-        user_id: user.id,
-        search_query: query,
-        search_type: type,
-        result_count: (results.recipes?.total || 0) + (results.users?.total || 0)
-      }).then(({ error }) => { if (error) console.error('search_history insert failed:', error); })
+      // 2026-10-04 API1-24: 응답이 기다리지 않는 insert 는 서버리스에서 응답 직후 인스턴스가 동결되면 유실될 수 있다
+      // → 같은 시점에 시작한 promise 를 after() 에 넘긴다(응답 바이트·시점 동일, 완료만 보장 — Vercel waitUntil).
+      after(Promise.resolve(
+        supabase.from('search_history').insert({
+          user_id: user.id,
+          search_query: query,
+          search_type: type,
+          result_count: (results.recipes?.total || 0) + (results.users?.total || 0)
+        }).then(({ error }) => { if (error) console.error('search_history insert failed:', error); })
+      ))
     }
   }
 

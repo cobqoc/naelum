@@ -80,6 +80,20 @@ export function verifyTOTP(secret: string, code: string, drift: number = 1): boo
   return false;
 }
 
+/**
+ * TOTP 시크릿 암호화 — `decryptSecret` 의 짝(같은 aes-256-cbc·키 파생 `hex(KEY.slice(0, 64))`·랜덤 16바이트 IV·
+ * `ivHex:cipherHex` 형식). 2026-10-04 AG2-32: 2FA setup 라우트의 인라인 사본을 이동(출력 형식·알고리즘 동일).
+ */
+export function encryptSecret(secret: string): string {
+  const encryptionKey = process.env.TOTP_ENCRYPTION_KEY;
+  if (!encryptionKey) throw new Error('TOTP_ENCRYPTION_KEY not configured');
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey.slice(0, 64), 'hex'), iv);
+  let encrypted = cipher.update(secret, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return iv.toString('hex') + ':' + encrypted;
+}
+
 export function decryptSecret(encryptedSecret: string): string {
   const encryptionKey = process.env.TOTP_ENCRYPTION_KEY;
   if (!encryptionKey) throw new Error('TOTP_ENCRYPTION_KEY not configured');

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 
@@ -44,9 +45,7 @@ function num(v: string | null): number | null {
 }
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
 
   // 지도 패닝은 요청이 잦음(moveend마다). 비로그인 공개 조회라 IP 기준 120/분.
   const { allowed } = await checkRateLimit(`delivery_nearby:${ip}`, {

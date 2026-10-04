@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
   if (!query || query.length < 2) {
     return NextResponse.json({ suggestions: [] });
   }
+  // 2026-10-04 AG2-49: 숫자가 아닌 limit 은 `.limit(NaN)` → PostgREST 오류 → 500 이었다 → 400.
+  if (Number.isNaN(limit)) {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
 
   try {
     // 검색어 확장: 정확 일치 시 추가 검색어 포함 (expansions 는 하드코딩 상수라 안전)

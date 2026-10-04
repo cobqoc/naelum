@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
+// 2026-10-04 API1-37: tip_steps·tip_tags 행 매핑이 PUT 과 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
+import { buildTipStepRows, buildTipTagRows } from '@/lib/api/recipeChildRows';
 
 // GET /api/tip?limit=20&offset=0&category=손질법&random=true
 export async function GET(request: NextRequest) {
@@ -29,6 +31,11 @@ export async function GET(request: NextRequest) {
   if (random) {
     query = query.limit(50);
   } else {
+    // 2026-10-04 API1-41: 숫자가 아닌 limit/offset 은 .range(…NaN) → PostgREST 오류 → 500 이었다 → 400.
+    // (random 경로는 limit 를 slice 에만 써서 원래 500 이 아니므로 그대로.)
+    if (Number.isNaN(limit) || Number.isNaN(offset)) {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+    }
     query = query.range(offset, offset + limit - 1);
   }
 
@@ -91,20 +98,14 @@ export async function POST(request: NextRequest) {
 
   // 단계 삽입 (draft이고 steps가 없으면 생략)
   if (steps && steps.length > 0) {
-    const stepsToInsert = steps.map((step: { instruction: string; tip?: string; image_url?: string }, idx: number) => ({
-      tip_id: tip.id,
-      step_number: idx + 1,
-      instruction: step.instruction,
-      tip: step.tip || null,
-      image_url: step.image_url || null,
-    }));
+    const stepsToInsert = buildTipStepRows(tip.id, steps);
     const { error: stepsError } = await supabase.from('tip_steps').insert(stepsToInsert);
     if (stepsError) return NextResponse.json({ error: stepsError.message }, { status: 500 });
   }
 
   // 태그 삽입
   if (tags && tags.length > 0) {
-    const tagsToInsert = tags.map((tag: string) => ({ tip_id: tip.id, tag }));
+    const tagsToInsert = buildTipTagRows(tip.id, tags);
     const { error: tagsError } = await supabase.from('tip_tags').insert(tagsToInsert);
     if (tagsError) return NextResponse.json({ error: tagsError.message }, { status: 500 });
   }

@@ -1,6 +1,5 @@
-import { verifyAdmin } from '@/lib/supabase/admin'
+import { guardAdminApi } from '@/lib/api/adminGuard'
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRateLimit } from '@/lib/ratelimit'
 import { dailyPageViews, topEvents, topPages, eventStats, type EventRow } from '@/lib/analytics/aggregateEvents'
 
 /**
@@ -15,18 +14,10 @@ const MAX_DAYS = 90
 const MAX_ROWS = 10_000
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
-  const { allowed } = await checkRateLimit(`admin-analytics-events:${ip}`, { windowMs: 10 * 60 * 1000, maxRequests: 100 })
-  if (!allowed) {
-    return NextResponse.json({ error: '요청이 너무 많습니다.' }, { status: 429 })
-  }
-
-  const auth = await verifyAdmin()
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status })
-  }
+  // 2026-10-04 AG2-30: 보일러플레이트 → lib/api/adminGuard — 이 라우트 고유의 rate-limit 키·429 문구는 옵션으로 보존
+  const guard = await guardAdminApi(request, { rateKeyPrefix: 'admin-analytics-events', rateLimitedMessage: '요청이 너무 많습니다.' })
+  if (guard.response) return guard.response
+  const auth = guard.auth
 
   const { searchParams } = new URL(request.url)
   const daysRaw = parseInt(searchParams.get('days') ?? '7', 10)

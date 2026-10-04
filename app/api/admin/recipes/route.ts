@@ -1,7 +1,6 @@
-import { verifyAdmin } from '@/lib/supabase/admin'
+import { guardAdminApi } from '@/lib/api/adminGuard'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePagination } from '@/lib/api/pagination'
-import { checkRateLimit } from '@/lib/ratelimit'
 
 // 정렬 가능 컬럼 — 화이트리스트 (임의 컬럼 정렬 차단)
 const SORT_COLUMNS: Record<string, string> = {
@@ -12,19 +11,10 @@ const SORT_COLUMNS: Record<string, string> = {
 
 // GET /api/admin/recipes - 레시피 목록 조회 (관리자용)
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
-  const { allowed } = await checkRateLimit(`admin-api:${ip}`, { windowMs: 10 * 60 * 1000, maxRequests: 100 })
-  if (!allowed) {
-    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
-  }
-
-  const auth = await verifyAdmin()
-
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status })
-  }
+  // 2026-10-04 AG2-30: IP→rate limit→verifyAdmin 보일러플레이트 → lib/api/adminGuard(같은 키·문구·상태코드)
+  const guard = await guardAdminApi(request)
+  if (guard.response) return guard.response
+  const auth = guard.auth
 
   const { searchParams } = new URL(request.url)
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams)

@@ -1,7 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { getServiceRoleClient } from '@/lib/supabase/service';
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { estimateExpiry } from '@/lib/freshness/shelfLife';
+import { isAuthorizedCronRequest } from '@/lib/api/cron';
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -12,9 +13,8 @@ webpush.setVapidDetails(
 // GET /api/push/send-expiry
 // Vercel Cron이 매일 오전 9시에 호출
 export async function GET(request: NextRequest) {
-  // 크론 시크릿 검증
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // 크론 시크릿 검증 — CRON_SECRET 미설정이면 거부(2026-10-04 AG2-16: 이전엔 "Bearer undefined" 통과)
+  if (!isAuthorizedCronRequest(request.headers)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -22,11 +22,8 @@ export async function GET(request: NextRequest) {
   // user_id)로 user_ingredients·notifications 등을 0건 읽어 cron 전체가 무력.
   // → 시스템 cron 의 올바른 컨텍스트인 service-role 사용 (CRON_SECRET 게이트).
   // 2026-05-17 RLS 감사서 발견한 선존 버그 수정.
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  // 2026-10-04 AG2-29/API1-40: 인라인 사본 → 공용 service-role 클라이언트(같은 인자).
+  const supabase = getServiceRoleClient();
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -52,13 +49,14 @@ export async function GET(request: NextRequest) {
   const daysFromToday = (iso: string) =>
     Math.ceil((new Date(iso + 'T00:00:00').getTime() - today.getTime()) / 86400000);
 
-  type Notify = { userId: string; id: string; type: 'expiry' | 'expiry_estimate'; title: string; message: string };
+  // masterId: user_ingredients.ingredient_id(도감 ingredients_master.id) — 알림 링크의 highlight 용(AG2-14).
+  type Notify = { userId: string; id: string; masterId: string | null; type: 'expiry' | 'expiry_estimate'; title: string; message: string };
   const notify: Notify[] = [];
 
   // (A) 확정 만료 — 유저가 직접 입력한 expiry_date 가 D-3 ~ D-0. 강한 알림(⏰).
   const { data: confirmed } = await supabase
     .from('user_ingredients')
-    .select('id, user_id, ingredient_name, expiry_date')
+    .select('id, user_id, ingredient_id, ingredient_name, expiry_date')
     .eq('expiry_alert', true)
     .in('user_id', optedInArr)
     .not('expiry_date', 'is', null)
@@ -68,7 +66,7 @@ export async function GET(request: NextRequest) {
   for (const ing of confirmed ?? []) {
     const d = daysFromToday(ing.expiry_date as string);
     notify.push({
-      userId: ing.user_id, id: ing.id, type: 'expiry',
+      userId: ing.user_id, id: ing.id, masterId: ing.ingredient_id ?? null, type: 'expiry',
       title: `⏰ 유통기한 임박: ${ing.ingredient_name}`,
       message: d === 0
         ? `${ing.ingredient_name}의 유통기한이 오늘 만료됩니다.`
@@ -80,7 +78,7 @@ export async function GET(request: NextRequest) {
   //     추측이라 *예상 D-1~D-0* 만(보수적, 과경보 방지) + "예상" 라벨로 확정과 구분(🧊).
   const { data: estRows } = await supabase
     .from('user_ingredients')
-    .select('id, user_id, ingredient_name, category, storage_location, purchase_date, ingredients_master!ingredient_id(shelf_life_days)')
+    .select('id, user_id, ingredient_id, ingredient_name, category, storage_location, purchase_date, ingredients_master!ingredient_id(shelf_life_days)')
     .eq('expiry_alert', true)
     .in('user_id', optedInArr)
     .is('expiry_date', null)
@@ -99,7 +97,7 @@ export async function GET(request: NextRequest) {
     const d = daysFromToday(estISO);
     if (d < 0 || d > 1) continue; // 보수적: 예상 D-1/D-0 만 (지나면 더는 안 보냄 → 도배 방지)
     notify.push({
-      userId: ing.user_id, id: ing.id, type: 'expiry_estimate',
+      userId: ing.user_id, id: ing.id, masterId: ing.ingredient_id ?? null, type: 'expiry_estimate',
       title: `🧊 보관기한 예상: ${ing.ingredient_name}`,
       message: `${ing.ingredient_name}의 예상 보관기한이 ${d === 0 ? '오늘' : '내일'}쯤이에요. 상태를 확인해보세요. (예상)`,
     });
@@ -127,7 +125,13 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId);
 
     for (const n of items) {
-      const actionUrl = `/kitchen?highlight=${n.id}`;
+      // 2026-10-04 AG2-14: 도감(/kitchen)의 highlight 는 ingredients_master.id 로만 찾는데 user_ingredients 행 id 를
+      // 넣어 상세가 열리지 않고 엉뚱한 목록 뷰만 떴다 → 마스터 id 가 있을 때만 highlight, 없으면 파라미터 없이(허브).
+      // item=<냉장고 행 id> 는 페이지가 읽지 않는 값으로, 아래 1일 1회 중복방지 키(action_url)를 이전처럼 *냉장고 항목
+      // 단위*로 유지하려고 남긴다(같은 마스터를 가진 항목·마스터 없는 항목끼리 알림이 하나로 합쳐지지 않게).
+      const actionUrl = n.masterId
+        ? `/kitchen?highlight=${n.masterId}&item=${n.id}`
+        : `/kitchen?item=${n.id}`;
 
       // 1) 앱 내 알림(드롭다운) — 구독 여부와 무관하게 생성. 타입+url+오늘 기준 1회 중복 방지.
       const { data: existing } = await supabase

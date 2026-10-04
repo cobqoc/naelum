@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 import { checkRateLimit } from '@/lib/ratelimit';
-import { uploadToBucket, getPublicUrl } from '@/lib/storage';
+import { parseUploadForm, uploadAndRespond } from '@/lib/storage/uploadRoute';
 
 const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
@@ -20,17 +20,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '영상 업로드 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
   }
 
-  let formData: FormData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return NextResponse.json({ error: '요청 형식이 잘못되었습니다.' }, { status: 400 });
-  }
-
-  const file = formData.get('file') as File | null;
-  if (!file) {
-    return NextResponse.json({ error: '파일을 선택해주세요.' }, { status: 400 });
-  }
+  // 2026-10-04 AG2-33: 본문 파싱·파일 유무(400 문구)와 업로드·응답은 upload 와 같은 골격 → lib/storage/uploadRoute.
+  const parsed = await parseUploadForm(request);
+  if (parsed.response) return parsed.response;
+  const { file } = parsed;
 
   if (!ALLOWED_TYPES.includes(file.type)) {
     return NextResponse.json(
@@ -50,9 +43,10 @@ export async function POST(request: NextRequest) {
 
   // MP4 매직 바이트 검증 (ftyp box — offset 4)
   if (file.type === 'video/mp4') {
-    const header = new Uint8Array(bytes, 4, 4);
+    // 2026-10-04 AG2-11: 8바이트 미만이면 new Uint8Array(bytes, 4, 4) 가 RangeError → 500 이었다 → 불일치(400).
+    const header = bytes.byteLength >= 8 ? new Uint8Array(bytes, 4, 4) : null;
     const ftyp = [0x66, 0x74, 0x79, 0x70]; // "ftyp"
-    if (!ftyp.every((b, i) => header[i] === b)) {
+    if (!header || !ftyp.every((b, i) => header[i] === b)) {
       return NextResponse.json({ error: '파일 내용이 선언된 형식과 일치하지 않습니다.' }, { status: 400 });
     }
   }
@@ -60,20 +54,5 @@ export async function POST(request: NextRequest) {
   const ext = file.type === 'video/quicktime' ? 'mov' : file.type === 'video/webm' ? 'webm' : 'mp4';
   const filename = `${user!.id}/${Date.now()}.${ext}`;
 
-  const { path: uploadedPath, error } = await uploadToBucket(
-    supabase,
-    'recipe-videos',
-    filename,
-    bytes,
-    { contentType: file.type, upsert: false }
-  );
-
-  if (error) {
-    return NextResponse.json({ error: '업로드 중 오류가 발생했습니다: ' + error.message }, { status: 500 });
-  }
-
-  const finalPath = uploadedPath ?? filename;
-  const publicUrl = getPublicUrl(supabase, 'recipe-videos', finalPath);
-
-  return NextResponse.json({ url: publicUrl, path: finalPath });
+  return uploadAndRespond(supabase, 'recipe-videos', filename, bytes, file.type);
 }

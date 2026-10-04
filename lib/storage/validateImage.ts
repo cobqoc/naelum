@@ -5,7 +5,7 @@
  * 매직바이트 검증은 확장자·Content-Type 위조(.jpg 로 위장한 실행파일 등)를 차단한다.
  */
 
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const FILE_SIGNATURES: Record<string, number[]> = {
@@ -33,6 +33,11 @@ export async function validateImageFile(file: File): Promise<ImageValidationResu
   }
 
   const bytes = await file.arrayBuffer();
+  // 2026-10-04 AG2-11: 8바이트 미만 파일은 new Uint8Array(bytes, 0, 8) 가 RangeError → 500 이었다.
+  // 그런 파일은 이전에도 통과한 적이 없으므로(항상 throw) 같은 불일치 메시지(→ 라우트 400)로 거부한다.
+  if (bytes.byteLength < 8) {
+    return { ok: false, error: '파일 내용이 선언된 형식과 일치하지 않습니다.' };
+  }
   const header = new Uint8Array(bytes, 0, 8);
   const expectedSig = FILE_SIGNATURES[file.type];
   if (expectedSig && !expectedSig.every((b, i) => header[i] === b)) {

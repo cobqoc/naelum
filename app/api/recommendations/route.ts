@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { fetchAllRows } from '@/lib/supabase/fetchAll'
@@ -8,6 +9,8 @@ import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases
 import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 import { getBlockedUserIds } from '@/lib/social/blocks'
+import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
+import { fetchCookedRecipeIds } from '@/lib/queries/recipeCards'
 
 // V2 알레르기 필터 — DB allergens 컬럼 lookup (2026-05-29).
 // substring 매칭·정규화 추측 제거. ingredient_id 기반 정확 매칭만.
@@ -88,9 +91,7 @@ function isAny(r: RecipeWithMatch): boolean {
 
 // GET /api/recommendations - 재료 기반 레시피 추천
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
   const { allowed } = await checkRateLimit(`recommendations:${ip}`, { windowMs: 60 * 1000, maxRequests: 20 })
   if (!allowed) {
     return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
@@ -131,13 +132,19 @@ export async function GET(request: NextRequest) {
         // 비로그인 체험에선 id 해석(resolveExactIngredientIds)을 기다리지 않고 먼저 시작한다 (perf 2026-09-27).
         let nameCandidatePromise: Promise<{ recipe_id: string }[]> | null = null
         const startNameCandidates = (): Promise<{ recipe_id: string }[]> => {
-          const ilikeClauses = ingredientNames.length > 0
-            ? ingredientNames.slice(0, 20).map(ing => `ingredient_name.ilike.%${ing}%`).join(',')
+          // 2026-10-04 API1-17: 이름을 .or() 필터 문자열에 그대로 넣으면 `%`·`_` 가 전 행 매치 와일드카드가 되고
+          // `,`·`(`·`"` 는 필터 문법을 깨 500 이 났다 → 검색 라우트와 같은 sanitizeSearchTerm 으로 정제, 정제 후 빈
+          // 이름은 제외(빈 패턴 `%%` = 전 행 매치 방지). 특수문자 없는 일반 이름은 그대로(같은 앞 20개 창).
+          const safeNames = ingredientNames.slice(0, 20).map(sanitizeSearchTerm).filter(Boolean)
+          const ilikeClauses = safeNames.length > 0
+            ? safeNames.map(ing => `ingredient_name.ilike.%${ing}%`).join(',')
             : null
           const p = ilikeClauses
             ? fetchAllRows<{ recipe_id: string }>(() => supabase
                 .from('recipe_ingredients')
-                .select('recipe_id')
+                // 2026-10-04 API1-16: 공개 레시피의 재료행만 후보로(아래 id 후보와 같은 이유).
+                .select('recipe_id, recipe:recipes!inner(status)')
+                .eq('recipe.status', 'published')
                 .or(ilikeClauses))
             : Promise.resolve([] as { recipe_id: string }[])
           // 앞선 단계가 먼저 throw 해 이 promise 가 await 되지 않을 때의 unhandled rejection 방지.
@@ -201,11 +208,16 @@ export async function GET(request: NextRequest) {
 
         // V2: 후보 검색 — FK 우선(recipe_ingredients.ingredient_id 인덱스), 이름 ilike fallback.
         // candidateIdPool 의존이라 위 병렬 이후. fetchAllRows 로 1000행 silent 절단 회피.
+        // 2026-10-04 API1-16: recipe_ingredients 는 SELECT 가 공개(USING true)라 비공개 레시피의 재료행까지 후보가
+        // 되고, 아래에서 후보를 300개로 *자른 뒤* published 필터를 걸어 공개 레시피가 잘려 나갔다(prod 대부분이
+        // 비공개). 후보 단계에서 공개 레시피로 한정(검색 라우트의 recipe:recipes!inner + recipe.status 와 같은 방식)
+        // → 300 상한은 공개 후보에만 적용. 아래 recipes 조회의 published 필터·매칭·정렬·응답 형태는 그대로.
         let idCandidateIds: string[] = []
         if (candidateIdPool.length > 0) {
           const idCandidateRows = await fetchAllRows<{ recipe_id: string }>(() => supabase
             .from('recipe_ingredients')
-            .select('recipe_id')
+            .select('recipe_id, recipe:recipes!inner(status)')
+            .eq('recipe.status', 'published')
             .in('ingredient_id', candidateIdPool))
           idCandidateIds = idCandidateRows.map(r => r.recipe_id)
         }
@@ -479,13 +491,8 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recipeIds = recommendations.map((r: any) => r.id).filter(Boolean) as string[]
     // 완료 세션만 "만들어봤어요" — 진행중(completed_at NULL) 제외(클라·browse·search 와 동일 의미).
-    const { data: cooked } = await supabase
-      .from('cooking_sessions')
-      .select('recipe_id')
-      .eq('user_id', user.id)
-      .in('recipe_id', recipeIds)
-      .not('completed_at', 'is', null)
-    const cookedSet = new Set(cooked?.map(s => s.recipe_id) || [])
+    // (2026-10-04 API1-39: 같은 쿼리 4벌 → lib/queries/recipeCards.fetchCookedRecipeIds — 오류 시 빈 집합 동일)
+    const cookedSet = await fetchCookedRecipeIds(supabase, user.id, recipeIds)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recommendations = recommendations.map((r: any) => ({ ...r, has_cooked: cookedSet.has(r.id) }))
   }

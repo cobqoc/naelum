@@ -126,12 +126,15 @@ export async function getRecipeDetailData(id: string): Promise<RecipeDetailData 
         .eq('recipe_id', id)
         .eq('user_id', user.id)
         .maybeSingle(),
+      // 2026-10-04 API1-01: cooking_sessions 는 (user,recipe) UNIQUE 가 없어 완료 세션이 2행 이상일 수 있다.
+      // maybeSingle 은 2행+면 data=null(PGRST116) → 존재 확인은 limit(1) 로(0/1행 결과 동일).
       supabase
         .from('cooking_sessions')
         .select('id')
         .eq('recipe_id', id)
         .eq('user_id', user.id)
         .not('completed_at', 'is', null)
+        .limit(1)
         .maybeSingle(),
       supabase
         .from('recipe_likes')

@@ -1,13 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { NextRequest, NextResponse } from 'next/server'
 
 // POST /api/auth/reset-password-email — 비밀번호 재설정 이메일 발송 (KMP 모바일 앱 전용)
 // 이메일 존재 여부 노출 방지: 항상 200 ok 반환
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
 
   const { allowed } = await checkRateLimit(`reset-pw:${ip}`, {
     windowMs: 60 * 60 * 1000,

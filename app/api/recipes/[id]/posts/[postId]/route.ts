@@ -72,22 +72,25 @@ export async function DELETE(
   const { user, error: authError } = await requireAuth(supabase)
   if (authError) return authError
 
-  const { data: post } = await supabase
-    .from('recipe_posts')
-    .select('id, user_id')
-    .eq('id', postId)
-    .maybeSingle()
+  // 2026-10-04 API1-45: 소유 확인 조회와 답글 수 count 는 서로 독립(postId 만 의존) → 병렬.
+  // count 는 소유 판정(404/403)을 통과한 뒤에만 쓴다 — 응답·쓰기 동일.
+  const [{ data: post }, { count }] = await Promise.all([
+    supabase
+      .from('recipe_posts')
+      .select('id, user_id')
+      .eq('id', postId)
+      .maybeSingle(),
+    // 답글이 남아있으면 soft delete(스레드 보존), 없으면 hard delete
+    supabase
+      .from('recipe_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('parent_id', postId)
+      .eq('is_deleted', false),
+  ])
   if (!post) return NextResponse.json({ error: '글을 찾을 수 없습니다.' }, { status: 404 })
   if (post.user_id !== user.id) {
     return NextResponse.json({ error: '본인 글만 삭제할 수 있습니다.' }, { status: 403 })
   }
-
-  // 답글이 남아있으면 soft delete(스레드 보존), 없으면 hard delete
-  const { count } = await supabase
-    .from('recipe_posts')
-    .select('id', { count: 'exact', head: true })
-    .eq('parent_id', postId)
-    .eq('is_deleted', false)
 
   if ((count || 0) > 0) {
     const { error } = await supabase

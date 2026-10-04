@@ -39,14 +39,16 @@ export async function GET(
     .range(offset, rangeEnd)
 
   if (type === 'published') {
+    // 공개 팁만 — 본인·남의 프로필 동일 (2026-10-04 API1-33: 아무 일도 안 하던 빈 `if (!isOwnProfile) {}` 제거)
     query = query.eq('is_public', true).eq('is_draft', false)
-    if (!isOwnProfile) {
-      // 남의 프로필: 공개 팁만
-    }
   } else if (type === 'drafts') {
     query = query.eq('is_draft', true)
   } else if (type === 'private') {
     query = query.eq('is_public', false).eq('is_draft', false)
+  } else {
+    // 2026-10-04 API1-33: 알 수 없는 type 은 필터 없이 작성자 팁 전체(본인이면 임시저장·비공개 섞임)가 200 으로 나갔다
+    // → recipes 라우트(`default: 잘못된 타입입니다` 400)와 같이 거부. 웹(published|drafts|private)·KMP(published) 호출은 불변.
+    return NextResponse.json({ error: '잘못된 타입입니다' }, { status: 400 })
   }
 
   const { data, count, error } = await query

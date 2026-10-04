@@ -1,22 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api/auth';
+import { requireAdminRole } from '@/lib/api/adminGuard';
 import { parsePagination } from '@/lib/api/pagination';
-
-/**
- * 관리자 권한 체크 헬퍼 함수
- */
-async function checkAdminRole(userId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
-    .maybeSingle();
-
-  return profile?.role === 'admin';
-}
 
 /**
  * GET /api/ingredients/pending
@@ -26,18 +11,10 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // 1. 인증 확인
-    const { user, error: authError } = await requireAuth(supabase);
-    if (authError) return authError;
-
-    // 2. 관리자 권한 체크
-    const isAdmin = await checkAdminRole(user.id);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: '관리자 권한이 필요합니다' },
-        { status: 403 }
-      );
-    }
+    // 1·2. 인증 + 관리자 권한 — 2026-10-04 AG2-31: checkAdminRole 2벌·이 블록 3벌 → lib/api/adminGuard.requireAdminRole
+    // (401 requireAuth 본문·403 '관리자 권한이 필요합니다'·프로필 없음 403 그대로)
+    const admin = await requireAdminRole(supabase);
+    if (admin.response) return admin.response;
 
     // 3. 파라미터 파싱
     const { searchParams } = new URL(request.url);

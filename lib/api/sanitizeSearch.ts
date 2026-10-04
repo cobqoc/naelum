@@ -19,3 +19,18 @@
 export function sanitizeSearchTerm(raw: string): string {
   return raw.replace(/[%_\\,(){}":*]/g, '').trim();
 }
+
+/**
+ * PostgREST 논리 필터(`.or('col.op.값,…')`) 문자열에 사용자 입력 값을 *글자 그대로* 넣기 위한 인용 (2026-10-04 AG2-25).
+ *
+ * postgrest-js 의 `.in()` 과 같은 규칙: 예약 문자(`,` `(` `)`)가 있으면 큰따옴표로 감싸고, 없으면 그대로 둔다
+ * → 특수문자 없는 일반 입력은 기존 필터 문자열과 바이트 동일. 따옴표 문법을 깨는 `"`·`\` 만 제거.
+ *
+ * `sanitizeSearchTerm` 과 달리 LIKE 와일드카드(`%`·`_`·`*`)를 지우지 않는다 — 관리자 사용자 검색의 `chef_kim`·
+ * `john_doe@…` 처럼 `_` 가 든 *정상* 입력이 `chefkim` 으로 바뀌어 결과가 달라지는 것을 막기 위함
+ * (`_` 는 LIKE 에서 자기 자신과도 일치하므로 기존 결과 유지).
+ */
+export function quoteOrFilterValue(raw: string): string {
+  const v = raw.replace(/["\\]/g, '');
+  return /[,()]/.test(v) ? `"${v}"` : v;
+}

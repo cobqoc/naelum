@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isUuid } from '@/lib/api/isUuid';
 import { NextRequest, NextResponse } from 'next/server';
 import { isFundamental } from '@/lib/recommendations/matchV2';
 import { parseQuantity, mergeQuantity } from '@/lib/shopping-list/quantity';
@@ -236,6 +237,10 @@ export async function PATCH(request: NextRequest) {
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: '업데이트할 필드가 없습니다.' }, { status: 400 });
   }
+  // 2026-10-04 API1-41: id 누락·비UUID 는 `id=eq.undefined` 등 → 22P02 → 500 이었다 → 400.
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from('shopping_list_items')
@@ -271,6 +276,10 @@ export async function DELETE(request: NextRequest) {
       .eq('is_checked', true);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else if (id) {
+    // 2026-10-04 API1-41: 비UUID id 는 22P02 → 500 이었다 → 400. (빈 id·파라미터 없음 = 전체 삭제 의미는 그대로 — 클라 계약)
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+    }
     const { error } = await supabase
       .from('shopping_list_items')
       .delete()

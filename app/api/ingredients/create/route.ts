@@ -2,7 +2,8 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { containsBadWords } from '@/lib/utils/badWordsFilter';
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein';
-import { ingredientCreationLimiter } from '@/lib/utils/rateLimit';
+import { quoteOrFilterValue } from '@/lib/api/sanitizeSearch';
+import { checkRateLimit } from '@/lib/ratelimit';
 import { requireAuth } from '@/lib/api/auth';
 import { suggestEmoji } from '@/lib/constants/ingredientEmoji';
 
@@ -21,9 +22,11 @@ export async function POST(request: NextRequest) {
     if (authError) return authError;
 
     // 2. Rate limiting (1분에 3개까지)
-    try {
-      await ingredientCreationLimiter.check(3, user.id);
-    } catch {
+    // 2026-10-04 AG2-27: 재-export 심(lib/utils/rateLimit)의 클래스형 ingredientCreationLimiter.check(3, user.id) 와
+    // 동일 — 그 check 는 !allowed 일 때만 throw(checkRateLimit 은 DB 오류 시 fail-open, throw 없음)하고 여기서 같은 429 로
+    // 바꿨다. 키(user.id)·창(60초)·한도(3)도 그대로.
+    const { allowed } = await checkRateLimit(user.id, { windowMs: 60 * 1000, maxRequests: 3 });
+    if (!allowed) {
       return NextResponse.json(
         { error: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.' },
         { status: 429 }
@@ -78,11 +81,15 @@ export async function POST(request: NextRequest) {
 
     // 7. 중복 체크 (Levenshtein distance)
     const firstTwoChars = name.substring(0, 2);
-    const { data: existing } = await supabase
+    // 2026-10-04 AG2-25: 이름 정규식이 `(`·`)` 를 허용해 `(주)두부` 같은 이름은 .or() 파싱 오류로 이 읽기가 실패했고,
+    // error 를 안 봐서 *중복검사 없이* 삽입이 진행됐다 → 예약 문자가 있을 때만 값 인용(일반 이름은 그대로) + 실패는 로그.
+    const prefixPattern = quoteOrFilterValue(`${firstTwoChars}%`);
+    const { data: existing, error: existingError } = await supabase
       .from('ingredients_master')
       .select('id, name, name_ko')
-      .or(`name.ilike.${firstTwoChars}%,name_ko.ilike.${firstTwoChars}%`)
+      .or(`name.ilike.${prefixPattern},name_ko.ilike.${prefixPattern}`)
       .limit(20);
+    if (existingError) console.error('[ingredients/create] duplicate-check read failed:', existingError);
 
     if (existing && existing.length > 0) {
       // 유사도 계산

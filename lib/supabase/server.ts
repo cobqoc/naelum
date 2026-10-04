@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { newServiceRoleClient } from './service'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -33,14 +33,6 @@ export async function createClient() {
  * DO NOT expose this client to client-side code
  */
 export function createAdminClient() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  )
+  // 2026-10-04 AG2-29/API1-40: 같은 인자의 인라인 생성 → lib/supabase/service 단일 출처(호출마다 새 인스턴스 — 기존과 동일).
+  return newServiceRoleClient()
 }

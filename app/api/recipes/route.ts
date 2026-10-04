@@ -1,24 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { parsePagination } from '@/lib/api/pagination'
 import { checkRateLimit } from '@/lib/ratelimit'
-import { normalizeSubstitutes } from '@/lib/recipes/substituteChips'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns'
-
-// 저장 boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
-// 빈 배열은 NULL 로 (jsonb 행 깔끔 유지).
-function normalizeSubstitutesForStorage(raw: unknown): unknown[] | null {
-  const list = normalizeSubstitutes(raw)
-  return list.length > 0 ? list : null
-}
+// 2026-10-04 API1-37: 자식 행 매핑(재료·단계·태그)·normalizeSubstitutesForStorage 가 PUT 과 2벌 → lib/api/recipeChildRows 단일 출처
+// (저장 boundary: legacy string[] / 신규 객체[] → 정규화 객체[], 빈 배열은 NULL — 동작 그대로)
+import {
+  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows,
+} from '@/lib/api/recipeChildRows'
 
 // GET /api/recipes - 레시피 목록 조회
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('cf-connecting-ip')
-    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
+  const ip = getClientIp(request.headers)
   const { allowed } = await checkRateLimit(`recipes:${ip}`, { windowMs: 60 * 1000, maxRequests: 60 })
   if (!allowed) {
     return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
@@ -148,21 +144,8 @@ export async function POST(request: NextRequest) {
   // 재료 추가
   if (ingredients && ingredients.length > 0) {
     // 클라가 번호 안 준 재료는 *이름 정확일치* 로만 자동 번호 부여 (추측 0). 못 찾으면 null → 어드민 큐.
-    const exactIds = await resolveExactIngredientIds(
-      ingredients.filter((i: { ingredient_id?: string | null }) => !i.ingredient_id).map((i: { ingredient_name: string }) => i.ingredient_name),
-      supabase
-    )
-    const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: number; unit: string; notes?: string; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }, index: number) => ({
-      recipe_id: recipe.id,
-      ingredient_name: ing.ingredient_name,
-      ingredient_id: ing.ingredient_id || exactIds.get(ing.ingredient_name) || null,
-      quantity: ing.quantity,
-      unit: ing.unit,
-      notes: ing.notes,
-      is_optional: ing.is_optional || false,
-      substitutes: normalizeSubstitutesForStorage(ing.substitutes),
-      display_order: index + 1
-    }))
+    const exactIds = await resolveExactIngredientIds(namesWithoutIngredientId(ingredients), supabase)
+    const ingredientsToInsert = buildRecipeIngredientRows(recipe.id, ingredients, exactIds)
 
     const { error: ingErr } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert)
     if (ingErr) {
@@ -172,15 +155,7 @@ export async function POST(request: NextRequest) {
 
   // 조리 단계 추가
   if (steps && steps.length > 0) {
-    const stepsToInsert = steps.map((step: { title?: string; instruction: string; timer_minutes?: number; tip?: string; image_url?: string | null }, index: number) => ({
-      recipe_id: recipe.id,
-      step_number: index + 1,
-      title: step.title,
-      instruction: step.instruction,
-      timer_minutes: step.timer_minutes,
-      tip: step.tip,
-      image_url: step.image_url
-    }))
+    const stepsToInsert = buildRecipeStepRows(recipe.id, steps)
 
     const { error: stepErr } = await supabase.from('recipe_steps').insert(stepsToInsert)
     if (stepErr) {
@@ -190,10 +165,7 @@ export async function POST(request: NextRequest) {
 
   // 태그 추가
   if (tags && tags.length > 0) {
-    const tagsToInsert = tags.map((tag: string) => ({
-      recipe_id: recipe.id,
-      tag_name: tag
-    }))
+    const tagsToInsert = buildRecipeTagRows(recipe.id, tags)
 
     const { error: tagErr } = await supabase.from('recipe_tags').insert(tagsToInsert)
     if (tagErr) {
@@ -201,8 +173,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 사용자 레시피 카운트 업데이트
-  await supabase.rpc('increment_recipes_count', { user_id: user.id })
+  // profiles.recipes_count 는 recipes 의 trigger_update_profile_recipes(AFTER INSERT OR DELETE)가 관리.
+  // 2026-10-04 API1-09: 여기서 부르던 rpc('increment_recipes_count') 는 prod 에 함수가 없어(pg_proc 실측)
+  // 매번 PGRST202 로 실패·결과 무시되던 죽은 왕복 → 제거(동작 동일).
 
   // 작성자 username 동봉 — 클라가 작성 후 /@username 리다이렉트에 사용(데이터 계층 이전:
   // recipes/new 의 draft 저장 후 profiles.username 직접 read 제거. 발행 경로는 무시).

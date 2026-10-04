@@ -13,11 +13,17 @@ export async function POST() {
     return NextResponse.json({ ok: true })
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('onboarding_completed')
     .eq('id', user.id)
     .maybeSingle()
+
+  // 조회 실패를 "미완료"로 취급하면 일시적 DB 오류에 *완료된 계정을 영구 삭제* 한다 → 삭제하지 않고 중단.
+  if (profileError) {
+    console.error('cancel-signup profile read error:', profileError)
+    return NextResponse.json({ error: 'profile_read_failed' }, { status: 500 })
+  }
 
   if (profile?.onboarding_completed) {
     return NextResponse.json(

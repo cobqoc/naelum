@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, rangeEnd)
 
-  const recipes = saves?.map(s => ({ ...s.recipe, save_notes: s.notes })) ?? []
+  // 2026-10-04 API1-10: 비-inner 임베드라 RLS 로 가려진(비공개 전환된) 레시피는 recipe=null 로 남아
+  // id 없는 항목({ save_notes })이 섞였다(KMP 저장목록 DTO 디코딩 실패). 그런 항목만 제외 — 정상 항목·순서 동일.
+  const recipes = saves?.filter(s => s.recipe != null).map(s => ({ ...s.recipe, save_notes: s.notes })) ?? []
 
   return NextResponse.json({
     recipes,
