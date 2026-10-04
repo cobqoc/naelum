@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { killStaleServerSync } from './e2e/stale-server';
 
 // .env.local을 Playwright Node 프로세스로 주입해 e2e/helpers에서 Supabase 서비스 롤 키 등을 쓸 수 있게 한다.
 // Next.js 서버는 자체적으로 .env.local을 읽지만, Playwright 테스트 러너는 별도 프로세스이므로 수동으로 파싱한다.
@@ -24,6 +25,13 @@ import { join } from 'path';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
+// 스테일 :3000 서버(옛 빌드 청크 404 → hydration 실패 → 클라 페이지 "Loading…" hang)를 webServer 의
+// "재사용" 결정 *전에* 정리. 설정은 러너와 각 워커에서 모두 평가되므로 러너 프로세스에서만 실행
+// (워커는 TEST_WORKER_INDEX 가 설정 로드 전에 세팅됨). 자세한 이유는 e2e/stale-server.ts.
+if (!process.env.TEST_WORKER_INDEX && !process.env.PLAYWRIGHT_BASE_URL) {
+  killStaleServerSync();
+}
+
 export default defineConfig({
   testDir: './e2e',
   // e2e/_*.spec.ts 는 스크린샷·시각검수용 스크래치 스펙(untracked)이라 정식 회귀
@@ -43,9 +51,6 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   reporter: 'html',
   timeout: 60000,
-  // 스테일 :3000 서버(옛 빌드 청크 404 → hydration 실패 → 클라 페이지 "Loading…" hang)
-  // 를 webServer 기동 전에 정리. pkill -f "next start" 가 next-server 를 못 죽이던 함정 처방.
-  globalSetup: './e2e/global-setup.ts',
 
   use: {
     baseURL: BASE_URL,

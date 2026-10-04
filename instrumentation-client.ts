@@ -11,7 +11,7 @@
 //
 // ── SDK 지연 로딩 (perf, 2026-09-27) ──────────────────────────────────────────
 // 이전엔 `import * as Sentry from '@sentry/nextjs'` 정적 import 라 SDK 전체(core·browser·
-// replay/rrweb·tracing ≈ 240KB raw / ~75KB gz)가 *모든 라우트의 공유 메인 청크*에 실렸다.
+// replay/rrweb·tracing ≈ 350KB raw / ~110KB gz — 2026-09-27 실측, docs/CHANGELOG 2026-09)가 *모든 라우트의 공유 메인 청크*에 실렸다.
 // 그런데 init 은 `enabled: hasDsn && 동의` 라 동의 전(대부분의 세션)엔 이벤트를 하나도 안 보낸다.
 // 이제 활성 여부를 (이전과 같은 시점인) 모듈 평가 시 한 번 결정하고, 활성일 때만 SDK 를
 // dynamic import 해 init 한다. 비활성 세션은 SDK 바이트를 아예 내려받지 않는다.

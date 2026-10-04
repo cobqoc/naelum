@@ -1,10 +1,13 @@
-# 낼름 CI — 필수 검증 순서(lint → build → e2e)를 자동 강제한다.
+# 낼름 CI — 필수 검증 순서를 파이프라인으로 강제한다.
+#   quality 잡(항상): lint(경고 0) → tsc → scan → vitest.
+#   e2e 잡(build + playwright)은 repo secrets 가 있을 때만 — 2026-10-04 기준 secrets 미설정이라 skip 된다
+#   (즉 build·e2e 는 CI 가 아니라 로컬/Preview 에서 확인해야 한다).
 #
 # CLAUDE.md "코드 수정 후 필수 검증 순서"를 사람 규율이 아니라 파이프라인으로 박는다.
 # (영상 「2차 소프트웨어 위기」의 처방: 처방을 알면서 외면하지 않도록 강제)
 #
 # 잡 구성
-#  - quality : lint + 단위 테스트(순수 함수). secret 불필요 → 항상 실행.
+#  - quality : lint(경고 0) + tsc + scan + 단위 테스트(순수 함수). secret 불필요 → 항상 실행.
 #  - e2e     : build + playwright. Supabase secret 필요 → 미설정 시 graceful skip
 #              (secret 없는 fork PR / 초기 상태에서 CI가 빨강이 되지 않도록).
 #
@@ -39,7 +42,10 @@ jobs:
           cache: npm
       - run: npm ci
       - name: ESLint (경고 0개)
-        run: npm run lint
+        # `eslint` 는 경고만 있으면 exit 0 → 스텝 이름대로 경고 0 을 강제하려면 --max-warnings=0 (2026-10-04)
+        run: npm run lint -- --max-warnings=0
+      - name: 타입 체크 (tsc — next build 없이도 테스트·e2e 파일까지 검사)
+        run: npx tsc --noEmit --incremental false
       - name: 패턴/god-file 스캔 (날짜 UTC 블로킹 + god-file ≥900 차단)
         run: npm run scan
       - name: Unit tests (vitest — 순수 로직 회귀 안전망)

@@ -2,29 +2,29 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 
 /**
- * 스테일 prod 서버 정리 — e2e 신뢰성 (2026-06-01 근본 처방).
+ * 스테일 prod 서버 정리 — e2e 신뢰성 (2026-06-01 근본 처방, 2026-10-04 실행 시점 교정).
  *
  * **증상**: 이전 `npm run start` 서버가 :3000 에 남아 *옛 빌드* HTML 을 서빙하면,
  * 브라우저가 디스크에 없는 청크(`turbopack-<옛해시>.js` 등)를 요청 → 404 →
  * hydration 실패 → 클라이언트 렌더 페이지(로그인 폼·cart 등)가 `app/loading.tsx`
  * "Loading…" 에서 멈춰 모든 인증/폼 e2e 가 1분 타임아웃으로 떨어진다.
  *
- * **원인**: CLAUDE.md 가 안내하던 `pkill -f "next start"` 는 실제 프로세스명이
- * `next-server` 라 포트를 못 비우고, playwright `reuseExistingServer:true` 가 그
- * 스테일 서버를 그대로 재사용한다.
+ * **원인**: `pkill -f "next start"` 는 실제 프로세스명이 `next-server` 라 포트를 못 비우고,
+ * playwright `reuseExistingServer:true` 가 그 스테일 서버를 그대로 재사용한다.
  *
  * **처방(신호 선택)**: turbopack *런타임 청크*(`turbopack-<hash>.js`)를 비교한다.
  *  - 런타임 청크는 모듈 그래프 content-hash라 *의미 있는* 빌드 변경마다 새 해시.
  *  - 항상 emit 됨 → fresh 빌드에서 false-positive 없음.
- *    (전체 청크를 비교하면 turbopack 의 preload-hint 미emit 청크 때문에 fresh
- *     빌드도 "missing" 1개가 잡혀 매번 kill 되는 오탐 발생 — 확인 후 폐기.)
  *  - 주석만 바꾼 no-op 재빌드는 출력 동일 → 런타임 동일 → "스테일 아님"(무해, 정답).
- * 서버 HTML 이 *디스크의 현재 런타임 청크명* 을 포함하지 않으면 = 옛 빌드 →
- * 포트 강제 정리 → webServer 가 fresh 재기동. 포함하면 최신이라 그대로 reuse
- * (빠른 반복 보존). 전부 best-effort — 실패해도 테스트는 진행된다.
+ * 서버 HTML 이 *디스크의 현재 런타임 청크명* 을 포함하지 않으면 = 옛 빌드 → 포트 강제 정리.
+ *
+ * **실행 시점(2026-10-04 교정)**: 예전엔 `globalSetup` 에서 했는데, playwright 는 webServer 플러그인
+ * setup(= "이미 떠 있으니 재사용" 결정)을 globalSetup *보다 먼저* 실행한다(playwright/lib/runner/tasks.js
+ * createGlobalSetupTasks). 그래서 globalSetup 이 서버를 죽이면 새 서버가 뜨지 않아 그 실행의 테스트가 전부
+ * ERR_CONNECTION_REFUSED 였다. 이제 playwright.config.ts 가 *설정 평가 시점*(webServer 결정 전)에 호출한다 —
+ * 죽이면 webServer 가 곧바로 fresh 빌드·기동한다. 전부 best-effort: 실패해도 테스트는 진행된다.
  */
-export default async function globalSetup() {
-  if (process.env.PLAYWRIGHT_BASE_URL) return; // 외부 서버 사용 시 관여 안 함
+export function killStaleServerSync(): void {
   try {
     const chunksDir = '.next/static/chunks';
     if (!existsSync(chunksDir)) return; // 빌드 없음 → webServer 가 빌드함
@@ -40,11 +40,11 @@ export default async function globalSetup() {
     if (!html) return;
 
     if (!html.includes(runtimeChunk)) {
-      // 옛 빌드 서빙 중 — 포트 강제 정리(next-server 포함). 그러면 webServer 가 fresh 기동.
+      // 옛 빌드 서빙 중 — 포트 강제 정리(next-server 포함). 이어서 webServer 가 fresh 기동.
       try {
         execSync('lsof -ti tcp:3000 | xargs kill -9', { stdio: 'ignore' });
         execSync('sleep 1');
-        console.log('[e2e global-setup] 스테일 :3000 서버 종료(런타임 청크 불일치=옛 빌드) → fresh 재기동');
+        console.log('[e2e] 스테일 :3000 서버 종료(런타임 청크 불일치=옛 빌드) → webServer 가 fresh 재기동');
       } catch { /* ignore */ }
     }
   } catch { /* best-effort */ }
