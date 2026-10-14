@@ -1308,6 +1308,7 @@ npx tsx scripts/import-nongsaro-koreng.ts --import --prod
 ---
 
 ### 배달 DB (2026-05-16)
+- **봉인(2026-10-15)**: `DELIVERY_ENABLED` 가 정확히 `'true'` 가 아니면 `proxy.ts` 가 `/delivery`·`/merchant`·`/rider`·`/api/delivery` 를 **404** (관리자 포함, `lib/delivery/seal.ts`). 운영(Production) Vercel 에는 넣지 않고 로컬 `.env.local`·Preview 에만 넣는다. 런타임에 읽으므로 값만 바꾸면 되고 다시 빌드할 필요 없음(로컬 `next start` 로 확인). e2e 서버는 `playwright.config.ts` 가 켠다. 관리자 메뉴의 배달 링크는 봉인 중엔 404 로 간다
 - **dev 적용 완료 / prod 미적용** — 출시 결정 시 prod 적용 필요
 - 적용된 테이블 8개 (`naelum-dev` jmyrdoguxlizvajfcwep):
   - `delivery_restaurants` / `delivery_menu_categories` / `delivery_menu_items` (`20260516_delivery_schema.sql`, 샘플 식당 6개)

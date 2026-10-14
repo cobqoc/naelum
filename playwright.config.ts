@@ -89,5 +89,7 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
+    // 배달 e2e 는 봉인을 연 서버에서 돈다(운영은 봉인 — lib/delivery/seal.ts). 재사용 서버는 직접 켠 값 그대로.
+    env: { ...process.env, DELIVERY_ENABLED: 'true' } as Record<string, string>,
   },
 });

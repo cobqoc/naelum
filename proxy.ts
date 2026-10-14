@@ -3,6 +3,7 @@ import { updateSession, USER_ID_HEADER } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 import { SUPPORTED_LANGUAGES, type Language } from '@/lib/i18n/locales'
 import { peekSessionJwt } from '@/lib/auth/peekSessionJwt'
+import { isDeliveryEnabled, isDeliveryPath } from '@/lib/delivery/seal'
 
 // /[lang]/ path-based i18n. URL prefix가 없으면 detected locale로 redirect.
 // 각 locale별 정적 prerender → CDN 캐시 분리 가능 (Vary 쿠키 없이도 캐싱).
@@ -184,6 +185,12 @@ export async function proxy(request: NextRequest) {
   // 정적 PWA 자산 통과 — 세션 갱신·게이트 생략, Cache-Control 은 기존과 동일 (STATIC_PASSTHROUGH 주석 참고)
   if (STATIC_PASSTHROUGH.includes(pathname)) {
     return applyNoStore(NextResponse.next(), pathname, hasSupabaseSessionCookie(request))
+  }
+
+  // 배달 봉인 — 운영은 DELIVERY_ENABLED 가 없어 배달·가게·라이더 화면과 배달 API 가 404 (lib/delivery/seal.ts).
+  // i18n 리다이렉트보다 앞이라 /delivery 와 /ko/delivery 가 같은 404 — 리다이렉트로 경로 존재를 흘리지 않는다.
+  if (!isDeliveryEnabled(process.env.DELIVERY_ENABLED) && isDeliveryPath(stripLang(pathname))) {
+    return new NextResponse('Not Found', { status: 404 })
   }
 
   // /[lang]/ path-based i18n: bare path는 detected lang으로 redirect.
