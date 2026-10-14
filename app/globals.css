@@ -279,8 +279,11 @@ a,
   outline-offset: 2px;
 }
 
-/* Remove default input styles on mobile */
-input,
+/* Remove default input styles on mobile
+   체크박스 · 라디오는 빼야 한다 — appearance:none 이면 네모 · 동그라미가 통째로 사라진다.
+   이 규칙은 층(@layer) 밖이라 Tailwind 유틸(appearance-auto 등)로도 못 이긴다(2026-10-15 관리자 일괄 선택 ·
+   장바구니 「가진 재료 빼기」 · 신고 사유 라디오가 안 보이던 원인). 직접 그리는 체크박스는 appearance-none 클래스를 단다. */
+input:not([type="checkbox"]):not([type="radio"]),
 textarea,
 select {
   -webkit-appearance: none;
