@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v16';
+const CACHE_VERSION = 'v17';
 const CACHE_NAME = `naelum-${CACHE_VERSION}`;
 const STATIC_CACHE = `naelum-static-${CACHE_VERSION}`;
 const RECIPE_CACHE = `naelum-recipes-${CACHE_VERSION}`;
@@ -56,7 +56,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Skip API, auth, 페이지 탐색 요청 (Next.js SSR 페이지는 항상 네트워크에서)
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return;
+  if (url.pathname.startsWith('/api/') || /^(\/(?:ko|en|ja|zh|es|fr|de|it))?\/auth\//.test(url.pathname)) return;
 
   // Strategy: Next.js 정적 자산 — Cache First (hash 포함되어 영구 캐시 안전)
   if (url.pathname.startsWith('/_next/static/')) {
@@ -104,11 +104,15 @@ self.addEventListener('fetch', (event) => {
   // 이 분기가 *영영 미실행* → 오프라인 레시피 캐시가 죽어 있었다(2026-06-01 수정).
   // locale 목록은 SUPPORTED_LANGUAGES(lib/i18n/locales) 와 동기화. 신규 locale 추가 시 갱신.
   // bare /recipes/[id] 도 안전상 허용(미들웨어가 prefix 로 redirect 하지만 방어적).
-  if (url.pathname.match(/^(\/(?:ko|en|ja|zh|es|fr|de|it))?\/recipes\/[^/]+$/)) {
+  // 2026-10-19 (감사 ICL-26): 서버가 no-store 로 보낸 응답(로그인 세션 — 비공개 레시피·개인 메모 포함)은 저장하지 않는다.
+  // 공용 기기에서 로그아웃 뒤 오프라인으로 이전 사용자 화면이 보이던 문제. 문서 탐색만 캐시(RSC ?_rsc= 요청 제외),
+  // 작성 폼 /recipes/new 는 레시피가 아니라 제외.
+  if (url.pathname.match(/^(\/(?:ko|en|ja|zh|es|fr|de|it))?\/recipes\/(?!new$)[^/]+$/)) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.ok && response.type === 'basic') {
+          const noStore = (response.headers.get('cache-control') || '').includes('no-store');
+          if (response.ok && response.type === 'basic' && request.mode === 'navigate' && !noStore) {
             const clone = response.clone();
             caches.open(RECIPE_CACHE).then((cache) => {
               cache.put(request, clone);
@@ -180,20 +184,8 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// 특정 레시피 오프라인 저장
+// 로그아웃 시 레시피 캐시 비우기 (lib/auth/logout.ts 가 보냄). CACHE_RECIPE 는 보내는 쪽이 없어 삭제(2026-10-19).
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'CACHE_RECIPE') {
-    const { url, assets } = event.data;
-    caches.open(RECIPE_CACHE).then((cache) => {
-      cache.add(url);
-      if (assets && assets.length > 0) {
-        caches.open(IMAGE_CACHE).then((ic) => {
-          assets.forEach((asset) => ic.add(asset).catch(() => {}));
-        });
-      }
-    });
-  }
-
   if (event.data && event.data.type === 'CLEAR_RECIPE_CACHE') {
     caches.delete(RECIPE_CACHE);
   }

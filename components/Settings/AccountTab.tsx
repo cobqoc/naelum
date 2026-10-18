@@ -7,11 +7,11 @@ import { localDateISO } from '@/lib/date/localDate';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
 import { getPasswordStrength } from '@/lib/utils/password';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useCookieConsent } from '@/lib/cookieConsent/context';
 import { useToast } from '@/lib/toast/context';
+import { logout } from '@/lib/auth/logout';
 
-const TwoFactorTab = dynamic(() => import('@/components/Settings/TwoFactorTab'), { ssr: false });
+const TwoFactorTab = dynamic(() => import('@/components/Settings/TwoFactorTab'), { loading: () => null });
 
 // 2FA UI 숨김 (2026-06-01) — 로그인 경로에서 TOTP 를 강제하지 않아(H4 미구현) 2FA 를 켜도
 // 비밀번호만으로 로그인됨 → 사용자에게 거짓 안전감을 준다. 로그인 강제(H4)를 제대로
@@ -21,7 +21,6 @@ const TWO_FACTOR_UI_ENABLED = false;
 interface AccountTabProps {
   profile: { id: string; email: string; created_at: string } | null;
   supabase: SupabaseClient;
-  router: AppRouterInstance;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: Record<string, any>;
 }
@@ -46,7 +45,7 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-export default function AccountTab({ profile, supabase, router, t }: AccountTabProps) {
+export default function AccountTab({ profile, supabase, t }: AccountTabProps) {
   const sp = t.settingsPage;
   const toast = useToast();
 
@@ -545,10 +544,8 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
         {/* Logout */}
         <button
           onClick={async () => {
-            localStorage.removeItem('naelum_auto_login');
-            localStorage.removeItem('naelum_saved_email');
-            await supabase.auth.signOut();
-            router.push('/');
+            // 헤더 로그아웃과 같은 단일 출처(lib/auth/logout) — 이 기기만 로그아웃·SW 캐시 정리·풀 리로드
+            if (!(await logout())) toast.error(t.auth.errNetwork);
           }}
           className="w-full py-3 rounded-xl bg-background-secondary text-text-primary font-bold hover:bg-white/10 transition-all"
         >

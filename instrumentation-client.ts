@@ -52,23 +52,28 @@ function _hasAnalyticsConsent(): boolean {
 }
 
 const hasDsn = !!process.env.NEXT_PUBLIC_SENTRY_DSN
-const hasAnalyticsConsent = _hasAnalyticsConsent()
 
 // 활성화 조건 (이전 `enabled:` 옵션과 동일):
 //   1. DSN 설정됨
 //   2. 사용자가 "분석·에러 추적" 쿠키 동의 (GDPR)
 // 비동의 사용자는 SDK 자체를 로드하지 않는다(이전: 로드는 하되 이벤트 전송 안 함).
-const enabled = hasDsn && hasAnalyticsConsent
+// 로드 시점 판정에 더해, 세션 중 동의가 바뀌면(아래 이벤트) 바로 시작/중단한다 — 이전엔 철회 후에도
+// 새로고침 전까지 에러·리플레이를 계속 보냈다(2026-10-19 감사 ICL-41, GDPR Art.7(3)).
+const enabled = hasDsn && _hasAnalyticsConsent()
 
 let sentry: SentryModule | null = null
 
-if (enabled) {
+function startSentry(): void {
+  const g = globalThis as SentryGlobal
+  if (g.__naelumSentry) return
   const ready: Promise<SentryModule | null> = import('./lib/sentry/client')
     .then((Sentry) => {
+      // 로드되는 사이 동의가 철회됐으면 시작하지 않는다
+      if (g.__naelumSentry !== ready) return null
       Sentry.init({
         dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-        enabled,
+        enabled: true,
 
         // 샘플링 비율 (프로덕션에서 10% 트랜잭션 추적)
         tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -85,7 +90,29 @@ if (enabled) {
       return Sentry
     })
     .catch(() => null) // SDK 청크 로드 실패 = 관측성만 손실, 앱 동작 무관
-  ;(globalThis as SentryGlobal).__naelumSentry = ready
+  g.__naelumSentry = ready
+}
+
+function stopSentry(): void {
+  const g = globalThis as SentryGlobal
+  const ready = g.__naelumSentry
+  if (!ready) return
+  g.__naelumSentry = undefined
+  sentry = null
+  void ready.then((Sentry) => Sentry?.close()).catch(() => {})
+}
+
+if (enabled) startSentry()
+
+// lib/cookieConsent/types.ts 의 CONSENT_CHANGED_EVENT 와 동기화 유지 (번들 분리로 import 불가 — 파일 상단 주의)
+const _CONSENT_CHANGED_EVENT = 'naelum:consent-changed'
+
+if (typeof window !== 'undefined' && hasDsn) {
+  window.addEventListener(_CONSENT_CHANGED_EVENT, (e) => {
+    const analytics = (e as CustomEvent<{ analytics?: boolean }>).detail?.analytics === true
+    if (analytics) startSentry()
+    else stopSentry()
+  })
 }
 
 // Next 가 클라이언트 네비게이션마다 호출. SDK 로드 전(또는 비활성)엔 no-op —

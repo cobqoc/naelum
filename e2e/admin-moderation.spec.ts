@@ -63,6 +63,20 @@ test.describe('어드민 — 사용자 차단·활동 로그', () => {
           data: { email: victim.email, password: victim.password },
         })
         expect(signin.ok()).toBe(true)
+        // 변경 API 도 차단 → 403 banned, 그리고 차단 응답이 세션 쿠키를 지운다
+        const write = await victimContext.request.post('/api/user-ingredients', {
+          data: { ingredient_name: '차단테스트', category: 'veggie' },
+        })
+        expect(write.status()).toBe(403)
+        expect((await write.json()).error).toBe('banned')
+        const me = await victimContext.request.get('/api/users/me')
+        expect(me.status()).toBe(401)
+
+        // 다시 로그인해도 보호 페이지는 홈으로 돌려보낸다
+        const signin2 = await victimContext.request.post('/api/test/signin', {
+          data: { email: victim.email, password: victim.password },
+        })
+        expect(signin2.ok()).toBe(true)
         const victimPage = await victimContext.newPage()
         await victimPage.goto('/recipes/new', { waitUntil: 'domcontentloaded' })
         await expect(victimPage).not.toHaveURL(/\/recipes\/new/)

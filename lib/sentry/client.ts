@@ -11,4 +11,4 @@
  *   두 번들이 공유하면 Turbopack dev 에서 "module factory not available" 에러가 난다.
  *   에러 바운더리는 lib/sentry/captureException.ts(런타임 import 없음) 를 쓴다. (perf 2026-09-27)
  */
-export { init, replayIntegration, captureRouterTransitionStart, captureException } from '@sentry/nextjs'
+export { init, close, replayIntegration, captureRouterTransitionStart, captureException } from '@sentry/nextjs'

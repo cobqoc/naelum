@@ -19,6 +19,7 @@ import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useListKeyboardNav } from '@/lib/hooks/useListKeyboardNav';
+import { logout } from '@/lib/auth/logout';
 
 const WriteModal = dynamic(() => import('../WriteModal'), { loading: () => null });
 
@@ -50,17 +51,8 @@ function Header() {
   useCartRestore('desktop', () => setShowCart(true));
 
   const handleLogout = async () => {
-    localStorage.removeItem('naelum_auto_login');
-    // 서버 사이드 로그아웃: 서버가 쿠키를 직접 제거하고 홈으로 리다이렉트
-    try {
-      await fetch('/api/auth/signout', { method: 'POST', redirect: 'manual' });
-    } catch {
-      // 2026-10-04 PAU-62: 네트워크 예외 시 처리되지 않은 rejection 으로 아무 반응 없이 멈췄다.
-      // 서버 쿠키가 그대로라 이동해도 로그인 상태이므로, 실패를 알리고 현재 화면에 머문다.
-      toast.error(t.auth.errNetwork);
-      return;
-    }
-    window.location.href = '/';
+    // 2026-10-04 PAU-62: 네트워크 예외 시 아무 반응 없이 멈췄다 → 실패를 알리고 현재 화면에 머문다(lib/auth/logout).
+    if (!(await logout())) toast.error(t.auth.errNetwork);
   };
 
   const closeAll = () => {
