@@ -4,7 +4,7 @@
  *
  * 우선순위 체인 (사용처: inferStorageLocation):
  *   1. 정확 일치 (STORAGE_MAP에 동일 이름)
- *   2. 부분 포함 (STORAGE_MAP 키를 재료명이 포함, 또는 반대)
+ *   2. 부분 포함 — 재료명이 키(2자 이상)를 포함할 때, *가장 긴 키* 우선 (예: "갓김치" → '김치' 냉장, '김' 아님)
  *   3. 카테고리 fallback (meat→냉장, veggie→상온 등)
  *   4. '상온' (최종 fallback)
  *
@@ -36,12 +36,12 @@ const ROOM_TEMP: string[] = [
   '청주', '맛술', '미림',
   // 건어물·통조림
   '김', '미역', '다시마', '멸치', '건새우', '황태', '북어',
-  '참치캔', '참치', '꽁치캔', '고등어캔', '스팸', '옥수수캔', '콩나물캔',
+  '참치캔', '꽁치캔', '고등어캔', '스팸', '옥수수캔', '콩나물캔',
   // 과일 (상온 보관 위주)
   '사과', '배', '귤', '오렌지', '레몬', '라임', '바나나', '감', '복숭아',
   '자두', '체리토마토',
-  // 기타 staple — 꿀류도 FRIDGE 리스트로 이동
-  '메이플시럽', '이유식',
+  // 기타 staple — 꿀류·메이플시럽은 FRIDGE 리스트로 이동
+  '이유식',
 ];
 
 // ── 냉장 (fridge) ─────────────────────────────────────────────
@@ -101,49 +101,47 @@ const PANTRY_SET = new Set(ROOM_TEMP);
 const FRIDGE_SET = new Set(FRIDGE);
 const FREEZER_SET = new Set(FREEZER);
 
+// 부분 포함용 — 세 목록의 2자 이상 키를 길이 내림차순으로. 1글자 키('파'·'배'·'김'·'감'·'무')는 정확 일치에만 쓴다.
+// (2026-10-19 감사 ICL-19: 예전엔 상온 목록을 먼저 양방향 includes 로 훑어 "갓김치"→'김'(상온), "알배추"→'배',
+//  "파슬리"→'파' 로 잘못 분류됐고, '참치'·'메이플시럽' 은 두 목록에 다 있어 냉장 쪽에 영영 닿지 않았다.)
+const PARTIAL_KEYS: Array<[string, StorageLocation]> = [
+  ...ROOM_TEMP.map((k): [string, StorageLocation] => [k, '상온']),
+  ...FRIDGE.map((k): [string, StorageLocation] => [k, '냉장']),
+  ...FREEZER.map((k): [string, StorageLocation] => [k, '냉동']),
+]
+  .filter(([k]) => k.length >= 2)
+  .sort((a, b) => b[0].length - a[0].length);
+
 // ── 카테고리 fallback ────────────────────────────────────────
+// 현행 카테고리(app/api/ingredients/create 의 validCategories) 기준 — 2026-10-19 갱신(ICL-19 ③).
 const CATEGORY_FALLBACK: Record<string, StorageLocation> = {
   meat: '냉장',
   seafood: '냉동',  // 대부분 냉동 유통 기준
   dairy: '냉장',
-  veggie: '상온',  // 뿌리채소 기준 (엽채류는 STORAGE_MAP에서 냉장으로 명시)
+  egg: '냉장',
+  veggie: '상온',  // 뿌리채소 기준 (엽채류는 목록에서 냉장으로 명시)
+  mushroom: '냉장',
   fruit: '상온',
   grain: '상온',
+  legume: '상온',  // 마른 콩 기준 (두부·콩나물은 목록에서 냉장)
+  nuts: '상온',
+  seeds: '상온',
+  seaweed: '상온',
+  oil: '상온',
+  sweetener: '상온',
   seasoning: '상온',
+  spice: '상온',
+  condiment: '냉장',  // 장·소스류 — 개봉 후 냉장
+  fermented: '냉장',  // 김치·젓갈
+  processed: '냉장',  // 햄·소시지·베이컨
   bakery: '상온',
-  asian: '상온',
   snack: '상온',
   beverage: '상온',
-  dessert: '냉장',
+  alcohol: '상온',
   other: '상온',  // 매칭 안 되는 '기타' 카테고리는 상온으로 취급 (찬장 표시)
 };
 
-// ── 냉장고 도어 선반 전용 아이템 (자주 꺼내는 소스·음료·계란 등) ──
-const FRIDGE_DOOR_ITEMS = new Set<string>([
-  '계란', '달걀', '메추리알',
-  '우유', '두유', '아몬드밀크', '오트밀크',
-  '버터', '치즈', '슬라이스치즈', '크림치즈',
-  '요거트', '요구르트', '생크림',
-  '케첩', '마요네즈', '머스타드',
-  '굴소스', '드레싱', '샐러드드레싱', '다진마늘',
-  '생수', '주스', '탄산수', '식혜', '수정과',
-  // 작은 병 양념류 — 도어 선반 단골
-  '식초', '현미식초', '사과식초', '감식초',
-  '꿀', '잼', '시럽', '메이플시럽',
-]);
-
-/**
- * 이 재료가 냉장고 도어 선반에 보관되는 타입인지 (소스·음료·자주 꺼냄).
- * 냉장 보관되는 재료 중에서만 쓰임.
- */
-export function isFridgeDoorItem(name: string): boolean {
-  const trimmed = name.trim().toLowerCase();
-  if (FRIDGE_DOOR_ITEMS.has(trimmed)) return true;
-  for (const key of FRIDGE_DOOR_ITEMS) {
-    if (trimmed.includes(key) || key.includes(trimmed)) return true;
-  }
-  return false;
-}
+// (2026-10-19) 호출처 0 이던 isFridgeDoorItem·FRIDGE_DOOR_ITEMS 삭제 (ICL-19 ④).
 
 /**
  * 재료명으로만 큐레이션 맵에서 조회. 매칭 안 되면 null.
@@ -151,16 +149,15 @@ export function isFridgeDoorItem(name: string): boolean {
  */
 export function lookupStorageByName(name: string): StorageLocation | null {
   const trimmed = name.trim().toLowerCase();
+  if (!trimmed) return null;
 
   // 1. 정확 일치
   if (PANTRY_SET.has(trimmed)) return '상온';
   if (FRIDGE_SET.has(trimmed)) return '냉장';
   if (FREEZER_SET.has(trimmed)) return '냉동';
 
-  // 2. 부분 포함 (예: "다진마늘" → "마늘" 매칭)
-  for (const key of PANTRY_SET) if (trimmed.includes(key) || key.includes(trimmed)) return '상온';
-  for (const key of FRIDGE_SET) if (trimmed.includes(key) || key.includes(trimmed)) return '냉장';
-  for (const key of FREEZER_SET) if (trimmed.includes(key) || key.includes(trimmed)) return '냉동';
+  // 2. 부분 포함 (예: "다진마늘" → "마늘") — 가장 긴 키 우선
+  for (const [key, loc] of PARTIAL_KEYS) if (trimmed.includes(key)) return loc;
 
   return null;
 }

@@ -69,8 +69,9 @@ export async function POST(request: NextRequest) {
         feedback_type: feedbackType,
         model_version: 'mobilenet-v2',
         processing_time_ms: processingTime || null,
-        consent_given: consentGiven !== undefined ? consentGiven : true,
-        can_use_for_training: consentGiven && feedbackType === 'correct'
+        // 동의는 명시적 true 일 때만 (opt-in) — 예전엔 값이 없으면 동의로 기록했다(2026-10-19 감사 결정, GDPR Art.7).
+        consent_given: consentGiven === true,
+        can_use_for_training: consentGiven === true && feedbackType === 'correct'
       })
       .select()
       .single();

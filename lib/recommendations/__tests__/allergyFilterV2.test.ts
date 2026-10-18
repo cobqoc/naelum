@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRecipeBlockedV2, normalizeUserAllergens } from '../allergyFilterV2';
+import { isRecipeBlockedV2, normalizeUserAllergens, expandUserAllergens } from '../allergyFilterV2';
 
 // V2 알레르기 — DB allergens 컬럼 직접 lookup. substring 매칭·동의어 확장 *전부 제거*.
 // 본질: 재료 마스터에 명시된 allergens 만 신뢰. 사용자 신규 입력 흐름에 자동 추정 + 어드민 검수.
@@ -50,5 +50,27 @@ describe('normalizeUserAllergens', () => {
 
   it('빈 입력 → 빈 배열', () => {
     expect(normalizeUserAllergens([])).toEqual([]);
+  });
+});
+
+describe('expandUserAllergens — 자유 입력을 표준 키로 확장 (PAU-67)', () => {
+  it("'계란'·'egg' 입력이 '난류' 재료를 차단", () => {
+    const eggs = new Map<string, string[]>([['ing-egg', ['난류']]]);
+    expect(isRecipeBlockedV2(eggs, expandUserAllergens(['계란']))).toBe(true);
+    expect(isRecipeBlockedV2(eggs, expandUserAllergens(['Egg']))).toBe(true);
+  });
+
+  it("'소고기' 입력이 '쇠고기' 재료를, '밀가루' 가 '밀' 재료를 차단", () => {
+    expect(isRecipeBlockedV2(new Map([['b', ['쇠고기']]]), expandUserAllergens(['소고기']))).toBe(true);
+    expect(isRecipeBlockedV2(new Map([['f', ['밀']]]), expandUserAllergens(['밀가루']))).toBe(true);
+  });
+
+  it('표준 키 입력은 확장하지 않는다 — 땅콩이 대두까지 막지 않음', () => {
+    expect(expandUserAllergens(['땅콩'])).toEqual(['땅콩']);
+    expect(isRecipeBlockedV2(new Map([['tofu', ['대두']]]), expandUserAllergens(['땅콩']))).toBe(false);
+  });
+
+  it('원래 토큰도 유지 (정규화된 형태)', () => {
+    expect(expandUserAllergens([' 계란 '])).toEqual(expect.arrayContaining(['계란', '난류']));
   });
 });

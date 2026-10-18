@@ -6,7 +6,7 @@ import { fetchAllRows } from '@/lib/supabase/fetchAll'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
 import { matchRecipe, assembleRecipeMatchFields, type RecipeIngredientInput } from '@/lib/recommendations/matchV2'
 import { fetchRelationsForRecipe, fetchAllergensForRecipe, fetchUserVariantBases, fetchForwardRelationTargets, fetchUnitCoeffs } from '@/lib/recommendations/fetchRelations'
-import { isRecipeBlockedV2, normalizeUserAllergens } from '@/lib/recommendations/allergyFilterV2'
+import { isRecipeBlockedV2, expandUserAllergens } from '@/lib/recommendations/allergyFilterV2'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 import { getBlockedUserIds } from '@/lib/social/blocks'
 import { sanitizeSearchTerm } from '@/lib/api/sanitizeSearch'
@@ -34,7 +34,8 @@ async function filterByAllergies<T extends Record<string, any>>(
   }
   if (!allergies || allergies.length === 0) return recipes
 
-  const userAllergens = normalizeUserAllergens(
+  // 자유 입력('계란'·'egg')도 표준 키('난류')로 확장해 비교 (PAU-67)
+  const userAllergens = expandUserAllergens(
     allergies.map((a: { ingredient_name: string | null }) => a.ingredient_name).filter((n: string | null): n is string => !!n)
   )
   if (userAllergens.length === 0) return recipes

@@ -65,7 +65,10 @@ export const INGREDIENT_CATEGORIES: IngredientCategory[] = [
   { id: 'fruit', name: '과일', icon: '🍎' },
   { id: 'meat', name: '육류', icon: '🥩' },
   { id: 'seafood', name: '해산물', icon: '🐟' },
+  // egg·legume — 2026-05-29 달걀류를 dairy→egg 로 옮긴 뒤 이 목록에 빠져 탭·필터·새 재료 선택지에서 사라졌던 것 복구 (감사 ICL-03)
+  { id: 'egg', name: '달걀류', icon: '🥚' },
   { id: 'grain', name: '곡물류', icon: '🌾' },
+  { id: 'legume', name: '콩류', icon: '🫘' },
   { id: 'dairy', name: '유제품', icon: '🧀' },
   { id: 'fermented', name: '발효식품', icon: '🫙' },
   { id: 'seasoning', name: '양념&소스', icon: '🥫' },

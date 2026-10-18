@@ -254,6 +254,7 @@ export default function IngredientBrowser({
                 >
                   <button
                     type="button"
+                    data-testid="ingredient-chip"
                     onClick={() => onSelect(ing)}
                     className="group/chip flex items-center gap-1.5 pl-3 pr-3 py-1.5"
                   >
