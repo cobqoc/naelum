@@ -970,7 +970,7 @@ export interface Database {
       admin_actions: {
         Row: {
           id: string
-          admin_id: string
+          admin_id: string | null
           action_type: string
           target_type: string
           target_id: string
@@ -1007,7 +1007,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          banned_by: string
+          banned_by: string | null
           reason: string
           ban_type: 'permanent' | 'temporary'
           expires_at: string | null
