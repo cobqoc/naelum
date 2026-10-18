@@ -7,19 +7,29 @@
 // 카테고리:
 //  [BLOCK] client-date-utc — 'use client' 파일의 new Date().toISOString().slice(0,10)/.split('T')[0].
 //          UTC라 KST 자정~오전9시 "오늘"이 하루 빠름(2026-06-03 유통기한 버그). lib/date/localDate 사용. exit 1.
+//  [BLOCK] sentry-app-import — app/components/lib 안에서 '@sentry/nextjs' 를 런타임 import(정적·동적) 하면 exit 1.
+//          정적이면 SDK(≈350KB raw/110KB gz) 가 모든 라우트의 앱 번들로 되돌아오고, 네임스페이스 동적 import 는
+//          tree-shaking 을 잃는다(2026-09-27 perf: Sentry 는 instrumentation-client.ts 가 lib/sentry/client.ts 파사드만
+//          dynamic import, 에러 바운더리는 lib/sentry/captureException.ts 경유). 타입 전용(import type / typeof import) 허용.
 //  [RATCHET] hardcoded-korean / client-direct-read / select-star — 아래 RATCHET 상한(high-water mark) 초과 시 exit 1.
 //          기존 부채는 통과시키되 *새로 늘면* 막는다(역행 차단). burndown 으로 수치가 줄면 RATCHET 상한도 *반드시* 같이 낮춰 잠가라.
 //          - hardcoded-korean: client 컴포넌트 JSX 안 한글 문자열 리터럴 파일 수(i18n 부채). 글로벌 출시 전 t.* 로 이관.
 //          - client-direct-read: 'use client' 파일의 supabase 직접 read(`.from(...).select`, mutation 제외).
 //            데이터 페칭은 서버/데이터계층(lib/queries)으로 — docs/DATA_LAYER.md 점진 이전. (사용자 액션 mutation 은 제외.)
+//          - client-indirect-read: 'use client' 파일이 *직접 import 한* 지시어 없는 lib 모듈 안의 read 체인 수(2026-10-04 추가).
+//            client-direct-read 는 파일 안 `.from(` 만 봐서 `lib/` read 헬퍼에 브라우저 클라이언트를 넘기는 우회를 못 셌다.
+//          - hardcoded-korean 은 2026-10-04 부터 따옴표 리터럴 + *JSX 텍스트*(TS AST JsxText)도 센다 — 예전엔 `<span>수정하기</span>`
+//            같은 텍스트 노드를 못 봐 "사용자 화면 이관 완료" 로 오판했다. 대상: 'use client' 파일 + 지시어 없는 표현 컴포넌트
+//            (components/** · app/**/_components/**, 클라이언트 페이지가 import). 브랜드명(낼름)은 번역 대상 아님.
 //          - select-star: `select('*')` 사용처 수(과대 fetch 부채). 쓰는 컬럼만 명시로 줄여나감.
 //
 // ── RATCHET 상한 — 현재 부채를 high-water mark 로 고정. 수치를 낮추면 여기 숫자도 같이 낮춰 다시 잠근다.
 const RATCHET = {
-  hardcodedKoreanFiles: 5,     // client *표시* 한글 파일 — 남은 5개는 전부 배달(delivery/merchant/rider/map) 미출시 deferred. 사용자 화면 i18n 이관 완료(2026-06-09). 출시 시 배달도 t.* 화 후 0 으로 잠금.
+  hardcodedKoreanFiles: 8,     // client *표시* 한글 파일 — 2026-10-04 JSX 텍스트까지 세도록 확장 후 재측정. 남은 8개는 전부 배달(delivery/merchant/rider/map) 미출시 deferred. 사용자 화면(배달 외)은 0. 출시 시 배달도 t.* 화 후 0 으로 잠금.
   clientDirectReadFiles: 0,    // client 직접 supabase read 파일
   clientDirectReadSites: 0,    // client 직접 supabase read 체인 총수
-  selectStar: 5,               // select('*') 사용처. GDPR export(SELECT_STAR_EXEMPT)·JSDoc주석 제외 후 남은 실사용. 남은 5 = 배달 4(미출시 deferred) + ingredient_recognition_feedback(dev 미존재 dead 스텁, Phase3 이미지인식 대기). 사용자화면 read 는 컬럼 명시 완료(2026-06-09).
+  clientIndirectReadSites: 7,  // client 가 import 한 lib 헬퍼 경유 read 체인(2026-10-04 신설·실측): useRecipeFridgeMatch→fetchRelations 6 + 배달 MapView→places 1. 서버 이전 시 낮춰 잠글 것.
+  selectStar: 21,             // select('*') 류 — 2026-10-04 조인 와일드카드(`*, rel(...)`)·count 동반까지 세도록 확장 후 재측정(head:true 카운트·GDPR export·주석 제외). 내역: 레시피 피드 posts 6·레시피 목록/상세 2·팁 상세 1·알림 1·admin actions/reports 2·재료 pending/feedback 2·배달 7. 컬럼 명시로 줄이면 상한도 낮출 것.
 };
 //
 // 사용:
@@ -30,7 +40,12 @@ const RATCHET = {
 //    이 스캔은 'use client' 파일만 본다.
 
 import { readdir, readFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { existsSync } from 'node:fs';
+import { join, relative, dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
+
+// JSX 텍스트 탐지는 정규식 대신 TypeScript 파서로(영문 JSX 텍스트의 아포스트로피 등에 흔들리지 않게).
+const ts = createRequire(import.meta.url)('typescript');
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ['app', 'components', 'lib'];
@@ -93,12 +108,28 @@ const SENTINEL_LITERAL = new RegExp(
 );
 // mutation 동사 — 이게 같은 .from() 체인에 있으면 read 아님(허용)
 const MUTATION = /\.(insert|update|delete|upsert)\(/;
-// select('*') / select("*") / select(`*`) — 과대 fetch
-const SELECT_STAR = /\.select\(\s*['"`]\*['"`]\s*\)/g;
+// select('*') / select("*") / select(`*`) — 과대 fetch.
+// 2026-10-04: bare '*' 만 세던 것을 *첫 인자가 '*' 로 시작하는 문자열 전부*로 확장 — `*, user:profiles(...)` 같은 조인 포함
+// 와일드카드(여러 줄 템플릿 포함)와 `'*', { count: 'exact' }`(행+개수 동시 반환)도 과대 fetch 다.
+// 단 `{ head: true }` 카운트 질의는 행을 안 받으므로 제외. (한계: select 문자열을 상수로 넘기는 경우는 못 본다.)
+const SELECT_STAR = /\.select\(\s*(['"`])\s*\*[\s\S]*?\1\s*(?:,\s*(\{[^}]*\}))?\s*\)/g;
+function countSelectStar(code) {
+  let n = 0;
+  for (const m of code.matchAll(SELECT_STAR)) {
+    if (m[2] && /head\s*:\s*true/.test(m[2])) continue;
+    n++;
+  }
+  return n;
+}
 // select('*') 카운트 면제 — *의도적으로 전체 컬럼이 옳은* 곳:
 //  - users/export: GDPR Art.20 데이터 이동권. 모든 컬럼 포함이 요구사항 — 컬럼 명시하면 신규 PII 누락(완전성 회귀).
 //    새 컬럼이 자동으로 export 에 포함되는 게 *바람직*하므로 select('*') 가 정답.
 const SELECT_STAR_EXEMPT = [/\/app\/api\/users\/export\/route\.ts$/];
+
+// Sentry 런타임 import 탐지 — `import ... from '@sentry/nextjs'`(import type 제외), `export ... from '@sentry/nextjs'`,
+// `import('@sentry/nextjs')`(typeof import 제외). 파사드(lib/sentry/client.ts)만 허용.
+const SENTRY_IMPORT = /(^\s*(?:import|export)\s+(?!type\b)[^;]*?from\s*['"]@sentry\/nextjs['"])|((?<!typeof\s+)import\s*\(\s*['"]@sentry\/nextjs['"]\s*\))/m;
+const SENTRY_IMPORT_EXEMPT = [/\/lib\/sentry\/client\.ts$/];
 
 // 한 'use client' 파일의 supabase 직접 read 체인 수 (.from(...) 이후 창에 .select 있고 mutation 없음)
 function countClientReadChains(src) {
@@ -111,34 +142,81 @@ function countClientReadChains(src) {
   return reads;
 }
 
+// JSX 텍스트 중 번역 대상이 아닌 고유명사 — 브랜드명.
+const BRAND_TOKENS = /낼름/g;
+
+/** TSX 의 JSX 텍스트 노드 중 (브랜드명 제외 후) 한글이 남는 것의 [줄:텍스트] 목록 */
+function jsxHangulTexts(src, file) {
+  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const hits = [];
+  const visit = (n) => {
+    if (n.kind === ts.SyntaxKind.JsxText) {
+      const txt = n.getText(sf).replace(BRAND_TOKENS, '').trim();
+      if (/[가-힣]/.test(txt)) {
+        hits.push(`${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1}:${txt.replace(/\s+/g, ' ').slice(0, 30)}`);
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return hits;
+}
+
+/** client 파일의 import 를 lib/ 아래 지시어 없는 모듈로 해석(`@/…`·상대경로, 타입 전용 import 제외) */
+function resolveLibImports(fromFile, src) {
+  const out = new Set();
+  for (const m of src.matchAll(/^\s*import\s+(?!type\b)[^;]*?from\s*['"]([^'"]+)['"]/gm)) {
+    const spec = m[1];
+    let base;
+    if (spec.startsWith('@/')) base = join(ROOT, spec.slice(2));
+    else if (spec.startsWith('.')) base = resolve(dirname(join(ROOT, fromFile)), spec);
+    else continue;
+    for (const cand of [base + '.ts', base + '.tsx', join(base, 'index.ts'), join(base, 'index.tsx')]) {
+      if (existsSync(cand)) { const rel = relative(ROOT, cand); if (rel.startsWith('lib/')) out.add(rel); break; }
+    }
+  }
+  return [...out];
+}
+
 const files = [];
 for (const d of SCAN_DIRS) await walk(join(ROOT, d), files);
 
 const dateHits = [];
+const sentryHits = [];   // 앱 번들에 Sentry SDK 를 되돌리는 런타임 import
 let koreanFiles = 0;
 const koreanList = [];   // 한글 리터럴이 남은(면제 아님) client 파일 — burndown 추적용
 const clientReadFiles = [];   // 클라 직접 read 가 있는 파일들 (file:횟수)
 let clientReadSites = 0;       // 클라 직접 read 체인 총수
+const clientIndirectList = []; // 클라 → lib 헬퍼 경유 read (client -> module:횟수)
+let clientIndirectSites = 0;
+const moduleReadCache = new Map(); // lib 모듈별 (지시어 없음일 때) read 체인 수
 let selectStar = 0;            // select('*') 총수 (서버 포함 전체)
 
 for (const f of files) {
   const src = await readFile(join(ROOT, f), 'utf8');
 
   // select('*') 는 서버/클라 무관 전체 스캔. 단 주석(JSDoc 사용 예시)과 면제 파일(GDPR export)은 제외.
+  const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   if (!SELECT_STAR_EXEMPT.some(re => re.test('/' + f))) {
-    const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-    selectStar += (codeOnly.match(SELECT_STAR) || []).length;
+    selectStar += countSelectStar(codeOnly);
   }
+  // Sentry 는 서버/클라 무관 전체 스캔(lib/* 은 클라 번들로 끌려갈 수 있음). 주석 제거본 기준.
+  if (!SENTRY_IMPORT_EXEMPT.some(re => re.test('/' + f)) && SENTRY_IMPORT.test(codeOnly)) sentryHits.push(f);
 
   const isClient = /^\s*['"]use client['"]/m.test(src.slice(0, 100));
-  if (!isClient) continue;
+  const koreanExempt = KOREAN_EXEMPT.some(re => re.test('/' + f));
+  if (!isClient) {
+    // 지시어 없는 표현 컴포넌트(클라이언트 페이지가 import → 같은 번들)의 JSX 텍스트 한글도 i18n 부채.
+    const isPresentational = f.endsWith('.tsx') && /^(components\/|app\/.*\/_components\/)/.test(f);
+    if (isPresentational && !koreanExempt && jsxHangulTexts(src, f).length > 0) { koreanFiles++; koreanList.push(f); }
+    continue;
+  }
   const lines = src.split('\n');
 
   lines.forEach((ln, i) => { if (DATE_UTC.test(ln)) dateHits.push(`${f}:${i + 1}`); });
 
   // 한글 i18n 부채 판정: 주석(블록·JSX·라인)과 console.* dev 로그는 UI 가 아니라 제외.
   // 블록/JSX 주석은 여러 줄에 걸치므로 *소스 레벨*에서 먼저 제거(연속줄 false positive 차단).
-  const koreanExempt = KOREAN_EXEMPT.some(re => re.test('/' + f));
   const srcNoBlock = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '');
   const hasKorean = !koreanExempt && srcNoBlock.split('\n').some(ln => {
     const t = ln.trim();
@@ -147,19 +225,36 @@ for (const f of files) {
     const stripped = ln.replace(SENTINEL_LITERAL, '$1$1');
     return HANGUL_LITERAL.test(stripped);
   });
-  if (hasKorean) { koreanFiles++; koreanList.push(f); }
+  const hasJsxKorean = !koreanExempt && f.endsWith('.tsx') && jsxHangulTexts(src, f).length > 0;
+  if (hasKorean || hasJsxKorean) { koreanFiles++; koreanList.push(f); }
 
   const reads = countClientReadChains(src);
   if (reads > 0) { clientReadFiles.push(`${f}:${reads}`); clientReadSites += reads; }
+
+  // 간접 read: 이 client 파일이 직접 import 한 지시어 없는 lib 모듈의 read 체인(브라우저 클라이언트로 실행됨).
+  for (const mod of resolveLibImports(f, src)) {
+    if (!moduleReadCache.has(mod)) {
+      const msrc = await readFile(join(ROOT, mod), 'utf8');
+      const modIsClient = /^\s*['"]use client['"]/m.test(msrc.slice(0, 100));
+      // server-only 모듈은 클라이언트 번들에 못 들어가므로 제외. client 모듈은 자기 자신이 direct 로 집계됨.
+      const serverOnly = /^\s*import\s+['"]server-only['"]/m.test(msrc);
+      moduleReadCache.set(mod, modIsClient || serverOnly ? 0 : countClientReadChains(msrc.replace(/\/\*[\s\S]*?\*\//g, '')));
+    }
+    const n = moduleReadCache.get(mod);
+    if (n > 0) { clientIndirectList.push(`${f} -> ${mod}:${n}`); clientIndirectSites += n; }
+  }
 }
 
 const report = {
   dateUtcClient: dateHits,
+  sentryAppImport: sentryHits,
   hardcodedKoreanFiles: koreanFiles,
   hardcodedKoreanList: koreanList,
   clientDirectReadFiles: clientReadFiles.length,
   clientDirectReadSites: clientReadSites,
   clientDirectReadList: clientReadFiles,
+  clientIndirectReadSites: clientIndirectSites,
+  clientIndirectReadList: clientIndirectList,
   selectStar,
 };
 
@@ -169,9 +264,15 @@ if (process.argv.includes('--json')) {
   console.log('— fragility scan —\n');
   console.log(`[BLOCK] client 날짜 UTC: ${dateHits.length}`);
   dateHits.forEach(h => console.log(`   ✗ ${h}  → lib/date/localDate (localDateISO/addDaysLocalISO)`));
+  console.log(`[BLOCK] Sentry 앱 번들 import: ${sentryHits.length}`);
+  sentryHits.forEach(h => console.log(`   ✗ ${h}  → lib/sentry/captureException (에러 캡처) / instrumentation-client.ts 만 SDK 로드`));
   console.log(`\n[NOTE]  하드코딩 한글 client 파일: ${koreanFiles}  (i18n 부채 — 글로벌 출시 전 t.* 로 이관)`);
   console.log(`\n[NOTE]  client 직접 read: ${clientReadFiles.length}개 파일 / ${clientReadSites}곳  (데이터 페칭은 lib/queries 로 — docs/DATA_LAYER.md. 숫자가 줄어야 함)`);
   clientReadFiles.forEach(h => console.log(`   • ${h}`));
+  console.log(`[NOTE]  client 간접 read(lib 헬퍼 경유): ${clientIndirectSites}곳`);
+  clientIndirectList.forEach(h => console.log(`   • ${h}`));
+  if (koreanList.length) console.log(`\n[NOTE]  하드코딩 한글 파일 목록:`);
+  koreanList.forEach(h => console.log(`   • ${h}`));
   console.log(`\n[NOTE]  select('*'): ${selectStar}곳  (쓰는 컬럼만 명시로 과대 fetch 줄이기)`);
 }
 
@@ -180,6 +281,7 @@ const ratchetChecks = [
   ['하드코딩 한글 client 파일', report.hardcodedKoreanFiles, RATCHET.hardcodedKoreanFiles],
   ['client 직접 read 파일',      report.clientDirectReadFiles, RATCHET.clientDirectReadFiles],
   ['client 직접 read 곳',        report.clientDirectReadSites, RATCHET.clientDirectReadSites],
+  ['client 간접 read 곳',        report.clientIndirectReadSites, RATCHET.clientIndirectReadSites],
   ["select('*')",                report.selectStar,            RATCHET.selectStar],
 ];
 const ratchetViolations = ratchetChecks.filter(([, cur, max]) => cur > max);
@@ -187,6 +289,10 @@ const ratchetLoosened = ratchetChecks.filter(([, cur, max]) => cur < max);
 
 if (dateHits.length > 0) {
   console.error('\n❌ client 날짜 UTC 패턴 발견 — lib/date/localDate 로 교체하세요 (KST 하루 어긋남).');
+  process.exit(1);
+}
+if (sentryHits.length > 0) {
+  console.error('\n❌ @sentry/nextjs 런타임 import 발견 — SDK 가 앱 번들로 되돌아옵니다. lib/sentry/captureException 를 쓰거나 파사드 lib/sentry/client.ts 를 통해 instrumentation-client.ts 에서만 로드하세요.');
   process.exit(1);
 }
 if (ratchetViolations.length > 0) {
@@ -201,5 +307,5 @@ if (ratchetViolations.length > 0) {
 if (!process.argv.includes('--json')) {
   ratchetLoosened.forEach(([name, cur, max]) =>
     console.log(`🔽 ${name}: ${cur} < 상한 ${max} — scan-fragility.mjs 의 RATCHET 상한을 ${cur} 로 낮춰 다시 잠그세요.`));
-  console.log('\n✅ 블로킹(날짜 UTC + ratchet) 통과.');
+  console.log('\n✅ 블로킹(날짜 UTC + Sentry import + ratchet) 통과.');
 }

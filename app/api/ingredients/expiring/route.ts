@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // 2026-10-04 AG2-49: 숫자가 아닌 days 는 Invalid Date → toISOString RangeError → 500 이었다 → 400
+    // (인증 401 판정 뒤 — 기존 우선순위 유지).
+    if (Number.isNaN(days)) {
+      return NextResponse.json({ error: 'Invalid days' }, { status: 400 });
+    }
+
     // 오늘 날짜
     const today = new Date();
     today.setHours(0, 0, 0, 0);

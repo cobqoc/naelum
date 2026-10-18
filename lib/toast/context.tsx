@@ -11,7 +11,7 @@ interface ToastAction {
   variant?: 'primary' | 'secondary';
 }
 
-interface Toast {
+export interface Toast {
   id: string;
   message: string;
   type: ToastType;
@@ -27,8 +27,10 @@ interface ToastOptions {
   duration?: number;
 }
 
+// 액션 컨텍스트 — 모든 useToast() 소비처(~35곳)가 받는 값. 전부 useCallback 이라 identity 가 고정돼
+// 토스트가 뜨고 사라질 때 소비처가 재렌더되지 않는다. toasts 배열은 별도 컨텍스트로 분리해
+// ToastContainer 만 구독 (perf 2026-09-27). 소비처 API(toast/success/error/warning/info/dismiss)는 동일.
 interface ToastContextValue {
-  toasts: Toast[];
   toast: (message: string, type?: ToastType, options?: ToastOptions) => void;
   success: (message: string, options?: ToastOptions) => void;
   error: (message: string, options?: ToastOptions) => void;
@@ -38,6 +40,7 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+const ToastListContext = createContext<Toast[] | null>(null);
 
 let toastCounter = 0;
 
@@ -81,12 +84,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const info = useCallback((msg: string, opts?: ToastOptions) => addToast(msg, 'info', opts), [addToast]);
 
   const value = useMemo<ToastContextValue>(() => ({
-    toasts, toast: addToast, success, error, warning, info, dismiss,
-  }), [toasts, addToast, success, error, warning, info, dismiss]);
+    toast: addToast, success, error, warning, info, dismiss,
+  }), [addToast, success, error, warning, info, dismiss]);
 
   return (
     <ToastContext.Provider value={value}>
-      {children}
+      <ToastListContext.Provider value={toasts}>
+        {children}
+      </ToastListContext.Provider>
     </ToastContext.Provider>
   );
 }
@@ -95,4 +100,11 @@ export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
   return ctx;
+}
+
+/** 현재 표시 중인 토스트 목록 — ToastContainer 전용 구독. */
+export function useToastList(): Toast[] {
+  const list = useContext(ToastListContext);
+  if (!list) throw new Error('useToastList must be used within ToastProvider');
+  return list;
 }

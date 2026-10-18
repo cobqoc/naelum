@@ -29,7 +29,7 @@ const THRESHOLD_REQUIRED = 900;
 const EXCLUDED_DIRS = new Set(['node_modules', '.next', 'dist', 'build', '.git']);
 const EXCLUDED_FILE_PATTERNS = [
   /\/lib\/i18n\/locales\//,
-  /\/lib\/supabase\/database\.types\.ts$/,  // 생성물 (supabase typegen)
+  /\/lib\/supabase\/database\.types\.ts$/,  // 타입 스냅샷(2026-04 수기 작성 — 생성물 아님, 재생성 필요). 데이터 성격이라 줄 수 검사 제외
   /\/public\/sw\.js$/,
   /\.test\.(ts|tsx|js|mjs)$/,
   /\.spec\.(ts|tsx|js|mjs)$/,

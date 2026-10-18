@@ -78,5 +78,10 @@ export async function GET() {
     })
     .sort((a, b) => b.count - a.count);
 
-  return NextResponse.json({ ingredient_categories });
+  // 2026-10-04 API1-49: 사용자 무관 공개 데이터(approved 재료 집계) — 형제 도감 API(ingredients/browse·autocomplete)와
+  // 같은 캐시 정책 값. 매 요청 approved 재료 전체를 fetchAllRows 하던 부하를 CDN 이 흡수(최대 5분 지연 반영).
+  return NextResponse.json(
+    { ingredient_categories },
+    { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } },
+  );
 }

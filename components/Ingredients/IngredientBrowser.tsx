@@ -53,6 +53,11 @@ export default function IngredientBrowser({
   const [activeCategory, setActiveCategory] = useState(hasFrequent ? 'frequent' : categoryTabs[0].id);
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
   const [loading, setLoading] = useState(!hasFrequent);
+  // 지금 보이는 탭 — 카테고리 fetch 응답이 도착했을 때 "아직 이 탭의 응답인가" 판정용(아래 effect).
+  const activeCategoryRef = useRef(activeCategory);
+  useEffect(() => {
+    activeCategoryRef.current = activeCategory;
+  }, [activeCategory]);
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -134,9 +139,15 @@ export default function IngredientBrowser({
     // 일반 카테고리 탭: 서버 API 호출 (categories 항상 명시 — 전체 탭 제거됨)
     const params = new URLSearchParams({ limit: '60', sort: 'search_count', categories: activeCategory });
 
+    // stale-response 가드 — 응답이 왔을 때 사용자가 이미 다른 탭(⭐자주 포함)으로 옮겼으면 반영하지 않는다.
+    // 전엔 늦게 온 옛 탭 응답이 지금 탭 목록을 덮고, 그 finally 가 지금 탭의 로딩 표시를 일찍 껐다(2026-10-04).
+    // 같은 탭의 응답은 이전처럼 그대로 반영 — 요청 횟수·정상 경로 불변.
+    const requestedCategory = activeCategory;
+    const isStale = () => activeCategoryRef.current !== requestedCategory;
     fetch(`/api/ingredients/browse?${params}`)
       .then(r => r.json())
       .then(data => {
+        if (isStale()) return;
         const items: IngredientItem[] = (data.ingredients || []).map((ing: {
           id: string; name: string; name_en: string | null;
           category: string | null; common_units: string[];
@@ -158,8 +169,8 @@ export default function IngredientBrowser({
         }));
         setIngredients(items);
       })
-      .catch(() => setIngredients([]))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!isStale()) setIngredients([]); })
+      .finally(() => { if (!isStale()) setLoading(false); });
   }, [activeCategory, frequentItems, popularItems]);
 
   return (

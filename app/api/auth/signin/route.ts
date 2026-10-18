@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLoginAttempt, recordFailedAttempt, clearLoginAttempts } from '@/lib/security/loginLimiter'
 
@@ -11,10 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // IP 기반 rate limiting
-    const ip = request.headers.get('cf-connecting-ip')
-      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || request.headers.get('x-real-ip')
-      || 'unknown'
+    const ip = getClientIp(request.headers, { realIpFallback: true })
     const identifier = `${ip}:${email}`
 
     const limitCheck = await checkLoginAttempt(identifier)

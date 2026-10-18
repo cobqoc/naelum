@@ -8,21 +8,27 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useAutosave, loadAutosave, clearAutosave } from '@/lib/hooks/useAutosave';
-import AddIngredientDialog from '@/components/Ingredients/AddIngredientDialog';
-import TagsField from './_components/TagsField';
-import NutritionFields from './_components/NutritionFields';
+// 2026-10-04 [PHR-D1] new/edit 공용 폼 블록은 recipes/_components 로 통합(차이는 prop 으로 보존).
+// StepsSection(단계 제목·팁 위치·드롭존 스타일이 진짜 다름)·RecipeFormFooter(new 전용)만 이 라우트 전용.
+import TagsField from '../_components/TagsField';
+import NutritionFields from '../_components/NutritionFields';
 import StepsSection from './_components/StepsSection';
-import IngredientsSection from './_components/IngredientsSection';
-import BasicInfoSection from './_components/BasicInfoSection';
+import IngredientsSection from '../_components/IngredientsSection';
+import BasicInfoSection from '../_components/BasicInfoSection';
 import RecipeFormFooter from './_components/RecipeFormFooter';
-import ThumbnailUploadField from './_components/ThumbnailUploadField';
-import DietaryOptionsField from './_components/DietaryOptionsField';
+import ThumbnailUploadField from '../_components/ThumbnailUploadField';
+import DietaryOptionsField from '../_components/DietaryOptionsField';
 import ImageCropModal from '@/components/Common/ImageCropModal';
 import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
 import { useImageDropZone } from '@/lib/hooks/useImageDropZone';
-import { computeAutoTags } from '@/lib/recipes/autoTags';
+import { computeAutoTags, mergeAutoTags } from '@/lib/recipes/autoTags';
 import { buildRecipePayload } from '@/lib/recipes/buildRecipePayload';
-import { normalizeSubstitutes, type SubstituteEntry } from '@/lib/recipes/substituteChips';
+import { normalizeSubstitutes } from '@/lib/recipes/substituteChips';
+import {
+  updateIngredientAt, selectIngredientAt, updateStepAt, removeRowAt, getIngredientPlaceholder,
+  type IngredientValue,
+} from '@/lib/recipes/formRows';
+import { NEW_RECIPE_NUTRITION_LIMITS } from '@/lib/recipes/nutritionInput';
 import {
   type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
@@ -124,9 +130,6 @@ export default function NewRecipePage() {
 
   // 툴팁 표시 상태
   const [hoveredDietaryOption, setHoveredDietaryOption] = useState<string | null>(null);
-
-  const [showAddIngredientDialog, setShowAddIngredientDialog] = useState(false);
-  const [addIngredientSearchQuery, setAddIngredientSearchQuery] = useState('');
 
   // 자동저장 — localStorage 백업 (게시·임시저장 시 clear). 상수는 모듈 레벨.
   const [autosaveRestoreVisible, setAutosaveRestoreVisible] = useState(false);
@@ -276,73 +279,54 @@ export default function NewRecipePage() {
   }, [remixId]);
 
   // 자동 태그 생성
+  // 2026-10-04 [PHR-43] 직전 실행의 자동태그를 기억해 더 이상 해당하지 않는 자동태그는 제거(옛 코드는 추가만 해서
+  // IME 조합 중간값 `#ㅍ #퓨 …`·한식→일식 전 태그·채식 해제 후 태그가 남아 저장됐음). 사용자 태그 보존·10개 상한은 mergeAutoTags.
+  const prevAutoTagsRef = useRef<string[]>([]);
   useEffect(() => {
     const autoTags = computeAutoTags({
       cuisineType, customCuisineType, dishType, customDishType,
       isVegetarian, isVegan, isGlutenFree,
     });
+    const prevAutoTags = prevAutoTagsRef.current;
+    prevAutoTagsRef.current = autoTags;
 
-    // 기존 태그와 중복되지 않는 자동 태그만 추가 (함수형 업데이트로 최신 상태 사용)
-    setTags(prevTags => {
-      const newTags = autoTags.filter(tag => !prevTags.includes(tag));
-
-      if (newTags.length > 0) {
-        // 최대 10개 제한
-        const remainingSlots = 10 - prevTags.length;
-        const tagsToAdd = newTags.slice(0, remainingSlots);
-        return [...prevTags, ...tagsToAdd];
-      }
-
-      return prevTags;
-    });
+    // 함수형 업데이트로 최신 상태 사용
+    setTags(prevTags => mergeAutoTags(prevTags, prevAutoTags, autoTags));
   }, [cuisineType, dishType, customCuisineType, customDishType, isVegetarian, isVegan, isGlutenFree]);
 
+  // 2026-10-04 [PHR-01] 재료·단계 핸들러는 전부 함수형 업데이트(prev => …) — 비동기 단계 이미지 업로드 완료 콜백이
+  // 업로드 시작 시점 배열로 덮어써 그 사이 입력이 되돌아가던 stale closure 차단. 본문은 lib/recipes/formRows 한 벌(edit 와 공용).
+  // [PHR-03] 자동완성으로 고른 뒤 재료명을 손으로 바꾸면 옛 ingredient_id 해제(updateIngredientAt).
   const addIngredients = () => {
-    setIngredients([
-      ...ingredients,
+    setIngredients(prev => [
+      ...prev,
       { ingredient_name: '', quantity: '', unit: '선택', notes: '', is_optional: false, substitutes: [] },
     ]);
   };
 
   const removeIngredient = (index: number) => {
     // 최소 1행 유지 (5→1로 완화: 빈 행 초기 2개 + 1개씩 추가 UX와 일관)
-    if (ingredients.length > 1) {
-      setIngredients(ingredients.filter((_, i) => i !== index));
-    }
+    setIngredients(prev => removeRowAt(prev, index));
   };
 
-  const updateIngredient = (index: number, field: keyof Ingredient, value: string | boolean | SubstituteEntry[]) => {
-    const updated = [...ingredients];
-    updated[index] = { ...updated[index], [field]: value };
-    setIngredients(updated);
+  const updateIngredient = (index: number, field: keyof Ingredient, value: IngredientValue) => {
+    setIngredients(prev => updateIngredientAt(prev, index, field, value));
   };
 
   const selectIngredient = (index: number, item: IngredientItem) => {
-    const updated = [...ingredients];
-    const current = updated[index];
-    updated[index] = {
-      ...current,
-      ingredient_name: item.name,
-      ingredient_id: item.id,
-      ...(item.common_units?.[0] && current.unit === '선택' ? { unit: item.common_units[0] } : {}),
-    };
-    setIngredients(updated);
+    setIngredients(prev => selectIngredientAt(prev, index, item));
   };
 
   const addStep = () => {
-    setSteps([...steps, { instruction: '', timer_minutes: null, tip: '', image_url: null }]);
+    setSteps(prev => [...prev, { instruction: '', timer_minutes: null, tip: '', image_url: null }]);
   };
 
   const removeStep = (index: number) => {
-    if (steps.length > 1) {
-      setSteps(steps.filter((_, i) => i !== index));
-    }
+    setSteps(prev => removeRowAt(prev, index));
   };
 
   const updateStep = (index: number, field: keyof Step, value: string | number | null) => {
-    const updated = [...steps];
-    updated[index] = { ...updated[index], [field]: value };
-    setSteps(updated);
+    setSteps(prev => updateStepAt(prev, index, field, value));
   };
 
   const addTag = () => {
@@ -357,8 +341,7 @@ export default function NewRecipePage() {
     setTags(tags.filter(t => t !== tag));
   };
 
-  // (영양 정보 검증 validateNutritionInput → _components/NutritionFields.tsx 로 이동.
-  //  이 블록에서만 쓰이는 순수 함수라 응집상 컴포넌트와 함께 둠)
+  // (영양 정보 검증 validateNutritionInput → lib/recipes/nutritionInput.ts (edit 와 공용, new 는 상한 limits 전달).)
 
   // 단계 이미지 업로드 — per-index 상태라 useFileUpload(bool) 안 맞음 → runImageUpload
   // (lifecycle hooks 으로 setUploadingImage(index) 매핑). boilerplate 동일.
@@ -453,21 +436,9 @@ export default function NewRecipePage() {
     }
   };
 
-  // Get placeholder text based on index
-  const getPlaceholder = (index: number, field: 'name' | 'quantity' | 'notes') => {
-    const examples = {
-      0: { name: tf.getPlaceholderName1, quantity: tf.getPlaceholderQty1, notes: tf.getPlaceholderNotes1 },
-      2: { name: tf.getPlaceholderName2, quantity: tf.getPlaceholderQty2, notes: tf.getPlaceholderNotes2 },
-      4: { name: tf.ingName, quantity: tf.ingQuantity, notes: tf.ingNotes }
-    };
-
-    const example = examples[index as keyof typeof examples];
-    if (example) {
-      return example[field];
-    }
-
-    return field === 'name' ? tf.ingName : field === 'quantity' ? tf.ingQuantity : tf.ingNotes;
-  };
+  // Get placeholder text based on index — 1·3번째 행 예시, 5번째 행은 일반 문구(edit 와 다른 점, [PHR-D1 (b)-5])
+  const getPlaceholder = (index: number, field: 'name' | 'quantity' | 'notes') =>
+    getIngredientPlaceholder(tf, index, field, { fifthRowExample: false });
 
   const handleSubmit = async () => {
     // 유효성 검사
@@ -640,34 +611,28 @@ export default function NewRecipePage() {
             <div className="flex-1">
               <p className="text-sm font-medium text-accent-warm">{tf.remixLabel}</p>
               <p className="text-xs text-text-secondary">
-                원본: <Link href={`/recipes/${remixSource.id}`} className="text-accent-warm hover:underline">{remixSource.title}</Link>
+                {/* 2026-10-04 i18n — 단일 텍스트 노드 `원본: ` 유지(ko 출력 바이트 동일) */}
+                {`${tf.remixOriginalPrefix} `}<Link href={`/recipes/${remixSource.id}`} className="text-accent-warm hover:underline">{remixSource.title}</Link>
                 {remixSource.author && <span> by @{remixSource.author}</span>}
               </p>
             </div>
           </div>
         )}
 
-        {/* Section 1: 기본 정보 */}
-        <section className="space-y-6">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-accent-warm text-background-primary flex items-center justify-center text-sm font-bold">1</span>
-            {tf.section1Basic}
-          </h2>
-
-          <BasicInfoSection
-            t={t}
-            tf={tf}
-            title={title} setTitle={setTitle}
-            description={description} setDescription={setDescription}
-            servings={servings} setServings={setServings}
-            cookTime={cookTime} setCookTime={setCookTime}
-            difficulty={difficulty} setDifficulty={setDifficulty}
-            cuisineType={cuisineType} setCuisineType={setCuisineType}
-            customCuisineType={customCuisineType} setCustomCuisineType={setCustomCuisineType}
-            dishType={dishType} setDishType={setDishType}
-            customDishType={customDishType} setCustomDishType={setCustomDishType}
-          />
-        </section>
+        {/* Section 1: 기본 정보 — 공용 BasicInfoSection 이 <section>+번호 h2 래퍼 소유(같은 마크업),
+            new 전용 커스텀 요리종류·요리 유형 블록은 customCuisine/dish prop 으로 */}
+        <BasicInfoSection
+          t={t}
+          tf={tf}
+          title={title} setTitle={setTitle}
+          description={description} setDescription={setDescription}
+          servings={servings} setServings={setServings}
+          cookTime={cookTime} setCookTime={setCookTime}
+          difficulty={difficulty} setDifficulty={setDifficulty}
+          cuisineType={cuisineType} setCuisineType={setCuisineType}
+          customCuisine={{ value: customCuisineType, set: setCustomCuisineType }}
+          dish={{ type: dishType, setType: setDishType, custom: customDishType, setCustom: setCustomDishType }}
+        />
 
         {/* Section 2: 재료 준비 */}
         <section className="space-y-4">
@@ -676,9 +641,8 @@ export default function NewRecipePage() {
             {tf.section2Ingredients}
           </h2>
 
-          {/* 통합된 재료 준비 영역 — _components/IngredientsSection.tsx 로 추출
-              (Strangler Fig). 상태·로직·ref·getPlaceholder 는 page 소유, 컴포넌트는
-              값+콜백만 받는 순수 표현. 부모는 <section>·h2 유지. */}
+          {/* 통합된 재료 준비 영역 — 공용 recipes/_components/IngredientsSection (new: 삭제 임계 <=5 · "재료 추가" 라벨).
+              상태·로직·ref·getPlaceholder 는 page 소유, 컴포넌트는 값+콜백만 받는 순수 표현. 부모는 <section>·h2 유지. */}
           <IngredientsSection
             t={t}
             tf={tf}
@@ -688,6 +652,8 @@ export default function NewRecipePage() {
             isDraggingIngredients={ingredientsDropZone.isDragging}
             unitInputRefs={unitInputRefs}
             getPlaceholder={getPlaceholder}
+            removeDisabledAtOrBelow={5}
+            addLabel={tf.addIngredient}
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}
             onUpdateIngredient={updateIngredient}
@@ -755,11 +721,10 @@ export default function NewRecipePage() {
             isVegetarian={isVegetarian} setIsVegetarian={setIsVegetarian}
             isVegan={isVegan} setIsVegan={setIsVegan}
             isGlutenFree={isGlutenFree} setIsGlutenFree={setIsGlutenFree}
-            hoveredDietaryOption={hoveredDietaryOption}
-            setHoveredDietaryOption={setHoveredDietaryOption}
+            tooltip={{ hovered: hoveredDietaryOption, setHovered: setHoveredDietaryOption }}
           />
 
-          {/* 영양 정보 — _components/NutritionFields.tsx 로 추출 (Strangler Fig down-payment).
+          {/* 영양 정보 — 공용 recipes/_components/NutritionFields (new 는 검증 상한 limits 전달).
               상태는 page 가 소유, 컴포넌트는 값+setter 만 받는 순수 표현. */}
           <NutritionFields
             t={t}
@@ -778,6 +743,7 @@ export default function NewRecipePage() {
             setFiber={setFiber}
             sodium={sodium}
             setSodium={setSodium}
+            limits={NEW_RECIPE_NUTRITION_LIMITS}
           />
 
           <TagsField
@@ -801,21 +767,6 @@ export default function NewRecipePage() {
         />
       </div>
 
-      {/* 재료 선택 모달 */}
-      {/* 새 재료 추가 다이얼로그 */}
-      <AddIngredientDialog
-        isOpen={showAddIngredientDialog}
-        onClose={() => {
-          setShowAddIngredientDialog(false);
-          setAddIngredientSearchQuery('');
-        }}
-        onSuccess={() => {
-          setShowAddIngredientDialog(false);
-          setAddIngredientSearchQuery('');
-          toast.success(tf.successIngredientAdded);
-        }}
-        initialName={addIngredientSearchQuery}
-      />
       <ImageCropModal
         file={pendingThumbnailFile}
         onCropComplete={handleCroppedThumbnailUpload}

@@ -24,6 +24,7 @@
 - 엔티티/화면별 read 함수를 `lib/queries/<area>.ts` 에 모은다. 예: `recipeDetail.ts`.
 - 페이지/라우트는 이 함수만 호출 → **얇게**. 같은 쿼리가 여러 곳에 흩어지지 않는다.
 - 파일 맨 위 `import 'server-only'` — 클라 번들 유입 차단(서비스키·쿠키 클라이언트 보호).
+  예외: DB 를 부르지 않는 순수 변환 헬퍼(예: `lib/queries/flattenMasterJoin.ts` — vitest 대상)는 `server-only` 를 붙이지 않는다.
 
 ### 3. 멀티쿼리는 DB 에서 집계 (RPC) — 가능하면
 - 한 화면에 (recipe_id, user_id) 류 read 가 여러 개면 **Postgres RPC 하나**로 합쳐
@@ -56,32 +57,42 @@
 
 ### 레퍼런스 슬라이스 (템플릿)
 - **레시피 상세** (`app/[lang]/recipes/[id]/`) — `lib/queries/recipeDetail.ts` 로
-  전(全) read 이전 완료(2026-06-08, 행위보존). 새 슬라이스는 이걸 본떠 작업.
-- 후속(별도): engagement 5쿼리 → `get_recipe_engagement` RPC, cooked_count 를
-  전역(`recipe_cooked_count`)으로 교정(= *동작 변경*이라 분리).
+  페이지 read 이전 완료(2026-06-08, 행위보존). 새 슬라이스는 이걸 본떠 작업.
+  단 냉장고 매칭 read 는 하이드레이션 후 클라이언트(`lib/hooks/useRecipeFridgeMatch.ts` → `lib/recommendations/fetchRelations.ts`)에 남아 있다 — 아래 client-indirect-read.
+- 후속(별도, *동작 변경*이라 분리):
+  - [x] cooked_count 전역 교정 — SECURITY DEFINER `recipe_cooked_count` RPC(`20260609_recipe_cooked_count.sql`, 2026-06-09)
+  - [ ] engagement 5쿼리 → `get_recipe_engagement` RPC — 미구현(코드·migrations 에 없음)
 
 ---
 
 ## 가드레일 (재발 차단 — 사람 규율 아니라 파이프라인)
-`npm run scan:fragility` 에 룰 추가됨 (2026-06-08). **2026-06-08 ratchet(역행 차단) 블로킹으로 승격.**
+`npm run scan:fragility` 에 룰 추가됨 (2026-06-08). **2026-06-08 ratchet(역행 차단) 블로킹으로 승격.** 2026-10-04 탐지 범위 확장(아래 각 항목).
 스캐너 상단 `RATCHET` 상수가 현재 부채를 high-water mark 로 고정 — **초과 시 `exit 1`**(머지 차단), 기존 부채는 통과.
 burndown 으로 수치가 줄면 **`RATCHET` 상한도 같이 낮춰 다시 잠근다**(스캐너가 미달 시 "상한 낮추세요" 알림 출력).
-- `[RATCHET]` **client-direct-read** — `'use client'` 파일의 `.from(...).select` read
-  (mutation insert/update/delete/upsert 는 제외). **상한 0파일 / 0곳 — 전 read 이전 완료(2026-06-09).
-  hard-block: 새 client 직접 read 는 머지 차단.** (시작 26/50 → 0).
-  파일별 리스트를 출력해 *새* 위반이 diff 에 드러남.
-- `[RATCHET]` **select-star** — `select('*')` 사용처 수. **상한 5곳** (시작 67 → 5, 2026-06-09).
-  GDPR `users/export`(이동권=전체컬럼 필수, `SELECT_STAR_EXEMPT`)·JSDoc 주석 예시 면제.
-  남은 5 = 배달 4(미출시 deferred) + `ingredient_recognition_feedback`(dev 미존재 dead 스텁).
-- `[RATCHET]` **hardcoded-korean** — client JSX *표시* 한글 리터럴 파일 수. **상한 5** (시작 71 → 5, 2026-06-09).
+**현재 상한·실측치는 `scripts/scan-fragility.mjs` 의 `RATCHET` 상수와 스캔 출력이 단일 출처** — 아래 괄호 속 수치는 당시 기록이다.
+- `[RATCHET]` **client-direct-read** — `'use client'` 파일 *안의* `.from(...).select` read
+  (mutation insert/update/delete/upsert 는 제외). 2026-06-09 직접 read 0파일/0곳 달성(시작 26/50 → 0) —
+  **hard-block: 새 client 직접 read 는 머지 차단.** 파일별 리스트를 출력해 *새* 위반이 diff 에 드러남.
+- `[RATCHET]` **client-indirect-read** (2026-10-04 신설) — `'use client'` 파일이 *직접 import 한* 지시어 없는 `lib/` 모듈 안의 read 체인
+  (`server-only` 모듈 제외). 직접 read 지표가 0 이어도 `lib/` read 헬퍼에 브라우저 클라이언트를 넘기는 우회가 남아 있었다 —
+  현재 잡히는 곳: `lib/hooks/useRecipeFridgeMatch.ts` → `lib/recommendations/fetchRelations.ts`(레시피 상세 냉장고 매칭),
+  배달 `app/[lang]/delivery/map/MapView.tsx` → `lib/delivery/places.ts`(푸드트럭 조회).
+- `[RATCHET]` **select-star** — 첫 인자가 `'*'` 로 시작하는 select 문자열 수. 2026-10-04 확장: 조인 `*, rel(...)`·여러 줄 템플릿·
+  `'*', { count: 'exact' }` 포함, `{ head: true }` 카운트 질의 제외(그 전엔 bare `select('*')` 만 셌다 — 2026-06-09 "67 → 5" 는 그 기준).
+  GDPR `users/export`(이동권=전체컬럼 필수, `SELECT_STAR_EXEMPT`)·주석 면제.
+- `[RATCHET]` **hardcoded-korean** — 한글 *표시* 텍스트가 남은 파일 수: 따옴표 문자열 리터럴 + JSX 텍스트 노드(TS AST `JsxText`, 2026-10-04 추가).
+  대상은 `'use client'` 파일 + 지시어 없는 표현 컴포넌트(`components/**`·`app/**/_components/**`). 브랜드명 '낼름' 제외.
   admin/legal/error 면제(`KOREAN_EXEMPT`) + DB센티넬 토큰(냉장/큰술 등 `DB_SENTINEL_TOKENS`)·주석·`console.*`·endonym(한국어) 제외 → *진짜 표시 텍스트만* 카운트.
-  남은 5 = 배달 deferred. 사용자화면 26개 t.* 이관 완료.
-- god-file(`scan:line-counts`)·date-utc(BLOCK) 가드와 같은 자리. `--json` CI 파싱 지원.
+  (2026-06-09 "71 → 5, 사용자화면 26개 t.* 이관 완료" 는 따옴표 리터럴만 세던 기준 — JSX 텍스트까지 세면서 사용자 화면 공용 컴포넌트의 잔존 한글이 드러났다.)
+- ⚠️ **여전히 못 보는 것**: lib 상수 라벨(예: `lib/constants/recipe.ts` `CUISINE_TYPES` 의 한글 `label`)을 JSX 가 그대로 렌더하는 경우,
+  DB 원시값·서버 에러 원문 표시, select 문자열을 상수로 넘기는 경우(예: `lib/queries/recipeDetail.ts` 의 `RECIPE_BODY_SELECT`),
+  `'use client'` 가 아닌 파일에서 시작하거나 import 를 2단계 이상 거치는 간접 read.
+- god-file(`scan:line-counts`)·date-utc(BLOCK)·Sentry 런타임 import(BLOCK) 가드와 같은 자리. `--json` CI 파싱 지원.
 
 > **2026-06-08 세션 결산** — ratchet 승격 + 슬라이스 7개(cook삭제·settings·admin·tip·NotificationsTab·delivery주문·식당상세). client read **26파일/50곳 → 18/31**(-19곳, 38%), select-star 67→60. admin·알림탭 e2e 안전망 신규. (PR #239)
 
 > **2026-06-08~09 세션 결산 — read 마이그레이션 100% 완료(18→0파일/31→0곳).**
-> 배달 4(식당목록·주문·메뉴·라이더) + 레시피 브라우즈/검색/추천/수정/작성 + signin + signup완료(set-password·terms) + 레시피상세 + context 2(auth·cookieConsent) + 냉장고 load 2(useFridgeItems·InteractiveFridge) + 냉장고 모달추가(atomic) 슬라이스. select-star 60→55. RATCHET 0/0 hard-block.
+> 배달 4(식당목록·주문·메뉴·라이더) + 레시피 브라우즈/검색/추천/수정/작성 + signin + signup완료(set-password·terms) + 레시피상세 + context 2(auth·cookieConsent) + 냉장고 load 2(useFridgeItems·InteractiveFridge — InteractiveFridge 는 이후 2026-09-28 미사용으로 삭제) + 냉장고 모달추가(atomic) 슬라이스. select-star 60→55. RATCHET 0/0 hard-block.
 > **핵심 해법**: `attachFridgeMatch` 를 `import type` 으로 server/client 공용화 / owner-rider 엔드포인트는 클라 id 불신·서버 재유도(IDOR) / search·recommendations 의 has_cooked 죽은 중복 제거 / **HomeClient 냉장고 race read 는 atomic `POST /api/user-ingredients/add` 로 → "API 외부화=race 악화"는 *naive 분리* 한정, read-then-write 를 한 서버요청으로 통합하면 race 가 구조적으로 소거**.
 > **#5 fix**: cooked_count 가 cooking_sessions 본인-only RLS 로 본인 것만(0/1) 세던 버그 → SECURITY DEFINER `recipe_cooked_count` RPC(dev+prod 적용).
 > **안전망-우선이 잠재 이슈 3건 적발**: remix `order_index` 버그 / signin provider-check 죽은코드(anon profiles SELECT GRANT 없음, dev+prod 실측) / cooked_count RLS 버그.
@@ -89,9 +100,16 @@ burndown 으로 수치가 줄면 **`RATCHET` 상한도 같이 낮춰 다시 잠�
 
 > **2026-06-09 세션 결산 — i18n 하드코딩 한글 + select-star burndown.**
 > **핵심 교훈: 스캐너 휴리스틱이 "부채 아닌 것"까지 세고 있었다 → 먼저 *정직화*, 그다음 진짜 대상만 처리.**
-> - **hardcoded-korean 71 → 5**: admin/legal/error(이미 인라인 다국어맵)·DB센티넬(냉장/큰술=CLAUDE.md "DB값 한글유지")·주석·console·endonym 면제로 *진짜 표시 텍스트만* 카운트(71→31) → 사용자화면 26개 t.* 이관(31→5). 재사용 승리 다수(About `t.about` 죽은 fallback 제거·Kitchen 죽은 label 필드·age-gate `t.auth` fallback). 신규키는 8로케일 동시삽입 스크립트(네임스페이스 여는 줄 앵커). `withRoParticle`(한국어 조사)→`lib/i18n/koreanParticle.ts`·미리보기 냉장고 샘플→`sampleIngredients.ts` 추출. 남은 5=배달 deferred.
+> - **hardcoded-korean 71 → 5**: admin/legal/error(이미 인라인 다국어맵)·DB센티넬(냉장/큰술=CLAUDE.md "DB값 한글유지")·주석·console·endonym 면제로 *진짜 표시 텍스트만* 카운트(71→31) → 사용자화면 26개 t.* 이관(31→5). 재사용 승리 다수(About `t.about` 죽은 fallback 제거·Kitchen 죽은 label 필드·age-gate `t.auth` fallback). 신규키는 8로케일 동시삽입 스크립트(네임스페이스 여는 줄 앵커). `withRoParticle`(한국어 조사)→`lib/i18n/koreanParticle.ts`·미리보기 냉장고 샘플→`sampleIngredients.ts` 추출(이후 2026-09-28 미사용으로 삭제). 남은 5=배달 deferred.
 > - **select-star 55 → 5**: GDPR `users/export` 45곳은 *이동권=전체컬럼 필수*라 `SELECT_STAR_EXEMPT`, JSDoc 주석 2곳 제외. 실제 처리 3곳(expiring=route map 7컬럼 계약 / folders×2=`user_id` 만 제외, recipe_folders 10컬럼 MCP 실측 확인). feedback=dev 미존재 dead 스텁이라 미처리. 남은 5=배달 4+feedback.
 > - **함정**: 블라인드 컬럼 드롭 금지(소비처+실스키마 확인) / default param 은 hook 못 써 body 에서 resolve / 폼리셋 위험 effect 는 t 를 dep 아닌 ref 로. lint 0/0·build✓·e2e 464 passed.
+
+> **2026-10-04 세션 결산 — 스캐너 탐지 확장(정직화 2차) + 전수 감사 후속.**
+> 이전 지표가 *못 세던* 것을 세게 해서 숫자가 올라갔다(부채가 늘어난 게 아니라 원래 있던 것이 보이게 됨). 상한은 실측값으로 다시 잠금:
+> - **hardcoded-korean 5 → 8**: JSX 텍스트 노드(TS AST)와 지시어 없는 표현 컴포넌트까지 세자 사용자 화면에서 ~20곳(냉장고 액션시트·자동완성·카테고리 필터·타이머 패널 등)이 새로 잡혀 전부 `t.*` 이관(ko 출력 바이트 동일, 렌더 동등성 하네스로 증명). 남은 8 = 전부 배달(delivery/merchant/rider/map) 미출시 deferred.
+> - **client-indirect-read 신설 = 7**: `useRecipeFridgeMatch → lib/recommendations/fetchRelations`(6) + 배달 `MapView → lib/delivery/places`(1). 레시피 상세 냉장고 매칭이 브라우저에서 PostgREST 를 직접 읽는 것(PHR-27) — 서버 이전은 별도 슬라이스.
+> - **select-star 5 → 21**: 조인 와일드카드 `*, rel(...)`·`'*', { count }` 까지 세자 피드 posts 6·레시피 목록/상세 2·팁 상세 1·알림 1·admin 2·재료 2·배달 7. 컬럼 명시 burndown 대상.
+> - 같은 날 감사 후속 수정 다수(보안·버그·중복 제거) — `docs/CHANGELOG.md` 2026-10 참조(상세 감사 보고서는 로컬 보관).
 
 ---
 
@@ -107,14 +125,16 @@ burndown 으로 수치가 줄면 **`RATCHET` 상한도 같이 낮춰 다시 잠�
 - [x] delivery 주문 — `lib/delivery/api.ts` fetchOrders/fetchOrder 직접 read 4개 → 신규 `GET /api/delivery/orders{,/[id]}`(requireAuth). `toClientOrder`+타입을 server-safe `lib/delivery/orderMapping.ts` 로 추출(createOrder mutation 과 공용). 호출처 2곳 단순화(OrdersList createClient 제거). 20→19파일/38→34곳. delivery e2e 18/18 green(full-flow 주문상세+빈 주문내역) (2026-06-08)
 - [x] delivery 식당상세 — `RestaurantDetailClient` 직접 read 3개(식당+메뉴 카테고리/항목) → 신규 공개 `GET /api/delivery/restaurants/[id]`(auth 불필요, 컬럼명시). createClient 통째 제거. 19→18파일/34→31곳, select-star 63→60. delivery e2e 18/18 (2026-06-08)
 - [x] AllRecipesClient(browse+trending) · SearchClient · IngredientRecsView · recipes edit/new(remix) · signin(죽은 read 제거) · signup완료(set-password·terms → `/api/auth/complete-onboarding`+`/onboarding-status`) (2026-06-08)
-- [x] RecipeDetailClient 평점 새로고침 · auth·cookieConsent context(lean 엔드포인트) · useFridgeItems·InteractiveFridge(냉장고 load) (2026-06-09)
+- [x] RecipeDetailClient 평점 새로고침 · auth·cookieConsent context(lean 엔드포인트) · useFridgeItems·InteractiveFridge(냉장고 load — InteractiveFridge 는 2026-09-28 미사용으로 삭제) (2026-06-09)
 - [x] **HomeClient 냉장고 모달추가 read-then-write → atomic `POST /api/user-ingredients/add`** — race 를 *naive 분리*가 아니라 *서버 통합*으로 소거(보류 해제). (2026-06-09)
 - [x] **#5 cooked_count 전역 교정** — SECURITY DEFINER `recipe_cooked_count` RPC(dev+prod). cooking_sessions 본인-only RLS 버그 수정. (2026-06-09)
-- **→ client-direct-read 0/0. 전 슬라이스 완료. RATCHET hard-block 으로 신규 직접 read 차단.**
+- [x] 홈 SSR 냉장고 + 도감 조인 → `lib/queries/userIngredients.ts`(`selectUserIngredientsWithMaster`, 순수 `flattenMasterJoin.ts`) — `GET /api/user-ingredients?withMaster=1` 과 `app/[lang]/page.tsx` 공유 (2026-09-28)
+- **→ client-direct-read 0/0(파일 안 `.from` 직접 기준). 전 슬라이스 완료. RATCHET hard-block 으로 신규 직접 read 차단.**
+  lib 헬퍼 경유 간접 read 는 별도 지표(client-indirect-read, 2026-10-04 신설)로 추적 — 남은 곳은 위 "가드레일" 절.
 
 ## 서버 병목 개선 (read 마이그레이션 후속, 2026-06-09)
 - [x] 직렬 round-trip 병렬화 — preferences 3테이블 [delete→insert] 병렬, users/me profile+3prefs 1 Promise.all, search getUser 검색쿼리와 병렬. (행위보존, 안전망 `preferences-save.spec`)
 - [x] `delivery/restaurants` `.limit(200)` — PostgREST 1000행 silent cap 방지.
-- [x] 공개 엔드포인트 캐싱 — trending·delivery/restaurants `unstable_cache`(cookieless anon, 비공개 유출 0), ingredients catalog/autocomplete `Cache-Control`. 실측 hit ~2-3ms(uncached ~24-29ms). browse 는 "새 레시피 즉시 노출" 가드라 제외.
+- [x] 공개 엔드포인트 캐싱 — trending·delivery/restaurants `unstable_cache`(cookieless anon, 비공개 유출 0), `ingredients/browse`·`ingredients/autocomplete` `Cache-Control`(`public, s-maxage=300`). 실측 hit ~2-3ms(uncached ~24-29ms). `/api/recipes/browse` 는 "새 레시피 즉시 노출" 가드라 제외.
 - [x] 검색 fridge-match 2회 호출 → union 1회(중복 user_ingredients read 제거, 안전망 `search-fridge-match.spec`).
 - [ ] (이연) RLS multiple_permissive_policies 6개 OR 병합 → **출시 보안 패스** (cold 테이블 micro-opt + row 가시성 리스크). ILIKE sweep · hot-path select(*) · order-history limit → scale-gated.

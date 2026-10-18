@@ -13,12 +13,15 @@ export async function GET(
   const { user, error: authError } = await requireAuth(supabase)
   if (authError) return authError
 
+  // 2026-10-04 API1-01: 완료 세션이 2행+ 이면 maybeSingle 이 null(PGRST116) → hasCooked:false 오판.
+  // 존재 확인이므로 limit(1) (0/1행 결과 동일).
   const { data } = await supabase
     .from('cooking_sessions')
     .select('id')
     .eq('recipe_id', recipeId)
     .eq('user_id', user.id)
     .not('completed_at', 'is', null)
+    .limit(1)
     .maybeSingle()
 
   return NextResponse.json({ hasCooked: !!data })

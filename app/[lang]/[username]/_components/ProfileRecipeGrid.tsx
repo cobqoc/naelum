@@ -1,7 +1,11 @@
+'use client';
+
+import { useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { getTimeAgo } from '@/lib/utils/timeAgo';
+import { useOutsideClick } from '@/lib/hooks/useOutsideClick';
 import type { Recipe, TabType } from './types';
 
 /**
@@ -76,7 +80,7 @@ export default function ProfileRecipeGrid({
             {activeTab === 'cooked' && recipe.completion_photo_url ? (
               <SafeImage
                 src={recipe.completion_photo_url}
-                alt={`${recipe.title} 완성 사진`}
+                alt={`${recipe.title} ${t.recipe.ratingPhotoAlt}`}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
@@ -93,10 +97,10 @@ export default function ProfileRecipeGrid({
               </div>
             )}
 
-            {/* 비공개 표시 */}
+            {/* 비공개 표시 — 하드코딩 한글 → 기존 번역 키(ko 값 '🔒 비공개' 동일, PAU-25 2026-10-04) */}
             {recipe.status !== 'published' && isOwnProfile && activeTab === 'created' && (
               <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-bold backdrop-blur-sm">
-                🔒 비공개
+                {t.profile.privateBadge}
               </div>
             )}
 
@@ -192,8 +196,63 @@ export default function ProfileRecipeGrid({
 
         {/* Recipe Management Menu (Own Profile Only) */}
         {isOwnProfile && activeTab === 'created' && (
+          <RecipeManageMenu
+            t={t}
+            recipe={recipe}
+            isOpen={menuOpenRecipeId === recipe.id}
+            menuOpenRecipeId={menuOpenRecipeId}
+            setMenuOpenRecipeId={setMenuOpenRecipeId}
+            onDeleteRecipe={onDeleteRecipe}
+            onToggleVisibility={onToggleVisibility}
+          />
+        )}
+      </div>
+    ))}
+    <div ref={sentinelRef} className="mt-8 flex justify-center">
+      {loadingMore && (
+        <div className="flex items-center gap-2 text-text-muted text-sm py-4">
+          <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
+          <span>{t.common.loading}</span>
+        </div>
+      )}
+    </div>
+    </div>
+  );
+}
+
+interface RecipeManageMenuProps {
+  t: TranslationKeys;
+  recipe: Recipe;
+  isOpen: boolean;
+  menuOpenRecipeId: string | null;
+  setMenuOpenRecipeId: (id: string | null) => void;
+  onDeleteRecipe: (recipeId: string) => void;
+  onToggleVisibility: (recipeId: string, currentStatus: string) => void;
+}
+
+/**
+ * 카드별 관리 메뉴(⋮) — 2026-10-04 PAU-26: 바깥 클릭 닫기를 투명 `fixed inset-0` 오버레이에서
+ * `useOutsideClick`(document 리스너)으로 교체. 오버레이는 첫 클릭을 삼켜 다른 카드의 ⋮·링크를 두 번 눌러야 했다.
+ * 훅은 반복문 안에서 못 쓰므로 카드 단위 소컴포넌트로 분리. 트리거·메뉴 마크업·핸들러는 원본 그대로(오버레이 div 만 제거).
+ */
+function RecipeManageMenu({
+  t,
+  recipe,
+  isOpen,
+  menuOpenRecipeId,
+  setMenuOpenRecipeId,
+  onDeleteRecipe,
+  onToggleVisibility,
+}: RecipeManageMenuProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  // 트리거 클릭은 제외(버튼 onClick 이 토글) — 메뉴 안 클릭도 제외.
+  useOutsideClick(isOpen, panelRef, () => setMenuOpenRecipeId(null), triggerRef);
+
+  return (
           <div className="absolute top-3 right-3">
             <button
+              ref={triggerRef}
               onClick={() => setMenuOpenRecipeId(menuOpenRecipeId === recipe.id ? null : recipe.id)}
               className="w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm text-white hover:bg-black/90 transition-all flex items-center justify-center"
             >
@@ -202,15 +261,10 @@ export default function ProfileRecipeGrid({
               </svg>
             </button>
 
-            {menuOpenRecipeId === recipe.id && (
+            {isOpen && (
               <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setMenuOpenRecipeId(null)}
-                />
                 {/* Menu */}
-                <div className="absolute right-0 mt-2 w-40 rounded-xl bg-background-primary border border-white/10 shadow-2xl overflow-hidden z-50">
+                <div ref={panelRef} className="absolute right-0 mt-2 w-40 rounded-xl bg-background-primary border border-white/10 shadow-2xl overflow-hidden z-50">
                   <Link
                     href={`/recipes/${recipe.id}/edit`}
                     className="flex items-center gap-2 px-4 py-3 hover:bg-background-secondary transition-colors text-sm"
@@ -246,17 +300,5 @@ export default function ProfileRecipeGrid({
               </>
             )}
           </div>
-        )}
-      </div>
-    ))}
-    <div ref={sentinelRef} className="mt-8 flex justify-center">
-      {loadingMore && (
-        <div className="flex items-center gap-2 text-text-muted text-sm py-4">
-          <div className="w-4 h-4 border-2 border-accent-warm border-t-transparent rounded-full animate-spin" />
-          <span>{t.common.loading}</span>
-        </div>
-      )}
-    </div>
-    </div>
   );
 }

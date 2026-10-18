@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
-import { fetchAllData } from '@/lib/supabase/fetchAll';
+import { fetchAllData, fetchAllDataIfExists } from '@/lib/supabase/fetchAll';
 
 // GET /api/users/export
 // GDPR Article 20 (Right to Data Portability) — 본인 데이터 일괄 export.
@@ -46,6 +46,9 @@ export async function GET() {
     ] = await Promise.all([
       // 전체 행이 진짜 필요한 GDPR export — 1000행 silent 절단 방지 위해 fetchAllData 로
       // .range() 끝까지 페이지네이션. profiles 만 단일행(maybeSingle).
+      // 2026-10-04 API1-14: 환경에 따라 *없는* 테이블/컬럼은 fetchAllDataIfExists — prod 미적용 배달 스키마
+      // (delivery_*)·user_id 컬럼이 없는 recipe_notes 가 throw 해 export 전체가 500 이었다. "없음" 오류만
+      // 빈 배열로 보고 그 외 오류는 기존처럼 실패(응답 키 구조 동일).
       sb.from('profiles').select('*').eq('id', uid).maybeSingle(),
       fetchAllData(() => sb.from('user_interests').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('user_dietary_preferences').select('*').eq('user_id', uid)),
@@ -60,7 +63,8 @@ export async function GET() {
       fetchAllData(() => sb.from('post_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_views').select('*').eq('user_id', uid)),
-      fetchAllData(() => sb.from('recipe_notes').select('*').eq('user_id', uid)),
+      // recipe_notes 는 현재 작성자 레시피 노트(tip/warning/info) 테이블로 user_id 컬럼이 없다(42703) → 빈 배열.
+      fetchAllDataIfExists(() => sb.from('recipe_notes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('cooking_sessions').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('experience_logs').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('user_badges').select('*').eq('user_id', uid)),
@@ -74,20 +78,20 @@ export async function GET() {
       fetchAllData(() => sb.from('ingredient_price_reports').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('ingredient_training_data').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('events').select('*').eq('user_id', uid)),
-      fetchAllData(() => sb.from('delivery_addresses').select('*').eq('user_id', uid)),
-      fetchAllData(() => sb.from('delivery_rider_profiles').select('*').eq('user_id', uid)),
+      fetchAllDataIfExists(() => sb.from('delivery_addresses').select('*').eq('user_id', uid)),
+      fetchAllDataIfExists(() => sb.from('delivery_rider_profiles').select('*').eq('user_id', uid)),
       // recipes: soft-delete 시스템 미구현 (20260209 마이그레이션 미적용, deleted_at 컬럼 없음).
       // status 컬럼(private/published) 으로만 관리. 본인 author_id 전체 export.
       fetchAllData(() => sb.from('recipes').select('*').eq('author_id', uid)),
       fetchAllData(() => sb.from('tip').select('*').eq('author_id', uid)),
-      fetchAllData(() => sb.from('delivery_restaurants').select('*').eq('owner_id', uid)),
+      fetchAllDataIfExists(() => sb.from('delivery_restaurants').select('*').eq('owner_id', uid)),
       fetchAllData(() => sb.from('reports').select('*').eq('reporter_id', uid)),
       // user_blocks: 본인이 *차단한* 사람만 (blocked_id=본인 = 본인을 차단한 사람은 비공개)
       fetchAllData(() => sb.from('user_blocks').select('*').eq('blocker_id', uid)),
       // user_follows: 양방향 (팔로잉·팔로워 모두 본인 사회 그래프)
       fetchAllData(() => sb.from('user_follows').select('*').or(`follower_id.eq.${uid},following_id.eq.${uid}`)),
       // delivery_orders: 소비자(user_id)·라이더(rider_id) 양쪽
-      fetchAllData(() => sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
+      fetchAllDataIfExists(() => sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
       // 어드민 활동 (일반 사용자는 빈 배열)
       fetchAllData(() => sb.from('ingredients_master').select('*').or(`created_by.eq.${uid},approved_by.eq.${uid}`)),
       // V2(2026-05-29): ingredient_substitutes_global → ingredient_relations 로 흡수. 흡수된 live 테이블에서 export.
@@ -110,7 +114,7 @@ export async function GET() {
       tipIds.length ? fetchAllData(() => sb.from('tip_steps').select('*').in('tip_id', tipIds)) : emptyData,
       tipIds.length ? fetchAllData(() => sb.from('tip_tags').select('*').in('tip_id', tipIds)) : emptyData,
       mealPlanIds.length ? fetchAllData(() => sb.from('meal_plan_items').select('*').in('meal_plan_id', mealPlanIds)) : emptyData,
-      orderIds.length ? fetchAllData(() => sb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
+      orderIds.length ? fetchAllDataIfExists(() => sb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
     ]);
 
     const exportData = {

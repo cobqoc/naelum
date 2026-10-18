@@ -1,12 +1,11 @@
 import { createServiceClient } from '@/lib/supabase/service'
+import { getClientIp } from '@/lib/api/clientIp'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('cf-connecting-ip')
-      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || 'unknown'
+    const ip = getClientIp(request.headers)
 
     const { allowed } = await checkRateLimit(`check-email:${ip}`, {
       windowMs: 60 * 1000,

@@ -1,3 +1,5 @@
+import { serializeJsonLd } from '@/lib/recipes/jsonLd';
+
 interface RecipeJsonLdProps {
   title: string;
   description: string;
@@ -53,10 +55,11 @@ export default function RecipeJsonLd({
     }),
   };
 
+  // 2026-10-04 [TT-28] 사용자 입력(제목·설명·재료·단계)의 `</script>` 탈출 차단 — `<` 를 \u003c 로 직렬화(lib/recipes/jsonLd).
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }

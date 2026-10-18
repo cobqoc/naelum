@@ -32,6 +32,28 @@ const FIXTURE_FILE = {
   buffer: TINY_PNG_BUFFER,
 } as const;
 
+/**
+ * 파일 input 에 React 가 onChange 를 붙일 때까지(=하이드레이션 완료) 결정적으로 대기.
+ *
+ * tip/new 는 SSR 되는 client 페이지라 input 이 하이드레이션 *전부터* 화면에 보인다. 그 사이에
+ * setInputFiles 하면 change 이벤트를 받을 리스너가 없어 모달이 안 열린다 — 드물게 1회 실패하던 원인
+ * (recipes/new 는 useSearchParams 로 CSR 이라 input 자체가 하이드레이션 뒤에 생겨 영향 없음).
+ * React 는 하이드레이션한 DOM 노드에 `__reactProps$<id>` 로 props 를 붙이므로 그 onChange 존재를 신호로 쓴다.
+ */
+async function waitForHydratedInput(page: Page, testId: string) {
+  await page.waitForFunction(
+    (id) => {
+      const el = document.querySelector(`[data-testid="${id}"]`);
+      if (!el) return false;
+      const key = Object.keys(el).find((k) => k.startsWith('__reactProps$'));
+      const props = key ? (el as unknown as Record<string, { onChange?: unknown }>)[key] : undefined;
+      return typeof props?.onChange === 'function';
+    },
+    testId,
+    { timeout: 15000 },
+  );
+}
+
 async function gotoRecipeNew(page: Page) {
   await page.goto('/recipes/new', { waitUntil: 'domcontentloaded' });
   await page
@@ -57,6 +79,7 @@ test.describe('썸네일 자르기 모달', () => {
 
     // hidden file input 에 직접 파일 주입 (label click 우회).
     // accept="image/*" 인 input 중 첫 번째 = 썸네일 input.
+    await waitForHydratedInput(page, 'thumbnail-file-input');
     const fileInput = page.getByTestId('thumbnail-file-input');
     await fileInput.setInputFiles(FIXTURE_FILE);
 
@@ -78,6 +101,7 @@ test.describe('썸네일 자르기 모달', () => {
   }) => {
     await gotoTipNew(page);
 
+    await waitForHydratedInput(page, 'thumbnail-file-input');
     const fileInput = page.getByTestId('thumbnail-file-input');
     await fileInput.setInputFiles(FIXTURE_FILE);
 
@@ -94,6 +118,7 @@ test.describe('썸네일 자르기 모달', () => {
   }) => {
     await gotoRecipeNew(page);
 
+    await waitForHydratedInput(page, 'thumbnail-file-input');
     const fileInput = page.getByTestId('thumbnail-file-input');
     await fileInput.setInputFiles({
       name: 'not-image.txt',

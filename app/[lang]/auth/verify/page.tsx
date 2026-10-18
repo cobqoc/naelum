@@ -5,6 +5,9 @@ import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
+import { resolveEmailLinkSession } from '@/lib/auth/emailLinkSession';
+import { broadcastCrossTabAuth } from '@/lib/auth/crossTabAuth';
+import EmailLinkStatusCard from '@/components/Auth/EmailLinkStatusCard';
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -14,84 +17,47 @@ export default function VerifyPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
+    // 지연 이동 타이머는 언마운트 시 정리 — 예전엔 사용자가 먼저 다른 곳으로 가도 1.5~2초 뒤
+    // 다시 끌려갔다 (2026-10-04 PAU-59). 정상 흐름의 이동 시점은 동일.
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const later = (fn: () => void, ms: number) => {
+      if (!cancelled) timers.push(setTimeout(fn, ms));
+    };
+
     const handleVerification = async () => {
       try {
-        // URL에서 토큰 정보 확인 (Supabase가 자동으로 처리)
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // 세션 확립(getSession → URL hash 토큰 setSession) — lib/auth/emailLinkSession (2026-10-04 PAU-16)
+        const result = await resolveEmailLinkSession(supabase.auth, () => window.location.hash, {
+          requireRecoveryType: false,
+        });
 
-        if (error) {
-          console.error('Session error:', error);
+        if (result.kind === 'error') {
           setStatus('error');
-          setErrorMessage(translateError(error));
+          setErrorMessage(translateError(result.error, t));
           return;
         }
 
-        if (session?.user) {
-          setStatus('success');
-          // 원래 창에 인증 완료 알림
-          const channel = new BroadcastChannel('auth-channel');
-          channel.postMessage({ type: 'AUTH_SUCCESS' });
-          channel.close();
-          try {
-            localStorage.setItem('naelum_auth_event', JSON.stringify({
-              type: 'AUTH_SUCCESS',
-              timestamp: Date.now()
-            }));
-          } catch {}
-          // 탭 닫기 시도 → 실패 시 set-password로 직접 이동 (원래 탭이 없는 경우 대비)
-          setTimeout(() => {
-            window.close();
-            setTimeout(() => {
-              router.push('/signup/set-password');
-            }, 500);
-          }, 1500);
+        if (result.kind === 'missing') {
+          // 토큰이 없으면 회원가입 페이지로
+          setStatus('error');
+          setErrorMessage(t.auth.verifyNotFound);
+          later(() => {
+            router.push('/signup');
+          }, 2000);
           return;
-        } else {
-          // 세션이 없으면 URL hash에서 토큰 처리 시도
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
-
-          if (accessToken && refreshToken) {
-            const { error: setSessionError } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-
-            if (setSessionError) {
-              setStatus('error');
-              setErrorMessage(translateError(setSessionError));
-              return;
-            }
-
-            setStatus('success');
-            // 원래 창에 인증 완료 알림
-            const channel = new BroadcastChannel('auth-channel');
-            channel.postMessage({ type: 'AUTH_SUCCESS' });
-            channel.close();
-            try {
-              localStorage.setItem('naelum_auth_event', JSON.stringify({
-                type: 'AUTH_SUCCESS',
-                timestamp: Date.now()
-              }));
-            } catch {}
-            // 탭 닫기 시도 → 실패 시 set-password로 직접 이동
-            setTimeout(() => {
-              window.close();
-              setTimeout(() => {
-                router.push('/signup/set-password');
-              }, 500);
-            }, 1500);
-            return;
-          } else {
-            // 토큰이 없으면 회원가입 페이지로
-            setStatus('error');
-            setErrorMessage(t.auth.verifyNotFound);
-            setTimeout(() => {
-              router.push('/signup');
-            }, 2000);
-          }
         }
+
+        setStatus('success');
+        // 원래 창에 인증 완료 알림 (BroadcastChannel + localStorage 폴백 — lib/auth/crossTabAuth)
+        broadcastCrossTabAuth({ type: 'AUTH_SUCCESS' });
+        // 탭 닫기 시도 → 실패 시 set-password로 직접 이동 (원래 탭이 없는 경우 대비)
+        later(() => {
+          window.close();
+          later(() => {
+            router.push('/signup/set-password');
+          }, 500);
+        }, 1500);
       } catch (err) {
         console.error('Verification error:', err);
         setStatus('error');
@@ -100,63 +66,33 @@ export default function VerifyPage() {
     };
 
     handleVerification();
-  }, [router, supabase.auth, t.auth.verifyError, t.auth.verifyNotFound]);
 
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [router, supabase.auth, t]);
+
+  // 상태 카드 틀·로딩·실패 블록은 components/Auth/EmailLinkStatusCard (2026-10-04 PAU-16, 마크업 동일)
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background-primary px-4">
-      <div className="w-full max-w-md rounded-2xl bg-background-secondary p-8 shadow-2xl border border-white/5 text-center">
-        {status === 'loading' && (
-          <>
-            <div className="mx-auto w-16 h-16 rounded-full bg-accent-warm/20 flex items-center justify-center mb-6">
-              <span className="w-8 h-8 border-3 border-accent-warm border-t-transparent rounded-full animate-spin" />
-            </div>
-            <h1 className="text-xl font-bold text-text-primary mb-2">
-              {t.auth.verifying}
-            </h1>
-            <p className="text-text-secondary text-sm">
-              {t.auth.pleaseWait}
-            </p>
-          </>
-        )}
-
-        {status === 'success' && (
-          <>
-            <div className="mx-auto w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-6">
-              <span className="text-3xl">✓</span>
-            </div>
-            <h1 className="text-xl font-bold text-text-primary mb-2">
-              {t.auth.emailVerifyComplete}
-            </h1>
-            <p className="text-text-secondary text-sm mb-4">
-              {t.auth.autoMoveNext}
-            </p>
-            <p className="text-xs text-text-muted">
-              {t.auth.tabAutoClose}<br />
-              {t.auth.tabCloseManual}
-            </p>
-          </>
-        )}
-
-        {status === 'error' && (
-          <>
-            <div className="mx-auto w-16 h-16 rounded-full bg-error/20 flex items-center justify-center mb-6">
-              <span className="text-3xl">✗</span>
-            </div>
-            <h1 className="text-xl font-bold text-text-primary mb-2">
-              {t.auth.authFailed}
-            </h1>
-            <p className="text-text-secondary text-sm mb-4">
-              {errorMessage || t.auth.authErrorDesc}
-            </p>
-            <button
-              onClick={() => router.push('/signup')}
-              className="w-full rounded-xl bg-accent-warm py-3 font-bold text-background-primary transition-all hover:bg-accent-hover"
-            >
-              {t.auth.backToSignup}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+    <EmailLinkStatusCard
+      status={status}
+      t={t}
+      successTitle={t.auth.emailVerifyComplete}
+      successBody={
+        <>
+          <p className="text-text-secondary text-sm mb-4">
+            {t.auth.autoMoveNext}
+          </p>
+          <p className="text-xs text-text-muted">
+            {t.auth.tabAutoClose}<br />
+            {t.auth.tabCloseManual}
+          </p>
+        </>
+      }
+      errorMessage={errorMessage || t.auth.authErrorDesc}
+      errorActionLabel={t.auth.backToSignup}
+      onErrorAction={() => router.push('/signup')}
+    />
   );
 }

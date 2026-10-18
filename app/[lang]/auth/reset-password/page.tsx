@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
-import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import AuthCheckingScreen from '@/components/Auth/AuthCheckingScreen';
+import { PasswordField, PasswordStrengthMeter, PasswordMatchHint } from '@/components/Auth/PasswordFields';
 import { useI18n } from '@/lib/i18n/context';
 
 export default function ResetPasswordPage() {
@@ -57,6 +58,19 @@ export default function ResetPasswordPage() {
     };
   }, [supabase]);
 
+  // 성공 후 3초 뒤 로그인 이동 타이머 — 언마운트(사용자가 먼저 '로그인 페이지로' 이동 등) 시 정리하고,
+  // 언마운트 뒤에 끝난 요청은 예약하지 않는다. 예전엔 정리하지 않아 다른 화면에서 3초 뒤 다시
+  // /signin 으로 끌려갔다 (2026-10-04 PAU-59). 화면에 머무는 정상 흐름의 이동 시점은 동일.
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unmountedRef = useRef(false);
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
+
   const strength = getPasswordStrength(password);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -80,7 +94,7 @@ export default function ResetPasswordPage() {
     });
 
     if (updateError) {
-      setError(translateError(updateError));
+      setError(translateError(updateError, t));
       setLoading(false);
       return;
     }
@@ -89,20 +103,15 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     // 3초 후 로그인 페이지로 이동
-    setTimeout(() => {
-      router.push('/signin');
-    }, 3000);
+    if (!unmountedRef.current) {
+      redirectTimerRef.current = setTimeout(() => {
+        router.push('/signin');
+      }, 3000);
+    }
   };
 
   if (checking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background-primary">
-        <div className="flex items-center gap-3 text-text-muted">
-          <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          {t.auth.checking}
-        </div>
-      </div>
-    );
+    return <AuthCheckingScreen label={t.auth.checking} />;
   }
 
   if (!validSession) {
@@ -163,102 +172,29 @@ export default function ResetPasswordPage() {
         </p>
 
         <form onSubmit={handleResetPassword} className="space-y-6">
-          {/* Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{t.auth.newPassword} *</label>
-            <div className="relative">
-              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
-                  style={INPUT_INNER_STYLE}
-                  placeholder={t.auth.passwordPlaceholder}
-                  autoComplete="new-password"
-                  required
-                />
-              </InputBoxWrapper>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
-              >
-                {showPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {/* Strength Indicator */}
-            <div className="flex gap-1 pt-1">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full transition-all ${
-                    i <= strength ? (strength <= 2 ? 'bg-warning' : 'bg-success') : 'bg-white/10'
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
-              {strength > 0 && (
-                <p className={`text-[10px] font-medium ${strength <= 2 ? 'text-warning' : 'text-success'}`}>
-                  {strength === 1 ? t.auth.passwordStrengthWeak
-                    : strength === 2 ? t.auth.passwordStrengthFair
-                    : strength === 3 ? t.auth.passwordStrengthStrong
-                    : t.auth.passwordStrengthVeryStrong}
-                </p>
-              )}
-            </div>
-          </div>
+          {/* 비밀번호 입력·확인 블록 — components/Auth/PasswordFields 로 공용화 (2026-10-04 PAU-14, 마크업 동일) */}
+          <PasswordField
+            label={t.auth.newPassword}
+            value={password}
+            setValue={setPassword}
+            show={showPassword}
+            setShow={setShowPassword}
+            boxClassName="!bg-background-tertiary !rounded-xl !px-5 !py-3.5"
+            placeholder={t.auth.passwordPlaceholder}
+          >
+            <PasswordStrengthMeter strength={strength} t={t} />
+          </PasswordField>
 
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{t.auth.confirmPassword} *</label>
-            <div className="relative">
-              <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
-                  style={INPUT_INNER_STYLE}
-                  autoComplete="new-password"
-                  required
-                />
-              </InputBoxWrapper>
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
-              >
-                {showConfirmPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {confirmPassword && password === confirmPassword && (
-              <p className="text-xs text-success">✓ {t.auth.passwordMatch}</p>
-            )}
-            {confirmPassword && password !== confirmPassword && (
-              <p className="text-xs text-error">✗ {t.auth.passwordMismatch}</p>
-            )}
-          </div>
+          <PasswordField
+            label={t.auth.confirmPassword}
+            value={confirmPassword}
+            setValue={setConfirmPassword}
+            show={showConfirmPassword}
+            setShow={setShowConfirmPassword}
+            boxClassName={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}
+          >
+            <PasswordMatchHint password={password} confirm={confirmPassword} t={t} />
+          </PasswordField>
 
           {error && <p className="text-center text-sm text-error">{error}</p>}
 

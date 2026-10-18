@@ -1,5 +1,6 @@
 import { createClient } from './server'
 import { User } from '@supabase/supabase-js'
+import { getClientIp } from '@/lib/api/clientIp'
 
 /**
  * 관리자 권한 검증 에러 타입
@@ -122,7 +123,11 @@ export async function verifyAdminAndLog(
   }
 
   // 로그 기록
-  const ipAddress = request?.headers.get('x-forwarded-for') || request?.headers.get('x-real-ip') || undefined
+  // 2026-10-04 API1-44: x-forwarded-for 원문(전체, Cloudflare 뒤에선 엣지 IP·다중 값)을 그대로 넣던 것을 단일 출처
+  // getClientIp(CF-Connecting-IP 우선 → XFF 첫 값 → X-Real-IP)로. 헤더가 없으면('unknown') 이전처럼 NULL —
+  // ip_address 는 INET 컬럼이라 'unknown' 문자열을 넣으면 감사로그 insert 자체가 실패한다.
+  const clientIp = request ? getClientIp(request.headers, { realIpFallback: true }) : 'unknown'
+  const ipAddress = clientIp === 'unknown' ? undefined : clientIp
   const userAgent = request?.headers.get('user-agent') || undefined
 
   await logAdminAction(

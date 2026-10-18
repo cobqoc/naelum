@@ -1,15 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
+// Geist Mono 는 제거됨 (perf 2026-09-27): --font-geist-mono 를 참조하는 CSS 가 없고 Tailwind `font-mono`
+// 는 기본 ui-monospace 스택을 쓰므로 어떤 요소도 이 폰트로 렌더되지 않았는데 매 로드마다 23KB woff2 를
+// preload 하고 있었다. 필요해지면 Geist_Mono 를 다시 추가하고 globals.css 에서 변수를 연결할 것.
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -99,7 +96,7 @@ export default function RootLayout({
         {supabaseUrl && <link rel="dns-prefetch" href={supabaseUrl} />}
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} antialiased`}
       >
         {children}
       </body>

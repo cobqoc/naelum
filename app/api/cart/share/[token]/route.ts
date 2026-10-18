@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 
 // GET: 비로그인 가능. 토큰 검증 후 cart items + owner 닉네임 반환.
 // RLS 우회를 위해 service role 사용 — 토큰 검증으로 권한 게이트.
@@ -53,10 +53,16 @@ export async function GET(
 
   // last_viewed_at 기록 (fire-and-forget — 실패해도 응답엔 영향 없음).
   // view_count 증분은 별도 RPC 필요해서 1단계에선 생략, 필요해지면 추가.
-  void supabase
-    .from('shopping_list_shares')
-    .update({ last_viewed_at: new Date().toISOString() })
-    .eq('token', token);
+  // 2026-10-04 API1-21: `void builder` 는 요청이 나가지 않는다(PostgREST 빌더는 then() 때 실행) → last_viewed_at 이
+  // 영원히 NULL 이었다. 의도(주석)·컬럼(20260516_add_shopping_list_shares)·권한(service-role) 모두 분명 → 실제로 실행.
+  // 응답은 기다리지 않고(after 로 완료만 보장) 실패는 로그.
+  after(Promise.resolve(
+    supabase
+      .from('shopping_list_shares')
+      .update({ last_viewed_at: new Date().toISOString() })
+      .eq('token', token)
+      .then(({ error }) => { if (error) console.error('[cart/share/token] last_viewed_at update failed:', error.message); })
+  ));
 
   return NextResponse.json({
     ownerName,

@@ -266,6 +266,7 @@ function convertRecentToIngredientItem(recent: RecentIngredient): IngredientItem
  */
 const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boolean; compact?: boolean }> = React.memo(
   ({ item, isSelected, compact }) => {
+    const { t } = useI18n();
     const hasCount = item.metadata?.count !== undefined && typeof item.metadata.count === 'number';
     const count = hasCount ? item.metadata!.count as number : 0;
 
@@ -288,7 +289,7 @@ const IngredientItemRenderer: React.FC<{ item: IngredientItem; isSelected: boole
 
         {hasCount && (
           <span className="text-xs px-2 py-1 rounded-full bg-accent-warm/10 text-accent-warm">
-            {count}회
+            {t.autocomplete.usedCount.replace('{count}', String(count))}
           </span>
         )}
 

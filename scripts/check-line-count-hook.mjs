@@ -5,7 +5,10 @@
 // 분해 임계 (CLAUDE.md "🧱 코드 유지 체계"): ~700 검토 · ~900 필수.
 //
 // 입력: Claude Code 가 stdin 으로 JSON ({tool_name, tool_input: {file_path, ...}}).
-// 출력: stderr 에 경고. 종료 코드는 항상 0 (PostToolUse 는 차단 안 함, 알림만).
+// 출력: stdout 에 hookSpecificOutput.additionalContext JSON(모델에게 전달) + stderr 에 같은 경고(터미널용).
+//       종료 코드는 항상 0 (PostToolUse 는 차단 안 함, 알림만).
+//       ※ 2026-10-04: 예전엔 stderr 만 썼는데 exit 0 의 stderr 는 모델·대화에 전달되지 않아 경고가 사실상 무음이었다.
+//         또 matcher 가 Edit|Write 라 Bash(sed·heredoc) 편집엔 발화하지 않는다 — 머지 차단은 CI `npm run scan` 이 담당.
 //
 // 제외 파일 (CLAUDE.md "i18n locale·생성물·SVG 마크업 제외"):
 //  - lib/i18n/locales/*.ts (8 locale, 큰 게 정상)
@@ -73,18 +76,24 @@ try {
 
 const lines = content.split('\n').length;
 
+let warning = '';
 if (lines >= THRESHOLD_REQUIRED) {
-  process.stderr.write(
-    `\n🚨 god-file 임계 초과 — ${lines}줄 (${THRESHOLD_REQUIRED}+)\n` +
+  warning =
+    `🚨 god-file 임계 초과 — ${lines}줄 (${THRESHOLD_REQUIRED}+)\n` +
     `   ${filePath}\n` +
     `   CLAUDE.md "🧱 코드 유지 체계" 분해 *필수* 선. 이번 작업에 분해 묶거나 별도 PR 우선 진행 검토.\n` +
-    `   [[project-god-file-phase2]] · [[feedback-check-line-count-before-adding]]\n\n`
-  );
+    `   [[project-god-file-phase2]] · [[feedback-check-line-count-before-adding]]`;
 } else if (lines >= THRESHOLD_REVIEW) {
-  process.stderr.write(
-    `\n⚠️  god-file 검토 임계 — ${lines}줄 (${THRESHOLD_REVIEW}+)\n` +
+  warning =
+    `⚠️  god-file 검토 임계 — ${lines}줄 (${THRESHOLD_REVIEW}+)\n` +
     `   ${filePath}\n` +
-    `   추가 분량 누적 시 ${THRESHOLD_REQUIRED} 도달 가능. 다음 추가가 들어오면 같이 추출할 후보 파악 모드.\n\n`
+    `   추가 분량 누적 시 ${THRESHOLD_REQUIRED} 도달 가능. 다음 추가가 들어오면 같이 추출할 후보 파악 모드.`;
+}
+
+if (warning) {
+  process.stderr.write(`\n${warning}\n\n`);
+  process.stdout.write(
+    JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: warning } })
   );
 }
 

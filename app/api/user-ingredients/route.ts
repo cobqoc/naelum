@@ -2,10 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { inferStorageLocation } from '@/lib/ingredients/storageMap';
 import { resolveExactIngredientId } from '@/lib/ingredients/resolveIngredientId';
 import { NextRequest, NextResponse } from 'next/server';
-
-const SELECT_COLS =
-  'id,user_id,ingredient_name,quantity,unit,category,expiry_date,' +
-  'storage_location,purchase_date,notes,expiry_alert,created_at';
+import { USER_INGREDIENT_COLS as SELECT_COLS, selectUserIngredientsWithMaster } from '@/lib/queries/userIngredients';
 
 // GET /api/user-ingredients — 로그인 사용자 냉장고 전체 조회
 // 정렬: expiry_date asc nullslast (KMP FridgeRepositoryImpl 과 동일)
@@ -18,37 +15,25 @@ export async function GET(request: NextRequest) {
   }
 
   const withMaster = request.nextUrl.searchParams.get('withMaster') === '1';
-  const cols = withMaster
-    ? `${SELECT_COLS},ingredients_master!ingredient_id(emoji, shelf_life_days)`
-    : SELECT_COLS;
+  if (withMaster) {
+    // 도감 조인·평탄화 — 홈 SSR 과 같은 함수(lib/queries/userIngredients)라 두 경로의 행 shape 이 동일.
+    const { items, error } = await selectUserIngredientsWithMaster(supabase, user.id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ items });
+  }
 
   const { data, error } = await supabase
     .from('user_ingredients')
-    .select(cols)
+    .select(SELECT_COLS)
     .eq('user_id', user.id)
     .order('expiry_date', { ascending: true, nullsFirst: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  if (!withMaster) {
-    return NextResponse.json({ items: data ?? [] });
-  }
-
-  // 도감 조인 평탄화 — emoji·shelf_life_days 를 최상위로, 중첩 ingredients_master 제거.
-  const items = (data ?? []).map((row) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const master = (row as any).ingredients_master;
-    return {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(row as any),
-      emoji: master?.emoji ?? null,
-      shelf_life_days: master?.shelf_life_days ?? null,
-      ingredients_master: undefined,
-    };
-  });
-  return NextResponse.json({ items });
+  return NextResponse.json({ items: data ?? [] });
 }
 
 // POST /api/user-ingredients — 냉장고 항목 추가

@@ -1,10 +1,10 @@
 # 만들어봤어요 흐름 + 나만의 메모 리디자인 (설계)
 
-> 작성: 2026-06-02. 설계 확정, 구현은 단계적. **메모 부분은 보류(다음 세션)**, 만들어봤어요(별점·난이도·사진)는 먼저 구현.
+> 작성: 2026-06-02. 설계 확정, 구현은 단계적. **A(만들어봤어요 — 직후 사진·난이도 / 먹고 나서 맛 별점) 구현 완료**(2026-06-03 커밋 `ab53e19`, 마이그레이션 `20260602_cooking_difficulty.sql`, e2e `e2e/made-it-flow.spec.ts`). **B(나만의 메모)는 보류.**
 
-## 배경 — 현재 흐름의 문제
+## 배경 — 설계 당시(2026-06-02) 흐름의 문제
 
-`🍳 만들어봤어요`(조리순서 탭 끝 버튼, `StepsTab.tsx:210`, `showMadeIt={!isAuthor}`) → `MadeItModal` 이
+`🍳 만들어봤어요`(조리순서 탭 끝 버튼 — `components/Recipes/_browse/StepsTab.tsx` 의 `showMadeIt` prop, `RecipeBrowseView` 가 `showMadeIt={!isAuthor}` 전달) → `MadeItModal` 이
 **별점 ⭐ + 사진 + 후기 textarea 를 한 번에** 띄움. 전부 선택이지만 "폼 벽"이라 사용자가:
 1. "그냥 만들었다 기록만" 하는 길을 못 봄(빈 채 제출 가능한 걸 모름)
 2. **만든 직후 = 후기 쓸 때가 아님** — 아직 안 먹었고 정신없음. 맛 평가는 먹고 나서 나오는 신호.
@@ -14,7 +14,7 @@
 | # | 종류 | 공개 | 자연스러운 시점 | 저장 위치 | 현재 |
 |---|---|---|---|---|---|
 | ① | **맛 ⭐ + 후기** | 공개(피드) | **먹고 나서** | `recipe_posts` | ✅ 있음 |
-| ② | **체감 난이도**(쉬움/적당/어려움) | 공개(집계) | **만든 직후**(과정 기억 신선) | `cooking_sessions.difficulty_felt` 🆕 | ❌ |
+| ② | **체감 난이도**(쉬움/적당/어려움) | 공개(집계) | **만든 직후**(과정 기억 신선) | `cooking_sessions.difficulty_felt` | ✅ 수집 중(2026-06-03 — 집계·표시는 데이터 축적 후) |
 | ③ | **나만의 메모**("소금 반으로") | 비공개 | 아무때나(누적) | `recipe_notes` 🆕 | ⚠️ 현재 `recipe_saves.notes`(저장 종속) |
 
 **원칙**
@@ -49,14 +49,13 @@ ALTER TABLE cooking_sessions ADD COLUMN difficulty_felt smallint
 - 적용: **dev(jmyrdoguxlizvajfcwep) → 검증 → prod(rgnlgpfazxgwsnkgrhzs)**.
 - 집계(추천/표시)는 **데이터 축적 후**(추천 섹션 부활 trigger와 동일) — 지금은 **수집만**.
 
-### 파일
-- `supabase/migrations/2026XXXX_cooking_difficulty.sql` 🆕
+### 파일 (구현 결과 — 2026-06-03)
+- `supabase/migrations/20260602_cooking_difficulty.sql` — `difficulty_felt smallint CHECK 1~3`
 - `app/api/recipes/[id]/complete/route.ts` — `difficulty_felt` 수신·저장(`.error` 체크)
-- `components/RecipePosts/MadeItModal.tsx` — 슬림화(⭐·후기 제거, 난이도 3버튼, 모바일 capture)
-- `components/RecipePosts/RecipePostsFeed.tsx` / 신규 `ReviewLaterPrompt` — 2단계 별점 진입(재방문 prompt)
-- `app/[lang]/recipes/[id]/RecipeDetailClient.tsx` — 재방문 prompt 상태(cooking_session 있는데 내 리뷰 없음)
-- `lib/i18n/locales/*.ts`(8개) — 난이도 라벨·prompt 문구
-- `e2e/` — 1단계 기록·난이도, 2단계 재유도 spec
+- `components/RecipePosts/MadeItModal.tsx` — 슬림화(⭐·후기 제거, 난이도 3버튼, 사진 선택)
+- 2단계 별점: 별도 `ReviewLaterPrompt` 컴포넌트는 만들지 않았다 — 재방문 prompt 는 `app/[lang]/recipes/[id]/RecipeDetailClient.tsx` 인라인(`showReviewPrompt` = 로그인·비작성자·만든 기록 있음·내 리뷰 없음, `initialHasReviewed` 는 `lib/queries/recipeDetail.ts`), 별점·후기 입력은 `components/RecipeReviewModal.tsx`
+- `lib/i18n/locales/*.ts`(8개) — 난이도 라벨·prompt 문구(`t.posts.reviewPrompt*` 등)
+- `e2e/made-it-flow.spec.ts` — 1단계 기록·난이도 → 2단계 prompt → 리뷰 모달
 
 ---
 
@@ -73,10 +72,11 @@ ALTER TABLE cooking_sessions ADD COLUMN difficulty_felt smallint
 | **쓰기/수정** | 같은 핀 카드 인라인 편집 | 요리 중에도 먹고 나서도 아무때나. 단계 아님 |
 | **둘러보기** | 프로필 낼름함/만든요리 탭 미리보기 | 현행 유지 |
 
-- **저장 종속 해제**: `recipe_saves.notes` → 신규 `recipe_notes`(user·recipe UNIQUE, 비공개 RLS 4종). 로그인만 하면 어떤 레시피든 메모.
+- **저장 종속 해제**: `recipe_saves.notes` → 신규 사용자 메모 테이블(user·recipe UNIQUE, 비공개 RLS 4종). 로그인만 하면 어떤 레시피든 메모.
+- ⚠️ **이름 충돌**: `recipe_notes` 라는 테이블이 **이미 있다** — 작성자 팁/주의사항용(`recipe_id, note_type, content, display_order`, user_id 없음, 공개 읽기 정책 `recipe_notes_public_read` — `supabase-schema.sql`·`supabase/migrations/20260413_sync_rls_policies_to_dev.sql`). 아래 스키마를 그대로 `CREATE TABLE recipe_notes` 하면 충돌(또는 `IF NOT EXISTS` 면 조용히 건너뛰어 user_id 없는 공개 테이블에 비공개 메모를 쓰게 됨). 착수 시 새 이름(예: `user_recipe_notes`)으로 분리하거나 기존 테이블 폐기·이관 계획을 먼저 정할 것.
 - **어떤 모달의 단계도 아님**. 2단계 리뷰 끝에 `✏️ 내 메모 남기기` 넛지만, 입력은 조리순서 탭 핀에서.
 
-### 스키마 (보류)
+### 스키마 (보류 — ⚠️ 테이블명은 위 "이름 충돌" 참고, 착수 시 변경)
 ```sql
 CREATE TABLE recipe_notes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -95,10 +95,10 @@ CREATE POLICY notes_delete ON recipe_notes FOR DELETE USING (auth.uid() = user_i
 ```
 
 ### 파일 (보류)
-- `supabase/migrations/2026XXXX_recipe_notes.sql` 🆕 + RLS + saves.notes 이관
+- `supabase/migrations/2026XXXX_<사용자 메모 테이블>.sql` 🆕 + RLS + saves.notes 이관 (기존 `recipe_notes` 와 이름 분리)
 - `app/api/recipes/[id]/notes/route.ts` 🆕 (GET/PUT/DELETE, service-role 아님)
 - `components/Recipes/_browse/StepsTab.tsx` — 상단 sticky 메모 핀(읽기+인라인 편집)
-- `components/RecipeBrowseView.tsx` — 기존 333-403 메모 블록 제거(조리순서 핀으로 이동), recipe_notes 연결
+- `components/RecipeBrowseView.tsx` — 기존 메모 블록(`memoText` 상태·`onUpdateMemo` 콜백) 제거(조리순서 핀으로 이동), 새 메모 테이블 연결
 - `app/[lang]/recipes/[id]/RecipeDetailClient.tsx` — saveNotes 종속 제거
 
 ### 보류한 래빗홀

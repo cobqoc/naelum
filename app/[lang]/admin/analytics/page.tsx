@@ -36,14 +36,20 @@ export default function AdminAnalyticsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/admin/analytics?range=${range}`);
-    const json = await res.json();
-    setData(json);
-    setLoading(false);
+    // 429·403·500 의 {error} 를 데이터로 저장하면 data.recentSignups 가 undefined 라 렌더 중 TypeError 로
+    // 관리자 화면 전체가 깨졌다 → 실패 응답·네트워크 오류는 기존 "불러올 수 없습니다" 화면으로(2026-10-04).
+    try {
+      const res = await fetch(`/api/admin/analytics?range=${range}`);
+      const json = await res.json();
+      setData(res.ok ? json : null);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
   }, [range]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 

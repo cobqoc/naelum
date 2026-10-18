@@ -22,6 +22,8 @@ test.describe('FloatingFeedbackButton (layout 연결 회귀)', () => {
     await btn.click();
     // ContactModal — t.contact.title (ko: "✉️ 개발자에게 문의")
     await expect(page.getByText('개발자에게 문의')).toBeVisible();
+    // 비로그인 분기(isLoggedIn === false) — 답변 받을 이메일 입력칸 노출 (로그인 판정이 AuthProvider 세션 기반으로 바뀐 뒤 회귀 가드)
+    await expect(page.locator('input[type="email"]')).toBeVisible();
   });
 
   test('홈(/)·/signin 에서는 자체 hide 로직으로 숨김 (i18n /ko 경로 회귀 가드)', async ({ page }) => {

@@ -8,8 +8,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const body = await request.json()
-  const { action, reason, ban_type, expires_at } = body
+  // 2026-10-04 AG2-49: 형식 오류 JSON·null 본문은 500 이었다 → action 없음으로 보고 아래 기존 400('유효하지 않은 작업입니다').
+  let body: { action?: unknown; reason?: unknown; ban_type?: unknown; expires_at?: unknown } | null
+  try {
+    body = await request.json()
+  } catch {
+    body = null
+  }
+  const { action, reason, ban_type, expires_at } = body ?? {}
 
   if (action === 'ban') {
     const auth = await verifyAdminAndLog(
@@ -34,6 +40,14 @@ export async function PATCH(
     })
 
     if (error) {
+      // 2026-10-04 AG2-49: 잘못된 입력·상태가 500 이던 경로만 4xx 로 — 이미 차단된 사용자(banned_users.user_id UNIQUE, 23505)
+      // → 409, DB 가 거부한 만료일 형식(22007/22008) → 400. 그 외 오류는 기존처럼 500.
+      if (error.code === '23505') {
+        return NextResponse.json({ error: '이미 차단된 사용자입니다' }, { status: 409 })
+      }
+      if (error.code === '22007' || error.code === '22008') {
+        return NextResponse.json({ error: '유효하지 않은 만료일입니다' }, { status: 400 })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 

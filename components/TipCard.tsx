@@ -65,7 +65,8 @@ export default memo(function TipCard({ tip, showAuthor = false, priority = false
           {/* 비공개 배지 (프로필 비공개 팁) */}
           {tip.is_public === false && (
             <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/70 text-white text-xs font-bold backdrop-blur-sm">
-              🔒 {t.profile.privateBadge}
+              {/* privateBadge 문구에 이미 🔒 가 들어 있다 — 앞에 하나 더 붙여 '🔒 🔒 비공개' 로 보이던 것(2026-10-04). 다른 사용처와 동일하게 */}
+              {t.profile.privateBadge}
             </div>
           )}
         </div>

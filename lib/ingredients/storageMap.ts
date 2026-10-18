@@ -6,10 +6,11 @@
  *   1. 정확 일치 (STORAGE_MAP에 동일 이름)
  *   2. 부분 포함 (STORAGE_MAP 키를 재료명이 포함, 또는 반대)
  *   3. 카테고리 fallback (meat→냉장, veggie→상온 등)
- *   4. '기타'
+ *   4. '상온' (최종 fallback)
  *
  * 향후 학습 시스템이 이 맵을 동적으로 확장할 수 있음
- * (ingredients_master.default_storage 컬럼 + 유저 투표 집계).
+ * (예: 마스터에 기본 보관위치 컬럼 + 유저 투표 집계 — 현재 그런 컬럼은 없음).
+ * (2026-10-04 주석 정정 — 최종값·존재하지 않는 컬럼 표기, ICL-47)
  */
 
 export type StorageLocation = '냉장' | '냉동' | '상온';

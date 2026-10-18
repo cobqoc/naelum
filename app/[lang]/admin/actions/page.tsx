@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/lib/toast/context';
+import AdminPagination from '@/components/Admin/AdminPagination';
 
 interface AdminAction {
   id: string;
@@ -38,6 +40,7 @@ const ACTION_COLORS: Record<string, string> = {
 const ACTION_TYPES = Object.keys(ACTION_LABELS);
 
 export default function AdminActionsPage() {
+  const toast = useToast();
   const [actions, setActions] = useState<AdminAction[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -53,15 +56,20 @@ export default function AdminActionsPage() {
       limit: '50',
       ...(actionTypeFilter && { action_type: actionTypeFilter }),
     });
-    const res = await fetch(`/api/admin/actions?${params}`);
-    const data = await res.json();
-    if (data.actions) {
-      setActions(data.actions);
-      setTotalPages(data.pagination?.totalPages || 1);
-      setTotal(data.pagination?.total || 0);
+    try {
+      const res = await fetch(`/api/admin/actions?${params}`);
+      const data = await res.json();
+      if (data.actions) {
+        setActions(data.actions);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotal(data.pagination?.total || 0);
+      }
+    } catch {
+      // 네트워크 실패·비JSON 응답(504 HTML 등)에도 스피너가 영구 고착되지 않게(2026-10-04)
+      toast.error('감사 로그를 불러오지 못했습니다');
     }
     setLoading(false);
-  }, [page, actionTypeFilter]);
+  }, [page, actionTypeFilter, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -126,9 +134,9 @@ export default function AdminActionsPage() {
               </thead>
               <tbody>
                 {actions.map((action) => (
-                  <>
+                  // key 는 리스트 항목(Fragment)에 — 안쪽 <tr> 에만 있으면 React 가 목록 key 를 못 봐 경고·인덱스 재조정(2026-10-04)
+                  <Fragment key={action.id}>
                     <tr
-                      key={action.id}
                       className="border-t border-white/10 hover:bg-white/5 cursor-pointer"
                       onClick={() => setExpandedId(expandedId === action.id ? null : action.id)}
                     >
@@ -164,7 +172,7 @@ export default function AdminActionsPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -173,27 +181,7 @@ export default function AdminActionsPage() {
       )}
 
       {/* 페이지네이션 */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-lg bg-background-secondary disabled:opacity-40 hover:bg-white/10 transition-colors text-sm"
-          >
-            이전
-          </button>
-          <span className="px-4 py-2 text-sm text-text-muted">
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 rounded-lg bg-background-secondary disabled:opacity-40 hover:bg-white/10 transition-colors text-sm"
-          >
-            다음
-          </button>
-        </div>
-      )}
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

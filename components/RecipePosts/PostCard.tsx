@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from '@/components/Common/LocalizedLink';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
@@ -9,7 +9,6 @@ import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { Post, formatRelativeTime } from './types';
 import ReplyForm from './ReplyForm';
-import PostReplies from './PostReplies';
 
 interface PostCardProps {
   post: Post;
@@ -213,6 +212,47 @@ export default function PostCard({ post, currentUserId, recipeId, isReply = fals
 
       <ConfirmDialog isOpen={deleteOpen} title={tc.confirmDelete} destructive loading={isDeleting}
         onConfirm={confirmDelete} onCancel={() => { if (!isDeleting) setDeleteOpen(false); }} />
+    </div>
+  );
+}
+
+// 2026-10-04 [PHR-16] PostReplies.tsx ↔ PostCard.tsx 순환 import 해소 — 같은 파일의 비-export 컴포넌트로 이동
+// (본문은 옛 PostReplies.tsx 와 동일. 파일 내부 재귀 렌더는 모듈 순환이 아님).
+interface PostRepliesProps {
+  parentId: string;
+  recipeId: string;
+  currentUserId: string | null;
+  onReplyDelete: (id: string) => void;
+}
+
+// 답글 목록(1단) — 마운트 시 lazy fetch. 답글에는 또 답글/별점 없음.
+function PostReplies({ parentId, recipeId, currentUserId, onReplyDelete }: PostRepliesProps) {
+  const [replies, setReplies] = useState<Post[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/recipes/${recipeId}/posts/${parentId}/replies`)
+      .then(r => r.json())
+      .then(d => { if (active) setReplies(d.replies || []); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [parentId, recipeId]);
+
+  if (replies.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-3">
+      {replies.map(reply => (
+        <PostCard
+          key={reply.id}
+          post={reply}
+          currentUserId={currentUserId}
+          recipeId={recipeId}
+          isReply
+          onUpdate={(id, updates) => setReplies(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r))}
+          onDelete={(id) => { setReplies(prev => prev.filter(r => r.id !== id)); onReplyDelete(id); }}
+        />
+      ))}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { base32Encode } from '@/lib/security/totp';
+import { base32Encode, encryptSecret } from '@/lib/security/totp';
 
 function generateBackupCodes(count: number = 8): string[] {
   const codes: string[] = [];
@@ -70,11 +70,8 @@ export async function POST() {
   if (!encryptionKey) {
     return NextResponse.json({ error: '서버 설정 오류: TOTP 암호화 키가 설정되지 않았습니다.' }, { status: 500 });
   }
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey.slice(0, 64), 'hex'), iv);
-  let encrypted = cipher.update(secret, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const encryptedSecret = iv.toString('hex') + ':' + encrypted;
+  // 2026-10-04 AG2-32: 인라인 AES 사본 → lib 의 decryptSecret 짝 encryptSecret(같은 알고리즘·키 파생·`iv:cipher` 형식)
+  const encryptedSecret = encryptSecret(secret);
 
   // Upsert the TOTP record (replace if setup was started but not verified)
   const { error } = await supabase

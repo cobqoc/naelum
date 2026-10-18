@@ -36,10 +36,18 @@ export async function attachFridgeMatch<T extends { id: string }>(
 ): Promise<(T & Partial<FridgeMatchResult>)[]> {
   if (!userId || recipes.length === 0) return recipes
 
-  const { data: userIngredients } = await supabase
-    .from('user_ingredients')
-    .select('ingredient_name, ingredient_id, quantity, unit')
-    .eq('user_id', userId)
+  // 보유 재료와 레시피 재료는 서로 독립(userId / 레시피 id 만 의존) → 병렬 (perf 2026-09-27).
+  // 냉장고가 비면 레시피 재료 결과는 버려지고(이전엔 조회 자체를 안 함) 응답은 동일하게 원본 recipes.
+  const [{ data: userIngredients }, { data: riRows }] = await Promise.all([
+    supabase
+      .from('user_ingredients')
+      .select('ingredient_name, ingredient_id, quantity, unit')
+      .eq('user_id', userId),
+    supabase
+      .from('recipe_ingredients')
+      .select('recipe_id, ingredient_name, ingredient_id, is_optional, quantity, unit')
+      .in('recipe_id', recipes.map(r => r.id)),
+  ])
   if (!userIngredients || userIngredients.length === 0) return recipes
 
   const userIdSet = new Set<string>(
@@ -56,11 +64,6 @@ export async function attachFridgeMatch<T extends { id: string }>(
       userQtyMap.set(ui.ingredient_id as string, { quantity: ui.quantity ?? null, unit: ui.unit ?? null })
     }
   }
-
-  const { data: riRows } = await supabase
-    .from('recipe_ingredients')
-    .select('recipe_id, ingredient_name, ingredient_id, is_optional, quantity, unit')
-    .in('recipe_id', recipes.map(r => r.id))
 
   const byRecipe = new Map<string, RecipeIngredientInput[]>()
   for (const row of riRows ?? []) {

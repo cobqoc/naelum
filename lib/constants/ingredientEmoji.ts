@@ -6,12 +6,12 @@
  *
  * 매칭 우선순위:
  *   1. 정확 매칭 (EMOJI_MAP[name])
- *   2. 부분 매칭 — 긴 키부터 (예: '닭가슴살' → '닭고기' 키 매칭)
+ *   2. 부분 매칭 — 긴 키부터 (예: '방울토마토' → '토마토' 키 매칭).
+ *      단 1글자 키(배·게·굴·쌀·밥·빵·꿀·귤·햄·잣)는 *끝 글자*일 때만 — 아래 suggestEmoji 주석.
  *   3. 빈 문자열
  *
  * 호출:
- *   - app/api/ingredients/create — 신규 추가 시 emoji 자동 채움
- *   - components/Ingredients/AddIngredientDialog — 다이얼로그 미리보기 (옵션)
+ *   - app/api/ingredients/create — 신규 추가 시 emoji 자동 채움 (유일한 호출처)
  */
 
 const EMOJI_MAP: Record<string, string> = {
@@ -106,10 +106,13 @@ export function suggestEmoji(name: string): string {
   // 1) 정확 매칭
   if (EMOJI_MAP[trimmed]) return EMOJI_MAP[trimmed];
 
-  // 2) 부분 매칭 — 긴 키부터 (닭가슴살 → 닭고기 → 🍗)
+  // 2) 부분 매칭 — 긴 키부터 (방울토마토 → 토마토 → 🍅).
+  //    1글자 키는 이름의 *끝 글자*일 때만 맞춘다(ICL-38, 2026-10-04). 한국어 합성어는 끝이 중심어라
+  //    '제주귤'·'식빵'·'대게'·'찹쌀'·'벌꿀' 은 이전처럼 맞고, 다른 낱말의 일부로 든 '알배추'·'양배추'(배→🍐)·
+  //    '굴소스'·'쌀국수'·'햄버거' 같은 오매칭은 빈 문자열(정직성 정책). 2글자 이상 키는 이전과 동일.
   const sorted = Object.keys(EMOJI_MAP).sort((a, b) => b.length - a.length);
   for (const key of sorted) {
-    if (trimmed.includes(key)) return EMOJI_MAP[key];
+    if (key.length === 1 ? trimmed.endsWith(key) : trimmed.includes(key)) return EMOJI_MAP[key];
   }
 
   return '';

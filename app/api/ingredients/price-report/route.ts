@@ -48,6 +48,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
 
+  // 2026-10-04 AG2-49: null 본문(구조분해 TypeError)·문자열 아닌 unit(`.trim` TypeError)은 500 이었다 → 기존 400 'invalid_body'.
+  if (!body || typeof body !== 'object' || (body.unit != null && typeof body.unit !== 'string')) {
+    return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+  }
+
   const { ingredientId, price } = body;
   if (!ingredientId || typeof price !== 'number' || !Number.isFinite(price) || price <= 0) {
     return NextResponse.json({ error: 'invalid_price' }, { status: 400 });

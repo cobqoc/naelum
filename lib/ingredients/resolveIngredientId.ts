@@ -8,8 +8,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *  2. **큐레이션된 별칭** 일치 (마스터 `aliases` 배열 — 사람이 등록한 동의어. 예: 통마늘→마늘, 후춧가루→후추)
  *  3. **공백 무시** 정확 일치 (예: "다진 마늘" → "다진마늘")
  *
- * `resolveIngredientIds`(normalizeIngredientName 접두사 분리·단어 fallback 포함)와 달리 추측을
- * 하지 않는다 — 위 3개는 전부 명시적/결정적. 위에 안 걸리는 변형·신규는 Map 에서 빠져 호출처에서
+ * 추측(접두사 분리·단어 fallback)을 하던 옛 fuzzy 해석기(`resolveIngredientIds`)는 2026-05-31 이 함수로
+ * 대체·제거됐다 — 위 3개는 전부 명시적/결정적. 위에 안 걸리는 변형·신규는 Map 에서 빠져 호출처에서
  * null 로 남는다 → 어드민 "번호 연결" 큐로 흘러감.
  * (2026-05-29 비대칭 resolution fix → 2026-05-31 별칭·공백 존중 추가)
  */
@@ -20,11 +20,18 @@ export async function resolveExactIngredientIds(
 ): Promise<Map<string, string>> {
   if (names.every(n => !n.trim())) return new Map();
 
-  // 승인 마스터 전체(수십 개 규모) 로드 — 별칭·공백무시 해석은 IN 쿼리로 안 되므로 in-memory.
-  const { data } = await supabase
+  // 승인 마스터 전체(2026-06 기준 dev 281 / prod 241행) 로드 — 별칭·공백무시 해석은 IN 쿼리로 안 되므로 in-memory.
+  // ⚠️ 승인 행이 1000을 넘으면 PostgREST 기본 상한으로 조용히 잘린다 → 그때는 .range() 페이지네이션 필요(ICL-30 보고).
+  const { data, error } = await supabase
     .from('ingredients_master')
     .select('id, name, aliases')
     .eq('status', 'approved');
+  if (error) {
+    // Supabase 는 실패를 throw 대신 { error } 로 준다 — 전엔 확인하지 않아 일시적 DB 오류에도 이번 요청의 모든 이름이
+    // 조용히 '미해석'(ingredient_id NULL)으로 저장됐다(ICL-30, 2026-10-04). 결과(미해석 → 호출처 null)는 그대로 두고
+    // 서버 로그로 표면화만 한다 — 저장 자체를 실패시키면 호출 라우트 6곳의 저장 흐름이 바뀐다.
+    console.error('[resolveExactIngredientIds] 승인 마스터 조회 실패 — 이번 요청 재료는 ingredient_id 미해석(NULL):', error.message ?? error);
+  }
 
   const collapse = (s: string) => s.replace(/\s+/g, '');
   const byName = new Map<string, string>();        // 정확 이름
@@ -53,7 +60,7 @@ export async function resolveExactIngredientIds(
 /**
  * 단일 재료명 → id (결정적). `resolveExactIngredientIds` 의 1개짜리 래퍼.
  * 냉장고 쓰기 경로를 레시피와 동일한 결정적 해석으로 통일하기 위한 용도
- * (2026-05-31 — fuzzy `resolveIngredientId` 대체. 비대칭 resolution 제거).
+ * (2026-05-31 — 옛 fuzzy `resolveIngredientId`(제거됨) 대체. 비대칭 resolution 제거).
  */
 export async function resolveExactIngredientId(
   name: string,

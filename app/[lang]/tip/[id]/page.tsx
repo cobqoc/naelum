@@ -7,16 +7,16 @@ import dynamic from 'next/dynamic';
 import Link from '@/components/Common/LocalizedLink';
 import SafeImage from '@/components/Common/SafeImage';
 import Header from '@/components/Header';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
+import { useToast } from '@/lib/toast/context';
+import { CATEGORY_ICONS } from '../_components/tipCategories';
 
 const ReportModal = dynamic(() => import('@/components/Common/ReportModal'), { ssr: false });
 const ConfirmDialog = dynamic(() => import('@/components/Common/ConfirmDialog'), { ssr: false });
 
 // 2026-05-25 한글 → 영문 key 마이그레이션. 표시는 t.tipForm.categories[key].
-const CATEGORY_ICONS: Record<string, string> = {
-  prep: '🔪', storage: '🧊', cooking: '🍳', tools: '🥄', measuring: '⚖️', other: '💡',
-};
+// 아이콘 맵은 tip/new·edit 와 공용 (PAU-27, 2026-10-04 — 같은 값이 세 파일에 복제돼 있었음)
 
 interface TipStep {
   id: string;
@@ -44,39 +44,56 @@ interface Tip {
 export default function TipDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const supabase = createClient();
+  // 현재 사용자는 AuthProvider 가 쿠키에서 복원한 세션에서 — 조회 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 수정/삭제 권한은 서버(DELETE /api/tip/[id]·수정 API)가 다시 검증한다.
+  const { user, loading: authLoading } = useAuth();
 
   const { t, language } = useI18n();
+  const toast = useToast();
   const [tip, setTip] = useState<Tip | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const currentUserId = user?.id ?? null;
   const [deleting, setDeleting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [res, { data: { user } }] = await Promise.all([
-        fetch(`/api/tip/${id}`),
-        supabase.auth.getUser(),
-      ]);
-      const data = await res.json();
-      if (res.ok) setTip(data.tip);
-      if (user) setCurrentUserId(user.id);
-      setLoading(false);
+      // 2026-10-04 PAU-29: 네트워크 오류·비 JSON(500 HTML) 응답이면 res.json() 이 throw 해 setLoading(false) 에
+      // 도달하지 못하고 스피너가 영원히 돌았다 → 실패는 tip=null 그대로 두고(아래 "찾을 수 없음" 화면) 로딩만 끝낸다.
+      try {
+        const res = await fetch(`/api/tip/${id}`);
+        const data = await res.json();
+        if (res.ok) setTip(data.tip);
+      } catch {
+        // tip 은 null 유지
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
-  }, [id, supabase]);
+  }, [id]);
 
   const handleDelete = async () => {
     setDeleteConfirmOpen(false);
     setDeleting(true);
-    const res = await fetch(`/api/tip/${id}`, { method: 'DELETE' });
-    if (res.ok) router.push('/');
-    else setDeleting(false);
+    // 2026-10-04 PAU-29: 예전엔 서버 실패(403 등) 시 버튼만 조용히 되살아나고, 네트워크 예외면 deleting 이 영구 true
+    // (버튼 비활성)였다 → 실패 시 deleting 해제 + 번역된 에러 토스트. 성공 시 홈 이동은 그대로.
+    try {
+      const res = await fetch(`/api/tip/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push('/');
+        return;
+      }
+    } catch {
+      // 아래에서 실패 처리
+    }
+    setDeleting(false);
+    toast.error(t.errors.deleteFailed);
   };
 
-  if (loading) {
+  // 인증 확정 전엔 스피너 유지 → 작성자 버튼이 첫 화면부터 정확(이전 Promise.all 과 같은 보장)
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background-primary flex items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-warm border-t-transparent" />

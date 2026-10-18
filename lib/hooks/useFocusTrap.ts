@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, RefObject } from 'react';
+import { useEffect, useRef, RefObject } from 'react';
 
 /**
  * Focus trap — dropdown/modal 열린 동안 Tab/Shift+Tab 이 panel 안에서 순환.
@@ -20,13 +20,22 @@ import { useEffect, RefObject } from 'react';
  * @param options.autoRestorePreviousFocus  trigger 명시 안 됐어도 *모달 열리기 직전
  *  활성 element* 자동 기록 → 닫힐 때 거기로 복원. trigger 가 외부 컴포넌트에 있거나
  *  키보드 사용자가 다양한 element 에서 모달 열 때 유용 (FridgeAllSheet 패턴).
+ * @param options.paused  true 인 동안 Tab 처리만 멈춘다 — 이 패널 위에 *자기 트랩을 가진* 하위 레이어
+ *  (예: FridgeAllSheet 의 같은 이름 미니시트)가 떠 있을 때. effect 를 다시 돌리지 않아 열릴 때 기록한
+ *  복원 대상·리스너는 그대로라, 닫힐 때 원래 trigger 로의 포커스 복원이 유지된다(PHR-33, 2026-10-04).
+ *  미지정(기존 호출처 전부) = false → 동작 불변.
  */
 export function useFocusTrap(
   isOpen: boolean,
   panelRef: RefObject<HTMLElement | null>,
   triggerRef?: RefObject<HTMLElement | null>,
-  options?: { autoRestorePreviousFocus?: boolean },
+  options?: { autoRestorePreviousFocus?: boolean; paused?: boolean },
 ): void {
+  const pausedRef = useRef(!!options?.paused);
+  useEffect(() => {
+    pausedRef.current = !!options?.paused;
+  }, [options?.paused]);
+
   useEffect(() => {
     if (!isOpen) return;
     const panel = panelRef.current;
@@ -47,6 +56,7 @@ export function useFocusTrap(
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return;
+      if (pausedRef.current) return; // 위 레이어가 자기 트랩으로 Tab 을 처리 중
       const focusables = getFocusableElements(panel);
       if (focusables.length === 0) return;
       const first = focusables[0];

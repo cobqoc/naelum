@@ -1,14 +1,15 @@
 'use client';
 
-import { localDateISO } from '@/lib/date/localDate';
-
 import { useState, useEffect } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { getPasswordStrength } from '@/lib/utils/password';
-import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import AuthCheckingScreen from '@/components/Auth/AuthCheckingScreen';
+import { PasswordField, PasswordStrengthMeter, PasswordMatchHint } from '@/components/Auth/PasswordFields';
+import BirthDateField from '@/components/Auth/BirthDateField';
+import ConsentCheckboxes from '@/components/Auth/ConsentCheckboxes';
 import { useI18n } from '@/lib/i18n/context';
 import { checkMinAge } from '@/lib/auth/ageGate';
 
@@ -88,7 +89,7 @@ export default function SetPasswordPage() {
     });
 
     if (updateError) {
-      setError(translateError(updateError));
+      setError(translateError(updateError, t));
       setLoading(false);
       return;
     }
@@ -117,14 +118,7 @@ export default function SetPasswordPage() {
   };
 
   if (checking) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background-primary">
-        <div className="flex items-center gap-3 text-text-muted">
-          <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          {t.auth.checking}
-        </div>
-      </div>
-    );
+    return <AuthCheckingScreen label={t.auth.checking} />;
   }
 
   return (
@@ -143,303 +137,52 @@ export default function SetPasswordPage() {
         </div>
 
         <form onSubmit={handleSetPassword} className="space-y-6">
-          {/* Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{t.auth.password} *</label>
-            <div className="relative">
-              <InputBoxWrapper className="!bg-background-tertiary !rounded-xl !px-5 !py-3.5">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
-                  style={INPUT_INNER_STYLE}
-                  placeholder={t.auth.passwordPlaceholder}
-                  autoComplete="new-password"
-                  required
-                />
-              </InputBoxWrapper>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
-              >
-                {showPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {/* Strength Indicator */}
-            <div className="flex gap-1 pt-1">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full transition-all ${
-                    i <= strength ? (strength <= 2 ? 'bg-warning' : 'bg-success') : 'bg-white/10'
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-text-muted italic">{t.auth.passwordHint}</p>
-              {strength > 0 && (
-                <p className={`text-[10px] font-medium ${strength <= 2 ? 'text-warning' : 'text-success'}`}>
-                  {strength === 1 ? t.auth.passwordStrengthWeak
-                    : strength === 2 ? t.auth.passwordStrengthFair
-                    : strength === 3 ? t.auth.passwordStrengthStrong
-                    : t.auth.passwordStrengthVeryStrong}
-                </p>
-              )}
-            </div>
-          </div>
+          {/* 비밀번호 입력·확인 블록 — components/Auth/PasswordFields 로 공용화 (2026-10-04 PAU-14, 마크업 동일) */}
+          <PasswordField
+            label={t.auth.password}
+            value={password}
+            setValue={setPassword}
+            show={showPassword}
+            setShow={setShowPassword}
+            boxClassName="!bg-background-tertiary !rounded-xl !px-5 !py-3.5"
+            placeholder={t.auth.passwordPlaceholder}
+          >
+            <PasswordStrengthMeter strength={strength} t={t} />
+          </PasswordField>
 
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-text-secondary">{t.auth.confirmPassword} *</label>
-            <div className="relative">
-              <InputBoxWrapper className={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
-                  style={INPUT_INNER_STYLE}
-                  placeholder={t.auth.confirmPassword}
-                  autoComplete="new-password"
-                  required
-                />
-              </InputBoxWrapper>
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
-              >
-                {showConfirmPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {confirmPassword && password === confirmPassword && (
-              <p className="text-xs text-success">✓ {t.auth.passwordMatch}</p>
-            )}
-            {confirmPassword && password !== confirmPassword && (
-              <p className="text-xs text-error">✗ {t.auth.passwordMismatch}</p>
-            )}
-          </div>
+          <PasswordField
+            label={t.auth.confirmPassword}
+            value={confirmPassword}
+            setValue={setConfirmPassword}
+            show={showConfirmPassword}
+            setShow={setShowConfirmPassword}
+            boxClassName={`!bg-background-tertiary !rounded-xl !px-5 !py-3.5 ${confirmPassword && password !== confirmPassword ? '!ring-error' : ''}`}
+            placeholder={t.auth.confirmPassword}
+          >
+            <PasswordMatchHint password={password} confirm={confirmPassword} t={t} />
+          </PasswordField>
 
-          {/* 생년월일 — 연령 gate (글로벌 safe 16세 기준) */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-text-secondary">
-              {t.auth.birthDateLabel} <span className="text-error">*</span>
-            </label>
-            <InputBoxWrapper className="!bg-background-secondary !rounded-xl !px-4 !py-3">
-              <input
-                type="date"
-                value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                max={localDateISO()}
-                className={INPUT_INNER_COMFORTABLE_CLASS}
-                style={INPUT_INNER_STYLE}
-                required
-              />
-            </InputBoxWrapper>
-            <p className="text-[11px] text-text-muted">
-              {t.auth.ageGateNotice}
-            </p>
-          </div>
+          {/* 생년월일 — 연령 gate (글로벌 safe 16세 기준). components/Auth/BirthDateField (2026-10-04 PAU-15) */}
+          <BirthDateField
+            t={t}
+            value={birthDate}
+            setValue={setBirthDate}
+            wrapperClassName="space-y-1.5"
+            boxClassName="!bg-background-secondary !rounded-xl !px-4 !py-3"
+          />
 
-          {/* 약관 동의 */}
-          <div className="pt-2 space-y-3">
-            {/* 전체 동의 */}
-            <label className="flex items-center gap-3 cursor-pointer pb-2 border-b border-white/10">
-              <div className="relative flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  checked={agreedToTerms && agreedToPrivacy && agreedToCopyright && agreedToMarketing}
-                  onChange={(e) => {
-                    setAgreedToTerms(e.target.checked);
-                    setAgreedToPrivacy(e.target.checked);
-                    setAgreedToCopyright(e.target.checked);
-                    setAgreedToMarketing(e.target.checked);
-                  }}
-                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-                />
-                <svg
-                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <span className="text-sm font-semibold text-text-primary">{t.auth.agreeAll}</span>
-            </label>
-
-            {/* 이용약관 동의 (필수) */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative flex items-center justify-center mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-                />
-                <svg
-                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                    {t.auth.termsAgreeLabel}
-                  </span>
-                  <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-                </div>
-                <Link
-                  href="/terms"
-                  target="_blank"
-                  className="text-xs text-text-muted hover:text-accent-warm underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {t.auth.termsViewDetail}
-                </Link>
-              </div>
-            </label>
-
-            {/* 개인정보처리방침 동의 (필수) */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative flex items-center justify-center mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={agreedToPrivacy}
-                  onChange={(e) => setAgreedToPrivacy(e.target.checked)}
-                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-                />
-                <svg
-                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                    {t.auth.termsPrivacyLabel}
-                  </span>
-                  <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-                </div>
-                <Link
-                  href="/privacy"
-                  target="_blank"
-                  className="text-xs text-text-muted hover:text-accent-warm underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {t.auth.termsViewDetail}
-                </Link>
-              </div>
-            </label>
-
-            {/* 저작권 조항 동의 (필수) */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative flex items-center justify-center mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={agreedToCopyright}
-                  onChange={(e) => setAgreedToCopyright(e.target.checked)}
-                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-                />
-                <svg
-                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                    {t.auth.termsCopyrightLabel}
-                  </span>
-                  <span className="text-xs text-error font-medium">{t.auth.termsRequiredLabel}</span>
-                </div>
-                <p className="text-xs text-text-muted mt-0.5">
-                  {t.auth.termsCopyrightDesc}
-                </p>
-              </div>
-            </label>
-
-            {/* 마케팅 수신 동의 (선택) */}
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative flex items-center justify-center mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={agreedToMarketing}
-                  onChange={(e) => setAgreedToMarketing(e.target.checked)}
-                  className="peer h-4 w-4 cursor-pointer appearance-none rounded border-2 border-white/30 bg-background-primary transition-all checked:border-accent-warm checked:bg-accent-warm hover:border-accent-warm/50"
-                />
-                <svg
-                  className="pointer-events-none absolute h-3 w-3 text-background-primary opacity-0 peer-checked:opacity-100 transition-opacity"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                    {t.auth.termsMarketingLabel}
-                  </span>
-                  <span className="text-xs text-text-muted">{t.auth.termsOptionalLabel}</span>
-                </div>
-                <p className="text-xs text-text-muted mt-0.5">
-                  {t.auth.termsMarketingDesc}
-                </p>
-              </div>
-            </label>
-          </div>
+          {/* 약관 동의 — components/Auth/ConsentCheckboxes (2026-10-04 PAU-15, 마크업 동일·상태는 이 페이지 소유) */}
+          <ConsentCheckboxes
+            t={t}
+            consents={{
+              terms: { checked: agreedToTerms, set: setAgreedToTerms },
+              privacy: { checked: agreedToPrivacy, set: setAgreedToPrivacy },
+              copyright: { checked: agreedToCopyright, set: setAgreedToCopyright },
+              marketing: { checked: agreedToMarketing, set: setAgreedToMarketing },
+            }}
+            containerClassName="pt-2 space-y-3"
+            agreeAllPaddingClassName="pb-2"
+          />
 
           {error && <p className="text-center text-sm text-error">{error}</p>}
 

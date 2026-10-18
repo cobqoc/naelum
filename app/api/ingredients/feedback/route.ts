@@ -113,6 +113,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
+    // 2026-10-04 AG2-49: 숫자가 아닌 limit 은 `.limit(NaN)` → PostgREST 오류 → 500 이었다 → 400.
+    if (Number.isNaN(limit)) {
+      return NextResponse.json({ error: 'Invalid limit' }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from('ingredient_recognition_feedback')

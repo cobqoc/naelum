@@ -11,12 +11,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  const { items } = await request.json() as {
-    items: { ingredient_name: string; category: string; quantity: number | null; unit: string | null }[];
-  };
+  // 2026-10-04 API1-41: 형식 오류 JSON 은 request.json() throw → 500, items 가 배열이 아니거나 이름이 문자열이
+  // 아니면 .map/.trim TypeError → 500 이었다 → 400. 정상 배열 입력은 그대로.
+  let body: { items?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+  }
+  const items = body?.items as
+    { ingredient_name: string; category: string; quantity: number | null; unit: string | null }[] | undefined;
 
-  if (!items || items.length === 0) {
+  if (!items || !Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: '항목이 필요합니다.' }, { status: 400 });
+  }
+  if (items.some(i => typeof i?.ingredient_name !== 'string')) {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
   }
 
   // ingredients_master에서 ingredient_id 일괄 조회 — 결정적(정확/별칭/공백무시, 추측 0).

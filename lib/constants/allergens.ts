@@ -39,7 +39,8 @@ export const ALLERGEN_22: AllergenSpec[] = [
   { key: '연어', label: '연어', emoji: '🐟' },
 ];
 
-export const ALLERGEN_KEYS: string[] = ALLERGEN_22.map(a => a.key);
+// 파일 내부 전용(ALLERGEN_KEY_SET 생성) — 외부 소비처 0 이라 export 제거 (2026-10-04).
+const ALLERGEN_KEYS: string[] = ALLERGEN_22.map(a => a.key);
 export const ALLERGEN_KEY_SET = new Set(ALLERGEN_KEYS);
 
 /**

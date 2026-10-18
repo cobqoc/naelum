@@ -13,18 +13,19 @@ export async function POST(
     // 현재 사용자 정보 (선택적)
     const { data: { user } } = await supabase.auth.getUser()
 
-    // recipe_views 테이블에 조회 기록 추가
-    await supabase
-      .from('recipe_views')
-      .insert({
-        recipe_id: recipeId,
-        user_id: user?.id || null,
-        created_at: new Date().toISOString()
-      })
-
-    // Database Function을 사용하여 조회수 증가 (RLS 우회)
-    const { data: newCount, error: incrementError } = await supabase
-      .rpc('increment_recipe_views', { recipe_id: recipeId })
+    // 2026-10-04 API1-45: 조회 기록 insert(결과 미사용)와 조회수 증가 RPC 는 서로 독립 → 병렬.
+    const [, { data: newCount, error: incrementError }] = await Promise.all([
+      // recipe_views 테이블에 조회 기록 추가
+      supabase
+        .from('recipe_views')
+        .insert({
+          recipe_id: recipeId,
+          user_id: user?.id || null,
+          created_at: new Date().toISOString()
+        }),
+      // Database Function을 사용하여 조회수 증가 (RLS 우회)
+      supabase.rpc('increment_recipe_views', { recipe_id: recipeId }),
+    ])
 
     if (incrementError) {
       return NextResponse.json({ success: false, error: incrementError.message }, { status: 500 })

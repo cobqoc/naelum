@@ -34,10 +34,7 @@ export async function GET(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 카테고리 필터 — 'all' 이면 전체
-  const inCategory = (q: ReturnType<typeof supabase.from> extends infer T ? T : never) => q;
-  void inCategory;
-
+  // (2026-10-04 AG2-22: 쓰이지 않던 `inCategory` 항등 함수 + `void inCategory` 제거 — 카테고리 필터는 아래 각 쿼리가 직접 건다.)
   const items: QuickAddItem[] = [];
   const seenIds = new Set<string>();
 
@@ -84,9 +81,11 @@ export async function GET(request: NextRequest) {
   // 2) 글로벌 폴백 — 부족하면 전체 사용자 인기도로 보충
   if (items.length < limit) {
     // 전체 사용자 user_ingredients 집계 — ingredient_id 별 row 수
+    // (2026-10-04 AG2-22: 결과에서 읽지 않던 count:'exact' 옵션 제거 — 반환 행 동일, COUNT 계산만 생략.
+    //  주의: 쿠키 세션 클라이언트라 RLS(본인 행만) 때문에 실제로는 "전체 사용자"가 아니라 본인/0행 집계 — 보고서 참고.)
     const globalQuery = supabase
       .from('user_ingredients')
-      .select('ingredient_id', { count: 'exact', head: false })
+      .select('ingredient_id')
       .not('ingredient_id', 'is', null);
     const { data: globalRows } = await globalQuery;
 

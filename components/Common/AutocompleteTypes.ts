@@ -94,9 +94,6 @@ export interface AutocompleteProps<T extends AutocompleteItem> {
   /** 검색 결과 없을 때 렌더링할 커스텀 UI */
   renderNoResults?: () => React.ReactNode;
 
-  /** 로딩 중일 때 렌더링할 커스텀 UI */
-  renderLoading?: () => React.ReactNode;
-
   // ===== 스타일링 =====
 
   /** 입력창 컨테이너 클래스명 */
@@ -118,22 +115,4 @@ export interface AutocompleteProps<T extends AutocompleteItem> {
 
   /** 데스크톱(pointer: fine)에서만 마운트 시 자동 포커스 */
   autoFocus?: boolean;
-}
-
-/**
- * 자동완성 드롭다운 섹션 인터페이스
- * 최근 항목, 검색 결과 등 여러 섹션을 구분하기 위해 사용
- */
-export interface AutocompleteSection<T extends AutocompleteItem> {
-  /** 섹션 제목 */
-  title: string;
-
-  /** 섹션에 표시할 항목들 */
-  items: T[];
-
-  /** 섹션별 액션 버튼 (예: "전체 삭제") */
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
 }

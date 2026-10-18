@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAuth } from '@/lib/api/auth';
-import { normalizeSubstitutes } from '@/lib/recipes/substituteChips';
+import { requireRecipeOwner } from '@/lib/api/ownership';
+import { firstOfEmbed } from '@/lib/queries/recipeCards';
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId';
 import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns';
-
-// PUT boundary — legacy string[] / 신규 객체[] 어느 입력이든 정규화된 객체[]로 저장.
-function normalizeSubstitutesForStorage(raw: unknown): unknown[] | null {
-  const list = normalizeSubstitutes(raw);
-  return list.length > 0 ? list : null;
-}
+// 2026-10-04 API1-37: 자식 행 매핑·normalizeSubstitutesForStorage 가 POST 와 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
+import {
+  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows,
+} from '@/lib/api/recipeChildRows';
 
 // GET /api/recipes/[id] - 레시피 상세 조회
 export async function GET(
@@ -45,7 +44,7 @@ export async function GET(
         (a, b) => a.step_number - b.step_number
       ),
       tags: (recipe.tags as { tag_name: string }[]).map((t) => t.tag_name),
-      author: Array.isArray(recipe.author) ? recipe.author[0] : recipe.author,
+      author: firstOfEmbed(recipe.author), // 2026-10-04 API1-39: 같은 식 4벌 → lib/queries/recipeCards
     };
 
     return NextResponse.json({ recipe: result });
@@ -66,26 +65,9 @@ export async function PUT(
     const { user, error: authError } = await requireAuth(supabase);
     if (authError) return authError;
 
-    // 레시피 소유자 확인
-    const { data: recipe, error: fetchError } = await supabase
-      .from('recipes')
-      .select('author_id')
-      .eq('id', recipeId)
-      .single();
-
-    if (fetchError || !recipe) {
-      return NextResponse.json(
-        { error: '레시피를 찾을 수 없습니다.' },
-        { status: 404 }
-      );
-    }
-
-    if (recipe.author_id !== user.id) {
-      return NextResponse.json(
-        { error: '레시피를 수정할 권한이 없습니다.' },
-        { status: 403 }
-      );
-    }
+    // 레시피 소유자 확인 (2026-10-04 API1-36: PUT·DELETE·visibility 3벌 → lib/api/ownership, 404/403 문구 그대로)
+    const owner = await requireRecipeOwner(supabase, recipeId, user.id, '레시피를 수정할 권한이 없습니다.');
+    if (owner.response) return owner.response;
 
     const body = await request.json();
     const { title, description, ingredients, steps, tags, ...recipeData } = body;
@@ -130,21 +112,8 @@ export async function PUT(
 
       if (ingredients.length > 0) {
         // 클라가 번호 안 준 재료는 *이름 정확일치* 로만 자동 번호 부여 (추측 0). 못 찾으면 null → 어드민 큐.
-        const exactIds = await resolveExactIngredientIds(
-          ingredients.filter((i: { ingredient_id?: string | null }) => !i.ingredient_id).map((i: { ingredient_name: string }) => i.ingredient_name),
-          supabase
-        );
-        const ingredientsToInsert = ingredients.map((ing: { ingredient_name: string; ingredient_id?: string | null; quantity: string; unit: string; notes: string; is_optional?: boolean; substitutes?: (string | { name?: string; note?: string })[] | null }, index: number) => ({
-          recipe_id: recipeId,
-          ingredient_name: ing.ingredient_name,
-          ingredient_id: ing.ingredient_id || exactIds.get(ing.ingredient_name) || null,
-          quantity: ing.quantity,
-          unit: ing.unit,
-          notes: ing.notes,
-          is_optional: ing.is_optional || false,
-          substitutes: normalizeSubstitutesForStorage(ing.substitutes),
-          display_order: index + 1
-        }));
+        const exactIds = await resolveExactIngredientIds(namesWithoutIngredientId(ingredients), supabase);
+        const ingredientsToInsert = buildRecipeIngredientRows(recipeId, ingredients, exactIds);
 
         const { error: insErr } = await supabase.from('recipe_ingredients').insert(ingredientsToInsert);
         if (insErr) {
@@ -161,15 +130,7 @@ export async function PUT(
       }
 
       if (steps.length > 0) {
-        const stepsToInsert = steps.map((step: { title: string; instruction: string; timer_minutes?: number; tip?: string; image_url?: string }, index: number) => ({
-          recipe_id: recipeId,
-          step_number: index + 1,
-          title: step.title,
-          instruction: step.instruction,
-          timer_minutes: step.timer_minutes,
-          tip: step.tip,
-          image_url: step.image_url
-        }));
+        const stepsToInsert = buildRecipeStepRows(recipeId, steps);
 
         const { error: insErr } = await supabase.from('recipe_steps').insert(stepsToInsert);
         if (insErr) {
@@ -186,10 +147,7 @@ export async function PUT(
       }
 
       if (tags.length > 0) {
-        const tagsToInsert = tags.map((tag: string) => ({
-          recipe_id: recipeId,
-          tag_name: tag
-        }));
+        const tagsToInsert = buildRecipeTagRows(recipeId, tags);
 
         const { error: insErr } = await supabase.from('recipe_tags').insert(tagsToInsert);
         if (insErr) {
@@ -220,26 +178,9 @@ export async function DELETE(
     const { user, error: authError } = await requireAuth(supabase);
     if (authError) return authError;
 
-    // 레시피 소유자 확인
-    const { data: recipe, error: fetchError } = await supabase
-      .from('recipes')
-      .select('author_id')
-      .eq('id', recipeId)
-      .single();
-
-    if (fetchError || !recipe) {
-      return NextResponse.json(
-        { error: '레시피를 찾을 수 없습니다.' },
-        { status: 404 }
-      );
-    }
-
-    if (recipe.author_id !== user.id) {
-      return NextResponse.json(
-        { error: '레시피를 삭제할 권한이 없습니다.' },
-        { status: 403 }
-      );
-    }
+    // 레시피 소유자 확인 (2026-10-04 API1-36: lib/api/ownership, 404/403 문구 그대로)
+    const owner = await requireRecipeOwner(supabase, recipeId, user.id, '레시피를 삭제할 권한이 없습니다.');
+    if (owner.response) return owner.response;
 
     // 레시피 삭제 (관련 데이터는 CASCADE로 자동 삭제)
     const { error: deleteError } = await supabase

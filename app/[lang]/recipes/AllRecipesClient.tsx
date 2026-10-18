@@ -43,8 +43,10 @@ export default function AllRecipesPage() {
   const hasFilter = !!(cuisineFilter || dishFilter);
 
   const { save, load, clear } = useScrollCache<RecipesCache>(CACHE_KEY);
-  // 필터 적용 시 캐시 무시
-  const initialCache = hasFilter ? null : load();
+  // 필터 적용 시 캐시 무시.
+  // useState lazy initializer: 초기 state 계산에만 쓰이는 값이라 mount 1회만 sessionStorage 읽기+JSON.parse
+  // (이전엔 매 렌더마다 최대 120개 레시피를 다시 parse). 초기값은 동일 (perf 2026-09-27).
+  const [initialCache] = useState(() => (hasFilter ? null : load()));
 
   // 카테고리 탭 — URL 필터가 활성이면 강제, 없으면 유저의 수동 선택 유지.
   // setState-in-effect 패턴을 피하기 위해 render time에 파생.
@@ -83,6 +85,15 @@ export default function AllRecipesPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // 2026-10-04 [PHR-22] 카테고리 칩·필터 라벨·alt 를 로케일 라벨로 — 레시피 폼과 같은 `t.cuisineLabels[v] ?? 상수 label` 패턴.
+  // ko 로케일 값은 상수 라벨과 문자 단위 동일(전 22개 확인) → 한국어 화면 불변. 목록 밖 값(URL 임의 값)은 옛처럼 원문 그대로.
+  const cuisineLabelOf = (value: string, fallback: string) =>
+    t.cuisineLabels[value as keyof typeof t.cuisineLabels] ?? fallback;
+  const dishLabelOf = (value: string, fallback: string) =>
+    t.dishLabels[value as keyof typeof t.dishLabels] ?? fallback;
+  const cuisineFilterMatch = CUISINE_TYPES.find(c => c.value === cuisineFilter);
+  const dishFilterMatch = DISH_TYPES.find(d => d.value === dishFilter);
+
   const isRestoredRef = useRef(!!initialCache);
   const latestStateRef = useRef<RecipesCache>({ recipes: [], page: 0, hasMore: true, sortBy: 'latest' });
   const cuisineFilterRef = useRef(cuisineFilter);
@@ -112,7 +123,12 @@ export default function AllRecipesPage() {
 
   // 데이터 계층 이전(docs/DATA_LAYER.md): 직접 read(recipes·cooking_sessions) + 클라 fridge match
   // → GET /api/recipes/browse (서버가 페이지네이션·냉장고 match·has_cooked 모두 처리).
+  // 2026-10-04 [PHR-24] 요청 세대 — 더보기(무한스크롤) 진행 중 정렬/카테고리를 바꾸면 늦게 온 옛 정렬 페이지가 새 목록 뒤에
+  // append 되거나 먼저 보낸 reset 응답이 나중 것을 덮어쓰던 경쟁 차단. 마지막으로 시작한 요청만 상태(목록·hasMore·로딩)에 반영.
+  // 동시에 진행되는 요청은 reset 1개(+그 사이 막힌 더보기) 뿐이라 정상 경로(요청 1개)는 동작 동일.
+  const requestSeqRef = useRef(0);
   const fetchRecipes = useCallback(async (pageNum: number, sort: string, reset = false) => {
+    const seq = ++requestSeqRef.current;
     const params = new URLSearchParams({ sort, page: String(pageNum) });
     if (cuisineFilterRef.current) params.set('cuisine_type', cuisineFilterRef.current);
     if (dishFilterRef.current) params.set('dish_type', dishFilterRef.current);
@@ -124,6 +140,7 @@ export default function AllRecipesPage() {
     } catch {
       // 네트워크 실패 — 아래 null 가드가 로딩 종료 처리.
     }
+    if (seq !== requestSeqRef.current) return; // 더 새 요청이 진행 중 — 그 요청이 상태를 마무리
     if (!data) {
       setLoading(false);
       setLoadingMore(false);
@@ -141,13 +158,16 @@ export default function AllRecipesPage() {
     setLoadingMore(false);
   }, []);
 
-  // mount 1회: 캐시 복원 시 스크롤 위치 복원, 아니면 신규 fetch
+  // mount 1회: 캐시 복원 시 스크롤 위치 복원.
+  // 신규 fetch 는 아래 sortBy/필터 effect 가 담당 — 캐시가 없으면 isRestoredRef 가 false 라 mount 에 반드시
+  // 1회 실행되므로 여기서 또 부르면 같은 목록을 두 번 요청하고(?sort= 딥링크면 'latest' 와 경쟁까지)
+  // 결과는 동일했다. 중복 요청 제거 (perf 2026-09-27).
   useEffect(() => {
-    const cached = hasFilter ? null : load();
+    // initialCache(= 첫 렌더에서 읽은 같은 sessionStorage 값)를 재사용 — mount 전에 save/clear 가 실행될 수
+    // 없어 다시 load() 한 결과와 동일하다. 최대 120개 레시피 JSON 의 두 번째 parse 제거 (perf 2026-09-27).
+    const cached = initialCache;
     if (cached) {
       setTimeout(() => window.scrollTo({ top: cached.scrollY, behavior: 'instant' }), 150);
-    } else {
-      fetchRecipes(0, 'latest', true); // eslint-disable-line react-hooks/set-state-in-effect -- setState calls are all after await
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -269,8 +289,8 @@ export default function AllRecipesPage() {
             <div>
               {hasFilter && (
                 <p className="text-sm text-text-muted mt-0.5">
-                  {cuisineFilter && `${t.home.filterCuisineLabel}: ${CUISINE_TYPES.find(c => c.value === cuisineFilter)?.label ?? cuisineFilter}`}
-                  {dishFilter && `${t.home.filterDishLabel}: ${DISH_TYPES.find(d => d.value === dishFilter)?.label ?? dishFilter}`}
+                  {cuisineFilter && `${t.home.filterCuisineLabel}: ${cuisineFilterMatch ? cuisineLabelOf(cuisineFilterMatch.value, cuisineFilterMatch.label) : cuisineFilter}`}
+                  {dishFilter && `${t.home.filterDishLabel}: ${dishFilterMatch ? dishLabelOf(dishFilterMatch.value, dishFilterMatch.label) : dishFilter}`}
                   <Link href="/recipes" className="ml-2 text-accent-warm text-xs hover:underline">
                     {t.home.clearFilter}
                   </Link>
@@ -324,7 +344,8 @@ export default function AllRecipesPage() {
 
             <div className="-mx-4 md:mx-0 overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 px-4 md:px-0 pb-1">
-                {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label }) => {
+                {(categoryTab === 'cuisine' ? CUISINE_TYPES : DISH_TYPES).map(({ value, label: constLabel }) => {
+                  const label = categoryTab === 'cuisine' ? cuisineLabelOf(value, constLabel) : dishLabelOf(value, constLabel);
                   const color = categoryTab === 'cuisine' ? CUISINE_COLORS[value] : DISH_COLORS[value];
                   const icon = categoryTab === 'cuisine' ? CUISINE_ICONS[value] : DISH_ICONS[value];
                   const isActive = categoryTab === 'cuisine'

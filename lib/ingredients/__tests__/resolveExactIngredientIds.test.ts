@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 
 // 승인 마스터 mock — 정확일치/별칭/공백무시 해석 검증용.
@@ -55,5 +55,32 @@ describe('resolveExactIngredientIds', () => {
   it('빈 입력 → 빈 Map', async () => {
     const r = await resolveExactIngredientIds(['', '  '], fakeSupabase(MASTER))
     expect(r.size).toBe(0)
+  })
+
+  // ICL-30 (2026-10-04): 마스터 조회 { error } 를 더는 삼키지 않고 서버 로그로 표면화 — 결과(미해석)는 이전과 동일
+  it('마스터 조회 실패 → 빈 Map(호출처 null) + console.error', async () => {
+    const failing = {
+      from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: null, error: { message: 'boom' } }) }) }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const r = await resolveExactIngredientIds(['마늘'], failing)
+      expect(r.size).toBe(0)
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(String(spy.mock.calls[0][1])).toBe('boom')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('정상 조회에선 console.error 없음', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await resolveExactIngredientIds(['마늘'], fakeSupabase(MASTER))
+      expect(spy).not.toHaveBeenCalled()
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

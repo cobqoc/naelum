@@ -7,7 +7,7 @@ import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth/context';
 
 interface MadeItModalProps {
   recipeId: string;
@@ -31,7 +31,10 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // 로그인 여부는 AuthProvider 가 이미 쿠키에서 복원한 세션으로 판단 — 열 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 3-상태 유지: null=인증 확인 중 / true / false. 실제 쓰기는 서버 API 가 다시 인증한다.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn: boolean | null = authLoading ? null : !!user;
   const panelRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEscapeKey(onClose, isOpen && !submitting);
@@ -40,8 +43,14 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
   useEffect(() => {
     if (!isOpen) return;
     setDifficulty(0); setPhoto(null); setPhotoPreview(null);
-    createClient().auth.getUser().then(({ data: { user } }) => setIsLoggedIn(!!user));
   }, [isOpen]);
+
+  // 2026-10-04 [PHR-13] blob 미리보기 URL 해제 — 교체·제거·닫힘 리셋·언마운트 때 이전 URL 을 revoke(누수 방지).
+  // 새 URL 이 커밋된 뒤 cleanup 이 돌아 화면에 쓰이는 URL 은 건드리지 않는다.
+  useEffect(() => {
+    if (!photoPreview) return;
+    return () => URL.revokeObjectURL(photoPreview);
+  }, [photoPreview]);
 
   const handlePickPhoto = (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error(t.tipForm.errorImageType); return; }
@@ -123,8 +132,9 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
         {/* 완성 사진 (선택) */}
         <div className="mb-4">
           <label className="block text-sm font-bold text-text-primary mb-2">{tp.photoOptional}</label>
+          {/* 2026-10-04 [PHR-13] value 리셋 — 사진 제거 후 같은 파일을 다시 골라도 change 가 발생하도록(다른 업로드 입력과 동일) */}
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePickPhoto(f); }} />
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePickPhoto(f); e.target.value = ''; }} />
           {photoPreview ? (
             <div className="relative w-full aspect-video rounded-xl overflow-hidden">
               <Image src={photoPreview} alt={t.recipe.ratingPhotoAlt} fill className="object-cover" unoptimized />

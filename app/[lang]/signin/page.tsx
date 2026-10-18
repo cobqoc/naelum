@@ -7,9 +7,12 @@ import { createClient } from '@/lib/supabase/client';
 import { translateError } from '@/lib/i18n/errorMessages';
 import { useI18n } from '@/lib/i18n/context';
 import { getPasswordStrength } from '@/lib/utils/password';
+import { safeRedirectPath } from '@/lib/auth/safeRedirect';
+import { subscribeCrossTabAuth, AUTH_EVENT_STORAGE_KEY } from '@/lib/auth/crossTabAuth';
 import FindIdModal from './_components/FindIdModal';
 import ResetPasswordModal from './_components/ResetPasswordModal';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import EyeIcon from '@/components/Auth/EyeIcon';
 
 
 const STORAGE_KEYS = {
@@ -57,9 +60,10 @@ function LoginContent() {
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
 
   const redirectAfterLogin = () => {
-    const param = searchParams.get('redirect') || '/';
-    // 상대경로만 허용: /path 형식. //evil.com 같은 프로토콜-상대 URL 차단
-    const redirectTo = param.startsWith('/') && !param.startsWith('//') ? param : '/';
+    // 같은 출처 경로만 허용 — 옛 검증(startsWith('/') && !startsWith('//'))은 '/\evil.com'
+    // (브라우저가 '//evil.com' 으로 해석)을 통과시켜 외부로 이동했다 (2026-10-04 AG2-48).
+    // 정상 내부 경로는 입력 그대로 → 이동 위치 동일.
+    const redirectTo = safeRedirectPath(searchParams.get('redirect'), window.location.origin);
     window.location.href = redirectTo;
   };
 
@@ -99,47 +103,38 @@ function LoginContent() {
   // Escape 키로 모달 닫기 (closeResetPasswordModal 선언 후 별도 useEffect에서 처리)
   const escHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
 
-  // 비밀번호 재설정 이메일 발송 후 BroadcastChannel 리스닝
+  // 비밀번호 재설정 이메일 발송 후 다른 탭(reset-password-verify)의 준비 완료 신호 수신.
+  // 채널·storage 구독은 lib/auth/crossTabAuth (2026-10-04 PAU-16 — 미지원 브라우저에서도 storage 폴백 동작).
+  // 경로별 처리(채널은 setSession 을 기다린 뒤 표시, storage 는 기다리지 않고 표시 후 키 삭제)는 기존 그대로.
   useEffect(() => {
     if (!resetSuccess) return;
 
-    const channel = new BroadcastChannel('auth-channel');
-    channel.onmessage = async (event) => {
-      if (event.data.type === 'PASSWORD_RESET_READY') {
-        // 세션 설정
-        if (event.data.accessToken && event.data.refreshToken) {
-          await supabase.auth.setSession({
-            access_token: event.data.accessToken,
-            refresh_token: event.data.refreshToken,
-          });
-        }
-        setResetReady(true);
-      }
-    };
-
-    const handleStorageEvent = (event: StorageEvent) => {
-      if (event.key === 'naelum_auth_event') {
-        try {
-          const data = JSON.parse(event.newValue || '{}');
-          if (data.type === 'PASSWORD_RESET_READY') {
-            if (data.accessToken && data.refreshToken) {
-              supabase.auth.setSession({
-                access_token: data.accessToken,
-                refresh_token: data.refreshToken,
-              });
-            }
-            setResetReady(true);
-            localStorage.removeItem('naelum_auth_event');
+    return subscribeCrossTabAuth({
+      onChannelMessage: async (data) => {
+        if (data.type === 'PASSWORD_RESET_READY') {
+          // 세션 설정
+          if (data.accessToken && data.refreshToken) {
+            await supabase.auth.setSession({
+              access_token: data.accessToken,
+              refresh_token: data.refreshToken,
+            });
           }
-        } catch {}
-      }
-    };
-    window.addEventListener('storage', handleStorageEvent);
-
-    return () => {
-      channel.close();
-      window.removeEventListener('storage', handleStorageEvent);
-    };
+          setResetReady(true);
+        }
+      },
+      onStorageMessage: (data) => {
+        if (data.type === 'PASSWORD_RESET_READY') {
+          if (data.accessToken && data.refreshToken) {
+            supabase.auth.setSession({
+              access_token: data.accessToken,
+              refresh_token: data.refreshToken,
+            });
+          }
+          setResetReady(true);
+          localStorage.removeItem(AUTH_EVENT_STORAGE_KEY);
+        }
+      },
+    });
   }, [resetSuccess, supabase.auth]);
 
   const validateEmail = (val: string) => {
@@ -172,7 +167,7 @@ function LoginContent() {
       });
 
       if (signInError) {
-        setLoginError(translateError(signInError));
+        setLoginError(translateError(signInError, t));
         setLoading(false);
         return;
       }
@@ -205,7 +200,7 @@ function LoginContent() {
     });
 
     if (error) {
-      setLoginError(translateError(error));
+      setLoginError(translateError(error, t));
       setOauthLoading(false);
     }
   };
@@ -220,7 +215,7 @@ function LoginContent() {
     });
 
     if (error) {
-      setLoginError(translateError(error));
+      setLoginError(translateError(error, t));
       setOauthLoading(false);
     }
   };
@@ -246,7 +241,7 @@ function LoginContent() {
     });
 
     if (error) {
-      setResetEmailError(translateError(error));
+      setResetEmailError(translateError(error, t));
     } else {
       setResetSuccess(true);
     }
@@ -276,7 +271,7 @@ function LoginContent() {
     });
 
     if (error) {
-      setNewPasswordError(translateError(error));
+      setNewPasswordError(translateError(error, t));
       setUpdatingPassword(false);
       return;
     }
@@ -435,16 +430,7 @@ function LoginContent() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
               >
-                {showPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                )}
+                <EyeIcon open={showPassword} />
               </button>
             </div>
           </div>

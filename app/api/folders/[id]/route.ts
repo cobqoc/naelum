@@ -17,22 +17,20 @@ export async function GET(
 
   const { page, limit, offset, rangeEnd } = parsePagination(searchParams, { defaultLimit: 12 })
 
-  // 폴더 정보 — user_id 는 필터 키라 반환 불필요, 나머지 전 컬럼 명시(과대 fetch 축소)
-  const { data: folder, error: folderError } = await supabase
-    .from('recipe_folders')
-    .select('id, folder_name, description, color, icon, is_default, recipes_count, created_at, updated_at')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (folderError || !folder) {
-    return NextResponse.json({ error: '폴더를 찾을 수 없습니다' }, { status: 404 })
-  }
-
-  // 폴더의 레시피
-  const { data: saves, count } = await supabase
-    .from('recipe_saves')
-    .select(`
+  // 2026-10-04 API1-45: 폴더 조회와 폴더 내 저장 레시피 조회는 서로 독립(둘 다 id·user.id 만 의존) → 병렬.
+  // 폴더가 없으면 아래에서 404 — 그때 saves 결과는 버린다(응답 동일).
+  const [{ data: folder, error: folderError }, { data: saves, count }] = await Promise.all([
+    // 폴더 정보 — user_id 는 필터 키라 반환 불필요, 나머지 전 컬럼 명시(과대 fetch 축소)
+    supabase
+      .from('recipe_folders')
+      .select('id, folder_name, description, color, icon, is_default, recipes_count, created_at, updated_at')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single(),
+    // 폴더의 레시피
+    supabase
+      .from('recipe_saves')
+      .select(`
       id,
       notes,
       created_at,
@@ -43,12 +41,19 @@ export async function GET(
         author:profiles!recipes_author_id_fkey(username, avatar_url)
       )
     `, { count: 'exact' })
-    .eq('folder_id', id)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .range(offset, rangeEnd)
+      .eq('folder_id', id)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, rangeEnd),
+  ])
 
-  const recipes = saves?.map(s => ({ ...s.recipe, save_id: s.id, save_notes: s.notes })) || []
+  if (folderError || !folder) {
+    return NextResponse.json({ error: '폴더를 찾을 수 없습니다' }, { status: 404 })
+  }
+
+  // 2026-10-04 API1-10: RLS 로 가려진(비공개 전환된) 레시피는 recipe=null 임베드라 id 없는 항목이 섞였다
+  // (KMP NaelumFolderRecipeItemDto 의 id·title 필수 → 디코딩 실패) → 그런 항목만 제외, 정상 항목·순서 동일.
+  const recipes = saves?.filter(s => s.recipe != null).map(s => ({ ...s.recipe, save_id: s.id, save_notes: s.notes })) || []
 
   return NextResponse.json({
     folder,

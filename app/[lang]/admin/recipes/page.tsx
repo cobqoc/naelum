@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -57,7 +57,9 @@ export default function AdminRecipesPage() {
   >(null);
   const [deleting, setDeleting] = useState(false);
 
+  const requestSeq = useRef(0);
   const loadRecipes = useCallback(async () => {
+    const seq = ++requestSeq.current;
     setLoading(true);
     const params = new URLSearchParams({
       page: page.toString(),
@@ -68,17 +70,25 @@ export default function AdminRecipesPage() {
       ...(status && { status }),
     });
 
-    const res = await fetch(`/api/admin/recipes?${params}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/admin/recipes?${params}`);
+      const data = await res.json();
+      // 검색어를 빠르게 바꾸면 요청이 겹친다 — 마지막 요청의 응답만 반영(늦게 온 옛 응답이 최신 결과를 덮지 않게, 2026-10-04)
+      if (seq !== requestSeq.current) return;
 
-    if (data.recipes) {
-      setRecipes(data.recipes);
-      setTotalPages(data.pagination.totalPages);
-      if (data.counts) setCounts(data.counts);
+      if (data.recipes) {
+        setRecipes(data.recipes);
+        setTotalPages(data.pagination.totalPages);
+        if (data.counts) setCounts(data.counts);
+      }
+    } catch {
+      // 네트워크 실패·비JSON 응답(504 HTML 등)에도 스피너가 영구 고착되지 않게(2026-10-04)
+      if (seq !== requestSeq.current) return;
+      toast.error('레시피 목록을 불러오지 못했습니다');
     }
     setSelected(new Set()); // 목록이 바뀌면 선택 초기화 — 선택은 페이지 단위
     setLoading(false);
-  }, [page, search, status, sort, order]);
+  }, [page, search, status, sort, order, toast]);
 
   useEffect(() => {
     loadRecipes();

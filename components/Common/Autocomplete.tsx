@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, KeyboardEvent, useCallback } from 'react';
+import { useState, useEffect, useRef, KeyboardEvent, useCallback, useId } from 'react';
 import { AutocompleteItem, AutocompleteProps } from './AutocompleteTypes';
 import { useI18n } from '@/lib/i18n/context';
 
@@ -42,7 +42,6 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // 커스터마이징
   renderItem,
   renderNoResults,
-  renderLoading: _renderLoading,
 
   // 스타일링
   className = '',
@@ -56,6 +55,11 @@ export default function Autocomplete<T extends AutocompleteItem>({
 }: AutocompleteProps<T>) {
   const { t } = useI18n();
   const resolvedPlaceholder = placeholder ?? t.search.searchPlaceholderSmall;
+  // ARIA id 는 인스턴스마다 고유하게 — 레시피 작성 폼처럼 자동완성이 여러 개면 고정 id 가 서로를 가리켰다
+  // (aria-controls/activedescendant, ICL-46 2026-10-04). id 를 셀렉터로 쓰는 코드·테스트 없음(grep 확인).
+  const ariaBaseId = useId();
+  const listboxId = `${ariaBaseId}-listbox`;
+  const optionId = (index: number) => `${ariaBaseId}-option-${index}`;
   // ===== 상태 관리 =====
   const [suggestions, setSuggestions] = useState<T[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -70,6 +74,10 @@ export default function Autocomplete<T extends AutocompleteItem>({
   // stale-response race 가드(H14): 발사된 요청마다 단조 증가 id 부여.
   // await 후 자신이 최신 요청일 때만 결과 반영 — 느린 옛 응답이 최신 위 덮기 방지.
   const requestIdRef = useRef(0);
+  // 방금 선택한 항목의 라벨 — 선택 직후 부모가 value 를 그 라벨로 바꿔 아래 디바운스 조회가 다시 돌 때,
+  // 그 응답으로 드롭다운을 *다시 열지는* 않게 한다(ICL-10, 2026-10-04). 조회·결과 저장은 이전 그대로
+  // (나중에 다시 포커스하면 그 결과를 보여주는 기존 동작 유지). 사용자가 값을 바꾸면 해제.
+  const justSelectedLabelRef = useRef<string | null>(null);
 
   // ===== 데스크톱 자동 포커스 =====
   useEffect(() => {
@@ -82,6 +90,11 @@ export default function Autocomplete<T extends AutocompleteItem>({
 
   // ===== 디바운싱 검색 =====
   useEffect(() => {
+    // 선택 후 사용자가 값을 바꿨으면 "방금 선택" 표시 해제 (ICL-10)
+    if (justSelectedLabelRef.current !== null && value !== justSelectedLabelRef.current) {
+      justSelectedLabelRef.current = null;
+    }
+
     // 검색어가 최소 길이 미만이면 초기화
     if (value.length < minQueryLength) {
       setSuggestions([]);
@@ -97,7 +110,8 @@ export default function Autocomplete<T extends AutocompleteItem>({
         const results = await fetchSuggestions(value);
         if (reqId !== requestIdRef.current) return; // 더 새 요청이 떴음 — 옛 응답 폐기
         setSuggestions(results);
-        if (isFocusedRef.current) setShowDropdown(true);
+        // 선택 직후(값 = 방금 고른 라벨)의 재조회는 결과만 채우고 드롭다운은 다시 열지 않는다 (ICL-10)
+        if (isFocusedRef.current && value !== justSelectedLabelRef.current) setShowDropdown(true);
       } catch (error) {
         if (reqId !== requestIdRef.current) return;
         console.error('Error fetching suggestions:', error);
@@ -135,6 +149,9 @@ export default function Autocomplete<T extends AutocompleteItem>({
     if (!showDropdown || totalItems === 0) {
       // Escape은 드롭다운 닫기만 처리
       if (e.key === 'Escape') {
+        // 드롭다운(로딩·결과 없음 표시 포함)이 *보이는* 중이면 이 Esc 는 드롭다운 닫기용 — 처리했다고 표시해
+        // 바깥 모달의 useEscapeKey 가 함께 닫히지 않게 한다(ICL-33). 안 보일 땐 그대로 전파(모달 닫힘 유지).
+        if (isDropdownVisible()) e.preventDefault();
         setShowDropdown(false);
         setSelectedIndex(-1);
       }
@@ -177,6 +194,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
         break;
 
       case 'Escape':
+        // preventDefault = "이 Esc 는 드롭다운이 처리함" — useEscapeKey(바깥 모달)는 이 표시가 있으면 무시 (ICL-33)
         e.preventDefault();
         setShowDropdown(false);
         setSelectedIndex(-1);
@@ -233,6 +251,12 @@ export default function Autocomplete<T extends AutocompleteItem>({
   };
 
   /**
+   * 드롭다운이 실제로 보이는지 — 렌더의 shouldShowDropdown 과 같은 판정 (ICL-33 Esc 처리용)
+   */
+  const isDropdownVisible = (): boolean =>
+    showDropdown && (shouldShowRecentItems() || suggestions.length > 0 || shouldShowCustomInput() || loading);
+
+  /**
    * 커스텀 입력 옵션을 표시할지 여부
    * 검색 결과가 있어도 항상 표시 (사용자가 원하는 재료를 직접 추가할 수 있도록)
    */
@@ -248,6 +272,12 @@ export default function Autocomplete<T extends AutocompleteItem>({
    * 항목 선택 핸들러
    */
   const handleSelectItem = useCallback((item: T) => {
+    // ICL-10: 선택 직후 같은 라벨 재조회 응답이 드롭다운을 다시 열지 않게 표시하고, 선택 순간 이미 날아가 있던
+    // (이전 검색어) 요청의 응답도 무효화 — 그 응답이 늦게 와 옛 목록으로 드롭다운을 다시 여는 것까지 막는다.
+    // 무효화된 요청은 로딩을 끄지 못하므로 여기서 끈다(진행 중 요청이 없으면 둘 다 영향 없음).
+    justSelectedLabelRef.current = item.label;
+    requestIdRef.current++;
+    setLoading(false);
     onChange(item.label);
     onSelect(item);
     setShowDropdown(false);
@@ -255,6 +285,14 @@ export default function Autocomplete<T extends AutocompleteItem>({
     setSuggestions([]);
     setIsFocused(false);
   }, [onChange, onSelect]);
+
+  /**
+   * 최근 선택 항목·"전체 삭제" 버튼의 mousedown 기본동작(포커스 이동) 차단 — ICL-09 (2026-10-04).
+   * 최근 섹션은 isFocused 일 때만 보이는데, mousedown 이 input 을 blur 시키면 click 이 오기 전에 섹션이
+   * 언마운트돼 마우스/터치로는 고를 수도 지울 수도 없었다. 검색 결과·직접 추가 버튼은 isFocused 와 무관하게
+   * 남아 있어 원래 정상이므로 손대지 않는다.
+   */
+  const keepInputFocus = (e: React.MouseEvent) => e.preventDefault();
 
   /**
    * 커스텀 입력 핸들러
@@ -338,8 +376,8 @@ export default function Autocomplete<T extends AutocompleteItem>({
           role="combobox"
           aria-expanded={shouldShowDropdown}
           aria-autocomplete="list"
-          aria-controls="autocomplete-listbox"
-          aria-activedescendant={selectedIndex >= 0 ? `autocomplete-option-${selectedIndex}` : undefined}
+          aria-controls={listboxId}
+          aria-activedescendant={selectedIndex >= 0 ? optionId(selectedIndex) : undefined}
           aria-label={ariaLabel || resolvedPlaceholder}
         />
         {/* 오른쪽 아이콘 — 로딩 중엔 스피너, 평소엔 홈 검색바와 동일한 오렌지 돋보기 버튼 */}
@@ -363,7 +401,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
           ref={dropdownRef}
           className={`absolute left-0 right-0 ${dropdownDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'} rounded-2xl bg-background-secondary border border-white/10 shadow-2xl overflow-hidden z-50 ${dropdownClassName}`}
           role="listbox"
-          id="autocomplete-listbox"
+          id={listboxId}
         >
           {/* 필터 컴포넌트 */}
           {filterComponent && (
@@ -377,14 +415,15 @@ export default function Autocomplete<T extends AutocompleteItem>({
             {showRecent && (
               <div className="border-b border-white/10">
                 <div className="flex items-center justify-between px-4 py-2 bg-white/5">
-                  <span className="text-xs font-medium text-text-secondary">최근 선택한 항목</span>
+                  <span className="text-xs font-medium text-text-secondary">{t.autocomplete.recentSelected}</span>
                   {onRecentItemsClear && (
                     <button
+                      onMouseDown={keepInputFocus}
                       onClick={onRecentItemsClear}
                       className="text-xs text-accent-warm hover:text-accent-hover transition-colors"
                       type="button"
                     >
-                      전체 삭제
+                      {t.autocomplete.clearAll}
                     </button>
                   )}
                 </div>
@@ -392,14 +431,17 @@ export default function Autocomplete<T extends AutocompleteItem>({
                   <button
                     key={`recent-${item.id}`}
                     type="button"
-                    onClick={() => handleSelectItem(item)}
+                    onMouseDown={keepInputFocus}
+                    // 고른 뒤엔 검색 결과를 마우스로 고른 경우와 같은 상태(입력창 포커스 해제)로 맞춘다 —
+                    // 그래야 입력창을 다시 탭하면 포커스 이벤트로 최근 목록이 다시 열린다 (ICL-09)
+                    onClick={() => { inputRef.current?.blur(); handleSelectItem(item); }}
                     className={`w-full px-4 py-3 min-h-[3rem] text-left transition-colors touch-manipulation active:scale-98 ${
                       selectedIndex === index
                         ? 'bg-accent-warm/20'
                         : 'hover:bg-white/5 active:bg-white/10'
                     }`}
                     role="option"
-                    id={`autocomplete-option-${index}`}
+                    id={optionId(index)}
                     aria-selected={selectedIndex === index}
                   >
                     {renderItemFn(item, selectedIndex === index)}
@@ -424,7 +466,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
                           : 'hover:bg-white/5 active:bg-white/10'
                       }`}
                       role="option"
-                      id={`autocomplete-option-${globalIndex}`}
+                      id={optionId(globalIndex)}
                       aria-selected={selectedIndex === globalIndex}
                     >
                       {renderItemFn(item, selectedIndex === globalIndex)}
@@ -443,7 +485,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
                   <div className="text-center">
                     {/* 검색 결과가 없을 때만 메시지 표시 */}
                     {suggestions.length === 0 && (
-                      <p className="text-sm text-text-muted mb-3">검색 결과가 없습니다</p>
+                      <p className="text-sm text-text-muted mb-3">{t.search.noResults}</p>
                     )}
                     <button
                       type="button"
@@ -451,7 +493,8 @@ export default function Autocomplete<T extends AutocompleteItem>({
                       className="w-full px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-accent-warm font-medium flex items-center justify-center gap-2"
                     >
                       <span>➕</span>
-                      <span>&quot;{value}&quot; 직접 추가하기</span>
+                      {/* 함수 치환 — 입력값의 `$&` 등이 치환 패턴으로 해석되지 않게 */}
+                      <span>{t.autocomplete.addCustom.replace('{value}', () => value)}</span>
                     </button>
                   </div>
                 )}

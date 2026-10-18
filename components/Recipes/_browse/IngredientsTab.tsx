@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import FridgeIcon from '@/components/icons/FridgeIcon';
 import SubstituteIndicator from '@/components/Recipes/SubstituteIndicator';
 import type { MatchResult } from '@/lib/recommendations/matchV2';
@@ -57,7 +58,7 @@ interface IngredientsTabProps {
   t: TranslationKeys;
 }
 
-export default function IngredientsTab({
+function IngredientsTab({
   activeTab,
   ingredients,
   matchResults,
@@ -273,3 +274,6 @@ export default function IngredientsTab({
     </div>
   );
 }
+
+// 순수 표현(hook 0) — 요리 타이머 1초 틱으로 부모가 재렌더돼도 props 가 같으면 건너뛴다(출력 동일, perf 2026-09-27).
+export default memo(IngredientsTab);

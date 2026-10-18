@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useRef } from 'react';
+import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
@@ -28,23 +28,31 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // 로그인 여부는 AuthProvider 가 이미 쿠키에서 복원한 세션으로 판단 — 열 때마다 /auth/v1/user 왕복 제거 (perf 2026-09-28).
+  // 3-상태 유지: null=인증 확인 중 / true / false. 실제 쓰기는 서버 API 가 다시 인증한다.
+  const { user, loading: authLoading } = useAuth();
+  const isLoggedIn: boolean | null = authLoading ? null : !!user;
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [screenshotUploading, setScreenshotUploading] = useState(false);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  useEscapeKey(onClose, isOpen);
-  useFocusTrap(isOpen, panelRef);
 
-  // 모달 열릴 때 로그인 상태 확인
-  useEffect(() => {
-    if (!isOpen) return;
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
-  }, [isOpen]);
+  const handleClose = () => {
+    setCategory('bug');
+    setContent('');
+    setEmail('');
+    setError('');
+    setSubmitted(false);
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    setScreenshotUrl(null);
+    onClose();
+  };
+
+  // ESC 도 ✕·배경 클릭과 같은 닫기(상태 초기화) — 예전엔 onClose 만 불러 다시 열면 이전 '접수 완료' 화면이 남았다(2026-10-04).
+  useEscapeKey(handleClose, isOpen);
+  useFocusTrap(isOpen, panelRef);
 
   if (!isOpen) return null;
 
@@ -79,9 +87,13 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, content, email, screenshotUrl: uploadedUrl }),
       });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error || t.contact.errorSubmit);
+        // 서버 에러 문자열은 한국어 고정(서버 i18n 미도입) — 상태·입력으로 번역 메시지를 고른다(2026-10-04).
+        // ko 문구는 서버 문구와 같다.
+        if (res.status === 429) setError(t.contact.errorRateLimit);
+        else if (res.status === 400 && isLoggedIn === false && !email.includes('@')) setError(t.contact.errorEmailRequired);
+        else if (res.status === 400 && content.trim().length < 10) setError(t.contact.errorMinLength);
+        else setError(t.contact.errorSubmit);
         return;
       }
       setSubmitted(true);
@@ -90,19 +102,6 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleClose = () => {
-    setCategory('bug');
-    setContent('');
-    setEmail('');
-    setError('');
-    setSubmitted(false);
-    setIsLoggedIn(null);
-    setScreenshotFile(null);
-    setScreenshotPreview(null);
-    setScreenshotUrl(null);
-    onClose();
   };
 
   return (

@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePagination } from '@/lib/api/pagination'
+import { fetchAllRows } from '@/lib/supabase/fetchAll'
+import { firstPerKey } from '@/lib/queries/firstPerKey'
+import { fetchCookedRecipeIds } from '@/lib/queries/recipeCards'
 
 // GET /api/users/[username]/recipes - 사용자 레시피 목록
 export async function GET(
@@ -98,7 +101,8 @@ export async function GET(
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 
-      recipes = result.data?.map(s => ({ ...s.recipe, save_notes: s.notes })) || []
+      // 2026-10-04 API1-10: RLS 로 가려진(비공개 전환된) 레시피는 recipe=null 임베드 → id 없는 항목 제외(정상 항목 동일)
+      recipes = result.data?.filter(s => s.recipe != null).map(s => ({ ...s.recipe, save_notes: s.notes })) || []
       count = result.count || 0
       break
     }
@@ -119,16 +123,31 @@ export async function GET(
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 
-      recipes = result.data?.map(l => l.recipe) || []
+      // 2026-10-04 API1-10: 가려진 레시피의 null 원소 제외 — 아래 has_cooked 의 r.id 접근 TypeError(500)도 방지
+      recipes = result.data?.filter(l => l.recipe != null).map(l => l.recipe) || []
       count = result.count || 0
       break
     }
 
     case 'cooked': {
       // cooking_sessions와 recipe_ratings를 LEFT JOIN
-      const { data: sessions, count: sessionsCount } = await supabase
-        .from('cooking_sessions')
-        .select(`
+      // 2026-10-04 API1-42: cooking_sessions 는 (user, recipe) UNIQUE 가 없어 같은 레시피를 여러 번 완성하면 세션
+      // *행* 마다 카드가 중복(React key 중복)되고 total 도 세션 수였다 → 완료 세션을 전부 받아(사용자당 소수,
+      // fetchAllRows 로 1000행 cap 회피) completed_at 내림차순 그대로 레시피별 *가장 최근* 1건만 남긴 뒤 페이지를
+      // 자른다. 순서 규칙(최근 완성순)·카드 필드는 동일. RLS 로 가려진 레시피(null 임베드)는 여기서 빠져 count 와도 일치.
+      // 읽기 실패 시 이전처럼 빈 목록(200) — 단 로그로 표면화.
+      type CookedRecipeEmbed = { id: string } & Record<string, unknown>
+      type CookedSessionRow = {
+        completed_at: string
+        photo_url: string | null
+        recipe: CookedRecipeEmbed | CookedRecipeEmbed[] | null
+      }
+      const embedOf = (s: CookedSessionRow) => (Array.isArray(s.recipe) ? s.recipe[0] : s.recipe)
+      let allSessions: CookedSessionRow[] = []
+      try {
+        allSessions = await fetchAllRows<CookedSessionRow>(() => supabase
+          .from('cooking_sessions')
+          .select(`
           completed_at,
           photo_url,
           recipe:recipes(
@@ -137,11 +156,16 @@ export async function GET(
             average_rating, views_count,
             author:profiles!recipes_author_id_fkey(username, avatar_url)
           )
-        `, { count: 'exact' })
-        .eq('user_id', profile.id)
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false })
-        .range(offset, rangeEnd)
+        `)
+          .eq('user_id', profile.id)
+          .not('completed_at', 'is', null)
+          .order('completed_at', { ascending: false }))
+      } catch (e) {
+        console.error('[recipes] cooked sessions read failed:', e)
+      }
+      const latestPerRecipe = firstPerKey(allSessions, s => embedOf(s)?.id)
+      const sessions = latestPerRecipe.slice(offset, rangeEnd + 1)
+      const sessionsCount = latestPerRecipe.length
 
       // 각 레시피에 대한 리뷰 조회
       if (sessions && sessions.length > 0) {
@@ -176,6 +200,7 @@ export async function GET(
             user_review: ratingsMap.get(recipe?.id)?.review
           };
         })
+        // (2026-10-04 API1-10 의 null 임베드 제외는 위 firstPerKey 가 페이지 자르기 전에 처리 — API1-42)
       } else {
         recipes = []
       }
@@ -229,18 +254,12 @@ export async function GET(
     const recipeIds = recipes.map((r: Record<string, unknown>) => r.id).filter(Boolean)
 
     if (recipeIds.length > 0) {
-      const { data: cookedSessions } = await supabase
-        .from('cooking_sessions')
-        .select('recipe_id')
-        .eq('user_id', user.id)
-        .in('recipe_id', recipeIds)
-        .not('completed_at', 'is', null)
-
-      const cookedRecipeIds = new Set(cookedSessions?.map(s => s.recipe_id) || [])
+      // (2026-10-04 API1-39: 같은 쿼리 4벌 → lib/queries/recipeCards.fetchCookedRecipeIds — 오류 시 빈 집합 동일)
+      const cookedRecipeIds = await fetchCookedRecipeIds(supabase, user.id, recipeIds as string[])
 
       recipes = recipes.map((r: Record<string, unknown>) => ({
         ...r,
-        has_cooked: cookedRecipeIds.has(r.id)
+        has_cooked: cookedRecipeIds.has(r.id as string)
       }))
     }
   }

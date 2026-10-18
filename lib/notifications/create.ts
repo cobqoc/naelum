@@ -1,4 +1,5 @@
-import { SupabaseClient, createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getServiceRoleClient } from '@/lib/supabase/service';
 
 type NotificationType = 'like' | 'comment' | 'rating' | 'save' | 'meal_time' | 'expiry';
 
@@ -8,12 +9,9 @@ type NotificationType = 'like' | 'comment' | 'rating' | 'save' | 'meal_time' | '
 // 데이터유실 버그: 댓글·평점·낼름 알림 미발송). owner-scoped INSERT 정책은
 // 의미상 부적합(타인 알림 차단) / true 정책은 스팸 취약 → 알림 insert 는
 // service-role 로 한다(lib/ratelimit.ts 와 동일 패턴). RLS 마이그레이션 아님.
+// 2026-10-04 AG2-29/API1-40: 호출마다 새로 만들던 인라인 사본 → 공용 memo(무상태라 재사용해도 동작 동일).
 function notificationAdminClient(): SupabaseClient {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  return getServiceRoleClient();
 }
 
 interface CreateNotificationParams {
@@ -28,7 +26,7 @@ interface CreateNotificationParams {
   relatedCommentId?: string;
 }
 
-export async function createNotification({
+async function createNotification({
   supabase: _supabase, // 시그니처 안정용 유지 — insert 는 service-role 로(위 주석)
   userId,
   type,
@@ -120,23 +118,5 @@ export async function notifySave(
     actionUrl: `/recipes/${recipeId}`,
     relatedUserId: saverId,
     relatedRecipeId: recipeId,
-  });
-}
-
-export async function notifyExpiry(
-  supabase: SupabaseClient,
-  userId: string,
-  ingredientName: string,
-  daysLeft: number,
-) {
-  await createNotification({
-    supabase,
-    userId,
-    type: 'expiry',
-    title: '유통기한 임박',
-    message: daysLeft <= 0
-      ? `${ingredientName}의 유통기한이 지났습니다!`
-      : `${ingredientName}의 유통기한이 ${daysLeft}일 남았습니다.`,
-    actionUrl: '/fridge',
   });
 }

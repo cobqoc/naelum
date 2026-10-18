@@ -2,6 +2,10 @@
  * Username Validation and Reserved Words Filter
  *
  * Prevents users from using inappropriate or reserved usernames.
+ *
+ * 2026-10-04 (PAU-10): 호출처 0 이던 getValidationDetails·RESERVED_WORDS 삭제,
+ * 파일 내부 전용 isReservedUsername·validateUsernameFormat 은 export 제거.
+ * 외부 소비처는 validateUsername 하나(app/api/users/check-username/route.ts).
  */
 
 import { containsBadWords } from './badWordsFilter';
@@ -96,7 +100,7 @@ function normalizeUsername(username: string): string {
 /**
  * Check if username is reserved
  */
-export function isReservedUsername(username: string): boolean {
+function isReservedUsername(username: string): boolean {
   const normalized = normalizeUsername(username);
 
   // Check exact matches
@@ -121,7 +125,7 @@ export function isReservedUsername(username: string): boolean {
 /**
  * Validate username format
  */
-export function validateUsernameFormat(username: string): {
+function validateUsernameFormat(username: string): {
   valid: boolean;
   error?: string;
 } {
@@ -177,42 +181,3 @@ export function validateUsername(username: string): {
 
   return { valid: true };
 }
-
-/**
- * Get detailed validation errors (for debugging)
- */
-export function getValidationDetails(username: string): {
-  format: boolean;
-  profanity: boolean;
-  reserved: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  const formatCheck = validateUsernameFormat(username);
-  const hasProfanity = containsBadWords(username);
-  const isReserved = isReservedUsername(username);
-
-  if (!formatCheck.valid) errors.push(formatCheck.error!);
-  if (hasProfanity) errors.push('부적절한 단어 포함');
-  if (isReserved) errors.push('예약어 사용');
-
-  return {
-    format: formatCheck.valid,
-    profanity: !hasProfanity,
-    reserved: !isReserved,
-    errors,
-  };
-}
-
-/**
- * Export reserved words lists for reference
- */
-export const RESERVED_WORDS = {
-  admin: ADMIN_RESERVED,
-  service: SERVICE_RESERVED,
-  brand: BRAND_RESERVED,
-  tech: TECH_RESERVED,
-  role: ROLE_RESERVED,
-  all: ALL_RESERVED,
-};

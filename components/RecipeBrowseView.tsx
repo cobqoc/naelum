@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
@@ -18,8 +18,8 @@ import CustomTimerSetup from '@/components/cook/CustomTimerSetup';
 import RecipeFridgeModal from '@/components/Recipes/RecipeFridgeModal';
 import IngredientsTab from '@/components/Recipes/_browse/IngredientsTab';
 import StepsTab from '@/components/Recipes/_browse/StepsTab';
+import ContactModal from './LazyContactModal';
 
-const ContactModal = dynamic(() => import('./ContactModal'), { loading: () => null });
 const ReportModal = dynamic(() => import('./Common/ReportModal'), { loading: () => null });
 
 interface RecipeIngredient {
@@ -134,7 +134,7 @@ export default function RecipeBrowseView({
   // 냉장고 매칭 hook — 재료 탭·냉장고 모달·cart 보유 제외 3 곳 단일 출처.
   // 양 매칭: 보유 양 맵 + 인분 배수(현재/기본) → 부족분(shortBy) 계산.
   const match = useRecipeFridgeMatch(
-    recipe.ingredients, userIngredients, userIngredientIds, userQtyMap, currentServings / baseServings,
+    recipe.ingredients, userIngredientIds, userQtyMap, currentServings / baseServings,
   );
   // 카트 추가 hook — V2: ingredient_id 기반 매칭.
   const cart = useCartFromRecipe({
@@ -181,18 +181,24 @@ export default function RecipeBrowseView({
     return m;
   }, [userIngredientQtys]);
 
+  // ── 탭 props 안정화 (perf 2026-09-27) ─────────────────────────────────────────────
+  // 요리 타이머가 돌면 useCookingMode 의 1초 틱마다 이 컴포넌트가 다시 렌더된다. 그때마다 재료·단계 탭 전체
+  // (단계별 정규식 토큰화·재료별 단위 변환 포함)가 다시 그려지던 것을, 탭을 memo 로 감싸고 아래 값들을
+  // 참조 고정해 틱에선 건너뛰게 한다. 값은 같은 입력의 같은 계산이라 출력 동일 — 인분·단위·완료 단계 등
+  // 실제 입력이 바뀌면 그대로 다시 그린다. 타이머 표시는 CookTimerPanel 이 매 틱 갱신.
+
   // 재료 양 배율 계산
-  const scaleQty = (qty: string): string => {
+  const scaleQty = useCallback((qty: string): string => {
     if (currentServings === baseServings || !qty) return qty;
     const num = parseFloat(qty);
     if (isNaN(num)) return qty;
     const scaled = num * (currentServings / baseServings);
     return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1);
-  };
+  }, [currentServings, baseServings]);
 
   // is_optional 재료 목록 + substitutes — 단계 본문 자동 highlight 용.
   // substitutes 는 display 용 string[] 로 평탄화 (note 있으면 "name · note" 합쳐서).
-  const optionalIngredients = recipe.ingredients
+  const optionalIngredients = useMemo(() => recipe.ingredients
     .filter(i => i.is_optional)
     .map(i => ({
       name: i.ingredient_name,
@@ -207,10 +213,36 @@ export default function RecipeBrowseView({
             })
             .filter(Boolean)
         : undefined,
-    }));
+    })), [recipe.ingredients]);
 
   // useCookingMode 가 제공하지 않는 *display order* 정렬은 RBV 가 책임 (hook 은 카운트만).
-  const sortedSteps = [...(recipe.steps || [])].sort((a, b) => a.step_number - b.step_number);
+  const sortedSteps = useMemo(
+    () => [...(recipe.steps || [])].sort((a, b) => a.step_number - b.step_number),
+    [recipe.steps],
+  );
+
+  // IngredientsTab 전용 — 매 렌더 새 배열/함수/객체였던 props 를 참조 고정
+  const tabIngredients = useMemo(() => recipe.ingredients.map(i => ({
+    ingredient_id: i.ingredient_id ?? null,
+    ingredient_name: i.ingredient_name,
+    quantity: i.quantity,
+    unit: i.unit,
+    notes: i.notes,
+    is_optional: i.is_optional,
+    substitutes: i.substitutes,
+  })), [recipe.ingredients]);
+  const openFridgeModal = useCallback(() => setShowFridgeModal(true), []);
+  const { isImperial, toggleSystem, convertIngredient } = unitConv;
+  const tabUnitConv = useMemo(
+    () => ({ isImperial, toggleSystem, convertIngredient }),
+    [isImperial, toggleSystem, convertIngredient],
+  );
+  // StepsTab 전용 — voice 훅 결과 객체는 매 렌더 새로 만들어지므로 쓰는 두 값만 고정
+  const { isSupported: voiceSupported, speakStepDirect } = cook.voice;
+  const tabVoice = useMemo(
+    () => ({ isSupported: voiceSupported, speakStepDirect }),
+    [voiceSupported, speakStepDirect],
+  );
 
   // 카트 추가 액션은 cart.addToShoppingList; ingredientStatus 는 match.* 에서.
 
@@ -243,7 +275,8 @@ export default function RecipeBrowseView({
           </div>
           {recipe.thumbnail_url?.includes('wikim.re.kr') && (
             <p className="mt-1 text-right text-xs text-text-muted">
-              출처: 세계김치연구소 (공공누리 제1유형)
+              {/* 공공누리 출처표시 의무 — 2026-10-04 i18n(ko 값 = 원문 그대로, 기관명·유형 누락 금지) */}
+              {t.recipe.wikimImageCredit}
             </p>
           )}
         </div>
@@ -293,7 +326,8 @@ export default function RecipeBrowseView({
       <div className="flex items-center gap-3 mt-3 flex-wrap">
         <span className="text-accent-warm font-bold text-sm">⭐ {recipe.average_rating.toFixed(1)}</span>
         {(recipe.cooked_count ?? 0) > 0 && (
-          <span className="text-text-secondary text-sm">🍳 {recipe.cooked_count}명</span>
+          // 2026-10-04 [I18N-JSX] '명' JSX 텍스트 i18n(ko 값 '명' = 원문, 같은 텍스트 노드 구성)
+          <span className="text-text-secondary text-sm">🍳 {recipe.cooked_count}{t.recipe.cookedCountUnit}</span>
         )}
         <div className="ml-auto flex items-center gap-2">
           <ShareButton
@@ -519,15 +553,7 @@ export default function RecipeBrowseView({
           {/* 재료 패널 — 추출된 표현 컴포넌트 ([[project-god-file-phase2]]) */}
           <IngredientsTab
             activeTab={activeTab}
-            ingredients={recipe.ingredients.map(i => ({
-              ingredient_id: i.ingredient_id ?? null,
-              ingredient_name: i.ingredient_name,
-              quantity: i.quantity,
-              unit: i.unit,
-              notes: i.notes,
-              is_optional: i.is_optional,
-              substitutes: i.substitutes,
-            }))}
+            ingredients={tabIngredients}
             matchResults={summary.results}
             userIngredientNameById={userIngredientNameById}
             coveredCount={coveredCount}
@@ -537,8 +563,8 @@ export default function RecipeBrowseView({
             currentServings={currentServings}
             setCurrentServings={setCurrentServings}
             scaleQty={scaleQty}
-            unitConv={unitConv}
-            onShowFridgeModal={() => setShowFridgeModal(true)}
+            unitConv={tabUnitConv}
+            onShowFridgeModal={openFridgeModal}
             t={t}
           />
 
@@ -553,7 +579,7 @@ export default function RecipeBrowseView({
             onToggleStep={cook.toggleStep}
             onOpenTimer={cook.openTimerForStep}
             getEffectiveTimers={cook.getEffectiveTimers}
-            voice={cook.voice}
+            voice={tabVoice}
             showMadeIt={!isAuthor}
             onMadeIt={onMadeIt}
             t={t}
@@ -562,48 +588,48 @@ export default function RecipeBrowseView({
         </div>
       </div>
 
-      {/* 영양 정보 (조건부) */}
-      {(recipe.calories || recipe.protein_grams || recipe.carbs_grams ||
+      {/* 영양 정보 (조건부) — 2026-10-04 [PHR-09] `{0 && …}` 가 숫자 "0" 을 그리드에 렌더하던 함정: !! 로 boolean 화(0 은 숨김 유지) */}
+      {!!(recipe.calories || recipe.protein_grams || recipe.carbs_grams ||
         recipe.fat_grams || recipe.fiber_grams || recipe.sodium_mg) && (
         <div className="mt-8 py-6 border-t border-white/10">
           <h2 className="text-lg font-bold mb-4">{t.nutrition.title}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {recipe.calories && (
+            {!!recipe.calories && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.calories}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.calories}</span>
                 <span className="text-xs text-text-muted ml-1">kcal</span>
               </div>
             )}
-            {recipe.protein_grams && (
+            {!!recipe.protein_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.protein}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.protein_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.carbs_grams && (
+            {!!recipe.carbs_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.carbs}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.carbs_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.fat_grams && (
+            {!!recipe.fat_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.fat}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fat_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.fiber_grams && (
+            {!!recipe.fiber_grams && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.fiber}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.fiber_grams}</span>
                 <span className="text-xs text-text-muted ml-1">g</span>
               </div>
             )}
-            {recipe.sodium_mg && (
+            {!!recipe.sodium_mg && (
               <div className="text-center p-3 rounded-xl bg-background-secondary">
                 <span className="block text-xs text-text-muted mb-1">{t.nutrition.sodium}</span>
                 <span className="text-xl font-bold text-accent-warm">{recipe.sodium_mg}</span>

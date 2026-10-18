@@ -1,5 +1,6 @@
 import type { TranslationKeys } from '@/lib/i18n/translations';
 import { COMMON_UNITS, type CartAddSource, type Suggestion } from '@/components/cart/types';
+import { categoryLabelFor } from '@/lib/shopping-list/groupItems';
 
 /**
  * cart 재료 추가 입력창 + 단위 select + 자동완성 목록 (순수 표현).
@@ -152,7 +153,8 @@ export default function CartAddInput({
             >
               <span className="text-accent-warm flex-shrink-0">+</span>
               <span className="text-text-primary flex-1 truncate">{s.name}</span>
-              {s.category && <span className="text-text-muted">{s.category}</span>}
+              {/* 카테고리 키(veggie·meat …)를 그대로 보이던 것을 번역 라벨로 — 장보기 그룹 헤더와 같은 라벨 (PAU-48, 2026-10-04) */}
+              {s.category && <span className="text-text-muted">{categoryLabelFor(t, s.category) ?? t.cart.categoryLabels.other}</span>}
             </button>
           ))}
         </div>

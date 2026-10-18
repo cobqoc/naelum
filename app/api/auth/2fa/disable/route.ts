@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyTOTP, decryptSecret } from '@/lib/security/totp';
+import { loadVerifiedTotp, TOTP_DISABLE_GUARD } from '@/lib/api/totpGuard';
 
 // POST: Disable 2FA after code verification
+// 2026-10-04 AG2-32: 코드 검증~TOTP 확인 42줄(verify 와 사본) → lib/api/totpGuard 공용(문구·상태코드 옵션으로 보존).
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,40 +12,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { code } = body;
-
-  if (!code || typeof code !== 'string' || code.length !== 6) {
-    return NextResponse.json({ error: '6자리 인증 코드를 입력해주세요.' }, { status: 400 });
-  }
-
-  // Get the TOTP record
-  const { data: totpRecord, error: fetchError } = await supabase
-    .from('user_totp_secrets')
-    .select('encrypted_secret, is_enabled')
-    .eq('user_id', user.id)
-    .single();
-
-  if (fetchError || !totpRecord) {
-    return NextResponse.json({ error: '2FA가 설정되어 있지 않습니다.' }, { status: 400 });
-  }
-
-  if (!totpRecord.is_enabled) {
-    return NextResponse.json({ error: '2FA가 활성화되어 있지 않습니다.' }, { status: 400 });
-  }
-
-  // Decrypt the secret
-  let secret: string;
-  try {
-    secret = decryptSecret(totpRecord.encrypted_secret);
-  } catch {
-    return NextResponse.json({ error: '암호화 키 오류입니다. 관리자에게 문의하세요.' }, { status: 500 });
-  }
-
-  // Verify the code
-  if (!verifyTOTP(secret, code)) {
-    return NextResponse.json({ error: '인증 코드가 올바르지 않습니다. 다시 시도해주세요.' }, { status: 400 });
-  }
+  const guard = await loadVerifiedTotp(request, supabase, user.id, TOTP_DISABLE_GUARD);
+  if (guard.response) return guard.response;
 
   // Delete the TOTP record
   const { error: deleteError } = await supabase

@@ -2,15 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences'
+import { requireAuth } from '@/lib/api/auth'
 
 // POST /api/recommendations/track - Track user interactions for personalization learning
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 })
-  }
+  // 2026-10-04 API1-38: 인라인 getUser+401 → requireAuth(401 본문 '로그인이 필요합니다' 가 이 라우트와 동일).
+  const { user, error: authError } = await requireAuth(supabase)
+  if (authError) return authError
 
   const { allowed } = await checkRateLimit(`track:${user.id}`, { windowMs: 60 * 1000, maxRequests: 30 })
   if (!allowed) {

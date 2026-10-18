@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 
 // 배달 기능은 prod 미적용 — 완성/출시 전까지 /delivery 하위 전 페이지 검색 색인 제외.
-// 출시 시 이 metadata 제거하면 색인 복구.
+// ⚠️ 하위 page 7곳이 각자 robots 메타를 다시 지정하므로, 출시 때 이 layout 값만 지우면 색인이 복구되지 않는다
+//    — 각 page 의 robots 도 함께 제거할 것(2026-10-04 확인).
 export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };

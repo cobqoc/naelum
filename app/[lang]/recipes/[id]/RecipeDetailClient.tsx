@@ -383,29 +383,35 @@ export default function RecipeDetailClient({
         onRequireCartLogin={handleCartLogin}
       />
 
-      {/* 2단계 재유도 — 만들었는데 아직 맛 별점 안 남긴 경우(먹고 나서) */}
-      {showReviewPrompt && (
-        <div className="mt-6 rounded-2xl border border-accent-warm/30 bg-accent-warm/10 p-4 flex items-center gap-3">
-          <div className="text-3xl">🍳</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-text-primary">{t.posts.reviewPromptTitle}</p>
-            <p className="text-xs text-text-secondary mt-0.5">{t.posts.reviewPromptSub}</p>
-          </div>
-          <button onClick={() => setReviewOpen(true)}
-            className="shrink-0 px-4 py-2 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors">
-            {t.posts.reviewPromptCta}
-          </button>
-        </div>
-      )}
+      {/* 2026-10-04 [PHR-14] 피드 통합(4cc6bb3) 때 사라진 본문 컬럼 래퍼 복원 — 통합 전 RecipeRatings·RecipeComments 가
+          각자 쓰던 `px-6` + `container mx-auto max-w-2xl` 와 같은 좌우 여백(이전엔 화면 전체 폭으로 붙어 렌더). */}
+      <div className="px-6">
+        <div className="container mx-auto max-w-2xl">
+          {/* 2단계 재유도 — 만들었는데 아직 맛 별점 안 남긴 경우(먹고 나서) */}
+          {showReviewPrompt && (
+            <div className="mt-6 rounded-2xl border border-accent-warm/30 bg-accent-warm/10 p-4 flex items-center gap-3">
+              <div className="text-3xl">🍳</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-text-primary">{t.posts.reviewPromptTitle}</p>
+                <p className="text-xs text-text-secondary mt-0.5">{t.posts.reviewPromptSub}</p>
+              </div>
+              <button onClick={() => setReviewOpen(true)}
+                className="shrink-0 px-4 py-2 rounded-xl bg-accent-warm text-background-primary text-sm font-bold hover:bg-accent-hover transition-colors">
+                {t.posts.reviewPromptCta}
+              </button>
+            </div>
+          )}
 
-      {/* 통합 피드 (리뷰 + 댓글 + 답글) */}
-      <RecipePostsFeed
-        recipeId={id}
-        currentUserId={currentUserId}
-        isAuthor={isOwnRecipe}
-        onRatingUpdate={refreshRecipeRatings}
-        refreshKey={feedRefreshKey}
-      />
+          {/* 통합 피드 (리뷰 + 댓글 + 답글) */}
+          <RecipePostsFeed
+            recipeId={id}
+            currentUserId={currentUserId}
+            isAuthor={isOwnRecipe}
+            onRatingUpdate={refreshRecipeRatings}
+            refreshKey={feedRefreshKey}
+          />
+        </div>
+      </div>
 
       <MadeItModal
         recipeId={id}
@@ -420,7 +426,9 @@ export default function RecipeDetailClient({
         isOpen={reviewOpen}
         onClose={() => setReviewOpen(false)}
         initialRating={0}
-        onSuccess={() => { setHasReviewed(true); refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
+        // 2026-10-04 [PHR-12] 성공 시 모달 닫기 — onSuccess 가 있으면 모달이 스스로 안 닫혀(RecipeReviewModal) 열린 채 남았고,
+        // 재제출하면 1인 1리뷰 분기가 같은 글을 "수정됨" 으로 덮어씀. 프로필 페이지 호출처(handleReviewSuccess)와 동일하게 닫는다.
+        onSuccess={() => { setReviewOpen(false); setHasReviewed(true); refreshRecipeRatings(); setFeedRefreshKey(k => k + 1); }}
       />
 
     </div>

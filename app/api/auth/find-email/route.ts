@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
+import { getClientIp } from '@/lib/api/clientIp'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -13,9 +14,7 @@ function maskEmail(email: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('cf-connecting-ip')
-      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || 'unknown'
+    const ip = getClientIp(request.headers)
 
     const { allowed } = await checkRateLimit(`find-email:${ip}`, {
       windowMs: 60 * 1000,
@@ -26,9 +25,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 })
     }
 
-    const { username } = await request.json()
+    // 2026-10-04 AG2-49: 형식 오류 JSON·null 본문·문자열 아닌 username 은 throw/TypeError → catch 500 이었다 → 기존 400 문구.
+    const body = await request.json().catch(() => undefined)
+    const username = body && typeof body === 'object' ? body.username : undefined
 
-    if (!username || username.trim().length < 2) {
+    if (!username || typeof username !== 'string' || username.trim().length < 2) {
       return NextResponse.json({ error: '사용자명을 입력해주세요 (2자 이상)' }, { status: 400 })
     }
 

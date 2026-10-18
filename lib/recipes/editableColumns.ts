@@ -7,7 +7,7 @@
  * sort 오염이 가능하다. 이 화이트리스트의 *콘텐츠 컬럼만* 통과시켜 차단한다.
  *
  * 제외된 컬럼은 전용 경로로만 갱신:
- *  - status/published_at → `recipes/[id]/visibility` 라우트 (PUT) · POST 의 명시 분기
+ *  - status/published_at → `recipes/[id]/visibility` 라우트 (PATCH — 발행 시 published_at 이 비어 있으면 채움) · POST 의 명시 분기
  *  - average_rating/cooked_count/views_count/likes_count/saves_count → RPC·트리거
  *  - author_id → 생성 시 서버가 user.id 로 강제, 이후 불변 (RLS WITH CHECK)
  *  - is_remix/original_recipe_id → 생성 시에만 (편집으로 remix 정체성 변경 불가)

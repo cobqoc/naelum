@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n/context';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { ALLERGEN_22, suggestAllergens } from '@/lib/constants/allergens';
+import { ALLERGEN_I18N_KEYS } from '@/lib/constants/allergenI18n';
 
 interface AddIngredientDialogProps {
   /** 다이얼로그 열림 상태 */
@@ -96,6 +97,30 @@ export default function AddIngredientDialog({
     setSelectedAllergens(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key],
     );
+  };
+
+  // 알레르겐 표시명 — 저장값(식약처 표준 키)은 그대로 두고 표시만 로케일 번역(ICL-02, 2026-10-04).
+  // ko 번역 = 기존 표시(칩은 한국어 label, 자동 제안 문장은 표준 키)와 동일 — allergenI18n 테스트가 고정.
+  const allergenLabel = (key: string, fallback: string) => {
+    const k = ALLERGEN_I18N_KEYS[key];
+    return k ? t.ingredient[k.label] : fallback;
+  };
+  const allergenShortName = (key: string) => {
+    const k = ALLERGEN_I18N_KEYS[key];
+    return k ? t.ingredient[k.short] : key;
+  };
+
+  // 서버(/api/ingredients/create) 에러 → 번역 문구(ICL-06, 2026-10-04). 서버는 한국어 원문(data.error)을 주는데
+  // 그걸 그대로 띄우면 비한국어 로케일에 한국어가, 500 엔 DB 영문 메시지가 노출됐다 → 원문은 콘솔에만.
+  // ko 문구는 서버 원문과 같게 맞춘 키(401·409·429). 400(금칙어·허용 안 되는 문자)만 두 사유를 묶은 문구.
+  const createErrorMessage = (status: number): string => {
+    switch (status) {
+      case 401: return t.errors.loginRequired;
+      case 409: return t.ingredient.duplicateExists;
+      case 429: return t.ingredient.errorTooManyRequests;
+      case 400: return t.ingredient.errorInvalidName;
+      default: return t.ingredient.errorCreateGeneric;
+    }
   };
 
   /**
@@ -190,7 +215,9 @@ export default function AddIngredientDialog({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || t.ingredient.errorCreateFailed);
+        console.error('Error creating ingredient:', response.status, data?.error);
+        setError(createErrorMessage(response.status));
+        return;
       }
 
       // 성공 - 생성된 재료 정보를 콜백으로 전달
@@ -198,8 +225,9 @@ export default function AddIngredientDialog({
         onSuccess(data.ingredient);
       }
     } catch (err) {
+      // 네트워크 오류·비JSON 응답 등 — 예외 원문(err.message) 대신 일반 문구 (ICL-06)
       console.error('Error creating ingredient:', err);
-      setError(err instanceof Error ? err.message : t.ingredient.errorCreateGeneric);
+      setError(t.ingredient.errorCreateGeneric);
     } finally {
       setSubmitting(false);
     }
@@ -275,7 +303,7 @@ export default function AddIngredientDialog({
             >
               {INGREDIENT_CATEGORIES.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.icon} {cat.name}
+                  {cat.icon} {(t.ingredient.categoryLabels as Record<string, string>)[cat.id] ?? cat.name}
                 </option>
               ))}
             </select>
@@ -307,11 +335,11 @@ export default function AddIngredientDialog({
           {/* 알레르겐 — 식약처 22품목, 안전 critical */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              알레르기 유발 (해당 없으면 빈 채로) <span className="text-text-muted">식약처 22품목</span>
+              {t.ingredient.allergenFieldLabel} <span className="text-text-muted">{t.ingredient.allergenStandardNote}</span>
             </label>
             {suggestedAllergens.length > 0 && !allergensTouched && (
               <p className="text-xs text-warning mb-2">
-                이름 기반 자동 제안: {suggestedAllergens.join(', ')} (확인 후 수정 가능)
+                {t.ingredient.allergenAutoSuggest.replace('{list}', () => suggestedAllergens.map(allergenShortName).join(', '))}
               </p>
             )}
             <div className="flex flex-wrap gap-1.5">
@@ -327,7 +355,7 @@ export default function AddIngredientDialog({
                   }`}
                   aria-pressed={selectedAllergens.includes(a.key)}
                 >
-                  {a.emoji ? `${a.emoji} ` : ''}{a.label}
+                  {a.emoji ? `${a.emoji} ` : ''}{allergenLabel(a.key, a.label)}
                 </button>
               ))}
             </div>

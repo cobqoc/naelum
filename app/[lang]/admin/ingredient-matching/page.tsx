@@ -4,7 +4,7 @@ import { useState } from 'react';
 import LinkingTab from './_components/LinkingTab';
 import AddRelationForm from './_components/AddRelationForm';
 import SetBaseForm from './_components/SetBaseForm';
-import RelationsPanel from '../substitute-suggestions/page';
+import RelationsPanel from '@/components/Admin/RelationsPanel';
 
 /**
  * 재료 매칭 관리 — 한 페이지, 두 탭 (2026-05-29).

@@ -2,13 +2,14 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse, type NextRequest } from 'next/server';
 import { attachFridgeMatch } from '@/lib/recommendations/fridgeMatch';
 import type { RecipeWithMatch } from '@/lib/types/recipe';
+// 2026-10-04 API1-39: 카드 컬럼(trending 과 바이트 동일)·author 정규화·has_cooked 조회 → lib/queries/recipeCards 단일 출처
+import { RECIPE_LIST_CARD_COLS, firstOfEmbed, fetchCookedRecipeIds } from '@/lib/queries/recipeCards';
 
 // 전체 레시피 페이지(AllRecipesClient) 목록 — 페이지네이션 + 냉장고 match + has_cooked.
 // 데이터 계층 이전(docs/DATA_LAYER.md): AllRecipesClient 의 직접 read(recipes·cooking_sessions)와
 // 클라 fridge match 를 서버로. attachFridgeMatch 는 client/server 공용(같은 V2 매칭, 단일 출처).
 const RECIPES_PER_PAGE = 20;
-const RECIPE_COLS =
-  'id, title, thumbnail_url, prep_time_minutes, cook_time_minutes, difficulty_level, average_rating, views_count, author:profiles!recipes_author_id_fkey(username), created_at';
+const RECIPE_COLS = RECIPE_LIST_CARD_COLS;
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -44,22 +45,16 @@ export async function GET(request: NextRequest) {
 
   let processed: RecipeWithMatch[] = data.map((r) => ({
     ...r,
-    author: Array.isArray(r.author) ? r.author[0] : r.author,
+    author: firstOfEmbed(r.author),
   }));
 
   if (user && processed.length > 0) {
     const recipeIds = processed.map((r) => r.id);
     // cooked 조회와 냉장고 match 는 독립 → 병렬.
-    const [{ data: cooked }, fridgeMatched] = await Promise.all([
-      supabase
-        .from('cooking_sessions')
-        .select('recipe_id')
-        .eq('user_id', user.id)
-        .in('recipe_id', recipeIds)
-        .not('completed_at', 'is', null),
+    const [cookedIds, fridgeMatched] = await Promise.all([
+      fetchCookedRecipeIds(supabase, user.id, recipeIds),
       attachFridgeMatch(supabase, user.id, processed),
     ]);
-    const cookedIds = new Set(cooked?.map((s) => s.recipe_id) || []);
     processed = fridgeMatched.map((r) => ({ ...r, has_cooked: cookedIds.has(r.id) }));
   } else {
     processed = await attachFridgeMatch(supabase, user?.id ?? null, processed);

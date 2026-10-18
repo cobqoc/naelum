@@ -479,3 +479,39 @@ describe('buildMatchNameArrays — RecipeCard 이름 배열 (배지 단일 출�
     expect(counts.totalCount).toBe(fields.totalIngredients);
   });
 });
+
+// useRecipeFridgeMatch 가 "보유 id 0개면 graph·coeffs fetch 생략" 하는 근거가 되는 불변식 (perf 2026-09-27).
+// 보유 재료가 없으면 관계 그래프·단위 계수가 무엇이든 matchRecipe 결과는 EMPTY 입력과 완전히 같아야 한다.
+describe('matchRecipe — 보유 id 가 비면 graph·coeffs 무관 (fetch 생략 근거)', () => {
+  const ingredients = [
+    { ingredient_id: 'recipe-anchovy', ingredient_name: '멸치액젓', quantity: '2', unit: '큰술' },
+    { ingredient_id: 'recipe-rice', ingredient_name: '밥', quantity: 1, unit: '공기' },
+    { ingredient_id: 'recipe-onion', ingredient_name: '양파', quantity: 2, unit: '개', is_optional: true },
+    { ingredient_id: null, ingredient_name: '소금 약간' },
+    { ingredient_id: 'recipe-water', ingredient_name: '물', quantity: 500, unit: 'ml' },
+  ];
+  const populatedGraph: RelationGraph = {
+    incoming: new Map([
+      ['recipe-anchovy', [{ from_id: 'user-fish-sauce', kind: 'substitute' as const, ratio: 0.5 }]],
+      ['recipe-rice', [{ from_id: 'user-raw-rice', kind: 'preparable_to' as const }]],
+    ]),
+  };
+  const populatedCoeffs = new Map([
+    ['recipe-onion', { gramsPerCountUnit: { 개: 200 } }],
+    ['recipe-anchovy', { gramsPerMl: 1.2 }],
+  ]);
+  const qty = new Map([['user-fish-sauce', { quantity: 100, unit: 'ml' }]]);
+
+  it('빈 보유 Set: 그래프·계수 유무와 무관하게 deep-equal', () => {
+    const withData = matchRecipe(ingredients, new Set(), populatedGraph, new Map(), qty, populatedCoeffs);
+    const withEmpty = matchRecipe(ingredients, new Set(), EMPTY_GRAPH, new Map(), qty, new Map());
+    expect(withData).toEqual(withEmpty);
+    expect(countMatched(ingredients, withData.results)).toEqual(countMatched(ingredients, withEmpty.results));
+  });
+
+  it('대조군: 보유 id 가 있으면 그래프가 결과를 바꾼다 (테스트가 무의미하지 않음을 확인)', () => {
+    const withData = matchRecipe(ingredients, new Set(['user-fish-sauce']), populatedGraph, new Map(), qty, populatedCoeffs);
+    const withEmpty = matchRecipe(ingredients, new Set(['user-fish-sauce']), EMPTY_GRAPH, new Map(), qty, new Map());
+    expect(withData).not.toEqual(withEmpty);
+  });
+});

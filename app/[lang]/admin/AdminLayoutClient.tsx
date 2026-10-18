@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { useLocalizedPathname } from '@/lib/i18n/useLocalizedPathname'
 import Link from '@/components/Common/LocalizedLink'
 
 interface AdminLayoutClientProps {
@@ -12,7 +12,9 @@ interface AdminLayoutClientProps {
 }
 
 export default function AdminLayoutClient({ profile, children }: AdminLayoutClientProps) {
-  const pathname = usePathname()
+  // href 는 lang 없는 경로(/admin/…)라 raw usePathname()(/ko/admin/…) 과 비교하면 활성 강조가 한 번도 안 켜졌다
+  // → lang 을 뗀 경로로 비교(2026-10-04, BottomNav·FloatingFeedbackButton 과 같은 훅).
+  const pathname = useLocalizedPathname()
 
   const navItems = [
     { key: 'dashboard', label: '대시보드', icon: '📊', href: '/admin' },

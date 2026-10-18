@@ -84,7 +84,8 @@ export function getRecentIngredients(): RecentIngredient[] {
  * 재료를 최근 선택 목록에 추가하거나 업데이트
  * - 이미 존재하면 count 증가 + timestamp 갱신
  * - 없으면 새로 추가
- * - 최대 개수 초과 시 가장 오래된 항목 제거
+ * - 최대 개수 초과 시 선택 횟수(count)가 가장 적은 항목(동률이면 더 오래된 것)부터 제거
+ *   (2026-10-04 주석을 실제 동작에 맞춤 — ICL-47. 이 규칙 때문에 새 항목이 바로 밀려나는 문제는 ICL-12, 보류)
  *
  * @param ingredient - 추가할 재료 정보
  */
@@ -208,62 +209,5 @@ export function clearRecentIngredients(): void {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Error clearing recent ingredients:', error);
-  }
-}
-
-/**
- * 특정 재료를 최근 선택 목록에서 제거
- * @param ingredientId - 제거할 재료 ID
- */
-export function removeRecentIngredient(ingredientId: string): void {
-  // 서버 사이드 렌더링 환경에서는 실행하지 않음
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    const currentItems = getRecentIngredients();
-    const filteredItems = currentItems.filter(item => item.id !== ingredientId);
-
-    const storageData: RecentIngredientsStorage = {
-      items: filteredItems,
-      version: STORAGE_VERSION,
-      lastUpdated: Date.now(),
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(storageData));
-  } catch (error) {
-    console.error('Error removing recent ingredient:', error);
-  }
-}
-
-/**
- * 최근 선택 재료 개수 가져오기
- * @returns 현재 저장된 최근 재료 개수
- */
-export function getRecentIngredientsCount(): number {
-  return getRecentIngredients().length;
-}
-
-/**
- * localStorage 크기 추정 (디버깅용)
- * @returns 현재 저장된 데이터의 크기 (bytes)
- */
-export function getStorageSize(): number {
-  if (typeof window === 'undefined') {
-    return 0;
-  }
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      return 0;
-    }
-
-    // UTF-16 인코딩 고려 (JavaScript 문자열은 UTF-16)
-    return new Blob([stored]).size;
-  } catch (error) {
-    console.error('Error calculating storage size:', error);
-    return 0;
   }
 }

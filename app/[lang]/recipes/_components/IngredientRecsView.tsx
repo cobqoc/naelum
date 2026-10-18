@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useSearchParams } from 'next/navigation';
 import { type RecipeWithMatch } from '@/lib/types/recipe';
 import { useI18n } from '@/lib/i18n/context';
 import { useAuth } from '@/lib/auth/context';
 import RecipeCard from '@/components/RecipeCard';
+import { LS_KEY_DEMO_ITEMS } from '@/app/[lang]/_home/constants';
 
 type IngMode = 'auto' | 'ready' | 'almost' | 'all';
 
@@ -18,6 +19,7 @@ type IngMode = 'auto' | 'ready' | 'almost' | 'all';
  */
 export default function IngredientRecsView() {
   const { t } = useI18n();
+  const tr = t.recommendations;
   const { user } = useAuth();
   const searchParams = useSearchParams();
 
@@ -34,8 +36,14 @@ export default function IngredientRecsView() {
   // 빈 결과(터미널) 시 dead-end 회피용 인기 레시피 fallback
   const [fallback, setFallback] = useState<RecipeWithMatch[]>([]);
   const [fallbackTried, setFallbackTried] = useState(false);
+  // 2026-10-04 [PHR-21] 요청 세대 — pill 을 빠르게 바꿀 때 늦게 온 옛 응답이 새 결과·mode 를 덮어쓰던 경쟁 차단(마지막 요청만 반영).
+  const requestSeqRef = useRef(0);
+  // [PHR-21] auto 응답이 서버가 고른 mode 로 pill 하이라이트만 맞출 때, 그 mode 변경이 같은 결과를 한 번 더 요청하던 것(진입마다
+  // 2회 호출·로딩 깜빡임·레이트리밋 1회 소모)을 건너뛴다. 결과 목록은 auto 응답(=서버가 고른 mode 의 결과) 그대로.
+  const skipFetchForModeRef = useRef<IngMode | null>(null);
 
   const fetchRecommendations = useCallback(async (modeVal: IngMode) => {
+    const seq = ++requestSeqRef.current;
     setLoading(true);
     setMessage('');
     try {
@@ -46,7 +54,10 @@ export default function IngredientRecsView() {
         extraParams += `&ingredients=${encodeURIComponent(urlIngredients)}`;
       } else {
         try {
-          const saved = localStorage.getItem('naelum_demo_items');
+          // 2026-10-04 [PHR-20] 홈 데모 냉장고가 실제로 저장하는 키(LS_KEY_DEMO_ITEMS, v5)를 읽는다 — 옛 무버전 키
+          // 'naelum_demo_items' 는 아무도 쓰지 않아 비로그인 직접 진입 시 데모 재료가 전달되지 않았음.
+          // (로그인 사용자는 서버가 이 파라미터를 무시하고 DB 보유 재료를 쓴다 — app/api/recommendations)
+          const saved = localStorage.getItem(LS_KEY_DEMO_ITEMS);
           if (saved) {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -58,31 +69,39 @@ export default function IngredientRecsView() {
       }
       const res = await fetch(`/api/recommendations?type=ingredients&limit=20${extraParams}`);
       const data = await res.json();
+      if (seq !== requestSeqRef.current) return;
 
       // auto 모드였으면 서버가 선택한 resolvedMode를 상태에 반영 (pill UI 하이라이트)
       if (modeVal === 'auto' && data.mode && data.mode !== 'auto') {
+        skipFetchForModeRef.current = data.mode;
         setMode(data.mode);
       }
 
+      // [PHR-20] 서버 한글 원문(message/error) 대신 번역 키 — ko 값은 서버 문구와 동일(라우트 문자열은 서버 i18n 미도입이라 그대로)
       if (data.error) {
-        setMessage(data.error);
+        setMessage(res.status === 429 ? tr.rateLimitedError : tr.serverLoadFailed);
         setRecommendations([]);
       } else if (data.message) {
-        setMessage(data.message);
+        setMessage(tr.noIngredientsMessage);
         setRecommendations([]);
       } else {
         // 데이터 계층 이전(docs/DATA_LAYER.md): has_cooked 는 /api/recommendations 가 서버에서 부착(중복 제거).
         setRecommendations(data.recommendations || []);
       }
     } catch {
-      setMessage(t.recommendations.loadFailed);
+      if (seq !== requestSeqRef.current) return;
+      setMessage(tr.loadFailed);
       setRecommendations([]);
     } finally {
-      setLoading(false);
+      if (seq === requestSeqRef.current) setLoading(false);
     }
-  }, [t.recommendations.loadFailed, searchParams]);
+  }, [tr, searchParams]);
 
   useEffect(() => {
+    if (skipFetchForModeRef.current === mode) {
+      skipFetchForModeRef.current = null;
+      return;
+    }
     fetchRecommendations(mode);
   }, [mode, fetchRecommendations]);
 

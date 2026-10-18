@@ -220,9 +220,9 @@ export default function AccountTab({ profile, supabase, router, t }: AccountTabP
         await supabase.auth.signOut();
         window.location.href = '/';
       } else {
-        const data = await res.json();
         setDeleting(false);
-        toast.error(data.error || t.common.error);
+        // API 에러 원문(영어 'Unauthorized'·'Failed to delete account')을 그대로 띄우지 않고 번역 문구로 (PAU-23, 2026-10-04)
+        toast.error(t.errors.deleteFailed);
       }
     } catch {
       setDeleting(false);

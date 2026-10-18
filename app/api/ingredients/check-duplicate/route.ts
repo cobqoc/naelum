@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { levenshteinSimilarity } from '@/lib/utils/levenshtein';
+import { quoteOrFilterValue } from '@/lib/api/sanitizeSearch';
 
 /**
  * GET /api/ingredients/check-duplicate
@@ -27,11 +28,13 @@ export async function GET(request: NextRequest) {
 
     // 유사한 이름 검색 (첫 2글자 일치하는 것들)
     const firstTwoChars = name.substring(0, 2);
+    // 2026-10-04 AG2-25: `(가` 처럼 예약 문자로 시작하면 .or() 파싱 오류(500) → 그때만 값 인용. 일반 이름은 그대로.
+    const prefixPattern = quoteOrFilterValue(`${firstTwoChars}%`);
 
     const { data: candidates, error } = await supabase
       .from('ingredients_master')
       .select('id, name, name_ko')
-      .or(`name.ilike.${firstTwoChars}%,name_ko.ilike.${firstTwoChars}%`)
+      .or(`name.ilike.${prefixPattern},name_ko.ilike.${prefixPattern}`)
       .limit(20);
 
     if (error) {

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getClientIp } from '@/lib/api/clientIp'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 
@@ -12,10 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '이메일과 비밀번호를 입력해주세요' }, { status: 400 })
     }
 
-    const ip = request.headers.get('cf-connecting-ip')
-      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-      || request.headers.get('x-real-ip')
-      || 'unknown'
+    const ip = getClientIp(request.headers, { realIpFallback: true })
 
     const { allowed } = await checkRateLimit(`signup:${ip}`, { windowMs: 60 * 60 * 1000, maxRequests: 5 })
     if (!allowed) {

@@ -15,6 +15,7 @@ import PreferencesTab from '@/components/Settings/PreferencesTab';
 import AccountTab from '@/components/Settings/AccountTab';
 import NotificationsTab from '@/components/Settings/NotificationsTab';
 import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences';
+import { usernameErrorMessage } from '@/components/Settings/usernameErrorMessage';
 
 interface Profile {
   id: string;
@@ -206,23 +207,34 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!username || username === profile?.username) {
       setUsernameError(null);
+      // 진행 중이던 이전 확인은 cleanup 으로 무효화돼 스스로 끄지 못하므로 여기서 스피너 해제 (PAU-20)
+      setCheckingUsername(false);
       return;
     }
 
+    // 2026-10-04 PAU-20: 입력이 바뀌면 이전 요청 응답을 무시 — 늦게 도착한 이전 닉네임 결과가 최신 결과를
+    // 덮어 "사용 가능한데 사용 중"(저장 차단)·"사용 중인데 사용 가능"이 뜨던 경합 차단.
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setCheckingUsername(true);
       try {
         const res = await fetch(`/api/users/check-username?username=${encodeURIComponent(username)}`);
         const data = await res.json();
-        setUsernameError(data.available ? null : data.error);
+        if (cancelled) return;
+        // 서버 한글 원문 대신 현재 로케일 문구 (ko 출력은 동일) — PAU-20
+        setUsernameError(data.available ? null : usernameErrorMessage(data.error, sp));
       } catch {
+        if (cancelled) return;
         setUsernameError(t.common.error);
       }
       setCheckingUsername(false);
     }, 500);
 
-    return () => clearTimeout(timer);
-  }, [username, profile?.username, t.common.error]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [username, profile?.username, t.common.error, sp]);
 
   // 탭 변경 시 URL `?tab=X` 동기 — 공유·새로고침 후 활성 탭 유지 (이슈 #14).
   // history.replaceState 로 React state 영향 없이 주소창만 갱신.
@@ -303,6 +315,9 @@ export default function SettingsPage() {
     const { error } = await uploadToBucket(supabase, 'avatars', filePath, avatarFile);
     if (error) {
       console.error('Avatar upload error:', error);
+      // 2026-10-04 PAU-17(결정 대기 — 2026-10-04 감사 결정 목록): 실패 시 미리보기 data: URL 을 돌려줘 base64 가
+      // profiles.avatar_url 에 저장된다. 지금 avatars 스토리지 정책상 업로드가 항상 실패해 이 폴백이 사실상 유일한
+      // 아바타 변경 경로라 그대로 둔다. 정책(20261004_fix_avatars_storage_policies.sql) 적용 후 폴백 제거를 결정할 것.
       return avatarUrl;
     }
 

@@ -4,6 +4,7 @@ import RecipeJsonLd from '@/components/RecipeJsonLd';
 import RecipeDetailClient from './RecipeDetailClient';
 import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
 import { getRecipeDetailData, getRecipeMetadata } from '@/lib/queries/recipeDetail';
+import { formatJsonLdIngredient } from '@/lib/recipes/jsonLd';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://naelum.app';
 
@@ -118,10 +119,8 @@ export default async function RecipeDetailPage({ params }: PageProps) {
         servings={recipe.servings}
         rating={recipe.average_rating}
         ratingsCount={recipe.ratings_count}
-        ingredients={recipe.ingredients.map(i => {
-          const displayUnit = (i.unit && i.unit !== '선택') ? i.unit : '';
-          return `${i.ingredient_name} ${i.quantity} ${displayUnit}`.trim();
-        })}
+        // 2026-10-04 [PHR-10] 수량 공란(null) 재료가 "소금 null" 로 나가던 버그 — 순수 헬퍼로 null 건너뜀
+        ingredients={recipe.ingredients.map(i => formatJsonLdIngredient(i.ingredient_name, i.quantity, i.unit))}
         steps={recipe.steps.map(s => s.instruction)}
       />
       <RecipeDetailClient
