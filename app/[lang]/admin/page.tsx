@@ -20,9 +20,10 @@ interface RecentAction {
   id: string;
   action_type: string;
   created_at: string;
+  // 탈퇴·삭제된 관리자의 로그는 admin_id 가 NULL(ON DELETE SET NULL) → 조인 결과 null
   admin: {
     username: string;
-  };
+  } | null;
 }
 
 export default function AdminDashboard() {
@@ -237,7 +238,7 @@ export default function AdminDashboard() {
                 <div className="flex-1">
                   <div className="text-sm font-medium">{formatActionType(action.action_type)}</div>
                   <div className="text-xs text-text-muted">
-                    by @{action.admin.username} • {new Date(action.created_at).toLocaleString('ko-KR')}
+                    by @{action.admin?.username || '(알 수 없음)'} • {new Date(action.created_at).toLocaleString('ko-KR')}
                   </div>
                 </div>
               </div>
