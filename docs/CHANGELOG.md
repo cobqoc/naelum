@@ -11,6 +11,18 @@
 
 ## 2026-10 작업 로그
 
+- **develop → main 머지·운영 배포 — 다음 작업 ③ 완료** (2026-10-18)
+  - **PR #249**(커밋 29개, 2026-09-28 성능·경량화 + 2026-10-05 감사 수정 + 2026-10-15 배달 봉인·입력칸 수정) → main 머지 커밋 `9cc5899`, Vercel Production 배포 성공(직전 운영 배포는 PR #248, 2026-07-16). CI: Lint + Unit 통과 · Build + E2E 는 secrets 미설정이라 사실상 skip.
+  - **운영 확인(naelum.app, 비로그인)**: `/ko`·`/ko/recipes`·레시피 상세(JSON-LD `Recipe`)·`/ko/kitchen`(재료 241개)·`/ko/signin`·`/ko/tip` 200, 콘솔 오류 0·실패 리소스 0. 서비스 워커 `v16` 제어 중, `/manifest.json`·`/offline.html`·`/robots.txt`·`/sitemap.xml` 200. 배달 봉인: `/ko/delivery`·`/ko/merchant`·`/ko/rider`·`/api/delivery/restaurants` 404. 분석 미동의 상태에서 Sentry 요청 0(지연 로드 동작). 입력칸 모서리 수정 반영(도감 검색 `rounded-xl` → 12px). 운영 로그인 화면은 확인하지 않음(실계정 자격증명 필요).
+  - **남은 순서**: ④ 마이그레이션 dev 적용·검증 → prod(dev 재복원 필요, 그때 baedariyo 재정지) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
+- **dev 복원 후 전체 e2e·Preview 확인 — 다음 작업 ①·② 완료** (2026-10-18)
+  - **환경**: 무료플랜 활성 2개 한도라 `baedariyo` 일시정지 → `naelum-dev` 복원(요청 후 응답까지 약 15분, 그동안 DNS 미해석) → 확인 후 되돌림(dev 정지·baedariyo 복원). 로컬 develop 은 원격 `bde3168`(2026-10-15 배달 봉인·체크박스/라디오 가시성·입력칸 모서리 수정 — 다른 세션 작업, 이 로그에 기록 없음)로 fast-forward.
+  - **전체 e2e(fresh build, 484건, 2워커)**: **480 passed · 1 failed · 1 flaky · 2 skipped** (6.4분). 실패 1건 = `e2e/delivery.spec.ts` 비로그인 식당 목록 — 화면이 "아직 식당이 없습니다"(목록 API 비정상 응답 → 클라이언트가 빈 목록 유지). 같은 시각(복원 직후 첫 분) dev PostgREST 로그에 "Warp server error: Thread killed by timeout manager" 7건 → **복원 직후 일시 장애**로 판단. 단독 재실행 통과, 배달 스펙 3개(`delivery`·`delivery-full-flow`·`merchant-rider`) 2워커 동시 재실행 34/34 통과. flaky 1건 = `cart.spec` 수량 스테퍼(Mobile Chrome, 재시도 통과 — 알려진 부하 flake 부류).
+  - **Preview(develop 별칭 URL, 2026-10-15 배포본)**: 홈·레시피 목록·레시피 상세·부엌 도감·로그인 화면 — 콘솔 오류 0·실패 리소스 0·로딩 splash 멈춤 없음(claude-in-chrome visibility 우회 적용). 레시피 JSON-LD 파싱 정상. 서비스 워커 `v16` 활성(리포 `public/sw.js` 와 동일), `/offline.html`·`/manifest.json` 200, `sw.js` cache-control `max-age=0, must-revalidate`. 배달 봉인: Preview 환경변수에 `DELIVERY_ENABLED` 가 없어 `/ko/delivery`·`/ko/merchant`·`/ko/rider` 404 확인. **Preview 로그인은 미확인**(비로컬 호스트라 자격증명 입력 불가) — 대신 로컬 prod 서버(`DELIVERY_ENABLED=true npm run start`)에서 `/api/test/signin` 으로 로그인한 뒤 `/ko` SSR HTML 첫 응답에 재료 이모지·보관기간 추정 라벨(`🥔 감자 · 예상 D-4`, purchase_date+shelf_life_days)·명시 유통기한(`🧈 버터 · D-3`)이 포함됨을 확인(추정 라벨은 `_home/helpers.ts` 규칙대로 7일 이내만 표시).
+  - **발견(미수정, 결정 필요)**: ① `e2e/merchant-rider.spec.ts` 가 UI 로 만드는 '테스트 식당' 이 testUser 삭제 후 `owner_id NULL` 고아로 dev 에 누적(442건, 2026-05-30~) — 고아 정리는 `delivery-full-flow.spec` 의 `name LIKE 'E2E%'` 만 잡는다 → 이름을 `E2E …` 로 바꾸거나 정리 조건 확장 ② Vercel Preview 와 로컬 `.env.local` 모두 `DELIVERY_ENABLED` 없음(봉인 규칙은 Preview·로컬에 넣기로 돼 있음) ③ `/ko/signin` 의 `<title>` 이 홈 제목과 동일(전용 메타 없음, 기존 상태).
+  - **남은 순서**: ③ develop → main PR(→ 같은 날 완료, 위 항목) ④ 마이그레이션 dev 적용·검증 → prod(dev 재복원 필요, 그때 baedariyo 재정지) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
 - **앱 전수 감사 + 행위 보존 수정·중복 제거·문서 동기화** (2026-10-04 작업, 2026-10-05 develop 커밋·푸시 — 결정 목록·근거는 로컬 감사 보고서 `AUDIT_2026-10-04.md`. 공개 저장소라 저장소에는 넣지 않음)
   - **발단**(사용자): "앱 전체를 꼼꼼히 — 최적화·중복 코드(한 벌이면 되는 여러 벌)·버그 전수 검사, 기능은 그대로, 기능이 바뀌는 작업은 빼 두고(아침에 확인), 안전망 충분히, 문서도 앱과 일치시키고, 끝나면 테스트까지".
   - **방법**: 영역별 감사 8기(읽기 전용, 470건 발견 — 코드 350 · 문서 불일치 111 · 문서 대조 중 코드 관찰 9) → 소유 파일이 겹치지 않는 구현 6기(API·재료/홈·레시피·인증·설정/프로필/팁·문서) + 리드 직접 수정. 모든 발견을 코드로 재검증(감사 오판 적발: check-expiry 는 KMP 앱이 호출 중이라 삭제 보류, 옛 매칭 상수는 이미 정의 0 등).
@@ -21,7 +33,7 @@
   - **문서**: 문서↔앱 불일치 111건 대조 → 98건 반영(버전·경로·라우트·데이터 수치(prod 실측)·스캐너 서술·GDPR 현황·삭제된 파일 언급 등). AGENTS.md·README.md 재작성. 리포만으로는 현행 DB 스키마 재현 불가 사실 명시.
   - **미적용 마이그레이션(작성만, dev → prod 순서로 적용 필요)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
   - **사용자 결정으로 남긴 것**: 이메일 가입 비밀번호 설정 단계 도달 불가(proxy, 패치 준비) · 보안·권한 관련 항목 다수(로컬 보고서) · prod `removeConsole` 이 서버 에러 로그까지 제거 · 알레르기 자유입력 ↔ 표준키 불일치 · 설정 아바타 base64 폴백(스토리지 정책 적용 후 제거 — 먼저 고쳤다가 정책 미적용 상태에선 아바타 변경이 막혀 되돌림) · 온보딩 선호도 저장 실패 시 완료를 막을지 등 — 로컬 감사 보고서 "결정 필요" 절.
-  - **다음 작업 (순서대로)**: ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
+  - **다음 작업 (순서대로)** — ①·②·③ 은 2026-10-18 완료(위 항목 참조): ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
 
 ## 2026-09 작업 로그
 
