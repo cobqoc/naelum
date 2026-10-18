@@ -7,7 +7,7 @@
 --
 -- 아래는 prod 의 현재 정의를 pg_get_functiondef 로 그대로 옮긴 것(2026-10-04 실측)이다. CREATE OR REPLACE 라
 -- 이미 같은 정의가 있는 prod 에 적용해도 변화가 없다(멱등). 권한도 prod 실측 그대로: anon 실행 불가, authenticated 실행 가능.
--- ⚠️ 미적용(작성만) — 적용할 때도 CLAUDE.md 흐름대로 dev 먼저.
+-- ✅ 2026-10-18 적용: naelum-dev → 검증(전체 e2e 482 통과) → naelum(prod).
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.delete_user()

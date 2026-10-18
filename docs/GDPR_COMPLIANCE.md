@@ -90,7 +90,7 @@
   - 삭제 후 남는 테이블 체크 (user_ingredients, recipes, comments, follows 등)
   - CASCADE DELETE 설정 확인
   - 로그·분석 데이터도 90일 내 익명화
-- **파일**: `app/api/users/delete/route.ts` — 핵심은 `supabase.rpc('delete_user')`(auth.users 삭제 → ON DELETE CASCADE 의존). 이 함수 정의는 prod DB 에만 있고 리포에 없다가 2026-10-04 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 백필됨(미적용, prod 정의와 동일) — 새 환경에선 이 마이그레이션 적용이 전제
+- **파일**: `app/api/users/delete/route.ts` — 핵심은 `supabase.rpc('delete_user')`(auth.users 삭제 → ON DELETE CASCADE 의존). 이 함수 정의는 prod DB 에만 있고 리포에 없다가 2026-10-04 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 백필됨(2026-10-18 dev·prod 적용, prod 정의와 동일) — 새 환경에선 이 마이그레이션 적용이 전제
 
 ### 🟡 Trigger: 사용자 10,000명+ OR 민감정보 처리 시작
 

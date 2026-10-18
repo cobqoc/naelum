@@ -1,7 +1,9 @@
 -- =============================================================================
 -- 2026-10-04 — avatars 스토리지 정책 수정 (아바타 업로드가 구조적으로 불가능하던 문제)
 --
--- ⚠️ 미적용(작성만). CLAUDE.md DB 흐름대로 naelum-dev 에 먼저 apply → 설정·온보딩 아바타 업로드 확인 → naelum(prod).
+-- ✅ 2026-10-18 적용: naelum-dev → 검증 → naelum(prod). dev 에는 avatars 버킷과 'Anyone can view avatars'(SELECT)
+--    정책이 없어 prod 와 같게 먼저 만들었다(덮어쓰기·삭제는 SELECT 정책이 있어야 동작 — 그래서 이 파일엔 없다).
+--    dev 실측: 본인 이름 업로드(설정·온보딩 경로)·덮어쓰기·삭제 성공, 타인 uid 이름 업로드 RLS 거부.
 --
 -- prod 실측(2026-10-04, pg_policies) — 현재 정책:
 --   INSERT WITH CHECK: auth.uid() = (split_part(name,'/',2) || split_part(split_part(name,'/',2),'-',1))

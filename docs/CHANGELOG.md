@@ -11,10 +11,19 @@
 
 ## 2026-10 작업 로그
 
+- **마이그레이션 3개 dev → prod 적용 — 다음 작업 ④ 완료** (2026-10-18)
+  - **대상**: `20261004_backfill_delete_user_fn.sql`(계정 삭제 함수 정의 백필) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드 정책) · `20261004_secdef_function_grants.sql`(좋아요 토글 함수 호출자 본인 확인 + rate limit·관리자 집계 함수 서비스 롤 전용 — 적용 전까지 로컬 보관하던 파일, 이번에 커밋).
+  - **환경**: baedariyo 일시정지 → naelum-dev 복원 → 적용·검증 → dev 정지·baedariyo 복원.
+  - **dev 사전 대조**: 대상 함수 5개가 prod 와 정의가 달랐다(옛 dev drift — search_path·SECURITY DEFINER 설정·서식 차이, 로직 동일). 마이그레이션이 prod 정의로 덮어써 일치시킴. dev 에는 `avatars` 버킷과 `Anyone can view avatars`(SELECT) 정책이 없어 prod 와 같게 생성(버킷 public).
+  - **검증(dev, 임시 사용자 2명 스크립트 — 적용 전/후 비교)**: 아바타 본인 이름 업로드(설정 `avatars/<uid>-…`·온보딩 `<uid>-…` 경로) 거부 → 성공, 덮어쓰기·삭제 성공, 타인 uid 이름 업로드는 계속 거부. 좋아요: 비로그인 호출 권한 거부, 로그인 사용자가 남의 user_id 로 호출 시 `forbidden`, 본인 토글 정상. rate limit·관리자 집계·정리 함수: anon·로그인 사용자 권한 거부, 서비스 롤 정상. **전체 e2e 482 passed · 0 failed · 0 flaky · 2 skipped**(5.7분).
+  - **prod 적용 후**: 권한 실측 — 대상 7개 함수 anon 실행 불가, 서비스 롤 전용 4개는 authenticated 도 불가, 좋아요·계정 삭제는 authenticated 가능. 아바타 정책 3개 교체 확인. 적용 직후 postgres 로그에 앱 쪽 권한 거부 오류 0.
+  - **후속(결정 필요)**: 설정 화면 아바타 base64 폴백(PAU-17, `app/[lang]/settings/page.tsx`) — 정책이 이제 업로드를 허용하므로 제거 가능. Security Advisor 의 다른 SECURITY DEFINER 실행 권한 경고는 이번 범위 밖(로컬 감사 결정 목록).
+  - **남은 순서**: ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
 - **develop → main 머지·운영 배포 — 다음 작업 ③ 완료** (2026-10-18)
   - **PR #249**(커밋 29개, 2026-09-28 성능·경량화 + 2026-10-05 감사 수정 + 2026-10-15 배달 봉인·입력칸 수정) → main 머지 커밋 `9cc5899`, Vercel Production 배포 성공(직전 운영 배포는 PR #248, 2026-07-16). CI: Lint + Unit 통과 · Build + E2E 는 secrets 미설정이라 사실상 skip.
   - **운영 확인(naelum.app, 비로그인)**: `/ko`·`/ko/recipes`·레시피 상세(JSON-LD `Recipe`)·`/ko/kitchen`(재료 241개)·`/ko/signin`·`/ko/tip` 200, 콘솔 오류 0·실패 리소스 0. 서비스 워커 `v16` 제어 중, `/manifest.json`·`/offline.html`·`/robots.txt`·`/sitemap.xml` 200. 배달 봉인: `/ko/delivery`·`/ko/merchant`·`/ko/rider`·`/api/delivery/restaurants` 404. 분석 미동의 상태에서 Sentry 요청 0(지연 로드 동작). 입력칸 모서리 수정 반영(도감 검색 `rounded-xl` → 12px). 운영 로그인 화면은 확인하지 않음(실계정 자격증명 필요).
-  - **남은 순서**: ④ 마이그레이션 dev 적용·검증 → prod(dev 재복원 필요, 그때 baedariyo 재정지) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+  - **남은 순서**: ④ 마이그레이션(→ 같은 날 완료, 위 항목) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
 
 - **dev 복원 후 전체 e2e·Preview 확인 — 다음 작업 ①·② 완료** (2026-10-18)
   - **환경**: 무료플랜 활성 2개 한도라 `baedariyo` 일시정지 → `naelum-dev` 복원(요청 후 응답까지 약 15분, 그동안 DNS 미해석) → 확인 후 되돌림(dev 정지·baedariyo 복원). 로컬 develop 은 원격 `bde3168`(2026-10-15 배달 봉인·체크박스/라디오 가시성·입력칸 모서리 수정 — 다른 세션 작업, 이 로그에 기록 없음)로 fast-forward.
@@ -31,9 +40,9 @@
   - **중복 제거(행위 보존, 하네스 증명)**: 레시피 작성↔수정 폼 공용 컴포넌트 6개(`app/[lang]/recipes/_components/`, 진짜 분기는 prop) · 팁 작성↔수정(`app/[lang]/tip/_components/` useTipForm·TipFormFields) · 인증 화면 비밀번호/약관/생년월일/이메일 링크 블록(`components/Auth/`) · 클라이언트 IP 식 21벌(`lib/api/clientIp.ts`) · 관리자 라우트 가드·신고 라우트 3벌·서비스 롤 클라이언트 7벌·2FA 사본 · 같은 이름 그룹 미니시트 · 언어 전환 핸들러 · 관리자 페이지네이션 등.
   - **도구·CI**: CI quality 잡에 `--max-warnings=0` lint 와 `tsc --noEmit` 추가(테스트 파일 타입 오류가 아무 데서도 안 잡히던 구멍) · `scan:fragility` 정직화 2차(JSX 텍스트 한글·lib 헬퍼 경유 간접 read·조인 와일드카드 select 까지 세고 상한을 실측값으로 재잠금 — docs/DATA_LAYER.md 2026-10-04 결산) · e2e 스테일 서버 정리를 globalSetup → 설정 평가 시점으로(`e2e/stale-server.ts`, webServer 재사용 결정보다 먼저) · 줄 수 훅이 모델에게 경고를 실제로 전달 · 7개 로케일에 `satisfies TranslationKeys`.
   - **문서**: 문서↔앱 불일치 111건 대조 → 98건 반영(버전·경로·라우트·데이터 수치(prod 실측)·스캐너 서술·GDPR 현황·삭제된 파일 언급 등). AGENTS.md·README.md 재작성. 리포만으로는 현행 DB 스키마 재현 불가 사실 명시.
-  - **미적용 마이그레이션(작성만, dev → prod 순서로 적용 필요)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
+  - **마이그레이션(작성 당시 미적용 — 2026-10-18 dev·prod 적용 완료)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
   - **사용자 결정으로 남긴 것**: 이메일 가입 비밀번호 설정 단계 도달 불가(proxy, 패치 준비) · 보안·권한 관련 항목 다수(로컬 보고서) · prod `removeConsole` 이 서버 에러 로그까지 제거 · 알레르기 자유입력 ↔ 표준키 불일치 · 설정 아바타 base64 폴백(스토리지 정책 적용 후 제거 — 먼저 고쳤다가 정책 미적용 상태에선 아바타 변경이 막혀 되돌림) · 온보딩 선호도 저장 실패 시 완료를 막을지 등 — 로컬 감사 보고서 "결정 필요" 절.
-  - **다음 작업 (순서대로)** — ①·②·③ 은 2026-10-18 완료(위 항목 참조): ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
+  - **다음 작업 (순서대로)** — ①~④ 는 2026-10-18 완료(위 항목 참조): ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
 
 ## 2026-09 작업 로그
 

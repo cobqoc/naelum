@@ -44,7 +44,7 @@
 - `recipes`: 아래 "📌 데이터 현황 > 레시피 DB" 절 참조 (published; MAFF 2,050개 2026-05-13 삭제됨)
 - `ingredients_master`: **dev 281개(2026-06 기준, 현재 dev 정지로 미확인) / prod 241개(2026-10-04 실측)** (전부 approved. 2026-06-02 정리 후 베이스 재료만 유지. **2026-06-04 prod에 흔한 재료 14종 보강 + `shelf_life_days`(보관기간) 컬럼·데이터 69종 추가**)
 - `shopping_list_items`: ingredient_id 컬럼 추가 완료
-- **dev ↔ prod 는 완전 동기 아님** — 배달 테이블은 dev 전용(아래 "배달 DB"), 과거 drift 기록 있음(`supabase/migrations/20260601_social_unique_constraints_dev_drift.sql`·`20260603_drop_legacy_cruft.sql` 주석). 리포에 정의가 없는 DB-only 객체도 있음(예: `push_tokens` 테이블 — `app/api/push-tokens/route.ts` 가 사용). `delete_user()` 는 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 리포에 백필됨(미적용, prod 정의와 동일). 신규 변경은 반드시 `supabase/migrations/` 경유
+- **dev ↔ prod 는 완전 동기 아님** — 배달 테이블은 dev 전용(아래 "배달 DB"), 과거 drift 기록 있음(`supabase/migrations/20260601_social_unique_constraints_dev_drift.sql`·`20260603_drop_legacy_cruft.sql` 주석). 리포에 정의가 없는 DB-only 객체도 있음(예: `push_tokens` 테이블 — `app/api/push-tokens/route.ts` 가 사용). `delete_user()` 는 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 리포에 백필됨(2026-10-18 dev·prod 적용, prod 정의와 동일). 신규 변경은 반드시 `supabase/migrations/` 경유
 
 ### 주의사항
 - **로컬/dev에서 절대 prod DB 직접 수정 금지**
@@ -1228,7 +1228,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
   - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 — 클라이언트 IP 는 `lib/api/clientIp.ts` `getClientIp` 가 단일 출처(IP 키 rate limit·로그인 잠금 라우트 전부). 예외: 기록용 IP(약관 동의 `app/api/terms/accept`, 관리자 행동 로그 `lib/supabase/admin.ts`)는 `X-Forwarded-For` 사용
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
 - **Rate limits 테이블 정리** — 매일 00:00 UTC(09:00 KST) cron (`/api/cron/cleanup-rate-limits`, `vercel.json` `0 0 * * *` — Vercel Hobby 플랜 cron 은 하루 1회 제한)
-- **미적용 DB 권한 정리 마이그레이션 1건(2026-10-04 작성)** — 공개 저장소라 적용 전까지 SQL 파일을 로컬에만 둔다(`.git/info/exclude`, 내용은 로컬 감사 보고서 `AUDIT_2026-10-04.md` §2). dev → 검증 → prod 적용 후 커밋
+- **DB 함수 권한 정리 마이그레이션(`20261004_secdef_function_grants.sql`)** — 2026-10-18 dev → 검증 → prod 적용 후 커밋. 좋아요 토글 함수에 호출자 본인 확인, rate limit·관리자 집계 함수는 서비스 롤 전용. 그 밖의 Security Advisor 경고(다른 SECURITY DEFINER 함수 실행 권한 등)는 로컬 감사 보고서 결정 목록에서 다룬다
 
 ### 농사로 Open API 현황 (2026-05-08)
 
