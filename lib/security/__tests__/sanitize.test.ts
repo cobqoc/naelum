@@ -31,9 +31,16 @@ describe('sanitizeHtml', () => {
     expect(sanitizeHtml('javascript:alert(1)')).toBe('alert(1)');
   });
 
-  it('알려진 한계: "<"가 포함된 정상 텍스트도 잘림 (회귀 감지용 고정)', () => {
-    // HTML_TAG_REGEX(/<\/?[^>]+(>|$)/)가 "< b"를 태그로 오인해 제거한다.
-    // 현 구현의 알려진 약점 — 동작을 고정하고, 개선 시 의도된 변경으로 드러나게 한다.
-    expect(sanitizeHtml('a < b')).toBe('a');
+  it('태그가 아닌 "<" 는 보존 — 이모티콘·비교·분량 표기', () => {
+    expect(sanitizeHtml('a < b')).toBe('a < b');
+    expect(sanitizeHtml('<3 최고')).toBe('<3 최고');
+    expect(sanitizeHtml('정말 맛있어요 <3')).toBe('정말 맛있어요 <3');
+    expect(sanitizeHtml('물은 <1컵, 소금 <= 1작은술')).toBe('물은 <1컵, 소금 <= 1작은술');
+  });
+
+  it('닫는 태그·주석·닫히지 않은 태그는 제거', () => {
+    expect(sanitizeHtml('a</b> c')).toBe('a c');
+    expect(sanitizeHtml('x<!-- hidden -->y')).toBe('xy');
+    expect(sanitizeHtml('hi <img src=x onerror=alert(1)')).toBe('hi');
   });
 });
