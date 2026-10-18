@@ -11,6 +11,16 @@
 
 ## 2026-10 작업 로그
 
+- **감사 결정 목록 나머지 일괄 처리 — 보안·RLS·제품 동작·인프라** (2026-10-19, 다음 작업 ⑤)
+  - **인증·세션**: 이메일 가입 비밀번호 설정 화면이 proxy 에 막혀 도달 불가 → 온보딩 미완료 세션만 허용(AG2-01, e2e 추가) · 로그아웃을 이 기기만(scope local, AG2-36)으로 + 헤더·설정 로그아웃 단일 출처 `lib/auth/logout.ts`(PAU-63) · 로그아웃 시 SW 레시피 캐시 정리, SW 는 no-store 응답·`/recipes/new` 캐시 안 함(ICL-26, CACHE_VERSION v17) · 분석 동의 철회 즉시 Sentry 중단(ICL-41) · 차단 사용자: 변경 API 403 + 세션 쿠키 삭제(e2e 확장).
+  - **DB·권한**(dev 검증 → prod): `profiles` 공개 컬럼만 SELECT(AG2-18 — 본인 민감 컬럼은 서버가 service-role 로) · 닉네임 lower unique + 형식·사칭 트리거, 서버 경로 `validateUsername` 단일 규칙·대소문자 무시 중복(PAU-52·API1-12·PAU-37), 설정 저장을 `PUT /api/users/me` 로 · 레시피 자식 행(재료·단계·태그·글)이 부모 공개 범위를 따름(API1-18) · '만들어봤어요' 수를 사람 수로(API1-02) · 남의 공개 저장/만든 요리 탭 동작(API1-11) · 관리자 레시피 삭제 service-role(결정 #15) · `meal_type` 가짜 'lunch' 13건 NULL.
+  - **안전·데이터**: 알레르기 자유 입력('계란'·'egg')을 표준 키로 확장해 차단(PAU-67) · 레시피/팁 자식 배열 사전 검증으로 부분 저장·유실 방지(API1-06) · 온보딩 취향 저장 실패 경고 토스트(PAU-36) · 설정 관심사·식단을 키로 저장 + API 1회(PAU-18·19) · 재료 피드백 동의 opt-in · GDPR 내보내기에 내 레시피 노트 포함.
+  - **제품 동작**: 단위 변환 방향·한국 컵 200ml(ICL-27) · 보관위치 1글자 오분류(ICL-19) · 달걀류·콩류 카테고리(ICL-03) · 최근 재료 축출(ICL-12) · 아무도 읽지 않는 즐겨찾기 동기화가 로컬 목록을 지우던 경로 삭제(ICL-29, 테이블·트리거는 유지) · 검색 기록 최신 행·검색어 단위 삭제(API1-07) · 재료 검색 레시피 단위 페이지(API1-23) · 조회수 쿠키+rate limit(API1-25) · 관심사 자동 학습을 같은 요리 종류로(API1-29) · 장보기 요청 내 같은 재료 병합(API1-52) · 답글 있는 삭제글 스레드 보존(API1-04) · 선택 재료 ⓘ 첫 멘션만(PHR-29) · 음성 안내 화면 언어(PHR-07) · 홈 토스트 단일화(PHR-47) · 테마 첫 페인트 전 적용(PAU-51) · `dynamic({ssr:false})` 정리 + 모달 Lazy 단일 출처(PAU-40) · sitemap 레시피 있는 프로필만·인코딩(PAU-54) · robots 단일 출처·lang 와일드카드(PAU-53, public/robots.txt 삭제) · check-expiry 호환 no-op(KMP 호출 유지).
+  - **관리자**: 행동 분석 메뉴(ADM-39) · 남의 레시피 '수정' 숨김(ADM-43) · 검색 디바운스·오류 표시(ADM-09) · 재료 승인 페이지네이션·늦은 응답 폐기(ADM-38).
+  - **인프라**: CI Node 22 · 미사용 xml2js 제거 · `.fridge-backups/` 추적 해제 · 미사용 `lib/api/types.ts`·`lib/utils/unitConversion.ts` 삭제 · 업로드 파일명 랜덤 6자 고정(불안정 vitest 원인).
+  - **검증**: lint 0 · tsc · scan · vitest 748 · build · 전체 e2e(dev) **488 passed · 0 failed · 0 flaky**(2회 — 중간 실패 2건은 프로필 PUT 전체 행 반환·새 '달걀류' 탭 선택자 충돌, 수정 후 통과). dev 에서 로그인 사용자로 타인 email 조회 42501·예약어 닉네임 23514 직접 확인.
+  - **남긴 것(결정·설계 필요)**: 앱 내 알림 다국어(ICL-40 — 알림에 파라미터 컬럼 필요) · 레시피 수정의 요리 유형·커스텀 종류(PHR-37) · 영상 업로드 직접 스토리지(AG2-10) · soft-404(루트 loading) · 약관 동의 IP(API1-22) · `database.types.ts` 재생성 · `engines` 지정(Vercel 빌드 Node 가 바뀜) · 개인정보처리방침 카카오 고지(법무) · 배달 출시 전 목록.
+
 - **관리자 차단·활동 로그·대시보드 통계 테이블 생성 — dev → prod 적용** (2026-10-19)
   - **원인**: `20260209_add_admin_role.sql`·`20260209_enhance_admin_security.sql` 이 dev·prod 어디에도 적용되지 않아 `banned_users`·`admin_actions`·`admin_dashboard_stats`·`reports.action_taken` 이 없었다 → 관리자 차단 저장 실패, 활동 로그·통계 빈 값, 신고 처리(`action_taken` 갱신) 실패. 두 옛 파일엔 "미적용·대체됨, 적용 금지" 머리말을 달았다.
   - **`20261019_admin_moderation_tables.sql`**: 옛 정의를 현재 스키마에 맞춰 재작성 — `admin_id`·`banned_by` NULL 허용(ON DELETE SET NULL 과 NOT NULL 충돌 해소), 통계 뷰는 `status='published'`·`recipe_posts` 기준 + `security_invoker` + service_role 전용, 차단된 사용자는 만료 전 자기 행만 읽기(proxy.ts 가 사용자 컨텍스트로 차단 확인 — 코드 변경 없이 차단 집행), 관리자만 차단 추가·삭제·로그 조회, 로그 insert 는 본인 admin_id 만.
