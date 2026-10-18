@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import DispatchMonitorClient from './DispatchMonitorClient';
 
 export const dynamic = 'force-dynamic';
@@ -7,8 +7,9 @@ export default async function DispatchMonitorPage() {
   // admin layout이 이미 권한 체크 (app/[lang]/admin/layout.tsx).
   const supabase = await createClient();
 
+  // 라이더 이메일 — email 은 authenticated SELECT 권한 밖이라 service-role (AG2-18). 권한 확인은 admin layout.
   const [{ data: riders }, { data: activeOrders }] = await Promise.all([
-    supabase
+    createAdminClient()
       .from('delivery_rider_profiles')
       .select('user_id, status, vehicle_type, total_deliveries, rating, last_seen_at, profile:profiles(username, email)')
       .order('status'),

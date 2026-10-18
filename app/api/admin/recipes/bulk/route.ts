@@ -26,9 +26,18 @@ export async function POST(request: NextRequest) {
   const idList = ids as string[]
 
   if (action === 'delete') {
-    const { error } = await auth.supabase.from('recipes').delete().in('id', idList)
+    // 2026-10-19 (감사 결정 목록 #15): 공개/비공개와 같은 이유로 — 관리자 쿠키 클라이언트는 RLS("본인 레시피만 DELETE")에
+    // 막혀 타인 레시피 삭제가 0행 무음 성공이었다. verifyAdmin 통과 후 service-role, count 는 실제 삭제 행 수.
+    const { data: deleted, error } = await createAdminClient()
+      .from('recipes')
+      .delete()
+      .in('id', idList)
+      .select('id')
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ success: true, count: idList.length })
+    if (!deleted || deleted.length === 0) {
+      return NextResponse.json({ error: '레시피를 찾을 수 없습니다' }, { status: 404 })
+    }
+    return NextResponse.json({ success: true, count: deleted.length })
   }
 
   // publish → 공개, unpublish → 비공개(private). 단건 PATCH 와 동일 의미.

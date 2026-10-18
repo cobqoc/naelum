@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { createServiceClient, removeOAuthIdentity } from '@/lib/supabase/service'
+import { removeOAuthIdentity, newServiceRoleClient } from '@/lib/supabase/service'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { NextResponse } from 'next/server'
 
@@ -19,7 +19,7 @@ function redirectToDuplicateEmail(baseUrl: string, email: string, original: stri
 // exchangeCodeForSession 직후 duplicate 상황이 감지됐을 때 호출해야 한다.
 async function deleteZombieUser(userId: string) {
   try {
-    const admin = createServiceClient()
+    const admin = newServiceRoleClient()
     const { error } = await admin.auth.admin.deleteUser(userId)
     // 2026-10-04 AG2-19: deleteUser 실패는 throw 가 아니라 { error } — 이전엔 로그도 없이 좀비 auth.users 가 남았다.
     if (error) console.error('deleteZombieUser failed:', error)
@@ -77,8 +77,9 @@ export async function GET(request: Request) {
       // 2026-10-04 AG2-45: OAuth 경로의 "email 로 기존 profile" 조회와 아래 "id 로 내 profile" 조회는 서로 독립 → 병렬
       // (로그인당 왕복 1회 절감). 판정 순서는 그대로 — email 충돌이면 좀비 정리 후 duplicate(그때 id 조회 결과는 버림).
       const [emailProfileRes, { data: profile }] = await Promise.all([
+        // 다른 사용자 행을 email 로 찾는 조회 — email 은 authenticated SELECT 권한 밖이라 service-role (AG2-18)
         oauthIdentity
-          ? supabase
+          ? newServiceRoleClient()
               .from('profiles')
               .select('auth_provider, id')
               .eq('email', authData.user.email!)
@@ -107,7 +108,7 @@ export async function GET(request: Request) {
 
       // 트리거가 email 충돌로 profile 생성을 스킵한 케이스 — duplicate로 처리
       if (!profile) {
-        const { data: existingProfile } = await supabase
+        const { data: existingProfile } = await newServiceRoleClient()
           .from('profiles')
           .select('id, auth_provider')
           .eq('email', authData.user.email!)

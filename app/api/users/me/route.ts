@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { sanitizeHtml } from '@/lib/security/sanitize'
+import { validateUsername } from '@/lib/utils/usernameValidator'
+import { usernameIlikePattern } from '@/lib/utils/usernameLookup'
+import { newServiceRoleClient } from '@/lib/supabase/service'
 
 // GET /api/users/me — 현재 로그인 사용자 프로필 조회 (쿠키 인증)
 export async function GET() {
@@ -18,7 +21,8 @@ export async function GET() {
       { data: dietaryPrefs },
       { data: allergies },
     ] = await Promise.all([
-      supabase
+      // 민감 컬럼(email·gender·birth_date·push_notifications)은 authenticated SELECT 권한 밖 → 본인 행만 service-role (AG2-18)
+      newServiceRoleClient()
         .from('profiles')
         .select('id, username, email, full_name, avatar_url, bio, recipes_count, show_saved_to_public, show_cooked_to_public, push_notifications, gender, birth_date, country, created_at')
         .eq('id', user!.id)
@@ -61,20 +65,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '소개는 500자 이내여야 합니다' }, { status: 400 })
     }
     if (username !== undefined) {
-      if (typeof username !== 'string' || username.length < 2 || username.length > 20) {
-        return NextResponse.json({ error: '닉네임은 2~20자여야 합니다' }, { status: 400 })
+      // check-username 과 같은 단일 규칙(형식·욕설·예약어) — 예전엔 소문자 정규식만 봐 예약어('admin')는 통과하고
+      // 한글 닉네임은 거부했다(2026-10-19 감사 API1-12). 웹 설정 화면도 이 라우트로 저장한다(PAU-52).
+      if (typeof username !== 'string') {
+        return NextResponse.json({ error: '닉네임은 2~20자여야 합니다', code: 'invalid_username' }, { status: 400 })
       }
-      if (!/^[a-z0-9_]+$/.test(username)) {
-        return NextResponse.json({ error: '닉네임은 영문 소문자, 숫자, _만 사용 가능합니다' }, { status: 400 })
+      const validation = validateUsername(username)
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error, code: 'invalid_username' }, { status: 400 })
       }
       const { data: existing } = await supabase
         .from('profiles')
         .select('id')
-        .eq('username', username)
+        .ilike('username', usernameIlikePattern(username))
         .neq('id', user!.id)
+        .limit(1)
         .maybeSingle()
       if (existing) {
-        return NextResponse.json({ error: '이미 사용 중인 닉네임입니다' }, { status: 409 })
+        return NextResponse.json({ error: '이미 사용 중인 닉네임입니다', code: 'username_taken' }, { status: 409 })
       }
     }
 
@@ -90,7 +98,8 @@ export async function PUT(request: NextRequest) {
     if (birth_date !== undefined) updates.birth_date = typeof birth_date === 'string' && birth_date ? birth_date : null
     if (country !== undefined) updates.country = typeof country === 'string' ? country : null
 
-    const { data: profile, error } = await supabase
+    // 갱신 결과에 민감 컬럼(gender·birth_date 등)을 돌려주므로 service-role — 필드는 위에서 화이트리스트, 행은 인증된 본인 고정 (AG2-18)
+    const { data: profile, error } = await newServiceRoleClient()
       .from('profiles')
       .update(updates)
       .eq('id', user!.id)
@@ -98,6 +107,14 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) {
+      // 동시 변경 경합 — lower(username) unique 인덱스 위반은 중복과 같은 409
+      if (error.code === '23505') {
+        return NextResponse.json({ error: '이미 사용 중인 닉네임입니다', code: 'username_taken' }, { status: 409 })
+      }
+      // DB 트리거(20261019_username_rules.sql)의 형식·사칭 거부
+      if (error.code === '23514') {
+        return NextResponse.json({ error: '사용할 수 없는 닉네임입니다', code: 'invalid_username' }, { status: 400 })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 

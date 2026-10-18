@@ -66,13 +66,19 @@ export async function DELETE(
     return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
 
-  const { error } = await auth.supabase
+  // 2026-10-19 (감사 결정 목록 #15): 관리자 쿠키 클라이언트는 RLS("본인 레시피만 DELETE")에 막혀 타인 레시피 삭제가
+  // 0행 무음 성공이었다 → 관리자 확인 후 service-role, 삭제 0행(없는 id)이면 404.
+  const { data: deleted, error } = await createAdminClient()
     .from('recipes')
     .delete()
     .eq('id', id)
+    .select('id')
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!deleted || deleted.length === 0) {
+    return NextResponse.json({ error: '레시피를 찾을 수 없습니다' }, { status: 404 })
   }
 
   return NextResponse.json({ success: true, message: '레시피가 삭제되었습니다' })
