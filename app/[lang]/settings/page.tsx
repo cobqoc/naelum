@@ -305,6 +305,9 @@ export default function SettingsPage() {
     setAvatarUrl(null);
   };
 
+  // 업로드 실패는 throw → saveProfile 의 catch 가 에러 토스트로 표면화하고 프로필 저장을 멈춘다.
+  // (예전엔 실패 시 미리보기 data: URL 을 돌려줘 base64 가 profiles.avatar_url 에 저장됐다 — PAU-17,
+  //  avatars 정책 수정 20261004_fix_avatars_storage_policies.sql 이 2026-10-18 적용돼 업로드가 정상 동작.)
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile || !profile) return avatarUrl;
 
@@ -315,10 +318,7 @@ export default function SettingsPage() {
     const { error } = await uploadToBucket(supabase, 'avatars', filePath, avatarFile);
     if (error) {
       console.error('Avatar upload error:', error);
-      // 2026-10-04 PAU-17(결정 대기 — 2026-10-04 감사 결정 목록): 실패 시 미리보기 data: URL 을 돌려줘 base64 가
-      // profiles.avatar_url 에 저장된다. 지금 avatars 스토리지 정책상 업로드가 항상 실패해 이 폴백이 사실상 유일한
-      // 아바타 변경 경로라 그대로 둔다. 정책(20261004_fix_avatars_storage_policies.sql) 적용 후 폴백 제거를 결정할 것.
-      return avatarUrl;
+      throw error;
     }
 
     const publicUrl = getPublicUrl(supabase, 'avatars', filePath);
