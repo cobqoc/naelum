@@ -1,4 +1,5 @@
 import { guardAdminApi } from '@/lib/api/adminGuard'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 // GET /api/admin/dashboard — 대시보드 통계 + 최근 관리자 활동
@@ -12,8 +13,9 @@ export async function GET(request: NextRequest) {
 
   // 통계 뷰(1행)와 최근 활동은 독립 → 병렬. 원본은 두 read 의 error 를 조용히 무시하고
   // 빈 값으로 렌더했으므로 동작 보존: 실패해도 null/[] 로 내려보낸다(표면화는 별도 fix).
+  // 통계 뷰는 service_role 전용(20261019_admin_moderation_tables.sql) — 위 guard 가 관리자 확인을 마친 뒤 읽는다.
   const [statsRes, actionsRes] = await Promise.all([
-    auth.supabase
+    createAdminClient()
       .from('admin_dashboard_stats')
       .select('total_users, new_users_week, new_users_month, total_recipes, new_recipes_week, pending_reports, banned_users_count, views_today, comments_week')
       .single(),

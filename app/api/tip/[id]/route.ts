@@ -2,7 +2,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 // 2026-10-04 API1-37: tip_steps·tip_tags 행 매핑이 POST 와 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
-import { buildTipStepRows, buildTipTagRows } from '@/lib/api/recipeChildRows';
+import { buildTipStepRows, buildTipTagRows, validateTipChildren } from '@/lib/api/recipeChildRows';
 import { firstOfEmbed } from '@/lib/queries/recipeCards';
 
 // GET /api/tip/[id]
@@ -110,6 +110,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
   if (description && description.length > 500) {
     return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 });
+  }
+  // 자식 배열을 부모 쓰기 전에 검증 — 실패 시 부분 저장 대신 400 (API1-06)
+  const childError = validateTipChildren({ steps, tags });
+  if (childError) {
+    return NextResponse.json({ error: childError }, { status: 400 });
   }
 
   // is_draft 는 명시 전송 시에만 갱신 — draft 팁을 편집으로 발행(is_draft=false)할 수 있게(H16).

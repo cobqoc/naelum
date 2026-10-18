@@ -33,7 +33,7 @@ export async function GET() {
       interestsRes, dietaryRes, allergiesRes,
       fridgeRes, favoritesRes, termsRes,
       foldersRes, savesRes, commentsRes, ratingsRes,
-      likesRes, viewsRes, notesRes,
+      likesRes, viewsRes, _notesPlaceholder,
       sessionsRes, expLogsRes, badgesRes,
       shoppingListsRes, shoppingItemsRes,
       mealPlansRes, notifsRes, searchHistRes,
@@ -63,8 +63,9 @@ export async function GET() {
       fetchAllData(() => sb.from('post_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_likes').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('recipe_views').select('*').eq('user_id', uid)),
-      // recipe_notes 는 현재 작성자 레시피 노트(tip/warning/info) 테이블로 user_id 컬럼이 없다(42703) → 빈 배열.
-      fetchAllDataIfExists(() => sb.from('recipe_notes').select('*').eq('user_id', uid)),
+      // recipe_notes 는 작성자 레시피 노트(tip/warning/info) — user_id 가 없어 아래 Stage 2 에서 내 레시피 id 로 가져온다
+      // (2026-10-19 감사 결정: 내가 쓴 레시피의 노트 포함). 자리 유지용 빈 값.
+      Promise.resolve({ data: [] as unknown[] }),
       fetchAllData(() => sb.from('cooking_sessions').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('experience_logs').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('user_badges').select('*').eq('user_id', uid)),
@@ -107,7 +108,7 @@ export async function GET() {
     const orderIds = ((ordersRes.data as WithId[] | null) ?? []).map(o => o.id);
 
     const emptyData = Promise.resolve({ data: [] as unknown[] });
-    const [recipeIngsRes, recipeStepsRes, recipeTagsRes, tipStepsRes, tipTagsRes, mealPlanItemsRes, orderItemsRes] = await Promise.all([
+    const [recipeIngsRes, recipeStepsRes, recipeTagsRes, tipStepsRes, tipTagsRes, mealPlanItemsRes, orderItemsRes, myRecipeNotesRes] = await Promise.all([
       recipeIds.length ? fetchAllData(() => sb.from('recipe_ingredients').select('*').in('recipe_id', recipeIds)) : emptyData,
       recipeIds.length ? fetchAllData(() => sb.from('recipe_steps').select('*').in('recipe_id', recipeIds)) : emptyData,
       recipeIds.length ? fetchAllData(() => sb.from('recipe_tags').select('*').in('recipe_id', recipeIds)) : emptyData,
@@ -115,6 +116,7 @@ export async function GET() {
       tipIds.length ? fetchAllData(() => sb.from('tip_tags').select('*').in('tip_id', tipIds)) : emptyData,
       mealPlanIds.length ? fetchAllData(() => sb.from('meal_plan_items').select('*').in('meal_plan_id', mealPlanIds)) : emptyData,
       orderIds.length ? fetchAllDataIfExists(() => sb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
+      recipeIds.length ? fetchAllDataIfExists(() => sb.from('recipe_notes').select('*').in('recipe_id', recipeIds)) : emptyData,
     ]);
 
     const exportData = {
@@ -145,7 +147,7 @@ export async function GET() {
         recipe_ingredients: recipeIngsRes.data ?? [],
         recipe_steps: recipeStepsRes.data ?? [],
         recipe_tags: recipeTagsRes.data ?? [],
-        recipe_notes: notesRes.data ?? [],
+        recipe_notes: myRecipeNotesRes.data ?? [],
         recipe_folders: foldersRes.data ?? [],
         tips: tipsRes.data ?? [],
         tip_steps: tipStepsRes.data ?? [],

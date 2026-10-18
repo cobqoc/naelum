@@ -93,9 +93,16 @@ export default function PostCard({ post, currentUserId, recipeId, isReply = fals
   };
 
   if (post.is_deleted) {
+    // 답글이 남은 삭제글 — 자리 표시 + 답글은 그대로 보여 스레드를 보존(감사 API1-04, 피드 GET 이 이런 글만 돌려준다)
     return (
-      <div className={`p-4 rounded-xl bg-background-tertiary/50 ${isReply ? 'ml-8 md:ml-12' : ''}`}>
-        <p className="text-text-muted italic text-sm">{tc.deleted}</p>
+      <div className={isReply ? 'ml-8 md:ml-12' : ''}>
+        <div className="p-4 rounded-xl bg-background-tertiary/50">
+          <p className="text-text-muted italic text-sm">{tc.deleted}</p>
+        </div>
+        {!isReply && repliesCount > 0 && (
+          <PostReplies parentId={post.id} recipeId={recipeId} currentUserId={currentUserId}
+            onReplyDelete={(id) => { onDelete(id); setRepliesCount(c => Math.max(0, c - 1)); }} />
+        )}
       </div>
     );
   }

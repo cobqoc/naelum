@@ -2,6 +2,7 @@ import { guardAdminApi } from '@/lib/api/adminGuard'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePagination } from '@/lib/api/pagination'
 import { quoteOrFilterValue } from '@/lib/api/sanitizeSearch'
+import { createAdminClient } from '@/lib/supabase/server'
 
 // GET /api/admin/users - 사용자 목록 조회
 export async function GET(request: NextRequest) {
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') || ''
   const role = searchParams.get('role') || ''
 
-  let query = auth.supabase
+  // 이메일 표시·검색 — email 은 authenticated SELECT 권한 밖이라 관리자 확인(guard) 뒤 service-role (AG2-18)
+  let query = createAdminClient()
     .from('profiles')
     .select('id, username, email, role, avatar_url, created_at, recipes_count', { count: 'exact' })
     .order('created_at', { ascending: false })

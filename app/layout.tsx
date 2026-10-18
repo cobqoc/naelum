@@ -90,8 +90,18 @@ export default function RootLayout({
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   return (
-    <html lang="ko">
+    // data-theme 는 아래 인라인 스크립트가 첫 페인트 전에 붙인다 → React 가 모르는 속성이라 html 만 경고 억제
+    <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* 테마를 첫 페인트 전에 적용 — 예전엔 hydration 뒤 effect 에서만 붙여 라이트 사용자가 매 로드마다
+            다크 화면을 0.2s 봤다(2026-10-19 감사 PAU-51). lib/theme/context.tsx 의 저장 키·계산과 같다.
+            CSP script-src 가 'unsafe-inline' 을 허용(next.config.ts). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t)}catch(e){}",
+          }}
+        />
         {supabaseUrl && <link rel="preconnect" href={supabaseUrl} />}
         {supabaseUrl && <link rel="dns-prefetch" href={supabaseUrl} />}
       </head>

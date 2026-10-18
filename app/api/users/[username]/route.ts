@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api/auth'
 import { sanitizeHtml } from '@/lib/security/sanitize'
+import { newServiceRoleClient } from '@/lib/supabase/service'
 
 // GET /api/users/[username] - 사용자 프로필 조회
 export async function GET(
@@ -161,7 +162,9 @@ export async function PUT(
   const sanitizedFullName = full_name ? sanitizeHtml(full_name) : full_name;
   const sanitizedBio = bio ? sanitizeHtml(bio) : bio;
 
-  const { data: updatedProfile, error } = await supabase
+  // 갱신 결과 전체 행(.select())에 민감 컬럼이 포함돼 authenticated 로는 읽을 수 없다(20261019_profiles_column_privileges.sql)
+  // → 위에서 본인 확인(profile.id === user.id)을 마친 뒤 service-role, 행은 본인 고정 (AG2-18)
+  const { data: updatedProfile, error } = await newServiceRoleClient()
     .from('profiles')
     .update({
       full_name: sanitizedFullName,

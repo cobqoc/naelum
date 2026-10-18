@@ -48,7 +48,7 @@ describe('buildRecipePayload', () => {
     expect(p.tags).toEqual([]);
     expect(p.ingredients).toEqual([]);
     expect(p.steps).toEqual([]);
-    expect(p.meal_type).toBe('lunch');
+    expect('meal_type' in p).toBe(false);
     expect(p.is_remix).toBe(false);
     expect(p.original_recipe_id).toBeNull();
   });

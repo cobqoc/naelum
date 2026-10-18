@@ -1,4 +1,5 @@
 import type { RecipeIngredient, RecipeStep } from '@/lib/constants/recipe';
+import { parseQuantity } from '@/lib/shopping-list/quantity';
 
 // handleSubmit·handleDraft 의 payload 빌딩이 byte-identical 중복(~75줄 × 2) 이라
 // 단일 진실 소스로 추출. 차이는 `status: 'draft'` 한 줄뿐 — options.status 로 분기.
@@ -63,7 +64,8 @@ export function buildRecipePayload(
     dish_type: state.dishType === 'other' && state.customDishType.trim()
       ? state.customDishType.trim()
       : state.dishType,
-    meal_type: 'lunch',
+    // meal_type 은 보내지 않는다 — 폼에 식사 시간 입력이 없는데 'lunch' 를 지어 저장하던 가짜 값(2026-10-04 감사 PHR-05).
+    // 키가 없으면 새 레시피는 NULL, 수정은 기존 값을 유지한다(pickEditableRecipeColumns).
     is_vegetarian: state.isVegetarian,
     is_vegan: state.isVegan,
     is_gluten_free: state.isGlutenFree,
@@ -76,7 +78,7 @@ export function buildRecipePayload(
     ingredients: validIngredients.map(i => ({
       ingredient_name: i.ingredient_name.trim(),
       ingredient_id: i.ingredient_id ?? null,
-      quantity: parseFloat(i.quantity) || null,
+      quantity: parseQuantity(i.quantity) || null,
       unit: (i.unit && i.unit !== '선택') ? i.unit : null,
       notes: i.notes.trim() || null,
       is_optional: i.is_optional,

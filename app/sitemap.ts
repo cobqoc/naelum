@@ -51,10 +51,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq('status', 'published')
         .order('updated_at', { ascending: false }),
     ),
+    // 레시피를 하나 이상 가진 프로필만 — 가입만 하고 끝낸 임시 닉네임(user_…) 계정의 빈 프로필이 대량 색인되던 것
+    // (2026-10-19 감사 PAU-54). onboarding_completed 는 anon 에 SELECT 권한이 없어 recipes_count 로 거른다.
     fetchAllRows<{ username: string | null; created_at: string }>(
       () => supabase
         .from('profiles')
         .select('username, created_at')
+        .gt('recipes_count', 0)
         .order('created_at', { ascending: false }),
     ),
   ]);
@@ -82,7 +85,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const profilePages: MetadataRoute.Sitemap = profiles
     .filter((profile) => profile.username)
     .map((profile) =>
-      entry(`/@${profile.username}`, {
+      // 한글 닉네임 — sitemaps.org 는 <loc> 이스케이프를 요구
+      entry(`/@${encodeURIComponent(profile.username as string)}`, {
         lastModified: new Date(profile.created_at),
         changeFrequency: 'weekly',
         priority: 0.5,

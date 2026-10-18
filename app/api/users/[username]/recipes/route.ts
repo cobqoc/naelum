@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { newServiceRoleClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePagination } from '@/lib/api/pagination'
 import { fetchAllRows } from '@/lib/supabase/fetchAll'
@@ -57,6 +58,13 @@ export async function GET(
     })
   }
 
+  // 남의 '저장한/만든 요리' 공개 탭 — recipe_saves·cooking_sessions RLS 는 본인 행만 보여 공개 설정이 항상 빈 목록이었다
+  // (2026-10-19 감사 API1-11). 위에서 공개 플래그를 확인한 뒤에만 service-role 로 읽되, 공개 레시피만(아래 inner +
+  // status 필터 — service-role 은 레시피 RLS 를 우회하므로) 그리고 저장 메모(notes)는 본인에게만 돌려준다.
+  const othersPublicTab = !isOwnProfile && (type === 'saved' || type === 'cooked')
+  const tabReader = othersPublicTab ? newServiceRoleClient() : supabase
+  const recipeEmbed = othersPublicTab ? 'recipe:recipes!inner' : 'recipe:recipes'
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let recipes: any[] = []
   let count = 0
@@ -85,12 +93,12 @@ export async function GET(
     }
 
     case 'saved': {
-      const result = await supabase
+      let savedQuery = tabReader
         .from('recipe_saves')
         .select(`
           created_at,
-          notes,
-          recipe:recipes(
+          ${isOwnProfile ? 'notes,' : ''}
+          ${recipeEmbed}(
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
@@ -98,11 +106,15 @@ export async function GET(
           )
         `, { count: 'exact' })
         .eq('user_id', profile.id)
+      if (othersPublicTab) savedQuery = savedQuery.eq('recipe.status', 'published')
+      const result = await savedQuery
         .order('created_at', { ascending: false })
         .range(offset, rangeEnd)
 
       // 2026-10-04 API1-10: RLS 로 가려진(비공개 전환된) 레시피는 recipe=null 임베드 → id 없는 항목 제외(정상 항목 동일)
-      recipes = result.data?.filter(s => s.recipe != null).map(s => ({ ...s.recipe, save_notes: s.notes })) || []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const savedRows = (result.data ?? []) as any[]
+      recipes = savedRows.filter(s => s.recipe != null).map(s => ({ ...s.recipe, save_notes: isOwnProfile ? s.notes : null }))
       count = result.count || 0
       break
     }
@@ -145,12 +157,13 @@ export async function GET(
       const embedOf = (s: CookedSessionRow) => (Array.isArray(s.recipe) ? s.recipe[0] : s.recipe)
       let allSessions: CookedSessionRow[] = []
       try {
-        allSessions = await fetchAllRows<CookedSessionRow>(() => supabase
+        allSessions = await fetchAllRows<CookedSessionRow>(() => {
+          const q = tabReader
           .from('cooking_sessions')
           .select(`
           completed_at,
           photo_url,
-          recipe:recipes(
+          ${recipeEmbed}(
             id, title, description, thumbnail_url, display_image,
             prep_time_minutes, cook_time_minutes, difficulty_level,
             average_rating, views_count,
@@ -159,7 +172,9 @@ export async function GET(
         `)
           .eq('user_id', profile.id)
           .not('completed_at', 'is', null)
-          .order('completed_at', { ascending: false }))
+          return (othersPublicTab ? q.eq('recipe.status', 'published') : q)
+            .order('completed_at', { ascending: false })
+        })
       } catch (e) {
         console.error('[recipes] cooked sessions read failed:', e)
       }

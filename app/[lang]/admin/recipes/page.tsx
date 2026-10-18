@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
 import { useToast } from '@/lib/toast/context';
+import { useAuth } from '@/lib/auth/context';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { useI18n } from '@/lib/i18n/context';
 import { DIFFICULTY_LABELS } from '@/lib/types/recipe';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
@@ -36,6 +38,8 @@ const STATUS_TABS: { key: string; label: string }[] = [
 ];
 
 export default function AdminRecipesPage() {
+  // 편집 화면·PUT 은 작성자만 허용 — 남의 레시피 행의 '수정'은 열자마자 권한 없음으로 튕겼다(2026-10-19 감사 ADM-43)
+  const { user: currentUser } = useAuth();
   const toast = useToast();
   const { t } = useI18n();
   const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
@@ -57,6 +61,9 @@ export default function AdminRecipesPage() {
   >(null);
   const [deleting, setDeleting] = useState(false);
 
+  // 검색어는 300ms 멈춘 뒤에만 요청 — 키 입력마다 요청해 관리자 API 공용 rate limit(100회/10분)을 소진했다(ADM-09)
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const requestSeq = useRef(0);
   const loadRecipes = useCallback(async () => {
     const seq = ++requestSeq.current;
@@ -66,13 +73,17 @@ export default function AdminRecipesPage() {
       limit: '20',
       sort,
       order,
-      ...(search && { search }),
+      ...(debouncedSearch && { search: debouncedSearch }),
       ...(status && { status }),
     });
 
     try {
       const res = await fetch(`/api/admin/recipes?${params}`);
       const data = await res.json();
+      if (seq === requestSeq.current && !res.ok) {
+        // 429(rate limit)·500 를 빈 목록으로 숨기지 않고 알린다(ADM-09)
+        toast.error(data?.error || '레시피 목록을 불러오지 못했습니다');
+      }
       // 검색어를 빠르게 바꾸면 요청이 겹친다 — 마지막 요청의 응답만 반영(늦게 온 옛 응답이 최신 결과를 덮지 않게, 2026-10-04)
       if (seq !== requestSeq.current) return;
 
@@ -88,7 +99,7 @@ export default function AdminRecipesPage() {
     }
     setSelected(new Set()); // 목록이 바뀌면 선택 초기화 — 선택은 페이지 단위
     setLoading(false);
-  }, [page, search, status, sort, order, toast]);
+  }, [page, debouncedSearch, status, sort, order, toast]);
 
   useEffect(() => {
     loadRecipes();
@@ -362,13 +373,15 @@ export default function AdminRecipesPage() {
                         >
                           {recipe.status === 'published' ? '비공개' : '공개'}
                         </button>
-                        <Link
-                          href={`/recipes/${recipe.id}/edit`}
-                          target="_blank"
-                          className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors"
-                        >
-                          수정
-                        </Link>
+                        {recipe.author?.id === currentUser?.id && (
+                          <Link
+                            href={`/recipes/${recipe.id}/edit`}
+                            target="_blank"
+                            className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 transition-colors"
+                          >
+                            수정
+                          </Link>
+                        )}
                         <button
                           onClick={() => handleDelete(recipe)}
                           className="px-3 py-1 text-xs rounded bg-error/20 text-error hover:bg-error/30 transition-colors"

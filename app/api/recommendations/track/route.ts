@@ -111,15 +111,18 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
 
         if (!existingInterest) {
-          // Auto-add cuisine interest based on repeated interactions
+          // Auto-add cuisine interest based on repeated interactions — *같은 요리 종류* 의 긍정 상호작용만 센다.
+          // 예전엔 요리 종류 조건이 없어, 한식 3번 저장 뒤 이탈리안을 처음 저장해도 '이탈리안' 이 바로 관심사로
+          // 추가됐다(2026-10-19 감사 API1-29).
           const { count } = await supabase
             .from('recommendation_history')
-            .select('id', { count: 'exact', head: true })
+            .select('id, recipes!inner(cuisine_type)', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .in('recommendation_type', ['personalized', 'ingredients', 'trending'])
             .gte('interaction_weight', 0.5)
+            .eq('recipes.cuisine_type', recipe.cuisine_type)
 
-          // After 3+ positive interactions, auto-learn the preference
+          // After 3+ positive interactions with this cuisine, auto-learn the preference
           if ((count || 0) >= 3) {
             const { error: interestErr } = await supabase
               .from('user_interests')

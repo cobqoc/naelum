@@ -12,8 +12,8 @@ import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { CATEGORY_ICONS } from '../_components/tipCategories';
 
-const ReportModal = dynamic(() => import('@/components/Common/ReportModal'), { ssr: false });
-const ConfirmDialog = dynamic(() => import('@/components/Common/ConfirmDialog'), { ssr: false });
+import ReportModal from '@/components/LazyReportModal';
+const ConfirmDialog = dynamic(() => import('@/components/Common/ConfirmDialog'), { loading: () => null });
 
 // 2026-05-25 한글 → 영문 key 마이그레이션. 표시는 t.tipForm.categories[key].
 // 아이콘 맵은 tip/new·edit 와 공용 (PAU-27, 2026-10-04 — 같은 값이 세 파일에 복제돼 있었음)

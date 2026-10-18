@@ -73,3 +73,6 @@ kor.traineddata
 # 루트 임시/스크래치 파일 (CSS recovery 등)
 /_*.txt
 /_*.css
+
+# 냉장고 디자인 로컬 백업 (2026-10-19 추적 해제 — 감사 TT-10, 5MB)
+.fridge-backups/

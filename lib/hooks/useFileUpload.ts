@@ -66,7 +66,8 @@ export interface UseFileUploadResult {
 export function buildUploadFileName(userId: string, prefix: string, originalName: string): string {
   const dot = originalName.lastIndexOf('.');
   const ext = dot > 0 && dot < originalName.length - 1 ? originalName.slice(dot + 1) : 'bin';
-  return `${userId}/${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+  // 랜덤 6자 — substring(7) 은 toString(36) 길이에 따라 5~6자 이상이 섞여 형식(rand6)이 흔들렸다(2026-10-19)
+  return `${userId}/${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8).padEnd(6, '0')}.${ext}`;
 }
 
 /**

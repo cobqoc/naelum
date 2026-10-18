@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useToast } from '@/lib/toast/context';
 import InputBoxWrapper, { INPUT_INNER_STYLE, INPUT_INNER_COMFORTABLE_CLASS } from '@/components/UI/InputBoxWrapper';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 
 interface User {
   id: string;
@@ -29,6 +30,9 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
 
+  // 검색어는 300ms 멈춘 뒤에만 요청(ADM-09)
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const requestSeq = useRef(0);
   const loadUsers = useCallback(async () => {
     const seq = ++requestSeq.current;
@@ -36,12 +40,16 @@ export default function AdminUsersPage() {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: '20',
-      ...(search && { search })
+      ...(debouncedSearch && { search: debouncedSearch })
     });
 
     try {
       const res = await fetch(`/api/admin/users?${params}`);
       const data = await res.json();
+      if (seq === requestSeq.current && !res.ok) {
+        // 429·500 을 빈 목록으로 숨기지 않고 알린다(ADM-09)
+        toast.error(data?.error || '사용자 목록을 불러오지 못했습니다');
+      }
       // 검색어를 빠르게 바꾸면 요청이 겹친다 — 마지막 요청의 응답만 반영(늦게 온 옛 응답이 최신 결과를 덮지 않게, 2026-10-04)
       if (seq !== requestSeq.current) return;
 
@@ -56,7 +64,7 @@ export default function AdminUsersPage() {
     }
 
     setLoading(false);
-  }, [page, search, toast]);
+  }, [page, debouncedSearch, toast]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

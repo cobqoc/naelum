@@ -1057,6 +1057,7 @@ export const ko = {
     errorPrefix: '저장 중 오류가 발생했습니다',
     errorUnknown: '알 수 없는 오류',
     errorAuthMissing: '사용자 인증 정보를 찾을 수 없습니다',
+    preferencesPartialFail: '일부 취향 정보(관심사·식단·알레르기)를 저장하지 못했어요. 설정에서 다시 입력해 주세요',
     interests: {
       title: '관심 요리 선택',
       subtitle: '관심 있는 요리를 선택하세요 (최소 3개 권장)',

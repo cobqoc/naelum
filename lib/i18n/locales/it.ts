@@ -1058,6 +1058,7 @@ export const it = {
     errorPrefix: 'Errore durante il salvataggio',
     errorUnknown: 'Errore sconosciuto',
     errorAuthMissing: 'Autenticazione utente non trovata',
+    preferencesPartialFail: 'Non è stato possibile salvare alcune preferenze (interessi, dieta, allergie). Reinseriscile nelle Impostazioni',
     interests: {
       title: 'Seleziona interessi',
       subtitle: 'Scegli le cucine che ti piacciono (3+ consigliati)',

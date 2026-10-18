@@ -44,7 +44,7 @@
 - `recipes`: 아래 "📌 데이터 현황 > 레시피 DB" 절 참조 (published; MAFF 2,050개 2026-05-13 삭제됨)
 - `ingredients_master`: **dev 281개(2026-06 기준, 현재 dev 정지로 미확인) / prod 241개(2026-10-04 실측)** (전부 approved. 2026-06-02 정리 후 베이스 재료만 유지. **2026-06-04 prod에 흔한 재료 14종 보강 + `shelf_life_days`(보관기간) 컬럼·데이터 69종 추가**)
 - `shopping_list_items`: ingredient_id 컬럼 추가 완료
-- **dev ↔ prod 는 완전 동기 아님** — 배달 테이블은 dev 전용(아래 "배달 DB"), 과거 drift 기록 있음(`supabase/migrations/20260601_social_unique_constraints_dev_drift.sql`·`20260603_drop_legacy_cruft.sql` 주석). 리포에 정의가 없는 DB-only 객체도 있음(예: `push_tokens` 테이블 — `app/api/push-tokens/route.ts` 가 사용). `delete_user()` 는 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 리포에 백필됨(미적용, prod 정의와 동일). 신규 변경은 반드시 `supabase/migrations/` 경유
+- **dev ↔ prod 는 완전 동기 아님** — 배달 테이블은 dev 전용(아래 "배달 DB"), 과거 drift 기록 있음(`supabase/migrations/20260601_social_unique_constraints_dev_drift.sql`·`20260603_drop_legacy_cruft.sql` 주석). 리포에 정의가 없는 DB-only 객체도 있음(예: `push_tokens` 테이블 — `app/api/push-tokens/route.ts` 가 사용). `delete_user()` 는 `supabase/migrations/20261004_backfill_delete_user_fn.sql` 로 리포에 백필됨(2026-10-18 dev·prod 적용, prod 정의와 동일). 신규 변경은 반드시 `supabase/migrations/` 경유
 
 ### 주의사항
 - **로컬/dev에서 절대 prod DB 직접 수정 금지**
@@ -1221,14 +1221,18 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **Cloudflare** — naelum.app 앞단에 연결 완료 (무료 플랜)
   - Bot Fight Mode ON, SSL Full (strict), 서울 CDN
 - **AI 크롤러 차단** (`proxy.ts` `BLOCKED_AI_CRAWLERS`) — GPTBot, ClaudeBot, CCBot, Bytespider, AhrefsBot 등 13종, `/robots.txt` 를 제외한 전 경로 403
-- **robots.txt** — 실제 서빙되는 건 `app/robots.ts`: 전 UA `Allow: /` + `/api/`·`/admin/`·`/settings`·`/auth/` Disallow 뿐(AI·SEO 봇 개별 규칙 없음 — AI 크롤러 차단은 위 `proxy.ts` 403 이 담당. Disallow 경로에 lang prefix 가 없어 실제 URL `/ko/admin` 등에는 매칭되지 않음). `public/robots.txt`(AI/SEO 봇 개별 Disallow·검색엔진 허용 목록)는 `app/robots.ts` 에 가려져 **서빙되지 않는 파일** — 처리(삭제 또는 그 규칙을 `app/robots.ts` 로 이식)는 사용자 결정
+- **robots.txt** — 단일 출처 `app/robots.ts`(2026-10-19 `public/robots.txt` 삭제·규칙 이식): AI·SEO 스크래퍼 13종 전체 Disallow + 전 UA 는 `/api/`·`/admin`·`/settings`·`/auth/`·`/signup/set-password`·`/cart/share/` 를 lang 없는 경로와 `/*/` 와일드카드 둘 다로 Disallow(실제 URL 은 `/ko/…`). AI 크롤러는 위 `proxy.ts` 403 으로도 차단
 - **Rate Limiting** — Supabase DB 기반 (`lib/ratelimit.ts` `checkRateLimit`, `supabase/migrations/20260411_rate_limits.sql`)
   - 대표 한도: 검색 30회/분 (IP), 추천 20회/분 (IP), 업로드 10회/분 (유저ID). 그 외(자동완성 60/분, 가입 5/시간, 문의 5/시간, 관리자 API 100/10분, 재료 생성 3/분 등)는 각 라우트의 `checkRateLimit(...)` 호출이 기준
   - 로그인 5회/15분 (IP+email, `lib/security/loginLimiter.ts`)은 **`POST /api/auth/signin`(KMP 앱 경로) 한정** — 웹 로그인 폼은 브라우저에서 `supabase.auth.signInWithPassword` 를 직접 호출(`app/[lang]/signin/page.tsx`)하므로 앱 레벨 잠금 없이 Supabase Auth 자체 rate limit 만 적용. loginLimiter 는 `ENABLE_RATE_LIMITING` 플래그와 무관하게 동작
   - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 — 클라이언트 IP 는 `lib/api/clientIp.ts` `getClientIp` 가 단일 출처(IP 키 rate limit·로그인 잠금 라우트 전부). 예외: 기록용 IP(약관 동의 `app/api/terms/accept`, 관리자 행동 로그 `lib/supabase/admin.ts`)는 `X-Forwarded-For` 사용
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
 - **Rate limits 테이블 정리** — 매일 00:00 UTC(09:00 KST) cron (`/api/cron/cleanup-rate-limits`, `vercel.json` `0 0 * * *` — Vercel Hobby 플랜 cron 은 하루 1회 제한)
-- **미적용 DB 권한 정리 마이그레이션 1건(2026-10-04 작성)** — 공개 저장소라 적용 전까지 SQL 파일을 로컬에만 둔다(`.git/info/exclude`, 내용은 로컬 감사 보고서 `AUDIT_2026-10-04.md` §2). dev → 검증 → prod 적용 후 커밋
+- **profiles 민감 컬럼 비공개(2026-10-19, `20261019_profiles_column_privileges.sql`)** — anon·authenticated 모두 공개 컬럼만 SELECT(email·생년월일·성별·알림·동의 기록·auth_provider 제외). 본인 민감 컬럼은 서버 라우트가 service-role 로 *본인 행만* 읽는다(`/api/users/me`·`onboarding-status`·`cookie-consent`·OAuth 콜백·관리자 화면). **새 공개 컬럼을 추가하면 그 마이그레이션에서 `GRANT SELECT (col)` 도 함께**(기본 권한으로 자동 공개되지 않음). 사용자 클라이언트로 `profiles` 를 `.select()`(전체)·`select('*')` 하면 권한 오류
+- **닉네임 규칙 DB 강제(2026-10-19, `20261019_username_rules.sql`)** — `lower(username)` unique + 변경 시 형식(2~20자 한글·영문·숫자·_)·운영진/브랜드 사칭 트리거(23514). 욕설·전체 예약어는 서버 `validateUsername`(check-username·`PUT /api/users/me`)
+- **레시피 자식 행 공개 범위(2026-10-19)** — recipe_ingredients·steps·tags·posts SELECT 는 부모 레시피가 보일 때만(`EXISTS (select 1 from recipes …)` — recipes RLS 상속). 남의 비공개 레시피 자식은 service-role 로만
+- **관리자 차단(2026-10-19)** — `banned_users`·`admin_actions`·`admin_dashboard_stats`(service_role 전용 뷰). proxy 가 보호·관리자 페이지와 *변경 API* 에서 차단을 확인(페이지 → 홈, API → 403 `banned`, 세션 쿠키 삭제)
+- **DB 함수 권한 정리 마이그레이션(`20261004_secdef_function_grants.sql`)** — 2026-10-18 dev → 검증 → prod 적용 후 커밋. 좋아요 토글 함수에 호출자 본인 확인, rate limit·관리자 집계 함수는 서비스 롤 전용. 그 밖의 Security Advisor 경고(다른 SECURITY DEFINER 함수 실행 권한 등)는 로컬 감사 보고서 결정 목록에서 다룬다
 
 ### 농사로 Open API 현황 (2026-05-08)
 

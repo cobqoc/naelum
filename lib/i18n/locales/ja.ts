@@ -1058,6 +1058,7 @@ export const ja = {
     errorPrefix: '保存中にエラーが発生しました',
     errorUnknown: '不明なエラー',
     errorAuthMissing: 'ユーザー認証情報が見つかりません',
+    preferencesPartialFail: '一部の好み（関心・食事・アレルギー）を保存できませんでした。設定で再入力してください',
     interests: {
       title: '好きな料理を選ぶ',
       subtitle: '興味のある料理を選んでください (3つ以上推奨)',

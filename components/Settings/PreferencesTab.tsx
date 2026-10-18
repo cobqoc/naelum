@@ -10,8 +10,8 @@ interface PreferencesTabProps {
   setDietary: (v: string[]) => void;
   allergies: string;
   setAllergies: (v: string) => void;
-  cuisineOptions: { value: string; icon: string }[];
-  dietaryOptions: string[];
+  cuisineOptions: { value: string; label: string; icon: string }[];
+  dietaryOptions: { value: string; label: string }[];
   // 프라이버시 토글 — 즉시 저장(NotificationsTab 패턴). 부모가 옵티미스틱+롤백 담당.
   showSavedToPublic: boolean;
   showCookedToPublic: boolean;
@@ -67,7 +67,7 @@ export default function PreferencesTab({
               }`}
             >
               <span className="text-lg">{item.icon}</span>
-              <span className="text-xs">{item.value}</span>
+              <span className="text-xs">{item.label}</span>
             </button>
           ))}
         </div>
@@ -79,20 +79,20 @@ export default function PreferencesTab({
         <div className="space-y-2">
           {dietaryOptions.map(item => (
             <button
-              key={item}
-              onClick={() => toggleItem(dietary, setDietary, item)}
+              key={item.value}
+              onClick={() => toggleItem(dietary, setDietary, item.value)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                dietary.includes(item)
+                dietary.includes(item.value)
                   ? 'bg-accent-warm text-background-primary'
                   : 'bg-background-secondary text-text-secondary hover:bg-white/5'
               }`}
             >
               <div className={`w-5 h-5 rounded flex items-center justify-center border ${
-                dietary.includes(item) ? 'border-background-primary' : 'border-white/20'
+                dietary.includes(item.value) ? 'border-background-primary' : 'border-white/20'
               }`}>
-                {dietary.includes(item) && <span className="text-xs">✓</span>}
+                {dietary.includes(item.value) && <span className="text-xs">✓</span>}
               </div>
-              {item}
+              {item.label}
             </button>
           ))}
         </div>

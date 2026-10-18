@@ -22,14 +22,19 @@ const UNITS = INGREDIENT_UNITS;
 const STORAGE_LOCATIONS = ['냉장', '냉동', '상온'];
 
 // 카테고리 ID·이모지만. 표시용 label은 i18n(t.ingredient.categoryLabels)에서 동적 lookup.
-const CATEGORIES: { id: 'veggie' | 'meat' | 'seafood' | 'grain' | 'dairy' | 'seasoning' | 'condiment' | 'oil' | 'sweetener' | 'mushroom' | 'seaweed' | 'nuts' | 'alcohol' | 'seeds' | 'fruit' | 'other'; icon: string }[] = [
+// egg·legume·fermented·spice·processed 추가 — 이 값인 냉장고 항목은 어떤 칩도 활성 표시되지 않아 현재 값이 안 보였다 (감사 ICL-03)
+const CATEGORIES: { id: 'veggie' | 'meat' | 'seafood' | 'egg' | 'grain' | 'legume' | 'dairy' | 'fermented' | 'seasoning' | 'condiment' | 'spice' | 'oil' | 'sweetener' | 'mushroom' | 'seaweed' | 'nuts' | 'alcohol' | 'seeds' | 'processed' | 'fruit' | 'other'; icon: string }[] = [
   { id: 'veggie', icon: '🥬' },
   { id: 'meat', icon: '🥩' },
   { id: 'seafood', icon: '🐟' },
+  { id: 'egg', icon: '🥚' },
   { id: 'grain', icon: '🌾' },
+  { id: 'legume', icon: '🫘' },
   { id: 'dairy', icon: '🧀' },
+  { id: 'fermented', icon: '🫙' },
   { id: 'seasoning', icon: '🥫' },
   { id: 'condiment', icon: '🧂' },
+  { id: 'spice', icon: '🌶️' },
   { id: 'oil', icon: '🫗' },
   { id: 'sweetener', icon: '🍯' },
   { id: 'mushroom', icon: '🍄' },
@@ -37,6 +42,7 @@ const CATEGORIES: { id: 'veggie' | 'meat' | 'seafood' | 'grain' | 'dairy' | 'sea
   { id: 'nuts', icon: '🥜' },
   { id: 'alcohol', icon: '🍷' },
   { id: 'seeds', icon: '🌰' },
+  { id: 'processed', icon: '📦' },
   { id: 'fruit', icon: '🍎' },
   { id: 'other', icon: '📦' },
 ];

@@ -11,6 +11,50 @@
 
 ## 2026-10 작업 로그
 
+- **감사 결정 목록 나머지 일괄 처리 — 보안·RLS·제품 동작·인프라** (2026-10-19, 다음 작업 ⑤)
+  - **인증·세션**: 이메일 가입 비밀번호 설정 화면이 proxy 에 막혀 도달 불가 → 온보딩 미완료 세션만 허용(AG2-01, e2e 추가) · 로그아웃을 이 기기만(scope local, AG2-36)으로 + 헤더·설정 로그아웃 단일 출처 `lib/auth/logout.ts`(PAU-63) · 로그아웃 시 SW 레시피 캐시 정리, SW 는 no-store 응답·`/recipes/new` 캐시 안 함(ICL-26, CACHE_VERSION v17) · 분석 동의 철회 즉시 Sentry 중단(ICL-41) · 차단 사용자: 변경 API 403 + 세션 쿠키 삭제(e2e 확장).
+  - **DB·권한**(dev 검증 → prod): `profiles` 공개 컬럼만 SELECT(AG2-18 — 본인 민감 컬럼은 서버가 service-role 로) · 닉네임 lower unique + 형식·사칭 트리거, 서버 경로 `validateUsername` 단일 규칙·대소문자 무시 중복(PAU-52·API1-12·PAU-37), 설정 저장을 `PUT /api/users/me` 로 · 레시피 자식 행(재료·단계·태그·글)이 부모 공개 범위를 따름(API1-18) · '만들어봤어요' 수를 사람 수로(API1-02) · 남의 공개 저장/만든 요리 탭 동작(API1-11) · 관리자 레시피 삭제 service-role(결정 #15) · `meal_type` 가짜 'lunch' 13건 NULL.
+  - **안전·데이터**: 알레르기 자유 입력('계란'·'egg')을 표준 키로 확장해 차단(PAU-67) · 레시피/팁 자식 배열 사전 검증으로 부분 저장·유실 방지(API1-06) · 온보딩 취향 저장 실패 경고 토스트(PAU-36) · 설정 관심사·식단을 키로 저장 + API 1회(PAU-18·19) · 재료 피드백 동의 opt-in · GDPR 내보내기에 내 레시피 노트 포함.
+  - **제품 동작**: 단위 변환 방향·한국 컵 200ml(ICL-27) · 보관위치 1글자 오분류(ICL-19) · 달걀류·콩류 카테고리(ICL-03) · 최근 재료 축출(ICL-12) · 아무도 읽지 않는 즐겨찾기 동기화가 로컬 목록을 지우던 경로 삭제(ICL-29, 테이블·트리거는 유지) · 검색 기록 최신 행·검색어 단위 삭제(API1-07) · 재료 검색 레시피 단위 페이지(API1-23) · 조회수 쿠키+rate limit(API1-25) · 관심사 자동 학습을 같은 요리 종류로(API1-29) · 장보기 요청 내 같은 재료 병합(API1-52) · 답글 있는 삭제글 스레드 보존(API1-04) · 선택 재료 ⓘ 첫 멘션만(PHR-29) · 음성 안내 화면 언어(PHR-07) · 홈 토스트 단일화(PHR-47) · 테마 첫 페인트 전 적용(PAU-51) · `dynamic({ssr:false})` 정리 + 모달 Lazy 단일 출처(PAU-40) · sitemap 레시피 있는 프로필만·인코딩(PAU-54) · robots 단일 출처·lang 와일드카드(PAU-53, public/robots.txt 삭제) · check-expiry 호환 no-op(KMP 호출 유지).
+  - **관리자**: 행동 분석 메뉴(ADM-39) · 남의 레시피 '수정' 숨김(ADM-43) · 검색 디바운스·오류 표시(ADM-09) · 재료 승인 페이지네이션·늦은 응답 폐기(ADM-38).
+  - **인프라**: CI Node 22 · 미사용 xml2js 제거 · `.fridge-backups/` 추적 해제 · 미사용 `lib/api/types.ts`·`lib/utils/unitConversion.ts` 삭제 · 업로드 파일명 랜덤 6자 고정(불안정 vitest 원인).
+  - **검증**: lint 0 · tsc · scan · vitest 748 · build · 전체 e2e(dev) **488 passed · 0 failed · 0 flaky**(2회 — 중간 실패 2건은 프로필 PUT 전체 행 반환·새 '달걀류' 탭 선택자 충돌, 수정 후 통과). dev 에서 로그인 사용자로 타인 email 조회 42501·예약어 닉네임 23514 직접 확인.
+  - **남긴 것(결정·설계 필요)**: 앱 내 알림 다국어(ICL-40 — 알림에 파라미터 컬럼 필요) · 레시피 수정의 요리 유형·커스텀 종류(PHR-37) · 영상 업로드 직접 스토리지(AG2-10) · soft-404(루트 loading) · 약관 동의 IP(API1-22) · `database.types.ts` 재생성 · `engines` 지정(Vercel 빌드 Node 가 바뀜) · 개인정보처리방침 카카오 고지(법무) · 배달 출시 전 목록.
+
+- **관리자 차단·활동 로그·대시보드 통계 테이블 생성 — dev → prod 적용** (2026-10-19)
+  - **원인**: `20260209_add_admin_role.sql`·`20260209_enhance_admin_security.sql` 이 dev·prod 어디에도 적용되지 않아 `banned_users`·`admin_actions`·`admin_dashboard_stats`·`reports.action_taken` 이 없었다 → 관리자 차단 저장 실패, 활동 로그·통계 빈 값, 신고 처리(`action_taken` 갱신) 실패. 두 옛 파일엔 "미적용·대체됨, 적용 금지" 머리말을 달았다.
+  - **`20261019_admin_moderation_tables.sql`**: 옛 정의를 현재 스키마에 맞춰 재작성 — `admin_id`·`banned_by` NULL 허용(ON DELETE SET NULL 과 NOT NULL 충돌 해소), 통계 뷰는 `status='published'`·`recipe_posts` 기준 + `security_invoker` + service_role 전용, 차단된 사용자는 만료 전 자기 행만 읽기(proxy.ts 가 사용자 컨텍스트로 차단 확인 — 코드 변경 없이 차단 집행), 관리자만 차단 추가·삭제·로그 조회, 로그 insert 는 본인 admin_id 만.
+  - **코드**: 대시보드 API 가 통계 뷰를 관리자 확인 후 service-role 로 읽음 · 대시보드가 삭제된 관리자의 로그(admin=null)에서 깨지던 문제(`action.admin.username`) 수정 · 타입 nullable 반영 · 회귀 e2e `e2e/admin-moderation.spec.ts`(차단 → 목록·로그·통계 반영 → 차단 사용자 보호 경로 거부 → 해제, 일반 사용자 403).
+  - **검증(dev)**: lint 0 · tsc · scan · vitest 740 · build · 전체 e2e **488 passed · 0 failed · 0 flaky · 2 skipped**. anon 은 통계 뷰 권한 거부, 두 테이블은 빈 결과. prod 적용 후 권한·정책 수(2·3)·통계 뷰 값 확인.
+  - **주의**: main 이 아직 옛 코드라 운영 대시보드 통계는 develop → main 머지 전까지 계속 빈 값(뷰가 service_role 전용). 차단 저장·활동 로그·신고 처리는 테이블이 생겨 운영에서 바로 동작. 차단 집행 범위의 후속 검토는 로컬 감사 결정 목록.
+
+- **감사 결정 목록 — 명확한 버그 6건 수정 + 차단 기능 DB 부재 발견** (2026-10-19, 다음 작업 ⑤ 일부)
+  - **수정(항목별 커밋)**: 설정 아바타 업로드 실패 시 base64 를 프로필에 저장하던 폴백 제거(PAU-17 — 아바타 정책 적용으로 업로드 정상, prod data: 아바타 0건) · 운영 빌드가 서버 `console.error`·`warn` 까지 지우던 `removeConsole` 을 error·warn 제외로(빌드 산출물 서버 청크에서 보존 확인) · `sanitizeHtml` 이 `<` 뒤 `>` 가 없으면 끝까지 지우던 문제(`<3`·`a < b`·`<1컵` 보존, TT-25) · 레시피 작성·수정이 `meal_type: 'lunch'` 를 지어 저장(PHR-05 — prod 기존 'lunch' 13건 정리는 별도 결정) · 수량 `1/2` 가 1 로 저장(분수·대분수·½ 파싱, ICL-28 — 범위 `2~3` 은 앞 숫자 유지) · 레시피 작성 재료 행 3~5개일 때 × 비활성(임계 5 → 1, PHR-02, 회귀 e2e 추가).
+  - **검증**: lint 0 · tsc · scan · vitest 740 · build · 전체 e2e(dev) **484 passed · 0 failed · 0 flaky**.
+  - **되돌린 것 — 차단 사용자 강제 로그아웃(AG2-02)**: proxy 를 `is_user_banned` RPC 로 바꾸려다 확인해 보니 **dev·prod 모두 `banned_users` 테이블이 없다**(prod 엔 그 테이블을 참조하는 `is_user_banned` 함수만 있음). `admin_actions`(관리자 행동 로그)·`admin_dashboard_stats`(대시보드 통계 뷰)도 prod 에 없다 — `20260209_add_admin_role.sql` 이 적용되지 않은 채 폐기된 결과. 그래서 관리자 차단은 저장 자체가 실패하고, 관리자 행동 기록·대시보드 통계는 조용히 빈 값이다. 테이블을 새로 만들지(스키마 결정) 기능을 걷어낼지 결정 필요 — proxy 변경은 되돌림.
+  - **남은 것**: ⑤ 나머지(보안·RLS 묶음, 이메일 가입 비밀번호 설정, 제품 동작 결정들 — 로컬 감사 보고서 §3).
+
+- **마이그레이션 3개 dev → prod 적용 — 다음 작업 ④ 완료** (2026-10-18)
+  - **대상**: `20261004_backfill_delete_user_fn.sql`(계정 삭제 함수 정의 백필) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드 정책) · `20261004_secdef_function_grants.sql`(좋아요 토글 함수 호출자 본인 확인 + rate limit·관리자 집계 함수 서비스 롤 전용 — 적용 전까지 로컬 보관하던 파일, 이번에 커밋).
+  - **환경**: baedariyo 일시정지 → naelum-dev 복원 → 적용·검증 → dev 정지·baedariyo 복원.
+  - **dev 사전 대조**: 대상 함수 5개가 prod 와 정의가 달랐다(옛 dev drift — search_path·SECURITY DEFINER 설정·서식 차이, 로직 동일). 마이그레이션이 prod 정의로 덮어써 일치시킴. dev 에는 `avatars` 버킷과 `Anyone can view avatars`(SELECT) 정책이 없어 prod 와 같게 생성(버킷 public).
+  - **검증(dev, 임시 사용자 2명 스크립트 — 적용 전/후 비교)**: 아바타 본인 이름 업로드(설정 `avatars/<uid>-…`·온보딩 `<uid>-…` 경로) 거부 → 성공, 덮어쓰기·삭제 성공, 타인 uid 이름 업로드는 계속 거부. 좋아요: 비로그인 호출 권한 거부, 로그인 사용자가 남의 user_id 로 호출 시 `forbidden`, 본인 토글 정상. rate limit·관리자 집계·정리 함수: anon·로그인 사용자 권한 거부, 서비스 롤 정상. **전체 e2e 482 passed · 0 failed · 0 flaky · 2 skipped**(5.7분).
+  - **prod 적용 후**: 권한 실측 — 대상 7개 함수 anon 실행 불가, 서비스 롤 전용 4개는 authenticated 도 불가, 좋아요·계정 삭제는 authenticated 가능. 아바타 정책 3개 교체 확인. 적용 직후 postgres 로그에 앱 쪽 권한 거부 오류 0.
+  - **후속(결정 필요)**: 설정 화면 아바타 base64 폴백(PAU-17, `app/[lang]/settings/page.tsx`) — 정책이 이제 업로드를 허용하므로 제거 가능. Security Advisor 의 다른 SECURITY DEFINER 실행 권한 경고는 이번 범위 밖(로컬 감사 결정 목록).
+  - **남은 순서**: ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
+- **develop → main 머지·운영 배포 — 다음 작업 ③ 완료** (2026-10-18)
+  - **PR #249**(커밋 29개, 2026-09-28 성능·경량화 + 2026-10-05 감사 수정 + 2026-10-15 배달 봉인·입력칸 수정) → main 머지 커밋 `9cc5899`, Vercel Production 배포 성공(직전 운영 배포는 PR #248, 2026-07-16). CI: Lint + Unit 통과 · Build + E2E 는 secrets 미설정이라 사실상 skip.
+  - **운영 확인(naelum.app, 비로그인)**: `/ko`·`/ko/recipes`·레시피 상세(JSON-LD `Recipe`)·`/ko/kitchen`(재료 241개)·`/ko/signin`·`/ko/tip` 200, 콘솔 오류 0·실패 리소스 0. 서비스 워커 `v16` 제어 중, `/manifest.json`·`/offline.html`·`/robots.txt`·`/sitemap.xml` 200. 배달 봉인: `/ko/delivery`·`/ko/merchant`·`/ko/rider`·`/api/delivery/restaurants` 404. 분석 미동의 상태에서 Sentry 요청 0(지연 로드 동작). 입력칸 모서리 수정 반영(도감 검색 `rounded-xl` → 12px). 운영 로그인 화면은 확인하지 않음(실계정 자격증명 필요).
+  - **남은 순서**: ④ 마이그레이션(→ 같은 날 완료, 위 항목) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
+- **dev 복원 후 전체 e2e·Preview 확인 — 다음 작업 ①·② 완료** (2026-10-18)
+  - **환경**: 무료플랜 활성 2개 한도라 `baedariyo` 일시정지 → `naelum-dev` 복원(요청 후 응답까지 약 15분, 그동안 DNS 미해석) → 확인 후 되돌림(dev 정지·baedariyo 복원). 로컬 develop 은 원격 `bde3168`(2026-10-15 배달 봉인·체크박스/라디오 가시성·입력칸 모서리 수정 — 다른 세션 작업, 이 로그에 기록 없음)로 fast-forward.
+  - **전체 e2e(fresh build, 484건, 2워커)**: **480 passed · 1 failed · 1 flaky · 2 skipped** (6.4분). 실패 1건 = `e2e/delivery.spec.ts` 비로그인 식당 목록 — 화면이 "아직 식당이 없습니다"(목록 API 비정상 응답 → 클라이언트가 빈 목록 유지). 같은 시각(복원 직후 첫 분) dev PostgREST 로그에 "Warp server error: Thread killed by timeout manager" 7건 → **복원 직후 일시 장애**로 판단. 단독 재실행 통과, 배달 스펙 3개(`delivery`·`delivery-full-flow`·`merchant-rider`) 2워커 동시 재실행 34/34 통과. flaky 1건 = `cart.spec` 수량 스테퍼(Mobile Chrome, 재시도 통과 — 알려진 부하 flake 부류).
+  - **Preview(develop 별칭 URL, 2026-10-15 배포본)**: 홈·레시피 목록·레시피 상세·부엌 도감·로그인 화면 — 콘솔 오류 0·실패 리소스 0·로딩 splash 멈춤 없음(claude-in-chrome visibility 우회 적용). 레시피 JSON-LD 파싱 정상. 서비스 워커 `v16` 활성(리포 `public/sw.js` 와 동일), `/offline.html`·`/manifest.json` 200, `sw.js` cache-control `max-age=0, must-revalidate`. 배달 봉인: Preview 환경변수에 `DELIVERY_ENABLED` 가 없어 `/ko/delivery`·`/ko/merchant`·`/ko/rider` 404 확인. **Preview 로그인은 미확인**(비로컬 호스트라 자격증명 입력 불가) — 대신 로컬 prod 서버(`DELIVERY_ENABLED=true npm run start`)에서 `/api/test/signin` 으로 로그인한 뒤 `/ko` SSR HTML 첫 응답에 재료 이모지·보관기간 추정 라벨(`🥔 감자 · 예상 D-4`, purchase_date+shelf_life_days)·명시 유통기한(`🧈 버터 · D-3`)이 포함됨을 확인(추정 라벨은 `_home/helpers.ts` 규칙대로 7일 이내만 표시).
+  - **발견(미수정, 결정 필요)**: ① `e2e/merchant-rider.spec.ts` 가 UI 로 만드는 '테스트 식당' 이 testUser 삭제 후 `owner_id NULL` 고아로 dev 에 누적(442건, 2026-05-30~) — 고아 정리는 `delivery-full-flow.spec` 의 `name LIKE 'E2E%'` 만 잡는다 → 이름을 `E2E …` 로 바꾸거나 정리 조건 확장 ② Vercel Preview 와 로컬 `.env.local` 모두 `DELIVERY_ENABLED` 없음(봉인 규칙은 Preview·로컬에 넣기로 돼 있음) ③ `/ko/signin` 의 `<title>` 이 홈 제목과 동일(전용 메타 없음, 기존 상태).
+  - **남은 순서**: ③ develop → main PR(→ 같은 날 완료, 위 항목) ④ 마이그레이션 dev 적용·검증 → prod(dev 재복원 필요, 그때 baedariyo 재정지) ⑤ 로컬 감사 보고서 결정 목록 ⑥ `package-lock.json` 커밋 여부.
+
 - **앱 전수 감사 + 행위 보존 수정·중복 제거·문서 동기화** (2026-10-04 작업, 2026-10-05 develop 커밋·푸시 — 결정 목록·근거는 로컬 감사 보고서 `AUDIT_2026-10-04.md`. 공개 저장소라 저장소에는 넣지 않음)
   - **발단**(사용자): "앱 전체를 꼼꼼히 — 최적화·중복 코드(한 벌이면 되는 여러 벌)·버그 전수 검사, 기능은 그대로, 기능이 바뀌는 작업은 빼 두고(아침에 확인), 안전망 충분히, 문서도 앱과 일치시키고, 끝나면 테스트까지".
   - **방법**: 영역별 감사 8기(읽기 전용, 470건 발견 — 코드 350 · 문서 불일치 111 · 문서 대조 중 코드 관찰 9) → 소유 파일이 겹치지 않는 구현 6기(API·재료/홈·레시피·인증·설정/프로필/팁·문서) + 리드 직접 수정. 모든 발견을 코드로 재검증(감사 오판 적발: check-expiry 는 KMP 앱이 호출 중이라 삭제 보류, 옛 매칭 상수는 이미 정의 0 등).
@@ -19,9 +63,9 @@
   - **중복 제거(행위 보존, 하네스 증명)**: 레시피 작성↔수정 폼 공용 컴포넌트 6개(`app/[lang]/recipes/_components/`, 진짜 분기는 prop) · 팁 작성↔수정(`app/[lang]/tip/_components/` useTipForm·TipFormFields) · 인증 화면 비밀번호/약관/생년월일/이메일 링크 블록(`components/Auth/`) · 클라이언트 IP 식 21벌(`lib/api/clientIp.ts`) · 관리자 라우트 가드·신고 라우트 3벌·서비스 롤 클라이언트 7벌·2FA 사본 · 같은 이름 그룹 미니시트 · 언어 전환 핸들러 · 관리자 페이지네이션 등.
   - **도구·CI**: CI quality 잡에 `--max-warnings=0` lint 와 `tsc --noEmit` 추가(테스트 파일 타입 오류가 아무 데서도 안 잡히던 구멍) · `scan:fragility` 정직화 2차(JSX 텍스트 한글·lib 헬퍼 경유 간접 read·조인 와일드카드 select 까지 세고 상한을 실측값으로 재잠금 — docs/DATA_LAYER.md 2026-10-04 결산) · e2e 스테일 서버 정리를 globalSetup → 설정 평가 시점으로(`e2e/stale-server.ts`, webServer 재사용 결정보다 먼저) · 줄 수 훅이 모델에게 경고를 실제로 전달 · 7개 로케일에 `satisfies TranslationKeys`.
   - **문서**: 문서↔앱 불일치 111건 대조 → 98건 반영(버전·경로·라우트·데이터 수치(prod 실측)·스캐너 서술·GDPR 현황·삭제된 파일 언급 등). AGENTS.md·README.md 재작성. 리포만으로는 현행 DB 스키마 재현 불가 사실 명시.
-  - **미적용 마이그레이션(작성만, dev → prod 순서로 적용 필요)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
+  - **마이그레이션(작성 당시 미적용 — 2026-10-18 dev·prod 적용 완료)**: `20261004_backfill_delete_user_fn.sql`(prod 에만 있던 계정 삭제 함수 정의 백필, prod 와 동일) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드가 구조적으로 불가능하던 스토리지 정책) · DB 권한 정리 1건은 적용 전까지 로컬 보관(적용 후 커밋).
   - **사용자 결정으로 남긴 것**: 이메일 가입 비밀번호 설정 단계 도달 불가(proxy, 패치 준비) · 보안·권한 관련 항목 다수(로컬 보고서) · prod `removeConsole` 이 서버 에러 로그까지 제거 · 알레르기 자유입력 ↔ 표준키 불일치 · 설정 아바타 base64 폴백(스토리지 정책 적용 후 제거 — 먼저 고쳤다가 정책 미적용 상태에선 아바타 변경이 막혀 되돌림) · 온보딩 선호도 저장 실패 시 완료를 막을지 등 — 로컬 감사 보고서 "결정 필요" 절.
-  - **다음 작업 (순서대로)**: ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
+  - **다음 작업 (순서대로)** — ①~④ 는 2026-10-18 완료(위 항목 참조): ① baedariyo pause → naelum-dev restore → `npx playwright test` 전체 — 로그인이 필요한 e2e 는 dev 정지로 아직 미검증(확인 후 baedariyo 되돌림) ② Vercel Preview 확인 — 아래 2026-09 ① 의 확인 항목 포함(PWA 설치 후 /offline.html·/sw.js 는 dev 서버에서 재현 안 됨) ③ develop → main PR 머지 — 감사 수정의 prod 반영이니 미루지 말 것 ④ 마이그레이션 naelum-dev 적용·검증 → naelum(prod): 위 2개 + 로컬 보관 1건(적용 후 커밋) ⑤ 로컬 감사 보고서의 결정 목록 처리 ⑥ 세션 전부터 미커밋인 `package-lock.json`(Sentry 10.47 → 10.66 등 의존성 갱신) — dependabot PR 과 함께 커밋할지 되돌릴지 결정.
 
 ## 2026-09 작업 로그
 

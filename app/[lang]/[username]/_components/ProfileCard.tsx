@@ -112,7 +112,7 @@ export default function ProfileCard({
                       key={interest}
                       className="px-3 py-1.5 rounded-lg bg-accent-warm/10 text-accent-warm text-sm font-medium border border-accent-warm/20"
                     >
-                      {interestEmojis[interest] || ''} {interest}
+                      {interestEmojis[interest] || ''} {(t.cuisines as Record<string, string>)[interest] ?? interest}
                     </span>
                   ))}
                 </div>
@@ -128,7 +128,7 @@ export default function ProfileCard({
                       key={pref}
                       className="px-3 py-1.5 rounded-lg bg-success/10 text-success text-sm font-medium border border-success/20"
                     >
-                      ✓ {pref}
+                      ✓ {(t.onboarding.dietary.options as Record<string, string>)[pref] ?? pref}
                     </span>
                   ))}
                 </div>

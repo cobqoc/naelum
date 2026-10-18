@@ -1,144 +1,62 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import {
-  gramsToOunces, ouncesToGrams,
-  mlToCups, cupsToMl,
-  mlToTablespoons, tablespoonsToMl,
-  mlToTeaspoons, teaspoonsToMl,
-  kgToLbs, lbsToKg,
-  celsiusToFahrenheit, fahrenheitToCelsius,
-} from '@/lib/utils/unitConversion';
+import { useCallback, useSyncExternalStore } from 'react';
+import { toImperial } from '@/lib/units/imperial';
 
 export type UnitSystem = 'metric' | 'imperial';
 
 const STORAGE_KEY = 'naelum_unit_system';
 
-// Unit mappings: metric -> imperial
-const UNIT_CONVERSIONS: Record<string, {
-  to: string;
-  convert: (v: number) => number;
-  reverse: (v: number) => number;
-}> = {
-  'g': { to: 'oz', convert: gramsToOunces, reverse: ouncesToGrams },
-  'kg': { to: 'lb', convert: kgToLbs, reverse: lbsToKg },
-  'ml': { to: 'cup', convert: mlToCups, reverse: cupsToMl },
-  'L': { to: 'cup', convert: (v) => mlToCups(v * 1000), reverse: (v) => cupsToMl(v) / 1000 },
-  '큰술': { to: 'tbsp', convert: (v) => v, reverse: (v) => v },
-  '작은술': { to: 'tsp', convert: (v) => v, reverse: (v) => v },
-  'tbsp': { to: 'ml', convert: tablespoonsToMl, reverse: mlToTablespoons },
-  'tsp': { to: 'ml', convert: teaspoonsToMl, reverse: mlToTeaspoons },
-  'cup': { to: 'ml', convert: cupsToMl, reverse: mlToCups },
-  'oz': { to: 'g', convert: ouncesToGrams, reverse: gramsToOunces },
-  'lb': { to: 'kg', convert: lbsToKg, reverse: kgToLbs },
-  '°C': { to: '°F', convert: celsiusToFahrenheit, reverse: fahrenheitToCelsius },
-  '°F': { to: '°C', convert: fahrenheitToCelsius, reverse: celsiusToFahrenheit },
-};
+// 저장값은 마운트 후에만 읽는다 — 서버 스냅샷은 항상 'metric'. 예전엔 useState 초기화에서 localStorage 를 읽어
+// Imperial 을 고른 사용자의 첫 클라 렌더가 SSR HTML 과 달라 하이드레이션 불일치가 났다(2026-10-19 감사 ICL-27).
+// 쿠키·사이트 데이터 차단 브라우저는 localStorage 접근이 SecurityError — 항상 try.
+const listeners = new Set<() => void>();
+let cached: UnitSystem | null = null;
 
-// Korean unit aliases
-const UNIT_ALIASES: Record<string, string> = {
-  '그램': 'g',
-  '킬로그램': 'kg',
-  '밀리리터': 'ml',
-  '리터': 'L',
-  '컵': 'cup',
-  '온스': 'oz',
-  '파운드': 'lb',
-};
-
-function normalizeUnit(unit: string): string {
-  return UNIT_ALIASES[unit] || unit;
+function read(): UnitSystem {
+  if (cached) return cached;
+  try {
+    cached = localStorage.getItem(STORAGE_KEY) === 'imperial' ? 'imperial' : 'metric';
+  } catch {
+    cached = 'metric';
+  }
+  return cached;
 }
 
-export interface ConvertedIngredient {
-  ingredient_name: string;
-  quantity: string;
-  unit: string;
-  originalQuantity: string;
-  originalUnit: string;
-  isConverted: boolean;
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+}
+
+function write(next: UnitSystem) {
+  cached = next;
+  try {
+    localStorage.setItem(STORAGE_KEY, next);
+  } catch {
+    // 저장 불가 환경(차단·용량 초과) — 전환은 이 탭에서만 유지
+  }
+  listeners.forEach(l => l());
 }
 
 export function useUnitConversion() {
-  const [system, setSystem] = useState<UnitSystem>(() => {
-    if (typeof window === 'undefined') return 'metric';
-    // 쿠키·사이트 데이터를 차단한 브라우저는 localStorage 접근 자체가 SecurityError — 렌더 중 throw 로
-    // 레시피 화면이 깨지지 않게 기본 단위계로(ICL-27 저장소 안전성 부분, 2026-10-04). 저장값이 있으면 이전과 동일.
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved === 'imperial' ? 'imperial' : 'metric';
-    } catch {
-      return 'metric';
-    }
-  });
+  const system = useSyncExternalStore(subscribe, read, () => 'metric' as UnitSystem);
 
   const toggleSystem = useCallback(() => {
-    setSystem(prev => {
-      const next = prev === 'metric' ? 'imperial' : 'metric';
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {
-        // 저장 불가 환경(차단·용량 초과) — 전환은 이 화면에서만 유지
-      }
-      return next;
-    });
+    write(read() === 'metric' ? 'imperial' : 'metric');
   }, []);
 
   const convertIngredient = useCallback((
     quantity: string,
     unit: string,
   ): { quantity: string; unit: string; isConverted: boolean } => {
-    if (system === 'metric') {
-      return { quantity, unit, isConverted: false };
-    }
-
-    const normalizedUnit = normalizeUnit(unit);
-    const conversion = UNIT_CONVERSIONS[normalizedUnit];
-
-    if (!conversion) {
-      return { quantity, unit, isConverted: false };
-    }
-
-    const numValue = parseFloat(quantity);
-    if (isNaN(numValue)) {
-      return { quantity, unit, isConverted: false };
-    }
-
-    const converted = conversion.convert(numValue);
-    // Format nicely
-    const formatted = converted < 0.01 ? converted.toString() :
-      converted < 1 ? converted.toFixed(2) :
-      converted < 10 ? converted.toFixed(1) :
-      Math.round(converted).toString();
-
-    return {
-      quantity: formatted,
-      unit: conversion.to,
-      isConverted: true,
-    };
+    if (system === 'metric') return { quantity, unit, isConverted: false };
+    return toImperial(quantity, unit);
   }, [system]);
-
-  const convertIngredients = useCallback((
-    ingredients: { ingredient_name: string; quantity: string; unit: string; notes?: string }[]
-  ): ConvertedIngredient[] => {
-    return ingredients.map(ing => {
-      const result = convertIngredient(ing.quantity, ing.unit);
-      return {
-        ingredient_name: ing.ingredient_name,
-        quantity: result.quantity,
-        unit: result.unit,
-        originalQuantity: ing.quantity,
-        originalUnit: ing.unit,
-        isConverted: result.isConverted,
-      };
-    });
-  }, [convertIngredient]);
 
   return {
     system,
     toggleSystem,
     isImperial: system === 'imperial',
     convertIngredient,
-    convertIngredients,
   };
 }

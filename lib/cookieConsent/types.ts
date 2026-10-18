@@ -79,7 +79,12 @@ export function writeStoredConsent(consent: CookieConsent): void {
   } catch {
     // storage 사용 불가 — 무시
   }
+  // instrumentation-client.ts(별도 번들)가 듣는다 — 분석 동의 철회 즉시 Sentry 중단, 새 동의 시 시작 (감사 ICL-41)
+  window.dispatchEvent(new CustomEvent(CONSENT_CHANGED_EVENT, { detail: { analytics: consent.analytics === true } }));
 }
+
+/** instrumentation-client.ts 의 같은 이름 상수와 동기화 유지 (번들 분리로 import 불가) */
+export const CONSENT_CHANGED_EVENT = 'naelum:consent-changed';
 
 // 2026-10-04: 소비처 0 이던 canUseAnalytics·canUseMarketing·DEFAULT_REJECTED·DEFAULT_ACCEPTED_ALL·ConsentChoice 삭제.
 // instrumentation-client.ts 는 번들 분리를 위해 이 파일을 import 하지 않고 자체 _hasAnalyticsConsent() 를 쓴다.

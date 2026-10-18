@@ -88,4 +88,23 @@ test.describe('proxy 게이트 — 미들웨어 인증 최적화 안전망', () 
     const ok = await authenticatedPage.request.get('/ko/recipes/new', { maxRedirects: 0 });
     expect(ok.status()).toBe(200);
   });
+  test('비밀번호 설정: 온보딩 미완료 세션은 폼 렌더, 완료 사용자는 홈으로 (AG2-01)', async ({ authenticatedPage, testUser }) => {
+    const a = admin();
+    await a.from('profiles').update({ onboarding_completed: false }).eq('id', testUser.userId);
+    try {
+      const r = await authenticatedPage.request.get('/ko/signup/set-password', { maxRedirects: 0 });
+      expect(r.status()).toBe(200);
+      await authenticatedPage.goto('/ko/signup/set-password', { waitUntil: 'domcontentloaded' });
+      await expect(authenticatedPage).toHaveURL(/\/ko\/signup\/set-password$/);
+      await expect(authenticatedPage.locator('input[type="password"]').first()).toBeVisible({ timeout: 15000 });
+    } finally {
+      await a.from('profiles').update({ onboarding_completed: true, onboarding_step: 4 }).eq('id', testUser.userId);
+    }
+    const done = await authenticatedPage.request.get('/ko/signup/set-password', { maxRedirects: 0 });
+    expect(done.status()).toBe(307);
+    expect(done.headers()['location'] ?? '').toMatch(/\/ko\/?$/);
+    // 다른 auth-only 경로는 그대로 홈으로
+    const signup = await authenticatedPage.request.get('/ko/signup', { maxRedirects: 0 });
+    expect(signup.status()).toBe(307);
+  });
 });

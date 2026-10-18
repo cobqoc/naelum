@@ -84,8 +84,8 @@ export function getRecentIngredients(): RecentIngredient[] {
  * 재료를 최근 선택 목록에 추가하거나 업데이트
  * - 이미 존재하면 count 증가 + timestamp 갱신
  * - 없으면 새로 추가
- * - 최대 개수 초과 시 선택 횟수(count)가 가장 적은 항목(동률이면 더 오래된 것)부터 제거
- *   (2026-10-04 주석을 실제 동작에 맞춤 — ICL-47. 이 규칙 때문에 새 항목이 바로 밀려나는 문제는 ICL-12, 보류)
+ * - 최대 개수 초과 시 *방금 고른 항목을 제외한* 나머지 중 선택 횟수(count)가 가장 적은 것(동률이면 더 오래된 것)을 제거
+ *   (2026-10-19 감사 ICL-12: 예전엔 새 항목(count 1)이 정렬 맨 앞이라 들어오자마자 밀려나 목록이 영구 고정됐다)
  *
  * @param ingredient - 추가할 재료 정보
  */
@@ -128,16 +128,16 @@ export function addRecentIngredient(ingredient: {
       updatedItems = [newItem, ...currentItems];
     }
 
-    // 최대 개수 제한
+    // 최대 개수 제한 — 방금 고른 항목은 보호하고, 나머지 중 우선순위가 가장 낮은 1개를 제거
     if (updatedItems.length > MAX_RECENT_ITEMS) {
-      // count가 가장 낮고 가장 오래된 항목 제거
-      updatedItems.sort((a, b) => {
-        if (a.count !== b.count) {
-          return a.count - b.count; // count 오름차순
-        }
-        return a.timestamp - b.timestamp; // 오래된 순
+      let victim = -1;
+      updatedItems.forEach((item, i) => {
+        if (item.id === ingredient.id) return;
+        if (victim === -1) { victim = i; return; }
+        const v = updatedItems[victim];
+        if (item.count < v.count || (item.count === v.count && item.timestamp < v.timestamp)) victim = i;
       });
-      updatedItems = updatedItems.slice(1); // 첫 번째(가장 우선순위 낮은) 항목 제거
+      if (victim !== -1) updatedItems = updatedItems.filter((_, i) => i !== victim);
     }
 
     // localStorage에 저장
@@ -159,42 +159,10 @@ export function addRecentIngredient(ingredient: {
   }
 }
 
-/**
- * localStorage의 자주 사용 재료를 서버 user_favorites_ingredients로 일괄 이전.
- * 한 번 성공하면 SYNC_FLAG로 표시하고 더는 호출하지 않음. localStorage 데이터도 정리.
- */
-const SYNC_FLAG_KEY = 'naelum:recentIngredients:synced_v1';
-
-export async function syncRecentIngredientsToFavorites(): Promise<void> {
-  if (typeof window === 'undefined') return;
-  if (localStorage.getItem(SYNC_FLAG_KEY) === '1') return;
-
-  const items = getRecentIngredients();
-  if (items.length === 0) {
-    localStorage.setItem(SYNC_FLAG_KEY, '1');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/favorites/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: items.map(i => ({
-          ingredient_name: i.name,
-          category: i.category,
-          count: i.count,
-        })),
-      }),
-    });
-    if (res.ok) {
-      localStorage.setItem(SYNC_FLAG_KEY, '1');
-      clearRecentIngredients();
-    }
-  } catch {
-    // 실패 시 flag 안 세움 → 다음 로드에 재시도
-  }
-}
+// 2026-10-19 (감사 ICL-29): 로그인 시 이 목록을 user_favorites_ingredients 로 올린 뒤 *로컬 목록을 지우던*
+// syncRecentIngredientsToFavorites·FavoritesSyncBoot·POST /api/favorites/sync 를 삭제했다. 그 테이블은 화면 어디에서도
+// 읽지 않아(GET /api/favorites 는 user_ingredients 집계) 업로드는 쓸모없고, 로컬 최근 목록만 사라졌다.
+// 테이블·트리거는 남아 있다(사용자 데이터라 drop 은 별도 결정 — GDPR 내보내기에는 계속 포함).
 
 /**
  * 최근 선택 재료 전체 삭제

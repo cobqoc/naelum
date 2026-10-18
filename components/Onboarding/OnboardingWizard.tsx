@@ -125,8 +125,13 @@ export default function OnboardingWizard({
 
       if (profileError) {
         // 닉네임 unique 위반(23505)은 사용자에게 의미 있는 사유라 번역 문구로 구분 (PAU-36, 2026-10-04)
+        // 23505 = lower(username) unique 인덱스 포함. 23514 = DB 닉네임 규칙 트리거(형식·사칭, 20261019_username_rules.sql)
         throw profileError.code === '23505' ? new Error(t.onboarding.profile.usernameTaken) : profileError;
       }
+
+      // 관심사·식단·알레르기 저장 실패는 온보딩을 막지 않되 알린다(2026-10-19 감사 PAU-36 결정: 경고 토스트).
+      // 막아 세우면 중복 알레르기 입력 같은 경우 온보딩을 끝낼 수 없게 될 수 있다.
+      let prefsFailed = false;
 
       // 3. 관심사 저장
       if (formData.interests.length > 0) {
@@ -148,8 +153,7 @@ export default function OnboardingWizard({
 
         if (interestsError) {
           console.error('Interests save error:', interestsError);
-          // 2026-10-04 PAU-36(결정 대기 — 2026-10-04 감사 결정 목록): 관심사·식단·알레르기 저장 실패는 지금처럼 삼키고
-          // 완료 처리한다. 실패를 막아 세우면(throw) 중복 알레르기 입력 같은 경우 온보딩을 끝낼 수 없게 될 수 있어 보류.
+          prefsFailed = true;
         }
       }
 
@@ -172,6 +176,7 @@ export default function OnboardingWizard({
 
         if (dietaryError) {
           console.error('Dietary preferences save error:', dietaryError);
+          prefsFailed = true;
         }
       }
 
@@ -199,8 +204,11 @@ export default function OnboardingWizard({
 
         if (allergiesError) {
           console.error('Allergies save error:', allergiesError);
+          prefsFailed = true;
         }
       }
+
+      if (prefsFailed) toast.warning(t.onboarding.preferencesPartialFail);
 
       // 완료 처리
       onComplete();

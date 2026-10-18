@@ -66,17 +66,18 @@ export interface Tip {
 }
 
 // 관심사 이모지 매핑
+// 관심사는 키('korean' …)로 저장된다 — 온보딩·설정 공통(2026-10-19 감사 PAU-18). 표시명은 t.cuisines[key].
 export const interestEmojis: Record<string, string> = {
-  '한식': '🍚',
-  '중식': '🥟',
-  '일식': '🍱',
-  '양식': '🍝',
-  '이탈리안': '🍕',
-  '프렌치': '🥐',
-  '멕시칸': '🌮',
-  '인도': '🍛',
-  '태국': '🍜',
-  '비건': '🥗',
-  '디저트': '🍰',
-  '베이킹': '🥖',
+  korean: '🍚',
+  chinese: '🥟',
+  japanese: '🍱',
+  western: '🍝',
+  italian: '🍕',
+  french: '🥐',
+  mexican: '🌮',
+  indian: '🍛',
+  thai: '🍜',
+  vegan: '🥗',
+  dessert: '🍰',
+  baking: '🥖',
 };

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminRole } from '@/lib/api/adminGuard';
 import { parsePagination } from '@/lib/api/pagination';
+import { newServiceRoleClient } from '@/lib/supabase/service';
 
 /**
  * GET /api/ingredients/pending
@@ -45,7 +46,8 @@ export async function GET(request: NextRequest) {
     let profilesMap: Record<string, { id: string; username: string; email?: string }> = {};
 
     if (allUserIds.length > 0) {
-      const { data: profiles } = await supabase
+      // 관리자 확인(requireAdminRole) 뒤 — email 은 authenticated SELECT 권한 밖이라 service-role (AG2-18)
+      const { data: profiles } = await newServiceRoleClient()
         .from('profiles')
         .select('id, username, email')
         .in('id', allUserIds);

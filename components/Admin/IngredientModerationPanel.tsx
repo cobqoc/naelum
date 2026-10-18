@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/lib/toast/context';
 import ConfirmDialog from '@/components/Common/ConfirmDialog';
+import AdminPagination from '@/components/Admin/AdminPagination';
 import { getCategoryName } from '../Ingredients/IngredientAutocompleteTypes';
 
 interface IngredientForModeration {
@@ -35,6 +36,10 @@ type StatusFilter = 'pending' | 'approved' | 'rejected';
 export default function IngredientModerationPanel() {
   const toast = useToast();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  // 페이지네이션 — 예전엔 100건만 받아 '승인됨'(prod 241건) 101번째부터 볼 수도 지울 수도 없었다(2026-10-19 감사 ADM-38)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const requestSeq = useRef(0);
   const [ingredients, setIngredients] = useState<IngredientForModeration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,12 +56,15 @@ export default function IngredientModerationPanel() {
   /**
    * 재료 목록 로드
    */
-  const fetchIngredients = async (status: StatusFilter) => {
+  const fetchIngredients = async (status: StatusFilter, pageNum: number = page) => {
+    // 탭을 빠르게 바꾸면 늦게 온 이전 탭 응답이 현재 표를 덮었다 — 마지막 요청만 반영(ADM-38)
+    const seq = ++requestSeq.current;
     try {
       setLoading(true);
       setError('');
 
-      const response = await fetch(`/api/ingredients/pending?status=${status}&limit=100`);
+      const response = await fetch(`/api/ingredients/pending?status=${status}&limit=50&page=${pageNum}`);
+      if (seq !== requestSeq.current) return;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -65,7 +73,9 @@ export default function IngredientModerationPanel() {
       }
 
       const data = await response.json();
+      if (seq !== requestSeq.current) return;
       setIngredients(data.ingredients || []);
+      setTotalPages(data.pagination?.totalPages || 1);
 
       // pending 개수 업데이트
       if (status === 'pending') {
@@ -75,7 +85,7 @@ export default function IngredientModerationPanel() {
       console.error('Error fetching ingredients:', err);
       setError(err instanceof Error ? err.message : '재료 목록을 불러오는데 실패했습니다');
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   };
 
@@ -83,8 +93,9 @@ export default function IngredientModerationPanel() {
    * 상태 변경 시 재료 목록 로드
    */
   useEffect(() => {
-    fetchIngredients(statusFilter);
-  }, [statusFilter]);
+    fetchIngredients(statusFilter, page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, page]);
 
   // 사용자 클릭 → ConfirmDialog 트리거. 실행은 confirmPending() 에서.
   const handleApprove = (id: string) => setPendingAction({ kind: 'approve', id });
@@ -223,7 +234,7 @@ export default function IngredientModerationPanel() {
       {/* 탭 */}
       <div className="flex gap-2 border-b border-white/10">
         <button
-          onClick={() => setStatusFilter('pending')}
+          onClick={() => { setStatusFilter('pending'); setPage(1); }}
           className={`px-4 py-2 font-medium transition-colors relative ${
             statusFilter === 'pending'
               ? 'text-accent-warm'
@@ -236,7 +247,7 @@ export default function IngredientModerationPanel() {
           )}
         </button>
         <button
-          onClick={() => setStatusFilter('approved')}
+          onClick={() => { setStatusFilter('approved'); setPage(1); }}
           className={`px-4 py-2 font-medium transition-colors relative ${
             statusFilter === 'approved'
               ? 'text-accent-warm'
@@ -249,7 +260,7 @@ export default function IngredientModerationPanel() {
           )}
         </button>
         <button
-          onClick={() => setStatusFilter('rejected')}
+          onClick={() => { setStatusFilter('rejected'); setPage(1); }}
           className={`px-4 py-2 font-medium transition-colors relative ${
             statusFilter === 'rejected'
               ? 'text-accent-warm'
@@ -397,6 +408,8 @@ export default function IngredientModerationPanel() {
           </table>
         </div>
       )}
+
+      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       <ConfirmDialog
         isOpen={pendingAction !== null}

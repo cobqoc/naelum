@@ -12,10 +12,14 @@ import { useI18n } from '@/lib/i18n/context';
  * 26줄 복붙이던 speak/speakDirect 본문은 이 한 벌만 남음. 발화 설정은 그대로 — rate 1.0(옛 기본 속도
  * 'normal', setSpeed 호출처 없었음)·pitch·volume 1.0·한국어 voice 우선·lang 'ko-KR'.
  * isSpeaking state 는 읽는 곳이 없어 발화 시작/끝마다 RecipeBrowseView 전체를 재렌더시키기만 했으므로 제거.
- * (UI 로케일과 무관하게 ko-KR 로 읽는 문제는 동작 변경이라 별도 결정 — 손대지 않음.)
+ * 2026-10-19 (감사 PHR-07 후속): 낭독 언어를 화면 언어로 — 예전엔 /en 화면의 영문 단계도 ko-KR 음성으로 읽었다.
  */
+const SPEECH_LANG: Record<string, string> = {
+  ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT',
+};
+
 export function useVoiceGuide() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [isSupported, setIsSupported] = useState(false);
   // 발화 중 utterance 가 GC 되지 않도록 참조 유지(옛 코드와 동일)
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -38,16 +42,17 @@ export function useVoiceGuide() {
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
-    // Try to find a Korean voice
+    // 화면 언어의 음성 우선 — 없으면 lang 만 지정해 브라우저 기본 음성에 맡김
+    const lang = SPEECH_LANG[language] ?? 'ko-KR';
     const voices = window.speechSynthesis.getVoices();
-    const koreanVoice = voices.find(v => v.lang.startsWith('ko'));
-    if (koreanVoice) {
-      utterance.voice = koreanVoice;
+    const voice = voices.find(v => v.lang.startsWith(lang.slice(0, 2)));
+    if (voice) {
+      utterance.voice = voice;
     }
-    utterance.lang = 'ko-KR';
+    utterance.lang = lang;
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, [isSupported, t]);
+  }, [isSupported, t, language]);
 
   // Cleanup on unmount
   useEffect(() => {

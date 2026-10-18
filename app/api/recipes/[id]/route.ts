@@ -7,7 +7,7 @@ import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId
 import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns';
 // 2026-10-04 API1-37: 자식 행 매핑·normalizeSubstitutesForStorage 가 POST 와 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
 import {
-  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows,
+  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows, validateRecipeChildren,
 } from '@/lib/api/recipeChildRows';
 
 // GET /api/recipes/[id] - 레시피 상세 조회
@@ -80,6 +80,12 @@ export async function PUT(
     }
     if (description && typeof description === 'string' && description.length > 500) {
       return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 });
+    }
+
+    // 자식 배열을 부모 쓰기 전에 검증 — 예전엔 51자 태그 하나로 기존 태그가 전부 지워지고 500 이었다 (API1-06)
+    const childError = validateRecipeChildren({ ingredients, steps, tags });
+    if (childError) {
+      return NextResponse.json({ error: childError }, { status: 400 });
     }
 
     // 레시피 기본 정보 업데이트

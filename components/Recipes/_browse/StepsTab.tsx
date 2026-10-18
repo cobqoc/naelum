@@ -3,7 +3,23 @@
 import { memo } from 'react';
 import SafeImage from '@/components/Common/SafeImage';
 import OptionalIngredientBadge from '@/components/Recipes/OptionalIngredientBadge';
-import { tokenizeStepText, type OptionalIngredient } from '@/lib/recipes/highlightOptionalIngredients';
+import { tokenizeStepText, type OptionalIngredient, type HighlightToken } from '@/lib/recipes/highlightOptionalIngredients';
+
+// 단계 본문·팁 공용 토큰 렌더 — 선택 재료는 *첫 멘션만* ⓘ 배지(툴팁), 이후 멘션은 같은 강조 색만
+// (2026-10-19 감사 PHR-29: 문서와 달리 모든 멘션에 ⓘ 가 붙었고, 같은 13줄이 두 번 복붙돼 있었다)
+function renderStepTokens(tokens: HighlightToken[]) {
+  return tokens.map((tok, i) => {
+    if (tok.type === 'text') return <span key={i}>{tok.value}</span>;
+    if (!tok.isFirstMention) {
+      return (
+        <span key={i} className="text-text-secondary underline decoration-dashed decoration-warning/60 underline-offset-[3px]">
+          {tok.matchedText}
+        </span>
+      );
+    }
+    return <OptionalIngredientBadge key={i} name={tok.matchedText} substitutes={tok.substitutes} />;
+  });
+}
 import type { TranslationKeys } from '@/lib/i18n/translations';
 
 /**
@@ -137,19 +153,8 @@ function StepsTab({
                   </div>
                 )}
                 <p className="text-text-secondary leading-relaxed">
-                  {stepTokens.map((tok, i) =>
-                    tok.type === 'text' ? (
-                      <span key={i}>{tok.value}</span>
-                    ) : (
-                      // 재료명 자체를 underline + ⓘ 로 강조 (별도 배지 X) → 본문 흐름 자연.
-                      // hover/tap 시 tooltip 으로 "없어도 OK" + substitutes 안내.
-                      <OptionalIngredientBadge
-                        key={i}
-                        name={tok.matchedText}
-                        substitutes={tok.substitutes}
-                      />
-                    )
-                  )}
+                  {/* 재료명 자체를 underline + ⓘ 로 강조 (별도 배지 X) → 본문 흐름 자연. hover/tap 시 tooltip. */}
+                  {renderStepTokens(stepTokens)}
                 </p>
 
                 {/* 타이머 — 본문에 시간이 있는 단계에만. 그 단계 시간으로 prefill.
@@ -184,17 +189,7 @@ function StepsTab({
                       <p className="text-sm">
                         <span className="font-bold text-warning">{t.cookMode.tipLabel}</span>{' '}
                         <span className="text-text-secondary">
-                          {tipTokens.map((tok, i) =>
-                            tok.type === 'text' ? (
-                              <span key={i}>{tok.value}</span>
-                            ) : (
-                              <OptionalIngredientBadge
-                                key={i}
-                                name={tok.matchedText}
-                                substitutes={tok.substitutes}
-                              />
-                            )
-                          )}
+                          {renderStepTokens(tipTokens)}
                         </span>
                       </p>
                     </div>

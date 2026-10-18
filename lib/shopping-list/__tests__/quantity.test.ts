@@ -19,6 +19,21 @@ describe('parseQuantity', () => {
     expect(parseQuantity(null)).toBeNull();
   });
 
+  it('분수·대분수·유니코드 분수 (ICL-28 — 예전엔 "1/2" 가 1)', () => {
+    expect(parseQuantity('1/2')).toBe(0.5);
+    expect(parseQuantity('1 / 4')).toBe(0.25);
+    expect(parseQuantity('1 1/2')).toBe(1.5);
+    expect(parseQuantity('1/2개')).toBe(0.5);
+    expect(parseQuantity('½')).toBe(0.5);
+    expect(parseQuantity('1½')).toBe(1.5);
+    expect(parseQuantity('1/0')).toBeNull();
+  });
+
+  it('숫자 입력은 그대로 (DB 값)', () => {
+    expect(parseQuantity(2)).toBe(2);
+    expect(parseQuantity(Number.NaN)).toBeNull();
+  });
+
   it('음수는 미상 처리', () => {
     expect(parseQuantity('-5')).toBeNull();
   });

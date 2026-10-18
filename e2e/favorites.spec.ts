@@ -91,29 +91,6 @@ test.describe('즐겨찾기·자주 사용 재료 — Stage 2 score 기반 자�
     expect(names).toEqual(['A_recent3', 'C_old5', 'B_old2']);
   });
 
-  test('POST /api/favorites/sync — localStorage 데이터 일괄 upsert', async ({ authenticatedPage, testUser }) => {
-    const res = await authenticatedPage.request.post('/api/favorites/sync', {
-      data: {
-        items: [
-          { ingredient_name: '동기화_재료1', category: 'vegetable', count: 5 },
-          { ingredient_name: '동기화_재료2', category: 'meat', count: 3 },
-        ],
-      },
-    });
-    expect(res.status()).toBe(200);
-    const body = await res.json();
-    expect(body.synced).toBe(2);
-
-    const { data } = await admin()
-      .from('user_favorites_ingredients')
-      .select('ingredient_name, add_count')
-      .eq('user_id', testUser.userId)
-      .in('ingredient_name', ['동기화_재료1', '동기화_재료2']);
-    const map = new Map((data ?? []).map(d => [d.ingredient_name, d.add_count]));
-    expect(map.get('동기화_재료1')).toBe(5);
-    expect(map.get('동기화_재료2')).toBe(3);
-  });
-
   test('cart 빈 상태 — 자주 쓰는 재료 칩 노출 (별표 버튼 없음)', async ({ authenticatedPage, testUser }) => {
     const page = authenticatedPage;
     await page.setViewportSize({ width: 1280, height: 800 });

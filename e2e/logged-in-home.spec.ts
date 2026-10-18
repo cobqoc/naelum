@@ -383,9 +383,11 @@ test.describe('로그인 홈 — 모바일 헤더 + 만료 임박 배너', () =>
     await page.locator('button:has-text("냉장고 채우기")').click();
 
     // 3개 선택
-    await page.locator('button:has-text("양파")').first().click();
-    await page.locator('button:has-text("마늘")').first().click();
-    await page.locator('button:has-text("달걀")').first().click();
+    // 재료 칩으로 한정 — 카테고리 탭 '달걀류'(2026-10-19 추가)도 "달걀" 텍스트를 포함한다
+    const chip = (name: string) => page.getByTestId('ingredient-chip').filter({ hasText: name }).first();
+    await chip('양파').click();
+    await chip('마늘').click();
+    await chip('달걀').click();
     // 저장
     await page.locator('button:has-text("3개 추가")').first().click();
 

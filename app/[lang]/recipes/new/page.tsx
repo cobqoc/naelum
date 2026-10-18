@@ -652,7 +652,7 @@ export default function NewRecipePage() {
             isDraggingIngredients={ingredientsDropZone.isDragging}
             unitInputRefs={unitInputRefs}
             getPlaceholder={getPlaceholder}
-            removeDisabledAtOrBelow={5}
+            removeDisabledAtOrBelow={1}
             addLabel={tf.addIngredient}
             onAddIngredients={addIngredients}
             onRemoveIngredient={removeIngredient}

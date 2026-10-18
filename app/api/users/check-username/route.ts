@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { validateUsername } from '@/lib/utils/usernameValidator'
+import { usernameIlikePattern } from '@/lib/utils/usernameLookup'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -24,11 +25,12 @@ export async function GET(request: Request) {
   // 현재 사용자 확인
   const { data: { user } } = await supabase.auth.getUser()
 
-  // 중복 체크
+  // 중복 체크 — 대소문자 무시(PAU-37: 'Chef' 가입 뒤 'chef' 도 사용 가능으로 나왔다)
   const { data: existingProfile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('username', username)
+    .ilike('username', usernameIlikePattern(username))
+    .limit(1)
     .maybeSingle()
 
   // 본인의 현재 닉네임인 경우 사용 가능

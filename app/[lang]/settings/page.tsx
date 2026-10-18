@@ -14,7 +14,6 @@ import ProfileTab from '@/components/Settings/ProfileTab';
 import PreferencesTab from '@/components/Settings/PreferencesTab';
 import AccountTab from '@/components/Settings/AccountTab';
 import NotificationsTab from '@/components/Settings/NotificationsTab';
-import { INTEREST_TYPE_CUISINE } from '@/lib/constants/userPreferences';
 import { usernameErrorMessage } from '@/components/Settings/usernameErrorMessage';
 
 interface Profile {
@@ -42,24 +41,30 @@ export default function SettingsPage() {
   const toast = useToast();
   const sp = t.settingsPage;
 
+  // 저장 값은 *키* — 온보딩(OnboardingStep2·3)·레시피 cuisine_type·추천 API 와 같다. 예전엔 현재 로케일 라벨('한식'·'Korean')을
+  // 저장해 온보딩 값이 선택 안 된 것처럼 보이고 개인화 추천이 0건이었다(2026-10-19 감사 PAU-18).
   const cuisineOptions = [
-    { value: t.cuisines.korean, icon: '🍚' },
-    { value: t.cuisines.chinese, icon: '🥟' },
-    { value: t.cuisines.japanese, icon: '🍱' },
-    { value: t.cuisines.western, icon: '🍝' },
-    { value: t.cuisines.italian, icon: '🍕' },
-    { value: t.cuisines.french, icon: '🥐' },
-    { value: t.cuisines.mexican, icon: '🌮' },
-    { value: t.cuisines.indian, icon: '🍛' },
-    { value: t.cuisines.thai, icon: '🍜' },
-    { value: t.cuisines.vegan, icon: '🥗' },
-    { value: t.cuisines.dessert, icon: '🍰' },
-    { value: t.cuisines.baking, icon: '🥖' },
+    { value: 'korean', label: t.cuisines.korean, icon: '🍚' },
+    { value: 'chinese', label: t.cuisines.chinese, icon: '🥟' },
+    { value: 'japanese', label: t.cuisines.japanese, icon: '🍱' },
+    { value: 'western', label: t.cuisines.western, icon: '🍝' },
+    { value: 'italian', label: t.cuisines.italian, icon: '🍕' },
+    { value: 'french', label: t.cuisines.french, icon: '🥐' },
+    { value: 'mexican', label: t.cuisines.mexican, icon: '🌮' },
+    { value: 'indian', label: t.cuisines.indian, icon: '🍛' },
+    { value: 'thai', label: t.cuisines.thai, icon: '🍜' },
+    { value: 'vegan', label: t.cuisines.vegan, icon: '🥗' },
+    { value: 'dessert', label: t.cuisines.dessert, icon: '🍰' },
+    { value: 'baking', label: t.cuisines.baking, icon: '🥖' },
   ];
 
   const dietaryOptions = [
-    sp.dietaryVegetarian, t.cuisines.vegan, sp.dietaryLactoVeg,
-    sp.dietaryGlutenFree, sp.dietaryLowCarb, sp.dietaryLowCal,
+    { value: 'vegetarian', label: sp.dietaryVegetarian },
+    { value: 'vegan', label: t.cuisines.vegan },
+    { value: 'lacto_vegetarian', label: sp.dietaryLactoVeg },
+    { value: 'gluten_free', label: sp.dietaryGlutenFree },
+    { value: 'low_carb', label: sp.dietaryLowCarb },
+    { value: 'low_calorie', label: sp.dietaryLowCal },
   ];
 
   const [loading, setLoading] = useState(true);
@@ -305,6 +310,9 @@ export default function SettingsPage() {
     setAvatarUrl(null);
   };
 
+  // 업로드 실패는 throw → saveProfile 의 catch 가 에러 토스트로 표면화하고 프로필 저장을 멈춘다.
+  // (예전엔 실패 시 미리보기 data: URL 을 돌려줘 base64 가 profiles.avatar_url 에 저장됐다 — PAU-17,
+  //  avatars 정책 수정 20261004_fix_avatars_storage_policies.sql 이 2026-10-18 적용돼 업로드가 정상 동작.)
   const uploadAvatar = async (): Promise<string | null> => {
     if (!avatarFile || !profile) return avatarUrl;
 
@@ -315,10 +323,7 @@ export default function SettingsPage() {
     const { error } = await uploadToBucket(supabase, 'avatars', filePath, avatarFile);
     if (error) {
       console.error('Avatar upload error:', error);
-      // 2026-10-04 PAU-17(결정 대기 — 2026-10-04 감사 결정 목록): 실패 시 미리보기 data: URL 을 돌려줘 base64 가
-      // profiles.avatar_url 에 저장된다. 지금 avatars 스토리지 정책상 업로드가 항상 실패해 이 폴백이 사실상 유일한
-      // 아바타 변경 경로라 그대로 둔다. 정책(20261004_fix_avatars_storage_policies.sql) 적용 후 폴백 제거를 결정할 것.
-      return avatarUrl;
+      throw error;
     }
 
     const publicUrl = getPublicUrl(supabase, 'avatars', filePath);
@@ -346,20 +351,26 @@ export default function SettingsPage() {
         newAvatarUrl = await uploadAvatar();
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
+      // 서버 라우트로 저장 — 닉네임 형식·욕설·예약어·대소문자 무시 중복을 서버가 강제한다(2026-10-19 감사 PAU-52:
+      // 클라이언트 직접 update 라 검증이 참고용 GET 뿐이었다). bio 정화·길이 제한도 같은 라우트에서.
+      const res = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           username: username.trim(),
           bio: bio || null,
           avatar_url: newAvatarUrl,
           birth_date: birthDate,
           gender,
           country,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', profile.id);
-
-      if (error) throw error;
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { code?: string }));
+        toast.error(body.code === 'username_taken' ? t.onboarding.profile.usernameTaken : t.common.error);
+        setSaving(false);
+        return;
+      }
 
       // Sync original values
       setOriginalUsername(username.trim());
@@ -430,43 +441,14 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      // Supabase는 RLS/제약 거부 시 throw 안 하고 { error } 반환 → 명시 체크.
-      // 실패 시 throw → 아래 catch(toast.error)로 표면화, originals 미동기·성공토스트 미표시.
-      const assertOk = (r: { error: unknown }) => { if (r.error) throw r.error; };
-
-      assertOk(await supabase.from('user_interests').delete().eq('user_id', profile.id));
-      if (interests.length > 0) {
-        assertOk(await supabase.from('user_interests').insert(
-          interests.map(interest => ({
-            user_id: profile.id,
-            interest_type: INTEREST_TYPE_CUISINE,
-            interest_value: interest,
-          }))
-        ));
-      }
-
-      assertOk(await supabase.from('user_dietary_preferences').delete().eq('user_id', profile.id));
-      if (dietary.length > 0) {
-        assertOk(await supabase.from('user_dietary_preferences').insert(
-          dietary.map(pref => ({
-            user_id: profile.id,
-            preference_type: pref,
-            is_active: true,
-          }))
-        ));
-      }
-
-      assertOk(await supabase.from('user_allergies').delete().eq('user_id', profile.id));
+      // 서버 라우트 1회(3테이블 병렬, 각 쓰기 .error 체크) — 예전엔 클라이언트가 6번 직렬 왕복(2026-10-19 감사 PAU-19).
       const allergiesList = allergies.split(',').map(a => a.trim()).filter(a => a);
-      if (allergiesList.length > 0) {
-        assertOk(await supabase.from('user_allergies').insert(
-          allergiesList.map(allergy => ({
-            user_id: profile.id,
-            ingredient_name: allergy,
-            severity: 'moderate',
-          }))
-        ));
-      }
+      const res = await fetch('/api/users/me/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interests, dietaryPreferences: dietary, allergies: allergiesList }),
+      });
+      if (!res.ok) throw new Error(`preferences save failed: ${res.status}`);
 
       // 프라이버시는 토글 즉시 저장으로 처리 (savePrivacyToggle) — 여기선 폼만.
       // Sync originals
@@ -603,7 +585,6 @@ export default function SettingsPage() {
             <AccountTab
               profile={profile}
               supabase={supabase}
-              router={router}
               t={t}
             />
             </div>

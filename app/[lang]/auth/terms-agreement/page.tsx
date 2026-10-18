@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
-import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import AuthCheckingScreen from '@/components/Auth/AuthCheckingScreen';
@@ -10,10 +9,7 @@ import BirthDateField from '@/components/Auth/BirthDateField';
 import ConsentCheckboxes from '@/components/Auth/ConsentCheckboxes';
 import { checkMinAge } from '@/lib/auth/ageGate';
 
-const OnboardingWizard = dynamic(
-  () => import('@/components/Onboarding/OnboardingWizard'),
-  { ssr: false }
-);
+import OnboardingWizard from '@/components/LazyOnboardingWizard';
 
 export default function TermsAgreementPage() {
   const router = useRouter();

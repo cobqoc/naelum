@@ -134,7 +134,13 @@ const PROTECTED_PATTERNS = [
 const ADMIN_ROUTES = ['/admin']
 
 // 이미 로그인된 사용자를 홈으로 리다이렉트할 경로
-const AUTH_ONLY_ROUTES = ['/signin', '/signup', '/signup/set-password']
+const AUTH_ONLY_ROUTES = ['/signin', '/signup']
+
+// 이메일 가입의 비밀번호 설정 — 매직링크로 세션이 생긴 *온보딩 미완료* 사용자가 와야 하는 화면이라
+// auth-only·약관 게이트에서 빠진다. 온보딩을 마친 사용자는 홈으로(아래 분기).
+// (2026-10-19 감사 AG2-01: '/signup' 의 startsWith 가 이 경로까지 덮어 로그인 사용자를 홈으로 튕겼고,
+//  홈 게이트가 약관 화면으로 보내 비밀번호 없이 가입이 끝났다.)
+const SET_PASSWORD_ROUTE = '/signup/set-password'
 
 function createSupabaseClient(request: NextRequest) {
   return createServerClient(
@@ -207,7 +213,8 @@ export async function proxy(request: NextRequest) {
     PROTECTED_ROUTES.some((r) => bare === r || bare.startsWith(r + '/')) ||
     PROTECTED_PATTERNS.some((p) => p.test(bare))
   const isAdmin = ADMIN_ROUTES.some((r) => bare.startsWith(r))
-  const isAuthOnly = AUTH_ONLY_ROUTES.some((r) => bare === r || bare.startsWith(r + '/'))
+  const isSetPassword = bare === SET_PASSWORD_ROUTE
+  const isAuthOnly = !isSetPassword && AUTH_ONLY_ROUTES.some((r) => bare === r || bare.startsWith(r + '/'))
   // 현재 요청의 lang prefix — 리다이렉트 시 같은 lang 유지.
   const langPrefix = hasLangPrefix(pathname) ? `/${hasLangPrefix(pathname)}` : ''
 
@@ -260,7 +267,7 @@ export async function proxy(request: NextRequest) {
   const isApiPath = pathname.startsWith('/api/')
   const isAuthApi = pathname.startsWith('/api/auth/')
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)
-  const isGatedPage = !isApiPath && !bare.startsWith('/auth/')
+  const isGatedPage = !isApiPath && !bare.startsWith('/auth/') && !isSetPassword
   const isGatedMutatingApi = isApiPath && !isAuthApi && isMutating
 
   // (perf 2026-09-27) 게이트용 profiles 행 조회를 getUser(Auth 왕복)와 겹쳐 시작한다.
@@ -269,7 +276,7 @@ export async function proxy(request: NextRequest) {
   // 조회는 요청 자신의 쿠키 JWT 로 PostgREST 가 인가하므로(profiles SELECT 는 인증 사용자에 공개) 위조 sub 로
   // 얻을 수 있는 것이 없고, 불일치·오류·마진 안이면 기존 쿼리가 기존 시점에 그대로 실행된다.
   let overlap: { sub: string; promise: Promise<GateProfileRow | undefined> } | null = null
-  if (isGatedPage || isGatedMutatingApi || isProtected || isAdmin) {
+  if (isGatedPage || isGatedMutatingApi || isProtected || isAdmin || isSetPassword) {
     const jwt = await peekSessionJwt((name) => request.cookies.get(name)?.value, process.env.NEXT_PUBLIC_SUPABASE_URL!)
     if (jwt && jwt.exp * 1000 - Date.now() > JWT_EXPIRY_MARGIN_MS) {
       overlap = {
@@ -303,6 +310,23 @@ export async function proxy(request: NextRequest) {
     return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
   }
 
+  // 비밀번호 설정 화면은 온보딩 미완료 세션 전용 — 이미 가입을 마친 사용자는 홈으로.
+  if (isSetPassword && user) {
+    const overlapped = await getOverlappedProfile()
+    let completed: boolean | null | undefined = overlapped === undefined ? undefined : overlapped?.onboarding_completed
+    if (completed === undefined) {
+      const { data } = await createSupabaseClient(request)
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle()
+      completed = data?.onboarding_completed
+    }
+    if (completed) {
+      return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
+    }
+  }
+
   // 미인증 사용자가 보호된 경로 접근 시 로그인으로 리다이렉트
   if (!user && (isProtected || isAdmin)) {
     const loginUrl = new URL(`${langPrefix}/signin`, request.url)
@@ -315,7 +339,8 @@ export async function proxy(request: NextRequest) {
   let gateProfile: GateProfileRow | undefined
 
   // 인증된 사용자에 대한 추가 체크 (차단 여부, 관리자 권한)
-  if (user && (isProtected || isAdmin)) {
+  // 변경 API 도 차단 확인 — 예전엔 보호 페이지만 막아, 차단된 사용자가 API 로 글·레시피를 계속 쓸 수 있었다(2026-10-19).
+  if (user && (isProtected || isAdmin || isGatedMutatingApi)) {
     const supabase = createSupabaseClient(request)
 
     // banned 조회와 profiles(role·onboarding) 조회는 서로 독립한 읽기 → 병렬 (perf 2026-09-27).
@@ -340,8 +365,15 @@ export async function proxy(request: NextRequest) {
     gateProfile = profileRes.error ? null : profileRes.data
 
     if (banned) {
+      // 세션 서버측 폐기(모든 기기). 이 클라이언트의 setAll 은 빈 함수라 브라우저 쿠키는 아래에서 직접 지운다.
       await supabase.auth.signOut()
-      return applyNoStore(NextResponse.redirect(new URL(`${langPrefix}/`, request.url)), pathname, true)
+      const res = isGatedMutatingApi
+        ? NextResponse.json({ error: 'banned' }, { status: 403 })
+        : NextResponse.redirect(new URL(`${langPrefix}/`, request.url))
+      for (const c of request.cookies.getAll()) {
+        if (c.name.startsWith('sb-') && c.name.includes('-auth-token')) res.cookies.delete(c.name)
+      }
+      return applyNoStore(res, pathname, true)
     }
 
     // 이전 `.single()` + (error || !profile || role !== 'admin') 와 같은 입력 집합에서 리다이렉트:
