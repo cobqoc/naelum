@@ -27,6 +27,7 @@ import {
 import ImageCropModal from '@/components/Common/ImageCropModal';
 import { useFileUpload, runImageUpload } from '@/lib/hooks/useFileUpload';
 import { useImageDropZone } from '@/lib/hooks/useImageDropZone';
+import { parseQuantity } from '@/lib/shopping-list/quantity';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -427,7 +428,6 @@ export default function EditRecipePage(props: PageProps) {
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
           ...(cuisineType ? { cuisine_type: cuisineType } : {}),
-          meal_type: 'lunch',
           is_vegetarian: isVegetarian,
           is_vegan: isVegan,
           is_gluten_free: isGlutenFree,
@@ -441,7 +441,7 @@ export default function EditRecipePage(props: PageProps) {
           ingredients: validIngredients.map(i => ({
             ingredient_name: i.ingredient_name.trim(),
             ingredient_id: i.ingredient_id ?? null,
-            quantity: parseFloat(i.quantity) || null,
+            quantity: parseQuantity(i.quantity) || null,
             unit: (i.unit && i.unit !== '선택') ? i.unit : null,
             notes: i.notes.trim() || null,
             is_optional: i.is_optional,

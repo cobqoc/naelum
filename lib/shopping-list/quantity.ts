@@ -13,14 +13,32 @@
  * 미상값이 기존 누적을 *절대* 덮어쓰지 않는다.
  */
 
+const UNICODE_FRACTIONS: Record<string, string> = { '½': '1/2', '⅓': '1/3', '⅔': '2/3', '¼': '1/4', '¾': '3/4' };
+
 /**
  * 사용자/레시피가 준 수량 문자열을 유효 숫자 또는 null 로.
- * `"약간"`·`""`·`undefined`·`"2~3"`(범위) → null. `"200"`·`"1.5"` → 숫자.
- * `parseFloat` 과 달리 NaN 을 절대 흘리지 않고, 음수·무한대도 null 처리.
+ * `"200"`·`"1.5"`·`"200g"` → 앞 숫자. **분수** `"1/2"` → 0.5, `"1 1/2"` → 1.5, `"½"` → 0.5
+ * (예전엔 parseFloat 라 "1/2" 가 1 로 저장돼 상세·장보기·인분 배율이 전부 2배였다 — 2026-10-04 감사 ICL-28).
+ * `"약간"`·`""`·`undefined` → null. 범위 `"2~3"` 은 지금처럼 앞 숫자(2) — 범위 처리는 별도 결정.
+ * NaN 을 절대 흘리지 않고, 음수·무한대·분모 0 도 null 처리.
  */
-export function parseQuantity(raw?: string | null): number | null {
+export function parseQuantity(raw?: string | number | null): number | null {
   if (raw == null) return null;
-  const n = parseFloat(String(raw).trim());
+  if (typeof raw === 'number') return Number.isFinite(raw) && raw >= 0 ? raw : null;
+  let str = String(raw).trim();
+  for (const [glyph, frac] of Object.entries(UNICODE_FRACTIONS)) {
+    str = str.replace(new RegExp(`(\\d)?\\s*${glyph}`), (_m, whole?: string) => (whole ? `${whole} ${frac}` : frac));
+  }
+  let n: number;
+  const mixed = str.match(/^(\d+)\s+(\d+)\s*\/\s*(\d+)/);
+  const frac = str.match(/^(\d+)\s*\/\s*(\d+)/);
+  if (mixed) {
+    n = Number(mixed[3]) === 0 ? NaN : Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+  } else if (frac) {
+    n = Number(frac[2]) === 0 ? NaN : Number(frac[1]) / Number(frac[2]);
+  } else {
+    n = parseFloat(str);
+  }
   if (!Number.isFinite(n)) return null;
   if (n < 0) return null; // 음수 수량은 의미 없음 → 미상 처리
   return n;
