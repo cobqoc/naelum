@@ -25,6 +25,8 @@ export default function AdminLayoutClient({ profile, children }: AdminLayoutClie
     { key: 'reports', label: '신고 관리', icon: '🚨', href: '/admin/reports' },
     { key: 'inquiries', label: '문의 관리', icon: '✉️', href: '/admin/inquiries' },
     { key: 'analytics', label: '통계', icon: '📈', href: '/admin/analytics' },
+    // 행동 분석(events) — 사이드바·대시보드 어디서도 링크가 없어 URL 직접 입력으로만 들어갈 수 있었다(2026-10-19 감사 ADM-39)
+    { key: 'events', label: '행동 분석', icon: '🧭', href: '/admin/analytics/events' },
     { key: 'actions', label: '감사 로그', icon: '🗂️', href: '/admin/actions' },
     // 배달 — 진입은 admin 전용. 다른 nav(Header/BottomNav/홈)에는 노출 X
     { key: 'delivery', label: '배달 (사용자 페이지)', icon: '🛵', href: '/delivery' },

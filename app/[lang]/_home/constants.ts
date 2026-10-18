@@ -9,8 +9,6 @@ export const RECOMMENDATIONS_FETCH_DEBOUNCE_MS = 500;
 // 추천 API limit — 홈에서 fetch하는 최대 레시피 수.
 export const RECOMMENDATIONS_LIMIT = 30;
 
-// 일반 토스트 자동 숨김.
-export const TOAST_AUTO_HIDE_MS = 2000;
 
 // localStorage 키 — 홈 관련 상태 persist.
 // v2: DEMO 시드 확장(14→20개, 한식 ready 3+개 매칭 보장)으로 기존 캐시 무효화.

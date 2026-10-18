@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from '@/components/Common/LocalizedLink';
-import dynamic from 'next/dynamic';
 import { useI18n } from '@/lib/i18n/context';
 import { useToast } from '@/lib/toast/context';
 import { type Profile, type ProfileCounts, type Recipe, type Tip, type TabType } from './_components/types';
@@ -12,7 +11,7 @@ import TipsGrid from './_components/TipsGrid';
 import DraftsPrivateView from './_components/DraftsPrivateView';
 import ProfileRecipeGrid from './_components/ProfileRecipeGrid';
 
-const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal'), { ssr: false });
+import RecipeReviewModal from '@/components/LazyRecipeReviewModal';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';

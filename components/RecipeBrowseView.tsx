@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import SafeImage from '@/components/Common/SafeImage';
 import Link from '@/components/Common/LocalizedLink';
@@ -20,7 +19,7 @@ import IngredientsTab from '@/components/Recipes/_browse/IngredientsTab';
 import StepsTab from '@/components/Recipes/_browse/StepsTab';
 import ContactModal from './LazyContactModal';
 
-const ReportModal = dynamic(() => import('./Common/ReportModal'), { loading: () => null });
+import ReportModal from './LazyReportModal';
 
 interface RecipeIngredient {
   ingredient_name: string;

@@ -9,7 +9,6 @@
  */
 
 import Link from '@/components/Common/LocalizedLink';
-import dynamicImport from 'next/dynamic';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { useI18n } from '@/lib/i18n/context';
@@ -25,10 +24,8 @@ import { useFridgeItems } from './_home/useFridgeItems';
 import { useFridgeRecommendations } from './_home/useFridgeRecommendations';
 import { useOnboardingState } from './_home/useOnboardingState';
 import { computeFridgeShelfDistribution } from '@/lib/home/fridgeShelfDistribution';
-import {
-  TOAST_AUTO_HIDE_MS,
-  LS_KEY_ONBOARDING_BANNER,
-} from './_home/constants';
+import { LS_KEY_ONBOARDING_BANNER } from './_home/constants';
+import { useToast } from '@/lib/toast/context';
 import type { FridgeItem, IngredientFormData } from './_home/types';
 import { freshState, urgencyScore, isDemoRecord } from './_home/helpers';
 import { toStoredUnit } from '@/lib/ingredients/unitSentinel';
@@ -45,9 +42,7 @@ import SameNameGroupSheet from '@/components/Ingredients/SameNameGroupSheet';
 import { useLocalizedRouter as useRouter } from '@/lib/i18n/useLocalizedRouter';
 import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 
-const OnboardingWizard = dynamicImport(() => import('@/components/Onboarding/OnboardingWizard'), {
-  ssr: false,
-});
+import OnboardingWizard from '@/components/LazyOnboardingWizard';
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -79,7 +74,9 @@ export default function HomeClient({
   const pendingDeleteIdsRef = useRef<Set<string>>(new Set());
 
   // 하단 토스트 — useFridgeItems 의 조회 실패 알림에서도 쓰므로 그보다 먼저 선언.
-  const [toast, setToast] = useState<string | null>(null);
+  // 토스트는 전역 ToastProvider 하나로 — 예전엔 이 화면 전용 하단 pill(aria-live 없음)과 전역 토스트가 섞여 겹쳐 떴다
+  // (2026-10-19 감사 PHR-47). 삭제·실행취소·장보기 담기(useFridgeInteractions)는 원래 전역 토스트.
+  const toast = useToast();
 
   // 냉장고 items state + fetch + 3 effects — _home/useFridgeItems hook 으로 추출 (2026-05-25).
   // 비로그인 demo localStorage 동기화 + 초기 load + fridge-updated event listener + debounce.
@@ -89,7 +86,7 @@ export default function HomeClient({
     initialItems,
     pendingDeleteIdsRef,
     // 재료 재조회 실패 시 칩은 그대로 두고 번역된 안내만(PHR-36, 2026-10-04)
-    onFetchError: () => setToast(t.ingredient.loadError),
+    onFetchError: () => toast.error(t.ingredient.loadError),
   });
 
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -214,12 +211,6 @@ export default function HomeClient({
 
   // 문 애니메이션 제거 — SVG 기본 디자인 우선
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_AUTO_HIDE_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
-  const showToast = (msg: string) => setToast(msg);
 
   // Supabase 에러를 사용자 친화 토스트 메시지로 변환.
   // - 네트워크 오프라인: errorOffline
@@ -241,11 +232,11 @@ export default function HomeClient({
     if (isDemoRecord({ id })) {
       setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
       setDetailItem(null);
-      showToast(t.ingredient.updateSuccess.replace('{name}', formData.ingredient_name));
+      toast.success(t.ingredient.updateSuccess.replace('{name}', formData.ingredient_name));
       return;
     }
     if (!user) {
-      showToast(getErrorMessage(null, t.ingredient.updateError));
+      toast.error(getErrorMessage(null, t.ingredient.updateError));
       return;
     }
     const client = createClient();
@@ -253,12 +244,12 @@ export default function HomeClient({
     const { error } = await client.from('user_ingredients').update({ ...formData }).eq('id', id).eq('user_id', user.id);
     if (error) {
       console.error('[updateIngredient] update 실패:', error);
-      showToast(getErrorMessage(error, t.ingredient.updateError));
+      toast.error(getErrorMessage(error, t.ingredient.updateError));
       return;
     }
     setItems(prev => prev.map(i => (i.id === id ? { ...i, ...formData } : i)));
     setDetailItem(null);
-    showToast(t.ingredient.updateSuccess.replace('{name}', formData.ingredient_name));
+    toast.success(t.ingredient.updateSuccess.replace('{name}', formData.ingredient_name));
     window.dispatchEvent(new Event('fridge-updated'));
   };
 
@@ -296,7 +287,7 @@ export default function HomeClient({
       if (merged) {
         // 기존 항목 수량 합치기 — 서버가 합산한 결과 행으로 교체
         setItems(prev => prev.map(i => (i.id === item.id ? { ...i, ...item } : i)));
-        showToast(t.ingredient.mergedToast.replace('{name}', sanitized.ingredient_name));
+        toast.success(t.ingredient.mergedToast.replace('{name}', sanitized.ingredient_name));
         track('ingredient_merge', { name: sanitized.ingredient_name });
       } else {
         setItems(prev => [...prev, item as FridgeItem]);
@@ -493,11 +484,6 @@ export default function HomeClient({
 
       </div>
 
-      {toast && (
-        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-background-secondary border border-accent-warm/30 text-sm shadow-2xl flex items-center gap-2">
-          <span>{toast}</span>
-        </div>
-      )}
 
       {/* 전체 재료 보기 시트 — 두 모드:
           - 'all': 펜던트 탭 → 전체 재료 그룹별 표시

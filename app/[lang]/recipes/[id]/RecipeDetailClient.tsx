@@ -14,9 +14,9 @@ import RecipeBrowseView from '@/components/RecipeBrowseView';
 // (server에서 빈 마크업 render → client hydrate 시 동일 마크업이라 mismatch 없음).
 // 통합 피드(recipe_posts) — 리뷰(평점)·댓글·답글 한 곳. 옛 RecipeRatings+RecipeComments 대체.
 const RecipePostsFeed = dynamic(() => import('@/components/RecipePosts/RecipePostsFeed'), { loading: () => null });
-const MadeItModal = dynamic(() => import('@/components/RecipePosts/MadeItModal'), { ssr: false });
+const MadeItModal = dynamic(() => import('@/components/RecipePosts/MadeItModal'), { loading: () => null });
 // 2단계 — 먹고 나서 맛 별점·후기 (만든 직후 모달과 분리)
-const RecipeReviewModal = dynamic(() => import('@/components/RecipeReviewModal'), { ssr: false });
+import RecipeReviewModal from '@/components/LazyRecipeReviewModal';
 
 interface RecipeIngredient {
   ingredient_name: string;
