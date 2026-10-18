@@ -218,6 +218,26 @@ test.describe('레시피 작성', () => {
    *  - cuisine 선택 후 dish type 섹션 조건부 노출
    * 추출 전 미수정 코드에서 green(baseline) 확인 → 추출 후 동일 green.
    */
+  test('재료 행을 1개까지 삭제할 수 있다 (new 임계 <=1 — PHR-02)', async ({ authenticatedPage: page }) => {
+    // 초기 빈 행 2개 + 1개 추가 = 3행. 예전 new 임계(<=5)에선 3~5행일 때 × 가 전부 비활성이라 못 지웠다.
+    await gotoRecipeNew(page)
+    const ingSection = page.locator('section').filter({ hasText: '재료 준비' })
+    const removeButtons = ingSection.getByRole('button', { name: '×' })
+    await expect(removeButtons).toHaveCount(2, { timeout: 15000 })
+
+    await page.getByRole('button', { name: '+ 재료 추가' }).click()
+    await expect(removeButtons).toHaveCount(3)
+    await expect(removeButtons.first()).toBeEnabled()
+
+    await removeButtons.first().click()
+    await expect(removeButtons).toHaveCount(2)
+    await removeButtons.first().click()
+
+    // 1행만 남으면 마지막 × 는 비활성 (최소 1행 유지)
+    await expect(removeButtons).toHaveCount(1)
+    await expect(removeButtons.first()).toBeDisabled()
+  })
+
   test('UI 회귀(Section1 기본정보): 설명·인분·난이도·요리종류 바인딩 + 조건부 토글', async ({ authenticatedPage: page }) => {
     const pageErrors: string[] = []
     page.on('pageerror', (e) => pageErrors.push(e.message))

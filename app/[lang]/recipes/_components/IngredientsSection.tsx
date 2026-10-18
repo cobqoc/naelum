@@ -13,7 +13,8 @@ import InputBoxWrapper, { INPUT_INNER_CLASS, INPUT_INNER_STYLE } from '@/compone
  * 레시피 작성·수정 폼 공용 재료 준비 블록 (presentational).
  *
  * 2026-10-04 [PHR-D1 (b)-1] new/edit 두 벌(비주석 차이 3줄)을 한 벌로. 차이는 prop 2개로 보존:
- *  - removeDisabledAtOrBelow — 행 × 버튼 비활성 임계 (new 5 / edit 1, ARCHITECTURE.md 기록 분기 — 그대로 유지)
+ *  - removeDisabledAtOrBelow — 행 × 버튼 비활성 임계 (new·edit 모두 1. new 의 5 는 2026-05-20 초기 행 5→2 개편 때
+ *    핸들러만 1 로 바뀌고 남은 옛 값이라 3~5행을 못 지웠다 — 2026-10-04 감사 PHR-02, 2026-10-19 수정)
  *  - addLabel — 추가 버튼 라벨 (new tf.addIngredient / edit tf.addFiveIngredients)
  *
  * 2026-05-23 레이아웃 재구성:
