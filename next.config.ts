@@ -66,7 +66,9 @@ const nextConfig: NextConfig = {
     ],
   },
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    // error·warn 은 남긴다 — 이 옵션은 서버 코드에도 적용돼, 전부 지우면 API 라우트의 console.error 가
+    // Vercel 로그에 하나도 안 남는다(2026-10-04 감사: 빌드 산출물에서 실측). 브라우저 콘솔에도 error·warn 은 보인다.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   async redirects() {
     return [
