@@ -11,6 +11,12 @@
 
 ## 2026-10 작업 로그
 
+- **감사 결정 목록 — 명확한 버그 6건 수정 + 차단 기능 DB 부재 발견** (2026-10-19, 다음 작업 ⑤ 일부)
+  - **수정(항목별 커밋)**: 설정 아바타 업로드 실패 시 base64 를 프로필에 저장하던 폴백 제거(PAU-17 — 아바타 정책 적용으로 업로드 정상, prod data: 아바타 0건) · 운영 빌드가 서버 `console.error`·`warn` 까지 지우던 `removeConsole` 을 error·warn 제외로(빌드 산출물 서버 청크에서 보존 확인) · `sanitizeHtml` 이 `<` 뒤 `>` 가 없으면 끝까지 지우던 문제(`<3`·`a < b`·`<1컵` 보존, TT-25) · 레시피 작성·수정이 `meal_type: 'lunch'` 를 지어 저장(PHR-05 — prod 기존 'lunch' 13건 정리는 별도 결정) · 수량 `1/2` 가 1 로 저장(분수·대분수·½ 파싱, ICL-28 — 범위 `2~3` 은 앞 숫자 유지) · 레시피 작성 재료 행 3~5개일 때 × 비활성(임계 5 → 1, PHR-02, 회귀 e2e 추가).
+  - **검증**: lint 0 · tsc · scan · vitest 740 · build · 전체 e2e(dev) **484 passed · 0 failed · 0 flaky**.
+  - **되돌린 것 — 차단 사용자 강제 로그아웃(AG2-02)**: proxy 를 `is_user_banned` RPC 로 바꾸려다 확인해 보니 **dev·prod 모두 `banned_users` 테이블이 없다**(prod 엔 그 테이블을 참조하는 `is_user_banned` 함수만 있음). `admin_actions`(관리자 행동 로그)·`admin_dashboard_stats`(대시보드 통계 뷰)도 prod 에 없다 — `20260209_add_admin_role.sql` 이 적용되지 않은 채 폐기된 결과. 그래서 관리자 차단은 저장 자체가 실패하고, 관리자 행동 기록·대시보드 통계는 조용히 빈 값이다. 테이블을 새로 만들지(스키마 결정) 기능을 걷어낼지 결정 필요 — proxy 변경은 되돌림.
+  - **남은 것**: ⑤ 나머지(보안·RLS 묶음, 이메일 가입 비밀번호 설정, 제품 동작 결정들 — 로컬 감사 보고서 §3).
+
 - **마이그레이션 3개 dev → prod 적용 — 다음 작업 ④ 완료** (2026-10-18)
   - **대상**: `20261004_backfill_delete_user_fn.sql`(계정 삭제 함수 정의 백필) · `20261004_fix_avatars_storage_policies.sql`(아바타 업로드 정책) · `20261004_secdef_function_grants.sql`(좋아요 토글 함수 호출자 본인 확인 + rate limit·관리자 집계 함수 서비스 롤 전용 — 적용 전까지 로컬 보관하던 파일, 이번에 커밋).
   - **환경**: baedariyo 일시정지 → naelum-dev 복원 → 적용·검증 → dev 정지·baedariyo 복원.
