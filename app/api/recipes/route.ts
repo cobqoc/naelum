@@ -9,7 +9,7 @@ import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns'
 // 2026-10-04 API1-37: 자식 행 매핑(재료·단계·태그)·normalizeSubstitutesForStorage 가 PUT 과 2벌 → lib/api/recipeChildRows 단일 출처
 // (저장 boundary: legacy string[] / 신규 객체[] → 정규화 객체[], 빈 배열은 NULL — 동작 그대로)
 import {
-  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows,
+  namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows, validateRecipeChildren,
 } from '@/lib/api/recipeChildRows'
 
 // GET /api/recipes - 레시피 목록 조회
@@ -116,6 +116,12 @@ export async function POST(request: NextRequest) {
   }
   if (description && typeof description === 'string' && description.length > 500) {
     return NextResponse.json({ error: '설명은 500자 이내로 입력해주세요.' }, { status: 400 })
+  }
+
+  // 자식 배열을 부모 쓰기 전에 검증 — 실패 시 부분 저장 대신 400 (API1-06)
+  const childError = validateRecipeChildren({ ingredients, steps, tags })
+  if (childError) {
+    return NextResponse.json({ error: childError }, { status: 400 })
   }
 
   // 레시피 생성 (total_time_minutes는 DB에서 자동 계산되는 Generated Column)

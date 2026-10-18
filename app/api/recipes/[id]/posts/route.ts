@@ -41,7 +41,8 @@ export async function GET(
     .select(`*, user:profiles(id, username, avatar_url)`, { count: 'exact' })
     .eq('recipe_id', recipeId)
     .is('parent_id', null)
-    .eq('is_deleted', false)
+  // is_deleted 는 여기서 거르지 않는다 — 답글이 있어 soft delete 된 글은 "삭제된 글" 자리(PostCard placeholder)로 남아야
+  // 답글을 열 수 있다. 예전엔 함께 빠져 답글까지 영구 비노출이었다(2026-10-19 감사 API1-04). 답글 없는 삭제글은 아래에서 제외.
   if (filter === 'reviews') query = query.not('rating', 'is', null)
   if (notInList) query = query.not('user_id', 'in', notInList)
 
@@ -81,11 +82,13 @@ export async function GET(
       likedIds = new Set(likesRes.data?.map(l => l.post_id) || [])
     }
 
-    withMeta = withMeta.map(p => ({
-      ...p,
-      replies_count: replyCount.get(p.id) || 0,
-      is_liked: likedIds.has(p.id),
-    }))
+    withMeta = withMeta
+      .map(p => ({
+        ...p,
+        replies_count: replyCount.get(p.id) || 0,
+        is_liked: likedIds.has(p.id),
+      }))
+      .filter(p => !p.is_deleted || p.replies_count > 0)
   }
 
   const [{ data: recipe }, { data: cooked }] = await headerPromise

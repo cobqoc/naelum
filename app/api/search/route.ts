@@ -111,25 +111,24 @@ export async function GET(request: NextRequest) {
   // 재료 검색 (재료가 포함된 레시피)
   if (type === 'all' || type === 'ingredients') {
     searchPromises.push((async () => {
+      // 레시피 기준으로 조회 — 예전엔 recipe_ingredients *행* 단위로 페이지를 잘라, 한 레시피에 '양파'·'적양파'가 있으면
+      // total 이 과대·페이지 간 중복·페이지당 개수 부족이었다(2026-10-19 감사 API1-23). !inner 조인 필터는 부모 행 기준 count.
       const { data: ingredientRecipes, count: ingredientCount } = await supabase
-        .from('recipe_ingredients')
+        .from('recipes')
         .select(`
-          recipe:recipes!inner(
-            id, title, description, thumbnail_url, display_image,
-            prep_time_minutes, cook_time_minutes, difficulty_level,
-            average_rating, views_count,
-            author:profiles!recipes_author_id_fkey(username, avatar_url),
-            status
-          )
+          id, title, description, thumbnail_url, display_image,
+          prep_time_minutes, cook_time_minutes, difficulty_level,
+          average_rating, views_count,
+          author:profiles!recipes_author_id_fkey(username, avatar_url),
+          status,
+          matched:recipe_ingredients!inner(ingredient_name)
         `, { count: 'exact' })
-        .ilike('ingredient_name', `%${query}%`)
-        .eq('recipe.status', 'published')
+        .ilike('matched.ingredient_name', `%${query}%`)
+        .eq('status', 'published')
         .range(offset, offset + limit - 1)
 
       /* eslint-disable @typescript-eslint/no-explicit-any */
-      const uniqueRecipes: any[] = ingredientRecipes
-        ? [...new Map(ingredientRecipes.map((item: any) => [item.recipe?.id, item.recipe])).values()].filter(Boolean)
-        : []
+      const uniqueRecipes: any[] = (ingredientRecipes ?? []).map(({ matched: _matched, ...recipe }: any) => recipe)
       /* eslint-enable @typescript-eslint/no-explicit-any */
 
       results.ingredients = { data: uniqueRecipes, total: ingredientCount || 0 }

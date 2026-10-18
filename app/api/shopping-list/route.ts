@@ -135,8 +135,10 @@ export async function POST(request: NextRequest) {
   // 수량 파싱·병합은 lib/shopping-list/quantity 의 순수 함수로 위임 —
   // "약간"·"적당량" 같은 비숫자 수량이 NaN→null 로 *기존 누적을 파괴*하던
   // 버그(C7)를 거기서 차단한다. 미상값(null)은 기존 값을 절대 덮어쓰지 않음.
-  const toUpdate: { id: string; quantity: number | null }[] = [];
-  const toInsert: Array<Record<string, unknown>> = [];
+  // 요청 안의 같은 이름(예: 밑간 '소금' + 마무리 '소금')은 키 기준으로 먼저 합친다 — 예전엔 DB 스냅샷만 보고 판단해
+  // 같은 재료가 2행으로 들어가거나, 기존 행에 대한 update 2개가 동시에 돌아 합계가 유실됐다(2026-10-19 감사 API1-52).
+  const updateByKey = new Map<string, { id: string; base: number | null; quantity: number | null }>();
+  const insertByKey = new Map<string, Record<string, unknown> & { quantity: number | null }>();
 
   for (const i of ingredients) {
     // 기본 재료(물 등)는 장보기에 안 담음 — 누구나 가진 걸로 간주 (수돗물 살 일 없음).
@@ -145,13 +147,14 @@ export async function POST(request: NextRequest) {
     const newQty = parseQuantity(i.quantity);
     const existing = existingByName.get(key);
     if (existing) {
-      const merged = mergeQuantity(existing.quantity, newQty);
-      // 병합 결과가 기존과 같으면(= 새 수량 미상) 불필요한 쓰기·파괴 위험 회피 → 스킵
-      if (merged !== existing.quantity) {
-        toUpdate.push({ id: existing.id, quantity: merged });
-      }
+      const pending = updateByKey.get(key);
+      const current = pending ? pending.quantity : existing.quantity;
+      updateByKey.set(key, { id: existing.id, base: existing.quantity, quantity: mergeQuantity(current, newQty) });
+    } else if (insertByKey.has(key)) {
+      const row = insertByKey.get(key)!;
+      row.quantity = mergeQuantity(row.quantity, newQty);
     } else {
-      toInsert.push({
+      insertByKey.set(key, {
         user_id: user.id,
         shopping_list_id: shoppingListId,
         ingredient_name: i.ingredient_name,
@@ -167,6 +170,12 @@ export async function POST(request: NextRequest) {
       });
     }
   }
+
+  // 병합 결과가 기존과 같으면(= 새 수량 미상) 불필요한 쓰기·파괴 위험 회피 → 스킵
+  const toUpdate = [...updateByKey.values()]
+    .filter(u => u.quantity !== u.base)
+    .map(({ id, quantity }) => ({ id, quantity }));
+  const toInsert: Array<Record<string, unknown>> = [...insertByKey.values()];
 
   // UPDATE는 행 단위로 (Supabase는 batch update가 까다로워 Promise.all로 처리).
   // Supabase 는 RLS 거부·제약 위반 시 throw 안 하고 { error } 반환 →
