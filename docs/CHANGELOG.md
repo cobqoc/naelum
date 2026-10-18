@@ -11,6 +11,13 @@
 
 ## 2026-10 작업 로그
 
+- **관리자 차단·활동 로그·대시보드 통계 테이블 생성 — dev → prod 적용** (2026-10-19)
+  - **원인**: `20260209_add_admin_role.sql`·`20260209_enhance_admin_security.sql` 이 dev·prod 어디에도 적용되지 않아 `banned_users`·`admin_actions`·`admin_dashboard_stats`·`reports.action_taken` 이 없었다 → 관리자 차단 저장 실패, 활동 로그·통계 빈 값, 신고 처리(`action_taken` 갱신) 실패. 두 옛 파일엔 "미적용·대체됨, 적용 금지" 머리말을 달았다.
+  - **`20261019_admin_moderation_tables.sql`**: 옛 정의를 현재 스키마에 맞춰 재작성 — `admin_id`·`banned_by` NULL 허용(ON DELETE SET NULL 과 NOT NULL 충돌 해소), 통계 뷰는 `status='published'`·`recipe_posts` 기준 + `security_invoker` + service_role 전용, 차단된 사용자는 만료 전 자기 행만 읽기(proxy.ts 가 사용자 컨텍스트로 차단 확인 — 코드 변경 없이 차단 집행), 관리자만 차단 추가·삭제·로그 조회, 로그 insert 는 본인 admin_id 만.
+  - **코드**: 대시보드 API 가 통계 뷰를 관리자 확인 후 service-role 로 읽음 · 대시보드가 삭제된 관리자의 로그(admin=null)에서 깨지던 문제(`action.admin.username`) 수정 · 타입 nullable 반영 · 회귀 e2e `e2e/admin-moderation.spec.ts`(차단 → 목록·로그·통계 반영 → 차단 사용자 보호 경로 거부 → 해제, 일반 사용자 403).
+  - **검증(dev)**: lint 0 · tsc · scan · vitest 740 · build · 전체 e2e **488 passed · 0 failed · 0 flaky · 2 skipped**. anon 은 통계 뷰 권한 거부, 두 테이블은 빈 결과. prod 적용 후 권한·정책 수(2·3)·통계 뷰 값 확인.
+  - **주의**: main 이 아직 옛 코드라 운영 대시보드 통계는 develop → main 머지 전까지 계속 빈 값(뷰가 service_role 전용). 차단 저장·활동 로그·신고 처리는 테이블이 생겨 운영에서 바로 동작. 차단 집행 범위의 후속 검토는 로컬 감사 결정 목록.
+
 - **감사 결정 목록 — 명확한 버그 6건 수정 + 차단 기능 DB 부재 발견** (2026-10-19, 다음 작업 ⑤ 일부)
   - **수정(항목별 커밋)**: 설정 아바타 업로드 실패 시 base64 를 프로필에 저장하던 폴백 제거(PAU-17 — 아바타 정책 적용으로 업로드 정상, prod data: 아바타 0건) · 운영 빌드가 서버 `console.error`·`warn` 까지 지우던 `removeConsole` 을 error·warn 제외로(빌드 산출물 서버 청크에서 보존 확인) · `sanitizeHtml` 이 `<` 뒤 `>` 가 없으면 끝까지 지우던 문제(`<3`·`a < b`·`<1컵` 보존, TT-25) · 레시피 작성·수정이 `meal_type: 'lunch'` 를 지어 저장(PHR-05 — prod 기존 'lunch' 13건 정리는 별도 결정) · 수량 `1/2` 가 1 로 저장(분수·대분수·½ 파싱, ICL-28 — 범위 `2~3` 은 앞 숫자 유지) · 레시피 작성 재료 행 3~5개일 때 × 비활성(임계 5 → 1, PHR-02, 회귀 e2e 추가).
   - **검증**: lint 0 · tsc · scan · vitest 740 · build · 전체 e2e(dev) **484 passed · 0 failed · 0 flaky**.
