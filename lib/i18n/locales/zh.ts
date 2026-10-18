@@ -1058,6 +1058,7 @@ export const zh = {
     errorPrefix: '保存时发生错误',
     errorUnknown: '未知错误',
     errorAuthMissing: '找不到用户认证信息',
+    preferencesPartialFail: '部分偏好（兴趣、饮食、过敏）未能保存，请在设置中重新填写',
     interests: {
       title: '选择兴趣料理',
       subtitle: '选择你喜欢的料理 (建议至少3个)',

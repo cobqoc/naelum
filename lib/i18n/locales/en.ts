@@ -1057,6 +1057,7 @@ export const en = {
     errorPrefix: 'Error while saving',
     errorUnknown: 'Unknown error',
     errorAuthMissing: 'User authentication not found',
+    preferencesPartialFail: 'Some preferences (interests, diet, allergies) couldn\'t be saved. Please re-enter them in Settings',
     interests: {
       title: 'Select your interests',
       subtitle: 'Choose cuisines you like (3+ recommended)',

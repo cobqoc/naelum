@@ -1058,6 +1058,7 @@ export const de = {
     errorPrefix: 'Fehler beim Speichern',
     errorUnknown: 'Unbekannter Fehler',
     errorAuthMissing: 'Benutzer-Authentifizierung nicht gefunden',
+    preferencesPartialFail: 'Einige Vorlieben (Interessen, Ernährung, Allergien) konnten nicht gespeichert werden. Bitte gib sie in den Einstellungen erneut ein',
     interests: {
       title: 'Interessen wählen',
       subtitle: 'Wähle bevorzugte Küchen (3+ empfohlen)',

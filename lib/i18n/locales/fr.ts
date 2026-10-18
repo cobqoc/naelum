@@ -1058,6 +1058,7 @@ export const fr = {
     errorPrefix: 'Erreur lors de l\'enregistrement',
     errorUnknown: 'Erreur inconnue',
     errorAuthMissing: 'Authentification utilisateur introuvable',
+    preferencesPartialFail: 'Certaines préférences (centres d\'intérêt, régime, allergies) n\'ont pas pu être enregistrées. Saisissez-les à nouveau dans les Paramètres',
     interests: {
       title: 'Sélectionnez vos intérêts',
       subtitle: 'Choisissez les cuisines que vous aimez (3+ recommandé)',

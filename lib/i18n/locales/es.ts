@@ -1058,6 +1058,7 @@ export const es = {
     errorPrefix: 'Error al guardar',
     errorUnknown: 'Error desconocido',
     errorAuthMissing: 'No se encontró la autenticación del usuario',
+    preferencesPartialFail: 'No se pudieron guardar algunas preferencias (intereses, dieta, alergias). Vuelve a introducirlas en Ajustes',
     interests: {
       title: 'Selecciona tus intereses',
       subtitle: 'Elige las cocinas que te gusten (3+ recomendado)',
