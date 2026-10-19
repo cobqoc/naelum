@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { getClientIp } from '@/lib/api/clientIp'
+import { getServiceRoleClient } from '@/lib/supabase/service'
 
 // POST /api/recipes/[id]/view - 조회수 증가
 export async function POST(
@@ -36,8 +37,8 @@ export async function POST(
           user_id: user?.id || null,
           created_at: new Date().toISOString()
         }),
-      // Database Function을 사용하여 조회수 증가 (RLS 우회)
-      supabase.rpc('increment_recipe_views', { recipe_id: recipeId }),
+      // 조회수 증가는 서비스 롤로 호출 — 위 쿠키·rate limit 을 거친 요청만 센다.
+      getServiceRoleClient().rpc('increment_recipe_views', { recipe_id: recipeId }),
     ])
 
     // 조회 기록 insert 실패는 조회수와 별개 — 로그로만 표면화(API1-25)

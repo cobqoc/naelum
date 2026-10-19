@@ -39,7 +39,7 @@
 ### 🔴 Trigger 무관 — 고지 누락 (현재 앱 동작과 정책 문서 불일치)
 
 #### 16. 카카오(Kakao) 수탁·제3자 고지 누락
-- **현재 상태**: 앱은 카카오를 **소셜 로그인 제공자**(`supabase.auth.signInWithOAuth({ provider: 'kakao' })` — `app/[lang]/signin/page.tsx`·`app/[lang]/signup/SignupClient.tsx`·`components/Auth/AuthPromptSheet.tsx`)와 **공유 SDK**(`components/Recipes/ShareButton.tsx`, CSP 의 kakao 도메인 — `next.config.ts`)로 쓰지만, `app/[lang]/privacy/page.tsx`·`app/[lang]/cookies/page.tsx` 에 카카오 언급이 0건이다(소셜 로그인 수집 항목도 Google 만 기재).
+- **현재 상태**: 앱은 카카오를 **소셜 로그인 제공자**(`supabase.auth.signInWithOAuth({ provider: 'kakao' })` — `app/[lang]/signin/SigninClient.tsx`·`app/[lang]/signup/SignupClient.tsx`·`components/Auth/AuthPromptSheet.tsx`)와 **공유 SDK**(`components/Recipes/ShareButton.tsx`, CSP 의 kakao 도메인 — `next.config.ts`)로 쓰지만, `app/[lang]/privacy/page.tsx`·`app/[lang]/cookies/page.tsx` 에 카카오 언급이 0건이다(소셜 로그인 수집 항목도 Google 만 기재).
 - **해야 할 일**: `/privacy` 수탁업체·국외이전·소셜 로그인 수집 항목과 `/cookies` 제3자 목록에 카카오 추가 → 동의 버전 bump(아래 "업데이트 규칙"). 법적 본문 변경이라 사용자 결정·검토 후 진행.
 
 ### 🟡 Trigger: EU 사용자 100명+ OR 수익 발생

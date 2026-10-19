@@ -9,8 +9,8 @@
 ## 💻 기술 스택 (현재 프로젝트 기준)
 
 ### Frontend
-- **Framework**: Next.js 16.2.x (App Router) — `package.json` `^16.2.4`, lockfile·설치본 16.2.6 (16.2.3 은 `eslint-config-next` 버전)
-- **Library**: React 19.2.3
+- **Framework**: Next.js 16.2.x (App Router) — `package.json` `^16.2.10`, lockfile·설치본 16.2.10 (2026-10-19 — 16.2.3 은 `eslint-config-next` 버전)
+- **Library**: React 19.2.7
 - **Styling**: Tailwind CSS 4 (@tailwindcss/postcss)
 - **Language**: TypeScript 5.x
 
@@ -1224,7 +1224,7 @@ DELETE /api/user/ingredients/:id   # 보유 재료 삭제
 - **robots.txt** — 단일 출처 `app/robots.ts`(2026-10-19 `public/robots.txt` 삭제·규칙 이식): AI·SEO 스크래퍼 13종 전체 Disallow + 전 UA 는 `/api/`·`/admin`·`/settings`·`/auth/`·`/signup/set-password`·`/cart/share/` 를 lang 없는 경로와 `/*/` 와일드카드 둘 다로 Disallow(실제 URL 은 `/ko/…`). AI 크롤러는 위 `proxy.ts` 403 으로도 차단
 - **Rate Limiting** — Supabase DB 기반 (`lib/ratelimit.ts` `checkRateLimit`, `supabase/migrations/20260411_rate_limits.sql`)
   - 대표 한도: 검색 30회/분 (IP), 추천 20회/분 (IP), 업로드 10회/분 (유저ID). 그 외(자동완성 60/분, 가입 5/시간, 문의 5/시간, 관리자 API 100/10분, 재료 생성 3/분 등)는 각 라우트의 `checkRateLimit(...)` 호출이 기준
-  - 로그인 5회/15분 (IP+email, `lib/security/loginLimiter.ts`)은 **`POST /api/auth/signin`(KMP 앱 경로) 한정** — 웹 로그인 폼은 브라우저에서 `supabase.auth.signInWithPassword` 를 직접 호출(`app/[lang]/signin/page.tsx`)하므로 앱 레벨 잠금 없이 Supabase Auth 자체 rate limit 만 적용. loginLimiter 는 `ENABLE_RATE_LIMITING` 플래그와 무관하게 동작
+  - 로그인 5회/15분 (IP+email, `lib/security/loginLimiter.ts`)은 **`POST /api/auth/signin`(KMP 앱 경로) 한정** — 웹 로그인 폼은 브라우저에서 `supabase.auth.signInWithPassword` 를 직접 호출(`app/[lang]/signin/SigninClient.tsx`)하므로 앱 레벨 잠금 없이 Supabase Auth 자체 rate limit 만 적용. loginLimiter 는 `ENABLE_RATE_LIMITING` 플래그와 무관하게 동작
   - Cloudflare IP: `CF-Connecting-IP` 헤더 우선 — 클라이언트 IP 는 `lib/api/clientIp.ts` `getClientIp` 가 단일 출처(IP 키 rate limit·로그인 잠금 라우트 전부). 예외: 기록용 IP(약관 동의 `app/api/terms/accept`, 관리자 행동 로그 `lib/supabase/admin.ts`)는 `X-Forwarded-For` 사용
   - 활성화: Vercel 환경변수 `ENABLE_RATE_LIMITING=true` 설정됨
 - **Rate limits 테이블 정리** — 매일 00:00 UTC(09:00 KST) cron (`/api/cron/cleanup-rate-limits`, `vercel.json` `0 0 * * *` — Vercel Hobby 플랜 cron 은 하루 1회 제한)

@@ -32,18 +32,20 @@ test.describe('식당 사장님 어드민', () => {
     await expect(authenticatedPage.getByRole('heading', { name: '식당 등록' })).toBeVisible();
   });
 
+  // 이름을 E2E 로 시작하게 둔다 — testUser 가 지워지면 owner_id 가 NULL 로 남는데,
+  // delivery-full-flow.spec 의 고아 정리(owner_id IS NULL AND name LIKE 'E2E%')가 이 이름만 지운다.
   test('식당 등록 → 대시보드 진입', async ({ authenticatedPage }) => {
     const page = authenticatedPage;
     await page.goto('/ko/merchant/onboarding');
 
-    await page.getByTestId('form-name').fill('테스트 식당');
+    await page.getByTestId('form-name').fill('E2E 테스트 식당');
     await page.getByTestId('form-cuisine').fill('한식, 분식');
     await page.getByTestId('form-delivery-fee').fill('2500');
     await page.getByTestId('form-min-order').fill('10000');
     await page.getByTestId('onboarding-submit').click();
 
     await expect(page).toHaveURL(/\/merchant$/, { timeout: 10_000 });
-    await expect(page.getByText('테스트 식당')).toBeVisible();
+    await expect(page.getByText('E2E 테스트 식당')).toBeVisible();
     await expect(page.getByTestId('stat-orders')).toBeVisible();
   });
 
