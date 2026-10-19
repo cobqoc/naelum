@@ -197,7 +197,7 @@ export default function AllRecipesPage() {
       return;
     }
     clear();
-    fetchRecipes(0, sortBy, true); // eslint-disable-line react-hooks/set-state-in-effect -- setState calls are all after await
+    fetchRecipes(0, sortBy, true);
   }, [sortBy, cuisineFilter, dishFilter, fetchRecipes, clear]);
 
   // unmount 시 현재 state 저장

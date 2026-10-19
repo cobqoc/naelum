@@ -53,6 +53,7 @@ export function Map({
       });
     } catch {
       // WebGL 컨텍스트 생성 실패 등 — 페이지를 죽이지 않고 대체 표시
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 지도(WebGL) 생성 실패를 표시 — 외부 시스템 초기화 결과
       setFailed(true);
       return;
     }

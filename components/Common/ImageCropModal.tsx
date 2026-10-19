@@ -77,6 +77,7 @@ export default function ImageCropModal({
   // 새 파일이 들어오면 crop state 초기화. (이전 모달의 잔여 crop 이 새 이미지에 적용되는 걸 차단)
   useEffect(() => {
     if (!file) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     setCrop(undefined);
     setCompletedCrop(undefined);
     setProcessing(false);

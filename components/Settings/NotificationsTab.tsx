@@ -27,6 +27,7 @@ export default function NotificationsTab({ userId, t }: NotificationsTabProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
       setPushPermission(Notification.permission);
     }
   }, []);

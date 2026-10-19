@@ -42,6 +42,7 @@ export default function MadeItModal({ recipeId, isOpen, onClose, onSuccess }: Ma
 
   useEffect(() => {
     if (!isOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     setDifficulty(0); setPhoto(null); setPhotoPreview(null);
   }, [isOpen]);
 

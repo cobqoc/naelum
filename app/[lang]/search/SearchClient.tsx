@@ -125,6 +125,7 @@ function SearchContent() {
   // Fetch autocomplete suggestions
   useEffect(() => {
     if (searchInput.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
       setSuggestions([]);
       return;
     }
@@ -238,6 +239,7 @@ function SearchContent() {
     const prev = prevFiltersRef.current;
     if (prev.cuisine === cuisine && prev.difficulty === difficulty && prev.maxTime === maxTime) return;
     prevFiltersRef.current = { cuisine, difficulty, maxTime };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     if (query) performSearch(query);
   }, [cuisine, difficulty, maxTime, query, performSearch]);
 
@@ -247,6 +249,7 @@ function SearchContent() {
     const cached = load();
     if (cached && cached.data.query === initialQuery) {
       isRestoredRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
       setResults(cached.data.results);
       // ingredients 탭 제거 후엔 cache에 'ingredients'가 남아있어도 'recipes'로 fallback (빈 화면 방지)
       setActiveTab(cached.data.activeTab === 'ingredients' ? 'recipes' : cached.data.activeTab);

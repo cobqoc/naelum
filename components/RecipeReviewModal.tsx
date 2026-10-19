@@ -42,6 +42,7 @@ export default function RecipeReviewModal({
 
   // Props 변경 시 state 업데이트
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     setRating(initialRating);
     setReview(initialReview);
   }, [initialRating, initialReview]);

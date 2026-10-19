@@ -42,6 +42,7 @@ export function Picker({
   useEffect(() => {
     if (selected) return;
     const term = q.trim();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
     if (!term) { setResults([]); return; }
     let cancelled = false;
     setSearching(true);
