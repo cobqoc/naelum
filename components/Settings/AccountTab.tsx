@@ -217,6 +217,7 @@ export default function AccountTab({ profile, supabase, t }: AccountTabProps) {
         localStorage.removeItem('naelum_auto_login');
         localStorage.removeItem('naelum_saved_email');
         await supabase.auth.signOut();
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 탈퇴 후 세션·클라이언트 상태를 비우는 전체 이동
         window.location.href = '/';
       } else {
         setDeleting(false);

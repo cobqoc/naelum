@@ -80,6 +80,7 @@ export default function TermsAgreementPage() {
         return;
       }
       // 세션 쿠키를 완전히 비우기 위해 full reload
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 세션 쿠키를 비우는 전체 이동(위 주석)
       window.location.href = '/signup';
     } catch (err) {
       console.error('cancel-signup error:', err);

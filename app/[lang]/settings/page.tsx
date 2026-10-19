@@ -383,6 +383,7 @@ export default function SettingsPage() {
 
       if (usernameChanged) {
         toast.success(sp.profileSaved);
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 닉네임이 바뀌면 헤더·캐시까지 새로 읽도록 전체 이동
         window.location.href = `/@${username.trim()}`;
         return;
       }
