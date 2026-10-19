@@ -11,7 +11,12 @@
 
 ## 2026-10 작업 로그
 
-- **남은 소소한 항목 정리 + 의존성 업데이트 — develop 푸시·dev 전체 e2e 통과, main 머지는 다음 세션** (2026-10-19)
+- **main 머지·배포 + 함수 권한 정리 prod 적용** (2026-10-19 밤)
+  - PR #251 머지(`a9fdab4`)·Vercel Production 배포. naelum.app `/ko`·`/ko/signin`("로그인")·`/en/signin`("Log in")·`/ko/recipes`·`/ko/kitchen` 200, `/ko/delivery` 404(봉인).
+  - 배포 확인 뒤 prod 에 `20261019_secdef_grants_cleanup.sql` 적용 — 트리거·미사용 함수와 조회수 함수는 anon·authenticated 실행 불가, service_role 가능. `recipe_cooked_count` 공개·`delete_user` authenticated 유지 확인. 조회수 라우트는 적용 전·후 모두 증가(확인용 호출 2회로 공개 레시피 1건 조회수 +2).
+  - 이 변경으로 대체된 dependabot #242·#23·#22·#20 닫음. 로컬 배달 브랜치 2개는 이번 머지에서 제외(그대로 보관).
+
+- **남은 소소한 항목 정리 + 의존성 업데이트 — develop 푸시·dev 전체 e2e 통과, main 머지는 같은 날 밤(위)** (2026-10-19)
   - **로그인 페이지 제목**: `/[lang]/signin` 에 메타데이터가 없어 홈 제목이 떴다 → `page.tsx` 를 서버 래퍼(`meta.loginTitle`·`loginDescription`)로, 기존 클라이언트는 `SigninClient.tsx` 로 이름 변경. 로컬 prod 서버에서 ko·en·ja 제목 확인.
   - **e2e 고아 식당**: `merchant-rider.spec` 이 만드는 식당 이름을 `E2E 테스트 식당` 으로 — testUser 삭제 후 owner_id NULL 로 남는 행을 `delivery-full-flow.spec` 의 `E2E%` 고아 정리가 지운다. dev 에 쌓여 있던 옛 이름 '테스트 식당' 고아 454건(딸린 주문 0)은 같은 날 dev 에서 삭제.
   - **배달 봉인 해제 플래그**: `DELIVERY_ENABLED=true` 를 로컬 `.env.local`·Vercel Preview(develop)에 추가. Production 에는 넣지 않음.
