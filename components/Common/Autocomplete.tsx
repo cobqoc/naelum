@@ -97,6 +97,7 @@ export default function Autocomplete<T extends AutocompleteItem>({
 
     // 검색어가 최소 길이 미만이면 초기화
     if (value.length < minQueryLength) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
       setSuggestions([]);
       setShowDropdown(false);
       setLoading(false);

@@ -86,9 +86,12 @@ export default function IngredientForm({
     defaultLocationRef.current = selectedLocation;
   }, [selectedLocation]);
 
+  const [pendingItems, setPendingItems] = useState<PendingIngredient[]>([]);
+
   // selectedLocation 변화 시 기존 pendingItems 위치 일괄 재계산.
   // null(자동) → 큐레이션 맵 기반 재분류, 수동 → 모든 아이템 해당 위치로 고정.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     setPendingItems(prev => prev.map(item => ({
       ...item,
       storage_location: selectedLocation ?? (lookupStorageByName(item.name) ?? '상온'),
@@ -97,7 +100,6 @@ export default function IngredientForm({
 
   // 빠른 추가 모드 상태
   const [inputValue, setInputValue] = useState('');
-  const [pendingItems, setPendingItems] = useState<PendingIngredient[]>([]);
   // 상세설정 대상은 배열 인덱스가 아니라 pending id 로 추적(ICL-36, 2026-10-04) — 인덱스로 추적하면 앞 태그를
   // 지울 때 다른 재료를 편집하게 되거나, 대상이 사라져 패널 없이 브라우저만 숨은 빈 화면에 갇혔다.
   // 대상이 목록에서 빠지면 editingItem 이 null 이 돼 자연히 상세 패널이 닫힌다.
@@ -130,6 +132,7 @@ export default function IngredientForm({
   useEffect(() => {
     if (isEditMode) return;
     if (favorites.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
       setFrequentIngredients(
         favorites.slice(0, 40).map(f => ({
           id: `fav:${f.ingredient_name}`,

@@ -77,6 +77,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'profile' || tabParam === 'preferences' || tabParam === 'notifications' || tabParam === 'account') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
       setActiveTab(tabParam);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,12 +206,14 @@ export default function SettingsPage() {
   }, [router]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     loadProfile();
   }, [loadProfile]);
 
   // Username availability check
   useEffect(() => {
     if (!username || username === profile?.username) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
       setUsernameError(null);
       // 진행 중이던 이전 확인은 cleanup 으로 무효화돼 스스로 끄지 못하므로 여기서 스피너 해제 (PAU-20)
       setCheckingUsername(false);

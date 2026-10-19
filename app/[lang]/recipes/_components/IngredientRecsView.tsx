@@ -108,6 +108,7 @@ export default function IngredientRecsView() {
   // 결과가 비면(매칭 0 등 터미널 상태) 인기 레시피를 1회 로드 → dead-end 대신 제안
   useEffect(() => {
     if (loading || recommendations.length > 0 || fallbackTried) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     setFallbackTried(true);
     fetch('/api/recommendations?type=personalized&limit=10')
       .then(r => r.json())

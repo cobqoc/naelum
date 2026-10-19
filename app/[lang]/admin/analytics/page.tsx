@@ -50,6 +50,7 @@ export default function AdminAnalyticsPage() {
   }, [range]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     loadData();
   }, [loadData]);
 

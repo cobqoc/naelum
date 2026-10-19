@@ -140,6 +140,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
       fetchItems();
     } else {
       setInputText('');
@@ -153,6 +154,7 @@ export default function ShoppingCartDropdown({ isOpen, onClose, fromBottom = fal
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = inputText.trim();
     if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
       setSuggestions([]);
       setShowSuggestions(false);
       return;

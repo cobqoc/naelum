@@ -8,7 +8,7 @@
 > - **Supabase Realtime·Functions 사용 금지** — `next.config.ts` 가 `@supabase/realtime-js`·`functions-js` 를 shim 으로 대체(CLAUDE.md "Storage / 이식성")
 > - 환경 변수 템플릿은 리포 루트 `env.example`(Supabase 3개 외 `NEXT_PUBLIC_SITE_URL`·`CRON_SECRET` 등)
 > - Storage 버킷 7개 — `lib/storage/index.ts` 의 `StorageBucket`
-> - `lib/supabase/database.types.ts` 는 `supabase gen types` 생성물이 아닌 2026-04 수기 스냅샷(재생성 필요)
+> - `lib/supabase/database.types.ts` 는 prod 스키마 생성물(2026-10-20, Supabase MCP `generate_typescript_types`) — dev 전용 배달 테이블은 없다. 스키마 변경 후 다시 생성
 > - 스키마: 리포만으로는 현행 스키마를 처음부터 재현할 수 없다 — 기반 테이블은 초기 `supabase-schema.sql` 에만 있고, 일부 변경은 마이그레이션 없이 DB 에 직접 적용됐다(예: `recipes.status` 전환 2026-04-12 — 그런데 `supabase/migrations/20260413_sync_rls_policies_to_dev.sql` 이 이 컬럼을 참조). 새 환경은 운영 DB 스키마(덤프) 기준, 이후 변경만 `supabase/migrations/` 로
 
 ## 📋 목차
@@ -170,7 +170,7 @@ export async function updateSession(request: NextRequest) {
 
 ## 4. TypeScript 타입 생성
 
-> 현재 리포의 `lib/supabase/database.types.ts` 는 아래 "방법 2" 식 **수기 스냅샷(2026-04-14 마지막 수정)** 이라 현행 테이블 상당수가 빠져 있다 — 방법 1 로 재생성 필요.
+> 현재 리포의 `lib/supabase/database.types.ts` 는 2026-10-20 prod(`naelum`) 스키마로 생성한 파일이다(방법 1 과 같은 결과). 배달 테이블은 dev 전용이라 빠져 있어, 내보내기 라우트는 배달 테이블을 타입 없는 클라이언트로 읽는다.
 
 ### 방법 1: Supabase CLI 사용 (권장)
 
@@ -747,7 +747,7 @@ naelum/ (2026-10-04 기준 — 주요 경로만)
 │       ├── middleware.ts         # updateSession (proxy.ts 가 호출)
 │       ├── service.ts            # service role 클라이언트
 │       ├── shims/                # realtime-js·functions-js·iceberg-js 대체
-│       └── database.types.ts     # 수기 타입 스냅샷 (재생성 필요)
+│       └── database.types.ts     # prod 스키마 생성 타입 (2026-10-20)
 ├── supabase/migrations/          # 스키마 변경 SQL
 ├── proxy.ts                      # Next 16 미들웨어 (middleware.ts 아님)
 ├── .env.local                    # 환경 변수 (gitignore)

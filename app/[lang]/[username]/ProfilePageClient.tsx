@@ -65,6 +65,7 @@ export default function ProfilePageClient({ rawSegment }: ProfilePageClientProps
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as TabType;
       if (tabParam && PROFILE_TABS.includes(tabParam)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
         setActiveTab(tabParam);
       }
     }
@@ -149,6 +150,7 @@ export default function ProfilePageClient({ rawSegment }: ProfilePageClientProps
   }, [username, profile]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     fetchProfile();
   }, [fetchProfile]);
 
@@ -171,6 +173,7 @@ export default function ProfilePageClient({ rawSegment }: ProfilePageClientProps
   useEffect(() => {
     if (!profile) return;
     tabGenRef.current += 1; // 진행 중인 이전 탭 요청 무효화 (PAU-21)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     setLoadingMore(false); // 이전 탭의 무한스크롤 요청은 버려지므로 로딩 표시 해제 (PAU-21)
     setTips([]);
     if (activeTab === 'tips') {

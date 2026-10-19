@@ -36,6 +36,8 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifLoading, setNotifLoading] = useState(false);
+  // 상대 시간(n분 전)의 기준 — 렌더 중 Date.now() 대신 목록을 받은 시각
+  const [listFetchedAt, setListFetchedAt] = useState(() => Date.now());
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -65,6 +67,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
       const data = await res.json();
       if (res.ok) {
         setNotifications(data.notifications || []);
+        setListFetchedAt(Date.now());
         setUnreadCount(data.unreadCount || 0);
       } else {
         toast.error(t.common.error);
@@ -77,6 +80,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   // 폴링 (30초)
   useEffect(() => {
     if (!userId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
@@ -123,7 +127,7 @@ export default function NotificationPanel({ userId, isOpen, onOpen, onClose }: N
   };
 
   const formatNotifTime = (dateString: string) => {
-    const diff = Date.now() - new Date(dateString).getTime();
+    const diff = listFetchedAt - new Date(dateString).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);

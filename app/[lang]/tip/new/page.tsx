@@ -63,6 +63,7 @@ export default function TipNewPage() {
     const saved = loadAutosave<AutosaveSnapshot>(AUTOSAVE_KEY, AUTOSAVE_MAX_AGE);
     if (saved && saved.data.title?.trim()) {
       autosaveSnapshotRef.current = saved.data;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
       setAutosaveRestoreVisible(true);
     }
   }, []);

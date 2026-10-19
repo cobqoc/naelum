@@ -73,6 +73,7 @@ export default function AddIngredientDialog({
    */
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
       setName(initialName);
       setNameEn('');
       setCategory('other');
@@ -89,6 +90,7 @@ export default function AddIngredientDialog({
   // 자동 알레르겐 추정 — 사용자가 직접 체크하기 전까진 이름 기반 제안 반영
   const suggestedAllergens = useMemo(() => suggestAllergens(name), [name]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop·열림 상태 변화에 맞춘 상태 초기화·동기화
     if (!allergensTouched) setSelectedAllergens(suggestedAllergens);
   }, [suggestedAllergens, allergensTouched]);
 
@@ -128,6 +130,7 @@ export default function AddIngredientDialog({
    */
   useEffect(() => {
     if (!name || name.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
       setDuplicateError('');
       setSimilarIngredient(null);
       return;

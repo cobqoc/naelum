@@ -11,6 +11,16 @@
 
 ## 2026-10 작업 로그
 
+- **Node 버전 고정 + DB 타입 재생성** (2026-10-20)
+  - `engines.node` 24.x — Vercel 프로젝트 설정(24.x)과 같게 고정. CI 22 → 24.
+  - `lib/supabase/database.types.ts` 를 prod 스키마 생성물로 교체(2026-04 수기 스냅샷 → 테이블 57·뷰·함수 포함). 사용처 `createServiceClient()` 1곳. dev 전용 배달 테이블은 생성 타입에 없어 내보내기 라우트는 그 5개만 타입 없는 서비스 롤 클라이언트로 읽는다.
+  - **검증**: lint 0 · tsc · scan · fresh build · vitest 748. 전체 e2e 는 다시 돌리지 않음 — 런타임 변경은 내보내기 라우트의 클라이언트 교체뿐인데 이를 다루는 e2e 가 없다(같은 URL·키).
+
+- **react-hooks 린트 7.1.1 대응** (2026-10-20)
+  - 7.1.1 이 새로 잡은 진짜 문제 3건 수정: 레시피 작성 리믹스 접두어 ref 를 렌더 중이 아니라 effect 에서 갱신 · 알림 패널 상대 시간 기준을 렌더 중 `Date.now()` 대신 목록을 받은 시각으로 · 재료 폼 `pendingItems` state 를 쓰는 effect 보다 위에 선언(React Compiler 최적화 건너뜀 2건도 함께 해소).
+  - `set-state-in-effect` 44곳은 의도된 패턴이라 줄 단위 예외 + 사유(서버 데이터 로드 · 빈 입력 시 결과 초기화 · 브라우저 전용 값 hydration 뒤 읽기 · prop·열림 상태 동기화 · 지도 생성 실패 표시). 안 쓰이게 된 예외 1곳 제거. `overrides` 의 7.0.1 고정 해제.
+  - **검증**: lint 0 · tsc · scan · fresh build · vitest 748 · 전체 e2e(dev) **488 passed · 0 failed · 0 flaky · 2 skipped**. 서버 로그의 `recipe_views insert failed`(23503)는 e2e 가 레시피를 지운 뒤 늦게 도착한 조회 기록 — 이전 실행에도 있던 테스트 경합.
+
 - **보안 업데이트 — next 16.3.8 + 하위 의존성 lockfile 정리** (2026-10-20)
   - GitHub Dependabot 보안 알림(next critical 3·high 다수 — 16.2 계열엔 수정 없음, 이미지 최적화 AVIF 경로 포함)에 대응해 next 16.2.10 → **16.3.8**, `eslint-config-next` 16.3.8(정확 고정), vitest 4.1.11. `npm audit fix`(비파괴)로 sharp 0.35·postcss 8.5.31·nanoid·brace-expansion·fast-uri·js-yaml·browserslist 등 전이 의존성 갱신.
   - `npm audit fix` 가 함께 올린 `eslint-plugin-react-hooks` 7.1.1 은 `set-state-in-effect` 강화로 오류 48 → `overrides` 로 7.0.1 고정(규칙 대응은 별도 작업).

@@ -51,6 +51,7 @@ export default function SearchBar({ className = '', isSmall = false, autoFocus =
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
     setHistory(getSearchHistory());
   }, []);
 

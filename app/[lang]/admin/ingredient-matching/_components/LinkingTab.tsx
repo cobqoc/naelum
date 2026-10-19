@@ -88,12 +88,14 @@ export default function LinkingTab() {
     }
   }, [toast, t]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트·조건 변경 시 서버 데이터 로드(로딩 표시 포함) — 외부 시스템 동기화
   useEffect(() => { load(offset); }, [load, offset]);
 
   // 모달 검색 (입력 변화 시)
   useEffect(() => {
     if (!modalRow) return;
     const q = searchQ.trim();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 입력이 비면 이전 결과·상태를 비운다 — 아래 요청과 같은 effect 에서 동기화
     if (q.length < 1) { setSearchResults([]); return; }
     let cancelled = false;
     setSearching(true);

@@ -2,6 +2,9 @@
   "name": "naelum",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -48,7 +51,6 @@
     "vitest": "^4.1.11"
   },
   "overrides": {
-    "postcss": ">=8.5.10",
-    "eslint-plugin-react-hooks": "7.0.1"
+    "postcss": ">=8.5.10"
   }
 }

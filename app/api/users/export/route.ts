@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { createServiceClient } from '@/lib/supabase/service';
+import { createServiceClient, getServiceRoleClient } from '@/lib/supabase/service';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth';
 import { fetchAllData, fetchAllDataIfExists } from '@/lib/supabase/fetchAll';
@@ -26,6 +26,8 @@ export async function GET() {
 
     const uid = user!.id;
     const sb = createServiceClient();
+    // 배달 테이블은 dev 전용이라 prod 에서 생성한 Database 타입에 없다 — 타입 없는 클라이언트로 읽는다(테이블 부재는 IfExists 가 처리)
+    const deliverySb = getServiceRoleClient();
 
     // Stage 1: 본인 식별 컬럼 기반 단순 조회 (병렬)
     const [
@@ -79,20 +81,20 @@ export async function GET() {
       fetchAllData(() => sb.from('ingredient_price_reports').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('ingredient_training_data').select('*').eq('user_id', uid)),
       fetchAllData(() => sb.from('events').select('*').eq('user_id', uid)),
-      fetchAllDataIfExists(() => sb.from('delivery_addresses').select('*').eq('user_id', uid)),
-      fetchAllDataIfExists(() => sb.from('delivery_rider_profiles').select('*').eq('user_id', uid)),
+      fetchAllDataIfExists(() => deliverySb.from('delivery_addresses').select('*').eq('user_id', uid)),
+      fetchAllDataIfExists(() => deliverySb.from('delivery_rider_profiles').select('*').eq('user_id', uid)),
       // recipes: soft-delete 시스템 미구현 (20260209 마이그레이션 미적용, deleted_at 컬럼 없음).
       // status 컬럼(private/published) 으로만 관리. 본인 author_id 전체 export.
       fetchAllData(() => sb.from('recipes').select('*').eq('author_id', uid)),
       fetchAllData(() => sb.from('tip').select('*').eq('author_id', uid)),
-      fetchAllDataIfExists(() => sb.from('delivery_restaurants').select('*').eq('owner_id', uid)),
+      fetchAllDataIfExists(() => deliverySb.from('delivery_restaurants').select('*').eq('owner_id', uid)),
       fetchAllData(() => sb.from('reports').select('*').eq('reporter_id', uid)),
       // user_blocks: 본인이 *차단한* 사람만 (blocked_id=본인 = 본인을 차단한 사람은 비공개)
       fetchAllData(() => sb.from('user_blocks').select('*').eq('blocker_id', uid)),
       // user_follows: 양방향 (팔로잉·팔로워 모두 본인 사회 그래프)
       fetchAllData(() => sb.from('user_follows').select('*').or(`follower_id.eq.${uid},following_id.eq.${uid}`)),
       // delivery_orders: 소비자(user_id)·라이더(rider_id) 양쪽
-      fetchAllDataIfExists(() => sb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
+      fetchAllDataIfExists(() => deliverySb.from('delivery_orders').select('*').or(`user_id.eq.${uid},rider_id.eq.${uid}`)),
       // 어드민 활동 (일반 사용자는 빈 배열)
       fetchAllData(() => sb.from('ingredients_master').select('*').or(`created_by.eq.${uid},approved_by.eq.${uid}`)),
       // V2(2026-05-29): ingredient_substitutes_global → ingredient_relations 로 흡수. 흡수된 live 테이블에서 export.
@@ -115,7 +117,7 @@ export async function GET() {
       tipIds.length ? fetchAllData(() => sb.from('tip_steps').select('*').in('tip_id', tipIds)) : emptyData,
       tipIds.length ? fetchAllData(() => sb.from('tip_tags').select('*').in('tip_id', tipIds)) : emptyData,
       mealPlanIds.length ? fetchAllData(() => sb.from('meal_plan_items').select('*').in('meal_plan_id', mealPlanIds)) : emptyData,
-      orderIds.length ? fetchAllDataIfExists(() => sb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
+      orderIds.length ? fetchAllDataIfExists(() => deliverySb.from('delivery_order_items').select('*').in('order_id', orderIds)) : emptyData,
       recipeIds.length ? fetchAllDataIfExists(() => sb.from('recipe_notes').select('*').in('recipe_id', recipeIds)) : emptyData,
     ]);
 
