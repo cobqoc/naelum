@@ -48,7 +48,7 @@ export default function NewRecipePage() {
   const tf = t.recipeForm;
   // remix prefill effect 가 deps=[remixId] 라 t 를 dep 에 넣으면 언어변경 시 폼이 리셋됨 → ref 로 최신값만 읽음
   const remixPrefixRef = useRef(tf.remixTitlePrefix);
-  remixPrefixRef.current = tf.remixTitlePrefix;
+  useEffect(() => { remixPrefixRef.current = tf.remixTitlePrefix; }, [tf.remixTitlePrefix]);
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const [remixSource, setRemixSource] = useState<{ id: string; title: string; author: string } | null>(null);
@@ -175,6 +175,7 @@ export default function NewRecipePage() {
     const saved = loadAutosave<AutosaveSnapshot>(AUTOSAVE_KEY, AUTOSAVE_MAX_AGE);
     if (saved && saved.data.title?.trim()) {
       autosaveSnapshotRef.current = saved.data;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(URL·localStorage·권한)은 hydration 뒤 effect 에서만 읽는다
       setAutosaveRestoreVisible(true);
     }
   }, [remixId]);
