@@ -24,6 +24,7 @@ export async function logout(): Promise<boolean> {
   } catch {
     // SW 미지원·미등록 — 정리할 캐시 없음
   }
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 로그아웃 후 클라이언트 상태를 비우는 전체 이동
   window.location.href = '/'
   return true
 }

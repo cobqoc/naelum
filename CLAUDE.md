@@ -9,7 +9,7 @@
 ## 💻 기술 스택 (현재 프로젝트 기준)
 
 ### Frontend
-- **Framework**: Next.js 16.2.x (App Router) — `package.json` `^16.2.10`, lockfile·설치본 16.2.10 (2026-10-19 — 16.2.3 은 `eslint-config-next` 버전)
+- **Framework**: Next.js 16.3.x (App Router) — `package.json` `^16.3.8`, lockfile·설치본 16.3.8 (2026-10-20 보안 업데이트 — `eslint-config-next` 도 16.3.8 고정)
 - **Library**: React 19.2.7
 - **Styling**: Tailwind CSS 4 (@tailwindcss/postcss)
 - **Language**: TypeScript 5.x

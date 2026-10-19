@@ -60,6 +60,7 @@ export default function ResetPasswordVerifyPage() {
         later(() => {
           window.close();
           // window.close()가 동작하지 않는 경우 (스크립트로 열리지 않은 탭)
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 새 탭에서 연 경우 세션 쿠키를 다시 읽도록 전체 이동
           window.location.href = '/auth/reset-password';
         }, 2000);
       } catch (err) {
