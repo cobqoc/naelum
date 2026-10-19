@@ -157,7 +157,7 @@ export default function ResetPasswordModal({
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={`${INPUT_INNER_COMFORTABLE_CLASS} pr-10`}
                   style={INPUT_INNER_STYLE}
-                  // '{count}' 자리표시자를 채우지 않아 화면에 '최소 {count}자 이상' 이 그대로 보였다(2026-10-04). 재설정 규칙은 8자(signin/page.tsx).
+                  // '{count}' 자리표시자를 채우지 않아 화면에 '최소 {count}자 이상' 이 그대로 보였다(2026-10-04). 재설정 규칙은 8자(signin/SigninClient.tsx).
                   placeholder={t.auth.minChars.replace('{count}', '8')}
                 />
               </InputBoxWrapper>

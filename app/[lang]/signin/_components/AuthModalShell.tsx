@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 /**
  * 로그인 화면 모달 셸(배경·카드·제목·닫기 X) + 성공 체크 원형 아이콘 — 순수 표현 (2026-10-04 PAU-68).
  * FindIdModal ↔ ResetPasswordModal 에 동일하게 복제돼 있던 마크업 1벌. 바이트 단위로 원본과 같다
- * (렌더 동등성 하네스 확인). ESC 닫기는 부모(signin/page.tsx)가 그대로 처리.
+ * (렌더 동등성 하네스 확인). ESC 닫기는 부모(signin/SigninClient.tsx)가 그대로 처리.
  * 접근성 속성(role="dialog"·aria-modal·X aria-label)은 DOM 변경이라 이번 리팩터에서 제외(별도 결정).
  */
 export default function AuthModalShell({
