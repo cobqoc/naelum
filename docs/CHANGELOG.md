@@ -11,15 +11,16 @@
 
 ## 2026-10 작업 로그
 
-- **남은 소소한 항목 정리 + 의존성 업데이트 — develop 푸시, e2e·main 머지는 다음 세션** (2026-10-19)
+- **남은 소소한 항목 정리 + 의존성 업데이트 — develop 푸시·dev 전체 e2e 통과, main 머지는 다음 세션** (2026-10-19)
   - **로그인 페이지 제목**: `/[lang]/signin` 에 메타데이터가 없어 홈 제목이 떴다 → `page.tsx` 를 서버 래퍼(`meta.loginTitle`·`loginDescription`)로, 기존 클라이언트는 `SigninClient.tsx` 로 이름 변경. 로컬 prod 서버에서 ko·en·ja 제목 확인.
-  - **e2e 고아 식당**: `merchant-rider.spec` 이 만드는 식당 이름을 `E2E 테스트 식당` 으로 — testUser 삭제 후 owner_id NULL 로 남는 행을 `delivery-full-flow.spec` 의 `E2E%` 고아 정리가 지운다. **dev 에 이미 쌓인 옛 이름 '테스트 식당' 고아(약 442건)는 아직 남아 있음**(dev 정지).
+  - **e2e 고아 식당**: `merchant-rider.spec` 이 만드는 식당 이름을 `E2E 테스트 식당` 으로 — testUser 삭제 후 owner_id NULL 로 남는 행을 `delivery-full-flow.spec` 의 `E2E%` 고아 정리가 지운다. dev 에 쌓여 있던 옛 이름 '테스트 식당' 고아 454건(딸린 주문 0)은 같은 날 dev 에서 삭제.
   - **배달 봉인 해제 플래그**: `DELIVERY_ENABLED=true` 를 로컬 `.env.local`·Vercel Preview(develop)에 추가. Production 에는 넣지 않음.
   - **조회수 증가 RPC 를 서비스 롤로 호출**(`/api/recipes/[id]/view`). 함수 권한 정리 마이그레이션은 로컬 전용으로 준비만 — prod 는 이 코드가 배포된 *뒤에* 적용해야 함(옛 코드가 세션 클라이언트로 호출).
   - **의존성**: next 16.2.10 · react/react-dom 19.2.7(고정 유지) · @types/react 19.2.17 · @supabase/ssr 0.8.0→**0.12.3** · supabase-js 2.110.7 · tailwind 4.2.4 · playwright 1.59.1. dependabot #19(Sentry, lockfile 커밋으로 이미 반영) 닫음, #242·#23·#22·#20 은 이 커밋으로 대체(main 머지 후 닫기).
-  - **검증**: lint 0 · tsc · scan · build · vitest 748. **e2e 미실행**(dev 정지 — baedariyo 일시정지는 사용자 허락 대기). ⚠️ `@supabase/ssr` 메이저급 상승이라 **main 머지 전 전체 e2e(로그인·쿠키) 필수**.
+  - **검증**: lint 0 · tsc · scan · build · vitest 748 · fresh build 전체 e2e(dev, 권한 마이그레이션 적용 상태) **488 passed · 0 failed · 0 flaky · 2 skipped** — `@supabase/ssr` 0.12 로그인·쿠키 흐름 포함. 조회수 라우트 정상 증가 확인. 권한 마이그레이션은 dev 적용(dev 에 없는 함수 4개는 건너뜀 — dev↔prod drift), prod 는 배포 뒤.
+  - **함정**: `.env.local` 이 CRLF 줄끝이라 셸에서 `cut` 으로 읽은 URL 끝에 `\r` 이 붙어 curl 이 "Malformed URL"(코드 000) — dev 복원 대기 스크립트가 30분간 헛돌았다. 셸에서 읽을 땐 `tr -d '\r'`.
   - **함정**: `npx playwright install` 이 Node 26 에서 압축 해제 단계에 멈춘다(다운로드 완료 후 45분 무진행). `$TMPDIR/playwright-download-*/…zip` 을 `~/Library/Caches/ms-playwright/<browser>-<rev>/` 에 직접 `unzip` + `INSTALLATION_COMPLETE` 파일 생성으로 해결.
-  - **남은 것**: dev 복원 → 권한 마이그레이션 dev 적용·검증 → 옛 고아 식당 삭제 → 전체 e2e → PR·배포 → prod 마이그레이션. 로컬 배달 브랜치 `feature/delivery-docs`(7)·`feature/delivery-dispatch`(1) 처리 결정. Supabase Auth 유출 비밀번호 검사(대시보드 설정). Advisor 의 확장 public 스키마·정책 없는 서비스 롤 테이블은 의도적으로 유지.
+  - **남은 것**: develop → main PR·배포 → prod 권한 마이그레이션(배포 뒤) → dependabot #242·#23·#22·#20 닫기. 로컬 배달 브랜치 `feature/delivery-docs`(7)·`feature/delivery-dispatch`(1) 처리 결정. Supabase Auth 유출 비밀번호 검사(대시보드 설정). Advisor 의 확장 public 스키마·정책 없는 서비스 롤 테이블은 의도적으로 유지.
 
 - **감사 결정 목록 나머지 일괄 처리 — 보안·RLS·제품 동작·인프라** (2026-10-19, 다음 작업 ⑤)
   - **인증·세션**: 이메일 가입 비밀번호 설정 화면이 proxy 에 막혀 도달 불가 → 온보딩 미완료 세션만 허용(AG2-01, e2e 추가) · 로그아웃을 이 기기만(scope local, AG2-36)으로 + 헤더·설정 로그아웃 단일 출처 `lib/auth/logout.ts`(PAU-63) · 로그아웃 시 SW 레시피 캐시 정리, SW 는 no-store 응답·`/recipes/new` 캐시 안 함(ICL-26, CACHE_VERSION v17) · 분석 동의 철회 즉시 Sentry 중단(ICL-41) · 차단 사용자: 변경 API 403 + 세션 쿠키 삭제(e2e 확장).
