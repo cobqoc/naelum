@@ -11,6 +11,13 @@
 
 ## 2026-10 작업 로그
 
+- **보안 업데이트 — next 16.3.8 + 하위 의존성 lockfile 정리** (2026-10-20)
+  - GitHub Dependabot 보안 알림(next critical 3·high 다수 — 16.2 계열엔 수정 없음, 이미지 최적화 AVIF 경로 포함)에 대응해 next 16.2.10 → **16.3.8**, `eslint-config-next` 16.3.8(정확 고정), vitest 4.1.11. `npm audit fix`(비파괴)로 sharp 0.35·postcss 8.5.31·nanoid·brace-expansion·fast-uri·js-yaml·browserslist 등 전이 의존성 갱신.
+  - `npm audit fix` 가 함께 올린 `eslint-plugin-react-hooks` 7.1.1 은 `set-state-in-effect` 강화로 오류 48 → `overrides` 로 7.0.1 고정(규칙 대응은 별도 작업).
+  - 새 lint 규칙 `no-location-assign-relative-destination` 경고 5곳은 세션·상태를 비우는 의도적 전체 이동이라 줄 단위 예외 + 사유 주석.
+  - 남은 audit: `braces`(ESLint 개발 도구 체인, 수정본 없음) · `maplibre-gl` critical(4.7 → 6.4 메이저, 봉인된 배달 지도 전용 — 배달 재개 때).
+  - **검증**: lint 0 · tsc · scan · build · vitest 748 · fresh build 전체 e2e(dev) **488 passed · 0 failed · 0 flaky · 2 skipped**.
+
 - **main 머지·배포 + 함수 권한 정리 prod 적용** (2026-10-19 밤)
   - PR #251 머지(`a9fdab4`)·Vercel Production 배포. naelum.app `/ko`·`/ko/signin`("로그인")·`/en/signin`("Log in")·`/ko/recipes`·`/ko/kitchen` 200, `/ko/delivery` 404(봉인).
   - 배포 확인 뒤 prod 에 `20261019_secdef_grants_cleanup.sql` 적용 — 트리거·미사용 함수와 조회수 함수는 anon·authenticated 실행 불가, service_role 가능. `recipe_cooked_count` 공개·`delete_user` authenticated 유지 확인. 조회수 라우트는 적용 전·후 모두 증가(확인용 호출 2회로 공개 레시피 1건 조회수 +2).
