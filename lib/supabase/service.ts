@@ -6,7 +6,7 @@ import { Database } from './database.types'
  *
  * 2026-10-04 AG2-29/API1-40: 같은 인자(`URL, SERVICE_ROLE_KEY, { autoRefreshToken: false, persistSession: false }`)의
  * 인라인 사본 7벌(createAdminClient·removeOAuthIdentity·ratelimit·loginLimiter·notifications·크론 2개)을 단일 출처로.
- * untyped 인 이유: database.types.ts 는 수기·stale(Functions 비어 있음, 배달·push 테이블 없음)이라 제네릭판은 tsc 오류 위험.
+ * untyped 인 이유: database.types.ts 는 prod 스키마 생성물이라 dev 전용 배달 테이블이 없고, 호출처가 많아 제네릭 적용은 별도 작업.
  * env 누락 시 동작은 기존 `!` 시맨틱 그대로(createClient 가 'supabaseKey is required' throw).
  */
 export function newServiceRoleClient() {
