@@ -11,6 +11,11 @@
 
 ## 2026-10 작업 로그
 
+- **main 머지·배포 — react-hooks 7.1.1·Node 24·DB 타입** (2026-10-20)
+  - PR #253 머지(`e7a10c3`)·Vercel Production 배포. naelum.app `/ko`·`/ko/signin`·`/ko/recipes`·`/ko/kitchen`·`/ko/tip`·`/sitemap.xml` 200, `/ko/recipes/new` 307(로그인), `/ko/delivery` 404(봉인), 비로그인 `/api/users/export` 401.
+  - 보안 업데이트는 그 전에 PR #252 로 배포. Dependabot 보안 알림 52 → 1(maplibre-gl, 배달 재개 때).
+  - e2e 용 dev DB 는 다시 정지, baedariyo 복구(무료 플랜 활성 2개 제한).
+
 - **Node 버전 고정 + DB 타입 재생성** (2026-10-20)
   - `engines.node` 24.x — Vercel 프로젝트 설정(24.x)과 같게 고정. CI 22 → 24.
   - `lib/supabase/database.types.ts` 를 prod 스키마 생성물로 교체(2026-04 수기 스냅샷 → 테이블 57·뷰·함수 포함). 사용처 `createServiceClient()` 1곳. dev 전용 배달 테이블은 생성 타입에 없어 내보내기 라우트는 그 5개만 타입 없는 서비스 롤 클라이언트로 읽는다.
