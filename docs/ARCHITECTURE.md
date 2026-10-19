@@ -397,12 +397,10 @@ Phase 1 표본 2개는 끝났지만 영상의 "이해 부채" 처방은 *지속�
 | `app/[lang]/signin/page.tsx` (구 `login/`) | ~~877~~ → **601 (-31%)** (2026-05-17) · 현재 **578** (2026-10-04) | ✅ **완료 2026-05-17** (2026-05-26 `login` → `signin` rename) | 재스캔서 발견된 계획 외 god-file(IngredientForm 동급). 기존 `auth.spec.ts` 가 메인 카드(폼·검증·show-password·링크) 강커버 → 갭(모달 개폐/ESC/렌더)만 `e2e/signin-decomposition.spec.ts`(구 `login-decomposition`, rename 시 함께 변경) 2케이스 보강. **표현 2개 → `_components/`**: `FindIdModal`·`ResetPasswordModal`(4스텝 위저드). 모든 상태·ref·async·BroadcastChannel·passwordStrength 부모 소유, onClose 는 원본 inline setState 시퀀스 byte-identical 보존. 검증: lint 0err·build·vitest·login+auth e2e 18/18(baseline 동일) |
 
 > `app/[lang]/_home/FridgeSVG.tsx`(~1300)·`lib/i18n/locales/*`(각 ~1,880)·
-> `lib/supabase/database.types.ts`(~1137)는 **분해 대상 아님** — 각각 SVG 마크업·
+> `lib/supabase/database.types.ts`(~3300, 생성물)는 **분해 대상 아님** — 각각 SVG 마크업·
 > 정체성 컴포넌트 / 평면 번역 데이터 / 타입 정의. 로직 god-file 이 아니다.
-> ⚠️ `database.types.ts` 는 `supabase gen types` 생성물이 **아니라** 2026-04 수기 스냅샷(마지막 수정 2026-04-14)이다 —
-> 코드가 쓰는 현행 테이블 상당수(`recipe_posts`·`tip`·`rate_limits`·`push_subscriptions`·`delivery_*` 등)가 없고,
-> drop(예정)된 테이블·뷰(`recipe_comments`·`recipe_ratings`·`popular_recipes` 등)가 남아 있으며 `Functions` 도 비어 있다.
-> 사용처는 `lib/supabase/service.ts` 의 `Database` 제네릭 1곳 — 재생성 필요(코드 결정).
+> `database.types.ts` 는 2026-10-20 prod 스키마로 다시 생성했다(이전 2026-04 수기 스냅샷 대체). dev 전용 `delivery_*` 는 없다.
+> 사용처는 `lib/supabase/service.ts` 의 `createServiceClient()`(`Database` 제네릭) — 스키마 변경 후 다시 생성.
 
 **왜 지금, 빠르게 (프로젝트 커지기 전에) — 기술적 근거** (2026-05-17 Phase 2 착수 당시 기록 — 역사. 아래 수치도 당시 값):
 1. **이해 부채는 복리.** `edit/page.tsx` 는 핵심 경로라 앞으로도 계속 수정됨 →
