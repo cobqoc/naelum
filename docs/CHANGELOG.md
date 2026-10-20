@@ -11,6 +11,11 @@
 
 ## 2026-10 작업 로그
 
+- **세션 마무리 — develop 푸시, main 머지 대기** (2026-10-20)
+  - develop 커밋 `d7abcb4`(요리 유형)·`1327827`(알림 다국어)·`aafac0a`(영상 직접 업로드)·`6c2d383`(문서) 푸시. **main 머지(PR)는 아직** — prod DB 마이그레이션은 이미 적용돼 있어 머지 순서 제약 없음.
+  - DB 상태 원복: naelum-dev 일시정지·baedariyo 복원. Preview 확인이 필요하면 dev 를 다시 켜야 함(무료 플랜 활성 2개 제한).
+  - 남은 일: develop→main PR, KMP 앱의 큰 영상 업로드를 sign 경로로 전환(별도 저장소), 결정 대기 항목(soft-404·API1-22·DOC-101·Auth 유출 비밀번호 검사·배달).
+
 - **레시피 수정 요리 유형·알림 다국어·영상 직접 업로드** (2026-10-20, 감사 PHR-37·ICL-40·AG2-10)
   - **PHR-37**: 레시피 수정 화면에 요리 유형(dish_type) 칩 추가(공용 `BasicInfoSection` 의 `dish` prop). 목록 밖 값은 '기타'+직접 입력으로 복원, 미선택은 PUT 에서 키 생략(원래 값 유지), '기타'+빈 입력은 `'other'` 그대로 저장(기존 `'other'` 행이 저장에서 막히지 않게).
   - **ICL-40**: `notifications.params` jsonb 추가(`20261020_notifications_params.sql`). 댓글·평가·낼름·유통기한·보관기한 추정 알림이 값(actor·recipe·rating·ingredient·days)을 함께 저장하고, 헤더 알림 패널이 `lib/notifications/render.ts` 로 사용자 언어 템플릿을 채운다(8개 로케일 `notifications.*`). title·message 한국어 완성문은 KMP 앱·GDPR 내보내기·옛 행 호환으로 계속 저장 — params 없으면 저장 문구 표시. OS 푸시 본문은 수신자 언어를 몰라 한국어 유지. ⚠️ **prod 는 코드 배포 전에 마이그레이션 먼저**(없는 컬럼 insert 는 알림 저장 실패 — 로그만).
