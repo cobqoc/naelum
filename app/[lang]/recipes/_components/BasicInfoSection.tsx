@@ -14,7 +14,7 @@ import InputBoxWrapper, {
  * 원래 diff -w 동일이었고, 섹션 래퍼(`<section>`+번호 h2)는 edit 처럼 이 컴포넌트가 소유(new 페이지가 갖고 있던
  * 같은 마크업을 이리로). new 전용 블록은 선택 prop 으로 보존 — 생략하면(edit) 렌더 안 함:
  *  - customCuisine: '기타' 선택 시 커스텀 요리 종류 입력
- *  - dish: 요리 유형(2단계) 칩 + '기타' 커스텀 입력
+ *  - dish: 요리 유형(2단계) 칩 + '기타' 커스텀 입력 (2026-10-20 PHR-37 부터 edit 도 넘김)
  * 상태·setter 는 page 가 소유, 이 컴포넌트는 값+setter 만(순수 controlled inputs).
  * 검증: 렌더 동등성 하네스(new·edit 각 props) + e2e recipe-creation "UI 회귀(Section1)"·recipe-edit (1).
  */
@@ -36,7 +36,7 @@ interface BasicInfoSectionProps {
   setCuisineType: (v: string) => void;
   /** new 전용 — '기타' 요리 종류 커스텀 입력. 생략(edit) 시 렌더 안 함 */
   customCuisine?: { value: string; set: (v: string) => void };
-  /** new 전용 — 요리 유형(2단계) 칩 + '기타' 커스텀 입력. 생략(edit) 시 렌더 안 함 */
+  /** 요리 유형(2단계) 칩 + '기타' 커스텀 입력. new·edit 공용(PHR-37), 생략 시 렌더 안 함 */
   dish?: { type: string; setType: (v: string) => void; custom: string; setCustom: (v: string) => void };
 }
 
@@ -167,7 +167,7 @@ export default function BasicInfoSection({
         )}
       </div>
 
-      {/* 요리 유형 (2단계) - 조건부 표시 (new 전용) */}
+      {/* 요리 유형 (2단계) - 조건부 표시 */}
       {dish && cuisineType && (
         <div className="space-y-2 animate-fadeIn">
           <label className="text-sm font-medium text-text-secondary">

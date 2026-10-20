@@ -6,11 +6,11 @@ import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/lib/toast/context';
 import { useI18n } from '@/lib/i18n/context';
 import {
-  type RecipeIngredient as Ingredient, type RecipeStep as Step,
+  DISH_TYPES, type RecipeIngredient as Ingredient, type RecipeStep as Step,
 } from '@/lib/constants/recipe';
 import type { IngredientItem } from '@/components/Ingredients/IngredientAutocompleteTypes';
 // 2026-10-04 [PHR-D1] new/edit 공용 폼 블록은 recipes/_components 로 통합 — edit 고유 분기(재료 삭제 임계 <=1·
-// "재료 5개 추가" 라벨·영양 검증 상한 없음·커스텀 요리종류/요리유형 없음·툴팁 없음)는 prop 으로 그대로 보존.
+// "재료 5개 추가" 라벨·영양 검증 상한 없음·커스텀 요리종류 없음·툴팁 없음)는 prop 으로 그대로 보존.
 // StepsSection(단계 제목 input·팁 위치·드롭존 스타일이 new 와 진짜 다름)만 edit 전용 유지.
 import TagsField from '../../_components/TagsField';
 import BasicInfoSection from '../../_components/BasicInfoSection';
@@ -53,6 +53,10 @@ export default function EditRecipePage(props: PageProps) {
   // 2026-10-04 [PHR-04] 미선택 기본값 '' — 옛 'korean' 기본·폴백이 요리 종류 미선택(null/'') 레시피를 한식 칩 선택 상태로
   // 보여주고 저장 시 'korean' 으로 덮어썼음. 미선택이면 PUT 에서 cuisine_type 키를 빼 DB 원래 값(null·'')을 그대로 둔다.
   const [cuisineType, setCuisineType] = useState('');
+  // 2026-10-20 [PHR-37] 요리 유형도 수정 가능. 목록 밖 값(작성 때 '기타'+직접 입력)은 'other'+커스텀으로 복원,
+  // 미선택이면 PUT 에서 dish_type 키를 빼 DB 원래 값을 그대로 둔다(cuisine_type 과 같은 규칙).
+  const [dishType, setDishType] = useState('');
+  const [customDishType, setCustomDishType] = useState('');
 
   // 식단 옵션
   const [isVegetarian, setIsVegetarian] = useState(false);
@@ -168,6 +172,13 @@ export default function EditRecipePage(props: PageProps) {
         setCookTime(recipeData.cook_time_minutes ?? '');
         setDifficulty(recipeData.difficulty_level || '');
         setCuisineType(recipeData.cuisine_type || '');
+        const savedDish: string = recipeData.dish_type || '';
+        if (savedDish && !DISH_TYPES.some(d => d.value === savedDish)) {
+          setDishType('other');
+          setCustomDishType(savedDish);
+        } else {
+          setDishType(savedDish);
+        }
         setIsVegetarian(recipeData.is_vegetarian || false);
         setIsVegan(recipeData.is_vegan || false);
         setIsGlutenFree(recipeData.is_gluten_free || false);
@@ -393,6 +404,8 @@ export default function EditRecipePage(props: PageProps) {
       toast.warning(t.common.errorDescriptionTooLong);
       return;
     }
+    // '기타'+빈 입력은 'other' 그대로 — DB 에 'other' 로 저장된 기존 레시피가 수정 저장에서 막히지 않게(new 와 달리 경고 없음)
+    const dishValue = dishType === 'other' ? (customDishType.trim() || 'other') : dishType;
 
     const validIngredients = ingredients.filter(i => i.ingredient_name.trim());
     if (validIngredients.length === 0) {
@@ -428,6 +441,7 @@ export default function EditRecipePage(props: PageProps) {
           cook_time_minutes: cookTime !== '' ? cookTime : null,
           difficulty_level: difficulty || null,
           ...(cuisineType ? { cuisine_type: cuisineType } : {}),
+          ...(dishValue ? { dish_type: dishValue } : {}),
           is_vegetarian: isVegetarian,
           is_vegan: isVegan,
           is_gluten_free: isGlutenFree,
@@ -495,8 +509,8 @@ export default function EditRecipePage(props: PageProps) {
       </header>
 
       <div className="container mx-auto max-w-3xl px-6 py-6 space-y-10">
-        {/* Section 1: 기본 정보 — 공용 BasicInfoSection(<section>+번호 h2 래퍼 포함). edit 는 커스텀 요리종류·
-            요리 유형 블록 없음(customCuisine/dish prop 생략) */}
+        {/* Section 1: 기본 정보 — 공용 BasicInfoSection(<section>+번호 h2 래퍼 포함). edit 는 커스텀 요리종류 블록 없음
+            (customCuisine prop 생략), 요리 유형은 dish prop 으로 표시(PHR-37) */}
         <BasicInfoSection
           t={t}
           tf={tf}
@@ -512,6 +526,7 @@ export default function EditRecipePage(props: PageProps) {
           setDifficulty={setDifficulty}
           cuisineType={cuisineType}
           setCuisineType={setCuisineType}
+          dish={{ type: dishType, setType: setDishType, custom: customDishType, setCustom: setCustomDishType }}
         />
 
         {/* Section 2: 재료 준비 */}
