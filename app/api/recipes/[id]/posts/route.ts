@@ -199,7 +199,7 @@ export async function POST(
 
     if (!existing && recipe.author_id !== user.id) {
       const { data: rater } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
-      await notifyRating(supabase, recipe.author_id, rater?.username || '누군가', recipeId, recipe.title, rating, user.id)
+      await notifyRating(supabase, recipe.author_id, rater?.username || null, recipeId, recipe.title, rating, user.id)
     }
     return NextResponse.json({ post: { ...post, replies_count: 0, is_liked: false } }, { status: 201 })
   }
@@ -232,7 +232,7 @@ export async function POST(
   // 최상위 댓글이면 레시피 작성자에게 알림
   if (!parentId && recipe.author_id !== user.id) {
     const { data: commenter } = await supabase.from('profiles').select('username').eq('id', user.id).maybeSingle()
-    await notifyComment(supabase, recipe.author_id, commenter?.username || '누군가', recipeId, recipe.title, user.id, post.id)
+    await notifyComment(supabase, recipe.author_id, commenter?.username || null, recipeId, recipe.title, user.id, post.id)
   }
 
   return NextResponse.json({ post: { ...post, replies_count: 0, is_liked: false } }, { status: 201 })

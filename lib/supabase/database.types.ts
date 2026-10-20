@@ -990,6 +990,7 @@ export type Database = {
           is_read: boolean | null
           message: string
           notification_type: string
+          params: Json | null
           read_at: string | null
           related_comment_id: string | null
           related_recipe_id: string | null
@@ -1004,6 +1005,7 @@ export type Database = {
           is_read?: boolean | null
           message: string
           notification_type: string
+          params?: Json | null
           read_at?: string | null
           related_comment_id?: string | null
           related_recipe_id?: string | null
@@ -1018,6 +1020,7 @@ export type Database = {
           is_read?: boolean | null
           message?: string
           notification_type?: string
+          params?: Json | null
           read_at?: string | null
           related_comment_id?: string | null
           related_recipe_id?: string | null

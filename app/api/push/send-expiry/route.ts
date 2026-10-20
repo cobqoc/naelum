@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { estimateExpiry } from '@/lib/freshness/shelfLife';
 import { isAuthorizedCronRequest } from '@/lib/api/cron';
+import type { NotificationParams } from '@/lib/notifications/render';
 
 webpush.setVapidDetails(
   process.env.VAPID_EMAIL!,
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     Math.ceil((new Date(iso + 'T00:00:00').getTime() - today.getTime()) / 86400000);
 
   // masterId: user_ingredients.ingredient_id(도감 ingredients_master.id) — 알림 링크의 highlight 용(AG2-14).
-  type Notify = { userId: string; id: string; masterId: string | null; type: 'expiry' | 'expiry_estimate'; title: string; message: string };
+  type Notify = { userId: string; id: string; masterId: string | null; type: 'expiry' | 'expiry_estimate'; title: string; message: string; params: NotificationParams };
   const notify: Notify[] = [];
 
   // (A) 확정 만료 — 유저가 직접 입력한 expiry_date 가 D-3 ~ D-0. 강한 알림(⏰).
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
       message: d === 0
         ? `${ing.ingredient_name}의 유통기한이 오늘 만료됩니다.`
         : `${ing.ingredient_name}의 유통기한이 ${d}일 후 만료됩니다. (D-${d})`,
+      params: { ingredient: ing.ingredient_name, days: d },
     });
   }
 
@@ -100,6 +102,7 @@ export async function GET(request: NextRequest) {
       userId: ing.user_id, id: ing.id, masterId: ing.ingredient_id ?? null, type: 'expiry_estimate',
       title: `🧊 보관기한 예상: ${ing.ingredient_name}`,
       message: `${ing.ingredient_name}의 예상 보관기한이 ${d === 0 ? '오늘' : '내일'}쯤이에요. 상태를 확인해보세요. (예상)`,
+      params: { ingredient: ing.ingredient_name, days: d },
     });
   }
 
@@ -149,6 +152,8 @@ export async function GET(request: NextRequest) {
           notification_type: n.type,
           title: n.title,
           message: n.message,
+          // 화면 번역용(ICL-40) — OS 푸시 본문(아래 payload)은 수신자 언어를 몰라 한국어 그대로
+          params: n.params,
           action_url: actionUrl,
           is_read: false,
         });

@@ -72,7 +72,7 @@ export async function POST(
       await notifySave(
         supabase,
         recipe.author_id,
-        saver?.username || '누군가',
+        saver?.username || null,
         recipeId,
         recipe.title,
         user.id,
