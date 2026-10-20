@@ -11,7 +11,15 @@
 
 ## 2026-10 작업 로그
 
-- **세션 마무리 — develop 푸시, main 머지 대기** (2026-10-20)
+- **앱 실기기 점검 → 레시피 영상 주소 저장 수정** (2026-10-21)
+  - **버그**: 레시피 POST/PUT 의 H1 화이트리스트(`EDITABLE_RECIPE_COLUMNS`)에 `video_url` 이 없어, KMP 앱이 올린 영상이 레시피에 연결되지 않고 조용히 버려졌다(2026-06-01 H1 이후). 웹은 영상 업로드 UI 가 없어 앱에서만 드러남.
+  - **수정** `473d98a`: `lib/recipes/ownVideoUrl.ts` `pickOwnVideoUrl` — 본인 폴더 `recipe-videos/{userId}/{파일명}.(mp4|mov|webm)` 공개 URL 만 저장, `null`/빈 값은 제거, 그 밖(외부 URL·남의 폴더·경로 조작)은 다른 비화이트리스트 컬럼처럼 무시. 웹이 `video_url` 을 링크(href)로 렌더하므로 임의 URL 은 받지 않는다. 앱 수정 화면은 기존 값을 통째로 다시 보내므로 400 대신 무시.
+  - **앱 점검**(Android 에뮬 + 로컬 웹 + dev DB, 요청을 로깅 프록시로 기록): 앱이 부르는 API 69개 경로 중 68개 존재(`/api/favorites/sync` 는 삭제됐지만 앱 호출처 없음). 주요 화면 전부 2xx — dev 의 `push_tokens` 테이블 부재(500)만 dev drift(prod 엔 있음). 24.6MB 영상 서명 업로드 → 저장소 바이트 일치 → 수정 후 `video_url` 저장·레시피 수정 후 유지 확인.
+  - **앱 저장소 커밋**(`../naelum-app` `strangler/api-migration`): 영상 서명 URL 업로드(6.117) · 출시 빌드 서버 주소 `https://naelum.app`(그 전엔 출시 빌드도 로컬 고정)·공유 링크 `naelum.com`→`naelum.app`·장보기 공유 경로 `/cart/share/{token}`(6.118) · Android 팁 작성 폼 스크롤(등록 버튼이 화면 밖)·냉장고 수정 폼이 화면 밖에 열림(6.119). ⚠️ 원격 `github.com/cobqoc/naelum-app` 이 없어(Repository not found) 앱 커밋은 로컬에만 있다.
+  - **검증**: lint 0 · tsc · scan · build · vitest 760(신규 ownVideoUrl 4) · fresh build 전체 e2e(dev) 494 passed · 1 failed(tip-creation 비공개 저장 — 단독 재실행 통과, 부하 시 간헐) · 1 flaky(scroll-restoration 팁 목록 — 점검 중 남긴 공개 팁 1개 때문, 삭제 후 통과·skip). ⚠️ 이 테스트는 공개 팁이 1개뿐이면 스크롤할 공간이 없어 실패한다. Preview 는 비로그인만 확인(주요 화면 200, 비로그인 레시피 작성 401).
+  - dev 에 테스트 계정 `app-check@naelum.local` 과 영상 레시피 1개 남김. DB 상태 원복: dev 정지·baedariyo 복원.
+
+- **세션 마무리 — develop 푸시, main 머지 대기** (2026-10-20 — 이후 PR #254 로 머지·배포)
   - develop 커밋 `d7abcb4`(요리 유형)·`1327827`(알림 다국어)·`aafac0a`(영상 직접 업로드)·`6c2d383`(문서) 푸시. **main 머지(PR)는 아직** — prod DB 마이그레이션은 이미 적용돼 있어 머지 순서 제약 없음.
   - DB 상태 원복: naelum-dev 일시정지·baedariyo 복원. Preview 확인이 필요하면 dev 를 다시 켜야 함(무료 플랜 활성 2개 제한).
   - 남은 일: develop→main PR, KMP 앱의 큰 영상 업로드를 sign 경로로 전환(별도 저장소), 결정 대기 항목(soft-404·API1-22·DOC-101·Auth 유출 비밀번호 검사·배달).
