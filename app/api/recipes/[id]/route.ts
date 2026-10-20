@@ -5,6 +5,8 @@ import { requireRecipeOwner } from '@/lib/api/ownership';
 import { firstOfEmbed } from '@/lib/queries/recipeCards';
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId';
 import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns';
+import { pickOwnVideoUrl } from '@/lib/recipes/ownVideoUrl';
+import { getPublicUrl } from '@/lib/storage';
 // 2026-10-04 API1-37: 자식 행 매핑·normalizeSubstitutesForStorage 가 POST 와 2벌 → lib/api/recipeChildRows 단일 출처(동작 그대로)
 import {
   namesWithoutIngredientId, buildRecipeIngredientRows, buildRecipeStepRows, buildRecipeTagRows, validateRecipeChildren,
@@ -97,6 +99,7 @@ export async function PUT(
         title,
         description,
         ...pickEditableRecipeColumns(recipeData),
+        ...pickOwnVideoUrl(recipeData, getPublicUrl(supabase, 'recipe-videos', `${user.id}/`)),
         updated_at: new Date().toISOString()
       })
       .eq('id', recipeId);

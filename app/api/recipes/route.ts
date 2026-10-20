@@ -6,6 +6,8 @@ import { parsePagination } from '@/lib/api/pagination'
 import { checkRateLimit } from '@/lib/ratelimit'
 import { resolveExactIngredientIds } from '@/lib/ingredients/resolveIngredientId'
 import { pickEditableRecipeColumns } from '@/lib/recipes/editableColumns'
+import { pickOwnVideoUrl } from '@/lib/recipes/ownVideoUrl'
+import { getPublicUrl } from '@/lib/storage'
 // 2026-10-04 API1-37: 자식 행 매핑(재료·단계·태그)·normalizeSubstitutesForStorage 가 PUT 과 2벌 → lib/api/recipeChildRows 단일 출처
 // (저장 boundary: legacy string[] / 신규 객체[] → 정규화 객체[], 빈 배열은 NULL — 동작 그대로)
 import {
@@ -135,6 +137,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       ...pickEditableRecipeColumns(recipeData),
+      ...pickOwnVideoUrl(recipeData, getPublicUrl(supabase, 'recipe-videos', `${user.id}/`)),
       original_recipe_id: recipeData.original_recipe_id ?? null,
       is_remix: !!recipeData.is_remix,
       status,
