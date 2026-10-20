@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getServiceRoleClient } from '@/lib/supabase/service';
+import type { NotificationParams } from '@/lib/notifications/render';
 
 type NotificationType = 'like' | 'comment' | 'rating' | 'save' | 'meal_time' | 'expiry';
 
@@ -24,7 +25,12 @@ interface CreateNotificationParams {
   relatedUserId?: string;
   relatedRecipeId?: string;
   relatedCommentId?: string;
+  /** 화면 번역용 값(2026-10-20 ICL-40) — title·message(한국어 완성문)는 KMP 앱·옛 행 호환으로 계속 저장 */
+  params?: NotificationParams;
 }
+
+// 행위자 닉네임이 없을 때 저장 문구용 한국어 대체어. 화면은 params.actor=null 을 보고 t.notifications.someone 으로 번역.
+const SOMEONE_KO = '누군가';
 
 async function createNotification({
   supabase: _supabase, // 시그니처 안정용 유지 — insert 는 service-role 로(위 주석)
@@ -36,6 +42,7 @@ async function createNotification({
   relatedUserId,
   relatedRecipeId,
   relatedCommentId,
+  params,
 }: CreateNotificationParams) {
   // Don't notify yourself
   if (relatedUserId && userId === relatedUserId) return;
@@ -51,6 +58,7 @@ async function createNotification({
     related_user_id: relatedUserId || null,
     related_recipe_id: relatedRecipeId || null,
     related_comment_id: relatedCommentId || null,
+    params: params ?? null,
     is_read: false,
   });
   if (error) {
@@ -61,7 +69,7 @@ async function createNotification({
 export async function notifyComment(
   supabase: SupabaseClient,
   recipeAuthorId: string,
-  commenterUsername: string,
+  commenterUsername: string | null,
   recipeId: string,
   recipeTitle: string,
   commenterId: string,
@@ -72,18 +80,19 @@ export async function notifyComment(
     userId: recipeAuthorId,
     type: 'comment',
     title: '새로운 댓글',
-    message: `${commenterUsername}님이 "${recipeTitle}" 레시피에 댓글을 남겼습니다`,
+    message: `${commenterUsername ?? SOMEONE_KO}님이 "${recipeTitle}" 레시피에 댓글을 남겼습니다`,
     actionUrl: `/recipes/${recipeId}`,
     relatedUserId: commenterId,
     relatedRecipeId: recipeId,
     relatedCommentId: commentId,
+    params: { actor: commenterUsername, recipe: recipeTitle },
   });
 }
 
 export async function notifyRating(
   supabase: SupabaseClient,
   recipeAuthorId: string,
-  raterUsername: string,
+  raterUsername: string | null,
   recipeId: string,
   recipeTitle: string,
   rating: number,
@@ -94,17 +103,18 @@ export async function notifyRating(
     userId: recipeAuthorId,
     type: 'rating',
     title: '새로운 평가',
-    message: `${raterUsername}님이 "${recipeTitle}"에 ${'⭐'.repeat(rating)} 평가를 남겼습니다.`,
+    message: `${raterUsername ?? SOMEONE_KO}님이 "${recipeTitle}"에 ${'⭐'.repeat(rating)} 평가를 남겼습니다.`,
     actionUrl: `/recipes/${recipeId}`,
     relatedUserId: raterId,
     relatedRecipeId: recipeId,
+    params: { actor: raterUsername, recipe: recipeTitle, rating },
   });
 }
 
 export async function notifySave(
   supabase: SupabaseClient,
   recipeAuthorId: string,
-  saverUsername: string,
+  saverUsername: string | null,
   recipeId: string,
   recipeTitle: string,
   saverId: string,
@@ -114,9 +124,10 @@ export async function notifySave(
     userId: recipeAuthorId,
     type: 'save',
     title: '레시피 낼름!',
-    message: `${saverUsername}님이 "${recipeTitle}"을(를) 낼름했습니다.`,
+    message: `${saverUsername ?? SOMEONE_KO}님이 "${recipeTitle}"을(를) 낼름했습니다.`,
     actionUrl: `/recipes/${recipeId}`,
     relatedUserId: saverId,
     relatedRecipeId: recipeId,
+    params: { actor: saverUsername, recipe: recipeTitle },
   });
 }

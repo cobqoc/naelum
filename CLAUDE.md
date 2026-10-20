@@ -1036,7 +1036,7 @@ NLP (검색 개선):
 > | 검색 | `search`, `search/autocomplete`, `search/history` |
 > | 추천 | 단일 `GET recommendations?type=ingredients\|personalized\|trending\|meal_time`, `recommendations/track` |
 > | 재료 | `ingredients/{browse,autocomplete,quick-add,create,check-duplicate,expiring,check-expiry,feedback,match-receipt,price-report,pending}`, `ingredients/[id]/approve`, `kitchen/summary`(소비처 없던 `kitchen/all` 은 2026-10-04 삭제), 보유 재료 `user-ingredients`(+`[id]`·`add`) |
-> | 그 외 | `tip/**`, `shopping-list/**`, `cart/share/**`, `favorites/**`, `folders/**`, `notifications`, `push/{subscribe,send-expiry}`, `push-tokens`, `events`, `contact`, `copyright/report`, `terms/accept`, `upload`, `upload-video`, `cron/cleanup-rate-limits`, `admin/**`, `delivery/**`(미출시), `test/signin`(로컬 e2e 전용) |
+> | 그 외 | `tip/**`, `shopping-list/**`, `cart/share/**`, `favorites/**`, `folders/**`, `notifications`, `push/{subscribe,send-expiry}`, `push-tokens`, `events`, `contact`, `copyright/report`, `terms/accept`, `upload`, `upload-video`(+`sign` — 서명 URL 직접 업로드, 2026-10-20), `cron/cleanup-rate-limits`, `admin/**`, `delivery/**`(미출시), `test/signin`(로컬 e2e 전용) |
 
 ### 인증
 ```

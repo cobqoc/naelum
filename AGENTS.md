@@ -29,8 +29,8 @@ This file provides guidance to Verdent (and other AI coding agents) when working
     - **Styling**: Tailwind CSS 4 with `@tailwindcss/postcss`.
     - **Other**: Sentry (lazy-loaded from `instrumentation-client.ts`, consent-gated), web-push, Resend (email), maplibre-gl (delivery map, unreleased).
 - **External Dependencies** (see `package.json` for exact ranges):
-    - Next.js 16.2.x (lockfile: 16.2.6)
-    - React 19.2.3
+    - Next.js 16.3.x (lockfile: 16.3.8)
+    - React 19.2.7
     - Tailwind CSS 4
     - Testing: Vitest (unit) + Playwright (E2E)
 - **Development Entry Points**:

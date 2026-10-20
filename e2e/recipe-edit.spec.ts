@@ -259,4 +259,39 @@ test.describe('레시피 수정 — god-file 분해 회귀 안전망', () => {
       await cleanup(seed.recipeId)
     }
   })
+
+  test('(4) 요리 유형(dish_type) 변경 → PUT → DB 반영 (PHR-37)', async ({
+    authenticatedPage: page,
+  }) => {
+    const seed = await seedRichRecipe(page)
+    try {
+      await gotoRecipeEdit(page, seed.recipeId)
+      await expect(page.locator('input[placeholder*="떡볶이"]').first()).toHaveValue(seed.title, {
+        timeout: 15000,
+      })
+
+      // 시드 cuisine_type='other' → 요리 유형 블록 표시. '디저트' 칩으로 변경
+      await page.getByRole('button', { name: '디저트', exact: true }).click()
+      await page.getByRole('button', { name: '레시피 수정하기' }).click()
+      await expect(page).toHaveURL(new RegExp(`/recipes/${seed.recipeId}(?!/edit)`), {
+        timeout: 15000,
+      })
+
+      await expect
+        .poll(
+          async () => {
+            const { data } = await admin()
+              .from('recipes')
+              .select('dish_type')
+              .eq('id', seed.recipeId)
+              .single()
+            return data?.dish_type
+          },
+          { timeout: 15000, intervals: [500, 1000, 1500, 2000] }
+        )
+        .toBe('dessert')
+    } finally {
+      await cleanup(seed.recipeId)
+    }
+  })
 })

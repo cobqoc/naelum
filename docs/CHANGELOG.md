@@ -11,6 +11,24 @@
 
 ## 2026-10 작업 로그
 
+- **세션 마무리 — develop 푸시, main 머지 대기** (2026-10-20)
+  - develop 커밋 `d7abcb4`(요리 유형)·`1327827`(알림 다국어)·`aafac0a`(영상 직접 업로드)·`6c2d383`(문서) 푸시. **main 머지(PR)는 아직** — prod DB 마이그레이션은 이미 적용돼 있어 머지 순서 제약 없음.
+  - DB 상태 원복: naelum-dev 일시정지·baedariyo 복원. Preview 확인이 필요하면 dev 를 다시 켜야 함(무료 플랜 활성 2개 제한).
+  - 남은 일: develop→main PR, KMP 앱의 큰 영상 업로드를 sign 경로로 전환(별도 저장소), 결정 대기 항목(soft-404·API1-22·DOC-101·Auth 유출 비밀번호 검사·배달).
+
+- **레시피 수정 요리 유형·알림 다국어·영상 직접 업로드** (2026-10-20, 감사 PHR-37·ICL-40·AG2-10)
+  - **PHR-37**: 레시피 수정 화면에 요리 유형(dish_type) 칩 추가(공용 `BasicInfoSection` 의 `dish` prop). 목록 밖 값은 '기타'+직접 입력으로 복원, 미선택은 PUT 에서 키 생략(원래 값 유지), '기타'+빈 입력은 `'other'` 그대로 저장(기존 `'other'` 행이 저장에서 막히지 않게).
+  - **ICL-40**: `notifications.params` jsonb 추가(`20261020_notifications_params.sql`). 댓글·평가·낼름·유통기한·보관기한 추정 알림이 값(actor·recipe·rating·ingredient·days)을 함께 저장하고, 헤더 알림 패널이 `lib/notifications/render.ts` 로 사용자 언어 템플릿을 채운다(8개 로케일 `notifications.*`). title·message 한국어 완성문은 KMP 앱·GDPR 내보내기·옛 행 호환으로 계속 저장 — params 없으면 저장 문구 표시. OS 푸시 본문은 수신자 언어를 몰라 한국어 유지. ⚠️ **prod 는 코드 배포 전에 마이그레이션 먼저**(없는 컬럼 insert 는 알림 저장 실패 — 로그만).
+  - **AG2-10**: `POST /api/upload-video/sign` — 서명 URL 발급 후 클라이언트가 스토리지로 직접 PUT(Vercel 본문 4.5MB 우회). 형식·크기 규칙은 `lib/storage/videoUpload.ts` 단일 출처, 서명 URL 은 `lib/storage` `createSignedUpload` 경유. **한도 100MB → 50MB**(Supabase 무료 플랜 파일당 최대). 버킷 `file_size_limit`·`allowed_mime_types` 마이그레이션(`20261020_recipe_videos_bucket_limits.sql`). multipart `/api/upload-video` 는 KMP 앱 호환으로 유지 — 앱이 큰 영상을 올리려면 sign 경로로 바꿔야 함.
+  - **prod 적용(2026-10-20, 코드 배포 전)**: `notifications_params`·`recipe_videos_bucket_limits` 적용 후 컬럼·버킷 설정 확인.
+  - dev drift: `recipe-videos` 버킷이 dev 에 없어 prod 와 같은 구성(공개·읽기/삭제 정책)으로 생성.
+  - **검증**: lint 0 · tsc · scan · build · vitest 756(신규 render·videoUpload) · fresh build 전체 e2e(dev) **494 passed · 0 failed · 0 flaky · 2 skipped**(신규 recipe-edit (4)·upload-video-sign 2개 × 2 브라우저). 테스트 유저 2명으로 댓글·낼름 알림에 params 저장 확인 후 확인용 레시피·알림 삭제.
+
+- **main 머지·배포 — react-hooks 7.1.1·Node 24·DB 타입** (2026-10-20)
+  - PR #253 머지(`e7a10c3`)·Vercel Production 배포. naelum.app `/ko`·`/ko/signin`·`/ko/recipes`·`/ko/kitchen`·`/ko/tip`·`/sitemap.xml` 200, `/ko/recipes/new` 307(로그인), `/ko/delivery` 404(봉인), 비로그인 `/api/users/export` 401.
+  - 보안 업데이트는 그 전에 PR #252 로 배포. Dependabot 보안 알림 52 → 1(maplibre-gl, 배달 재개 때).
+  - e2e 용 dev DB 는 다시 정지, baedariyo 복구(무료 플랜 활성 2개 제한).
+
 - **Node 버전 고정 + DB 타입 재생성** (2026-10-20)
   - `engines.node` 24.x — Vercel 프로젝트 설정(24.x)과 같게 고정. CI 22 → 24.
   - `lib/supabase/database.types.ts` 를 prod 스키마 생성물로 교체(2026-04 수기 스냅샷 → 테이블 57·뷰·함수 포함). 사용처 `createServiceClient()` 1곳. dev 전용 배달 테이블은 생성 타입에 없어 내보내기 라우트는 그 5개만 타입 없는 서비스 롤 클라이언트로 읽는다.
