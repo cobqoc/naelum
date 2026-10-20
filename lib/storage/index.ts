@@ -55,3 +55,31 @@ export function getPublicUrl(
 ): string {
   return client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
+
+export interface SignedUploadResult {
+  /** 클라이언트가 파일 본문을 PUT 할 서명 URL. 실패 시 null */
+  signedUrl: string | null;
+  /** uploadToSignedUrl 용 토큰. 실패 시 null */
+  token: string | null;
+  path: string;
+  error: { message: string } | null;
+}
+
+/**
+ * 서명 업로드 URL 발급 — 파일 본문이 서버(Vercel 함수 본문 4.5MB 한도)를 거치지 않고 스토리지로 직접 간다.
+ * 발급 권한은 호출 클라이언트의 INSERT 정책을 따르고, 크기·형식 강제는 버킷 설정(file_size_limit·allowed_mime_types)이 맡는다.
+ * 2026-10-20 AG2-10.
+ */
+export async function createSignedUpload(
+  client: SupabaseClient,
+  bucket: StorageBucket,
+  path: string
+): Promise<SignedUploadResult> {
+  const { data, error } = await client.storage.from(bucket).createSignedUploadUrl(path);
+  return {
+    signedUrl: data?.signedUrl ?? null,
+    token: data?.token ?? null,
+    path: data?.path ?? path,
+    error: error ? { message: error.message } : null,
+  };
+}
